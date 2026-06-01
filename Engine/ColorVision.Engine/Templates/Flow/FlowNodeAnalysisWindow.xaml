@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="流程节点时间分析" Height="720" Width="1280"
+        Title="{x:Static properties:Resources.Flow_NodeAnalysis_Title}" Height="720" Width="1280"
         Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -27,7 +28,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="批次选择:" Margin="0,0,5,0"/>
+            <TextBlock Text="{x:Static properties:Resources.Flow_NodeAnalysis_BatchSelection}" Margin="0,0,5,0"/>
             <ListView x:Name="BatchListView" Grid.Column="1" Height="60"
                       SelectionMode="Extended"
                       Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
@@ -55,9 +56,9 @@
                 </ListView.View>
             </ListView>
             <StackPanel Grid.Column="2" Orientation="Horizontal">
-                <Button Content="加载" Click="LoadButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
-                <Button Content="对比" Click="CompareButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
-                <Button Content="导出" Click="ExportButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
+                <Button Content="{x:Static properties:Resources.Flow_NodeAnalysis_Load}" Click="LoadButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
+                <Button Content="{x:Static properties:Resources.Flow_NodeAnalysis_Compare}" Click="CompareButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
+                <Button Content="{x:Static properties:Resources.Flow_NodeAnalysis_Export}" Click="ExportButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
             </StackPanel>
         </Grid>
 
@@ -98,35 +99,35 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="节点名称" Width="150">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_NodeName}" Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding NodeName}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="节点类型" Width="120">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_NodeType}" Width="120">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding NodeType}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="开始时间" Width="170">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_StartTime}" Width="170">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding StartTime, StringFormat=yyyy/MM/dd HH:mm:ss.fff}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="结束时间" Width="170">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_EndTime}" Width="170">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding EndTime, StringFormat=yyyy/MM/dd HH:mm:ss.fff}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="耗时(ms)" Width="90">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_ElapsedMs}" Width="90">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding ElapsedMs}"/>
@@ -164,20 +165,20 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="MQTT消息追踪" FontWeight="Bold" Margin="0,0,10,0"/>
-                    <TextBlock Grid.Column="2" Text="节点筛选:" Margin="10,0,5,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_NodeAnalysis_MqttMessageTrace}" FontWeight="Bold" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="2" Text="{x:Static properties:Resources.Flow_NodeAnalysis_NodeFilter}" Margin="10,0,5,0"/>
                     <ComboBox x:Name="MessageNodeFilter" Grid.Column="3" SelectionChanged="MessageNodeFilter_SelectionChanged">
-                        <ComboBoxItem Content="全部" IsSelected="True"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.Flow_NodeAnalysis_All}" Tag="All" IsSelected="True"/>
                     </ComboBox>
-                    <TextBlock Grid.Column="4" Text="状态筛选:" Margin="10,0,5,0"/>
+                    <TextBlock Grid.Column="4" Text="{x:Static properties:Resources.Flow_NodeAnalysis_StateFilter}" Margin="10,0,5,0"/>
                     <ComboBox x:Name="MessageStateFilter" Grid.Column="5" SelectionChanged="MessageStateFilter_SelectionChanged">
-                        <ComboBoxItem Content="全部" IsSelected="True"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.Flow_NodeAnalysis_All}" Tag="All" IsSelected="True"/>
                         <ComboBoxItem Content="Sended"/>
                         <ComboBoxItem Content="Success"/>
                         <ComboBoxItem Content="Fail"/>
                         <ComboBoxItem Content="Timeout"/>
                     </ComboBox>
-                    <Button Grid.Column="7" Content="消息查询窗口" Click="OpenMessageListWindow_Click" Margin="5,0,0,0" Width="100" Height="24"/>
+                    <Button Grid.Column="7" Content="{x:Static properties:Resources.Flow_NodeAnalysis_MessageQueryWindow}" Click="OpenMessageListWindow_Click" Margin="5,0,0,0" Width="100" Height="24"/>
                 </Grid>
 
                 <Grid Grid.Row="1">
@@ -203,7 +204,7 @@
                                         <Setter Property="BorderThickness" Value="0"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="节点" Width="120">
+                                <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_Node}" Width="120">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding NodeName}"/>
@@ -217,28 +218,28 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="发送时间" Width="130">
+                                <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_SendTime}" Width="130">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding SendTime, StringFormat=HH:mm:ss.fff}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="接收时间" Width="130">
+                                <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_RecvTime}" Width="130">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding RecvTime, StringFormat=HH:mm:ss.fff}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="耗时(ms)" Width="70">
+                                <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_ElapsedMs}" Width="70">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding ElapsedMs}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="状态" Width="70">
+                                <GridViewColumn Header="{x:Static properties:Resources.Flow_NodeAnalysis_State}" Width="70">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding State}"/>
@@ -260,14 +261,14 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="发送数据 (Send)" FontWeight="Bold" Margin="2"/>
+                        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.Flow_NodeAnalysis_SendData}" FontWeight="Bold" Margin="2"/>
                         <TextBox x:Name="SendPayloadTextBox" Grid.Row="1" IsReadOnly="True"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                  TextWrapping="Wrap" BorderThickness="1"
                                  FontFamily="Consolas" FontSize="12"/>
 
-                        <TextBlock Grid.Row="2" Text="接收数据 (Receive)" FontWeight="Bold" Margin="2"/>
+                        <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.Flow_NodeAnalysis_RecvData}" FontWeight="Bold" Margin="2"/>
                         <TextBox x:Name="RecvPayloadTextBox" Grid.Row="3" IsReadOnly="True"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"

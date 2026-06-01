@@ -1,36 +1,36 @@
 ﻿
+using ColorVision.Engine.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System.ComponentModel;
 
 namespace ColorVision.Engine.Services
 {
     [JsonConverter(typeof(StringEnumConverter))]
     public enum DeviceStatusType
     {
-        [Description("未知")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusUnknown")]
         Unknown = -99,
-        [Description("未授权")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusUnauthorized")]
         Unauthorized = -3,
-        [Description("未初始化")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusUnInit")]
         UnInit = -2,
-        [Description("已断开")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusOffLine")]
         OffLine = -1,
-        [Description("已关闭")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusClosed")]
         Closed = 0,
-        [Description("关闭中")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusClosing")]
         Closing = 1,
-        [Description("已打开")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusOpened")]
         Opened = 2,
-        [Description("打开中")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusOpening")]
         Opening = 3,
-        [Description("设备忙")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusBusy")]
         Busy = 4,
-        [Description("设备空闲")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusFree")]
         Free = 5,
-        [Description("视频模式")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusLiveOpened")]
         LiveOpened = 6,
-        [Description("光谱仪连续模式")]
+        [LocalizedDescription(typeof(Properties.Resources), "DeviceStatusSPContinuousMode")]
         SP_Continuous_Mode = 11
     }
 }

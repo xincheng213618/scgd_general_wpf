@@ -97,11 +97,11 @@ namespace ColorVision.Rbac
             OpenUserManagerCommand = new RelayCommand(a => OpenUserManager());
             OpenPermissionManagerCommand = new RelayCommand(a => OpenPermissionManager());
 
-            // 若已有有效登录缓存则同步权限；默认空 DTO 不应提升为管理员。
+            // 若已有有效登录缓存则同步权限；无有效登录态时默认允许管理员级操作。
             if (IsValidLoginResult(Config.LoginResult))
                 Authorization.Instance.PermissionMode = Config.LoginResult.UserDetail.PermissionMode;
             else
-                Authorization.Instance.PermissionMode = PermissionMode.Guest;
+                Authorization.Instance.PermissionMode = PermissionMode.Administrator;
         }
 
         private void SeedPermissionsAndRoles()

@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Templates.Matching
             using (System.Windows.Forms.OpenFileDialog saveFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
                 saveFileDialog.Filter = "Tif Files (*.tif)|*.txt|All Files (*.*)|*.*";
-                saveFileDialog.Title = "打开文件";
+                saveFileDialog.Title = ColorVision.Engine.Properties.Resources.OpenFile;
                 saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 saveFileDialog.RestoreDirectory = true;
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

@@ -66,20 +66,16 @@ namespace ColorVision.Update
                 Version version = new Version(Version);
                 if (version > AutoUpdater.CurrentVersion)
                 {
-                    AutoUpdater.GetInstance().Update(Version, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
+                    AutoUpdater.Update(Version, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
                 }
                 else if (version == AutoUpdater.CurrentVersion)
                 {
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Properties.Resources.SoftwareVersionIdentical);
                 }
-                else if (version.Major == AutoUpdater.CurrentVersion.Major && AutoUpdater.CurrentVersion.Minor == version.Minor && AutoUpdater.CurrentVersion.Build == version.Build)
-                {
-                    Aria2cDownloadManager.GetInstance().AddDownload($"http://xc213618.ddns.me:9999/D%3A/ColorVision/ColorVision-{version}.exe", Aria2cDownloadManager.GetInstance().Config.DefaultDownloadPath, "1:1");
-                    DownloadWindow.ShowInstance();
-                }
                 else
                 {
-                    Aria2cDownloadManager.GetInstance().AddDownload($"http://xc213618.ddns.me:9999/D%3A/ColorVision/History/{version.Major}.{version.Minor}/{version.Major}.{version.Minor}.{version.Build}/ColorVision-{version}.exe", Aria2cDownloadManager.GetInstance().Config.DefaultDownloadPath, "1:1");
+                    string downloadUrl = AutoUpdater.GetReleasePackageDownloadUrl(version);
+                    Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, Aria2cDownloadManager.GetInstance().Config.DefaultDownloadPath, "1:1");
                     DownloadWindow.ShowInstance();
                 }
             });

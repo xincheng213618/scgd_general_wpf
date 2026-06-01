@@ -105,21 +105,21 @@ namespace ColorVision.Scheduler
                 if (jobException != null)
                 {
                     taskInfo.FailureCount++;
-                    taskInfo.LastExecutionResult = "失败";
+                    taskInfo.LastExecutionResult = Properties.Resources.Sched_ExecFail;
                     taskInfo.LastExecutionMessage = jobException.InnerException?.Message ?? jobException.Message;
                     _logger.Error($"Job execution failed: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms", jobException);
                 }
                 else if (IsJobResultFailure(context.Result))
                 {
                     taskInfo.FailureCount++;
-                    taskInfo.LastExecutionResult = "失败";
+                    taskInfo.LastExecutionResult = Properties.Resources.Sched_ExecFail;
                     taskInfo.LastExecutionMessage = context.Result?.ToString() ?? string.Empty;
                     _logger.Warn($"Job reported failure: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms, Result: {context.Result}");
                 }
                 else
                 {
                     taskInfo.SuccessCount++;
-                    taskInfo.LastExecutionResult = "成功";
+                    taskInfo.LastExecutionResult = Properties.Resources.Sched_ExecSuccess;
                     taskInfo.LastExecutionMessage = context.Result?.ToString() ?? string.Empty;
                     _logger.Info($"Job completed: {jobKey.Name}({jobKey.Group}), RunCount: {taskInfo.RunCount}, Duration: {executionTimeMs}ms");
                 }
@@ -134,7 +134,7 @@ namespace ColorVision.Scheduler
                         StartTime = startTime,
                         EndTime = DateTime.Now,
                         ExecutionTimeMs = executionTimeMs,
-                        Success = taskInfo.LastExecutionResult == "成功",
+                        Success = taskInfo.LastExecutionResult == Properties.Resources.Sched_ExecSuccess,
                         Result = taskInfo.LastExecutionResult,
                         Message = taskInfo.LastExecutionMessage
                     };

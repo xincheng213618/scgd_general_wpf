@@ -13,6 +13,7 @@ namespace Conoscope.Core
     {
         public double StepDegrees { get; init; } = 0.01;
         public bool IncludeMetadata { get; init; } = true;
+        public int DecimalPlaces { get; init; } = 4;
     }
 
     public sealed class ConoscopeExportContext
@@ -25,11 +26,12 @@ namespace Conoscope.Core
         public required double PixelsPerDegree { get; init; }
         public required Func<int, int, ConoscopeXyzValue> ReadXyz { get; init; }
         public Func<int, int, double>? ReadColorDifference { get; init; }
+        public Func<int, int, double>? ReadContrast { get; init; }
     }
 
     public static class ConoscopeExportService
     {
-        public static void ExportAngleModeToCsv(string filePath, ExportChannel channel, ConoscopeExportContext context)
+        public static void ExportAngleModeToCsv(string filePath, ExportChannel channel, ConoscopeExportContext context, int decimalPlaces = 4)
         {
             List<ExportLine> angleLines = CreateAzimuthLines(context, 1, 1, 0, 180);
             using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
@@ -38,10 +40,11 @@ namespace Conoscope.Core
                 "# Theta (Row): Sample point position along the full diameter (-MaxAngle to MaxAngle)",
                 "Phi \\ Theta",
                 angleLines,
-                item => item.HeaderLabel("F0"));
+                item => item.HeaderLabel("F0"),
+                decimalPlaces);
         }
 
-        public static void ExportCircleModeToCsv(string filePath, ExportChannel channel, ConoscopeExportContext context)
+        public static void ExportCircleModeToCsv(string filePath, ExportChannel channel, ConoscopeExportContext context, int decimalPlaces = 4)
         {
             List<ExportLine> circles = CreatePolarCircles(context, 1, 1);
             using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
@@ -50,10 +53,11 @@ namespace Conoscope.Core
                 "# Theta (Row): Circumferential angle (0-360°)",
                 "Phi \\ Theta",
                 circles,
-                item => item.HeaderLabel("F0"));
+                item => item.HeaderLabel("F0"),
+                decimalPlaces);
         }
 
-        public static void ExportAzimuthWithStep(string filePath, ExportChannel channel, ConoscopeExportContext context, double azimuthStep, double radialStep)
+        public static void ExportAzimuthWithStep(string filePath, ExportChannel channel, ConoscopeExportContext context, double azimuthStep, double radialStep, int decimalPlaces = 4)
         {
             List<ExportLine> angleLines = CreateAzimuthLines(context, azimuthStep, radialStep, 0, 180);
             using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
@@ -62,10 +66,11 @@ namespace Conoscope.Core
                 $"# Theta (Row): Full-diameter sample position (-MaxAngle to MaxAngle, step={radialStep}°)",
                 "Phi \\ Theta",
                 angleLines,
-                item => item.HeaderLabel("F2"));
+                item => item.HeaderLabel("F2"),
+                decimalPlaces);
         }
 
-        public static void ExportPolarWithStep(string filePath, ExportChannel channel, ConoscopeExportContext context, double polarStep, double circumStep)
+        public static void ExportPolarWithStep(string filePath, ExportChannel channel, ConoscopeExportContext context, double polarStep, double circumStep, int decimalPlaces = 4)
         {
             List<ExportLine> circles = CreatePolarCircles(context, polarStep, circumStep);
             using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
@@ -74,62 +79,39 @@ namespace Conoscope.Core
                 $"# Theta (Row): Circumferential angle (0-360°, step={circumStep}°)",
                 "Phi \\ Theta",
                 circles,
-                item => item.HeaderLabel("F2"));
-        }
-
-        public static void ExportAzimuthCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double azimuthAngle)
-        {
-            using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            WriteCrossSectionHeader(writer, $"Azimuth Cross-Section Export (Angle = {azimuthAngle}°)", channel, context, includeMetadata: true);
-            writer.WriteLine($"Azimuth Position (degrees),{GetExportValueHeader(channel)}");
-
-            foreach (ExportSample sample in CreateAzimuthCrossSection(context, azimuthAngle))
-            {
-                double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
-                writer.WriteLine($"{sample.Position:F2},{ConoscopeColorimetry.FormatChannelValue(value, channel)}");
-            }
+                item => item.HeaderLabel("F2"),
+                decimalPlaces);
         }
 
         public static void ExportAzimuthCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double azimuthAngle, ConoscopeCrossSectionExportOptions options)
         {
             options ??= new ConoscopeCrossSectionExportOptions();
+            int decimalPlaces = Math.Clamp(options.DecimalPlaces, 0, 8);
 
             using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            WriteCrossSectionHeader(writer, $"Azimuth Cross-Section Export (Angle = {azimuthAngle}°)", channel, context, options.IncludeMetadata);
+            if (options.IncludeMetadata) WriteHeader(writer, $"Azimuth Cross-Section Export (Angle = {azimuthAngle}°)", channel, context);
             writer.WriteLine($"Azimuth Position (degrees),{GetExportValueHeader(channel)}");
 
             foreach (ExportSample sample in CreateAzimuthCrossSection(context, azimuthAngle, options.StepDegrees))
             {
                 double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
-                writer.WriteLine($"{sample.Position:F2},{ConoscopeColorimetry.FormatChannelValue(value, channel)}");
-            }
-        }
-
-        public static void ExportPolarCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double polarAngle)
-        {
-            using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            WriteCrossSectionHeader(writer, $"Polar Cross-Section Export (Radius Angle = {polarAngle}°)", channel, context, includeMetadata: true);
-            writer.WriteLine($"Circumferential Angle (degrees),{GetExportValueHeader(channel)}");
-
-            foreach (ExportSample sample in CreatePolarCrossSection(context, polarAngle, 1))
-            {
-                double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
-                writer.WriteLine($"{sample.Position:F2},{ConoscopeColorimetry.FormatChannelValue(value, channel)}");
+                writer.WriteLine($"{sample.Position:F2},{ConoscopeColorimetry.FormatChannelValue(value, channel, decimalPlaces)}");
             }
         }
 
         public static void ExportPolarCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double polarAngle, ConoscopeCrossSectionExportOptions options)
         {
             options ??= new ConoscopeCrossSectionExportOptions();
+            int decimalPlaces = Math.Clamp(options.DecimalPlaces, 0, 8);
 
             using StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            WriteCrossSectionHeader(writer, $"Polar Cross-Section Export (Radius Angle = {polarAngle}°)", channel, context, options.IncludeMetadata);
+            if (options.IncludeMetadata) WriteHeader(writer, $"Polar Cross-Section Export (Radius Angle = {polarAngle}°)", channel, context);
             writer.WriteLine($"Circumferential Angle (degrees),{GetExportValueHeader(channel)}");
 
             foreach (ExportSample sample in CreatePolarCrossSection(context, polarAngle, options.StepDegrees))
             {
                 double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
-                writer.WriteLine($"{sample.Position:F2},{ConoscopeColorimetry.FormatChannelValue(value, channel)}");
+                writer.WriteLine($"{sample.Position:F2},{ConoscopeColorimetry.FormatChannelValue(value, channel, decimalPlaces)}");
             }
         }
 
@@ -177,8 +159,8 @@ namespace Conoscope.Core
             double normalizedAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(azimuthAngle);
             double radians = normalizedAngle * Math.PI / 180.0;
             double radiusPixels = polarAngle * context.PixelsPerDegree;
-            int imageX = ClampToInt((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
-            int imageY = ClampToInt((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
+            int imageX = Math.Clamp((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
+            int imageY = Math.Clamp((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
             return new ExportSample(polarAngle, imageX, imageY, context.ReadXyz(imageX, imageY));
         }
 
@@ -192,8 +174,8 @@ namespace Conoscope.Core
 
             double radians = normalizedAngle * Math.PI / 180.0;
             double radiusPixels = polarAngle * context.PixelsPerDegree;
-            int imageX = ClampToInt((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
-            int imageY = ClampToInt((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
+            int imageX = Math.Clamp((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
+            int imageY = Math.Clamp((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
             return new ExportSample(circumferentialAngle, imageX, imageY, context.ReadXyz(imageX, imageY));
         }
 
@@ -225,13 +207,14 @@ namespace Conoscope.Core
             return circles;
         }
 
-        private static void WriteMatrix(StreamWriter writer, string title, ExportChannel channel, ConoscopeExportContext context, string firstAxisComment, string secondAxisComment, string headerTitle, List<ExportLine> lines, Func<ExportLine, string> formatHeader)
+        private static void WriteMatrix(StreamWriter writer, string title, ExportChannel channel, ConoscopeExportContext context, string firstAxisComment, string secondAxisComment, string headerTitle, List<ExportLine> lines, Func<ExportLine, string> formatHeader, int decimalPlaces)
         {
             if (lines.Count == 0)
             {
                 return;
             }
 
+            int normalizedDecimalPlaces = Math.Clamp(decimalPlaces, 0, 8);
             WriteHeader(writer, title, channel, context);
             foreach (string line in firstAxisComment.Split('\n'))
             {
@@ -258,7 +241,7 @@ namespace Conoscope.Core
                     {
                         ExportSample sample = line.Samples[index];
                         double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
-                        dataLine.Append($",{ConoscopeColorimetry.FormatChannelValue(value, channel)}");
+                        dataLine.Append($",{ConoscopeColorimetry.FormatChannelValue(value, channel, normalizedDecimalPlaces)}");
                     }
                     else
                     {
@@ -267,16 +250,6 @@ namespace Conoscope.Core
                 }
                 writer.WriteLine(dataLine.ToString());
             }
-        }
-
-        private static void WriteCrossSectionHeader(StreamWriter writer, string title, ExportChannel channel, ConoscopeExportContext context, bool includeMetadata)
-        {
-            if (!includeMetadata)
-            {
-                return;
-            }
-
-            WriteHeader(writer, title, channel, context);
         }
 
         private static void WriteHeader(StreamWriter writer, string title, ExportChannel channel, ConoscopeExportContext context)
@@ -296,34 +269,29 @@ namespace Conoscope.Core
                 : label;
         }
 
-        private static double ReadExportValue(ExportChannel channel, ConoscopeExportContext context, int imageX, int imageY)
-        {
-            return ReadExportValue(channel, context, imageX, imageY, context.ReadXyz(imageX, imageY));
-        }
-
         private static double ReadExportValue(ExportChannel channel, ConoscopeExportContext context, int imageX, int imageY, ConoscopeXyzValue xyz)
         {
             if (channel == ExportChannel.ColorDifference)
             {
                 if (context.ReadColorDifference == null)
                 {
-                    throw new InvalidOperationException("色差通道需要先设置色差基准");
+                    throw new InvalidOperationException(Conoscope.Properties.Resources.MsgColorDifferenceReferenceRequired);
                 }
 
                 return context.ReadColorDifference(imageX, imageY);
             }
 
-            return ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);
-        }
-
-        private static int ClampToInt(int value, int min, int max)
-        {
-            if (max < min)
+            if (channel == ExportChannel.Contrast)
             {
-                return min;
+                if (context.ReadContrast == null)
+                {
+                    throw new InvalidOperationException(Conoscope.Properties.Resources.MsgContrastReferenceRequired);
+                }
+
+                return context.ReadContrast(imageX, imageY);
             }
 
-            return Math.Max(min, Math.Min(value, max));
+            return ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);
         }
 
         private static IEnumerable<double> EnumerateRange(double start, double end, double step)

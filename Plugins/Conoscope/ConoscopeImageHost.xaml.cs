@@ -1,7 +1,9 @@
+using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,6 +23,16 @@ namespace Conoscope
         public IReadOnlyList<DVCircleText> Circles { get; }
     }
 
+    public sealed class ConoscopeFocusCircleEditRequestedEventArgs : EventArgs
+    {
+        public ConoscopeFocusCircleEditRequestedEventArgs(DVCircleText circle)
+        {
+            Circle = circle;
+        }
+
+        public DVCircleText Circle { get; }
+    }
+
     public partial class ConoscopeImageHost : UserControl, IDisposable
     {
         internal const double MinimumFocusCircleRadius = 4;
@@ -28,17 +40,24 @@ namespace Conoscope
         public DrawEditorContext EditorContext { get; }
 
         private readonly ContextMenu focusCircleContextMenu = new();
+        private readonly EditorContext contextMenuEditorContext = new();
+        private readonly DrawingVisualBaseDVContextMenu focusCirclePropertyContextMenu = new();
+        private readonly MenuItem editFocusCircleByPolarMenuItem = new();
         private readonly MenuItem calculateFocusCircleMenuItem = new();
-        private readonly MenuItem deleteFocusCircleMenuItem = new();
         private readonly MenuItem clearFocusCircleMenuItem = new();
+        private readonly HashSet<DVCircleText> trackedFocusCircles = new();
         private readonly ConoscopeFocusCircleDrawTool focusCircleDrawTool;
         private readonly EraseManager focusCircleEraseTool;
 
         private DVCircleText? contextMenuFocusCircle;
         private bool isFocusCircleEditMode;
         private bool isFocusCircleSelectionEnabled;
+        private bool hasFocusCircleBoundary;
+        private bool isAdjustingFocusCircleBoundary;
         private bool suspendFocusCircleTracking;
         private int focusCircleSequence = 1;
+        private Point focusCircleBoundaryCenter;
+        private double focusCircleBoundaryRadius;
 
         public ConoscopeImageHost()
         {
@@ -49,7 +68,9 @@ namespace Conoscope
             EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
             focusCircleDrawTool = new ConoscopeFocusCircleDrawTool(EditorContext, this);
             focusCircleEraseTool = new EraseManager(EditorContext);
+            focusCircleEraseTool.CanEraseVisual = static visual => visual is DVCircleText;
             InitializeFocusCircleContextMenu();
+            EditorContext.SelectionVisual.SelectionChanged += SelectionVisual_SelectionChanged;
             ZoomBox.ContentMatrixChanged += ZoomBox_ContentMatrixChanged;
             ImageCanvas.PreviewMouseRightButtonDown += ImageCanvas_PreviewMouseRightButtonDown;
             ImageCanvas.ContextMenuOpening += ImageCanvas_ContextMenuOpening;
@@ -63,8 +84,12 @@ namespace Conoscope
 
         public IReadOnlyList<DVCircleText> FocusCircles => GetFocusCircles();
 
+        public DVCircleText? SelectedFocusCircle => EditorContext.SelectionVisual.PrimarySelectedVisual as DVCircleText;
+
         public event EventHandler<ConoscopeFocusCircleCalculationRequestedEventArgs>? FocusCircleCalculationRequested;
+        public event EventHandler<ConoscopeFocusCircleEditRequestedEventArgs>? FocusCircleEditRequested;
         public event EventHandler? FocusCirclesChanged;
+        public event EventHandler? FocusCircleSelectionChanged;
 
         public bool IsFocusCircleEditMode
         {
@@ -156,15 +181,33 @@ namespace Conoscope
             RefreshFocusCircleInteractionState();
         }
 
+        public void SetFocusCircleBoundary(Point center, double radius)
+        {
+            focusCircleBoundaryCenter = center;
+            focusCircleBoundaryRadius = Math.Max(0, radius);
+            hasFocusCircleBoundary = focusCircleBoundaryRadius > 0;
+        }
+
+        public void ClearFocusCircleBoundary()
+        {
+            hasFocusCircleBoundary = false;
+            focusCircleBoundaryRadius = 0;
+        }
+
         public void Dispose()
         {
             ZoomBox.ContentMatrixChanged -= ZoomBox_ContentMatrixChanged;
+            EditorContext.SelectionVisual.SelectionChanged -= SelectionVisual_SelectionChanged;
             ImageCanvas.PreviewMouseRightButtonDown -= ImageCanvas_PreviewMouseRightButtonDown;
             ImageCanvas.ContextMenuOpening -= ImageCanvas_ContextMenuOpening;
             ImageCanvas.VisualsAdd -= ImageCanvas_VisualsAdd;
             ImageCanvas.VisualsRemove -= ImageCanvas_VisualsRemove;
             ClearCore(preserveFocusCircles: false);
+            UntrackAllFocusCircles();
             ImageCanvas.ContextMenu = null;
+            editFocusCircleByPolarMenuItem.Click -= EditFocusCircleByPolarMenuItem_Click;
+            calculateFocusCircleMenuItem.Click -= CalculateFocusCircleMenuItem_Click;
+            clearFocusCircleMenuItem.Click -= ClearFocusCircleMenuItem_Click;
             focusCircleDrawTool.Dispose();
             focusCircleEraseTool.Dispose();
             EditorContext.SelectionVisual.Dispose();
@@ -175,16 +218,21 @@ namespace Conoscope
 
         private void InitializeFocusCircleContextMenu()
         {
+            editFocusCircleByPolarMenuItem.Header = Properties.Resources.Conoscope_EditByAngleLength;
+            editFocusCircleByPolarMenuItem.Click += EditFocusCircleByPolarMenuItem_Click;
             calculateFocusCircleMenuItem.Click += CalculateFocusCircleMenuItem_Click;
-            deleteFocusCircleMenuItem.Click += DeleteFocusCircleMenuItem_Click;
             clearFocusCircleMenuItem.Click += ClearFocusCircleMenuItem_Click;
 
-            focusCircleContextMenu.Items.Add(calculateFocusCircleMenuItem);
-            focusCircleContextMenu.Items.Add(deleteFocusCircleMenuItem);
-            focusCircleContextMenu.Items.Add(new Separator());
-            focusCircleContextMenu.Items.Add(clearFocusCircleMenuItem);
+            contextMenuEditorContext.DrawCanvas = ImageCanvas;
+            contextMenuEditorContext.Zoombox = ZoomBox;
+            contextMenuEditorContext.SelectionVisual = EditorContext.SelectionVisual;
             ImageCanvas.ContextMenu = focusCircleContextMenu;
             UpdateCanvasCursor();
+        }
+
+        private void SelectionVisual_SelectionChanged(object? sender, EventArgs e)
+        {
+            FocusCircleSelectionChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void ZoomBox_ContentMatrixChanged(object? sender, EventArgs e)
@@ -240,6 +288,18 @@ namespace Conoscope
             }
         }
 
+        public void ZoomToImageRect(Rect imageRect)
+        {
+            if (CheckAccess())
+            {
+                ZoomToImageRectCore(imageRect);
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => ZoomToImageRectCore(imageRect)));
+            }
+        }
+
         private void UpdateZoomAndScaleCore()
         {
             ZoomBox.ZoomUniform();
@@ -248,6 +308,11 @@ namespace Conoscope
                 UpdateDrawingVisualScale();
                 ImageCanvas.ApplyLayoutScaleToVisuals();
             }));
+        }
+
+        private void ZoomToImageRectCore(Rect imageRect)
+        {
+            ZoomBox.ZoomToContentRect(imageRect);
         }
 
         private void UpdateDrawingVisualScale()
@@ -301,6 +366,7 @@ namespace Conoscope
 
         private void ImageCanvas_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
+            focusCircleContextMenu.Items.Clear();
             IReadOnlyList<DVCircleText> focusCircles = FocusCircles;
             if (focusCircles.Count == 0)
             {
@@ -314,10 +380,25 @@ namespace Conoscope
             }
 
             string focusCircleName = contextMenuFocusCircle == null ? string.Empty : ResolveFocusCircleName(contextMenuFocusCircle);
-            calculateFocusCircleMenuItem.Header = contextMenuFocusCircle == null ? "计算全部关注点" : $"计算关注点: {focusCircleName}";
-            deleteFocusCircleMenuItem.Header = contextMenuFocusCircle == null ? "删除当前关注点" : $"删除关注点: {focusCircleName}";
-            deleteFocusCircleMenuItem.Visibility = contextMenuFocusCircle == null ? Visibility.Collapsed : Visibility.Visible;
-            clearFocusCircleMenuItem.Header = focusCircles.Count > 1 ? "清空全部关注点" : "清空关注点";
+            calculateFocusCircleMenuItem.Header = contextMenuFocusCircle == null ? Properties.Resources.Conoscope_CalculateAllFocusPoints : string.Format(Properties.Resources.Conoscope_CalculateFocusPoint, focusCircleName);
+            clearFocusCircleMenuItem.Header = focusCircles.Count > 1 ? Properties.Resources.Conoscope_ClearAllFocusPoints : Properties.Resources.Conoscope_ClearFocusPoint;
+
+            if (contextMenuFocusCircle != null)
+            {
+                focusCircleContextMenu.Items.Add(editFocusCircleByPolarMenuItem);
+                focusCircleContextMenu.Items.Add(new Separator());
+
+                foreach (MenuItem menuItem in focusCirclePropertyContextMenu.GetContextMenuItems(contextMenuEditorContext, contextMenuFocusCircle))
+                {
+                    focusCircleContextMenu.Items.Add(menuItem);
+                }
+
+                focusCircleContextMenu.Items.Add(new Separator());
+            }
+
+            focusCircleContextMenu.Items.Add(calculateFocusCircleMenuItem);
+            focusCircleContextMenu.Items.Add(new Separator());
+            focusCircleContextMenu.Items.Add(clearFocusCircleMenuItem);
         }
 
         private void CalculateFocusCircleMenuItem_Click(object sender, RoutedEventArgs e)
@@ -331,15 +412,14 @@ namespace Conoscope
             FocusCircleCalculationRequested?.Invoke(this, new ConoscopeFocusCircleCalculationRequestedEventArgs(circles));
         }
 
-        private void DeleteFocusCircleMenuItem_Click(object sender, RoutedEventArgs e)
+        private void EditFocusCircleByPolarMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (contextMenuFocusCircle == null)
             {
                 return;
             }
 
-            RemoveFocusCircle(contextMenuFocusCircle);
-            contextMenuFocusCircle = null;
+            FocusCircleEditRequested?.Invoke(this, new ConoscopeFocusCircleEditRequestedEventArgs(contextMenuFocusCircle));
         }
 
         private void ClearFocusCircleMenuItem_Click(object sender, RoutedEventArgs e)
@@ -355,11 +435,67 @@ namespace Conoscope
                 Id = id,
                 Center = center,
                 Radius = MinimumFocusCircleRadius,
+                RadiusY = MinimumFocusCircleRadius,
                 Brush = Brushes.Transparent,
                 Pen = new Pen(Brushes.DeepSkyBlue, 2),
                 Text = $"Focus_{id}",
             };
-            properties.Foreground = Brushes.DeepSkyBlue;
+            properties.Foreground = Brushes.White;
+            properties.FontWeight = FontWeights.SemiBold;
+            properties.Msg = string.Empty;
+            return new DVCircleText(properties);
+        }
+
+        internal void ReplaceFocusCirclesFromPoiPoints(IEnumerable<PoiPoint> poiPoints)
+        {
+            ArgumentNullException.ThrowIfNull(poiPoints);
+
+            ClearFocusCircleSelection();
+            SetFocusCircleDrawMode(false);
+            SetFocusCircleEraseMode(false);
+            contextMenuFocusCircle = null;
+
+            suspendFocusCircleTracking = true;
+            try
+            {
+                foreach (DVCircleText circle in GetFocusCircles())
+                {
+                    RemoveFocusCircle(circle);
+                }
+
+                focusCircleSequence = 1;
+                foreach (PoiPoint poiPoint in poiPoints.Where(static item => item.PointType == GraphicTypes.Circle))
+                {
+                    DVCircleText circle = CreateFocusCircle(poiPoint, focusCircleSequence);
+                    AttachFocusCircle(circle);
+                    focusCircleSequence++;
+                }
+            }
+            finally
+            {
+                suspendFocusCircleTracking = false;
+            }
+
+            FocusCirclesChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private DVCircleText CreateFocusCircle(PoiPoint poiPoint, int id)
+        {
+            double radius = Math.Max(poiPoint.PixWidth / 2, MinimumFocusCircleRadius);
+            double radiusY = Math.Max(poiPoint.PixHeight / 2, MinimumFocusCircleRadius);
+            string text = string.IsNullOrWhiteSpace(poiPoint.Name) ? $"Focus_{id}" : poiPoint.Name;
+            CircleTextProperties properties = new()
+            {
+                Id = id,
+                Name = poiPoint.Id.ToString(),
+                Center = new Point(poiPoint.PixX, poiPoint.PixY),
+                Radius = radius,
+                RadiusY = radiusY,
+                Brush = Brushes.Transparent,
+                Pen = new Pen(Brushes.DeepSkyBlue, 2),
+                Text = text,
+            };
+            properties.Foreground = Brushes.White;
             properties.FontWeight = FontWeights.SemiBold;
             properties.Msg = string.Empty;
             return new DVCircleText(properties);
@@ -372,6 +508,7 @@ namespace Conoscope
                 ImageCanvas.AddVisualCommand(circle);
             }
 
+            TrackFocusCircle(circle);
             ImageCanvas.TopVisual(circle);
         }
 
@@ -379,6 +516,100 @@ namespace Conoscope
         {
             EditorContext.SelectionVisual.SetRender(circle);
             ImageCanvas.TopVisual(circle);
+        }
+
+        internal void RefreshFocusCircleSelection()
+        {
+            EditorContext.SelectionVisual.Render();
+        }
+
+        internal bool CanCreateFocusCircleAt(Point center)
+        {
+            if (!hasFocusCircleBoundary)
+            {
+                return true;
+            }
+
+            return (center - focusCircleBoundaryCenter).Length <= focusCircleBoundaryRadius;
+        }
+
+        internal double ClampFocusCircleRadius(Point center, double radius)
+        {
+            if (!hasFocusCircleBoundary)
+            {
+                return radius;
+            }
+
+            double distance = (center - focusCircleBoundaryCenter).Length;
+            double maxRadius = Math.Max(0, focusCircleBoundaryRadius - distance);
+            return Math.Max(0, Math.Min(radius, maxRadius));
+        }
+
+        internal void ConstrainFocusCircleToBoundary(DVCircleText circle)
+        {
+            if (!hasFocusCircleBoundary || isAdjustingFocusCircleBoundary)
+            {
+                return;
+            }
+
+            CircleTextProperties attribute = circle.Attribute;
+            double radiusX = Math.Max(attribute.Radius, MinimumFocusCircleRadius);
+            double rawRadiusY = attribute.RadiusY > 0 ? attribute.RadiusY : attribute.Radius;
+            double radiusY = Math.Max(rawRadiusY, MinimumFocusCircleRadius);
+            double requiredRadius = Math.Max(radiusX, radiusY);
+            Point center = attribute.Center;
+            Vector delta = center - focusCircleBoundaryCenter;
+            double distance = delta.Length;
+            double maxCenterDistance = Math.Max(0, focusCircleBoundaryRadius - requiredRadius);
+            bool changed = false;
+
+            isAdjustingFocusCircleBoundary = true;
+            try
+            {
+                if (distance > maxCenterDistance)
+                {
+                    if (distance <= double.Epsilon)
+                    {
+                        center = new Point(focusCircleBoundaryCenter.X + maxCenterDistance, focusCircleBoundaryCenter.Y);
+                    }
+                    else
+                    {
+                        double scale = maxCenterDistance / distance;
+                        center = new Point(
+                            focusCircleBoundaryCenter.X + delta.X * scale,
+                            focusCircleBoundaryCenter.Y + delta.Y * scale);
+                    }
+
+                    attribute.Center = center;
+                    changed = true;
+                }
+
+                double centerDistance = (center - focusCircleBoundaryCenter).Length;
+                double maxRadius = Math.Max(0, focusCircleBoundaryRadius - centerDistance);
+                double clampedRadius = Math.Max(0, Math.Min(attribute.Radius, maxRadius));
+                if (!AreClose(attribute.Radius, clampedRadius))
+                {
+                    attribute.Radius = clampedRadius;
+                    changed = true;
+                }
+
+                double clampedRadiusY = Math.Max(0, Math.Min(rawRadiusY, maxRadius));
+                if (attribute.RadiusY > 0 && !AreClose(attribute.RadiusY, clampedRadiusY))
+                {
+                    attribute.RadiusY = clampedRadiusY;
+                    changed = true;
+                }
+            }
+            finally
+            {
+                isAdjustingFocusCircleBoundary = false;
+            }
+
+            if (changed)
+            {
+                circle.Render();
+                RefreshFocusCircleSelection();
+            }
         }
 
         internal void RemoveFocusCircle(DVCircleText circle)
@@ -392,6 +623,8 @@ namespace Conoscope
             {
                 ImageCanvas.RemoveVisualCommand(circle);
             }
+
+            UntrackFocusCircle(circle);
         }
 
         private void ImageCanvas_VisualsAdd(object? sender, VisualChangedEventArgs e)
@@ -417,6 +650,64 @@ namespace Conoscope
             }
 
             FocusCirclesChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void TrackFocusCircle(DVCircleText circle)
+        {
+            if (!trackedFocusCircles.Add(circle))
+            {
+                return;
+            }
+
+            circle.Attribute.PropertyChanged -= FocusCircleAttribute_PropertyChanged;
+            circle.Attribute.PropertyChanged += FocusCircleAttribute_PropertyChanged;
+        }
+
+        private void UntrackFocusCircle(DVCircleText circle)
+        {
+            if (!trackedFocusCircles.Remove(circle))
+            {
+                return;
+            }
+
+            circle.Attribute.PropertyChanged -= FocusCircleAttribute_PropertyChanged;
+        }
+
+        private void UntrackAllFocusCircles()
+        {
+            foreach (DVCircleText circle in trackedFocusCircles.ToArray())
+            {
+                UntrackFocusCircle(circle);
+            }
+        }
+
+        private void FocusCircleAttribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (suspendFocusCircleTracking || isAdjustingFocusCircleBoundary)
+            {
+                return;
+            }
+
+            if (sender is CircleTextProperties properties
+                && e.PropertyName is nameof(CircleTextProperties.Center)
+                    or nameof(CircleTextProperties.Radius)
+                    or nameof(CircleTextProperties.RadiusY))
+            {
+                DVCircleText? circle = trackedFocusCircles.FirstOrDefault(item => ReferenceEquals(item.Attribute, properties));
+                if (circle != null)
+                {
+                    ConstrainFocusCircleToBoundary(circle);
+                }
+            }
+
+            if (e.PropertyName is nameof(CircleTextProperties.Center)
+                or nameof(CircleTextProperties.Radius)
+                or nameof(CircleTextProperties.RadiusY)
+                or nameof(CircleTextProperties.Text)
+                or nameof(CircleTextProperties.Id))
+            {
+                FocusCirclesChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         private void ClearFocusCircleSelection()
@@ -452,6 +743,11 @@ namespace Conoscope
         private static string ResolveFocusCircleName(DVCircleText circle)
         {
             return string.IsNullOrWhiteSpace(circle.Attribute.Text) ? $"Focus_{circle.Attribute.Id}" : circle.Attribute.Text;
+        }
+
+        private static bool AreClose(double left, double right)
+        {
+            return Math.Abs(left - right) < 0.000001;
         }
     }
 }

@@ -1,3 +1,4 @@
+using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 
@@ -44,7 +45,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
     public class MenuTimedButtonOperationStatsWindow : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "按钮耗时统计";
+        public override string Header => Resources.MenuTimedButtonOperationStats;
         public override int Order => 1011;
 
         public override void Execute()

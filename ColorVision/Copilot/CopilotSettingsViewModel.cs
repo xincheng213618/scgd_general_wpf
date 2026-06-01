@@ -1,15 +1,33 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.Copilot
 {
     public sealed class CopilotSettingsViewModel : ViewModelBase
     {
+        private static readonly HttpClient McpHttpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(5),
+        };
+
+        private static readonly Regex SensitiveErrorRegex = new(
+            "(Bearer\\s+)[^,;\\s]+|(?<name>token|api[_-]?key|authorization)\\s*[:=]\\s*[^,;\\s]+",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private bool _isApplyingPreset;
 
         public CopilotSettingsViewModel()
@@ -42,19 +60,104 @@ namespace ColorVision.Copilot
             AddProfileCommand = new RelayCommand(_ => AddProfile());
             DuplicateProfileCommand = new RelayCommand(_ => DuplicateSelectedProfile());
             DeleteProfileCommand = new RelayCommand(_ => DeleteSelectedProfile());
+            RegenerateMcpTokenCommand = new RelayCommand(_ => RegenerateMcpToken());
+            CopyMcpTokenCommand = new RelayCommand(_ => CopyMcpBearerToken());
+            TestMcpConnectionCommand = new RelayCommand(_ => _ = TestMcpConnectionAsync());
+
+            McpEnabled = config.McpEnabled;
+            McpPort = config.McpPort;
+            McpEndpoint = BuildMcpEndpoint();
+            McpBearerToken = config.McpBearerToken;
+            RefreshMcpStatusText();
         }
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; } = new();
 
         public IReadOnlyList<CopilotProviderOption> ProviderOptions { get; }
 
-    public IReadOnlyList<CopilotVendorOption> VendorOptions { get; }
+        public IReadOnlyList<CopilotVendorOption> VendorOptions { get; }
 
         public RelayCommand AddProfileCommand { get; }
 
         public RelayCommand DuplicateProfileCommand { get; }
 
         public RelayCommand DeleteProfileCommand { get; }
+
+        public RelayCommand RegenerateMcpTokenCommand { get; }
+
+        public RelayCommand CopyMcpTokenCommand { get; }
+
+        public RelayCommand TestMcpConnectionCommand { get; }
+
+        public bool McpEnabled
+        {
+            get => _mcpEnabled;
+            set
+            {
+                if (SetProperty(ref _mcpEnabled, value))
+                    MarkMcpSettingsPending();
+            }
+        }
+        private bool _mcpEnabled;
+
+        public string McpEndpoint
+        {
+            get => _mcpEndpoint;
+            private set => SetProperty(ref _mcpEndpoint, value ?? string.Empty);
+        }
+        private string _mcpEndpoint = string.Empty;
+
+        public int McpPort
+        {
+            get => _mcpPort;
+            set
+            {
+                if (SetProperty(ref _mcpPort, value))
+                {
+                    McpEndpoint = BuildMcpEndpoint();
+                    MarkMcpSettingsPending();
+                }
+            }
+        }
+        private int _mcpPort = CopilotConfig.DefaultMcpPort;
+
+        public string McpBearerToken
+        {
+            get => _mcpBearerToken;
+            set
+            {
+                if (SetProperty(ref _mcpBearerToken, value ?? string.Empty))
+                    MarkMcpSettingsPending();
+            }
+        }
+        private string _mcpBearerToken = string.Empty;
+
+        public string McpStatusText
+        {
+            get => _mcpStatusText;
+            private set => SetProperty(ref _mcpStatusText, value ?? string.Empty);
+        }
+        private string _mcpStatusText = string.Empty;
+
+        public string McpConnectionTestText
+        {
+            get => _mcpConnectionTestText;
+            private set => SetProperty(ref _mcpConnectionTestText, value ?? string.Empty);
+        }
+        private string _mcpConnectionTestText = string.Empty;
+
+        public bool IsTestingMcpConnection
+        {
+            get => _isTestingMcpConnection;
+            private set
+            {
+                if (SetProperty(ref _isTestingMcpConnection, value))
+                    OnPropertyChanged(nameof(CanTestMcpConnection));
+            }
+        }
+        private bool _isTestingMcpConnection;
+
+        public bool CanTestMcpConnection => !IsTestingMcpConnection;
 
         public CopilotVendorType NewProfileVendorType
         {
@@ -102,8 +205,19 @@ namespace ColorVision.Copilot
                 config.Profiles.Add(profile);
             }
 
+            config.McpEnabled = McpEnabled;
+            config.McpPort = McpPort;
+            config.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
+                ? CopilotConfig.GenerateMcpBearerToken()
+                : McpBearerToken.Trim();
+
             config.EnsureInitialized();
+            McpPort = config.McpPort;
+            McpEndpoint = BuildMcpEndpoint();
+            McpBearerToken = config.McpBearerToken;
             ConfigHandler.GetInstance().Save<CopilotConfig>();
+            CopilotMcpServer.Instance.ApplyConfig();
+            RefreshMcpStatusText();
 
             var stateStore = CopilotChatStateStore.Instance;
             var state = stateStore.Load();
@@ -127,7 +241,7 @@ namespace ColorVision.Copilot
 
             var profile = SelectedProfile.Clone();
             profile.Id = Guid.NewGuid().ToString("N");
-            profile.Name = $"{SelectedProfile.DisplayLabel} 副本";
+            profile.Name = $"{SelectedProfile.DisplayLabel} Copy";
             Profiles.Add(profile);
             SelectedProfile = profile;
         }
@@ -160,6 +274,120 @@ namespace ColorVision.Copilot
             {
                 ApplyProviderPreset(profile);
             }
+        }
+
+        private void RegenerateMcpToken()
+        {
+            var result = MessageBox.Show(
+                "Regenerating the MCP bearer token will invalidate any existing Codex configuration that uses the old token. Continue?",
+                "Regenerate MCP token",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            McpBearerToken = CopilotConfig.GenerateMcpBearerToken();
+            McpConnectionTestText = "Token regenerated. Save settings and update Codex before reconnecting.";
+        }
+
+        private void CopyMcpBearerToken()
+        {
+            if (string.IsNullOrWhiteSpace(McpBearerToken))
+            {
+                McpConnectionTestText = "Token missing. Regenerate a token before copying.";
+                return;
+            }
+
+            try
+            {
+                Clipboard.SetText(McpBearerToken);
+                McpConnectionTestText = "Token copied to clipboard.";
+            }
+            catch (Exception ex)
+            {
+                McpConnectionTestText = "Copy failed: " + SanitizeError(ex.Message);
+            }
+        }
+
+        public async Task TestMcpConnectionAsync()
+        {
+            if (IsTestingMcpConnection)
+                return;
+
+            if (string.IsNullOrWhiteSpace(McpEndpoint) || !Uri.TryCreate(McpEndpoint, UriKind.Absolute, out var endpoint))
+            {
+                McpConnectionTestText = "Connection failed: endpoint is invalid.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(McpBearerToken))
+            {
+                McpConnectionTestText = "Connection failed: token missing.";
+                return;
+            }
+
+            IsTestingMcpConnection = true;
+            McpConnectionTestText = "Testing connection...";
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", McpBearerToken.Trim());
+                var payload = JsonSerializer.Serialize(new
+                {
+                    jsonrpc = "2.0",
+                    id = 1,
+                    method = "tools/call",
+                    @params = new
+                    {
+                        name = "get_server_status",
+                        arguments = new { },
+                    },
+                });
+                request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                using var response = await McpHttpClient.SendAsync(request, CancellationToken.None);
+                if (!response.IsSuccessStatusCode)
+                {
+                    McpConnectionTestText = $"Connection failed: HTTP {(int)response.StatusCode} {response.ReasonPhrase}.";
+                    RefreshMcpStatusText();
+                    return;
+                }
+
+                var body = await response.Content.ReadAsStringAsync();
+                using var document = JsonDocument.Parse(body);
+                var root = document.RootElement;
+                if (root.TryGetProperty("error", out var errorElement))
+                {
+                    McpConnectionTestText = "Connection failed: " + ReadJsonRpcErrorMessage(errorElement);
+                    RefreshMcpStatusText();
+                    return;
+                }
+
+                var result = root.GetProperty("result");
+                if (result.TryGetProperty("isError", out var isErrorElement) && isErrorElement.GetBoolean())
+                {
+                    McpConnectionTestText = "Connection failed: get_server_status returned an MCP error.";
+                    RefreshMcpStatusText();
+                    return;
+                }
+
+                McpConnectionTestText = "Connected.";
+                RefreshMcpStatusText();
+            }
+            catch (Exception ex)
+            {
+                McpConnectionTestText = "Connection failed: " + SanitizeError(ex.Message);
+                RefreshMcpStatusText();
+            }
+            finally
+            {
+                IsTestingMcpConnection = false;
+            }
+        }
+
+        private string BuildMcpEndpoint()
+        {
+            return $"http://127.0.0.1:{McpPort}/mcp";
         }
 
         private CopilotProfileConfig CreateProfileForVendor(CopilotVendorType vendorType)
@@ -216,6 +444,73 @@ namespace ColorVision.Copilot
             {
                 _isApplyingPreset = false;
             }
+        }
+
+        private void MarkMcpSettingsPending()
+        {
+            if (string.IsNullOrEmpty(McpStatusText))
+                return;
+
+            McpStatusText = McpEnabled
+                ? "Unsaved changes. Save settings to apply the local MCP server configuration."
+                : "Unsaved changes. Save settings to disable the local MCP server.";
+            McpConnectionTestText = string.Empty;
+        }
+
+        private void RefreshMcpStatusText()
+        {
+            if (!McpEnabled)
+            {
+                McpStatusText = "Disabled.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(McpBearerToken))
+            {
+                McpStatusText = "Token missing. Regenerate a token and save settings.";
+                return;
+            }
+
+            var server = CopilotMcpServer.Instance;
+            if (server.IsRunning)
+            {
+                McpStatusText = "Running at " + McpEndpoint + ".";
+                return;
+            }
+
+            var message = server.LastStatusMessage ?? string.Empty;
+            if (message.Contains("port", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("address", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("only one usage", StringComparison.OrdinalIgnoreCase))
+            {
+                McpStatusText = "Port unavailable. " + SanitizeError(message);
+                return;
+            }
+
+            McpStatusText = string.IsNullOrWhiteSpace(message)
+                ? "Stopped. Save settings to start the local MCP server."
+                : SanitizeError(message);
+        }
+
+        private static string ReadJsonRpcErrorMessage(JsonElement errorElement)
+        {
+            if (errorElement.ValueKind == JsonValueKind.Object
+                && errorElement.TryGetProperty("message", out var messageElement)
+                && messageElement.ValueKind == JsonValueKind.String)
+            {
+                return SanitizeError(messageElement.GetString());
+            }
+
+            return "JSON-RPC error.";
+        }
+
+        private static string SanitizeError(string? message)
+        {
+            var text = (message ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
+            text = SensitiveErrorRegex.Replace(text, match => match.Value.StartsWith("Bearer", StringComparison.OrdinalIgnoreCase)
+                ? "Bearer <redacted>"
+                : match.Groups["name"].Value + "=<redacted>");
+            return text.Length <= 220 ? text : text[..220] + "...";
         }
     }
 }

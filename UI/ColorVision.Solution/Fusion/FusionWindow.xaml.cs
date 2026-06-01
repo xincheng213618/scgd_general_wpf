@@ -53,7 +53,7 @@ namespace ColorVision.Solution.Fusion
         private void UpdateCudaStatus()
         {
             bool cudaAvailable = ImageCompute.UseCuda;
-            TextBlockCudaStatus.Text = cudaAvailable ? "CUDA: 可用" : "CUDA: 不可用";
+            TextBlockCudaStatus.Text = cudaAvailable ? Properties.Resources.Sol_Fusion_CudaAvail : Properties.Resources.Sol_Fusion_CudaUnavail;
             TextBlockCudaStatus.Foreground = cudaAvailable
                 ? System.Windows.Media.Brushes.Green
                 : System.Windows.Media.Brushes.Gray;
@@ -68,8 +68,8 @@ namespace ColorVision.Solution.Fusion
         {
             var dialog = new OpenFileDialog
             {
-                Title = "选择图像文件",
-                Filter = "图像文件 (*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff)|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff|所有文件 (*.*)|*.*",
+                Title = Properties.Resources.Sol_Fusion_ImageFiles,
+                Filter = $"{Properties.Resources.Sol_Fusion_ImageFiles} (*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff)|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff|{Properties.Resources.Sol_Fusion_AllFiles} (*.*)|*.*",
                 Multiselect = true
             };
             if (dialog.ShowDialog() == true)
@@ -149,7 +149,7 @@ namespace ColorVision.Solution.Fusion
         {
             if (FilePaths.Count < 2)
             {
-                MessageBox.Show("请至少选择2张图像文件。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.Sol_Fusion_SelectMin2, Properties.Resources.Sol_Fusion_Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -160,13 +160,13 @@ namespace ColorVision.Solution.Fusion
             {
                 if (!File.Exists(file))
                 {
-                    MessageBox.Show($"文件不存在: {file}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_FileNotExist, file), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
             }
 
             ButtonExecute.IsEnabled = false;
-            StatusText.Text = "正在执行融合...";
+            StatusText.Text = Properties.Resources.Sol_Fusion_Executing;
 
             try
             {
@@ -202,12 +202,12 @@ namespace ColorVision.Solution.Fusion
 
                 if (result != 0)
                 {
-                    StatusText.Text = $"融合失败，错误码: {result}";
-                    MessageBox.Show($"融合计算失败，返回码: {result}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    StatusText.Text = string.Format(Properties.Resources.Sol_Fusion_Failed, result);
+                    MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_CalcFailed, result), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                StatusText.Text = "融合完成，正在转换结果...";
+                StatusText.Text = Properties.Resources.Sol_Fusion_Converting;
 
                 var swConvert = Stopwatch.StartNew();
                 WriteableBitmap bitmap = hImage.ToWriteableBitmap();
@@ -231,19 +231,19 @@ namespace ColorVision.Solution.Fusion
                 // Auto-scroll to latest
                 TimingListView.ScrollIntoView(TimingRecords[^1]);
 
-                StatusText.Text = $"完成  融合: {fusionMs} ms  转换: {convertMs} ms  总计: {totalMs} ms";
+                StatusText.Text = string.Format(Properties.Resources.Sol_Fusion_Done, $"{fusionMs} ms");
 
                 ShowResultInImageEditor(bitmap);
             }
             catch (DllNotFoundException ex)
             {
-                StatusText.Text = "缺少运行库";
-                MessageBox.Show($"缺少必要的运行库: {ex.Message}\n请确保opencv_helper.dll或opencv_cuda.dll存在。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText.Text = Properties.Resources.Sol_Fusion_MissingLib;
+                MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_MissingRuntime, ex.Message), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
-                StatusText.Text = "融合出错";
-                MessageBox.Show($"融合过程中发生错误: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText.Text = Properties.Resources.Sol_Fusion_Error;
+                MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_ProcessError, ex.Message), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -253,7 +253,7 @@ namespace ColorVision.Solution.Fusion
 
         private void ShowResultInImageEditor(WriteableBitmap bitmap)
         {
-            string title = $"融合结果 - {DateTime.Now:HH:mm:ss}";
+            string title = string.Format(Properties.Resources.Sol_Fusion_Result, DateTime.Now.ToString("HH:mm:ss"));
             string guidId = Guid.NewGuid().ToString();
 
             if (WorkspaceManager.LayoutDocumentPane != null)

@@ -3,6 +3,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 
@@ -13,44 +14,36 @@ namespace ColorVision.Engine.Batch
     /// </summary>
     public class FileCleanupProcessConfig : ViewModelBase
     {
-        [DisplayName("清理文件夹")]
-        [Description("要清理的文件夹路径")]
+        [Display(Name = "Engine_PG_CleanupFolder", Description = "Engine_PG_CleanupFolderDesc", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string FolderPath { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private string _FolderPath = string.Empty;
 
-        [DisplayName("文件扩展名")]
-        [Description("要删除的文件扩展名（逗号分隔，例如: .tmp,.log,.cache）。留空表示删除所有文件")]
+        [Display(Name = "Engine_PG_FileExtensions", Description = "Engine_PG_FileExtensionsDesc", ResourceType = typeof(Properties.Resources))]
         public string FileExtensions { get => _FileExtensions; set { _FileExtensions = value; OnPropertyChanged(); } }
         private string _FileExtensions = ".tmp,.cache";
 
-        [DisplayName("文件名模式")]
-        [Description("要删除的文件名模式（支持通配符*和?，例如: temp_*）。留空表示匹配所有文件")]
+        [Display(Name = "Engine_PG_FilePattern", Description = "Engine_PG_FilePatternDesc", ResourceType = typeof(Properties.Resources))]
         public string FilePattern { get => _FilePattern; set { _FilePattern = value; OnPropertyChanged(); } }
         private string _FilePattern = string.Empty;
 
-        [DisplayName("包含子文件夹")]
-        [Description("是否包含子文件夹中的文件")]
+        [Display(Name = "Engine_PG_IncludeSubfolders", Description = "Engine_PG_IncludeSubfoldersDesc", ResourceType = typeof(Properties.Resources))]
         public bool IncludeSubfolders { get => _IncludeSubfolders; set { _IncludeSubfolders = value; OnPropertyChanged(); } }
         private bool _IncludeSubfolders = false;
 
-        [DisplayName("保留最近N个文件")]
-        [Description("保留最近修改的N个文件（按最后修改时间排序）。设置为0表示不保留")]
+        [Display(Name = "Engine_PG_KeepRecentFiles", Description = "Engine_PG_KeepRecentFilesDesc", ResourceType = typeof(Properties.Resources))]
         public int KeepRecentFiles { get => _KeepRecentFiles; set { _KeepRecentFiles = value; OnPropertyChanged(); } }
         private int _KeepRecentFiles = 0;
 
-        [DisplayName("仅删除旧于N天的文件")]
-        [Description("仅删除最后修改时间早于N天的文件。设置为0表示不限制")]
+        [Display(Name = "Engine_PG_DeleteOlderThanDays", Description = "Engine_PG_DeleteOlderThanDaysDesc", ResourceType = typeof(Properties.Resources))]
         public int DeleteOlderThanDays { get => _DeleteOlderThanDays; set { _DeleteOlderThanDays = value; OnPropertyChanged(); } }
         private int _DeleteOlderThanDays = 0;
 
-        [DisplayName("启用")]
-        [Description("是否启用此后处理")]
+        [Display(Name = "Engine_PG_Enabled", Description = "Engine_PG_EnabledPostProcessDesc", ResourceType = typeof(Properties.Resources))]
         public bool Enabled { get => _Enabled; set { _Enabled = value; OnPropertyChanged(); } }
         private bool _Enabled = true;
 
-        [DisplayName("删除空文件夹")]
-        [Description("删除文件后，是否删除空的文件夹")]
+        [Display(Name = "Engine_PG_DeleteEmptyFolders", Description = "Engine_PG_DeleteEmptyFoldersDesc", ResourceType = typeof(Properties.Resources))]
         public bool DeleteEmptyFolders { get => _DeleteEmptyFolders; set { _DeleteEmptyFolders = value; OnPropertyChanged(); } }
         private bool _DeleteEmptyFolders = false;
     }

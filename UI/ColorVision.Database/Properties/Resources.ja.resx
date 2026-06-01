@@ -249,4 +249,262 @@
   <data name="CurrentLog" xml:space="preserve">
     <value>現在のログ</value>
   </data>
+  <data name="MenuMySql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="MenuEntityBrowser" xml:space="preserve">
+    <value>データベース ブラウザ</value>
+  </data>
+  <data name="MenuMySqlInitTables" xml:space="preserve">
+    <value>MySQL テーブルを初期化 (デバッグ)</value>
+  </data>
+  <data name="DB_Browser_Title" xml:space="preserve">
+    <value>データベースブラウザ</value>
+  </data>
+  <data name="DB_DataSource" xml:space="preserve">
+    <value>データソース</value>
+  </data>
+  <data name="DB_Refresh" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="DB_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="DB_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="DB_Undo" xml:space="preserve">
+    <value>元に戻す</value>
+  </data>
+  <data name="DB_Delete" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="DB_Search" xml:space="preserve">
+    <value>検索</value>
+  </data>
+  <data name="DB_Query" xml:space="preserve">
+    <value>クエリ</value>
+  </data>
+  <data name="DB_Clear" xml:space="preserve">
+    <value>クリア</value>
+  </data>
+  <data name="DB_SelectTable" xml:space="preserve">
+    <value>テーブルを選択してください</value>
+  </data>
+  <data name="DB_ExpandHint" xml:space="preserve">
+    <value>左側からデータソース、データベース、テーブルを展開してください。</value>
+  </data>
+  <data name="DB_NoData" xml:space="preserve">
+    <value>データなし</value>
+  </data>
+  <data name="DB_RecordCount" xml:space="preserve">
+    <value>{0}件のレコード</value>
+  </data>
+  <data name="DB_Page" xml:space="preserve">
+    <value>ページ</value>
+  </data>
+  <data name="DB_PageSuffix" xml:space="preserve">
+    <value>ページ</value>
+  </data>
+  <data name="DB_Ready" xml:space="preserve">
+    <value>準備完了</value>
+  </data>
+  <data name="DB_ConfirmDelete" xml:space="preserve">
+    <value>削除の確認</value>
+  </data>
+  <data name="DB_ConfirmDeleteRows" xml:space="preserve">
+    <value>テーブル{0}から選択した行を削除しますか？</value>
+  </data>
+  <data name="DB_DeleteSuccess" xml:space="preserve">
+    <value>削除成功</value>
+  </data>
+  <data name="DB_DeleteFailed" xml:space="preserve">
+    <value>削除失敗: {0}</value>
+  </data>
+  <data name="DB_InsertSuccess" xml:space="preserve">
+    <value>挿入成功</value>
+  </data>
+  <data name="DB_InsertFailed" xml:space="preserve">
+    <value>挿入失敗: {0}</value>
+  </data>
+  <data name="DB_SaveComplete" xml:space="preserve">
+    <value>保存完了: {0}</value>
+  </data>
+  <data name="DB_SaveFailed" xml:space="preserve">
+    <value>保存失敗: {0}</value>
+  </data>
+  <data name="DB_Undone" xml:space="preserve">
+    <value>未保存の変更を元に戻しました</value>
+  </data>
+  <data name="DB_SelectRowFirst" xml:space="preserve">
+    <value>まず行を選択してください</value>
+  </data>
+  <data name="DB_Inserting" xml:space="preserve">
+    <value>挿入中...</value>
+  </data>
+  <data name="DB_Saving" xml:space="preserve">
+    <value>保存中...</value>
+  </data>
+  <data name="DB_Deleting" xml:space="preserve">
+    <value>削除中...</value>
+  </data>
+  <data name="DB_Loading" xml:space="preserve">
+    <value>読み込み中...</value>
+  </data>
+  <data name="DB_Querying" xml:space="preserve">
+    <value>クエリ中...</value>
+  </data>
+  <data name="DB_QueryFailed" xml:space="preserve">
+    <value>クエリ失敗: {0}</value>
+  </data>
+  <data name="DB_QueryComplete" xml:space="preserve">
+    <value>クエリ完了: {0}</value>
+  </data>
+  <data name="DB_NoDataSource" xml:space="preserve">
+    <value>データベースブラウザのデータソースが登録されていません</value>
+  </data>
+  <data name="DB_LoadFailed" xml:space="preserve">
+    <value>読み込み失敗</value>
+  </data>
+  <data name="DB_NoDatabase" xml:space="preserve">
+    <value>ブラウズできるデータベースがありません</value>
+  </data>
+  <data name="DB_NoTable" xml:space="preserve">
+    <value>データテーブルがありません</value>
+  </data>
+  <data name="DB_NoInsertableColumn" xml:space="preserve">
+    <value>現在のテーブルには挿入可能な列がありません。</value>
+  </data>
+  <data name="DB_PrimaryKey" xml:space="preserve">
+    <value>主キー</value>
+  </data>
+  <data name="DB_AdvancedQuery" xml:space="preserve">
+    <value>高度なクエリ</value>
+  </data>
+  <data name="DB_ClearTable" xml:space="preserve">
+    <value>テーブルをクリア</value>
+  </data>
+  <data name="DB_TruncateTable" xml:space="preserve">
+    <value>テーブルを切り捨て</value>
+  </data>
+  <data name="DB_Add" xml:space="preserve">
+    <value>+ 追加</value>
+  </data>
+  <data name="DB_AddTooltip" xml:space="preserve">
+    <value>選択したフィールドをクエリ条件に追加</value>
+  </data>
+  <data name="DB_AddAll" xml:space="preserve">
+    <value>すべて追加</value>
+  </data>
+  <data name="DB_AddAllTooltip" xml:space="preserve">
+    <value>利用可能なすべてのフィールドを一度に追加</value>
+  </data>
+  <data name="DB_Reset" xml:space="preserve">
+    <value>リセット</value>
+  </data>
+  <data name="DB_ResetTooltip" xml:space="preserve">
+    <value>すべてのクエリ条件をクリア</value>
+  </data>
+  <data name="DB_SqlPreview" xml:space="preserve">
+    <value>SQLプレビュー</value>
+  </data>
+  <data name="DB_QueryCount" xml:space="preserve">
+    <value>クエリ数</value>
+  </data>
+  <data name="DB_SortByType" xml:space="preserve">
+    <value>タイプで並べ替え</value>
+  </data>
+  <data name="DB_RemoveCondition" xml:space="preserve">
+    <value>この条件を削除</value>
+  </data>
+  <data name="DB_ResetDone" xml:space="preserve">
+    <value>すべてのクエリ条件がリセットされました</value>
+  </data>
+  <data name="DB_MysqlConfig" xml:space="preserve">
+    <value>MySQL設定</value>
+  </data>
+  <data name="DB_MysqlConfigDesc" xml:space="preserve">
+    <value>ここでデータベース接続を設定</value>
+  </data>
+  <data name="DB_DbNameEmpty" xml:space="preserve">
+    <value>データベース名は空にできません</value>
+  </data>
+  <data name="DB_ConnectSuccess" xml:space="preserve">
+    <value>接続成功</value>
+  </data>
+  <data name="DB_DbNotExist" xml:space="preserve">
+    <value>データベースが存在しません。</value>
+  </data>
+  <data name="DB_AuthError" xml:space="preserve">
+    <value>認証エラー、確認してください！</value>
+  </data>
+  <data name="DB_SpecifiedDbNotExist" xml:space="preserve">
+    <value>指定されたデータベースが存在しません！</value>
+  </data>
+  <data name="DB_ConnectFailed" xml:space="preserve">
+    <value>MySQLサーバーに接続できません。ポートとネットワークを確認してください！</value>
+  </data>
+  <data name="DB_UnknownError" xml:space="preserve">
+    <value>不明なデータベース接続エラー！</value>
+  </data>
+  <data name="DB_InitFailed" xml:space="preserve">
+    <value>MySQLテーブルの初期化に失敗しました。ログを確認してください。</value>
+  </data>
+  <data name="DB_InitSuccess" xml:space="preserve">
+    <value>MySQLテーブルの初期化が完了しました。</value>
+  </data>
+  <data name="DB_Error" xml:space="preserve">
+    <value>エラー</value>
+  </data>
+  <data name="DB_Success" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="DB_EnableLogging" xml:space="preserve">
+    <value>ログを有効にする</value>
+  </data>
+  <data name="DB_EnableLoggingDesc" xml:space="preserve">
+    <value>有効にすると、ローカル データベース ログを記録します。</value>
+  </data>
+  <data name="DB_EnableCompress" xml:space="preserve">
+    <value>圧縮アーカイブを有効にする</value>
+  </data>
+  <data name="DB_EnableCompressDesc" xml:space="preserve">
+    <value>有効にすると、サイズ制限を超えた場合にログが圧縮されます。</value>
+  </data>
+  <data name="DB_FileSizeLimit" xml:space="preserve">
+    <value>単一ファイルサイズ制限 (MB)</value>
+  </data>
+  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
+    <value>ログ データベース ファイルがこのサイズに達するとアーカイブします。単位は MB です。</value>
+  </data>
+  <data name="DB_ArchiveCount" xml:space="preserve">
+    <value>アーカイブ保持数</value>
+  </data>
+  <data name="DB_ArchiveCountDesc" xml:space="preserve">
+    <value>この数を超えると最古のアーカイブが削除されます。</value>
+  </data>
+  <data name="DB_SqliteLogTable" xml:space="preserve">
+    <value>SQLiteログ</value>
+  </data>
+  <data name="DB_ProviderIdEmpty" xml:space="preserve">
+    <value>ProviderIdは空にできません。</value>
+  </data>
+  <data name="DB_DbIdEmpty" xml:space="preserve">
+    <value>データベース識別子は空にできません。</value>
+  </data>
+  <data name="DB_PageSize10" xml:space="preserve">
+    <value>10/ページ</value>
+  </data>
+  <data name="DB_PageSize20" xml:space="preserve">
+    <value>20/ページ</value>
+  </data>
+  <data name="DB_PageSize50" xml:space="preserve">
+    <value>50/ページ</value>
+  </data>
+  <data name="DB_PageSize100" xml:space="preserve">
+    <value>100/ページ</value>
+  </data>
+  <data name="DB_EditRow" xml:space="preserve">
+    <value>行を編集</value>
+  </data>
 </root>

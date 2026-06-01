@@ -1,110 +1,51 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -166,7 +107,7 @@
     <value>截屏</value>
   </data>
   <data name="BitmapScalingMode" xml:space="preserve">
-    <value>位图缩放模式</value>
+    <value>缩放质量</value>
   </data>
   <data name="Invert" xml:space="preserve">
     <value>反相</value>
@@ -243,4 +184,922 @@
   <data name="HistogramEqualization" xml:space="preserve">
     <value>直方图均衡化</value>
   </data>
-</root>
+  <data name="MenuModelViewer3D" xml:space="preserve">
+    <value>3D模型查看器</value>
+  </data>
+  <data name="Settings_ImageSettingsTitle" xml:space="preserve">
+    <value>图像设置</value>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Settings_Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Settings_ScopeCurrentView" xml:space="preserve">
+    <value>作用域：当前视窗</value>
+  </data>
+  <data name="Settings_ScopeGlobalDefault" xml:space="preserve">
+    <value>作用域：全局默认值</value>
+  </data>
+  <data name="Settings_ScopeLoaderDefault" xml:space="preserve">
+    <value>作用域：打开器默认值</value>
+  </data>
+  <data name="Settings_ScopeWorkspace" xml:space="preserve">
+    <value>作用域：当前工作台</value>
+  </data>
+  <data name="Settings_ScopeUncategorized" xml:space="preserve">
+    <value>作用域：未分类</value>
+  </data>
+  <data name="Settings_ToolbarVisibility" xml:space="preserve">
+    <value>工具栏可见性</value>
+  </data>
+  <data name="Settings_ToolbarVisibilityDesc" xml:space="preserve">
+    <value>这些开关作用于当前 ImageView 实例，用来控制各区域工具栏是否显示。</value>
+  </data>
+  <data name="Settings_BottomToolbar" xml:space="preserve">
+    <value>底部工具栏 (ToolBarAl)</value>
+  </data>
+  <data name="Settings_DrawToolbar" xml:space="preserve">
+    <value>绘制工具栏 (ToolBarDraw)</value>
+  </data>
+  <data name="Settings_TopToolbar" xml:space="preserve">
+    <value>顶部工具栏 (ToolBarTop)</value>
+  </data>
+  <data name="Settings_LeftToolbar" xml:space="preserve">
+    <value>左侧工具栏 (ToolBarLeft)</value>
+  </data>
+  <data name="Settings_RightToolbar" xml:space="preserve">
+    <value>右侧工具栏 (ToolBarRight)</value>
+  </data>
+  <data name="Settings_EditorTools" xml:space="preserve">
+    <value>编辑器工具</value>
+  </data>
+  <data name="Settings_EditorToolsDesc" xml:space="preserve">
+    <value>以下列表就是当前已加载的 IEditorTool；开关仅控制其在工具栏中的显示，不会影响程序集发现。</value>
+  </data>
+  <data name="Settings_ShowAll" xml:space="preserve">
+    <value>全部显示</value>
+  </data>
+  <data name="Settings_HideAll" xml:space="preserve">
+    <value>全部隐藏</value>
+  </data>
+  <data name="Settings_ImageOpeners" xml:space="preserve">
+    <value>图像打开器</value>
+  </data>
+  <data name="Settings_ImageOpenersDesc" xml:space="preserve">
+    <value>当前 ImageView 已注册的 IImageOpen 打开器及其支持的扩展名。</value>
+  </data>
+  <data name="Settings_PropertySnapshot" xml:space="preserve">
+    <value>当前视窗属性快照</value>
+  </data>
+  <data name="Settings_Refresh" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="Settings_NoContextProperties" xml:space="preserve">
+    <value>当前视窗还没有记录可展示的上下文属性。</value>
+  </data>
+  <data name="Settings_DescriptionLabel" xml:space="preserve">
+    <value>说明</value>
+  </data>
+  <data name="Settings_NoPropertyContext" xml:space="preserve">
+    <value>当前视窗还没有写入属性上下文。打开图像或执行工具后，这里会按作用域展示实际状态。</value>
+  </data>
+  <data name="Settings_PropertyContextSummary" xml:space="preserve">
+    <value>当前视窗已记录 {0} 个属性，分布在 {1} 个作用域分组中。这里是只读快照，方便排查当前值和默认值是否串层。</value>
+  </data>
+  <data name="Settings_EntryCount" xml:space="preserve">
+    <value>{0} 项</value>
+  </data>
+  <data name="Settings_GroupGeneral" xml:space="preserve">
+    <value>通用</value>
+  </data>
+  <data name="Settings_GroupDisplay" xml:space="preserve">
+    <value>显示</value>
+  </data>
+  <data name="Settings_GroupContext" xml:space="preserve">
+    <value>上下文</value>
+  </data>
+  <data name="Settings_GroupDefaults" xml:space="preserve">
+    <value>默认值</value>
+  </data>
+  <data name="Settings_GroupWorkspace" xml:space="preserve">
+    <value>工作台</value>
+  </data>
+  <data name="Settings_GroupLoader" xml:space="preserve">
+    <value>加载器</value>
+  </data>
+  <data name="Settings_CurrentImageContext" xml:space="preserve">
+    <value>当前图像上下文</value>
+  </data>
+  <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
+    <value>按作用域只读展示当前 ImageView 的属性字典，帮助区分图像元数据、当前视窗状态、打开器运行态和仍待迁移的旧键。</value>
+  </data>
+  <data name="Settings_DefaultImageScaling" xml:space="preserve">
+    <value>默认图像缩放</value>
+  </data>
+  <data name="Settings_DefaultImageScalingDesc" xml:space="preserve">
+    <value>控制 ImageView 初始化时播种的 BitmapScalingMode。初始化之后保留当前值，只有用户显式调整或特定加载器覆盖时才会变化。</value>
+  </data>
+  <data name="Settings_DefaultDisplayParams" xml:space="preserve">
+    <value>默认显示参数</value>
+  </data>
+  <data name="Settings_DefaultDisplayParamsDesc" xml:space="preserve">
+    <value>控制 Zoombox 的全局最大/最小缩放，以及 NearestNeighbor 像素值叠层的性能阈值。</value>
+  </data>
+  <data name="Settings_DefaultTextStyle" xml:space="preserve">
+    <value>默认文本样式</value>
+  </data>
+  <data name="Settings_DefaultTextStyleDesc" xml:space="preserve">
+    <value>控制新建文本和带文字图元的默认字体、颜色和排版。</value>
+  </data>
+  <data name="Settings_PhysicalSizeDefaults" xml:space="preserve">
+    <value>物理尺寸默认值</value>
+  </data>
+  <data name="Settings_PhysicalSizeDefaultsDesc" xml:space="preserve">
+    <value>控制标尺、网格等物理尺寸换算的默认长度和单位。</value>
+  </data>
+  <data name="Settings_DefaultRealtimeCameraParams" xml:space="preserve">
+    <value>默认实时相机参数</value>
+  </data>
+  <data name="Settings_DefaultRealtimeCameraParamsDesc" xml:space="preserve">
+    <value>控制 realtime 相机入口共享的显示 FPS、清晰度计算和 ROI/状态文字样式。</value>
+  </data>
+  <data name="Settings_ToolbarToolsAndOpeners" xml:space="preserve">
+    <value>工具栏、工具与打开器</value>
+  </data>
+  <data name="Settings_ToolbarToolsAndOpenersDesc" xml:space="preserve">
+    <value>统一管理当前 ImageView 的工具栏显示、已加载 IEditorTool 的可见性，以及支持的 IImageOpen 打开器。</value>
+  </data>
+  <data name="Settings_TifOpener" xml:space="preserve">
+    <value>TIF 打开器</value>
+  </data>
+  <data name="Settings_TifOpenerDesc" xml:space="preserve">
+    <value>控制 Gray32Float TIFF 打开时是否转换为 Gray16 等加载策略。</value>
+  </data>
+  <data name="ThreeD_ModelViewer" xml:space="preserve">
+    <value>3D模型查看器</value>
+  </data>
+  <data name="ThreeD_ModelStructure" xml:space="preserve">
+    <value>模型结构</value>
+  </data>
+  <data name="ThreeD_IsolateSelected" xml:space="preserve">
+    <value>隔离选中</value>
+  </data>
+  <data name="ThreeD_RestoreAll" xml:space="preserve">
+    <value>恢复全部</value>
+  </data>
+  <data name="ThreeD_File" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="ThreeD_OpenModel" xml:space="preserve">
+    <value>打开模型</value>
+  </data>
+  <data name="ThreeD_OpenModelToolTip" xml:space="preserve">
+    <value>打开模型文件</value>
+  </data>
+  <data name="ThreeD_CameraPosition" xml:space="preserve">
+    <value>相机位置</value>
+  </data>
+  <data name="ThreeD_MoveLeftToolTip" xml:space="preserve">
+    <value>左移 (L)</value>
+  </data>
+  <data name="ThreeD_MoveForwardToolTip" xml:space="preserve">
+    <value>前进 (T)</value>
+  </data>
+  <data name="ThreeD_MoveRightToolTip" xml:space="preserve">
+    <value>右移 (R)</value>
+  </data>
+  <data name="ThreeD_MoveBackToolTip" xml:space="preserve">
+    <value>后退 (B)</value>
+  </data>
+  <data name="ThreeD_LookDirection" xml:space="preserve">
+    <value>视角方向</value>
+  </data>
+  <data name="ThreeD_LookLeftToolTip" xml:space="preserve">
+    <value>左看 (D)</value>
+  </data>
+  <data name="ThreeD_LookUpToolTip" xml:space="preserve">
+    <value>上看 (A)</value>
+  </data>
+  <data name="ThreeD_LookRightToolTip" xml:space="preserve">
+    <value>右看 (F)</value>
+  </data>
+  <data name="ThreeD_LookDownToolTip" xml:space="preserve">
+    <value>下看 (C)</value>
+  </data>
+  <data name="ThreeD_PresetViews" xml:space="preserve">
+    <value>预设视角</value>
+  </data>
+  <data name="ThreeD_Front" xml:space="preserve">
+    <value>前</value>
+  </data>
+  <data name="ThreeD_Back" xml:space="preserve">
+    <value>后</value>
+  </data>
+  <data name="ThreeD_Left" xml:space="preserve">
+    <value>左</value>
+  </data>
+  <data name="ThreeD_Right" xml:space="preserve">
+    <value>右</value>
+  </data>
+  <data name="ThreeD_Top" xml:space="preserve">
+    <value>上</value>
+  </data>
+  <data name="ThreeD_Bottom" xml:space="preserve">
+    <value>下</value>
+  </data>
+  <data name="ThreeD_FrontViewToolTip" xml:space="preserve">
+    <value>前视图</value>
+  </data>
+  <data name="ThreeD_BackViewToolTip" xml:space="preserve">
+    <value>后视图</value>
+  </data>
+  <data name="ThreeD_LeftViewToolTip" xml:space="preserve">
+    <value>左视图</value>
+  </data>
+  <data name="ThreeD_RightViewToolTip" xml:space="preserve">
+    <value>右视图</value>
+  </data>
+  <data name="ThreeD_TopViewToolTip" xml:space="preserve">
+    <value>上视图</value>
+  </data>
+  <data name="ThreeD_BottomViewToolTip" xml:space="preserve">
+    <value>下视图</value>
+  </data>
+  <data name="ThreeD_IsoViewToolTip" xml:space="preserve">
+    <value>等轴视图</value>
+  </data>
+  <data name="ThreeD_Projection" xml:space="preserve">
+    <value>投影</value>
+  </data>
+  <data name="ThreeD_Orthographic" xml:space="preserve">
+    <value>正交投影</value>
+  </data>
+  <data name="ThreeD_Perspective" xml:space="preserve">
+    <value>透视</value>
+  </data>
+  <data name="ThreeD_Rendering" xml:space="preserve">
+    <value>渲染</value>
+  </data>
+  <data name="ThreeD_Wireframe" xml:space="preserve">
+    <value>线框模式</value>
+  </data>
+  <data name="ThreeD_ShowTexture" xml:space="preserve">
+    <value>显示贴图</value>
+  </data>
+  <data name="ThreeD_ShowMaterial" xml:space="preserve">
+    <value>显示材质</value>
+  </data>
+  <data name="ThreeD_ResetView" xml:space="preserve">
+    <value>重置视角</value>
+  </data>
+  <data name="ThreeD_ResetViewToolTip" xml:space="preserve">
+    <value>重置视角 (Home)</value>
+  </data>
+  <data name="ThreeD_Screenshot" xml:space="preserve">
+    <value>截图</value>
+  </data>
+  <data name="ThreeD_ExportModel" xml:space="preserve">
+    <value>导出模型</value>
+  </data>
+  <data name="ThreeD_View" xml:space="preserve">
+    <value>视图</value>
+  </data>
+  <data name="ThreeD_Camera" xml:space="preserve">
+    <value>相机</value>
+  </data>
+  <data name="ThreeD_View3D" xml:space="preserve">
+    <value>3D视图</value>
+  </data>
+  <data name="ThreeD_HeightScale" xml:space="preserve">
+    <value>高度缩放</value>
+  </data>
+  <data name="ThreeD_IncreaseHeightToolTip" xml:space="preserve">
+    <value>增加高度 (Num+ / +)</value>
+  </data>
+  <data name="ThreeD_DecreaseHeightToolTip" xml:space="preserve">
+    <value>减少高度 (Num- / -)</value>
+  </data>
+  <data name="ThreeD_PseudoColor" xml:space="preserve">
+    <value>伪彩色</value>
+  </data>
+  <data name="ThreeD_ScreenshotToolTip" xml:space="preserve">
+    <value>保存当前3D视图为图片</value>
+  </data>
+  <data name="ThreeD_ExportModelToolTip" xml:space="preserve">
+    <value>导出当前3D网格为 OBJ 或 STL</value>
+  </data>
+  <data name="ThreeD_Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="ThreeD_SettingsToolTip" xml:space="preserve">
+    <value>渲染分辨率设置</value>
+  </data>
+  <data name="ThreeD_RenderSettings" xml:space="preserve">
+    <value>渲染设置</value>
+  </data>
+  <data name="ThreeD_TargetResolutionX" xml:space="preserve">
+    <value>目标分辨率 X:</value>
+  </data>
+  <data name="ThreeD_TargetResolutionY" xml:space="preserve">
+    <value>目标分辨率 Y:</value>
+  </data>
+  <data name="ThreeD_ApplyNote" xml:space="preserve">
+    <value>修改后需点击应用重新渲染</value>
+  </data>
+  <data name="ThreeD_ApplyRefresh" xml:space="preserve">
+    <value>应用并刷新</value>
+  </data>
+  <data name="ThreeD_Value" xml:space="preserve">
+    <value>值</value>
+  </data>
+  <data name="ThreeD_Height" xml:space="preserve">
+    <value>高度</value>
+  </data>
+  <data name="ThreeD_Resolution" xml:space="preserve">
+    <value>分辨率</value>
+  </data>
+  <data name="ThreeD_Mouse" xml:space="preserve">
+    <value>鼠标</value>
+  </data>
+  <data name="Graphic_Quadrilateral" xml:space="preserve">
+    <value>四边形</value>
+  </data>
+  <data name="Graphic_Circle" xml:space="preserve">
+    <value>圆</value>
+  </data>
+  <data name="Graphic_FindLuminousAreaCorner" xml:space="preserve">
+    <value>寻找发光区角点</value>
+  </data>
+  <data name="Graphic_TopLeft" xml:space="preserve">
+    <value>左上</value>
+  </data>
+  <data name="Graphic_TopRight" xml:space="preserve">
+    <value>右上</value>
+  </data>
+  <data name="Graphic_BottomRight" xml:space="preserve">
+    <value>右下</value>
+  </data>
+  <data name="Graphic_BottomLeft" xml:space="preserve">
+    <value>左下</value>
+  </data>
+  <data name="Graphic_Top" xml:space="preserve">
+    <value>上:</value>
+  </data>
+  <data name="Graphic_Left" xml:space="preserve">
+    <value>左:</value>
+  </data>
+  <data name="Graphic_Bottom" xml:space="preserve">
+    <value>下:</value>
+  </data>
+  <data name="Graphic_Right" xml:space="preserve">
+    <value>右:</value>
+  </data>
+  <data name="Graphic_Set" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Graphic_SetPoiArea" xml:space="preserve">
+    <value>设置布点区域</value>
+  </data>
+  <data name="Graphic_CenterPoint" xml:space="preserve">
+    <value>中心点</value>
+  </data>
+  <data name="Graphic_Radius" xml:space="preserve">
+    <value>半径:</value>
+  </data>
+  <data name="Graphic_Count" xml:space="preserve">
+    <value>数量:</value>
+  </data>
+  <data name="Graphic_Angle" xml:space="preserve">
+    <value>角度:</value>
+  </data>
+  <data name="Graphic_CircleShape" xml:space="preserve">
+    <value>圆形</value>
+  </data>
+  <data name="Graphic_RectShape" xml:space="preserve">
+    <value>矩形</value>
+  </data>
+  <data name="Graphic_Rows" xml:space="preserve">
+    <value>行数:</value>
+  </data>
+  <data name="Graphic_Columns" xml:space="preserve">
+    <value>列数:</value>
+  </data>
+  <data name="Graphic_Width" xml:space="preserve">
+    <value>宽度:</value>
+  </data>
+  <data name="Graphic_Height" xml:space="preserve">
+    <value>高度:</value>
+  </data>
+  <data name="Graphic_Draw" xml:space="preserve">
+    <value>绘制</value>
+  </data>
+  <data name="Graphic_ClearAll" xml:space="preserve">
+    <value>清除</value>
+  </data>
+  <data name="Graphic_ExportAnnotations" xml:space="preserve">
+    <value>导出标注</value>
+  </data>
+  <data name="Graphic_ImportAnnotations" xml:space="preserve">
+    <value>导入标注</value>
+  </data>
+  <data name="Graphic_ImportAnnotationsMenu" xml:space="preserve">
+    <value>导入标注</value>
+  </data>
+  <data name="Graphic_ExportAnnotationsMenu" xml:space="preserve">
+    <value>导出标注</value>
+  </data>
+  <data name="Graphic_ImageViewSettings" xml:space="preserve">
+    <value>图像设置</value>
+  </data>
+  <data name="Graphic_CountMin1" xml:space="preserve">
+    <value>绘制的个数不能小于1</value>
+  </data>
+  <data name="Graphic_ArrayCountMin1" xml:space="preserve">
+    <value>点阵数的行列不能小于1</value>
+  </data>
+  <data name="Desc_BinaryThreshold" xml:space="preserve">
+    <value>二值化阈值 (0-255)</value>
+  </data>
+  <data name="Desc_BeadSize" xml:space="preserve">
+    <value>灯珠尺寸</value>
+  </data>
+  <data name="Desc_MinBeadSize" xml:space="preserve">
+    <value>最小灯珠尺寸 (像素)</value>
+  </data>
+  <data name="Desc_MaxBeadSize" xml:space="preserve">
+    <value>最大灯珠尺寸 (像素)</value>
+  </data>
+  <data name="Desc_ExpectedRows" xml:space="preserve">
+    <value>预期灯珠行数</value>
+  </data>
+  <data name="Desc_ExpectedCols" xml:space="preserve">
+    <value>预期灯珠列数</value>
+  </data>
+  <data name="Desc_BinaryThresholdAuto" xml:space="preserve">
+    <value>二值化阈值，-1表示自动(OTSU)</value>
+  </data>
+  <data name="Desc_MinKeyArea" xml:space="preserve">
+    <value>最小按键面积(像素)</value>
+  </data>
+  <data name="Desc_MaxKeyArea" xml:space="preserve">
+    <value>最大按键面积(像素), 0表示不限制</value>
+  </data>
+  <data name="Desc_MarginRatio" xml:space="preserve">
+    <value>边距缩进比例(0~0.45)，缩小检测框以更贴合按键</value>
+  </data>
+  <data name="Sfr_FrequencyInputError" xml:space="preserve">
+    <value>频率输入错误</value>
+  </data>
+  <data name="Sfr_MtfNotFound" xml:space="preserve">
+    <value>未找到对应MTF</value>
+  </data>
+  <data name="Sfr_MtfInputError" xml:space="preserve">
+    <value>MTF输入错误</value>
+  </data>
+  <data name="Sfr_FreqNotFound" xml:space="preserve">
+    <value>未找到对应频率</value>
+  </data>
+  <data name="Sfr_ExportSuccess" xml:space="preserve">
+    <value>导出成功</value>
+  </data>
+  <data name="Sfr_ExportSuccessMsg" xml:space="preserve">
+    <value>数据已成功导出到:</value>
+  </data>
+  <data name="Sfr_ExportFailed" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Algorithm_SfrMtfAnalysis" xml:space="preserve">
+    <value>SFR/MTF 分析</value>
+  </data>
+  <data name="Histogram_Title" xml:space="preserve">
+    <value>直方图 (Histogram)</value>
+  </data>
+  <data name="PseudoColor_Group" xml:space="preserve">
+    <value>伪彩色</value>
+  </data>
+  <data name="PseudoColor_CurrentPseudoColor" xml:space="preserve">
+    <value>当前伪彩色</value>
+  </data>
+  <data name="PseudoColor_CurrentDescription" xml:space="preserve">
+    <value>控制当前画布的伪彩色启用状态、当前色表和当前范围。这里的修改立即生效，不会写回默认值。</value>
+  </data>
+  <data name="PseudoColor_DefaultPseudoColor" xml:space="preserve">
+    <value>伪彩色默认值</value>
+  </data>
+  <data name="PseudoColor_DefaultDescription" xml:space="preserve">
+    <value>控制新图像或重置后采用的默认伪彩色类型和自动范围开关，不会直接覆盖当前画布状态。</value>
+  </data>
+  <data name="PseudoColor_Enable" xml:space="preserve">
+    <value>启用伪彩色</value>
+  </data>
+  <data name="PseudoColor_AutoRange" xml:space="preserve">
+    <value>自动范围</value>
+  </data>
+  <data name="PseudoColor_Type" xml:space="preserve">
+    <value>伪彩色类型</value>
+  </data>
+  <data name="PseudoColor_MinValue" xml:space="preserve">
+    <value>最小值</value>
+  </data>
+  <data name="PseudoColor_MaxValue" xml:space="preserve">
+    <value>最大值</value>
+  </data>
+  <data name="PseudoColor_DefaultType" xml:space="preserve">
+    <value>默认伪彩色类型</value>
+  </data>
+  <data name="PseudoColor_DefaultAutoRange" xml:space="preserve">
+    <value>默认自动范围</value>
+  </data>
+  <data name="Artculation_MenuHeader" xml:space="preserve">
+    <value>清晰度评估</value>
+  </data>
+  <data name="Artculation_ParamSettings" xml:space="preserve">
+    <value>清晰度评估参数设置</value>
+  </data>
+  <data name="Artculation_ResultTitle" xml:space="preserve">
+    <value>清晰度评估</value>
+  </data>
+  <data name="Artculation_ResultMsg" xml:space="preserve">
+    <value>图像清晰度评估结果:</value>
+  </data>
+  <data name="Algorithm_Apply" xml:space="preserve">
+    <value>应用</value>
+  </data>
+  <data name="Algorithm_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Algorithm_BrightnessContrastTitle" xml:space="preserve">
+    <value>亮度对比度调整</value>
+  </data>
+  <data name="Algorithm_AdjustBrightnessContrast" xml:space="preserve">
+    <value>调整亮度和对比度</value>
+  </data>
+  <data name="Algorithm_Brightness" xml:space="preserve">
+    <value>亮度</value>
+  </data>
+  <data name="Algorithm_Contrast" xml:space="preserve">
+    <value>对比度</value>
+  </data>
+  <data name="Algorithm_EdgeDetectionTitle" xml:space="preserve">
+    <value>边缘检测 (Canny)</value>
+  </data>
+  <data name="Algorithm_LowThreshold" xml:space="preserve">
+    <value>低阈值:</value>
+  </data>
+  <data name="Algorithm_HighThreshold" xml:space="preserve">
+    <value>高阈值:</value>
+  </data>
+  <data name="Algorithm_WhiteBalanceTitle" xml:space="preserve">
+    <value>白平衡调整</value>
+  </data>
+  <data name="Algorithm_AdjustWhiteBalance" xml:space="preserve">
+    <value>调整白平衡</value>
+  </data>
+  <data name="Algorithm_Red" xml:space="preserve">
+    <value>红色</value>
+  </data>
+  <data name="Algorithm_Green" xml:space="preserve">
+    <value>绿色</value>
+  </data>
+  <data name="Algorithm_Blue" xml:space="preserve">
+    <value>蓝色</value>
+  </data>
+  <data name="Algorithm_GaussianBlurTitle" xml:space="preserve">
+    <value>高斯模糊</value>
+  </data>
+  <data name="Algorithm_KernelSizeOdd" xml:space="preserve">
+    <value>核大小 (必须为奇数):</value>
+  </data>
+  <data name="Algorithm_SigmaStdDev" xml:space="preserve">
+    <value>Sigma (标准差):</value>
+  </data>
+  <data name="Algorithm_MedianBlurTitle" xml:space="preserve">
+    <value>中值滤波</value>
+  </data>
+  <data name="Algorithm_GammaCorrectionTitle" xml:space="preserve">
+    <value>伽马校正</value>
+  </data>
+  <data name="Algorithm_AdjustGamma" xml:space="preserve">
+    <value>调整伽马值</value>
+  </data>
+  <data name="Algorithm_GammaValue" xml:space="preserve">
+    <value>伽马值</value>
+  </data>
+  <data name="Algorithm_ThresholdTitle" xml:space="preserve">
+    <value>阈值处理</value>
+  </data>
+  <data name="Algorithm_AdjustThreshold" xml:space="preserve">
+    <value>调整阈值</value>
+  </data>
+  <data name="Algorithm_ThresholdValue" xml:space="preserve">
+    <value>阈值</value>
+  </data>
+  <data name="TifOpenConfig_ConvertToGray16_DisplayName" xml:space="preserve">
+    <value>Gray32Float 转为 Gray16</value>
+  </data>
+  <data name="TifOpenConfig_ConvertToGray16_Description" xml:space="preserve">
+    <value>启用后，打开 Gray32Float TIFF 时按当前图像最小值和最大值归一化后转换为 Gray16；关闭后保留原始 Gray32Float 图像。</value>
+  </data>
+  <data name="ImageView_NoExportableAnnotations" xml:space="preserve">
+    <value>当前没有可导出的标注。</value>
+  </data>
+  <data name="ImageView_ExportAnnotations" xml:space="preserve">
+    <value>导出标注</value>
+  </data>
+  <data name="ImageView_NoAnnotationTypes" xml:space="preserve">
+    <value>当前图元里没有已接入 annotation 的类型。</value>
+  </data>
+  <data name="ImageView_ExportedAnnotationsWithSkip" xml:space="preserve">
+    <value>已导出 {0} 个标注，跳过 {1} 个未接入 annotation 的图元。</value>
+  </data>
+  <data name="ImageView_ExportedAnnotations" xml:space="preserve">
+    <value>已导出 {0} 个标注。</value>
+  </data>
+  <data name="ImageView_ImportAnnotations" xml:space="preserve">
+    <value>导入标注</value>
+  </data>
+  <data name="ImageView_ImportedAnnotations" xml:space="preserve">
+    <value>已导入 {0} 个标注。</value>
+  </data>
+  <data name="ImageView_ImportAnnotationsFailed" xml:space="preserve">
+    <value>导入标注失败: {0}</value>
+  </data>
+  <data name="ImageView_UnsupportedImageFormat" xml:space="preserve">
+    <value>不支持的图片格式 {0}</value>
+  </data>
+  <data name="ImageView_UnsupportedPixelFormat" xml:space="preserve">
+    <value>{0}暂不支持的格式,请联系开发人员</value>
+  </data>
+  <data name="ImageView_MetadataDesc_FilePath" xml:space="preserve">
+    <value>当前打开图像的绝对路径</value>
+  </data>
+  <data name="ImageView_MetadataDesc_FileSize" xml:space="preserve">
+    <value>当前打开文件大小（字节）</value>
+  </data>
+  <data name="ImageView_MetadataDesc_PixelFormat" xml:space="preserve">
+    <value>当前图像像素格式</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Cols" xml:space="preserve">
+    <value>当前图像列数</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Rows" xml:space="preserve">
+    <value>当前图像行数</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Channel" xml:space="preserve">
+    <value>当前图像通道数</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Depth" xml:space="preserve">
+    <value>当前图像位深</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Stride" xml:space="preserve">
+    <value>当前图像 stride</value>
+  </data>
+  <data name="ImageView_MetadataDesc_DpiX" xml:space="preserve">
+    <value>当前图像水平 DPI</value>
+  </data>
+  <data name="ImageView_MetadataDesc_DpiY" xml:space="preserve">
+    <value>当前图像垂直 DPI</value>
+  </data>
+  <data name="ImageView_Scope_ImageMetadata" xml:space="preserve">
+    <value>图像元数据</value>
+  </data>
+  <data name="ImageView_Scope_ViewState" xml:space="preserve">
+    <value>当前视窗状态</value>
+  </data>
+  <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
+    <value>打开器运行态</value>
+  </data>
+  <data name="ImageView_Scope_Legacy" xml:space="preserve">
+    <value>遗留未分类</value>
+  </data>
+  <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
+    <value>由当前文件和像素内容决定，切换图像后会整体刷新。</value>
+  </data>
+  <data name="ImageView_ScopeDesc_ViewState" xml:space="preserve">
+    <value>只作用于当前 ImageView 的临时状态，不会写回全局默认值。</value>
+  </data>
+  <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
+    <value>只在特定打开器工作流里有意义的运行态信息。</value>
+  </data>
+  <data name="ImageView_ScopeDesc_Legacy" xml:space="preserve">
+    <value>尚未迁移到显式作用域的旧键，建议继续收口。</value>
+  </data>
+  <data name="Cie_Title" xml:space="preserve">
+    <value>CIE 色度图</value>
+  </data>
+  <data name="Cie_CoordinateSystem" xml:space="preserve">
+    <value>坐标系</value>
+  </data>
+  <data name="Cie_Fit" xml:space="preserve">
+    <value>适应</value>
+  </data>
+  <data name="Cie_DisplayPresets" xml:space="preserve">
+    <value>显示预设</value>
+  </data>
+  <data name="Cie_Display" xml:space="preserve">
+    <value>显示器</value>
+  </data>
+  <data name="Cie_Cinema" xml:space="preserve">
+    <value>影视</value>
+  </data>
+  <data name="Cie_SelectAll" xml:space="preserve">
+    <value>全选</value>
+  </data>
+  <data name="Cie_Clear" xml:space="preserve">
+    <value>清空</value>
+  </data>
+  <data name="Cie_ColorGamut" xml:space="preserve">
+    <value>色域</value>
+  </data>
+  <data name="Cie_WhitePointLightSource" xml:space="preserve">
+    <value>白点 / 光源</value>
+  </data>
+  <data name="Cie_ReferenceLines" xml:space="preserve">
+    <value>参考线</value>
+  </data>
+  <data name="Cie_CurrentPoint" xml:space="preserve">
+    <value>当前点</value>
+  </data>
+  <data name="Draw_Lock" xml:space="preserve">
+    <value>锁定</value>
+  </data>
+  <data name="Draw_ResetToImageCenter" xml:space="preserve">
+    <value>重置为图像中心</value>
+  </data>
+  <data name="Draw_Mode" xml:space="preserve">
+    <value>模式</value>
+  </data>
+  <data name="Draw_Color" xml:space="preserve">
+    <value>颜色</value>
+  </data>
+  <data name="Draw_LineWidth" xml:space="preserve">
+    <value>线宽</value>
+  </data>
+  <data name="Draw_Angle" xml:space="preserve">
+    <value>角度</value>
+  </data>
+  <data name="Draw_CenterX" xml:space="preserve">
+    <value>中心点X</value>
+  </data>
+  <data name="Draw_CenterY" xml:space="preserve">
+    <value>中心点Y</value>
+  </data>
+  <data name="Draw_MaskSettings" xml:space="preserve">
+    <value>遮罩设置</value>
+  </data>
+  <data name="Draw_MaskShape" xml:space="preserve">
+    <value>遮罩形状</value>
+  </data>
+  <data name="Draw_MaskTransparentSize" xml:space="preserve">
+    <value>遮罩透明区大小</value>
+  </data>
+  <data name="Draw_MaskOpacity" xml:space="preserve">
+    <value>遮罩不透明度(0-255)</value>
+  </data>
+  <data name="Draw_CenterOverlay" xml:space="preserve">
+    <value>中心覆盖</value>
+  </data>
+  <data name="Draw_OverlayShape" xml:space="preserve">
+    <value>覆盖形状</value>
+  </data>
+  <data name="Draw_OverlayColor" xml:space="preserve">
+    <value>覆盖颜色</value>
+  </data>
+  <data name="Draw_OverlaySize" xml:space="preserve">
+    <value>覆盖大小</value>
+  </data>
+  <data name="Draw_PhysicalSize" xml:space="preserve">
+    <value>物理尺寸</value>
+  </data>
+  <data name="Draw_PhysicalSizeX" xml:space="preserve">
+    <value>物理尺寸X(mm)</value>
+  </data>
+  <data name="Draw_PhysicalSizeY" xml:space="preserve">
+    <value>物理尺寸Y(mm)</value>
+  </data>
+  <data name="Draw_PixelPerUnit" xml:space="preserve">
+    <value>像素/单位(px/mm)</value>
+  </data>
+  <data name="Draw_Highlighter" xml:space="preserve">
+    <value>荧光笔</value>
+  </data>
+  <data name="Draw_SampleSpacing" xml:space="preserve">
+    <value>采样间距</value>
+  </data>
+  <data name="Draw_StrokeWidth" xml:space="preserve">
+    <value>笔宽</value>
+  </data>
+  <data name="Draw_Text" xml:space="preserve">
+    <value>文本</value>
+  </data>
+  <data name="Draw_FontSize" xml:space="preserve">
+    <value>字号</value>
+  </data>
+  <data name="Draw_FontSizeLabel" xml:space="preserve">
+    <value>字体大小</value>
+  </data>
+  <data name="Draw_FontFamily" xml:space="preserve">
+    <value>字体</value>
+  </data>
+  <data name="Draw_Position" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="Draw_Background" xml:space="preserve">
+    <value>背景</value>
+  </data>
+  <data name="Draw_Fill" xml:space="preserve">
+    <value>填充</value>
+  </data>
+  <data name="Draw_DefaultFontSize" xml:space="preserve">
+    <value>默认字号</value>
+  </data>
+  <data name="Draw_DefaultColor" xml:space="preserve">
+    <value>默认颜色</value>
+  </data>
+  <data name="Draw_FollowZoom" xml:space="preserve">
+    <value>跟随缩放</value>
+  </data>
+  <data name="Draw_HighlighterMode" xml:space="preserve">
+    <value>荧光笔模式</value>
+  </data>
+  <data name="Draw_ContinuousDraw" xml:space="preserve">
+    <value>连续绘制</value>
+  </data>
+  <data name="Draw_LockDefaultRadius" xml:space="preserve">
+    <value>锁定默认半径</value>
+  </data>
+  <data name="Draw_LockDefaultSize" xml:space="preserve">
+    <value>锁定默认尺寸</value>
+  </data>
+  <data name="Draw_CreateFromCenter" xml:space="preserve">
+    <value>以中心创建</value>
+  </data>
+  <data name="Draw_LineColor" xml:space="preserve">
+    <value>线条颜色</value>
+  </data>
+  <data name="Draw_Rasterize" xml:space="preserve">
+    <value>栅格化</value>
+  </data>
+  <data name="Ruler_StartPoint" xml:space="preserve">
+    <value>起点</value>
+  </data>
+  <data name="Ruler_TotalLength" xml:space="preserve">
+    <value>总长</value>
+  </data>
+  <data name="Ruler_MeasureWithRealUnits" xml:space="preserve">
+    <value>测量是否启用实际单位</value>
+  </data>
+  <data name="Ruler_Calculate" xml:space="preserve">
+    <value>计算</value>
+  </data>
+  <data name="Ruler_PhysicalScale" xml:space="preserve">
+    <value>物理比例</value>
+  </data>
+  <data name="Ruler_PhysicalUnit" xml:space="preserve">
+    <value>物理单位</value>
+  </data>
+  <data name="Ruler_PixelRepresents" xml:space="preserve">
+    <value>1个像素代表实际</value>
+  </data>
+  <data name="Ruler_Pixel" xml:space="preserve">
+    <value>像素</value>
+  </data>
+  <data name="Ruler_ActualDistance" xml:space="preserve">
+    <value>实际距离</value>
+  </data>
+  <data name="Ruler_PhysicalLength" xml:space="preserve">
+    <value>物理长度</value>
+  </data>
+  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
+    <value>该图形没有足够的点来生成切面图。</value>
+  </data>
+  <data name="Annotation_CannotExtractData" xml:space="preserve">
+    <value>无法从图像中提取有效的截面数据。</value>
+  </data>
+  <data name="Annotation_SectionalDrawingTitle" xml:space="preserve">
+    <value>切面图</value>
+  </data>
+  <data name="Annotation_SamplePoints" xml:space="preserve">
+    <value>个采样点</value>
+  </data>
+  <data name="Annotation_SourceNotReadable" xml:space="preserve">
+    <value>图像源不是可读的 WriteableBitmap 格式。</value>
+  </data>
+  <data name="Draw_Tip" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="Draw_Warning" xml:space="preserve">
+    <value>警告</value>
+  </data>
+  <data name="Draw_Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Draw_Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Draw_Edit" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+<data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>算法调用</value></data></root>

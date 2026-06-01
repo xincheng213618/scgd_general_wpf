@@ -28,10 +28,6 @@ namespace ProjectKB
         public RelayCommand EditConfigCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenSocketConfigCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenChangeLogCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenReadMeCommand { get; set; }
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
@@ -44,13 +40,12 @@ namespace ProjectKB
             TemplateItemSource = TemplateFlow.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
             EditConfigCommand = new RelayCommand(a => EditConfig());
-            OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
-            OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
             OpenModbusCommand = new RelayCommand(a => OpenModbus());
             OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
         }
 
-        [DisplayName("日志开关(重启窗口后生效)")]
+        [DisplayName("显示日志面板"), Category("KB")]
+        [Description("关闭后隐藏主界面运行日志和底部实时日志面板；仍可通过状态栏“日志”按钮打开独立日志窗口。")]
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
@@ -70,53 +65,14 @@ namespace ProjectKB
         public void EditConfig()
         {
             new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog();
+            ConfigService.Instance.SaveConfigs();
         }
         public static void OepnSocketConfig()
         {
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.Show();
         }
-        public static void OpenResourceName(string title, string resourceName)
-        {
-            // 获取当前执行的程序集
-            Assembly assembly = Assembly.GetExecutingAssembly();
 
-            // 资源文件的完整名称
-
-            // 确保资源名称正确
-            string[] resourceNames = assembly.GetManifestResourceNames();
-
-            // 读取资源文件内容
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                {
-                    Console.WriteLine("资源文件未找到。请检查资源名称。");
-                    return;
-                }
-
-                using (StreamReader reader = new StreamReader(stream))
-                {
-                    string content = reader.ReadToEnd();
-
-                    string html = Markdig.Markdown.ToHtml(content);
-                    new MarkdownViewWindow(html) { Title = title, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-                }
-            }
-        }
-
-        public static void OpenChangeLog()
-        {
-            // 资源文件的完整名称
-            string resourceName = "ProjectKB.CHANGELOG.md";
-            OpenResourceName("CHANGELOG", resourceName);
-        }
-        public static void OpenReadMe()
-        {
-            // 资源文件的完整名称
-            string resourceName = "ProjectKB.README.md";
-            OpenResourceName("README",resourceName);
-        }
 
         public static void OpenModbus()
         {
@@ -131,6 +87,7 @@ namespace ProjectKB
         }
 
         [JsonIgnore]
+        [Browsable(false)]
         public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 

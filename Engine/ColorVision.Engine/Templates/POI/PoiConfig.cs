@@ -101,11 +101,6 @@ namespace ColorVision.Engine.Templates.POI
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                return;
-            }
             var ITemplate = new TemplateCalibrationParam(DeviceCamera.PhyCamera);
             var windowTemplate = new TemplateEditorWindow(ITemplate, CalibrationTemplateIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();

@@ -4,6 +4,7 @@ using ColorVision.Engine.PropertyEditor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,30 +21,25 @@ namespace ColorVision.Engine.Batch.PreProcess
         private const long DefaultTargetBytes = 50L * OneGb;
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        [DisplayName("监控文件夹")]
-        [Description("要监控的文件夹路径")]
+        [Display(Name = "Engine_PG_MonitorFolders", Description = "Engine_PG_MonitorFoldersDesc", ResourceType = typeof(Properties.Resources))]
         public List<string> FolderPaths { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private List<string> _FolderPath = new List<string>() { "D:\\CVTest\\DEV.Camera.Default" };
 
-        [DisplayName("触发上限")]
-        [Description("当文件夹总大小超过该值时开始清理（字节存储，GB输入）")]
+        [Display(Name = "Engine_PG_TriggerSize", Description = "Engine_PG_TriggerSizeDesc", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(FolderSizeBytesPropertiesEditor))]
         public long TriggerSizeBytes { get => _TriggerSizeBytes; set { _TriggerSizeBytes = value; OnPropertyChanged(); } }
         private long _TriggerSizeBytes = DefaultTriggerBytes;
 
-        [DisplayName("清理下限")]
-        [Description("清理到该值以下即停止（字节存储，GB输入，建议小于触发上限）")]
+        [Display(Name = "Engine_PG_TargetSize", Description = "Engine_PG_TargetSizeDesc", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(FolderSizeBytesPropertiesEditor))]
         public long TargetSizeBytes { get => _TargetSizeBytes; set { _TargetSizeBytes = value; OnPropertyChanged(); } }
         private long _TargetSizeBytes = DefaultTargetBytes;
 
-        [DisplayName("文件扩展名")]
-        [Description("要监控的文件扩展名（逗号分隔，例如: .jpg,.png,.tiff）。留空表示监控所有文件")]
+        [Display(Name = "Engine_PG_FileExtensions", Description = "Engine_PG_MonitorFileExtensionsDesc", ResourceType = typeof(Properties.Resources))]
         public string FileExtensions { get => _FileExtensions; set { _FileExtensions = value; OnPropertyChanged(); } }
         private string _FileExtensions = ".jpg,.png,.tiff,.bmp,.cvraw,.cvcie";
 
-        [DisplayName("包含子文件夹")]
-        [Description("是否包含子文件夹中的文件")]
+        [Display(Name = "Engine_PG_IncludeSubfolders", Description = "Engine_PG_IncludeSubfoldersDesc", ResourceType = typeof(Properties.Resources))]
         public bool IncludeSubfolders { get => _IncludeSubfolders; set { _IncludeSubfolders = value; OnPropertyChanged(); } }
         private bool _IncludeSubfolders = true;
     }

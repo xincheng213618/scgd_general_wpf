@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             ResetCommand = new RelayCommand((a)=> ResetValue());
             OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
             CheckCommand = new RelayCommand(a => Check());
-            Description = "Json配置";
+            Description = Properties.Resources.JsonConfig;
         }
 
 
@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             }
             else
             {
-                MessageBox.Show("无法重置，请检查数据库相关配置");
+                MessageBox.Show(Properties.Resources.ResetFailedCheckDbConfig);
             }
         }
 

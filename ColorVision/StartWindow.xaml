@@ -6,10 +6,28 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" Title="StartWindow" Width="700" Height="330" AllowsTransparency="True"
         Background="Transparent" BorderThickness="0" Initialized="Window_Initialized" WindowStyle="None">
+    <Window.Resources>
+        <Style x:Key="StartupProgressBarStyle" TargetType="{x:Type ProgressBar}">
+            <Setter Property="Height" Value="4" />
+            <Setter Property="Background" Value="#273847" />
+            <Setter Property="Foreground" Value="#4B8DFF" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ProgressBar}">
+                        <Grid ClipToBounds="True">
+                            <Border x:Name="PART_Track" Background="{TemplateBinding Background}" CornerRadius="2" />
+                            <Border x:Name="PART_Indicator" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" CornerRadius="2" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Border Background="#FF2D333A" BorderBrush="#413B39" BorderThickness="2" CornerRadius="20">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="215" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -23,15 +41,17 @@
             <Border Grid.Row="1">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Image Margin="20,25" VerticalAlignment="Top" Opacity="0.9" Source="/Assets/Image/ColorVision1.ico" />
+                    <Image Margin="20,25" Height="150" VerticalAlignment="Top" Opacity="0.9" Source="/Assets/Image/ColorVision1.ico" />
 
                     <StackPanel Grid.Row="1" Margin="15,10" VerticalAlignment="Center">
                         <TextBlock Margin="0,0,0,5" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="20" Foreground="White" Text="ColorVision" />
-                        <TextBlock x:Name="labelVersion" HorizontalAlignment="Left" FontSize="12" Foreground="White" Text="1.0.1.13" />
+                        <TextBlock x:Name="labelVersion"  Margin="0,0,0,5"  HorizontalAlignment="Left" FontSize="12" Foreground="White" Text="1.0.1.13" />
+                        <TextBlock VerticalAlignment="Bottom" FontSize="8.5" Foreground="#9EABB8" Text="© 2023-2026 ColorVision All Rigths Reserved" TextWrapping="Wrap" />
                     </StackPanel>
+
                 </Grid>
 
             </Border>
@@ -39,10 +59,10 @@
             <Border Grid.Column="1">
                 <Grid>
 
-                    <Image Margin="0,60,60,60" VerticalAlignment="Top" Opacity="0.3" Source="/Assets/Image/ColorVision1.ico" />
                     <Border Margin="0,20,20,20" Background="#484d4f" CornerRadius="15" Opacity="0.8" />
 
-                    <TextBox x:Name="logTextBox" Grid.Row="0" Margin="10,30,30,22" Padding="0" VerticalContentAlignment="Top" Background="Transparent" BorderThickness="0" Foreground="White" IsReadOnly="True" Text="" TextChanged="TextBoxMsg_TextChanged" />
+                    <TextBox x:Name="logTextBox" Grid.Row="0" Margin="10,30,30,32" Padding="0" VerticalContentAlignment="Top" Background="Transparent" BorderThickness="0" Foreground="White" IsReadOnly="True" Text="" TextChanged="TextBoxMsg_TextChanged" />
+                    <ProgressBar x:Name="startupProgressBar" Margin="10,0,30,32" VerticalAlignment="Bottom" Minimum="0" Maximum="1" Value="0" Style="{StaticResource StartupProgressBarStyle}" />
                 </Grid>
             </Border>
         </Grid>

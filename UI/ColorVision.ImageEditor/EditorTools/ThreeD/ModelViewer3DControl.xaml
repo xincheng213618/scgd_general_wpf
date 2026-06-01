@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
              mc:Ignorable="d"
              Focusable="True"
              d:DesignHeight="700" d:DesignWidth="1100">
@@ -24,9 +25,9 @@
                 BorderBrush="#30FFFFFF" BorderThickness="1" Panel.ZIndex="90">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
-                    <TextBlock Text="模型结构" Foreground="#DDFFFFFF" FontSize="12" VerticalAlignment="Center"/>
-                    <Button Style="{StaticResource PanelActionBtn}" Content="隔离选中" Click="IsolateSelected_Click"/>
-                    <Button Style="{StaticResource PanelActionBtn}" Content="恢复全部" Click="ShowAllNodes_Click"/>
+                    <TextBlock Text="{x:Static properties:Resources.ThreeD_ModelStructure}" Foreground="#DDFFFFFF" FontSize="12" VerticalAlignment="Center"/>
+                    <Button Style="{StaticResource PanelActionBtn}" Content="{x:Static properties:Resources.ThreeD_IsolateSelected}" Click="IsolateSelected_Click"/>
+                    <Button Style="{StaticResource PanelActionBtn}" Content="{x:Static properties:Resources.ThreeD_RestoreAll}" Click="ShowAllNodes_Click"/>
                 </StackPanel>
                 <TreeView x:Name="ModelTreeView" Margin="8,0,8,8"
                           Style="{StaticResource DarkTreeView}"
@@ -47,12 +48,12 @@
                 Background="#C8181818" CornerRadius="6" Padding="8"
                 BorderBrush="#30FFFFFF" BorderThickness="1">
             <StackPanel Width="122">
-                <TextBlock Text="文件" Style="{StaticResource SectionLabel}"/>
-                <Button Style="{StaticResource ActionBtn}" Content="打开模型" Click="OpenModel_Click" ToolTip="打开模型文件"/>
+                <TextBlock Text="{x:Static properties:Resources.ThreeD_File}" Style="{StaticResource SectionLabel}"/>
+                <Button Style="{StaticResource ActionBtn}" Content="{x:Static properties:Resources.ThreeD_OpenModel}" Click="OpenModel_Click" ToolTip="{x:Static properties:Resources.ThreeD_OpenModelToolTip}"/>
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
-                <TextBlock Text="相机位置" Style="{StaticResource SectionLabel}"/>
+                <TextBlock Text="{x:Static properties:Resources.ThreeD_CameraPosition}" Style="{StaticResource SectionLabel}"/>
                 <Grid HorizontalAlignment="Center" Width="96">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
@@ -60,15 +61,15 @@
                     <Grid.RowDefinitions>
                         <RowDefinition/><RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左移 (L)" Click="CameraMoveLeft_Click"/>
-                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="前进 (T)" Click="CameraMoveForward_Click"/>
-                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右移 (R)" Click="CameraMoveRight_Click"/>
-                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="后退 (B)" Click="CameraMoveBack_Click"/>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="{x:Static properties:Resources.ThreeD_MoveLeftToolTip}" Click="CameraMoveLeft_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="{x:Static properties:Resources.ThreeD_MoveForwardToolTip}" Click="CameraMoveForward_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="{x:Static properties:Resources.ThreeD_MoveRightToolTip}" Click="CameraMoveRight_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="{x:Static properties:Resources.ThreeD_MoveBackToolTip}" Click="CameraMoveBack_Click"/>
                 </Grid>
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
-                <TextBlock Text="视角方向" Style="{StaticResource SectionLabel}"/>
+                <TextBlock Text="{x:Static properties:Resources.ThreeD_LookDirection}" Style="{StaticResource SectionLabel}"/>
                 <Grid HorizontalAlignment="Center" Width="96">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
@@ -76,15 +77,15 @@
                     <Grid.RowDefinitions>
                         <RowDefinition/><RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左看 (D)" Click="LookLeft_Click"/>
-                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="上看 (A)" Click="LookUp_Click"/>
-                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右看 (F)" Click="LookRight_Click"/>
-                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="下看 (C)" Click="LookDown_Click"/>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="{x:Static properties:Resources.ThreeD_LookLeftToolTip}" Click="LookLeft_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="{x:Static properties:Resources.ThreeD_LookUpToolTip}" Click="LookUp_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="{x:Static properties:Resources.ThreeD_LookRightToolTip}" Click="LookRight_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="{x:Static properties:Resources.ThreeD_LookDownToolTip}" Click="LookDown_Click"/>
                 </Grid>
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
-                <TextBlock Text="预设视角" Style="{StaticResource SectionLabel}"/>
+                <TextBlock Text="{x:Static properties:Resources.ThreeD_PresetViews}" Style="{StaticResource SectionLabel}"/>
                 <Grid HorizontalAlignment="Center" Width="120">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
@@ -92,40 +93,40 @@
                     <Grid.RowDefinitions>
                         <RowDefinition/><RowDefinition/><RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="前" ToolTip="前视图" Click="FrontView_Click"/>
-                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="上" ToolTip="上视图" Click="TopView_Click"/>
-                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="右" ToolTip="右视图" Click="RightView_Click"/>
-                    <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="左" ToolTip="左视图" Click="LeftView_Click"/>
-                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="ISO" ToolTip="等轴视图" Click="IsoView_Click"/>
-                    <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="后" ToolTip="后视图" Click="BackView_Click"/>
-                    <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="下" ToolTip="下视图" Click="BottomView_Click"/>
+                    <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="{x:Static properties:Resources.ThreeD_Front}" ToolTip="{x:Static properties:Resources.ThreeD_FrontViewToolTip}" Click="FrontView_Click"/>
+                    <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="{x:Static properties:Resources.ThreeD_Top}" ToolTip="{x:Static properties:Resources.ThreeD_TopViewToolTip}" Click="TopView_Click"/>
+                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="{x:Static properties:Resources.ThreeD_Right}" ToolTip="{x:Static properties:Resources.ThreeD_RightViewToolTip}" Click="RightView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="{x:Static properties:Resources.ThreeD_Left}" ToolTip="{x:Static properties:Resources.ThreeD_LeftViewToolTip}" Click="LeftView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="ISO" ToolTip="{x:Static properties:Resources.ThreeD_IsoViewToolTip}" Click="IsoView_Click"/>
+                    <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="{x:Static properties:Resources.ThreeD_Back}" ToolTip="{x:Static properties:Resources.ThreeD_BackViewToolTip}" Click="BackView_Click"/>
+                    <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="{x:Static properties:Resources.ThreeD_Bottom}" ToolTip="{x:Static properties:Resources.ThreeD_BottomViewToolTip}" Click="BottomView_Click"/>
                 </Grid>
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
-                <TextBlock Text="投影" Style="{StaticResource SectionLabel}"/>
+                <TextBlock Text="{x:Static properties:Resources.ThreeD_Projection}" Style="{StaticResource SectionLabel}"/>
                 <ToggleButton x:Name="ProjectionToggle" Style="{StaticResource ToggleActionBtn}"
-                              Content="正交投影" Checked="ProjectionToggle_Checked"
+                              Content="{x:Static properties:Resources.ThreeD_Orthographic}" Checked="ProjectionToggle_Checked"
                               Unchecked="ProjectionToggle_Unchecked"/>
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
-                <TextBlock Text="渲染" Style="{StaticResource SectionLabel}"/>
+                <TextBlock Text="{x:Static properties:Resources.ThreeD_Rendering}" Style="{StaticResource SectionLabel}"/>
                 <ToggleButton x:Name="WireframeToggle" Style="{StaticResource ToggleActionBtn}"
-                              Content="线框模式" Checked="WireframeToggle_Checked"
+                              Content="{x:Static properties:Resources.ThreeD_Wireframe}" Checked="WireframeToggle_Checked"
                               Unchecked="WireframeToggle_Unchecked"/>
                 <ToggleButton x:Name="TextureToggle" Style="{StaticResource ToggleActionBtn}"
-                              Content="显示贴图" Checked="TextureToggle_Checked"
+                              Content="{x:Static properties:Resources.ThreeD_ShowTexture}" Checked="TextureToggle_Checked"
                               Unchecked="TextureToggle_Unchecked"/>
                 <ToggleButton x:Name="MaterialToggle" Style="{StaticResource ToggleActionBtn}"
-                              Content="显示材质" Checked="MaterialToggle_Checked"
+                              Content="{x:Static properties:Resources.ThreeD_ShowMaterial}" Checked="MaterialToggle_Checked"
                               Unchecked="MaterialToggle_Unchecked"/>
 
                 <Separator Background="#20FFFFFF" Margin="0,4"/>
 
-                <Button Style="{StaticResource ActionBtn}" Content="重置视角" Click="ResetView_Click" ToolTip="重置视角 (Home)"/>
-                <Button Style="{StaticResource ActionBtn}" Content="截图" Click="Screenshot_Click"/>
-                <Button Style="{StaticResource ActionBtn}" Content="导出模型" Click="ExportModel_Click"/>
+                <Button Style="{StaticResource ActionBtn}" Content="{x:Static properties:Resources.ThreeD_ResetView}" Click="ResetView_Click" ToolTip="{x:Static properties:Resources.ThreeD_ResetViewToolTip}"/>
+                <Button Style="{StaticResource ActionBtn}" Content="{x:Static properties:Resources.ThreeD_Screenshot}" Click="Screenshot_Click"/>
+                <Button Style="{StaticResource ActionBtn}" Content="{x:Static properties:Resources.ThreeD_ExportModel}" Click="ExportModel_Click"/>
             </StackPanel>
         </Border>
 

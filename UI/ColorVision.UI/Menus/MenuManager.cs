@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Reflection;
 
 namespace ColorVision.UI.Menus
 {
@@ -18,16 +18,9 @@ namespace ColorVision.UI.Menus
         public Dictionary<string, int> OrderOverrides { get; } = new();
         public Dictionary<string, string> OwnerGuidOverrides { get; } = new();
 
-        // ---------------------- 核心变更：多窗口支持 ----------------------
-        // 记录 TargetName 对应的 Menu 控件实例
-        private readonly Dictionary<string, Menu> _windowMenus = new();
-        // 记录每个窗口的额外类型过滤器，用于精简独立宿主窗口的菜单来源
-        private readonly Dictionary<string, Func<Type, bool>?> _windowMenuTypeFilters = new();
-        // 记录每个 Menu 控件最初在 XAML 中定义的原生菜单项备份
+        private readonly List<MenuRegistration> _menuRegistrations = new();
         private readonly Dictionary<Menu, List<MenuItem>> _menuBackups = new();
-        // ----------------------------------------------------------------
 
-        // ---------------------- Type caching ----------------------
         private bool _typeCacheBuilt;
         private readonly List<Type> _menuItemTypeCache = new();
         private readonly List<Type> _menuItemProviderTypeCache = new();
@@ -36,7 +29,6 @@ namespace ColorVision.UI.Menus
         /// These are handled via the lazy-loading path.</summary>
         private readonly List<Type> _menuItemAttributeTypeCache = new();
         private readonly object _typeCacheLock = new();
-        // ----------------------------------------------------------------
 
         private MenuManager()
         {
@@ -74,9 +66,7 @@ namespace ColorVision.UI.Menus
         {
             EnsureTypeCaches();
 
-            // 1. 注册该窗口的 Menu，并备份原生 XAML 菜单项（仅首次）
-            _windowMenus[targetName] = targetMenuControl;
-            _windowMenuTypeFilters[targetName] = typeFilter;
+            RegisterMenu(targetName, targetMenuControl, typeFilter);
             if (!_menuBackups.ContainsKey(targetMenuControl))
             {
                 var backups = targetMenuControl.Items.OfType<MenuItem>().ToList();
@@ -90,9 +80,7 @@ namespace ColorVision.UI.Menus
             log.Info($"LoadMenuForWindow for target: {targetName}");
             targetMenuControl.Items.Clear();
 
-            // 2. 获取所有菜单项，并根据 targetName 进行过滤
             var windowSpecificItems = GetWindowSpecificItems(targetName, typeFilter);
-            // 3. 构建一级菜单
             var rootMenuItems = windowSpecificItems
                 .Where(mi => GetEffectiveOwnerGuid(mi) == MenuItemConstants.Menu)
                 .OrderBy(mi => GetEffectiveOrder(mi));
@@ -107,7 +95,6 @@ namespace ColorVision.UI.Menus
                 }
             }
 
-            // 4. 恢复原生备份项 (避免覆盖已生成的同名菜单)
             foreach (var item in _menuBackups[targetMenuControl])
             {
                 if (!targetMenuControl.Items.OfType<MenuItem>().Any(m => m.Header?.ToString() == item.Header?.ToString()))
@@ -117,8 +104,34 @@ namespace ColorVision.UI.Menus
             }
         }
 
-        private void AddChildMenuItems(MenuItem parent, string ownerGuid, List<IMenuItem> windowSpecificItems)
+        public void UnregisterMenu(Menu menu)
         {
+            foreach (var registration in _menuRegistrations.Where(r => ReferenceEquals(r.Menu, menu)).ToList())
+            {
+                registration.Detach();
+                _menuRegistrations.Remove(registration);
+            }
+
+            _menuBackups.Remove(menu);
+        }
+
+        private void RegisterMenu(string targetName, Menu targetMenuControl, Func<Type, bool>? typeFilter)
+        {
+            var registration = _menuRegistrations.FirstOrDefault(r => ReferenceEquals(r.Menu, targetMenuControl));
+            if (registration != null)
+            {
+                registration.Update(targetName, typeFilter);
+                return;
+            }
+
+            _menuRegistrations.Add(new MenuRegistration(this, targetName, targetMenuControl, typeFilter));
+        }
+
+        private void AddChildMenuItems(MenuItem parent, string ownerGuid, List<IMenuItem> windowSpecificItems, HashSet<string>? visited = null)
+        {
+            visited ??= new HashSet<string>(StringComparer.Ordinal);
+            if (!visited.Add(ownerGuid)) return;
+
             var children = windowSpecificItems
                 .Where(mi => GetEffectiveOwnerGuid(mi) == ownerGuid)
                 .OrderBy(mi => GetEffectiveOrder(mi)).ToList();
@@ -126,6 +139,9 @@ namespace ColorVision.UI.Menus
             for (int i = 0; i < children.Count; i++)
             {
                 var mi = children[i];
+                if (mi.GuidId != null && visited.Contains(mi.GuidId))
+                    continue;
+
                 var menuItem = CreateMenuItem(mi);
 
                 // 自动添加分隔符
@@ -138,10 +154,11 @@ namespace ColorVision.UI.Menus
 
                 parent.Items.Add(menuItem);
 
-                // 递归添加子菜单
                 if (mi.GuidId != null)
-                    AddChildMenuItems(menuItem, mi.GuidId, windowSpecificItems);
+                    AddChildMenuItems(menuItem, mi.GuidId, windowSpecificItems, visited);
             }
+
+            visited.Remove(ownerGuid);
         }
 
         /// <summary>
@@ -150,27 +167,30 @@ namespace ColorVision.UI.Menus
         /// </summary>
         public void RefreshMenuItemsByGuid(string ownerGuid)
         {
-            foreach (var kvp in _windowMenus)
+            foreach (var registration in _menuRegistrations.ToList())
             {
-                var targetName = kvp.Key;
-                var targetMenuControl = kvp.Value;
-                _windowMenuTypeFilters.TryGetValue(targetName, out var typeFilter);
+                var targetName = registration.TargetName;
+                var targetMenuControl = registration.Menu;
+                var typeFilter = registration.TypeFilter;
 
                 var parentMenuItem = FindMenuItemByGuid(ownerGuid, targetMenuControl.Items);
-                if (parentMenuItem == null) continue; // 当前窗口没有这个菜单节点，跳过
+                if (parentMenuItem == null) continue;
 
                 parentMenuItem.Items.Clear();
 
-                // 仅筛选属于该窗口的菜单项
                 var windowSpecificItems = GetWindowSpecificItems(targetName, typeFilter);
 
                 var refreshedItems = windowSpecificItems
                     .Where(mi => GetEffectiveOwnerGuid(mi) == ownerGuid && (mi.GuidId == null || !FilteredGuids.Contains(mi.GuidId)))
                     .OrderBy(mi => GetEffectiveOrder(mi)).ToList();
+                var visited = new HashSet<string>(StringComparer.Ordinal) { ownerGuid };
 
                 for (int i = 0; i < refreshedItems.Count; i++)
                 {
                     var mi = refreshedItems[i];
+                    if (mi.GuidId != null && visited.Contains(mi.GuidId))
+                        continue;
+
                     var menuItem = CreateMenuItem(mi);
                     if (i > 0
                         && GetEffectiveOrder(mi) - GetEffectiveOrder(refreshedItems[i - 1]) > 4
@@ -180,7 +200,7 @@ namespace ColorVision.UI.Menus
                     }
                     parentMenuItem.Items.Add(menuItem);
                     if (mi.GuidId != null)
-                        AddChildMenuItems(menuItem, mi.GuidId, windowSpecificItems);
+                        AddChildMenuItems(menuItem, mi.GuidId, windowSpecificItems, visited);
                 }
             }
         }
@@ -252,8 +272,6 @@ namespace ColorVision.UI.Menus
                         }
                         else if (t.IsDefined(typeof(MenuItemAttribute), false))
                         {
-                            // Attribute-only path: class has [MenuItem] but does not implement
-                            // IMenuItem or IMenuItemProvider — handled via lazy loading.
                             AddInstantiableType(_menuItemAttributeTypeCache, t, nameof(MenuItemAttribute));
                         }
                     }
@@ -386,9 +404,6 @@ namespace ColorVision.UI.Menus
             return result;
         }
 
-
-        // 将这两个方法添加到 MenuManager 类中
-
         /// <summary>
         /// 获取系统中所有加载的菜单项（不应用任何过滤或隐藏规则）
         /// 主要供配置界面使用，这样即便是被隐藏的菜单也能在设置里被找回来
@@ -403,13 +418,101 @@ namespace ColorVision.UI.Menus
         /// </summary>
         public void RebuildAllMenus()
         {
-            // 遍历字典中所有已注册的窗口标识和对应的 Menu 控件
-            foreach (var kvp in _windowMenus.ToList())
+            foreach (var registration in _menuRegistrations.ToList())
             {
-                var targetName = kvp.Key;
-                var targetMenuControl = kvp.Value;
+                LoadMenuForWindow(registration.TargetName, registration.Menu, registration.TypeFilter);
+            }
+        }
 
-                LoadMenuForWindow(targetName, targetMenuControl);
+        private sealed class MenuRegistration
+        {
+            private readonly MenuManager _owner;
+            private readonly RoutedEventHandler _unloadedHandler;
+            private RoutedEventHandler? _loadedHandler;
+            private EventHandler? _closedHandler;
+            private Window? _window;
+            private bool _detached;
+
+            public MenuRegistration(MenuManager owner, string targetName, Menu menu, Func<Type, bool>? typeFilter)
+            {
+                _owner = owner;
+                TargetName = targetName;
+                Menu = menu;
+                TypeFilter = typeFilter;
+
+                _unloadedHandler = OnMenuUnloaded;
+                Menu.Unloaded += _unloadedHandler;
+                AttachWindowIfAvailable();
+                if (_window == null)
+                {
+                    _loadedHandler = OnMenuLoaded;
+                    Menu.Loaded += _loadedHandler;
+                }
+            }
+
+            public string TargetName { get; private set; }
+            public Menu Menu { get; }
+            public Func<Type, bool>? TypeFilter { get; private set; }
+
+            public void Update(string targetName, Func<Type, bool>? typeFilter)
+            {
+                TargetName = targetName;
+                TypeFilter = typeFilter;
+                AttachWindowIfAvailable();
+            }
+
+            public void Detach()
+            {
+                if (_detached) return;
+
+                _detached = true;
+                Menu.Unloaded -= _unloadedHandler;
+                if (_loadedHandler != null)
+                {
+                    Menu.Loaded -= _loadedHandler;
+                    _loadedHandler = null;
+                }
+
+                if (_window != null && _closedHandler != null)
+                {
+                    _window.Closed -= _closedHandler;
+                }
+
+                _closedHandler = null;
+                _window = null;
+            }
+
+            private void AttachWindowIfAvailable()
+            {
+                if (_window != null) return;
+
+                var window = Window.GetWindow(Menu);
+                if (window == null) return;
+
+                _window = window;
+                _closedHandler = OnWindowClosed;
+                _window.Closed += _closedHandler;
+
+                if (_loadedHandler != null)
+                {
+                    Menu.Loaded -= _loadedHandler;
+                    _loadedHandler = null;
+                }
+            }
+
+            private void OnMenuLoaded(object sender, RoutedEventArgs e)
+            {
+                AttachWindowIfAvailable();
+            }
+
+            private void OnMenuUnloaded(object sender, RoutedEventArgs e)
+            {
+                _owner.UnregisterMenu(Menu);
+            }
+
+            private void OnWindowClosed(object? sender, EventArgs e)
+            {
+                _owner.UnregisterMenu(Menu);
             }
         }
 

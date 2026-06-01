@@ -1,51 +1,51 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -53,637 +53,1167 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuLanguage" xml:space="preserve"><value>_Язык</value></data>
-  <data name="Model" xml:space="preserve"><value>Модель</value></data>
-  <data name="OpenObservationCamera" xml:space="preserve"><value>Открыть камеру наблюдения</value></data>
-  <data name="CaptureImage" xml:space="preserve"><value>Снять изображение</value></data>
-  <data name="Calibration" xml:space="preserve"><value>Калибровка</value></data>
-  <data name="ImageFilter" xml:space="preserve"><value>Фильтр изображения</value></data>
-  <data name="FilterType" xml:space="preserve"><value>Тип фильтра</value></data>
-  <data name="NoFilter" xml:space="preserve"><value>Без фильтра</value></data>
-  <data name="LowPassFilter" xml:space="preserve"><value>Низкочастотный фильтр</value></data>
-  <data name="MovingAverage" xml:space="preserve"><value>Скользящее среднее</value></data>
-  <data name="GaussianFilter" xml:space="preserve"><value>Фильтр Гаусса</value></data>
-  <data name="MedianFilter" xml:space="preserve"><value>Медианный фильтр</value></data>
-  <data name="BilateralFilter" xml:space="preserve"><value>Билатеральный фильтр</value></data>
-  <data name="KernelSize" xml:space="preserve"><value>Размер ядра</value></data>
-  <data name="ApplyFilter" xml:space="preserve"><value>Применить фильтр</value></data>
-  <data name="StatusInformation" xml:space="preserve"><value>Информация о состоянии</value></data>
-  <data name="CurrentModel" xml:space="preserve"><value>Текущая модель</value></data>
-  <data name="ObservationCameraStatus" xml:space="preserve"><value>Состояние камеры наблюдения</value></data>
-  <data name="MeasurementCameraStatus" xml:space="preserve"><value>Состояние измерительной камеры</value></data>
-  <data name="CalibrationStatus" xml:space="preserve"><value>Состояние калибровки</value></data>
-  <data name="NotOpened" xml:space="preserve"><value>Не открыто</value></data>
-  <data name="NotCalibrated" xml:space="preserve"><value>Не откалибровано</value></data>
-  <data name="Azimuth" xml:space="preserve"><value>Азимут</value></data>
-  <data name="PolarAngle" xml:space="preserve"><value>Полярный угол</value></data>
-  <data name="TabHome" xml:space="preserve"><value>Главная</value></data>
-  <data name="TabCapture" xml:space="preserve"><value>Съемка</value></data>
-  <data name="TabPreprocess" xml:space="preserve"><value>Предобработка</value></data>
-  <data name="TabAnalysis" xml:space="preserve"><value>Анализ</value></data>
-  <data name="TabWindow" xml:space="preserve"><value>Окно</value></data>
-  <data name="TabHelp" xml:space="preserve"><value>Справка</value></data>
-  <data name="GroupData" xml:space="preserve"><value>Данные</value></data>
-  <data name="GroupModel" xml:space="preserve"><value>Модель</value></data>
-  <data name="GroupCurrentView" xml:space="preserve"><value>Текущий вид</value></data>
-  <data name="GroupFlowCapture" xml:space="preserve"><value>Поток / съемка</value></data>
-  <data name="GroupMeasurementCamera" xml:space="preserve"><value>Измерительная камера</value></data>
-  <data name="GroupNdCalibration" xml:space="preserve"><value>ND / калибровка</value></data>
-  <data name="GroupEnable" xml:space="preserve"><value>Включение</value></data>
-  <data name="GroupFilter" xml:space="preserve"><value>Фильтр</value></data>
-  <data name="GroupDisplay" xml:space="preserve"><value>Отображение</value></data>
-  <data name="GroupExport" xml:space="preserve"><value>Экспорт</value></data>
-  <data name="GroupViews" xml:space="preserve"><value>Виды</value></data>
-  <data name="GroupGamut" xml:space="preserve"><value>Охват</value></data>
-  <data name="GroupContrast" xml:space="preserve"><value>Контраст</value></data>
-  <data name="GroupConfig" xml:space="preserve"><value>Конфигурация</value></data>
-  <data name="GroupAnalysisWindows" xml:space="preserve"><value>Окна анализа</value></data>
-  <data name="GroupOpen" xml:space="preserve"><value>Открыть</value></data>
-  <data name="GroupDescription" xml:space="preserve"><value>Описание</value></data>
-  <data name="LabelChannel" xml:space="preserve"><value>Канал</value></data>
-  <data name="LabelReference" xml:space="preserve"><value>Эталон</value></data>
-  <data name="LabelExport" xml:space="preserve"><value>Экспорт</value></data>
-  <data name="LabelFlowTemplate" xml:space="preserve"><value>Шаблон потока</value></data>
-  <data name="LabelCamera" xml:space="preserve"><value>Камера</value></data>
-  <data name="LabelStandard" xml:space="preserve"><value>Стандарт</value></data>
-  <data name="LabelColorMap" xml:space="preserve"><value>Цветовая карта</value></data>
-  <data name="LabelAzimuthDeg" xml:space="preserve"><value>Азимут (°)</value></data>
-  <data name="LabelPolarDeg" xml:space="preserve"><value>Полярный угол (°)</value></data>
-  <data name="LabelNdPort" xml:space="preserve"><value>Порт ND</value></data>
-  <data name="LabelStatus" xml:space="preserve"><value>Состояние</value></data>
-  <data name="LabelExposure" xml:space="preserve"><value>Экспозиция</value></data>
-  <data name="ChannelX" xml:space="preserve"><value>X канал</value></data>
-  <data name="ChannelY" xml:space="preserve"><value>Y канал</value></data>
-  <data name="ChannelZ" xml:space="preserve"><value>Z канал</value></data>
-  <data name="ChannelCieX" xml:space="preserve"><value>Хроматичность x</value></data>
-  <data name="ChannelCieY" xml:space="preserve"><value>Хроматичность y</value></data>
-  <data name="ChannelCieU" xml:space="preserve"><value>Хроматичность u</value></data>
-  <data name="ChannelCieV" xml:space="preserve"><value>Хроматичность v</value></data>
-  <data name="ChannelDeltaUV" xml:space="preserve"><value>Цветовое различие Δuv</value></data>
-  <data name="ChannelXShort" xml:space="preserve"><value>X кан.</value></data>
-  <data name="ChannelYShort" xml:space="preserve"><value>Y кан.</value></data>
-  <data name="ChannelZShort" xml:space="preserve"><value>Z кан.</value></data>
-  <data name="ChannelCieXShort" xml:space="preserve"><value>x хром.</value></data>
-  <data name="ChannelCieYShort" xml:space="preserve"><value>y хром.</value></data>
-  <data name="ChannelCieUShort" xml:space="preserve"><value>u хром.</value></data>
-  <data name="ChannelCieVShort" xml:space="preserve"><value>v хром.</value></data>
-  <data name="ChannelDeltaUVShort" xml:space="preserve"><value>Δuv</value></data>
-  <data name="RefAzimuthLine" xml:space="preserve"><value>Азимутальная линия</value></data>
-  <data name="RefPolarCircle" xml:space="preserve"><value>Полярная окружность</value></data>
-  <data name="BtnObservationCamera" xml:space="preserve"><value>Камера наблюдения</value></data>
-  <data name="BtnSettings" xml:space="preserve"><value>Настройки</value></data>
-  <data name="BtnExecute" xml:space="preserve"><value>Выполнить</value></data>
-  <data name="BtnRefresh" xml:space="preserve"><value>Обновить</value></data>
-  <data name="BtnCapturePhoto" xml:space="preserve"><value>Снять</value></data>
-  <data name="BtnAzimuthExport" xml:space="preserve"><value>Экспорт азимута</value></data>
-  <data name="BtnPolarExport" xml:space="preserve"><value>Экспорт полярного угла</value></data>
-  <data name="BtnComputeGamut" xml:space="preserve"><value>Рассчитать охват</value></data>
-  <data name="BtnClear" xml:space="preserve"><value>Очистить</value></data>
-  <data name="BtnRecordR" xml:space="preserve"><value>Записать R</value></data>
-  <data name="BtnRecordG" xml:space="preserve"><value>Записать G</value></data>
-  <data name="BtnRecordB" xml:space="preserve"><value>Записать B</value></data>
-  <data name="BtnRecordWhite" xml:space="preserve"><value>Записать белое</value></data>
-  <data name="BtnRecordBlack" xml:space="preserve"><value>Записать черное</value></data>
-  <data name="BtnComputeContrast" xml:space="preserve"><value>Рассчитать контраст</value></data>
-  <data name="BtnGamutWindow" xml:space="preserve"><value>Окно охвата</value></data>
-  <data name="BtnContrastWindow" xml:space="preserve"><value>Окно контраста</value></data>
-  <data name="BtnHelpCenter" xml:space="preserve"><value>Справка</value></data>
-  <data name="BtnClose" xml:space="preserve"><value>Закрыть</value></data>
-  <data name="BtnExport" xml:space="preserve"><value>Экспорт</value></data>
-  <data name="BtnCancel" xml:space="preserve"><value>Отмена</value></data>
-  <data name="BtnApplyPreset" xml:space="preserve"><value>Применить пресет</value></data>
-  <data name="BtnPreprocessSettings" xml:space="preserve"><value>Настройки предобработки</value></data>
-  <data name="BtnSaveConfig" xml:space="preserve"><value>Сохранить конфигурацию</value></data>
-  <data name="BtnSaveBaseImage" xml:space="preserve"><value>Сохранить базовое изображение</value></data>
-  <data name="BtnComputeColorDiff" xml:space="preserve"><value>Рассчитать цветовое различие</value></data>
-  <data name="BtnExportCurrent" xml:space="preserve"><value>Экспорт текущего</value></data>
-  <data name="BtnPolarCoord" xml:space="preserve"><value>Полярный</value></data>
-  <data name="BtnFindDevice" xml:space="preserve"><value>Найти устройство</value></data>
-  <data name="BtnOpenDevice" xml:space="preserve"><value>Открыть устройство</value></data>
-  <data name="BtnCloseDevice" xml:space="preserve"><value>Закрыть устройство</value></data>
-  <data name="BtnStartCapture" xml:space="preserve"><value>Начать съемку</value></data>
-  <data name="BtnStopCapture" xml:space="preserve"><value>Остановить съемку</value></data>
-  <data name="BtnSoftTriggerOnce" xml:space="preserve"><value>Однократный триггер</value></data>
-  <data name="BtnOpenObservationSettings" xml:space="preserve"><value>Настройки камеры наблюдения</value></data>
-  <data name="BtnGetParams" xml:space="preserve"><value>Получить параметры</value></data>
-  <data name="BtnSetParams" xml:space="preserve"><value>Задать параметры</value></data>
-  <data name="BtnAddSize" xml:space="preserve"><value>Добавить размер</value></data>
-  <data name="BtnDeleteCurrent" xml:space="preserve"><value>Удалить текущий</value></data>
-  <data name="BtnSelectRImage" xml:space="preserve"><value>Выбрать изображение R</value></data>
-  <data name="BtnRecordCurrentR" xml:space="preserve"><value>Записать текущий R</value></data>
-  <data name="BtnSelectGImage" xml:space="preserve"><value>Выбрать изображение G</value></data>
-  <data name="BtnRecordCurrentG" xml:space="preserve"><value>Записать текущий G</value></data>
-  <data name="BtnSelectBImage" xml:space="preserve"><value>Выбрать изображение B</value></data>
-  <data name="BtnRecordCurrentB" xml:space="preserve"><value>Записать текущий B</value></data>
-  <data name="BtnSelectWhiteImage" xml:space="preserve"><value>Выбрать белое изображение</value></data>
-  <data name="BtnRecordCurrentWhite" xml:space="preserve"><value>Записать текущее белое</value></data>
-  <data name="BtnSelectBlackImage" xml:space="preserve"><value>Выбрать черное изображение</value></data>
-  <data name="BtnRecordCurrentBlack" xml:space="preserve"><value>Записать текущее черное</value></data>
-  <data name="TipOpenFile" xml:space="preserve"><value>Открыть одно или несколько изображений Conoscope</value></data>
-  <data name="TipNewView" xml:space="preserve"><value>Создать пустой вид Conoscope</value></data>
-  <data name="TipSaveConfig" xml:space="preserve"><value>Сохранить конфигурацию окна и Conoscope</value></data>
-  <data name="TipOpenObservationCamera" xml:space="preserve"><value>Открыть окно камеры наблюдения</value></data>
-  <data name="TipOpenFlowTemplateMgmt" xml:space="preserve"><value>Открыть управление шаблонами потока</value></data>
-  <data name="TipExecuteFlow" xml:space="preserve"><value>Выполнить текущий поток и открыть результирующее изображение</value></data>
-  <data name="TipOpenCalibrationMgmt" xml:space="preserve"><value>Открыть управление шаблонами калибровки для текущей камеры</value></data>
-  <data name="TipRefreshCameraList" xml:space="preserve"><value>Обновить список камер и шаблонов калибровки</value></data>
-  <data name="TipCapturePhoto" xml:space="preserve"><value>Снять изображение с текущей камерой и калибровкой</value></data>
-  <data name="TipSwitchNdPort" xml:space="preserve"><value>Переключить на указанный порт ND</value></data>
-  <data name="TipReadNdPort" xml:space="preserve"><value>Считать текущий порт ND</value></data>
-  <data name="TipBindNdCalibration" xml:space="preserve"><value>Привязать текущий порт ND к текущему шаблону калибровки</value></data>
-  <data name="TipClearNdCalibration" xml:space="preserve"><value>Снять привязку текущего порта ND с шаблона калибровки</value></data>
-  <data name="TipReuseActiveView" xml:space="preserve"><value>Если включено, результаты потока и съемки обновляют активный вид, уменьшая использование памяти</value></data>
-  <data name="TipOpenPreprocessSettings" xml:space="preserve"><value>Открыть полные параметры фильтра и удаления пыли</value></data>
-  <data name="TipApplyPreprocess" xml:space="preserve"><value>Применить текущий пресет предобработки к активному виду</value></data>
-  <data name="TipExportAzimuthData" xml:space="preserve"><value>Экспортировать данные в режиме азимута</value></data>
-  <data name="TipExportPolarData" xml:space="preserve"><value>Экспортировать данные в режиме полярного угла</value></data>
-  <data name="TipAdvancedExport" xml:space="preserve"><value>Открыть расширенный экспорт</value></data>
-  <data name="TipOpen3DView" xml:space="preserve"><value>Открыть 3D-представление текущего изображения</value></data>
-  <data name="TipOpenCieDiagram" xml:space="preserve"><value>Открыть диаграмму хроматичности CIE для текущего изображения</value></data>
-  <data name="TipComputeGamut" xml:space="preserve"><value>Рассчитать охват по записанным данным R/G/B и открыть окно результата</value></data>
-  <data name="TipClearGamut" xml:space="preserve"><value>Очистить текущие записи охвата</value></data>
-  <data name="TipRecordRData" xml:space="preserve"><value>Записать данные R по всем фокусным точкам активного вида</value></data>
-  <data name="TipRecordGData" xml:space="preserve"><value>Записать данные G по всем фокусным точкам активного вида</value></data>
-  <data name="TipRecordBData" xml:space="preserve"><value>Записать данные B по всем фокусным точкам активного вида</value></data>
-  <data name="TipRecordWhiteData" xml:space="preserve"><value>Записать данные белого поля по всем фокусным точкам активного вида</value></data>
-  <data name="TipRecordBlackData" xml:space="preserve"><value>Записать данные черного поля по всем фокусным точкам активного вида</value></data>
-  <data name="TipComputeContrast" xml:space="preserve"><value>Рассчитать контраст по записанным данным белого/черного и открыть окно результата</value></data>
-  <data name="TipClearContrast" xml:space="preserve"><value>Очистить текущие записи контраста</value></data>
-  <data name="TipSaveWindowConfig" xml:space="preserve"><value>Сохранить конфигурацию окна</value></data>
-  <data name="TipOpenConoscopeSettings" xml:space="preserve"><value>Открыть настройки Conoscope</value></data>
-  <data name="TipOpenLegacyGamut" xml:space="preserve"><value>Открыть устаревшее окно цветового охвата RGB</value></data>
-  <data name="TipOpenLegacyContrast" xml:space="preserve"><value>Открыть устаревшее окно черно-белого контраста</value></data>
-  <data name="TipHelpCenter" xml:space="preserve"><value>Открыть центр справки Conoscope с поиском по сценариям использования, алгоритмам и глоссарию</value></data>
-  <data name="ChkEnablePreprocess" xml:space="preserve"><value>Включить предобработку</value></data>
-  <data name="ChkReuseActiveView" xml:space="preserve"><value>Использовать активный вид для результатов потока/съемки</value></data>
-  <data name="ChkPseudoColor" xml:space="preserve"><value>Псевдоцветовое отображение</value></data>
-  <data name="ChkEnableDustRemoval" xml:space="preserve"><value>Включить удаление пыли</value></data>
-  <data name="ChkExportTitle" xml:space="preserve"><value>Экспортировать заголовок и метаданные</value></data>
-  <data name="ChkEnableSectionExport" xml:space="preserve"><value>Включить экспорт сечения</value></data>
-  <data name="StatusReady" xml:space="preserve"><value>Готово</value></data>
-  <data name="StatusNotRecorded" xml:space="preserve"><value>Не записано</value></data>
-  <data name="StatusExecuting" xml:space="preserve"><value>Выполняется</value></data>
-  <data name="StatusCapturing" xml:space="preserve"><value>Съемка</value></data>
-  <data name="MsgConfigSaved" xml:space="preserve"><value>Конфигурация сохранена</value></data>
-  <data name="MsgConfigSaveFailed" xml:space="preserve"><value>Не удалось сохранить конфигурацию</value></data>
-  <data name="MsgNewViewCreated" xml:space="preserve"><value>Новый вид создан</value></data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve"><value>Список камер обновлен</value></data>
-  <data name="MsgPreprocessApplied" xml:space="preserve"><value>Текущий пресет предобработки применен</value></data>
-  <data name="MsgOpened" xml:space="preserve"><value>Открыто</value></data>
-  <data name="MsgNoActiveView" xml:space="preserve"><value>Сначала откройте или создайте вид Conoscope</value></data>
-  <data name="MsgSelectCamera" xml:space="preserve"><value>Выберите устройство камеры</value></data>
-  <data name="MsgSelectCameraAndCalibration" xml:space="preserve"><value>Выберите устройство камеры и действительный шаблон калибровки</value></data>
-  <data name="MsgInvalidNdPort" xml:space="preserve"><value>Введите корректный порт ND</value></data>
-  <data name="MsgNdBound" xml:space="preserve"><value>ND {0} привязан к {1}</value></data>
-  <data name="MsgSelectCameraAndNd" xml:space="preserve"><value>Выберите камеру и введите корректный порт ND</value></data>
-  <data name="MsgNdNotBound" xml:space="preserve"><value>Для ND {0} нет привязки к калибровке</value></data>
-  <data name="MsgNdUnbound" xml:space="preserve"><value>Привязка калибровки для ND {0} снята</value></data>
-  <data name="MsgSelectFlow" xml:space="preserve"><value>Выберите поток</value></data>
-  <data name="MsgFlowExecuting" xml:space="preserve"><value>Выполняется поток: {0}</value></data>
-  <data name="MsgFlowNotStarted" xml:space="preserve"><value>Поток не запущен</value></data>
-  <data name="MsgFlowFinished" xml:space="preserve"><value>Поток завершен: {0}</value></data>
-  <data name="MsgFlowIncomplete" xml:space="preserve"><value>Выполнение потока завершено не полностью: {0}&#xA;{1}</value></data>
-  <data name="MsgFlowResultOpened" xml:space="preserve"><value>Открыто {0}</value></data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve"><value>CVCIE не найден в результатах потока</value></data>
-  <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve"><value>Поток завершен, но файл .cvcie не найден в результатах</value></data>
-  <data name="MsgFlowFailed" xml:space="preserve"><value>Не удалось выполнить поток</value></data>
-  <data name="MsgFlowFailedDetail" xml:space="preserve"><value>Не удалось выполнить поток: {0}</value></data>
-  <data name="MsgCapturingPhoto" xml:space="preserve"><value>Съемка изображения: {0}</value></data>
-  <data name="MsgCaptureFailed" xml:space="preserve"><value>Съемка не удалась: {0}</value></data>
-  <data name="MsgCaptureFailedDetail" xml:space="preserve"><value>Съемка не удалась: {0}&#xA;{1}</value></data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve"><value>CVCIE не найден в результатах съемки</value></data>
-  <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve"><value>Съемка завершена, но файл .cvcie не найден в результатах</value></data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve"><value>Съемка не удалась</value></data>
-  <data name="MsgSwitchingNd" xml:space="preserve"><value>Переключение ND: {0}</value></data>
-  <data name="MsgNdSwitched" xml:space="preserve"><value>ND переключен на {0}</value></data>
-  <data name="MsgNdSwitchFailed" xml:space="preserve"><value>Не удалось переключить ND: {0}</value></data>
-  <data name="MsgNdSwitchFailedDetail" xml:space="preserve"><value>Не удалось переключить ND: {0}&#xA;{1}</value></data>
-  <data name="MsgNdSwitchFailedTitle" xml:space="preserve"><value>Не удалось переключить ND</value></data>
-  <data name="MsgReadingNd" xml:space="preserve"><value>Чтение ND</value></data>
-  <data name="MsgCurrentNd" xml:space="preserve"><value>Текущий ND: {0}</value></data>
-  <data name="MsgNdReadFailed" xml:space="preserve"><value>Не удалось считать ND: {0}</value></data>
-  <data name="MsgNdReadFailedDetail" xml:space="preserve"><value>Не удалось считать ND: {0}&#xA;{1}</value></data>
-  <data name="MsgNdReadFailedTitle" xml:space="preserve"><value>Не удалось считать ND</value></data>
-  <data name="MsgNdNotBoundCalibration" xml:space="preserve"><value>ND {0} не привязан к калибровке</value></data>
-  <data name="MsgNdMatchedCalibration" xml:space="preserve"><value>Для ND {0} найдена калибровка: {1}</value></data>
-  <data name="MsgLoadImageFirst" xml:space="preserve"><value>Сначала загрузите изображение</value></data>
-  <data name="MsgExportSuccess" xml:space="preserve"><value>Данные успешно экспортированы в:&#xA;{0}</value></data>
-  <data name="MsgAzimuthExportFailed" xml:space="preserve"><value>Не удалось экспортировать азимут: {0}</value></data>
-  <data name="MsgPolarExportFailed" xml:space="preserve"><value>Не удалось экспортировать полярный угол: {0}</value></data>
-  <data name="MsgXyzNotLoaded" xml:space="preserve"><value>Данные XYZ не загружены</value></data>
-  <data name="MsgAdvancedExportFailed" xml:space="preserve"><value>Расширенный экспорт не удался: {0}</value></data>
-  <data name="MsgSelectExportFolder" xml:space="preserve"><value>Выберите папку экспорта</value></data>
-  <data name="MsgSectionExportDone" xml:space="preserve"><value>Экспорт сечения завершен, {0} файлов экспортировано в:&#xA;{1}</value></data>
-  <data name="MsgExportDone" xml:space="preserve"><value>Экспорт завершен, {0} файлов экспортировано в:&#xA;{1}</value></data>
-  <data name="MsgExportFailed" xml:space="preserve"><value>Экспорт не удался: {0}</value></data>
-  <data name="MsgCurveExportConfigSaveFailed" xml:space="preserve"><value>Экспорт завершен, но не удалось сохранить конфигурацию экспорта кривых: {0}</value></data>
-  <data name="MsgSelectAzimuthFirst" xml:space="preserve"><value>Сначала выберите азимут</value></data>
-  <data name="MsgAzimuthExportSuccess" xml:space="preserve"><value>Азимут {0}° успешно экспортирован</value></data>
-  <data name="MsgSelectPolarFirst" xml:space="preserve"><value>Сначала выберите полярный угол</value></data>
-  <data name="MsgPolarExportSuccess" xml:space="preserve"><value>Полярный угол {0}° успешно экспортирован</value></data>
-  <data name="MsgGetImageFirst" xml:space="preserve"><value>Сначала получите изображение</value></data>
-  <data name="MsgOriginalDataRestored" xml:space="preserve"><value>Исходные данные восстановлены</value></data>
-  <data name="MsgPreprocessSuccess" xml:space="preserve"><value>Предобработка успешно применена</value></data>
-  <data name="MsgFilterApplyFailed" xml:space="preserve"><value>Не удалось применить фильтр: {0}</value></data>
-  <data name="MsgNoFixedLightSource" xml:space="preserve"><value>Текущая база цветового различия не является фиксированным источником света</value></data>
-  <data name="MsgInvalidCustomUV" xml:space="preserve"><value>Введите корректные пользовательские координаты базы u/v</value></data>
-  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve"><value>Для поточечного расчета по измеренной базе сначала сохраните базовое изображение</value></data>
-  <data name="MsgNoPixelsInCenter" xml:space="preserve"><value>В центральной фокусной точке 50px нет пригодных пикселей</value></data>
-  <data name="MsgBaseImageSaved" xml:space="preserve"><value>Базовое изображение сохранено</value></data>
-  <data name="MsgSaveBaseImageFailed" xml:space="preserve"><value>Не удалось сохранить базовое изображение: {0}</value></data>
-  <data name="MsgSaveColorDiffFailed" xml:space="preserve"><value>Не удалось сохранить базовое изображение цветового различия: {0}</value></data>
-  <data name="MsgImageSizeMismatch" xml:space="preserve"><value>Размер текущего изображения не совпадает с базовым изображением цветового различия, поточечный расчет невозможен</value></data>
-  <data name="MsgSaveBaseFirst" xml:space="preserve"><value>Перед расчетом измеренного цветового различия сначала сохраните базовое изображение</value></data>
-  <data name="MsgNoFocusPoints" xml:space="preserve"><value>Сначала нарисуйте окружности фокусных точек в текущем виде.</value></data>
-  <data name="MsgFocusPointNotReady" xml:space="preserve"><value>Текущее изображение не готово к расчету по фокусным точкам.</value></data>
-  <data name="MsgDrawFocusPointsFirst" xml:space="preserve"><value>Сначала нарисуйте окружности фокусных точек.</value></data>
-  <data name="MsgNoFocusPointPixels" xml:space="preserve"><value>Нет пригодных пикселей фокусной точки для расчета.</value></data>
-  <data name="MsgFocusPointNoPixels" xml:space="preserve"><value>Для {0} нет пригодных пикселей.</value></data>
-  <data name="Msg3DViewNotReady" xml:space="preserve"><value>Текущее изображение не готово к 3D-представлению</value></data>
-  <data name="Msg3DViewOpenFailed" xml:space="preserve"><value>Не удалось открыть 3D-представление: {0}</value></data>
-  <data name="MsgCieOpenFailed" xml:space="preserve"><value>Не удалось открыть диаграмму CIE</value></data>
-  <data name="TbPan" xml:space="preserve"><value>Сдвиг</value></data>
-  <data name="TbPanTip" xml:space="preserve"><value>Если включено, перетаскивайте левой кнопкой для панорамирования; иначе удерживайте Ctrl.</value></data>
-  <data name="TbRefDrag" xml:space="preserve"><value>Эталон</value></data>
-  <data name="TbRefDragTip" xml:space="preserve"><value>Перетаскивайте опорные азимутальные линии и полярные окружности прямо на изображении.</value></data>
-  <data name="TbZoomOut" xml:space="preserve"><value>Уменьш.</value></data>
-  <data name="TbZoomIn" xml:space="preserve"><value>Увелич.</value></data>
-  <data name="TbOriginalSize" xml:space="preserve"><value>1:1</value></data>
-  <data name="TbFit" xml:space="preserve"><value>Вписать</value></data>
-  <data name="TbFitTip" xml:space="preserve"><value>Вписать в окно</value></data>
-  <data name="TbFill" xml:space="preserve"><value>Заполн.</value></data>
-  <data name="TbFillTip" xml:space="preserve"><value>Заполнить окно</value></data>
-  <data name="TbZoomRatioTip" xml:space="preserve"><value>Текущий масштаб</value></data>
-  <data name="TbFullscreen" xml:space="preserve"><value>FS</value></data>
-  <data name="TbFullscreenTip" xml:space="preserve"><value>Переключить полноэкранный режим изображения</value></data>
-  <data name="TbEditFocusPoint" xml:space="preserve"><value>Фокус</value></data>
-  <data name="TbEditFocusPointTip" xml:space="preserve"><value>Включите, чтобы перейти в режим инструмента фокусных точек...</value></data>
-  <data name="TbCircle" xml:space="preserve"><value>Круг</value></data>
-  <data name="TbCircleTip" xml:space="preserve"><value>Рисовать только новые окружности фокусных точек</value></data>
-  <data name="TbEdit" xml:space="preserve"><value>Правка</value></data>
-  <data name="TbEditTip" xml:space="preserve"><value>Выбирать и перетаскивать существующие окружности фокусных точек</value></data>
-  <data name="TbEraser" xml:space="preserve"><value>Ластик</value></data>
-  <data name="TbEraserTip" xml:space="preserve"><value>Удалять окружности фокусных точек рамочным выделением</value></data>
-  <data name="TbCalc" xml:space="preserve"><value>Расчет</value></data>
-  <data name="TbCalcTip" xml:space="preserve"><value>Рассчитать все фокусные точки</value></data>
-  <data name="TbClearAll" xml:space="preserve"><value>Очист.</value></data>
-  <data name="TbClearAllTip" xml:space="preserve"><value>Очистить все фокусные точки</value></data>
-  <data name="PanelDisplay" xml:space="preserve"><value>Отображение</value></data>
-  <data name="PanelColorDiff" xml:space="preserve"><value>Цветовое различие</value></data>
-  <data name="PanelExport" xml:space="preserve"><value>Экспорт</value></data>
-  <data name="PanelSettings" xml:space="preserve"><value>Настройки</value></data>
-  <data name="LabelDisplayChannel" xml:space="preserve"><value>Канал отображения:</value></data>
-  <data name="LabelRefMode" xml:space="preserve"><value>Режим эталона:</value></data>
-  <data name="LabelRefAzimuth" xml:space="preserve"><value>Эталонный азимут</value></data>
-  <data name="LabelRefPolar" xml:space="preserve"><value>Эталонный полярный угол</value></data>
-  <data name="LabelColorDiffCalc" xml:space="preserve"><value>Расчет цветового различия</value></data>
-  <data name="LabelBaseRef" xml:space="preserve"><value>База:</value></data>
-  <data name="LabelExportSettings" xml:space="preserve"><value>Настройки экспорта</value></data>
-  <data name="LabelExportMode" xml:space="preserve"><value>Режим экспорта:</value></data>
-  <data name="LabelExportChannel" xml:space="preserve"><value>Канал экспорта:</value></data>
-  <data name="LabelRefCurve" xml:space="preserve"><value>Опорная кривая</value></data>
-  <data name="LabelMode" xml:space="preserve"><value>Режим</value></data>
-  <data name="LabelCurrentValue" xml:space="preserve"><value>Текущее значение</value></data>
-  <data name="LabelGraph" xml:space="preserve"><value>График</value></data>
-  <data name="LabelDisplayAndReference" xml:space="preserve"><value>Отображение и эталон</value></data>
-  <data name="CbiD65" xml:space="preserve"><value>Осветитель D65</value></data>
-  <data name="CbiD50" xml:space="preserve"><value>Осветитель D50</value></data>
-  <data name="CbiA" xml:space="preserve"><value>Осветитель A</value></data>
-  <data name="CbiD75" xml:space="preserve"><value>Осветитель D75</value></data>
-  <data name="CbiCenter50px" xml:space="preserve"><value>Центр изображения 50px</value></data>
-  <data name="CbiCustomCoord" xml:space="preserve"><value>Пользовательские координаты</value></data>
-  <data name="CbiMeasuredBase" xml:space="preserve"><value>Измеренная база</value></data>
-  <data name="CbiAzimuthExport" xml:space="preserve"><value>Экспорт по азимуту</value></data>
-  <data name="CbiPolarExport" xml:space="preserve"><value>Экспорт по полярному углу</value></data>
-  <data name="HeaderFilter" xml:space="preserve"><value>Фильтр</value></data>
-  <data name="HeaderDustRemoval" xml:space="preserve"><value>Удаление пыли</value></data>
-  <data name="LabelFilterType" xml:space="preserve"><value>Тип фильтра:</value></data>
-  <data name="LabelDustType" xml:space="preserve"><value>Тип пыли</value></data>
-  <data name="LabelThresholdPct" xml:space="preserve"><value>Порог, %</value></data>
-  <data name="LabelMinArea" xml:space="preserve"><value>Мин. площадь</value></data>
-  <data name="LabelMaxArea" xml:space="preserve"><value>Макс. площадь</value></data>
-  <data name="LabelRepairRadius" xml:space="preserve"><value>Радиус восстановления</value></data>
-  <data name="CbiDarkSpot" xml:space="preserve"><value>Темное пятно</value></data>
-  <data name="CbiBrightSpot" xml:space="preserve"><value>Светлое пятно</value></data>
-  <data name="CbiBothSpots" xml:space="preserve"><value>Темные + светлые пятна</value></data>
-  <data name="TipEnablePreprocess" xml:space="preserve"><value>Если включено, текущий пресет предобработки автоматически применяется при открытии изображений.</value></data>
-  <data name="TitlePreprocessSettings" xml:space="preserve"><value>Настройки предобработки</value></data>
-  <data name="TitleAdvancedExport" xml:space="preserve"><value>Настройки расширенного экспорта</value></data>
-  <data name="TitleCurrentCurveExport" xml:space="preserve"><value>Настройки экспорта текущей кривой</value></data>
-  <data name="TitleConoscopeSettings" xml:space="preserve"><value>Настройки Conoscope</value></data>
-  <data name="TitleHelpCenter" xml:space="preserve"><value>Центр справки Conoscope</value></data>
-  <data name="TitleMvsCameraView" xml:space="preserve"><value>Окно камеры MVS</value></data>
-  <data name="TitleObservationCameraSettings" xml:space="preserve"><value>Настройки камеры наблюдения</value></data>
-  <data name="TitleColorGamutCalc" xml:space="preserve"><value>Расчет цветового охвата RGB</value></data>
-  <data name="TitleColorGamutResult" xml:space="preserve"><value>Результат расчета охвата</value></data>
-  <data name="TitleContrastTest" xml:space="preserve"><value>Тест контрастности</value></data>
-  <data name="TitleContrastResult" xml:space="preserve"><value>Результат контраста</value></data>
-  <data name="GroupBoxFileSettings" xml:space="preserve"><value>Настройки файлов</value></data>
-  <data name="LabelFilePrefix" xml:space="preserve"><value>Префикс файла:</value></data>
-  <data name="HintFileNaming" xml:space="preserve"><value>Подсказка: экспортируемые файлы используют формат имени 'Prefix_Channel_Timestamp.csv'</value></data>
-  <data name="GroupBoxChannelSelection" xml:space="preserve"><value>Выбор канала (множественный выбор)</value></data>
-  <data name="HintChannelPerFile" xml:space="preserve"><value>Подсказка: для каждого выбранного канала создается отдельный файл</value></data>
-  <data name="GroupBoxExportMode" xml:space="preserve"><value>Режим экспорта</value></data>
-  <data name="HintBothExportModes" xml:space="preserve"><value>Подсказка: оба режима экспорта можно выбрать одновременно</value></data>
-  <data name="GroupBoxAzimuthSettings" xml:space="preserve"><value>Настройки азимута</value></data>
-  <data name="LabelAzimuthStep" xml:space="preserve"><value>Шаг азимута (градусы):</value></data>
-  <data name="LabelRadialStep" xml:space="preserve"><value>Шаг радиальной выборки (градусы):</value></data>
-  <data name="HintAzimuthSampling" xml:space="preserve"><value>Подсказка: шаг азимута задает плотность угловой выборки; радиальный шаг задает плотность от центра к краю</value></data>
-  <data name="GroupBoxPolarSettings" xml:space="preserve"><value>Настройки полярного угла</value></data>
-  <data name="LabelRingStep" xml:space="preserve"><value>Шаг колец (градусы):</value></data>
-  <data name="LabelCircularStep" xml:space="preserve"><value>Шаг по окружности (градусы):</value></data>
-  <data name="HintPolarSampling" xml:space="preserve"><value>Подсказка: шаг колец задает число колец по радиусу; шаг по окружности задает плотность выборки в каждом кольце</value></data>
-  <data name="GroupBoxSectionExport" xml:space="preserve"><value>Экспорт сечения (необязательно)</value></data>
-  <data name="RbAzimuthSection" xml:space="preserve"><value>Азимутальное сечение</value></data>
-  <data name="LabelAzimuthDegLabel" xml:space="preserve"><value>Азимут (градусы):</value></data>
-  <data name="RbPolarSection" xml:space="preserve"><value>Полярное сечение</value></data>
-  <data name="LabelPolarDegLabel" xml:space="preserve"><value>Полярный угол (градусы):</value></data>
-  <data name="HintSectionExport" xml:space="preserve"><value>Подсказка: экспорт сечения выгружает только одно поперечное сечение под указанным углом</value></data>
-  <data name="MsgSelectOneChannel" xml:space="preserve"><value>Выберите хотя бы один канал</value></data>
-  <data name="MsgSelectOneExportMode" xml:space="preserve"><value>Выберите хотя бы один режим экспорта</value></data>
-  <data name="MsgSettingsError" xml:space="preserve"><value>Ошибка настроек: {0}</value></data>
-  <data name="MsgEnterFilePrefix" xml:space="preserve"><value>Введите префикс файла</value></data>
-  <data name="MsgInvalidAzimuthStep" xml:space="preserve"><value>Шаг азимута должен быть в диапазоне от 0.01 до 180</value></data>
-  <data name="MsgInvalidRadialStep" xml:space="preserve"><value>Шаг радиальной выборки должен быть в диапазоне от 0.01 до 80</value></data>
-  <data name="MsgInvalidRingStep" xml:space="preserve"><value>Шаг колец должен быть в диапазоне от 0.01 до 80</value></data>
-  <data name="MsgInvalidCircularStep" xml:space="preserve"><value>Шаг по окружности должен быть в диапазоне от 0.01 до 360</value></data>
-  <data name="MsgInvalidAzimuthSection" xml:space="preserve"><value>Угол азимутального сечения должен быть в диапазоне от 0 до 180</value></data>
-  <data name="MsgInvalidPolarSection" xml:space="preserve"><value>Угол полярного сечения должен быть в диапазоне от 0 до 80</value></data>
-  <data name="GroupBoxSamplingSettings" xml:space="preserve"><value>Настройки выборки</value></data>
-  <data name="LabelSamplingInterval" xml:space="preserve"><value>Интервал выборки (градусы):</value></data>
-  <data name="HintSamplingDefault" xml:space="preserve"><value>По умолчанию 1, можно изменять и сохранять</value></data>
-  <data name="HintSamplingDescription" xml:space="preserve"><value>В режиме азимута выборка идет от -MaxAngle до +MaxAngle; в полярном режиме от 0 до 360.</value></data>
-  <data name="GroupBoxTitleSettings" xml:space="preserve"><value>Настройки заголовка</value></data>
-  <data name="HintExportTitle" xml:space="preserve"><value>Если снято, CSV выводит заголовки столбцов с единицами и данные напрямую, без строк описания вверху.</value></data>
-  <data name="MsgInvalidSamplingInterval" xml:space="preserve"><value>Интервал выборки должен быть в диапазоне от 0.01 до 360</value></data>
-  <data name="GroupBoxGlobalSettings" xml:space="preserve"><value>Глобальные настройки</value></data>
-  <data name="GroupBoxPreprocessSettings" xml:space="preserve"><value>Настройки предобработки</value></data>
-  <data name="GroupBoxModelParams" xml:space="preserve"><value>Параметры модели</value></data>
-  <data name="TipSearchHelp" xml:space="preserve"><value>Введите функцию, алгоритм или термин, например: Gamut / Contrast / CIE / Focus Point</value></data>
-  <data name="TipClearSearch" xml:space="preserve"><value>Очистить поиск</value></data>
-  <data name="RbAll" xml:space="preserve"><value>Все</value></data>
-  <data name="RbQuickStart" xml:space="preserve"><value>Быстрый старт</value></data>
-  <data name="RbUsagePaths" xml:space="preserve"><value>Сценарии</value></data>
-  <data name="RbAlgorithmPrinciples" xml:space="preserve"><value>Алгоритмы</value></data>
-  <data name="RbGlossary" xml:space="preserve"><value>Глоссарий</value></data>
-  <data name="PlaceholderSelectTopic" xml:space="preserve"><value>← Выберите тему справки слева</value></data>
-  <data name="HintHelpNativeView" xml:space="preserve"><value>Подсказка: содержимое справки использует встроенный WPF-просмотр документов; цвета согласованы с темой окна.</value></data>
-  <data name="HelpDescription" xml:space="preserve"><value>Центр справки объединяет быстрый старт, сценарии использования, алгоритмы и глоссарий. Откройте окно и используйте поиск или переключайте категории.</value></data>
-  <data name="MenuView" xml:space="preserve"><value>Вид</value></data>
-  <data name="MenuShowToolbar" xml:space="preserve"><value>Показать панель инструментов</value></data>
-  <data name="MenuShowStatusBar" xml:space="preserve"><value>Показать строку состояния</value></data>
-  <data name="RbContinuousMode" xml:space="preserve"><value>Непрерывный режим</value></data>
-  <data name="RbTriggerMode" xml:space="preserve"><value>Режим триггера</value></data>
-  <data name="ChkSoftTrigger" xml:space="preserve"><value>Программный триггер</value></data>
-  <data name="LabelExposureMs" xml:space="preserve"><value>Экспозиция (ms)</value></data>
-  <data name="LabelGain" xml:space="preserve"><value>Усиление</value></data>
-  <data name="LabelFrameRate" xml:space="preserve"><value>Частота кадров</value></data>
-  <data name="GroupBoxTestArea" xml:space="preserve"><value>Тестовая область</value></data>
-  <data name="LabelSelectArea" xml:space="preserve"><value>Выбрать область</value></data>
-  <data name="StatusExposure" xml:space="preserve"><value>Экспозиция: </value></data>
-  <data name="StatusGain" xml:space="preserve"><value>Усиление: </value></data>
-  <data name="StatusFrameRate" xml:space="preserve"><value>Частота кадров: </value></data>
-  <data name="StatusImageCount" xml:space="preserve"><value>Изображений: </value></data>
-  <data name="TabTestArea" xml:space="preserve"><value>Тестовая область</value></data>
-  <data name="TabObservationCamera" xml:space="preserve"><value>Камера наблюдения</value></data>
-  <data name="TipCurrentModelApplies" xml:space="preserve"><value>Параметры текущей модели напрямую применяются к наложению текущей тестовой области.</value></data>
-  <data name="LabelPixelType" xml:space="preserve"><value>Тип пикселей</value></data>
-  <data name="LabelSizeCoeff" xml:space="preserve"><value>Коэффициент размера (mm/px)</value></data>
-  <data name="LabelCenterXPx" xml:space="preserve"><value>Центр X (px)</value></data>
-  <data name="LabelCenterYPx" xml:space="preserve"><value>Центр Y (px)</value></data>
-  <data name="GroupBoxRgbImageSelection" xml:space="preserve"><value>Выбор RGB-изображений</value></data>
-  <data name="LabelRImage" xml:space="preserve"><value>Изображение R</value></data>
-  <data name="LabelGImage" xml:space="preserve"><value>Изображение G</value></data>
-  <data name="LabelBImage" xml:space="preserve"><value>Изображение B</value></data>
-  <data name="GroupBoxGamutStandard" xml:space="preserve"><value>Стандарт цветового охвата</value></data>
-  <data name="GroupBoxResults" xml:space="preserve"><value>Результаты</value></data>
-  <data name="LabelRChromaticity" xml:space="preserve"><value>Хроматичность R</value></data>
-  <data name="LabelGChromaticity" xml:space="preserve"><value>Хроматичность G</value></data>
-  <data name="LabelBChromaticity" xml:space="preserve"><value>Хроматичность B</value></data>
-  <data name="LabelGamutArea" xml:space="preserve"><value>Площадь охвата</value></data>
-  <data name="LabelCoverageRate" xml:space="preserve"><value>Степень покрытия</value></data>
-  <data name="ColNumber" xml:space="preserve"><value>№</value></data>
-  <data name="ColFocusPoint" xml:space="preserve"><value>Фокусная точка</value></data>
-  <data name="ColAzimuthDeg" xml:space="preserve"><value>Азимут (°)</value></data>
-  <data name="ColPolarDeg" xml:space="preserve"><value>Полярный угол (°)</value></data>
-  <data name="ColRadiusDeg" xml:space="preserve"><value>Радиус (°)</value></data>
-  <data name="ColRChromaticity" xml:space="preserve"><value>Хроматичность R</value></data>
-  <data name="ColGChromaticity" xml:space="preserve"><value>Хроматичность G</value></data>
-  <data name="ColBChromaticity" xml:space="preserve"><value>Хроматичность B</value></data>
-  <data name="ColGamutValue" xml:space="preserve"><value>Охват (%)</value></data>
-  <data name="ColWhiteLuminance" xml:space="preserve"><value>Ярк. белого</value></data>
-  <data name="ColBlackLuminance" xml:space="preserve"><value>Ярк. черного</value></data>
-  <data name="ColContrast" xml:space="preserve"><value>Контраст</value></data>
-  <data name="ColWhiteChromaticity" xml:space="preserve"><value>Хром. белого</value></data>
-  <data name="ColBlackChromaticity" xml:space="preserve"><value>Хром. черного</value></data>
-  <data name="GroupBoxImageSelection" xml:space="preserve"><value>Выбор изображений</value></data>
-  <data name="LabelWhiteImage" xml:space="preserve"><value>Белое изображение</value></data>
-  <data name="LabelBlackImage" xml:space="preserve"><value>Черное изображение</value></data>
-  <data name="LabelWhiteLuminance" xml:space="preserve"><value>Яркость белого</value></data>
-  <data name="LabelBlackLuminance" xml:space="preserve"><value>Яркость черного</value></data>
-  <data name="LabelColorCoordinates" xml:space="preserve"><value>Цветовые координаты</value></data>
-  <data name="MenuOpenWithConoscope" xml:space="preserve"><value>Открыть в Conoscope</value></data>
-  <data name="MenuContrastTest" xml:space="preserve"><value>Тест контраста</value></data>
-  <data name="MenuGamutCalculation" xml:space="preserve"><value>Расчет охвата</value></data>
-  <data name="LabelCurrentModel" xml:space="preserve"><value>Текущая модель</value></data>
-  <data name="LabelObservationCamera" xml:space="preserve"><value>Камера наблюдения</value></data>
-  <data name="LabelSaveFilterCsv" xml:space="preserve"><value>Файлы CSV (*.csv)|*.csv|Все файлы (*.*)|*.*</value></data>
-  <data name="CatFieldOfView" xml:space="preserve"><value>Поле зрения</value></data>
-  <data name="PropFovAngle" xml:space="preserve"><value>Угол FOV (градусы)</value></data>
-  <data name="DescFovAngle" xml:space="preserve"><value>Проектный угол FOV. Радиус анализа = угол FOV * коэффициент эффективного FOV.</value></data>
-  <data name="PropFullPixels" xml:space="preserve"><value>Полный радиус (px)</value></data>
-  <data name="DescFullPixels" xml:space="preserve"><value>Пиксельный радиус, соответствующий MaxAngle...</value></data>
-  <data name="PropConoscopeCoeff" xml:space="preserve"><value>Коэффициент Conoscope (°/px)</value></data>
-  <data name="DescConoscopeCoeff" xml:space="preserve"><value>Можно сразу вводить выражения вроде 60/3100...</value></data>
-  <data name="TipEnterAzimuth" xml:space="preserve"><value>Введите азимут и нажмите Enter, чтобы применить</value></data>
-  <data name="TipEnterPolarAngle" xml:space="preserve"><value>Введите полярный угол 0-{0} и нажмите Enter, чтобы применить</value></data>
-  <data name="MsgChannelSwitched" xml:space="preserve"><value>Канал отображения переключен: {0}</value></data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve"><value>Переключено на азимутальную линию</value></data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve"><value>Переключено на полярную окружность</value></data>
-  <data name="MsgExportChannelSwitched" xml:space="preserve"><value>Канал экспорта переключен: {0}</value></data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve"><value>Эталонный азимут задан: {0}°</value></data>
-  <data name="MsgRefPolarSet" xml:space="preserve"><value>Эталонный полярный угол задан: {0}°</value></data>
-  <data name="SlotWhite" xml:space="preserve"><value>Белый</value></data>
-  <data name="SlotBlack" xml:space="preserve"><value>Черный</value></data>
-  <data name="MsgRecordedSlot" xml:space="preserve"><value>Записано {0}</value></data>
-  <data name="MsgSlotRecordedDetail" xml:space="preserve"><value>{0} записано&#xA;Источник: {1}&#xA;Количество: {2}</value></data>
-  <data name="MsgRecordedRGamut" xml:space="preserve"><value>Данные фокусных точек R записаны</value></data>
-  <data name="MsgClearedGamut" xml:space="preserve"><value>Записи охвата очищены</value></data>
-  <data name="MsgNeedRGBData" xml:space="preserve"><value>Сначала запишите или импортируйте данные R/G/B.</value></data>
-  <data name="MsgSelectGamutStandard" xml:space="preserve"><value>Выберите стандарт охвата.</value></data>
-  <data name="MsgGamutComputed" xml:space="preserve"><value>Расчет охвата {0} завершен</value></data>
-  <data name="MsgGamutFailed" xml:space="preserve"><value>Расчет охвата не удался</value></data>
-  <data name="MsgRecordedWhite" xml:space="preserve"><value>Данные фокусных точек белого поля записаны</value></data>
-  <data name="MsgRecordedBlack" xml:space="preserve"><value>Данные фокусных точек черного поля записаны</value></data>
-  <data name="MsgClearedContrast" xml:space="preserve"><value>Записи контраста очищены</value></data>
-  <data name="MsgNeedWhiteBlackData" xml:space="preserve"><value>Сначала запишите данные белого и черного поля.</value></data>
-  <data name="MsgContrastComputed" xml:space="preserve"><value>Расчет контраста завершен</value></data>
-  <data name="MsgContrastFailed" xml:space="preserve"><value>Расчет контраста не удался</value></data>
-  <data name="MsgFocusPointsUnavailable" xml:space="preserve"><value>Текущие фокусные точки недоступны.</value></data>
-  <data name="MsgLineTooShort" xml:space="preserve"><value>Линия слишком короткая ({0} пикс.), выборка невозможна</value></data>
-  <data name="MsgAzimuthSamplingDone" xml:space="preserve"><value>Выборка завершена: азимут {0}°, {1} точек</value></data>
-  <data name="MsgPolarSamplingDone" xml:space="preserve"><value>Выборка завершена: полярный радиус {0}°, {1} точек</value></data>
-  <data name="TitleAzimuthCurve" xml:space="preserve"><value>Кривая распределения {1} по азимуту {0}°</value></data>
-  <data name="LabelAngleDeg" xml:space="preserve"><value>Угол (°)</value></data>
-  <data name="TitlePolarCurve" xml:space="preserve"><value>Кольцевая кривая распределения {1} при полярном угле {0}°</value></data>
-  <data name="LabelCircularAngleDeg" xml:space="preserve"><value>Угол по окружности (°)</value></data>
-  <data name="LabelRadius" xml:space="preserve"><value>Радиус: {0}</value></data>
-  <data name="MsgBaseCenter50px" xml:space="preserve"><value>База: среднее uv по фокусной точке 50px в центре текущего изображения</value></data>
-  <data name="MsgBaseNotSaved" xml:space="preserve"><value>База: измеренное базовое изображение еще не сохранено</value></data>
-  <data name="MsgBaseImageFile" xml:space="preserve"><value>Базовое изображение: {0}</value></data>
-  <data name="MsgImageNotLoadedPolar" xml:space="preserve"><value>Изображение не загружено, невозможно создать линию полярного угла</value></data>
-  <data name="MsgCannotGetImageSource" xml:space="preserve"><value>Не удалось получить источник изображения</value></data>
-  <data name="MsgPolarLineCreateFailed" xml:space="preserve"><value>Не удалось создать линию полярного угла: {0}</value></data>
-  <data name="FocusPointLabel" xml:space="preserve"><value>[Фокус] {0} - {1}</value></data>
-  <data name="FilterNone" xml:space="preserve"><value>Без фильтра</value></data>
-  <data name="FilterLowPass" xml:space="preserve"><value>Низкочастотный k{0}</value></data>
-  <data name="FilterMean" xml:space="preserve"><value>Среднее k{0}</value></data>
-  <data name="FilterGaussian" xml:space="preserve"><value>Гаусс k{0}</value></data>
-  <data name="FilterMedian" xml:space="preserve"><value>Медианный k{0}</value></data>
-  <data name="FilterBilateral" xml:space="preserve"><value>Билатеральный d{0}</value></data>
-  <data name="FilterDefaultParams" xml:space="preserve"><value>Параметры по умолчанию</value></data>
-  <data name="DustLabel" xml:space="preserve"><value>Пыль</value></data>
-  <data name="DustOff" xml:space="preserve"><value>Без удаления</value></data>
-  <data name="DustDarkSpot" xml:space="preserve"><value>Темное пятно</value></data>
-  <data name="DustBrightSpot" xml:space="preserve"><value>Светлое пятно</value></data>
-  <data name="DustBoth" xml:space="preserve"><value>Темн.+светл.</value></data>
-  <data name="TitleGamutCalc" xml:space="preserve"><value>Расчет охвата</value></data>
-  <data name="TitleContrastCalc" xml:space="preserve"><value>Расчет контраста</value></data>
-  <data name="TitleAnalysisRecord" xml:space="preserve"><value>Запись анализа</value></data>
-  <data name="TitleError" xml:space="preserve"><value>Ошибка</value></data>
-  <data name="TitleSuccess" xml:space="preserve"><value>Успешно</value></data>
-  <data name="TitleHint" xml:space="preserve"><value>Подсказка</value></data>
-  <data name="TitleWarning" xml:space="preserve"><value>Предупреждение</value></data>
-  <data name="MsgOpenImageFailed" xml:space="preserve"><value>Не удалось открыть изображение Conoscope: {0}</value></data>
-  <data name="MsgOpenImageFailedShort" xml:space="preserve"><value>Не удалось открыть изображение: {0}</value></data>
-  <data name="MsgSaveConfigFailedDetail" xml:space="preserve"><value>Не удалось сохранить конфигурацию Conoscope: {0}</value></data>
-  <data name="MsgSaveConfigFailed" xml:space="preserve"><value>Не удалось сохранить конфигурацию: {0}</value></data>
-  <data name="MsgLoadImageFirstColorDiff" xml:space="preserve"><value>Сначала загрузите измеренное изображение</value></data>
-  <data name="MsgComputeColorDiffFailed" xml:space="preserve"><value>Не удалось сохранить базовое изображение цветового различия: {0}</value></data>
-  <data name="MsgFocusPointNotReadyCalc" xml:space="preserve"><value>Сначала нарисуйте окружности фокусных точек в текущем виде.</value></data>
-  <data name="MsgFocusPointNotReady2" xml:space="preserve"><value>Текущее изображение не готово к расчету по фокусным точкам.</value></data>
-  <data name="MsgNoFocusPointPixelsCalc" xml:space="preserve"><value>Нет доступных пикселей фокусных точек для расчета.</value></data>
-  <data name="HelpCenterTitle" xml:space="preserve"><value>Центр справки Conoscope</value></data>
-  <data name="HelpTitleWithVersion" xml:space="preserve"><value>Справка Conoscope v{0}</value></data>
-  <data name="UnknownVersion" xml:space="preserve"><value>Неизвестная версия</value></data>
-  <data name="ItemCountFormat" xml:space="preserve"><value>{0} / {1} элементов</value></data>
-  <data name="NoContentToDisplay" xml:space="preserve"><value>Нет содержимого для отображения.</value></data>
-  <data name="TestAreaWaitingForImage" xml:space="preserve"><value>Тестовая область: {0} mm | Ожидание изображения</value></data>
-  <data name="TestAreaWithCenter" xml:space="preserve"><value>Тестовая область: {0} mm | Центр: ({1}, {2})</value></data>
-  <data name="Prompt" xml:space="preserve"><value>Сообщение</value></data>
-  <data name="TestAreaSizeMustBePositive" xml:space="preserve"><value>Введите размер тестовой области больше 0.</value></data>
-  <data name="ObservationCameraSettings" xml:space="preserve"><value>Настройки камеры наблюдения</value></data>
-  <data name="Estimated" xml:space="preserve"><value>Расчетное</value></data>
-  <data name="ReferenceCurve" xml:space="preserve"><value>Опорная кривая</value></data>
-  <data name="FieldOfView" xml:space="preserve"><value>Поле зрения</value></data>
-  <data name="FOVAngleDegrees" xml:space="preserve"><value>Угол FOV (градусы)</value></data>
-  <data name="FOVAngleDesc" xml:space="preserve"><value>Проектный угол FOV. Радиус анализа = угол FOV * коэффициент эффективного FOV.</value></data>
-  <data name="FullPixelCount" xml:space="preserve"><value>Полный радиус в пикселях (px)</value></data>
-  <data name="FullPixelCountDesc" xml:space="preserve"><value>Пиксельный радиус, соответствующий MaxAngle. Введите 0, чтобы использовать половину меньшей стороны изображения. При вводе 3000 коэффициент Conoscope = угол FOV / 3000.</value></data>
-  <data name="ConoscopeCoeffDegPerPx" xml:space="preserve"><value>Коэффициент Conoscope (deg/px)</value></data>
-  <data name="ConoscopeCoeffDesc" xml:space="preserve"><value>Можно вводить значения вроде 60/3100. Введите 0 для авт. расчета. Радиус анализа = угол FOV / этот коэффициент.</value></data>
-  <data name="XYZDataNotLoaded" xml:space="preserve"><value>Данные XYZ не загружены</value></data>
-  <data name="ConfigDisplay" xml:space="preserve"><value>Отображение</value></data>
-  <data name="ConfigDisplayChannel" xml:space="preserve"><value>Канал отображения</value></data>
-  <data name="ConfigPseudoColorMapping" xml:space="preserve"><value>Псевдоцветовая карта</value></data>
-  <data name="ConfigUsePseudoColor" xml:space="preserve"><value>Использовать псевдоцвет</value></data>
-  <data name="ConfigExport" xml:space="preserve"><value>Экспорт</value></data>
-  <data name="ConfigSamplingIntervalDeg" xml:space="preserve"><value>Интервал выборки текущей кривой (градусы)</value></data>
-  <data name="ConfigSamplingIntervalDesc" xml:space="preserve"><value>Интервал выборки по умолчанию для экспорта CSV текущей кривой.</value></data>
-  <data name="ConfigExportMetadata" xml:space="preserve"><value>Метаданные экспорта текущей кривой</value></data>
-  <data name="ConfigExportMetadataDesc" xml:space="preserve"><value>Определяет, записывать ли заголовок и метаданные в верхней части CSV текущей кривой.</value></data>
-  <data name="PleaseSelectRGBImages" xml:space="preserve"><value>Перед расчетом охвата выберите изображения R/G/B</value></data>
-  <data name="SelectRImage" xml:space="preserve"><value>Выбрать изображение R</value></data>
-  <data name="SelectGImage" xml:space="preserve"><value>Выбрать изображение G</value></data>
-  <data name="SelectBImage" xml:space="preserve"><value>Выбрать изображение B</value></data>
-  <data name="CVCIEFileFilter" xml:space="preserve"><value>Файлы CVCIE|*.cvcie|Все файлы|*.*</value></data>
-  <data name="FileRead" xml:space="preserve"><value>Загружено {0}</value></data>
-  <data name="RGBColorGamutCalc" xml:space="preserve"><value>Расчет цветового охвата RGB</value></data>
-  <data name="NoActiveConoscopeView" xml:space="preserve"><value>Нет активного вида Conoscope.</value></data>
-  <data name="CurrentFocusPointUnavailable" xml:space="preserve"><value>Текущая фокусная точка недоступна.</value></data>
-  <data name="FocusPointRecorded" xml:space="preserve"><value>Записана фокусная точка {0}: {1}</value></data>
-  <data name="PleaseSelectRGBFirst" xml:space="preserve"><value>Сначала выберите изображения R/G/B</value></data>
-  <data name="PleaseSelectGamutStandard" xml:space="preserve"><value>Выберите стандарт охвата</value></data>
-  <data name="SampleAreaFormat" xml:space="preserve"><value>Площадь образца={0}, площадь стандарта {1}={2}</value></data>
-  <data name="CalculationCompleteByStandard" xml:space="preserve"><value>Расчет по стандарту {0} завершен</value></data>
-  <data name="ChromaticityLuminanceFormat" xml:space="preserve"><value>x={0}, y={1}, Y={2}  ({3})</value></data>
-  <data name="ChromaticityFormat" xml:space="preserve"><value>x={0}, y={1}</value></data>
-  <data name="FocusPointCountAndAverageGamut" xml:space="preserve"><value>{0} фокусных точек, средний охват {1}%</value></data>
-  <data name="Measured" xml:space="preserve"><value>Измерено {0}</value></data>
-  <data name="ContrastTestTitle" xml:space="preserve"><value>Тест контрастности</value></data>
-  <data name="SlotRecorded" xml:space="preserve"><value>Записано {0}: {1}</value></data>
-  <data name="WhiteBlackLuminanceFormat" xml:space="preserve"><value>Яркость белого / яркость черного = {0} / {1}</value></data>
-  <data name="WhiteImageNotSelected" xml:space="preserve"><value>Белое изображение: не выбрано</value></data>
-  <data name="BlackImageNotSelected" xml:space="preserve"><value>Черное изображение: не выбрано</value></data>
-  <data name="WhiteImageFormat" xml:space="preserve"><value>Белое изображение: x={0}, y={1}</value></data>
-  <data name="BlackImageFormat" xml:space="preserve"><value>Черное изображение: x={0}, y={1}</value></data>
-  <data name="LuminanceFileNameFormat" xml:space="preserve"><value>Y={0}  ({1})</value></data>
-  <data name="FocusPointCountAndAverageContrast" xml:space="preserve"><value>{0} фокусных точек, средняя контрастность {1}:1, мин. {2}:1, макс. {3}:1</value></data>
-  <data name="PleaseSelectCVCIEFile" xml:space="preserve"><value>Выберите файл изображения CVCIE XYZ</value></data>
-  <data name="CVCIEChannelCountInsufficient" xml:space="preserve"><value>Недостаточно каналов в файле CVCIE: {0}</value></data>
-  <data name="CVCIEDataLengthInsufficient" xml:space="preserve"><value>Недостаточная длина данных файла CVCIE, невозможно разделить каналы XYZ</value></data>
-  <data name="Invalid" xml:space="preserve"><value>Недопустимо</value></data>
-  <data name="BlackLuminanceMustBePositive" xml:space="preserve"><value>Для расчета контраста яркость черного должна быть больше 0</value></data>
-  <data name="StandardGamutAreaInvalid" xml:space="preserve"><value>Площадь стандартного охвата {0} недопустима</value></data>
-  <data name="GamutNeedsAtLeastThreeVertices" xml:space="preserve"><value>Для охвата {0} требуется не менее трех вершин</value></data>
-  <data name="FocusPointMismatchError" xml:space="preserve"><value>Между группами фокусных точек нет совпадающих индексов. Запишите данные R/G/B или белого/черного для одного и того же набора фокусных точек.</value></data>
-  <data name="OnlyCVCIESupported" xml:space="preserve"><value>Текущий вид поддерживает только файлы изображений CVCIE XYZ</value></data>
-  <data name="ReadCVCIEFailed" xml:space="preserve"><value>Не удалось прочитать файл CVCIE</value></data>
-  <data name="CVCIEChannelInsufficientLoader" xml:space="preserve"><value>Недостаточно каналов в файле CVCIE: {0}</value></data>
-  <data name="CVCIEDataLengthInsufficientLoader" xml:space="preserve"><value>Недостаточная длина данных файла CVCIE, невозможно разделить каналы XYZ</value></data>
-  <data name="ColorDiffNeedsUVRef" xml:space="preserve"><value>Для канала цветового различия требуется опора uv</value></data>
-  <data name="UReferenceImage" xml:space="preserve"><value>Опорное изображение u</value></data>
-  <data name="SizeMismatchFormat" xml:space="preserve"><value>Размер {0} не совпадает с текущим изображением</value></data>
-  <data name="ReferenceFormat" xml:space="preserve"><value>Эталон: {0}</value></data>
-  <data name="PixelCoordFormat" xml:space="preserve"><value>Пиксель: X={0}, Y={1}</value></data>
-  <data name="PolarCoordFormat" xml:space="preserve"><value>Полярные координаты: азимут={0}°, полярный угол={1}°</value></data>
-  <data name="RadiusFormat" xml:space="preserve"><value>Радиус: {0}</value></data>
-  <data name="FocusPointYUV" xml:space="preserve"><value>Y:{0}  u:{1}  v:{2}</value></data>
-  <data name="PleaseSelectWhiteBlackImages" xml:space="preserve"><value>Перед расчетом контраста выберите белое и черное изображения</value></data>
-  <data name="SelectWhiteImage" xml:space="preserve"><value>Выбрать белое изображение</value></data>
-  <data name="SelectBlackImage" xml:space="preserve"><value>Выбрать черное изображение</value></data>
-  <data name="WhitePoint" xml:space="preserve"><value>Белая точка</value></data>
-  <data name="BlackPoint" xml:space="preserve"><value>Черная точка</value></data>
-  <data name="PleaseSelectWhiteBlackFirst" xml:space="preserve"><value>Сначала выберите белое и черное изображения</value></data>
-  <data name="HelpTitleQuickStart" xml:space="preserve"><value>Быстрый старт: от открытия изображения до получения результатов</value></data>
-  <data name="HelpSummaryQuickStart" xml:space="preserve"><value>При первом использовании Conoscope рекомендуется работать в порядке: Главная -&gt; Фокусная точка -&gt; Окно результатов анализа.</value></data>
-  <data name="HelpTitleCaptureWorkflow" xml:space="preserve"><value>Рабочий процесс съемки и управления видами</value></data>
-  <data name="HelpSummaryCaptureWorkflow" xml:space="preserve"><value>Вкладка «Съемка» отвечает за шаблоны процесса, измерительные камеры, привязку ND / коррекции, а результаты по умолчанию возвращаются в текущий активный вид.</value></data>
-  <data name="HelpTitlePreprocessWorkflow" xml:space="preserve"><value>Рабочий процесс предобработки и псевдоцветового отображения</value></data>
-  <data name="HelpSummaryPreprocessWorkflow" xml:space="preserve"><value>Вкладка «Предобработка» объединяет на одной странице включение, тип фильтра, псевдоцветовое отображение, полные настройки параметров и применение к текущему виду.</value></data>
-  <data name="HelpTitleFocusReferenceWorkflow" xml:space="preserve"><value>Рабочий процесс окружностей фокусных точек, эталонных линий и полярных окружностей</value></data>
-  <data name="HelpSummaryFocusReferenceWorkflow" xml:space="preserve"><value>Окружности фокусных точек создаются на панели инструментов над изображением; режим эталона можно настраивать и на вкладке «Главная», и на правой панели «Вид».</value></data>
-  <data name="HelpTitleGamutWorkflow" xml:space="preserve"><value>Комплексный рабочий процесс расчета охвата</value></data>
-  <data name="HelpSummaryGamutWorkflow" xml:space="preserve"><value>Комплексный охват теперь единообразно записывается с главной ленты пакетами фокусных точек R/G/B, после чего для отображения открывается отдельное окно результатов.</value></data>
-  <data name="HelpTitleContrastWorkflow" xml:space="preserve"><value>Рабочий процесс расчета черно-белого контраста</value></data>
-  <data name="HelpSummaryContrastWorkflow" xml:space="preserve"><value>Черно-белый контраст, как и комплексный охват, сначала записывает пакет фокусных точек, затем показывает отношение для каждой точки в отдельном окне результатов.</value></data>
-  <data name="HelpTitleVisualizationWorkflow" xml:space="preserve"><value>Рабочий процесс CIE, 3D, кривых и экспорта</value></data>
-  <data name="HelpSummaryVisualizationWorkflow" xml:space="preserve"><value>CIE и 3D - это инструменты визуализации для текущего активного вида; кривые и экспорт позволяют сохранять данные в CSV.</value></data>
-  <data name="HelpTitleFocusPrinciple" xml:space="preserve"><value>Принцип выборки фокусных точек</value></data>
-  <data name="HelpSummaryFocusPrinciple" xml:space="preserve"><value>Conoscope использует круговой ROI для вычисления среднего по данным XYZ и получения координат хроматичности этой точки.</value></data>
-  <data name="HelpTitleGamutPrinciple" xml:space="preserve"><value>Принцип расчета комплексного охвата</value></data>
-  <data name="HelpSummaryGamutPrinciple" xml:space="preserve"><value>Текущая реализация преобразует координаты хроматичности R/G/B каждой фокусной точки в треугольники, а затем вычисляет пересечение и объединение со стандартным охватом.</value></data>
-  <data name="HelpTitleContrastPrinciple" xml:space="preserve"><value>Принцип расчета черно-белого контраста</value></data>
-  <data name="HelpSummaryContrastPrinciple" xml:space="preserve"><value>Текущая реализация напрямую использует Y белого поля / Y черного поля, при этом яркость черного поля должна быть больше 0.</value></data>
-  <data name="HelpTitleCurvePrinciple" xml:space="preserve"><value>Принцип опорных кривых и экспорта</value></data>
-  <data name="HelpSummaryCurvePrinciple" xml:space="preserve"><value>В режиме азимута выборка идет вдоль диаметра, в полярном режиме - вдоль окружности фиксированного радиуса, а канал экспорта определяется флажками пользователя.</value></data>
-  <data name="HelpTitleVisualizationPrinciple" xml:space="preserve"><value>Принцип визуализации CIE и 3D</value></data>
-  <data name="HelpSummaryVisualizationPrinciple" xml:space="preserve"><value>3D использует текущий канал отображения для построения карты высот; CIE имеет два режима: просмотр текущего вида и сводка окна результатов.</value></data>
-  <data name="HelpTitleActiveViewTerm" xml:space="preserve"><value>Активный вид</value></data>
-  <data name="HelpSummaryActiveViewTerm" xml:space="preserve"><value>Текущий активный вид - это выбранная вкладка изображения; многие кнопки на вкладках «Главная» и «Анализ» по умолчанию работают именно с ним.</value></data>
-  <data name="HelpTitleFocusBatchTerm" xml:space="preserve"><value>Фокусные точки и пакет фокусных точек</value></data>
-  <data name="HelpSummaryFocusBatchTerm" xml:space="preserve"><value>Одна фокусная точка - это круговая область выборки; один пакет фокусных точек - это моментальный снимок всех фокусных точек текущего вида.</value></data>
-  <data name="HelpTitleCoordinateTerm" xml:space="preserve"><value>Азимутальный угол, полярный угол и радиусный угол</value></data>
-  <data name="HelpSummaryCoordinateTerm" xml:space="preserve"><value>Азимут определяет направление, окружность полярного угла определяет удаленность от центра, а радиусный угол описывает размер отображения самой окружности фокусной точки.</value></data>
-  <data name="HelpTitleChannelTerm" xml:space="preserve"><value>Каналы отображения и CIE x/y/u/v</value></data>
-  <data name="HelpSummaryChannelTerm" xml:space="preserve"><value>X/Y/Z - базовые трехстимульные значения, x/y/u/v - координаты хроматичности; псевдоцвет и экспорт можно выбирать по каналу.</value></data>
-  <data name="HelpTitleGamutCoverageTerm" xml:space="preserve"><value>Площадь образца, площадь стандарта и покрытие</value></data>
-  <data name="HelpSummaryGamutCoverageTerm" xml:space="preserve"><value>Текущее покрытие - это отношение площадей, а не отношение площади после пересечения со стандартным охватом.</value></data>
-  <data name="HelpTitleContrastTerm" xml:space="preserve"><value>Белое поле, черное поле и контраст</value></data>
-  <data name="HelpSummaryContrastTerm" xml:space="preserve"><value>Белое и черное поле сравнивают яркость одного и того же положения в разных состояниях, а контраст напрямую вычисляется как отношение Y белого поля к Y черного поля.</value></data>
+  <data name="NoFilter" xml:space="preserve">
+    <value>Без фильтра</value>
+  </data>
+  <data name="LowPassFilter" xml:space="preserve">
+    <value>Низкочастотный фильтр</value>
+  </data>
+  <data name="MovingAverage" xml:space="preserve">
+    <value>Скользящее среднее</value>
+  </data>
+  <data name="GaussianFilter" xml:space="preserve">
+    <value>Фильтр Гаусса</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>Медианный фильтр</value>
+  </data>
+  <data name="BilateralFilter" xml:space="preserve">
+    <value>Билатеральный фильтр</value>
+  </data>
+  <data name="KernelSize" xml:space="preserve">
+    <value>Размер ядра</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>Текущая модель</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>Состояние камеры наблюдения</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>Не открыто</value>
+  </data>
+  <data name="TabHome" xml:space="preserve">
+    <value>Главная</value>
+  </data>
+  <data name="TabCapture" xml:space="preserve">
+    <value>Съемка</value>
+  </data>
+  <data name="TabPreprocess" xml:space="preserve">
+    <value>Обработка</value>
+  </data>
+  <data name="TabAnalysis" xml:space="preserve">
+    <value>Анализ</value>
+  </data>
+  <data name="GroupData" xml:space="preserve">
+    <value>Файл</value>
+  </data>
+  <data name="GroupModel" xml:space="preserve">
+    <value>Модель и наблюдение</value>
+  </data>
+  <data name="GroupCurrentView" xml:space="preserve">
+    <value>Текущий вид</value>
+  </data>
+  <data name="GroupFlowCapture" xml:space="preserve">
+    <value>Поток / съемка</value>
+  </data>
+  <data name="GroupMeasurementCamera" xml:space="preserve">
+    <value>Измерительная камера</value>
+  </data>
+  <data name="GroupEnable" xml:space="preserve">
+    <value>Включение</value>
+  </data>
+  <data name="GroupFilter" xml:space="preserve">
+    <value>Фильтр</value>
+  </data>
+  <data name="GroupDisplay" xml:space="preserve">
+    <value>Отображение</value>
+  </data>
+  <data name="GroupExport" xml:space="preserve">
+    <value>Экспорт</value>
+  </data>
+  <data name="GroupGamut" xml:space="preserve">
+    <value>Охват</value>
+  </data>
+  <data name="GroupContrast" xml:space="preserve">
+    <value>Контраст</value>
+  </data>
+  <data name="GroupConfig" xml:space="preserve">
+    <value>Конфигурация</value>
+  </data>
+  <data name="GroupOpen" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
+  <data name="GroupDescription" xml:space="preserve">
+    <value>Действия вида</value>
+  </data>
+  <data name="LabelChannel" xml:space="preserve">
+    <value>Канал</value>
+  </data>
+  <data name="LabelReference" xml:space="preserve">
+    <value>Эталон</value>
+  </data>
+  <data name="LabelStandard" xml:space="preserve">
+    <value>Стандарт</value>
+  </data>
+  <data name="LabelAzimuthDeg" xml:space="preserve">
+    <value>Азимут (°)</value>
+  </data>
+  <data name="LabelPolarDeg" xml:space="preserve">
+    <value>Полярный угол (°)</value>
+  </data>
+  <data name="LabelExposure" xml:space="preserve">
+    <value>Экспозиция</value>
+  </data>
+  <data name="ChannelX" xml:space="preserve">
+    <value>X канал</value>
+  </data>
+  <data name="ChannelY" xml:space="preserve">
+    <value>Y канал</value>
+  </data>
+  <data name="ChannelZ" xml:space="preserve">
+    <value>Z канал</value>
+  </data>
+  <data name="ChannelCieX" xml:space="preserve">
+    <value>Хроматичность x</value>
+  </data>
+  <data name="ChannelCieY" xml:space="preserve">
+    <value>Хроматичность y</value>
+  </data>
+  <data name="ChannelCieU" xml:space="preserve">
+    <value>Хроматичность u</value>
+  </data>
+  <data name="ChannelCieV" xml:space="preserve">
+    <value>Хроматичность v</value>
+  </data>
+  <data name="ChannelDeltaUV" xml:space="preserve">
+    <value>Цветовое различие Δuv</value>
+  </data>
+  <data name="RefAzimuthLine" xml:space="preserve">
+    <value>Азимутальная линия</value>
+  </data>
+  <data name="RefPolarCircle" xml:space="preserve">
+    <value>Полярная окружность</value>
+  </data>
+  <data name="BtnObservationCamera" xml:space="preserve">
+    <value>Камера наблюдения</value>
+  </data>
+  <data name="BtnSettings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="BtnExecute" xml:space="preserve">
+    <value>Выполнить</value>
+  </data>
+  <data name="BtnCapturePhoto" xml:space="preserve">
+    <value>Снять</value>
+  </data>
+  <data name="BtnAzimuthExport" xml:space="preserve">
+    <value>Экспорт азимута</value>
+  </data>
+  <data name="BtnPolarExport" xml:space="preserve">
+    <value>Экспорт полярного угла</value>
+  </data>
+  <data name="BtnComputeGamut" xml:space="preserve">
+    <value>Рассчитать охват</value>
+  </data>
+  <data name="BtnClear" xml:space="preserve">
+    <value>Очистить</value>
+  </data>
+  <data name="BtnComputeContrast" xml:space="preserve">
+    <value>Рассчитать контраст</value>
+  </data>
+  <data name="BtnClose" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="BtnExport" xml:space="preserve">
+    <value>Экспорт</value>
+  </data>
+  <data name="BtnCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="BtnSaveBaseImage" xml:space="preserve">
+    <value>Сохранить базовое изображение</value>
+  </data>
+  <data name="BtnComputeColorDiff" xml:space="preserve">
+    <value>Рассчитать цветовое различие</value>
+  </data>
+  <data name="BtnExportCurrent" xml:space="preserve">
+    <value>Экспорт текущего</value>
+  </data>
+  <data name="BtnPolarCoord" xml:space="preserve">
+    <value>Полярный</value>
+  </data>
+  <data name="BtnFindDevice" xml:space="preserve">
+    <value>Найти устройство</value>
+  </data>
+  <data name="BtnOpenDevice" xml:space="preserve">
+    <value>Открыть устройство</value>
+  </data>
+  <data name="BtnCloseDevice" xml:space="preserve">
+    <value>Закрыть устройство</value>
+  </data>
+  <data name="BtnStartCapture" xml:space="preserve">
+    <value>Начать съемку</value>
+  </data>
+  <data name="BtnStopCapture" xml:space="preserve">
+    <value>Остановить съемку</value>
+  </data>
+  <data name="BtnSoftTriggerOnce" xml:space="preserve">
+    <value>Однократный триггер</value>
+  </data>
+  <data name="BtnOpenObservationSettings" xml:space="preserve">
+    <value>Настройки камеры наблюдения</value>
+  </data>
+  <data name="BtnGetParams" xml:space="preserve">
+    <value>Получить параметры</value>
+  </data>
+  <data name="BtnSetParams" xml:space="preserve">
+    <value>Задать параметры</value>
+  </data>
+  <data name="BtnAddSize" xml:space="preserve">
+    <value>Добавить размер</value>
+  </data>
+  <data name="BtnDeleteCurrent" xml:space="preserve">
+    <value>Удалить текущий</value>
+  </data>
+  <data name="TipOpenFile" xml:space="preserve">
+    <value>Открыть одно или несколько изображений Conoscope</value>
+  </data>
+  <data name="TipOpenObservationCamera" xml:space="preserve">
+    <value>Открыть окно камеры наблюдения</value>
+  </data>
+  <data name="TipOpenFlowTemplateMgmt" xml:space="preserve">
+    <value>Открыть управление шаблонами потока</value>
+  </data>
+  <data name="TipExecuteFlow" xml:space="preserve">
+    <value>Выполнить текущий поток и открыть результирующее изображение</value>
+  </data>
+  <data name="TipOpenCalibrationMgmt" xml:space="preserve">
+    <value>Открыть управление шаблонами калибровки для текущей камеры</value>
+  </data>
+  <data name="TipRefreshCameraList" xml:space="preserve">
+    <value>Обновить список камер и шаблонов калибровки</value>
+  </data>
+  <data name="TipCapturePhoto" xml:space="preserve">
+    <value>Снять изображение с текущей камерой и калибровкой</value>
+  </data>
+  <data name="TipReuseActiveView" xml:space="preserve">
+    <value>Если включено, результаты потока и съемки обновляют активный вид, уменьшая использование памяти</value>
+  </data>
+  <data name="TipOpenPreprocessSettings" xml:space="preserve">
+    <value>Открыть полные параметры фильтра и удаления пыли</value>
+  </data>
+  <data name="TipApplyPreprocess" xml:space="preserve">
+    <value>Применить текущий пресет предобработки к активному виду</value>
+  </data>
+  <data name="TipExportAzimuthData" xml:space="preserve">
+    <value>Экспортировать данные в режиме азимута</value>
+  </data>
+  <data name="TipExportPolarData" xml:space="preserve">
+    <value>Экспортировать данные в режиме полярного угла</value>
+  </data>
+  <data name="TipAdvancedExport" xml:space="preserve">
+    <value>Открыть расширенный экспорт</value>
+  </data>
+  <data name="TipOpen3DView" xml:space="preserve">
+    <value>Открыть 3D-представление текущего изображения</value>
+  </data>
+  <data name="TipOpenCieDiagram" xml:space="preserve">
+    <value>Открыть диаграмму хроматичности CIE для текущего изображения</value>
+  </data>
+  <data name="TipComputeGamut" xml:space="preserve">
+    <value>Рассчитать охват по записанным данным R/G/B и открыть окно результата</value>
+  </data>
+  <data name="TipClearGamut" xml:space="preserve">
+    <value>Очистить текущие записи охвата</value>
+  </data>
+  <data name="TipRecordRData" xml:space="preserve">
+    <value>Записать данные R по всем фокусным точкам активного вида</value>
+  </data>
+  <data name="TipRecordGData" xml:space="preserve">
+    <value>Записать данные G по всем фокусным точкам активного вида</value>
+  </data>
+  <data name="TipRecordBData" xml:space="preserve">
+    <value>Записать данные B по всем фокусным точкам активного вида</value>
+  </data>
+  <data name="TipRecordWhiteData" xml:space="preserve">
+    <value>Записать данные белого поля по всем фокусным точкам активного вида</value>
+  </data>
+  <data name="TipRecordBlackData" xml:space="preserve">
+    <value>Записать данные черного поля по всем фокусным точкам активного вида</value>
+  </data>
+  <data name="TipComputeContrast" xml:space="preserve">
+    <value>Рассчитать контраст по записанным данным белого/черного и открыть окно результата</value>
+  </data>
+  <data name="TipClearContrast" xml:space="preserve">
+    <value>Очистить текущие записи контраста</value>
+  </data>
+  <data name="TipSaveWindowConfig" xml:space="preserve">
+    <value>Сохранить конфигурацию окна</value>
+  </data>
+  <data name="TipOpenConoscopeSettings" xml:space="preserve">
+    <value>Открыть настройки Conoscope</value>
+  </data>
+  <data name="ChkEnablePreprocess" xml:space="preserve">
+    <value>Включить предобработку</value>
+  </data>
+  <data name="ChkReuseActiveView" xml:space="preserve">
+    <value>Использовать активный вид для результатов потока/съемки</value>
+  </data>
+  <data name="ChkPseudoColor" xml:space="preserve">
+    <value>Псевдоцветовое отображение</value>
+  </data>
+  <data name="ChkEnableDustRemoval" xml:space="preserve">
+    <value>Включить удаление пыли</value>
+  </data>
+  <data name="ChkExportTitle" xml:space="preserve">
+    <value>Экспортировать заголовок и метаданные</value>
+  </data>
+  <data name="ChkEnableSectionExport" xml:space="preserve">
+    <value>Включить экспорт сечения</value>
+  </data>
+  <data name="StatusNotRecorded" xml:space="preserve">
+    <value>Не записано</value>
+  </data>
+  <data name="StatusExecuting" xml:space="preserve">
+    <value>Выполняется</value>
+  </data>
+  <data name="StatusCapturing" xml:space="preserve">
+    <value>Съемка</value>
+  </data>
+  <data name="MsgConfigSaved" xml:space="preserve">
+    <value>Конфигурация сохранена</value>
+  </data>
+  <data name="MsgConfigSaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить конфигурацию</value>
+  </data>
+  <data name="MsgPreprocessApplied" xml:space="preserve">
+    <value>Текущий пресет предобработки применен</value>
+  </data>
+  <data name="MsgOpened" xml:space="preserve">
+    <value>Открыто</value>
+  </data>
+  <data name="MsgNoActiveView" xml:space="preserve">
+    <value>Сначала откройте или создайте вид Conoscope</value>
+  </data>
+  <data name="MsgSelectCamera" xml:space="preserve">
+    <value>Выберите устройство камеры</value>
+  </data>
+  <data name="MsgSelectFlow" xml:space="preserve">
+    <value>Выберите поток</value>
+  </data>
+  <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
+    <value>Поток завершен, но файл .cvcie не найден в результатах</value>
+  </data>
+  <data name="MsgFlowFailedDetail" xml:space="preserve">
+    <value>Не удалось выполнить поток: {0}</value>
+  </data>
+  <data name="MsgCaptureFailedDetail" xml:space="preserve">
+    <value>Съемка не удалась: {0}
+{1}</value>
+  </data>
+  <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
+    <value>Съемка завершена, но файл .cvcie не найден в результатах</value>
+  </data>
+  <data name="MsgLoadImageFirst" xml:space="preserve">
+    <value>Сначала загрузите изображение</value>
+  </data>
+  <data name="MsgExportSuccess" xml:space="preserve">
+    <value>Данные успешно экспортированы в:
+{0}</value>
+  </data>
+  <data name="MsgAzimuthExportFailed" xml:space="preserve">
+    <value>Не удалось экспортировать азимут: {0}</value>
+  </data>
+  <data name="MsgPolarExportFailed" xml:space="preserve">
+    <value>Не удалось экспортировать полярный угол: {0}</value>
+  </data>
+  <data name="MsgAdvancedExportFailed" xml:space="preserve">
+    <value>Расширенный экспорт не удался: {0}</value>
+  </data>
+  <data name="MsgSelectExportFolder" xml:space="preserve">
+    <value>Выберите папку экспорта</value>
+  </data>
+  <data name="MsgExportDone" xml:space="preserve">
+    <value>Экспорт завершен, {0} файлов экспортировано в:
+{1}</value>
+  </data>
+  <data name="MsgExportFailed" xml:space="preserve">
+    <value>Экспорт не удался: {0}</value>
+  </data>
+  <data name="MsgSelectAzimuthFirst" xml:space="preserve">
+    <value>Сначала выберите азимут</value>
+  </data>
+  <data name="MsgAzimuthExportSuccess" xml:space="preserve">
+    <value>Азимут {0}° успешно экспортирован</value>
+  </data>
+  <data name="MsgSelectPolarFirst" xml:space="preserve">
+    <value>Сначала выберите полярный угол</value>
+  </data>
+  <data name="TbEdit" xml:space="preserve">
+    <value>Правка</value>
+  </data>
+  <data name="TbEditTip" xml:space="preserve">
+    <value>Выбирать и перетаскивать существующие окружности фокусных точек</value>
+  </data>
+  <data name="TbEraserTip" xml:space="preserve">
+    <value>Удалять окружности фокусных точек рамочным выделением</value>
+  </data>
+  <data name="TbCalcTip" xml:space="preserve">
+    <value>Рассчитать все фокусные точки</value>
+  </data>
+  <data name="TbClearAll" xml:space="preserve">
+    <value>Очист.</value>
+  </data>
+  <data name="TbClearAllTip" xml:space="preserve">
+    <value>Очистить все фокусные точки</value>
+  </data>
+  <data name="PanelColorDiff" xml:space="preserve">
+    <value>Цветовое различие</value>
+  </data>
+  <data name="LabelRefMode" xml:space="preserve">
+    <value>Режим эталона:</value>
+  </data>
+  <data name="LabelColorDiffCalc" xml:space="preserve">
+    <value>Расчет цветового различия</value>
+  </data>
+  <data name="LabelBaseRef" xml:space="preserve">
+    <value>База:</value>
+  </data>
+  <data name="LabelRefCurve" xml:space="preserve">
+    <value>Опорная кривая</value>
+  </data>
+  <data name="LabelMode" xml:space="preserve">
+    <value>Режим</value>
+  </data>
+  <data name="LabelCurrentValue" xml:space="preserve">
+    <value>Текущее значение</value>
+  </data>
+  <data name="LabelGraph" xml:space="preserve">
+    <value>График</value>
+  </data>
+  <data name="CbiD65" xml:space="preserve">
+    <value>Осветитель D65</value>
+  </data>
+  <data name="CbiD50" xml:space="preserve">
+    <value>Осветитель D50</value>
+  </data>
+  <data name="CbiA" xml:space="preserve">
+    <value>Осветитель A</value>
+  </data>
+  <data name="CbiD75" xml:space="preserve">
+    <value>Осветитель D75</value>
+  </data>
+  <data name="CbiCenter50px" xml:space="preserve">
+    <value>Центр изображения 50px</value>
+  </data>
+  <data name="CbiCustomCoord" xml:space="preserve">
+    <value>Пользовательские координаты</value>
+  </data>
+  <data name="CbiMeasuredBase" xml:space="preserve">
+    <value>Измеренная база</value>
+  </data>
+  <data name="CbiAzimuthExport" xml:space="preserve">
+    <value>Экспорт по азимуту</value>
+  </data>
+  <data name="CbiPolarExport" xml:space="preserve">
+    <value>Экспорт по полярному углу</value>
+  </data>
+  <data name="HeaderFilter" xml:space="preserve">
+    <value>Фильтр</value>
+  </data>
+  <data name="HeaderDustRemoval" xml:space="preserve">
+    <value>Удаление пыли</value>
+  </data>
+  <data name="LabelFilterType" xml:space="preserve">
+    <value>Тип фильтра:</value>
+  </data>
+  <data name="LabelDustType" xml:space="preserve">
+    <value>Тип пыли</value>
+  </data>
+  <data name="LabelThresholdPct" xml:space="preserve">
+    <value>Порог, %</value>
+  </data>
+  <data name="LabelMinArea" xml:space="preserve">
+    <value>Мин. площадь</value>
+  </data>
+  <data name="LabelMaxArea" xml:space="preserve">
+    <value>Макс. площадь</value>
+  </data>
+  <data name="LabelRepairRadius" xml:space="preserve">
+    <value>Радиус восстановления</value>
+  </data>
+  <data name="CbiDarkSpot" xml:space="preserve">
+    <value>Темное пятно</value>
+  </data>
+  <data name="CbiBrightSpot" xml:space="preserve">
+    <value>Светлое пятно</value>
+  </data>
+  <data name="CbiBothSpots" xml:space="preserve">
+    <value>Темные + светлые пятна</value>
+  </data>
+  <data name="TipEnablePreprocess" xml:space="preserve">
+    <value>Если включено, текущий пресет предобработки автоматически применяется при открытии изображений.</value>
+  </data>
+  <data name="TitlePreprocessSettings" xml:space="preserve">
+    <value>Настройки предобработки</value>
+  </data>
+  <data name="TitleAdvancedExport" xml:space="preserve">
+    <value>Настройки расширенного экспорта</value>
+  </data>
+  <data name="TitleCurrentCurveExport" xml:space="preserve">
+    <value>Настройки экспорта текущей кривой</value>
+  </data>
+  <data name="TitleConoscopeSettings" xml:space="preserve">
+    <value>Настройки Conoscope</value>
+  </data>
+  <data name="TitleMvsCameraView" xml:space="preserve">
+    <value>Окно камеры MVS</value>
+  </data>
+  <data name="TitleObservationCameraSettings" xml:space="preserve">
+    <value>Настройки камеры наблюдения</value>
+  </data>
+  <data name="TitleColorGamutResult" xml:space="preserve">
+    <value>Результат расчета охвата</value>
+  </data>
+  <data name="TitleContrastResult" xml:space="preserve">
+    <value>Результат контраста</value>
+  </data>
+  <data name="GroupBoxFileSettings" xml:space="preserve">
+    <value>Настройки файлов</value>
+  </data>
+  <data name="LabelFilePrefix" xml:space="preserve">
+    <value>Префикс файла:</value>
+  </data>
+  <data name="HintFileNaming" xml:space="preserve">
+    <value>Подсказка: экспортируемые файлы используют формат имени 'Prefix_Channel_Timestamp.csv'</value>
+  </data>
+  <data name="GroupBoxChannelSelection" xml:space="preserve">
+    <value>Выбор канала (множественный выбор)</value>
+  </data>
+  <data name="HintChannelPerFile" xml:space="preserve">
+    <value>Подсказка: для каждого выбранного канала создается отдельный файл</value>
+  </data>
+  <data name="GroupBoxExportMode" xml:space="preserve">
+    <value>Режим экспорта</value>
+  </data>
+  <data name="HintBothExportModes" xml:space="preserve">
+    <value>Подсказка: оба режима экспорта можно выбрать одновременно</value>
+  </data>
+  <data name="GroupBoxAzimuthSettings" xml:space="preserve">
+    <value>Настройки азимута</value>
+  </data>
+  <data name="LabelAzimuthStep" xml:space="preserve">
+    <value>Шаг азимута (градусы):</value>
+  </data>
+  <data name="LabelRadialStep" xml:space="preserve">
+    <value>Шаг радиальной выборки (градусы):</value>
+  </data>
+  <data name="HintAzimuthSampling" xml:space="preserve">
+    <value>Подсказка: шаг азимута задает плотность угловой выборки; радиальный шаг задает плотность от центра к краю</value>
+  </data>
+  <data name="GroupBoxPolarSettings" xml:space="preserve">
+    <value>Настройки полярного угла</value>
+  </data>
+  <data name="LabelRingStep" xml:space="preserve">
+    <value>Шаг колец (градусы):</value>
+  </data>
+  <data name="LabelCircularStep" xml:space="preserve">
+    <value>Шаг по окружности (градусы):</value>
+  </data>
+  <data name="HintPolarSampling" xml:space="preserve">
+    <value>Подсказка: шаг колец задает число колец по радиусу; шаг по окружности задает плотность выборки в каждом кольце</value>
+  </data>
+  <data name="GroupBoxSectionExport" xml:space="preserve">
+    <value>Экспорт сечения (необязательно)</value>
+  </data>
+  <data name="RbAzimuthSection" xml:space="preserve">
+    <value>Азимутальное сечение</value>
+  </data>
+  <data name="LabelAzimuthDegLabel" xml:space="preserve">
+    <value>Азимут (градусы):</value>
+  </data>
+  <data name="RbPolarSection" xml:space="preserve">
+    <value>Полярное сечение</value>
+  </data>
+  <data name="LabelPolarDegLabel" xml:space="preserve">
+    <value>Полярный угол (градусы):</value>
+  </data>
+  <data name="HintSectionExport" xml:space="preserve">
+    <value>Подсказка: экспорт сечения выгружает только одно поперечное сечение под указанным углом</value>
+  </data>
+  <data name="MsgSelectOneChannel" xml:space="preserve">
+    <value>Выберите хотя бы один канал</value>
+  </data>
+  <data name="MsgSelectOneExportMode" xml:space="preserve">
+    <value>Выберите хотя бы один режим экспорта</value>
+  </data>
+  <data name="MsgSettingsError" xml:space="preserve">
+    <value>Ошибка настроек: {0}</value>
+  </data>
+  <data name="MsgEnterFilePrefix" xml:space="preserve">
+    <value>Введите префикс файла</value>
+  </data>
+  <data name="MsgInvalidAzimuthStep" xml:space="preserve">
+    <value>Шаг азимута должен быть в диапазоне от 0.01 до 180</value>
+  </data>
+  <data name="MsgInvalidRadialStep" xml:space="preserve">
+    <value>Шаг радиальной выборки должен быть в диапазоне от 0.01 до 80</value>
+  </data>
+  <data name="MsgInvalidRingStep" xml:space="preserve">
+    <value>Шаг колец должен быть в диапазоне от 0.01 до 80</value>
+  </data>
+  <data name="MsgInvalidCircularStep" xml:space="preserve">
+    <value>Шаг по окружности должен быть в диапазоне от 0.01 до 360</value>
+  </data>
+  <data name="MsgInvalidAzimuthSection" xml:space="preserve">
+    <value>Угол азимутального сечения должен быть в диапазоне от 0 до 180</value>
+  </data>
+  <data name="MsgInvalidPolarSection" xml:space="preserve">
+    <value>Угол полярного сечения должен быть в диапазоне от 0 до 80</value>
+  </data>
+  <data name="GroupBoxSamplingSettings" xml:space="preserve">
+    <value>Настройки выборки</value>
+  </data>
+  <data name="LabelSamplingInterval" xml:space="preserve">
+    <value>Интервал выборки (градусы):</value>
+  </data>
+  <data name="HintSamplingDefault" xml:space="preserve">
+    <value>По умолчанию 1, можно изменять и сохранять</value>
+  </data>
+  <data name="HintSamplingDescription" xml:space="preserve">
+    <value>В режиме азимута выборка идет от -MaxAngle до +MaxAngle; в полярном режиме от 0 до 360.</value>
+  </data>
+  <data name="GroupBoxTitleSettings" xml:space="preserve">
+    <value>Настройки заголовка</value>
+  </data>
+  <data name="HintExportTitle" xml:space="preserve">
+    <value>Если снято, CSV выводит заголовки столбцов с единицами и данные напрямую, без строк описания вверху.</value>
+  </data>
+  <data name="MsgInvalidSamplingInterval" xml:space="preserve">
+    <value>Интервал выборки должен быть в диапазоне от 0.01 до 360</value>
+  </data>
+  <data name="GroupBoxGlobalSettings" xml:space="preserve">
+    <value>Глобальные настройки</value>
+  </data>
+  <data name="GroupBoxPreprocessSettings" xml:space="preserve">
+    <value>Настройки предобработки</value>
+  </data>
+  <data name="GroupBoxModelParams" xml:space="preserve">
+    <value>Параметры модели</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>Вид</value>
+  </data>
+  <data name="MenuShowToolbar" xml:space="preserve">
+    <value>Показать панель инструментов</value>
+  </data>
+  <data name="MenuShowStatusBar" xml:space="preserve">
+    <value>Показать строку состояния</value>
+  </data>
+  <data name="RbContinuousMode" xml:space="preserve">
+    <value>Непрерывный режим</value>
+  </data>
+  <data name="RbTriggerMode" xml:space="preserve">
+    <value>Режим триггера</value>
+  </data>
+  <data name="ChkSoftTrigger" xml:space="preserve">
+    <value>Программный триггер</value>
+  </data>
+  <data name="LabelExposureMs" xml:space="preserve">
+    <value>Экспозиция (ms)</value>
+  </data>
+  <data name="LabelGain" xml:space="preserve">
+    <value>Усиление</value>
+  </data>
+  <data name="LabelFrameRate" xml:space="preserve">
+    <value>Частота кадров</value>
+  </data>
+  <data name="GroupBoxTestArea" xml:space="preserve">
+    <value>Тестовая область</value>
+  </data>
+  <data name="LabelSelectArea" xml:space="preserve">
+    <value>Выбрать область</value>
+  </data>
+  <data name="StatusExposure" xml:space="preserve">
+    <value>Экспозиция: </value>
+  </data>
+  <data name="StatusGain" xml:space="preserve">
+    <value>Усиление: </value>
+  </data>
+  <data name="StatusFrameRate" xml:space="preserve">
+    <value>Частота кадров: </value>
+  </data>
+  <data name="StatusImageCount" xml:space="preserve">
+    <value>Изображений: </value>
+  </data>
+  <data name="TabTestArea" xml:space="preserve">
+    <value>Тестовая область</value>
+  </data>
+  <data name="TipCurrentModelApplies" xml:space="preserve">
+    <value>Параметры текущей модели напрямую применяются к наложению текущей тестовой области.</value>
+  </data>
+  <data name="LabelPixelType" xml:space="preserve">
+    <value>Тип пикселей</value>
+  </data>
+  <data name="LabelSizeCoeff" xml:space="preserve">
+    <value>Коэффициент размера (mm/px)</value>
+  </data>
+  <data name="LabelCenterXPx" xml:space="preserve">
+    <value>Центр X (px)</value>
+  </data>
+  <data name="LabelCenterYPx" xml:space="preserve">
+    <value>Центр Y (px)</value>
+  </data>
+  <data name="ColNumber" xml:space="preserve">
+    <value>№</value>
+  </data>
+  <data name="ColFocusPoint" xml:space="preserve">
+    <value>Фокусная точка</value>
+  </data>
+  <data name="ColAzimuthDeg" xml:space="preserve">
+    <value>Азимут (°)</value>
+  </data>
+  <data name="ColPolarDeg" xml:space="preserve">
+    <value>Полярный угол (°)</value>
+  </data>
+  <data name="ColRadiusDeg" xml:space="preserve">
+    <value>Радиус (°)</value>
+  </data>
+  <data name="ColRChromaticity" xml:space="preserve">
+    <value>Хроматичность R</value>
+  </data>
+  <data name="ColGChromaticity" xml:space="preserve">
+    <value>Хроматичность G</value>
+  </data>
+  <data name="ColBChromaticity" xml:space="preserve">
+    <value>Хроматичность B</value>
+  </data>
+  <data name="ColGamutValue" xml:space="preserve">
+    <value>Охват (%)</value>
+  </data>
+  <data name="ColWhiteLuminance" xml:space="preserve">
+    <value>Ярк. белого</value>
+  </data>
+  <data name="ColBlackLuminance" xml:space="preserve">
+    <value>Ярк. черного</value>
+  </data>
+  <data name="ColContrast" xml:space="preserve">
+    <value>Контраст</value>
+  </data>
+  <data name="ColWhiteChromaticity" xml:space="preserve">
+    <value>Хром. белого</value>
+  </data>
+  <data name="ColBlackChromaticity" xml:space="preserve">
+    <value>Хром. черного</value>
+  </data>
+  <data name="MenuOpenWithConoscope" xml:space="preserve">
+    <value>Открыть в Conoscope</value>
+  </data>
+  <data name="LabelCurrentModel" xml:space="preserve">
+    <value>Текущая модель</value>
+  </data>
+  <data name="LabelObservationCamera" xml:space="preserve">
+    <value>Камера наблюдения</value>
+  </data>
+  <data name="LabelSaveFilterCsv" xml:space="preserve">
+    <value>Файлы CSV (*.csv)|*.csv|Все файлы (*.*)|*.*</value>
+  </data>
+  <data name="TipEnterAzimuth" xml:space="preserve">
+    <value>Введите азимут и нажмите Enter, чтобы применить</value>
+  </data>
+  <data name="TipEnterPolarAngle" xml:space="preserve">
+    <value>Введите полярный угол 0-{0} и нажмите Enter, чтобы применить</value>
+  </data>
+  <data name="SlotWhite" xml:space="preserve">
+    <value>Белый</value>
+  </data>
+  <data name="SlotBlack" xml:space="preserve">
+    <value>Черный</value>
+  </data>
+  <data name="MsgSlotRecordedDetail" xml:space="preserve">
+    <value>{0} записано
+Источник: {1}
+Количество: {2}</value>
+  </data>
+  <data name="MsgNeedRGBData" xml:space="preserve">
+    <value>Сначала запишите или импортируйте данные R/G/B.</value>
+  </data>
+  <data name="MsgSelectGamutStandard" xml:space="preserve">
+    <value>Выберите стандарт охвата.</value>
+  </data>
+  <data name="MsgNeedWhiteBlackData" xml:space="preserve">
+    <value>Сначала запишите данные белого и черного поля.</value>
+  </data>
+  <data name="MsgFocusPointsUnavailable" xml:space="preserve">
+    <value>Текущие фокусные точки недоступны.</value>
+  </data>
+  <data name="MsgBaseCenter50px" xml:space="preserve">
+    <value>База: среднее uv по фокусной точке 50px в центре текущего изображения</value>
+  </data>
+  <data name="MsgPolarLineCreateFailed" xml:space="preserve">
+    <value>Не удалось создать линию полярного угла: {0}</value>
+  </data>
+  <data name="FocusPointLabel" xml:space="preserve">
+    <value>[Фокус] {0} - {1}</value>
+  </data>
+  <data name="DustLabel" xml:space="preserve">
+    <value>Пыль</value>
+  </data>
+  <data name="TitleGamutCalc" xml:space="preserve">
+    <value>Расчет охвата</value>
+  </data>
+  <data name="TitleContrastCalc" xml:space="preserve">
+    <value>Расчет контраста</value>
+  </data>
+  <data name="TitleAnalysisRecord" xml:space="preserve">
+    <value>Запись анализа</value>
+  </data>
+  <data name="TitleError" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="TitleSuccess" xml:space="preserve">
+    <value>Успешно</value>
+  </data>
+  <data name="TitleHint" xml:space="preserve">
+    <value>Подсказка</value>
+  </data>
+  <data name="MsgOpenImageFailed" xml:space="preserve">
+    <value>Не удалось открыть изображение Conoscope: {0}</value>
+  </data>
+  <data name="MsgSaveConfigFailedDetail" xml:space="preserve">
+    <value>Не удалось сохранить конфигурацию Conoscope: {0}</value>
+  </data>
+  <data name="MsgLoadImageFirstColorDiff" xml:space="preserve">
+    <value>Сначала загрузите измеренное изображение</value>
+  </data>
+  <data name="MsgNoFocusPointPixelsCalc" xml:space="preserve">
+    <value>Нет доступных пикселей фокусных точек для расчета.</value>
+  </data>
+  <data name="TestAreaWaitingForImage" xml:space="preserve">
+    <value>Тестовая область: {0} mm | Ожидание изображения</value>
+  </data>
+  <data name="TestAreaWithCenter" xml:space="preserve">
+    <value>Тестовая область: {0} mm | Центр: ({1}, {2})</value>
+  </data>
+  <data name="Prompt" xml:space="preserve">
+    <value>Сообщение</value>
+  </data>
+  <data name="TestAreaSizeMustBePositive" xml:space="preserve">
+    <value>Введите размер тестовой области больше 0.</value>
+  </data>
+  <data name="ObservationCameraSettings" xml:space="preserve">
+    <value>Настройки камеры наблюдения</value>
+  </data>
+  <data name="Estimated" xml:space="preserve">
+    <value>Расчетное</value>
+  </data>
+  <data name="ReferenceCurve" xml:space="preserve">
+    <value>Опорная кривая</value>
+  </data>
+  <data name="XYZDataNotLoaded" xml:space="preserve">
+    <value>Данные XYZ не загружены</value>
+  </data>
+  <data name="ChromaticityFormat" xml:space="preserve">
+    <value>x={0}, y={1}</value>
+  </data>
+  <data name="FocusPointCountAndAverageGamut" xml:space="preserve">
+    <value>{0} фокусных точек, средний охват {1}%</value>
+  </data>
+  <data name="Measured" xml:space="preserve">
+    <value>Измерено {0}</value>
+  </data>
+  <data name="FocusPointCountAndAverageContrast" xml:space="preserve">
+    <value>{0} фокусных точек, средняя контрастность {1}:1, мин. {2}:1, макс. {3}:1</value>
+  </data>
+  <data name="PleaseSelectCVCIEFile" xml:space="preserve">
+    <value>Выберите файл изображения CVCIE XYZ</value>
+  </data>
+  <data name="Invalid" xml:space="preserve">
+    <value>Недопустимо</value>
+  </data>
+  <data name="BlackLuminanceMustBePositive" xml:space="preserve">
+    <value>Для расчета контраста яркость черного должна быть больше 0</value>
+  </data>
+  <data name="StandardGamutAreaInvalid" xml:space="preserve">
+    <value>Площадь стандартного охвата {0} недопустима</value>
+  </data>
+  <data name="GamutNeedsAtLeastThreeVertices" xml:space="preserve">
+    <value>Для охвата {0} требуется не менее трех вершин</value>
+  </data>
+  <data name="FocusPointMismatchError" xml:space="preserve">
+    <value>Между группами фокусных точек нет совпадающих индексов. Запишите данные R/G/B или белого/черного для одного и того же набора фокусных точек.</value>
+  </data>
+  <data name="ColorDiffNeedsUVRef" xml:space="preserve">
+    <value>Для канала цветового различия требуется опора uv</value>
+  </data>
+  <data name="UReferenceImage" xml:space="preserve">
+    <value>Опорное изображение u</value>
+  </data>
+  <data name="SizeMismatchFormat" xml:space="preserve">
+    <value>Размер {0} не совпадает с текущим изображением</value>
+  </data>
+  <data name="ReferenceFormat" xml:space="preserve">
+    <value>Эталон: {0}</value>
+  </data>
+  <data name="PixelCoordFormat" xml:space="preserve">
+    <value>Пиксель: X={0}, Y={1}</value>
+  </data>
+  <data name="PolarCoordFormat" xml:space="preserve">
+    <value>Полярные координаты: азимут={0}°, полярный угол={1}°</value>
+  </data>
+  <data name="RadiusFormat" xml:space="preserve">
+    <value>Радиус: {0}</value>
+  </data>
+  <data name="FocusPointYUV" xml:space="preserve">
+    <value>Y:{0}  u:{1}  v:{2}</value>
+  </data>
+  <data name="GroupColorDifference" xml:space="preserve">
+    <value>Цветовое различие</value>
+  </data>
+  <data name="ChannelContrast" xml:space="preserve">
+    <value>Контраст</value>
+  </data>
+  <data name="BtnReapply" xml:space="preserve">
+    <value>Применить снова</value>
+  </data>
+  <data name="BtnBlackReference" xml:space="preserve">
+    <value>Черн. эталон</value>
+  </data>
+  <data name="BtnWhiteReference" xml:space="preserve">
+    <value>Бел. эталон</value>
+  </data>
+  <data name="BtnColorDifferenceReference" xml:space="preserve">
+    <value>Эталон Δuv</value>
+  </data>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve">
+    <value>Если включено, в списке камер наблюдения будут показаны только устройства, модель которых содержит CS200.</value>
+  </data>
+  <data name="TipSelectedFocusPoint" xml:space="preserve">
+    <value>Текущая выбранная фокусная точка</value>
+  </data>
+  <data name="TipFocusPoiTemplate" xml:space="preserve">
+    <value>Шаблон POI фокусных точек</value>
+  </data>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve">
+    <value>Сохранить текущие фокусные точки в шаблон POI</value>
+  </data>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve">
+    <value>Управление шаблонами POI</value>
+  </data>
+  <data name="TbCircleFitTip" xml:space="preserve">
+    <value>Подогнать к эффективной круглой области</value>
+  </data>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve">
+    <value>Текущий глобальный эталон {0}: {1}. Нажмите еще раз, чтобы очистить</value>
+  </data>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve">
+    <value>Сохранить текущий вид как глобальный эталон {0}</value>
+  </data>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve">
+    <value>Текущее глобальное эталонное изображение цветового различия: {0}. Нажмите еще раз, чтобы очистить</value>
+  </data>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve">
+    <value>Сохранить текущий вид как глобальное эталонное изображение цветового различия</value>
+  </data>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve">
+    <value>Показывать только устройства CS200</value>
+  </data>
+  <data name="ChkEnableFilter" xml:space="preserve">
+    <value>Включить фильтр</value>
+  </data>
+  <data name="StateSaved" xml:space="preserve">
+    <value>Сохранено</value>
+  </data>
+  <data name="LabelCurrentImage" xml:space="preserve">
+    <value>Текущее изображение</value>
+  </data>
+  <data name="ContrastImageBlack" xml:space="preserve">
+    <value>Темное изображение</value>
+  </data>
+  <data name="ContrastImageWhite" xml:space="preserve">
+    <value>Светлое изображение</value>
+  </data>
+  <data name="ContrastReferenceBlackField" xml:space="preserve">
+    <value>Черное поле</value>
+  </data>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve">
+    <value>Белое поле</value>
+  </data>
+  <data name="MsgOriginalDataRestored" xml:space="preserve">
+    <value>Исходные данные восстановлены.</value>
+  </data>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve">
+    <value>Не удалось применить предобработку: {0}</value>
+  </data>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve">
+    <value>Не удалось сохранить настройки предобработки: {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve">
+    <value>Точки фокуса сохранены в шаблон POI: {0}</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve">
+    <value>База данных не подключена. Невозможно сохранить шаблон POI.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve">
+    <value>Не удалось создать шаблон POI.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve">
+    <value>Сохранение не удалось. Подробности смотрите в журнале.</value>
+  </data>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve">
+    <value>Не удалось сохранить: {0}</value>
+  </data>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve">
+    <value>Редактор полярных координат точки фокуса</value>
+  </data>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve">
+    <value>У текущего ImageView нет связанного пути к файлу.</value>
+  </data>
+  <data name="StatusImageSize" xml:space="preserve">
+    <value>Размер изображения</value>
+  </data>
+  <data name="StatusFileType" xml:space="preserve">
+    <value>Тип файла</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>Системная</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Светлая</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Тёмная</value>
+  </data>
+  <data name="ThemePink" xml:space="preserve">
+    <value>Розовая</value>
+  </data>
+  <data name="ThemeCyan" xml:space="preserve">
+    <value>Бирюзовая</value>
+  </data>
+  <data name="WindowTitleConoscope" xml:space="preserve">
+    <value>Conoscope</value>
+  </data>
+  <data name="WindowTitleConoscopeWithVersion" xml:space="preserve">
+    <value>Conoscope {0}</value>
+  </data>
+  <data name="TabSystem" xml:space="preserve">
+    <value>Система</value>
+  </data>
+  <data name="GroupAnalysisParameters" xml:space="preserve">
+    <value>Параметры анализа</value>
+  </data>
+  <data name="GroupComputeActions" xml:space="preserve">
+    <value>Действия расчета</value>
+  </data>
+  <data name="GroupThemeAndLanguage" xml:space="preserve">
+    <value>Тема и язык</value>
+  </data>
+  <data name="LabelTheme" xml:space="preserve">
+    <value>Тема</value>
+  </data>
+  <data name="LabelLanguage" xml:space="preserve">
+    <value>Язык</value>
+  </data>
+  <data name="LabelDecimalPlaces" xml:space="preserve">
+    <value>Знаков после запятой:</value>
+  </data>
+  <data name="TipRangeLimit" xml:space="preserve">
+    <value>Когда включено, отображение применяется только внутри допустимого круга; иначе показывается все изображение.</value>
+  </data>
+  <data name="ChkRangeLimit" xml:space="preserve">
+    <value>Ограничить область</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4" xml:space="preserve">
+    <value>По умолчанию 4, можно изменить</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4Saved" xml:space="preserve">
+    <value>По умолчанию 4, можно изменить и сохранить</value>
+  </data>
+  <data name="MsgInvalidDecimalPlaces" xml:space="preserve">
+    <value>Количество знаков после запятой должно быть целым числом от 0 до 8.</value>
+  </data>
+  <data name="MsgColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>Для канала цветовой разницы сначала задайте эталон цветовой разницы</value>
+  </data>
+  <data name="MsgContrastReferenceRequired" xml:space="preserve">
+    <value>Для канала контраста сначала сохраните эталон белого или черного поля</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>Сначала сохраните глобальное изображение-эталон цветовой разницы</value>
+  </data>
+  <data name="MsgInvalidCustomUvReference" xml:space="preserve">
+    <value>Введите корректные пользовательские координаты эталона u/v</value>
+  </data>
+  <data name="MsgNoMeasurementDataToAlign" xml:space="preserve">
+    <value>Нет данных измерения для выравнивания</value>
+  </data>
+  <data name="MsgEmptyMeasurementDataCannotAlignFocusPoints" xml:space="preserve">
+    <value>Есть пустые данные измерения, невозможно выровнять точки интереса</value>
+  </data>
+  <data name="StateNotSaved" xml:space="preserve">
+    <value>Не сохранено</value>
+  </data>
+  <data name="MsgContrastReferenceMissingStatus" xml:space="preserve">
+    <value>Для текущего {0} отсутствует эталон {1}.</value>
+  </data>
+  <data name="MsgContrastReferenceSizeMismatchStatus" xml:space="preserve">
+    <value>Размер эталона {1}, используемого для текущего {0}, не совпадает с размером текущего изображения.</value>
+  </data>
+  <data name="MsgContrastReferenceUsingStatus" xml:space="preserve">
+    <value>Для текущего {0} будет использоваться эталон {1}.</value>
+  </data>
+  <data name="MsgContrastReferenceSummary" xml:space="preserve">
+    <value>{0}
+{1}: {2}
+{3}: {4}</value>
+  </data>
+  <data name="MsgSaveContrastReferenceRequired" xml:space="preserve">
+    <value>Сначала сохраните эталонное изображение {0}</value>
+  </data>
+  <data name="MsgContrastReferenceImageSizeMismatch" xml:space="preserve">
+    <value>Размер эталонного изображения {0} не совпадает с текущим изображением. Сохраните эталон заново.</value>
+  </data>
+  <data name="MsgFocusPointDisplayInfoNotFound" xml:space="preserve">
+    <value>Не найдена информация отображения для точки интереса {0}.</value>
+  </data>
+  <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
+    <value>В данных {0} отсутствует точка интереса {1}.
+Источник: {2}</value>
+  </data>
+<data name="Conoscope_AllFocusPoints" xml:space="preserve"><value>All Focus Points</value></data><data name="Conoscope_AngleDegrees" xml:space="preserve"><value>Angle (°)</value></data><data name="Conoscope_CalculateAllFocusPoints" xml:space="preserve"><value>Calculate All Focus Points</value></data><data name="Conoscope_CalculateFocusPoint" xml:space="preserve"><value>Calculate Focus Point: {0}</value></data><data name="Conoscope_CircleAngleDegrees" xml:space="preserve"><value>Circle Angle (°)</value></data><data name="Conoscope_CircleDistributionTitle" xml:space="preserve"><value>Polar {0}° {1} Circle Distribution</value></data><data name="Conoscope_ClearAllFocusPoints" xml:space="preserve"><value>Clear All Focus Points</value></data><data name="Conoscope_ClearFocusPoint" xml:space="preserve"><value>Clear Focus Point</value></data><data name="Conoscope_ContrastChannel" xml:space="preserve"><value>Contrast</value></data><data name="Conoscope_ContrastNeedsReference" xml:space="preserve"><value>Contrast channel requires saving white or black field reference first</value></data><data name="Conoscope_ContrastReferenceImage" xml:space="preserve"><value>Contrast Reference Image</value></data><data name="Conoscope_CustomUv" xml:space="preserve"><value>Custom: u={0:F4}, v={1:F4}</value></data><data name="Conoscope_CvcieFileFilter" xml:space="preserve"><value>CVCIE Files (*.cvcie)|*.cvcie</value></data><data name="Conoscope_EditByAngleLength" xml:space="preserve"><value>Edit by Angle/Length...</value></data><data name="Conoscope_FocusPointInfo" xml:space="preserve"><value>{0}  Azimuth {1:F2}°  Polar {2:F2}°  R {3:F1}px/{4:F2}°</value></data><data name="Conoscope_FocusPointTemplateName" xml:space="preserve"><value>ConoscopeFocusPoint_{0}</value></data><data name="Conoscope_GlobalReference" xml:space="preserve"><value>Global Reference: {0}</value></data><data name="Conoscope_NoGlobalReference" xml:space="preserve"><value>No Global Color Difference Reference Saved</value></data><data name="Conoscope_OverallAverage" xml:space="preserve"><value>Overall Average</value></data><data name="Conoscope_PolarDistributionTitle" xml:space="preserve"><value>Azimuth {0}° {1} Distribution</value></data><data name="Conoscope_SaveGlobalReference" xml:space="preserve"><value>Save Global Reference</value></data><data name="Conoscope_ScaleCoefficientNotConfigured" xml:space="preserve"><value>Observation camera scale coefficient not configured</value></data><data name="Conoscope_TestAreaNotDisplayed" xml:space="preserve"><value>Test area not displayed</value></data><data name="Conoscope_UpdateGlobalReference" xml:space="preserve"><value>Update Global Reference</value></data><data name="Conoscope_VReferenceImage" xml:space="preserve"><value>v Reference Image</value></data><data name="Conoscope_TestAreaSizeInvalid" xml:space="preserve"><value>Test area size is invalid</value></data><data name="Con_Category_FOV" xml:space="preserve"><value>Field of View</value></data><data name="Con_Category_FocusPoint" xml:space="preserve"><value>Focus Point</value></data><data name="Con_Category_Position" xml:space="preserve"><value>Position</value></data><data name="Con_Category_Size" xml:space="preserve"><value>Size</value></data><data name="Con_Category_CoordAxis" xml:space="preserve"><value>Coordinate Axis</value></data><data name="Con_Category_RefLine" xml:space="preserve"><value>Reference Line</value></data><data name="Con_Category_Mask" xml:space="preserve"><value>Mask</value></data><data name="Con_Category_Text" xml:space="preserve"><value>Text</value></data><data name="Con_Category_Display" xml:space="preserve"><value>Display</value></data><data name="Con_Category_Export" xml:space="preserve"><value>Export</value></data><data name="Con_Category_Preprocess" xml:space="preserve"><value>Preprocessing</value></data><data name="Con_Category_Filter" xml:space="preserve"><value>Filter</value></data><data name="Con_Category_Dust" xml:space="preserve"><value>Dust Removal</value></data><data name="Con_Category_Model" xml:space="preserve"><value>Model</value></data><data name="Con_Category_ObserveCam" xml:space="preserve"><value>Observation Camera</value></data><data name="Con_FOV_Angle" xml:space="preserve"><value>FOV Angle(deg)</value></data><data name="Con_FOV_Pixels" xml:space="preserve"><value>Full Pixels(px)</value></data><data name="Con_FOV_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(deg/px)</value></data><data name="Con_FP_Name" xml:space="preserve"><value>Name</value></data><data name="Con_FP_Azimuth" xml:space="preserve"><value>Azimuth(°)</value></data><data name="Con_FP_Polar" xml:space="preserve"><value>Polar Angle(°)</value></data><data name="Con_FP_Distance" xml:space="preserve"><value>Distance(px)</value></data><data name="Con_FP_RadiusPx" xml:space="preserve"><value>Radius(px)</value></data><data name="Con_FP_RadiusDeg" xml:space="preserve"><value>Radius(°)</value></data><data name="Con_Axis_EnableInteract" xml:space="preserve"><value>Enable Interaction</value></data><data name="Con_Axis_MaxAngle" xml:space="preserve"><value>Max Angle</value></data><data name="Con_Axis_CenterX" xml:space="preserve"><value>Center X</value></data><data name="Con_Axis_CenterY" xml:space="preserve"><value>Center Y</value></data><data name="Con_Axis_Radius" xml:space="preserve"><value>Axis Radius</value></data><data name="Con_Axis_AzimuthStep" xml:space="preserve"><value>Azimuth Step</value></data><data name="Con_Axis_PolarStep" xml:space="preserve"><value>Polar Step</value></data><data name="Con_Axis_LineWidth" xml:space="preserve"><value>Line Width</value></data><data name="Con_Axis_Color" xml:space="preserve"><value>Axis Color</value></data><data name="Con_Axis_RefMode" xml:space="preserve"><value>Reference Mode</value></data><data name="Con_Axis_RefAzimuth" xml:space="preserve"><value>Reference Azimuth</value></data><data name="Con_Axis_RefPolar" xml:space="preserve"><value>Reference Polar</value></data><data name="Con_Axis_RefLineWidth" xml:space="preserve"><value>Reference Line Width</value></data><data name="Con_Axis_RefColor" xml:space="preserve"><value>Reference Line Color</value></data><data name="Con_Axis_ShowMask" xml:space="preserve"><value>Show Mask</value></data><data name="Con_Axis_MaskOpacity" xml:space="preserve"><value>Mask Opacity(0-255)</value></data><data name="Con_Axis_MaskColor" xml:space="preserve"><value>Mask Color</value></data><data name="Con_Axis_ShowText" xml:space="preserve"><value>Show Text</value></data><data name="Con_Axis_TextSize" xml:space="preserve"><value>Text Size</value></data><data name="Con_Axis_TextColor" xml:space="preserve"><value>Text Color</value></data><data name="Con_Axis_AzimuthLine" xml:space="preserve"><value>Azimuth Line</value></data><data name="Con_Axis_PolarCircle" xml:space="preserve"><value>Polar Circle</value></data><data name="Con_Cfg_DisplayChannel" xml:space="preserve"><value>Display Channel</value></data><data name="Con_Cfg_PseudoColor" xml:space="preserve"><value>Pseudo Color Map</value></data><data name="Con_Cfg_UsePseudoColor" xml:space="preserve"><value>Use Pseudo Color</value></data><data name="Con_Cfg_SampleInterval" xml:space="preserve"><value>Current Curve Sample Interval(deg)</value></data><data name="Con_Cfg_ExportMetadata" xml:space="preserve"><value>Current Curve Export Metadata</value></data><data name="Con_Cfg_Decimals" xml:space="preserve"><value>Export Data Decimal Places</value></data><data name="Con_Cfg_FixNonPositiveXYZ" xml:space="preserve"><value>Fix Non-positive XYZ on Load</value></data><data name="Con_Cfg_FilterType" xml:space="preserve"><value>Filter Type</value></data><data name="Con_Cfg_KernelSize" xml:space="preserve"><value>Kernel Size</value></data><data name="Con_Cfg_GaussianSigma" xml:space="preserve"><value>Gaussian Sigma</value></data><data name="Con_Cfg_BilateralD" xml:space="preserve"><value>Bilateral d</value></data><data name="Con_Cfg_BilateralSigmaColor" xml:space="preserve"><value>Bilateral SigmaColor</value></data><data name="Con_Cfg_BilateralSigmaSpace" xml:space="preserve"><value>Bilateral SigmaSpace</value></data><data name="Con_Cfg_EnableDust" xml:space="preserve"><value>Enable Dust Removal</value></data><data name="Con_Cfg_DustType" xml:space="preserve"><value>Dust Type</value></data><data name="Con_Cfg_DetectThreshold" xml:space="preserve"><value>Detection Threshold(%)</value></data><data name="Con_Cfg_MinArea" xml:space="preserve"><value>Min Area(px)</value></data><data name="Con_Cfg_MaxArea" xml:space="preserve"><value>Max Area(px)</value></data><data name="Con_Cfg_RepairRadius" xml:space="preserve"><value>Repair Radius(px)</value></data><data name="Con_Model_FOV" xml:space="preserve"><value>FOV Angle(deg)</value></data><data name="Con_Model_Pixels" xml:space="preserve"><value>Full Pixels(px)</value></data><data name="Con_Model_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(deg/px)</value></data><data name="Con_Model_EnableObsCam" xml:space="preserve"><value>Enable Observation Camera</value></data><data name="Con_Model_SizeCoeff" xml:space="preserve"><value>Size Coefficient(mm/px)</value></data><data name="Con_Model_CenterX" xml:space="preserve"><value>Center X(px)</value></data><data name="Con_Model_CenterY" xml:space="preserve"><value>Center Y(px)</value></data>
+  <data name="MsgPolarExportSuccess" xml:space="preserve">
+    <value>Polar angle {0}° exported successfully</value>
+  </data>
+  <data name="MsgNoFixedLightSource" xml:space="preserve">
+    <value>Current color difference base is not a fixed light source</value>
+  </data>
+  <data name="MsgInvalidCustomUV" xml:space="preserve">
+    <value>Please enter valid custom u/v base coordinates</value>
+  </data>
+  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
+    <value>Measured base image requires saving the base image first for point-by-point calculation</value>
+  </data>
+  <data name="MsgNoPixelsInCenter" xml:space="preserve">
+    <value>No usable pixels in center 50px focus point</value>
+  </data>
+  <data name="MsgImageSizeMismatch" xml:space="preserve">
+    <value>Current image size does not match color diff base image, cannot compute point-by-point</value>
+  </data>
+  <data name="MsgFocusPointNotReady" xml:space="preserve">
+    <value>Current image is not ready for focus point calculation.</value>
+  </data>
+  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
+    <value>Please draw focus point circles first.</value>
+  </data>
+  <data name="MsgFocusPointNoPixels" xml:space="preserve">
+    <value>{0} has no usable pixels.</value>
+  </data>
+  <data name="Msg3DViewNotReady" xml:space="preserve">
+    <value>Current image is not ready for 3D view</value>
+  </data>
+  <data name="Msg3DViewOpenFailed" xml:space="preserve">
+    <value>Failed to open 3D view: {0}</value>
+  </data>
+  <data name="TbEditFocusPointTip" xml:space="preserve">
+    <value>Enter focus point tool mode when enabled...</value>
+  </data>
+  <data name="TbCircleTip" xml:space="preserve">
+    <value>Draw new focus point circles only</value>
+  </data>
 </root>

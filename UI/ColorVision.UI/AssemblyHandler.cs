@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿#pragma warning disable CS8602
+using log4net;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;

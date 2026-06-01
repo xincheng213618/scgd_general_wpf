@@ -3,6 +3,7 @@ using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
+using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.POI;
@@ -19,6 +20,8 @@ public class RealPOINode : CVBaseServerNodeHub
 	private string _ReviseFileName;
 
 	private string _OutputTemplateName;
+
+	private string _SubPixelTemplateName;
 
 	private bool _IsSubPixel;
 
@@ -105,16 +108,16 @@ public class RealPOINode : CVBaseServerNodeHub
 		}
 	}
 
-	[STNodeProperty("亚像素", "亚像素", true)]
-	public bool IsSubPixel
+	[STNodeProperty("亚像素模板", "亚像素模板", true)]
+	public string SubPixelTemplateName
 	{
 		get
 		{
-			return _IsSubPixel;
+			return _SubPixelTemplateName;
 		}
 		set
 		{
-			_IsSubPixel = value;
+			_SubPixelTemplateName = value;
 		}
 	}
 
@@ -194,6 +197,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		_FilterTemplateName = "";
 		_ReviseTemplateName = "";
 		_OutputTemplateName = "";
+		_SubPixelTemplateName = "";
 		_ReviseFileName = "";
 		_POIType = POIPointTypes.None;
 		_POIWidth = 10f;
@@ -284,6 +288,10 @@ public class RealPOINode : CVBaseServerNodeHub
 	private void setPOIType(POIPointTypes value)
 	{
 		_POIType = value;
+		if (value == POIPointTypes.SubPixel)
+		{
+			_IsSubPixel = true;
+		}
 		setTypeSize();
 	}
 
@@ -306,7 +314,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		{
 			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
 		}
-		return new RealPOIData(_ImgFileName, _FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, poiData, array[0].MasterId, array[0].MasterResultType, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave)
+		return new RealPOIData(_ImgFileName, _FilterTemplateName, _ReviseTemplateName, _ReviseFileName, _OutputTemplateName, _SubPixelTemplateName, poiData, array[0].MasterId, array[0].MasterResultType, array[1].MasterId, _IsResultAdd, _IsSubPixel, _IsCCTWave)
 		{
 			SMUData = GetSMUResult(start)
 		};
@@ -323,13 +331,14 @@ public class RealPOINode : CVBaseServerNodeHub
 		switch (_POIType)
 		{
 		case POIPointTypes.None:
+		case POIPointTypes.SubPixel:
 		case POIPointTypes.SolidPoint_KB:
 		case POIPointTypes.SolidPoint:
-			result = _POIType.ToString();
+			result = Lang.Get(_POIType.ToString());
 			break;
 		case POIPointTypes.Circle:
 		case POIPointTypes.Rect:
-			result = $"{_POIType.ToString()}[{_POIWidth}x{_POIHeight}]";
+			result = $"{Lang.Get(_POIType.ToString())}[{_POIWidth}x{_POIHeight}]";
 			break;
 		}
 		return result;

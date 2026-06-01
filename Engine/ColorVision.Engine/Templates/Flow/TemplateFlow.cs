@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 List<ModMasterModel> flows = Db.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
@@ -226,10 +226,10 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
                 sfd.DefaultExt = "cvflow";
-                sfd.Filter = "流程包 (*.cvflow)|*.cvflow|STN文件 (*.stn)|*.stn";
+                sfd.Filter = ColorVision.Engine.Properties.Resources.Flow_ExportFlowFilter;
                 sfd.AddExtension = true;
                 sfd.RestoreDirectory = true;
-                sfd.Title = "导出流程";
+                sfd.Title = ColorVision.Engine.Properties.Resources.Flow_ExportFlow;
                 sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
@@ -292,7 +292,7 @@ namespace ColorVision.Engine.Templates.Flow
         public override bool Import()
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-            ofd.Filter = "流程文件 (*.cvflow;*.stn)|*.cvflow;*.stn|流程包 (*.cvflow)|*.cvflow|STN文件 (*.stn)|*.stn";
+            ofd.Filter = ColorVision.Engine.Properties.Resources.Flow_ImportFlowFilter;
             ofd.Title = ColorVision.Engine.Properties.Resources.ImportFlow;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
@@ -342,7 +342,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             catch (JsonException ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析流程样例时出错: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Flow_ParseFlowSampleError, ex.Message), "ColorVision");
             }
 
             return false;
@@ -387,7 +387,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"导入流程包时出错: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Flow_ImportFlowPackageError, ex.Message), "ColorVision");
                 return false;
             }
         }

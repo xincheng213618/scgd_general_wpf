@@ -249,4 +249,262 @@
   <data name="CurrentLog" xml:space="preserve">
     <value>Текущий журнал</value>
   </data>
+  <data name="MenuMySql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="MenuEntityBrowser" xml:space="preserve">
+    <value>Браузер базы данных</value>
+  </data>
+  <data name="MenuMySqlInitTables" xml:space="preserve">
+    <value>Инициализировать таблицы MySQL (отладка)</value>
+  </data>
+  <data name="DB_Browser_Title" xml:space="preserve">
+    <value>Браузер баз данных</value>
+  </data>
+  <data name="DB_DataSource" xml:space="preserve">
+    <value>Источник данных</value>
+  </data>
+  <data name="DB_Refresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="DB_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="DB_Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="DB_Undo" xml:space="preserve">
+    <value>Отменить</value>
+  </data>
+  <data name="DB_Delete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="DB_Search" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="DB_Query" xml:space="preserve">
+    <value>Запрос</value>
+  </data>
+  <data name="DB_Clear" xml:space="preserve">
+    <value>Очистить</value>
+  </data>
+  <data name="DB_SelectTable" xml:space="preserve">
+    <value>Пожалуйста, выберите таблицу</value>
+  </data>
+  <data name="DB_ExpandHint" xml:space="preserve">
+    <value>Разверните источники данных, базы данных и таблицы слева.</value>
+  </data>
+  <data name="DB_NoData" xml:space="preserve">
+    <value>Нет данных</value>
+  </data>
+  <data name="DB_RecordCount" xml:space="preserve">
+    <value>{0} записей</value>
+  </data>
+  <data name="DB_Page" xml:space="preserve">
+    <value>Страница</value>
+  </data>
+  <data name="DB_PageSuffix" xml:space="preserve">
+    <value>Страница</value>
+  </data>
+  <data name="DB_Ready" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="DB_ConfirmDelete" xml:space="preserve">
+    <value>Подтвердить удаление</value>
+  </data>
+  <data name="DB_ConfirmDeleteRows" xml:space="preserve">
+    <value>Удалить выбранные строки из таблицы {0}?</value>
+  </data>
+  <data name="DB_DeleteSuccess" xml:space="preserve">
+    <value>Успешно удалено</value>
+  </data>
+  <data name="DB_DeleteFailed" xml:space="preserve">
+    <value>Ошибка удаления: {0}</value>
+  </data>
+  <data name="DB_InsertSuccess" xml:space="preserve">
+    <value>Успешно вставлено</value>
+  </data>
+  <data name="DB_InsertFailed" xml:space="preserve">
+    <value>Ошибка вставки: {0}</value>
+  </data>
+  <data name="DB_SaveComplete" xml:space="preserve">
+    <value>Сохранение завершено: {0}</value>
+  </data>
+  <data name="DB_SaveFailed" xml:space="preserve">
+    <value>Ошибка сохранения: {0}</value>
+  </data>
+  <data name="DB_Undone" xml:space="preserve">
+    <value>Отменены несохранённые изменения</value>
+  </data>
+  <data name="DB_SelectRowFirst" xml:space="preserve">
+    <value>Пожалуйста, сначала выберите строку</value>
+  </data>
+  <data name="DB_Inserting" xml:space="preserve">
+    <value>Вставка...</value>
+  </data>
+  <data name="DB_Saving" xml:space="preserve">
+    <value>Сохранение...</value>
+  </data>
+  <data name="DB_Deleting" xml:space="preserve">
+    <value>Удаление...</value>
+  </data>
+  <data name="DB_Loading" xml:space="preserve">
+    <value>Загрузка...</value>
+  </data>
+  <data name="DB_Querying" xml:space="preserve">
+    <value>Запрос...</value>
+  </data>
+  <data name="DB_QueryFailed" xml:space="preserve">
+    <value>Ошибка запроса: {0}</value>
+  </data>
+  <data name="DB_QueryComplete" xml:space="preserve">
+    <value>Запрос завершён: {0}</value>
+  </data>
+  <data name="DB_NoDataSource" xml:space="preserve">
+    <value>Нет зарегистрированных источников данных</value>
+  </data>
+  <data name="DB_LoadFailed" xml:space="preserve">
+    <value>Ошибка загрузки</value>
+  </data>
+  <data name="DB_NoDatabase" xml:space="preserve">
+    <value>Нет баз данных для просмотра</value>
+  </data>
+  <data name="DB_NoTable" xml:space="preserve">
+    <value>Нет таблиц данных</value>
+  </data>
+  <data name="DB_NoInsertableColumn" xml:space="preserve">
+    <value>Текущая таблица не имеет вставляемых столбцов.</value>
+  </data>
+  <data name="DB_PrimaryKey" xml:space="preserve">
+    <value>Первичный ключ</value>
+  </data>
+  <data name="DB_AdvancedQuery" xml:space="preserve">
+    <value>Расширенный запрос</value>
+  </data>
+  <data name="DB_ClearTable" xml:space="preserve">
+    <value>Очистить таблицу</value>
+  </data>
+  <data name="DB_TruncateTable" xml:space="preserve">
+    <value>Усечь таблицу</value>
+  </data>
+  <data name="DB_Add" xml:space="preserve">
+    <value>+ Добавить</value>
+  </data>
+  <data name="DB_AddTooltip" xml:space="preserve">
+    <value>Добавить выбранное поле в условия запроса</value>
+  </data>
+  <data name="DB_AddAll" xml:space="preserve">
+    <value>Добавить все</value>
+  </data>
+  <data name="DB_AddAllTooltip" xml:space="preserve">
+    <value>Добавить все доступные поля</value>
+  </data>
+  <data name="DB_Reset" xml:space="preserve">
+    <value>Сброс</value>
+  </data>
+  <data name="DB_ResetTooltip" xml:space="preserve">
+    <value>Очистить все условия запроса</value>
+  </data>
+  <data name="DB_SqlPreview" xml:space="preserve">
+    <value>Предпросмотр SQL</value>
+  </data>
+  <data name="DB_QueryCount" xml:space="preserve">
+    <value>Количество запросов</value>
+  </data>
+  <data name="DB_SortByType" xml:space="preserve">
+    <value>Сортировать по типу</value>
+  </data>
+  <data name="DB_RemoveCondition" xml:space="preserve">
+    <value>Удалить это условие</value>
+  </data>
+  <data name="DB_ResetDone" xml:space="preserve">
+    <value>Все условия запроса сброшены</value>
+  </data>
+  <data name="DB_MysqlConfig" xml:space="preserve">
+    <value>Конфигурация MySQL</value>
+  </data>
+  <data name="DB_MysqlConfigDesc" xml:space="preserve">
+    <value>Настройте подключение к базе данных здесь</value>
+  </data>
+  <data name="DB_DbNameEmpty" xml:space="preserve">
+    <value>Имя базы данных не может быть пустым</value>
+  </data>
+  <data name="DB_ConnectSuccess" xml:space="preserve">
+    <value>Успешно подключено</value>
+  </data>
+  <data name="DB_DbNotExist" xml:space="preserve">
+    <value>База данных не существует.</value>
+  </data>
+  <data name="DB_AuthError" xml:space="preserve">
+    <value>Ошибка аутентификации, проверьте!</value>
+  </data>
+  <data name="DB_SpecifiedDbNotExist" xml:space="preserve">
+    <value>Указанная база данных не существует!</value>
+  </data>
+  <data name="DB_ConnectFailed" xml:space="preserve">
+    <value>Не удалось подключиться к серверу MySQL, проверьте порт и сеть!</value>
+  </data>
+  <data name="DB_UnknownError" xml:space="preserve">
+    <value>Неизвестная ошибка подключения!</value>
+  </data>
+  <data name="DB_InitFailed" xml:space="preserve">
+    <value>Инициализация таблицы MySQL не удалась, проверьте журналы.</value>
+  </data>
+  <data name="DB_InitSuccess" xml:space="preserve">
+    <value>Инициализация таблицы MySQL завершена.</value>
+  </data>
+  <data name="DB_Error" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="DB_Success" xml:space="preserve">
+    <value>Успех</value>
+  </data>
+  <data name="DB_EnableLogging" xml:space="preserve">
+    <value>Включить логирование</value>
+  </data>
+  <data name="DB_EnableLoggingDesc" xml:space="preserve">
+    <value>При включении записывает журналы локальной базы данных.</value>
+  </data>
+  <data name="DB_EnableCompress" xml:space="preserve">
+    <value>Включить сжатый архив</value>
+  </data>
+  <data name="DB_EnableCompressDesc" xml:space="preserve">
+    <value>Если включено, журналы будут сжиматься при превышении лимита размера.</value>
+  </data>
+  <data name="DB_FileSizeLimit" xml:space="preserve">
+    <value>Лимит размера файла (МБ)</value>
+  </data>
+  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
+    <value>Архивирует файл базы данных журнала при достижении этого размера, в МБ.</value>
+  </data>
+  <data name="DB_ArchiveCount" xml:space="preserve">
+    <value>Количество хранимых архивов</value>
+  </data>
+  <data name="DB_ArchiveCountDesc" xml:space="preserve">
+    <value>Самые старые архивы будут удалены при превышении этого количества.</value>
+  </data>
+  <data name="DB_SqliteLogTable" xml:space="preserve">
+    <value>Журнал SQLite</value>
+  </data>
+  <data name="DB_ProviderIdEmpty" xml:space="preserve">
+    <value>ProviderId не может быть пустым.</value>
+  </data>
+  <data name="DB_DbIdEmpty" xml:space="preserve">
+    <value>Идентификатор базы данных не может быть пустым.</value>
+  </data>
+  <data name="DB_PageSize10" xml:space="preserve">
+    <value>10/страница</value>
+  </data>
+  <data name="DB_PageSize20" xml:space="preserve">
+    <value>20/страница</value>
+  </data>
+  <data name="DB_PageSize50" xml:space="preserve">
+    <value>50/страница</value>
+  </data>
+  <data name="DB_PageSize100" xml:space="preserve">
+    <value>100/страница</value>
+  </data>
+  <data name="DB_EditRow" xml:space="preserve">
+    <value>Редактировать строку</value>
+  </data>
 </root>

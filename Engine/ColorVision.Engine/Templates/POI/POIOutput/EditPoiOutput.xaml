@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ColorVision.Engine.Templates.POI.POIOutput"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:PoiOutputParam}"
              d:DesignHeight="450" d:DesignWidth="500" Width="500" Height="450"
@@ -36,16 +37,16 @@
                     <TextBox Width="100" HorizontalAlignment="Left" Text="{Binding MaskFileName}" />
                 </DockPanel>
                 <DockPanel Margin="5,0,0,5">
-                    <TextBlock MinWidth="100" HorizontalAlignment="Left" Text="对标参数" />
+                    <TextBlock MinWidth="100" HorizontalAlignment="Left" Text="{x:Static properties:Resources.BenchmarkParams}" />
                 </DockPanel>
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用X" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseX}" />
                             <ToggleButton IsChecked="{Binding XIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding XFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -54,11 +55,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用Y" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseY}" />
                             <ToggleButton IsChecked="{Binding YIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding YFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -68,11 +69,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用Z" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseZ}" />
                             <ToggleButton IsChecked="{Binding ZIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding ZFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -82,11 +83,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用x" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseXLower}" />
                             <ToggleButton IsChecked="{Binding xIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding xFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -96,11 +97,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用y" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseYLower}" />
                             <ToggleButton IsChecked="{Binding yIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding yFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -109,11 +110,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用u" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseU}" />
                             <ToggleButton IsChecked="{Binding uIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding uFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -123,11 +124,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用v" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseV}" />
                             <ToggleButton IsChecked="{Binding vIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding vFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -137,11 +138,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用CCT" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseCCT}" />
                             <ToggleButton IsChecked="{Binding CCTIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding CCTFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -149,11 +150,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用XYZ" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseXYZ}" />
                             <ToggleButton IsChecked="{Binding XYZIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding XYZFileName}" />
                         </DockPanel>
                     </StackPanel>
@@ -162,11 +163,11 @@
                 <Border Grid.Row="1" Margin="0,0,0,5" CornerRadius="5" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="使用Wave" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.UseWave}" />
                             <ToggleButton IsChecked="{Binding WaveIsEnable}" Style="{StaticResource ToggleButtonSwitch.Small}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock MinWidth="100" Text="文件名称" />
+                            <TextBlock MinWidth="100" Text="{x:Static properties:Resources.FileName_Poi}" />
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding WaveFileName}" />
                         </DockPanel>
                     </StackPanel>

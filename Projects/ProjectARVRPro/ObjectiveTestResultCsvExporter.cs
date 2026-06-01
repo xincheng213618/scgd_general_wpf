@@ -81,7 +81,8 @@ namespace ProjectARVRPro
         private static string FormatCsvRow(string testScreenName, string propertyName, ObjectiveTestItem testItem)
         {
             string testResult = testItem.TestResult ? "pass" : "fail";
-            return $"{testScreenName},{propertyName},{testItem.Value},{testItem.Unit},{testItem.LowLimit},{testItem.UpLimit},{testResult}";
+            string testItemName = string.IsNullOrWhiteSpace(testItem.Name) ? propertyName : testItem.Name;
+            return $"{testScreenName},{testItemName},{testItem.Value},{testItem.Unit},{testItem.LowLimit},{testItem.UpLimit},{testResult}";
         }
 
         public static void ExportToCsv(ObjectiveTestResult results, string filePath)

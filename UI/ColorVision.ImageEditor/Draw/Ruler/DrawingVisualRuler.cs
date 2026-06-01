@@ -54,7 +54,7 @@ namespace ColorVision.ImageEditor.Draw
 
             if (Points.Count > 0)
             {
-                FormattedText formattedText1 = new("起点", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText1 = new(ColorVision.ImageEditor.Properties.Resources.Ruler_StartPoint, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 formattedText1.TextAlignment = TextAlignment.Center;
                 dc.DrawText(formattedText1, Points[0]);
 
@@ -76,7 +76,7 @@ namespace ColorVision.ImageEditor.Draw
                     {
                         lenAll += Lastlen;
 
-                        FormattedText formattedText2 = new("总长" + lenAll.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                        FormattedText formattedText2 = new(ColorVision.ImageEditor.Properties.Resources.Ruler_TotalLength + lenAll.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                     else

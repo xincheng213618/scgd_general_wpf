@@ -7,6 +7,7 @@ using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
@@ -20,15 +21,15 @@ namespace ColorVision.Engine
     /// </summary>
     public class ResultRenderConfig : ViewModelBase
     {
-        [DisplayName("小数位数"), Category("渲染")]
+        [Display(Name = "Engine_PG_DecimalPlaces", GroupName = "Engine_PG_Rendering", ResourceType = typeof(Properties.Resources))]
         public int DecimalPlaces { get => _DecimalPlaces; set { _DecimalPlaces = value; OnPropertyChanged(); } }
         private int _DecimalPlaces = 3;
 
-        [DisplayName("字体大小"), Category("渲染")]
+        [Display(Name = "Engine_PG_FontSize", GroupName = "Engine_PG_Rendering", ResourceType = typeof(Properties.Resources))]
         public double FontSize { get => _FontSize; set { _FontSize = value; OnPropertyChanged(); } }
         private double _FontSize = 10;
 
-        [DisplayName("线条粗细"), Category("渲染")]
+        [Display(Name = "Engine_PG_PenThickness", GroupName = "Engine_PG_Rendering", ResourceType = typeof(Properties.Resources))]
         public double PenThickness { get => _PenThickness; set { _PenThickness = value; OnPropertyChanged(); } }
         private double _PenThickness = 1;
 

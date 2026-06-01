@@ -254,14 +254,14 @@
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
-                    <RowDefinition Height="75"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="5">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <hc:ComboBox x:Name="FlowTemplate"  Width="200" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}"  SelectedValuePath="Value" DisplayMemberPath="Key" HorizontalAlignment="Left"  IsEditable="True"  hc:InfoElement.Necessary="True" hc:InfoElement.ShowClearButton="True"  hc:InfoElement.Symbol="*"  />
+                            <hc:ComboBox x:Name="FlowTemplate"  Width="235" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}"  SelectedValuePath="Value" DisplayMemberPath="Key" HorizontalAlignment="Left"  IsEditable="True"  hc:InfoElement.Necessary="True" hc:InfoElement.ShowClearButton="True"  hc:InfoElement.Symbol="*"  />
                             <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
                                 <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
@@ -270,7 +270,7 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                             </Grid>
-                            <Grid x:Name="SearchGrid" Margin="10,0" Width="210" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                            <Grid x:Name="SearchGrid" Margin="10,0" Width="275" HorizontalAlignment="Left" VerticalAlignment="Center" >
                                 <hc:TextBox x:Name="Searchbox"   Padding="25,1,2,1"  BorderThickness="1" GotFocus="Searchbox_GotFocus" hc:InfoElement.Placeholder="Search" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
                                 <Viewbox Width="16 " Height="16" HorizontalAlignment="Left" Margin="4,0,0,0">
                                     <Rectangle Width="16 " Height="16" >
@@ -331,7 +331,7 @@
 
                         </StackPanel>
                         <DockPanel>
-                            <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" FontWeight="Bold"  Foreground="Black" Click="TestClick" Width="200" />
+                            <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" FontWeight="Bold"  Foreground="Black" Click="TestClick" Width="275" />
                             <StackPanel Orientation="Horizontal">
                                 <TextBox x:Name="SNtextBox" IsEnabled="{Binding SNlocked,Converter={StaticResource Boolean2BooleanReConverter}}" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown" Margin="0,0,5,0"/>
                                 <Button Content="上传" Click="UploadSN_Click" Visibility="{Binding SummaryManager.Summary.UseMes,Converter={StaticResource bool2VisibilityConverter}}"  Margin="0,0,5,0"/>
@@ -340,11 +340,11 @@
                         </DockPanel>
                     </StackPanel>
                 </Grid>
-                <Border Grid.Row="1"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
-                    <TextBox x:FieldModifier="public"  x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+                <Border Grid.Row="1" Visibility="{Binding LogControlVisibility,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" Height="75" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
+                    <TextBox x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
                 </Border>
 
-                <RichTextBox x:Name="outputText" Grid.Row="2" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <RichTextBox x:Name="outputText" Grid.Row="2" Margin="5,0" Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <FlowDocument>  
                         <Paragraph>
 
@@ -383,12 +383,6 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="Test" Click="Button_Click"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="变更日志" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
+using SpectrumResources = Spectrum.Properties.Resources;
 using System.ComponentModel;
 using System.Text;
 
@@ -64,7 +65,7 @@ namespace Spectrum.Configs
         public bool CanEditDisplaySettings => !IsBusy;
 
         [JsonIgnore]
-        public string ConnectButtonText => IsOpen ? "断开源表" : "连接源表";
+        public string ConnectButtonText => IsOpen ? SpectrumResources.DisconnectSourceMeter : SpectrumResources.ConnectSourceMeter;
 
         [JsonIgnore]
         public string Version
@@ -90,7 +91,7 @@ namespace Spectrum.Configs
                 OnPropertyChanged(nameof(StatusSummary));
             }
         }
-        private string _statusText = "未连接";
+        private string _statusText = SpectrumResources.未连接;
 
         [JsonIgnore]
         public string StatusSummary => string.IsNullOrWhiteSpace(Version) ? StatusText : $"{StatusText} | {Version}";
@@ -100,13 +101,13 @@ namespace Spectrum.Configs
         private string _lastErrorMessage = string.Empty;
 
         [JsonIgnore]
-        public string MeasureValueLabel => DisplayConfig.IsSourceV ? "源值 (V)" : "源值 (mA)";
+        public string MeasureValueLabel => DisplayConfig.IsSourceV ? SpectrumResources.SourceValueVoltage : SpectrumResources.SourceValueCurrentMilliamp;
 
         [JsonIgnore]
-        public string LimitValueLabel => DisplayConfig.IsSourceV ? "限制 (mA)" : "限制 (V)";
+        public string LimitValueLabel => DisplayConfig.IsSourceV ? SpectrumResources.LimitMilliamp : SpectrumResources.LimitVoltage;
 
         [JsonIgnore]
-        public string ParameterHint => DisplayConfig.IsSourceV ? "电压源模式: 测量值单位为 V，限制值单位为 mA" : "电流源模式: 测量值单位为 mA，限制值单位为 V";
+        public string ParameterHint => DisplayConfig.IsSourceV ? SpectrumResources.VoltageSourceModeHint : SpectrumResources.CurrentSourceModeHint;
 
         [JsonIgnore]
         public double? V => DisplayConfig.V;
@@ -351,28 +352,28 @@ namespace Spectrum.Configs
             if (IsBusy) return false;
             if (string.IsNullOrWhiteSpace(Config.DevName))
             {
-                LastErrorMessage = "设备名称不能为空";
-                StatusText = "未连接";
+                LastErrorMessage = SpectrumResources.DeviceNameRequired;
+                StatusText = SpectrumResources.未连接;
                 return false;
             }
 
             IsBusy = true;
-            StatusText = "正在连接源表...";
+            StatusText = SpectrumResources.ConnectingSourceMeter;
             LastErrorMessage = string.Empty;
             string? version = await Task.Run(OpenCore);
             IsBusy = false;
             if (version is null)
             {
                 Version = string.Empty;
-                LastErrorMessage = "源表连接失败，请检查设备名称和连接方式";
-                StatusText = "连接失败";
+                LastErrorMessage = SpectrumResources.SourceMeterConnectFailedCheckSettings;
+                StatusText = SpectrumResources.ConnectionFailedTitle;
                 RefreshStateProperties();
                 return false;
             }
 
             Version = version;
             LastErrorMessage = string.Empty;
-            StatusText = "已连接";
+            StatusText = SpectrumResources.ConnectedStatus;
             RefreshStateProperties();
             log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
             return true;
@@ -386,15 +387,15 @@ namespace Spectrum.Configs
             string? version = OpenCore();
             if (version is null)
             {
-                LastErrorMessage = "源表连接失败，请检查设备名称和连接方式";
-                StatusText = "连接失败";
+                LastErrorMessage = SpectrumResources.SourceMeterConnectFailedCheckSettings;
+                StatusText = SpectrumResources.ConnectionFailedTitle;
                 RefreshStateProperties();
                 return false;
             }
 
             Version = version;
             LastErrorMessage = string.Empty;
-            StatusText = "已连接";
+            StatusText = SpectrumResources.ConnectedStatus;
             RefreshStateProperties();
             log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
             return true;
@@ -405,13 +406,13 @@ namespace Spectrum.Configs
             if (!IsOpen || IsBusy) return;
 
             IsBusy = true;
-            StatusText = "正在断开源表...";
+            StatusText = SpectrumResources.DisconnectingSourceMeter;
             await Task.Run(CloseCore);
             IsBusy = false;
             DisplayConfig.ClearOutput();
             Version = string.Empty;
             LastErrorMessage = string.Empty;
-            StatusText = "未连接";
+            StatusText = SpectrumResources.未连接;
             RefreshStateProperties();
             log.Info("SMU closed");
         }
@@ -424,7 +425,7 @@ namespace Spectrum.Configs
             DisplayConfig.ClearOutput();
             Version = string.Empty;
             LastErrorMessage = string.Empty;
-            StatusText = "未连接";
+            StatusText = SpectrumResources.未连接;
             RefreshStateProperties();
             log.Info("SMU closed");
         }
@@ -442,19 +443,19 @@ namespace Spectrum.Configs
             if (!IsOpen || IsBusy) return false;
 
             IsBusy = true;
-            StatusText = "正在点亮并读取...";
+            StatusText = SpectrumResources.MeasuringAndReading;
             SmuMeasurementSnapshot? snapshot = await Task.Run(CaptureMeasurementCore);
             IsBusy = false;
             if (snapshot is null)
             {
-                LastErrorMessage = "源表读取失败";
-                StatusText = "读取失败";
+                LastErrorMessage = SpectrumResources.SourceMeterReadFailed;
+                StatusText = SpectrumResources.ReadFailedTitle;
                 return false;
             }
 
             ApplyMeasurement(snapshot.Value);
             LastErrorMessage = string.Empty;
-            StatusText = $"已读取 {DateTime.Now:HH:mm:ss}";
+            StatusText = string.Format(SpectrumResources.ReadCompletedAt, DateTime.Now.ToString("HH:mm:ss"));
             log.Info($"SMU MeasureData: V={V}, I={I} mA");
             return true;
         }
@@ -466,14 +467,14 @@ namespace Spectrum.Configs
             SmuMeasurementSnapshot? snapshot = CaptureMeasurementCore();
             if (snapshot is null)
             {
-                LastErrorMessage = "源表读取失败";
-                StatusText = "读取失败";
+                LastErrorMessage = SpectrumResources.SourceMeterReadFailed;
+                StatusText = SpectrumResources.ReadFailedTitle;
                 return false;
             }
 
             ApplyMeasurement(snapshot.Value);
             LastErrorMessage = string.Empty;
-            StatusText = $"已读取 {DateTime.Now:HH:mm:ss}";
+            StatusText = string.Format(SpectrumResources.ReadCompletedAt, DateTime.Now.ToString("HH:mm:ss"));
             log.Info($"SMU MeasureData: V={V}, I={I} mA");
             return true;
         }
@@ -488,14 +489,14 @@ namespace Spectrum.Configs
             if (closeOutputCode != 1)
             {
                 log.Warn(BuildPassSxError("关闭源表输出失败", closeOutputCode, $"DevID={_deviceId}"));
-                LastErrorMessage = "关闭源表输出失败";
-                StatusText = "关闭输出失败";
+                LastErrorMessage = SpectrumResources.SourceMeterCloseOutputFailed;
+                StatusText = SpectrumResources.CloseOutputFailedTitle;
                 return false;
             }
 
             DisplayConfig.ClearOutput();
             LastErrorMessage = string.Empty;
-            StatusText = "输出已关闭";
+            StatusText = SpectrumResources.OutputClosed;
             log.Info("SMU output closed");
             return true;
         }

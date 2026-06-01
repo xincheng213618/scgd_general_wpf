@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             var model = SysResourceTpaDLLDao.Instance.GetByParam(new Dictionary<string, object>() { { "Code", Config.BindCode } });
             if (model ==null)
             {
-                MessageBox1.Show("请先在配置中配置关联的dll");
+                MessageBox1.Show(Properties.Resources.ConfigureAssociatedDllFirst);
                 return;
             }
             TemplateThirdPartyManager.Params.Clear();
@@ -96,7 +96,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 Application.Current.Dispatcher.Invoke(()=> UploadMsgManager.UploadList.Add(uploadMeta));
                 ;
                 await Task.Delay(1);
-                UploadMsgManager.Msg = "1s 后关闭窗口";
+                UploadMsgManager.Msg = Properties.Resources.CloseWindowInSeconds;
                 await Task.Delay(1000);
                 UploadMsgManager.Close();
             }

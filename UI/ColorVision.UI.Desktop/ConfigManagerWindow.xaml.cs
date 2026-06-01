@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1304,CA1311,CA1805,CA1822,CA1860,CA1862,CS8601,CS8604,CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
@@ -102,7 +103,7 @@ namespace ColorVision.UI.Desktop
             // 显示汇总信息
             int totalConfigs = _allConfigs.Count;
             int totalAssemblies = AssemblyGroups.Count;
-            SummaryText.Text = $"共计 {totalAssemblies} 个程序集，{totalConfigs} 个配置类型";
+            SummaryText.Text = string.Format(Properties.Resources.ConfigManager_Summary, totalAssemblies, totalConfigs);
         }
 
         /// <summary>
@@ -362,8 +363,8 @@ namespace ColorVision.UI.Desktop
         {
             if (config.ConfigInstance == null) return;
 
-            PropertyTitle.Text = $"配置: {config.DisplayName}";
-            SummaryText1.Text = $"当前选择: {config.DisplayName}";
+            PropertyTitle.Text = string.Format(Properties.Resources.ConfigManager_ConfigPrefix, config.DisplayName);
+            SummaryText1.Text = string.Format(Properties.Resources.ConfigManager_CurrentSelection, config.DisplayName);
 
             // Remove old property editor if exists
             if (PropertyContainer.Child is IDisposable disposable)
@@ -379,7 +380,7 @@ namespace ColorVision.UI.Desktop
             {
                 PropertyContainer.Child = new TextBlock
                 {
-                    Text = "无法加载配置属性",
+                    Text = Properties.Resources.ConfigManager_LoadFailed,
                     Margin = new Thickness(10),
                     Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
                 };
@@ -432,7 +433,7 @@ namespace ColorVision.UI.Desktop
         /// </summary>
         private void ClearPropertyDisplay()
         {
-            PropertyTitle.Text = "选择一个配置查看详情";
+            PropertyTitle.Text = Properties.Resources.ConfigManager_SelectConfig;
             
             if (PropertyContainer.Child is IDisposable disposable)
             {
@@ -444,7 +445,7 @@ namespace ColorVision.UI.Desktop
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             ConfigHandler.GetInstance().SaveConfigs();
-            MessageBox.Show("保存成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Properties.Resources.ConfigManager_SaveSuccess, Properties.Resources.ConfigManager_Prompt, MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void OpenFolder_Click(object sender, RoutedEventArgs e)

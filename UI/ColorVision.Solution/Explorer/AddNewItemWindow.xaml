@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
         mc:Ignorable="d"
-        Title="添加新建项" Height="420" Width="600"
+        Title="{x:Static properties:Resources.Sol_AddItem_Title}" Height="420" Width="600"
         Background="{DynamicResource GlobalBackground}"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
@@ -26,14 +27,14 @@
 
         <!-- Category filter -->
         <DockPanel Grid.Row="0" Margin="0,0,0,8">
-            <TextBlock Text="类别:" DockPanel.Dock="Left" Margin="0,0,8,0" FontWeight="Bold"/>
+            <TextBlock Text="{x:Static properties:Resources.Sol_AddItem_Category}" DockPanel.Dock="Left" Margin="0,0,8,0" FontWeight="Bold"/>
             <ComboBox x:Name="CategoryComboBox" SelectionChanged="CategoryComboBox_SelectionChanged"
                       Background="{DynamicResource GlobalBackground}"/>
         </DockPanel>
 
         <!-- Search bar -->
         <hc:SearchBar x:Name="SearchBar" Grid.Row="1" Margin="0,0,0,8"
-                      hc:InfoElement.Placeholder="搜索模板..."
+                      hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_AddItem_Search}"
                       hc:InfoElement.ShowClearButton="True"
                       Style="{StaticResource SearchBarPlus}"
                       IsRealTime="True"
@@ -56,21 +57,21 @@
                             <Setter Property="Background" Value="Transparent"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn Header="名称" Width="200">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sol_AddProject_Name}" Width="200">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="类别" Width="100">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sol_AddProject_CategoryCol}" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Category}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="扩展名" Width="80">
+                    <GridViewColumn Header="{x:Static properties:Resources.Sol_AddItem_Extension}" Width="80">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Extension}"/>
@@ -83,7 +84,7 @@
 
         <!-- Name input -->
         <DockPanel Grid.Row="3" Margin="0,0,0,12">
-            <TextBlock Text="名称:" DockPanel.Dock="Left" Margin="0,0,8,0" FontWeight="Bold"/>
+            <TextBlock Text="{x:Static properties:Resources.Sol_AddItem_Name}" DockPanel.Dock="Left" Margin="0,0,8,0" FontWeight="Bold"/>
             <TextBox x:Name="FileNameTextBox" Padding="4,3"
                      Foreground="{DynamicResource GlobalTextBrush}"
                      Background="{DynamicResource GlobalBackground}"
@@ -92,9 +93,9 @@
 
         <!-- Buttons -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button x:Name="AddButton" Content="添加" Width="80" Height="30" Margin="0,0,8,0"
+            <Button x:Name="AddButton" Content="{x:Static properties:Resources.Sol_AddItem_Add}" Width="80" Height="30" Margin="0,0,8,0"
                     Click="AddButton_Click" IsDefault="True"/>
-            <Button Content="取消" Width="80" Height="30"
+            <Button Content="{x:Static properties:Resources.Sol_AddItem_Cancel}" Width="80" Height="30"
                     Click="CancelButton_Click" IsCancel="True"/>
         </StackPanel>
     </Grid>

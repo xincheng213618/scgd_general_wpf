@@ -1,66 +1,33 @@
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.EditorTools.FullScreen;
 using Conoscope.Core;
 using System;
-using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace Conoscope
 {
     public partial class ConoscopeView
     {
-        private void UpdateToolbarZoomRatio()
-        {
-            if (txtToolbarZoomRatio == null)
-            {
-                return;
-            }
-
-            double zoomRatio = ImageView.Zoombox1.ContentMatrix.M11;
-            txtToolbarZoomRatio.Text = double.IsFinite(zoomRatio) ? zoomRatio.ToString("F2", CultureInfo.InvariantCulture) : "1.00";
-        }
-
         private void UpdatePanModeState()
         {
             bool isFocusCircleInteractionEnabled = ImageView.IsFocusCircleEditMode || ImageView.IsFocusCircleSelectionEnabled;
-            bool isPanModeEnabled = tglPanMode?.IsChecked == true && !isFocusCircleInteractionEnabled;
-            ImageView.Zoombox1.ActivateOn = isPanModeEnabled ? ModifierKeys.None : ModifierKeys.Control;
+            ImageView.Zoombox1.ActivateOn = isFocusCircleInteractionEnabled ? ModifierKeys.Control : ModifierKeys.None;
             if (!ImageView.IsFocusCircleEditMode)
             {
-                ImageView.Zoombox1.Cursor = isPanModeEnabled ? Cursors.Hand : Cursors.Arrow;
-                ImageView.ImageShow.Cursor = isPanModeEnabled ? Cursors.Hand : Cursors.Arrow;
+                ImageView.Zoombox1.Cursor = Cursors.Arrow;
+                ImageView.ImageShow.Cursor = Cursors.Arrow;
             }
         }
 
-        private void tglPanMode_Checked(object sender, RoutedEventArgs e)
+        private void btnCircleFit_Click(object sender, RoutedEventArgs e)
         {
-            UpdatePanModeState();
-        }
-
-        private void tglPanMode_Unchecked(object sender, RoutedEventArgs e)
-        {
-            UpdatePanModeState();
-        }
-
-        private void btnOpenCieWindow_Click(object sender, RoutedEventArgs e)
-        {
-            OpenCieWindow();
-        }
-
-        private void ToolbarOpenCie_Click(object sender, RoutedEventArgs e)
-        {
-            OpenCieWindow();
+            ApplyCircleFitZoomMode();
         }
 
         internal void OpenCieForCurrentView()
-        {
-            OpenCieWindow();
-        }
-
-        private void OpenCieWindow()
         {
             if (!HasXyzData() || currentBitmapSource == null || coordinateAxisController == null)
             {
@@ -68,12 +35,6 @@ namespace Conoscope
                 return;
             }
 
-            EnsureCieWindow();
-            SyncCieWindowFromCurrentPointer();
-        }
-
-        private void EnsureCieWindow()
-        {
             if (cieWindow == null)
             {
                 cieWindow = new WindowCIE();
@@ -88,6 +49,7 @@ namespace Conoscope
 
             cieWindow.Show();
             cieWindow.Activate();
+            SyncCieWindowFromCurrentPointer();
         }
 
         private void SyncCieWindowFromCurrentPointer()
@@ -106,84 +68,120 @@ namespace Conoscope
             UpdateCieWindowSelection(point);
         }
 
-        private void ToolbarZoomIn_Click(object sender, RoutedEventArgs e)
+        private void ApplyZoomAfterDisplayRefresh()
         {
-            ImageView.Zoombox1.Zoom(1.25);
-            UpdateToolbarZoomRatio();
-        }
-
-        private void ToolbarZoomOut_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView.Zoombox1.Zoom(0.8);
-            UpdateToolbarZoomRatio();
-        }
-
-        private void ToolbarZoomNone_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView.Zoombox1.ZoomNone();
-            UpdateToolbarZoomRatio();
-        }
-
-        private void ToolbarZoomUniform_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView.Zoombox1.ZoomUniform();
-            UpdateToolbarZoomRatio();
-        }
-
-        private void ToolbarZoomUniformToFill_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView.Zoombox1.ZoomUniformToFill();
-            UpdateToolbarZoomRatio();
-        }
-
-        private void txtToolbarZoomRatio_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
+            if (applyCircleFitOnNextRefresh)
             {
-                ApplyToolbarZoomRatio();
-                e.Handled = true;
+                applyCircleFitOnNextRefresh = false;
+                imageZoomMode = ConoscopeImageZoomMode.CircleFit;
+            }
+
+            switch (imageZoomMode)
+            {
+                case ConoscopeImageZoomMode.ActualSize:
+                    ApplyImageZoomMode(ConoscopeImageZoomMode.ActualSize, () => ImageView.Zoombox1.ZoomNone());
+                    break;
+                case ConoscopeImageZoomMode.Fill:
+                    ApplyImageZoomMode(ConoscopeImageZoomMode.Fill, () => ImageView.Zoombox1.ZoomUniformToFill());
+                    break;
+                case ConoscopeImageZoomMode.CircleFit:
+                    ApplyImageZoomMode(ConoscopeImageZoomMode.CircleFit, () =>
+                    {
+                        if (!TryApplyCircleFitZoom())
+                        {
+                            ImageView.Zoombox1.ZoomUniform();
+                        }
+                    });
+                    break;
+                case ConoscopeImageZoomMode.Custom:
+                    break;
+                case ConoscopeImageZoomMode.Fit:
+                default:
+                    ApplyImageZoomMode(ConoscopeImageZoomMode.Fit, () => ImageView.UpdateZoomAndScale());
+                    break;
             }
         }
 
-        private void txtToolbarZoomRatio_LostFocus(object sender, RoutedEventArgs e)
+        private void ApplyCircleFitZoomMode()
         {
-            ApplyToolbarZoomRatio();
-        }
-
-        private void ApplyToolbarZoomRatio()
-        {
-            if (txtToolbarZoomRatio == null)
+            if (!HasXyzData())
             {
+                MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (!ConoscopeNumericHelper.TryParseDouble(txtToolbarZoomRatio.Text, out double zoomRatio)
-                || !double.IsFinite(zoomRatio)
-                || zoomRatio <= 0)
+            ApplyImageZoomMode(ConoscopeImageZoomMode.CircleFit, () =>
             {
-                UpdateToolbarZoomRatio();
-                return;
-            }
-
-            double currentZoom = ImageView.Zoombox1.ContentMatrix.M11;
-            if (!double.IsFinite(currentZoom) || currentZoom <= 0)
-            {
-                currentZoom = 1;
-            }
-
-            ImageView.Zoombox1.Zoom(zoomRatio / currentZoom);
-            UpdateToolbarZoomRatio();
+                if (!TryApplyCircleFitZoom())
+                {
+                    ImageView.Zoombox1.ZoomUniform();
+                }
+            });
         }
 
-        private void ToolbarFullScreen_Click(object sender, RoutedEventArgs e)
+        private void ApplyImageZoomMode(ConoscopeImageZoomMode zoomMode, Action zoomAction)
         {
-            imageFullScreenMode ??= new ImageFullScreenMode(ImageViewHost);
-            imageFullScreenMode.ToggleFullScreen();
+            imageZoomMode = zoomMode;
+            isApplyingImageZoomMode = true;
+            try
+            {
+                zoomAction();
+            }
+            finally
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => isApplyingImageZoomMode = false));
+            }
         }
 
-        private void ToolbarOpen3D_Click(object sender, RoutedEventArgs e)
+        private bool TryApplyCircleFitZoom()
         {
-            Open3DForCurrentView();
+            if (!TryGetCurrentCircleBounds(out Rect circleBounds))
+            {
+                return false;
+            }
+
+            ImageView.ZoomToImageRect(circleBounds);
+            return true;
+        }
+
+        private bool TryGetCurrentCircleBounds(out Rect circleBounds)
+        {
+            circleBounds = Rect.Empty;
+
+            int imageWidth = currentBitmapSource?.PixelWidth ?? XMat?.Width ?? 0;
+            int imageHeight = currentBitmapSource?.PixelHeight ?? XMat?.Height ?? 0;
+            if (imageWidth <= 0 || imageHeight <= 0)
+            {
+                return false;
+            }
+
+            Point center = currentImageCenter;
+            double radius = currentImageRadius;
+            if (!double.IsFinite(center.X) || !double.IsFinite(center.Y) || radius <= 0)
+            {
+                center = new Point(imageWidth / 2.0, imageHeight / 2.0);
+                double pixelsPerDegree = CurrentModelProfile.GetConoscopeCoefficient(imageWidth, imageHeight);
+                radius = MaxAngle * pixelsPerDegree;
+            }
+
+            if (!double.IsFinite(radius) || radius <= 0)
+            {
+                return false;
+            }
+
+            double left = Math.Max(0, center.X - radius);
+            double top = Math.Max(0, center.Y - radius);
+            double right = Math.Min(imageWidth, center.X + radius);
+            double bottom = Math.Min(imageHeight, center.Y + radius);
+            double width = right - left;
+            double height = bottom - top;
+            if (width <= 0 || height <= 0)
+            {
+                return false;
+            }
+
+            circleBounds = new Rect(left, top, width, height);
+            return true;
         }
 
         internal void Open3DForCurrentView()
@@ -196,7 +194,16 @@ namespace Conoscope
 
             try
             {
-                WriteableBitmap heightBitmap = Create3DHeightBitmapForCurrentView();
+                OpenCvSharp.Mat fallback = YMat!;
+                WriteableBitmap heightBitmap = ConoscopePseudoColorRenderer.CreateHeightMapBitmap(
+                    XMat!,
+                    YMat!,
+                    ZMat!,
+                    GetSelectedDisplayChannel(),
+                    () => CreateColorDifferenceMat() ?? fallback,
+                    () => CreateContrastMat() ?? fallback,
+                    currentImageCenter,
+                    currentImageRadius);
                 Window3D window3D = new(heightBitmap, Conoscope3DInitialHeightScale)
                 {
                     Owner = Window.GetWindow(this)
@@ -206,20 +213,8 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error("打开 Conoscope 3D 视图失败", ex);
-                MessageBox.Show(string.Format(Properties.Resources.Msg3DViewOpenFailed, ex.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.Msg3DViewOpenFailed, ex.Message), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-        }
-
-        private WriteableBitmap Create3DHeightBitmapForCurrentView()
-        {
-            return ConoscopePseudoColorRenderer.CreateHeightMapBitmap(
-                XMat!,
-                YMat!,
-                ZMat!,
-                GetSelectedDisplayChannel(),
-                CreateColorDifferenceMat,
-                currentImageCenter,
-                currentImageRadius);
         }
     }
 }

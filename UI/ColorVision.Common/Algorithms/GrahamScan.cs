@@ -11,7 +11,7 @@ namespace ColorVision.Common.Algorithms
         public static List<Point> ComputeConvexHull(List<Point> points)
         {
             if (points.Count < 3)
-                throw new ArgumentException("至少需要三个点来构建凸包");
+                throw new ArgumentException(Properties.Resources.Common_MinThreePoints);
 
             // 找到基准点
             Point p0 = points.OrderBy(p => p.Y).ThenBy(p => p.X).First();

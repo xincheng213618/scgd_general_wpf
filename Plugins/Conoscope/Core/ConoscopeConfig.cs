@@ -3,8 +3,10 @@ using ColorVision.UI;
 using ColorVision.Core;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 namespace Conoscope.Core
@@ -19,6 +21,9 @@ namespace Conoscope.Core
 
         [JsonIgnore]
         public ConoscopeColorDifferenceSettings ColorDifference { get; }
+
+        [JsonIgnore]
+        public ConoscopeContrastSettings Contrast { get; }
 
         [JsonIgnore]
         public ConoscopeCaptureSettings Capture { get; }
@@ -95,58 +100,70 @@ namespace Conoscope.Core
         }
         private bool _UsePseudoColor = true;
 
+        public bool UsePseudoColorRangeLimit
+        {
+            get => _UsePseudoColorRangeLimit;
+            set
+            {
+                if (_UsePseudoColorRangeLimit == value) return;
+                _UsePseudoColorRangeLimit = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _UsePseudoColorRangeLimit = true;
+
         public bool ApplyFilterOnOpen { get => _ApplyFilterOnOpen; set { if (_ApplyFilterOnOpen == value) return; _ApplyFilterOnOpen = value; OnPropertyChanged(); } }
         private bool _ApplyFilterOnOpen = true;
 
-        [Category("预处理"), DisplayName("加载时修正非正 XYZ"), Description("启用后，在加载 CVCIE 数据时把 X/Y/Z 中小于等于 0 的像素修正为 1e-6，用于错误校正文件的兜底。会改变原始 XYZ 数据。")]
+        [Display(Name = "Con_Cfg_FixNonPositiveXYZ", GroupName = "Con_Category_Preprocess", Description = "启用后，在加载 CVCIE 数据时把 X/Y/Z 中小于等于 0 的像素修正为 1e-6，用于错误校正文件的兜底。会改变原始 XYZ 数据。", ResourceType = typeof(Properties.Resources))]
         public bool ClampNonPositiveXyzOnLoad { get => _ClampNonPositiveXyzOnLoad; set { if (_ClampNonPositiveXyzOnLoad == value) return; _ClampNonPositiveXyzOnLoad = value; OnPropertyChanged(); } }
         private bool _ClampNonPositiveXyzOnLoad = true;
 
-        [Category("滤波"), DisplayName("滤波类型"), Description("Conoscope 图像打开或手动应用时使用的预处理滤波类型。")]
+        [Display(Name = "Con_Cfg_FilterType", GroupName = "Con_Category_Filter", Description = "Conoscope 图像打开或手动应用时使用的预处理滤波类型。", ResourceType = typeof(Properties.Resources))]
         public ImageFilterType FilterType { get => _FilterType; set { if (_FilterType == value) return; _FilterType = value; OnPropertyChanged(); } }
         private ImageFilterType _FilterType = ImageFilterType.Gaussian;
 
-        [Category("滤波"), DisplayName("核大小"), Description("均值、高斯、中值滤波使用的核大小，自动修正为奇数。")]
+        [Display(Name = "Con_Cfg_KernelSize", GroupName = "Con_Category_Filter", Description = "均值、高斯、中值滤波使用的核大小，自动修正为奇数。", ResourceType = typeof(Properties.Resources))]
         public int FilterKernelSize { get => _FilterKernelSize; set { _FilterKernelSize = NormalizeOdd(value, 1, 101); OnPropertyChanged(); } }
         private int _FilterKernelSize = 55;
 
-        [Category("滤波"), DisplayName("高斯 Sigma"), Description("高斯滤波使用的标准差。")]
+        [Display(Name = "Con_Cfg_GaussianSigma", GroupName = "Con_Category_Filter", Description = "高斯滤波使用的标准差。", ResourceType = typeof(Properties.Resources))]
         public double FilterSigma { get => _FilterSigma; set { _FilterSigma = Math.Max(0.1, value); OnPropertyChanged(); } }
         private double _FilterSigma = 1.0;
 
-        [Category("滤波"), DisplayName("双边 d"), Description("双边滤波邻域直径。")]
+        [Display(Name = "Con_Cfg_BilateralD", GroupName = "Con_Category_Filter", Description = "双边滤波邻域直径。", ResourceType = typeof(Properties.Resources))]
         public int FilterD { get => _FilterD; set { _FilterD = Math.Max(1, value); OnPropertyChanged(); } }
         private int _FilterD = 5;
 
-        [Category("滤波"), DisplayName("双边 SigmaColor"), Description("双边滤波颜色域 Sigma。")]
+        [Display(Name = "Con_Cfg_BilateralSigmaColor", GroupName = "Con_Category_Filter", Description = "双边滤波颜色域 Sigma。", ResourceType = typeof(Properties.Resources))]
         public double FilterSigmaColor { get => _FilterSigmaColor; set { _FilterSigmaColor = Math.Max(1, value); OnPropertyChanged(); } }
         private double _FilterSigmaColor = 75;
 
-        [Category("滤波"), DisplayName("双边 SigmaSpace"), Description("双边滤波空间域 Sigma。")]
+        [Display(Name = "Con_Cfg_BilateralSigmaSpace", GroupName = "Con_Category_Filter", Description = "双边滤波空间域 Sigma。", ResourceType = typeof(Properties.Resources))]
         public double FilterSigmaSpace { get => _FilterSigmaSpace; set { _FilterSigmaSpace = Math.Max(1, value); OnPropertyChanged(); } }
         private double _FilterSigmaSpace = 75;
 
-        [Category("灰尘滤除"), DisplayName("启用灰尘滤除"), Description("灰尘滤除作为独立预处理步骤，可与常规滤波叠加使用。")]
+        [Display(Name = "Con_Cfg_EnableDust", GroupName = "Con_Category_Dust", Description = "灰尘滤除作为独立预处理步骤，可与常规滤波叠加使用。", ResourceType = typeof(Properties.Resources))]
         public bool DustRemovalEnabled { get => _DustRemovalEnabled; set { if (_DustRemovalEnabled == value) return; _DustRemovalEnabled = value; OnPropertyChanged(); } }
         private bool _DustRemovalEnabled;
 
-        [Category("灰尘滤除"), DisplayName("灰尘类型"), Description("暗斑用于滤除黑点灰尘，亮斑用于滤除亮点异常。")]
+        [Display(Name = "Con_Cfg_DustType", GroupName = "Con_Category_Dust", Description = "暗斑用于滤除黑点灰尘，亮斑用于滤除亮点异常。", ResourceType = typeof(Properties.Resources))]
         public DustRemovalMode DustRemovalMode { get => _DustRemovalMode; set { _DustRemovalMode = value; OnPropertyChanged(); } }
         private DustRemovalMode _DustRemovalMode = DustRemovalMode.DarkSpot;
 
-        [Category("灰尘滤除"), DisplayName("检测阈值(%)"), Description("基于归一化亮度和局部背景的差异阈值，数值越小越敏感。")]
+        [Display(Name = "Con_Cfg_DetectThreshold", GroupName = "Con_Category_Dust", Description = "基于归一化亮度和局部背景的差异阈值，数值越小越敏感。", ResourceType = typeof(Properties.Resources))]
         public double DustThresholdPercent { get => _DustThresholdPercent; set { _DustThresholdPercent = Math.Max(0.1, Math.Min(value, 100)); OnPropertyChanged(); } }
         private double _DustThresholdPercent = 12;
 
-        [Category("灰尘滤除"), DisplayName("最小面积(px)"), Description("低于该面积的候选点会被忽略。")]
+        [Display(Name = "Con_Cfg_MinArea", GroupName = "Con_Category_Dust", Description = "低于该面积的候选点会被忽略。", ResourceType = typeof(Properties.Resources))]
         public int DustMinArea { get => _DustMinArea; set { _DustMinArea = Math.Max(1, value); OnPropertyChanged(); } }
         private int _DustMinArea = 1;
 
-        [Category("灰尘滤除"), DisplayName("最大面积(px)"), Description("高于该面积的候选区域会被忽略，避免误修大面积结构。")]
+        [Display(Name = "Con_Cfg_MaxArea", GroupName = "Con_Category_Dust", Description = "高于该面积的候选区域会被忽略，避免误修大面积结构。", ResourceType = typeof(Properties.Resources))]
         public int DustMaxArea { get => _DustMaxArea; set { _DustMaxArea = Math.Max(1, value); OnPropertyChanged(); } }
         private int _DustMaxArea = 500;
 
-        [Category("灰尘滤除"), DisplayName("修复半径(px)"), Description("用于估计局部背景和扩展修复区域的像素半径。")]
+        [Display(Name = "Con_Cfg_RepairRadius", GroupName = "Con_Category_Dust", Description = "用于估计局部背景和扩展修复区域的像素半径。", ResourceType = typeof(Properties.Resources))]
         public int DustRepairRadius { get => _DustRepairRadius; set { _DustRepairRadius = Math.Max(1, Math.Min(value, 31)); OnPropertyChanged(); } }
         private int _DustRepairRadius = 3;
 
@@ -159,6 +176,30 @@ namespace Conoscope.Core
         public double ColorDifferenceCustomV { get => _ColorDifferenceCustomV; set { _ColorDifferenceCustomV = value; OnPropertyChanged(); } }
         private double _ColorDifferenceCustomV = 0.4684;
 
+        public string ColorDifferenceReferenceUMatPath { get => _ColorDifferenceReferenceUMatPath; set { _ColorDifferenceReferenceUMatPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ColorDifferenceReferenceUMatPath = string.Empty;
+
+        public string ColorDifferenceReferenceVMatPath { get => _ColorDifferenceReferenceVMatPath; set { _ColorDifferenceReferenceVMatPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ColorDifferenceReferenceVMatPath = string.Empty;
+
+        public string ColorDifferenceReferenceDisplayName { get => _ColorDifferenceReferenceDisplayName; set { _ColorDifferenceReferenceDisplayName = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ColorDifferenceReferenceDisplayName = string.Empty;
+
+        public ContrastReferenceKind ContrastReferenceKind { get => _ContrastReferenceKind; set { _ContrastReferenceKind = value; OnPropertyChanged(); } }
+        private ContrastReferenceKind _ContrastReferenceKind = ContrastReferenceKind.Black;
+
+        public string ContrastBlackReferenceYMatPath { get => _ContrastBlackReferenceYMatPath; set { _ContrastBlackReferenceYMatPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ContrastBlackReferenceYMatPath = string.Empty;
+
+        public string ContrastBlackReferenceDisplayName { get => _ContrastBlackReferenceDisplayName; set { _ContrastBlackReferenceDisplayName = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ContrastBlackReferenceDisplayName = string.Empty;
+
+        public string ContrastWhiteReferenceYMatPath { get => _ContrastWhiteReferenceYMatPath; set { _ContrastWhiteReferenceYMatPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ContrastWhiteReferenceYMatPath = string.Empty;
+
+        public string ContrastWhiteReferenceDisplayName { get => _ContrastWhiteReferenceDisplayName; set { _ContrastWhiteReferenceDisplayName = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _ContrastWhiteReferenceDisplayName = string.Empty;
+
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public ObservableCollection<ConoscopeNdCalibrationBinding> NdCalibrationBindings
         {
@@ -167,7 +208,15 @@ namespace Conoscope.Core
         }
         private ObservableCollection<ConoscopeNdCalibrationBinding> _NdCalibrationBindings = new();
 
-        [Category("导出"), DisplayName("当前曲线采样间隔(度)"), Description("当前曲线 CSV 导出的默认采样间隔，范围 0.01 到 360 度。")]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public ConoscopeAdvancedExportState AdvancedExport
+        {
+            get => _AdvancedExport;
+            set { _AdvancedExport = value ?? new ConoscopeAdvancedExportState(); OnPropertyChanged(); }
+        }
+        private ConoscopeAdvancedExportState _AdvancedExport = new();
+
+        [Display(Name = "Con_Cfg_SampleInterval", GroupName = "Con_Category_Export", Description = "当前曲线 CSV 导出的默认采样间隔，范围 0.01 到 360 度。", ResourceType = typeof(Properties.Resources))]
         public double CurrentCurveExportStepDegrees
         {
             get => _CurrentCurveExportStepDegrees;
@@ -181,7 +230,7 @@ namespace Conoscope.Core
         }
         private double _CurrentCurveExportStepDegrees = 1.0;
 
-        [Category("导出"), DisplayName("当前曲线导出元数据"), Description("启用后，在当前曲线 CSV 顶部写入标题和元数据信息。")]
+        [Display(Name = "Con_Cfg_ExportMetadata", GroupName = "Con_Category_Export", Description = "启用后，在当前曲线 CSV 顶部写入标题和元数据信息。", ResourceType = typeof(Properties.Resources))]
         public bool CurrentCurveExportIncludeMetadata
         {
             get => _CurrentCurveExportIncludeMetadata;
@@ -194,12 +243,27 @@ namespace Conoscope.Core
         }
         private bool _CurrentCurveExportIncludeMetadata = true;
 
+        [Display(Name = "Con_Cfg_Decimals", GroupName = "Con_Category_Export", Description = "CSV 导出时数据值默认保留的小数位数，范围 0 到 8，默认 4。", ResourceType = typeof(Properties.Resources))]
+        public int ExportDecimalPlaces
+        {
+            get => _ExportDecimalPlaces;
+            set
+            {
+                int normalized = Math.Max(0, Math.Min(value, 8));
+                if (_ExportDecimalPlaces == normalized) return;
+                _ExportDecimalPlaces = normalized;
+                OnPropertyChanged();
+            }
+        }
+        private int _ExportDecimalPlaces = 4;
+
 
         public ConoscopeConfig()
         {
             Rendering = new ConoscopeRenderingSettings(this);
             Preprocess = new ConoscopePreprocessSettings(this);
             ColorDifference = new ConoscopeColorDifferenceSettings(this);
+            Contrast = new ConoscopeContrastSettings(this);
             Capture = new ConoscopeCaptureSettings(this);
             Export = new ConoscopeExportSettings(this);
             EnsureProfile(ConoscopeModelType.VA60);
@@ -238,6 +302,12 @@ namespace Conoscope.Core
         {
             get => config.UsePseudoColor;
             set => config.UsePseudoColor = value;
+        }
+
+        public bool UsePseudoColorRangeLimit
+        {
+            get => config.UsePseudoColorRangeLimit;
+            set => config.UsePseudoColorRangeLimit = value;
         }
     }
 
@@ -363,6 +433,22 @@ namespace Conoscope.Core
         }
     }
 
+    public sealed class ConoscopeContrastSettings
+    {
+        private readonly ConoscopeConfig config;
+
+        internal ConoscopeContrastSettings(ConoscopeConfig config)
+        {
+            this.config = config;
+        }
+
+        public ContrastReferenceKind ReferenceKind
+        {
+            get => config.ContrastReferenceKind;
+            set => config.ContrastReferenceKind = value;
+        }
+    }
+
     public sealed class ConoscopeCaptureSettings
     {
         private readonly ConoscopeConfig config;
@@ -399,6 +485,31 @@ namespace Conoscope.Core
             get => config.CurrentCurveExportIncludeMetadata;
             set => config.CurrentCurveExportIncludeMetadata = value;
         }
+
+        public int DecimalPlaces
+        {
+            get => config.ExportDecimalPlaces;
+            set => config.ExportDecimalPlaces = value;
+        }
+    }
+
+    public sealed class ConoscopeAdvancedExportState
+    {
+        public string FilePrefix { get; set; } = "Conoscope_Export";
+
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<ExportChannel> Channels { get; set; } = new() { ExportChannel.Y };
+
+        public bool ExportAzimuth { get; set; } = true;
+        public bool ExportPolar { get; set; }
+        public double AzimuthStep { get; set; } = 1;
+        public double RadialStep { get; set; } = 1;
+        public double PolarStep { get; set; } = 1;
+        public double CircumferentialStep { get; set; } = 1;
+        public bool EnableCrossSection { get; set; }
+        public bool UseAzimuthCrossSection { get; set; } = true;
+        public double CrossSectionAzimuthAngle { get; set; }
+        public double CrossSectionPolarAngle { get; set; } = 45;
     }
 
     public class ConoscopeNdCalibrationBinding : ViewModelBase

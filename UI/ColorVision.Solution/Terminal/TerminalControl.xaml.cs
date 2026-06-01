@@ -2,6 +2,7 @@ using log4net;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,30 +12,58 @@ namespace ColorVision.Solution.Terminal
 {
     public partial class TerminalControl : UserControl, IDisposable
     {
+        private enum TerminalLifecycleState
+        {
+            Starting,
+            Running,
+            Exited,
+            Killed,
+            Disposed
+        }
+
+        private const short DefaultTerminalColumns = 120;
+        private const short DefaultTerminalRows = 30;
+        private const short MinTerminalColumns = 20;
+        private const short MinTerminalRows = 5;
+        private const short MaxTerminalColumns = 300;
+        private const short MaxTerminalRows = 200;
+
         private static readonly ILog log = LogManager.GetLogger(typeof(TerminalControl));
 
         private ConPtyTerminal? _terminal;
-        private TerminalScreenBuffer _screenBuffer = new();
-        private string _lastRendered = "";
+        private TerminalScreenBuffer _screenBuffer = new(DefaultTerminalColumns, DefaultTerminalRows);
         private readonly object _outputLock = new();
         private readonly Queue<string> _pendingOutput = new();
-        private DispatcherTimer? _flushTimer;
-        private bool _isShellRunning;
+        private int _flushQueued;
+        private TerminalLifecycleState _terminalState = TerminalLifecycleState.Exited;
         private bool _disposed;
+        private bool _initialShellStarted;
+        private bool _initialShellStartQueued;
         private string _currentShell = "powershell";
+        private short _terminalCols = DefaultTerminalColumns;
+        private short _terminalRows = DefaultTerminalRows;
+        private bool _resizeQueued;
+        private int _terminalSessionId;
+        private Action<string>? _outputReceivedHandler;
+        private Action<int>? _processExitedHandler;
 
         // Input tracking for command history
         private readonly CommandHistory _commandHistory = new();
         private StringBuilder _currentInput = new();
         private int _inputCursorPos;
 
+        internal bool IsDisposed => _disposed;
+
+        private bool CanSendInput => _terminal != null && _terminalState == TerminalLifecycleState.Running;
+
         public TerminalControl()
         {
             InitializeComponent();
-            _flushTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
-            _flushTimer.Tick += FlushOutput;
 
             TerminalDisplay.UrlClicked += OnUrlClicked;
+            IsVisibleChanged += TerminalControl_IsVisibleChanged;
+            LayoutUpdated += TerminalControl_LayoutUpdated;
+            UpdateTerminalStatus();
         }
 
         private void OnUrlClicked(string url)
@@ -51,17 +80,112 @@ namespace ColorVision.Solution.Terminal
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            if (!_isShellRunning)
+            QueueInitialShellStart();
+            QueueResizeToViewport();
+        }
+
+        private void TerminalControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible)
+            {
+                QueueInitialShellStart();
+                QueueResizeToViewport();
+            }
+        }
+
+        private void TerminalControl_LayoutUpdated(object? sender, EventArgs e)
+        {
+            if (_initialShellStarted || _disposed)
+                return;
+
+            QueueInitialShellStart();
+        }
+
+        private void QueueInitialShellStart()
+        {
+            if (_disposed || _initialShellStarted || _initialShellStartQueued)
+                return;
+
+            _initialShellStartQueued = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+            {
+                _initialShellStartQueued = false;
+                if (_disposed || _initialShellStarted)
+                    return;
+
+                if (!CanStartShellForVisibleControl())
+                    return;
+
+                MarkInitialShellStarted();
                 StartShell();
-            ImeProxy.Focus();
+            });
+        }
+
+        private bool CanStartShellForVisibleControl()
+        {
+            return IsLoaded && IsVisible;
+        }
+
+        private void MarkInitialShellStarted()
+        {
+            _initialShellStarted = true;
+            LayoutUpdated -= TerminalControl_LayoutUpdated;
+        }
+
+        private void FocusTerminalInput(bool force = false)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (_disposed || !IsVisible)
+                    return;
+
+                if (TerminalRoot.ContextMenu?.IsOpen == true)
+                    return;
+
+                if (!force && !TerminalRoot.IsKeyboardFocusWithin)
+                    return;
+
+                TerminalScrollViewer.Focus();
+                ImeProxy.Focus();
+                Keyboard.Focus(ImeProxy);
+            });
+        }
+
+        public void NotifyPanelActivated()
+        {
+            if (_disposed)
+                return;
+
+            QueueResizeToViewport();
+
+            if (!CanSendInput)
+            {
+                if (CanStartShellForVisibleControl() &&
+                    (_terminalState is TerminalLifecycleState.Exited or TerminalLifecycleState.Killed))
+                {
+                    MarkInitialShellStarted();
+                    StartShell();
+                }
+                else
+                {
+                    QueueInitialShellStart();
+                }
+            }
         }
 
         public void StartShell(string? workingDirectory = null)
         {
-            KillShell();
+            if (_disposed)
+                return;
+
+            StopShell(TerminalLifecycleState.Killed);
+            ResetTrackedInput();
+
+            var terminalSize = CalculateTerminalSize();
+            _terminalCols = terminalSize.cols;
+            _terminalRows = terminalSize.rows;
+            _screenBuffer = new TerminalScreenBuffer(_terminalCols, _terminalRows);
             ClearOutput();
-            _screenBuffer = new TerminalScreenBuffer();
-            _lastRendered = "";
 
             workingDirectory ??= GetDefaultWorkingDirectory();
 
@@ -73,16 +197,22 @@ namespace ColorVision.Solution.Terminal
 
             try
             {
+                SetTerminalState(TerminalLifecycleState.Starting);
                 _terminal = new ConPtyTerminal();
-                _terminal.OutputReceived += OnConPtyOutput;
-                _terminal.ProcessExited += OnConPtyExited;
-                _terminal.Start(commandLine, workingDirectory);
-                _isShellRunning = true;
+                int sessionId = ++_terminalSessionId;
+                _outputReceivedHandler = text => OnConPtyOutput(sessionId, text);
+                _processExitedHandler = exitCode => OnConPtyExited(sessionId, exitCode);
+                _terminal.OutputReceived += _outputReceivedHandler;
+                _terminal.ProcessExited += _processExitedHandler;
+                _terminal.Start(commandLine, workingDirectory, _terminalCols, _terminalRows);
+                SetTerminalState(TerminalLifecycleState.Running);
 
                 log.Info($"Terminal: ConPTY started ({commandLine}) in {workingDirectory}");
             }
             catch (Exception ex)
             {
+                ReleaseTerminal();
+                SetTerminalState(TerminalLifecycleState.Exited);
                 AppendOutput($"启动终端失败: {ex.Message}\r\n");
                 log.Error("Terminal: failed to start ConPTY shell", ex);
             }
@@ -90,14 +220,14 @@ namespace ColorVision.Solution.Terminal
 
         public void SendCommand(string command)
         {
-            if (!_isShellRunning || _terminal == null)
-            {
-                StartShell();
-                Task.Delay(500).ContinueWith(_ =>
-                    Dispatcher.BeginInvoke(() => _terminal?.Write(command + "\r\n")));
+            if (_disposed)
                 return;
-            }
-            _terminal.Write(command + "\r\n");
+
+            if (!CanSendInput)
+                StartShell();
+
+            SendText(command + "\r\n", trackInput: false);
+            ResetTrackedInput();
         }
 
         public void RunScript(string filePath)
@@ -142,29 +272,34 @@ namespace ColorVision.Solution.Terminal
 
         public void SendCtrlC()
         {
-            _terminal?.Write("\x03");
+            if (SendControlSequence("\x03"))
+                ResetTrackedInput();
         }
 
-        private void OnConPtyOutput(string text)
+        private void OnConPtyOutput(int sessionId, string text)
         {
+            if (sessionId != _terminalSessionId)
+                return;
+
             // Queue raw VT100 output for processing by TerminalScreenBuffer
             lock (_outputLock)
             {
                 _pendingOutput.Enqueue(text);
             }
-            Dispatcher.BeginInvoke(() =>
-            {
-                if (_flushTimer != null && !_flushTimer.IsEnabled)
-                    _flushTimer.Start();
-            });
+            QueueOutputFlush(sessionId);
         }
 
-        private void OnConPtyExited(int exitCode)
+        private void OnConPtyExited(int sessionId, int exitCode)
         {
-            _isShellRunning = false;
             // Write exit message directly into the screen buffer on UI thread
             Dispatcher.BeginInvoke(() =>
             {
+                if (_disposed || sessionId != _terminalSessionId || _terminalState == TerminalLifecycleState.Killed)
+                    return;
+
+                ReleaseTerminal();
+                SetTerminalState(TerminalLifecycleState.Exited);
+
                 _screenBuffer.Write($"\r\n[终端已退出, 退出代码: {exitCode}]\r\n");
                 RenderBuffer();
             });
@@ -180,10 +315,24 @@ namespace ColorVision.Solution.Terminal
             });
         }
 
-        private void FlushOutput(object? sender, EventArgs e)
+        private void QueueOutputFlush(int sessionId)
         {
-            _flushTimer?.Stop();
+            if (_disposed || Interlocked.Exchange(ref _flushQueued, 1) == 1)
+                return;
 
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, () =>
+            {
+                Interlocked.Exchange(ref _flushQueued, 0);
+
+                if (_disposed || sessionId != _terminalSessionId)
+                    return;
+
+                FlushPendingOutput();
+            });
+        }
+
+        private void FlushPendingOutput()
+        {
             string rawText;
             lock (_outputLock)
             {
@@ -202,12 +351,17 @@ namespace ColorVision.Solution.Terminal
         {
             var (lines, cursorLine, cursorCol) = _screenBuffer.RenderLines();
             TerminalDisplay.UpdateContent(lines, cursorLine, cursorCol);
+            TerminalScrollViewer.InvalidateScrollInfo();
 
             // Scroll to cursor after layout completes (Loaded priority runs after Render/Layout)
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, () =>
             {
+                if (_disposed)
+                    return;
+
                 ScrollToCursor();
                 UpdateImeProxyPosition();
+                TerminalDisplay.InvalidateVisual();
             });
         }
 
@@ -232,7 +386,6 @@ namespace ColorVision.Solution.Terminal
                 _pendingOutput.Clear();
             }
             _screenBuffer.Clear();
-            _lastRendered = "";
             Dispatcher.BeginInvoke(() =>
             {
                 TerminalDisplay.UpdateContent(new List<TerminalLine>(), 0, 0);
@@ -242,9 +395,15 @@ namespace ColorVision.Solution.Terminal
 
         private void KillShell()
         {
+            StopShell(TerminalLifecycleState.Killed);
+        }
+
+        private void StopShell(TerminalLifecycleState finalState)
+        {
+            _terminalSessionId++;
+
             if (_terminal != null)
             {
-                _isShellRunning = false;
                 try
                 {
                     _terminal.Kill();
@@ -253,11 +412,28 @@ namespace ColorVision.Solution.Terminal
                 {
                     log.Warn($"Terminal: kill shell failed: {ex.Message}");
                 }
-                _terminal.OutputReceived -= OnConPtyOutput;
-                _terminal.ProcessExited -= OnConPtyExited;
-                _terminal.Dispose();
-                _terminal = null;
+                ReleaseTerminal();
             }
+
+            if (_terminalState != TerminalLifecycleState.Disposed)
+                SetTerminalState(finalState);
+
+            ResetTrackedInput();
+        }
+
+        private void ReleaseTerminal()
+        {
+            if (_terminal == null)
+                return;
+
+            if (_outputReceivedHandler != null)
+                _terminal.OutputReceived -= _outputReceivedHandler;
+            if (_processExitedHandler != null)
+                _terminal.ProcessExited -= _processExitedHandler;
+            _outputReceivedHandler = null;
+            _processExitedHandler = null;
+            _terminal.Dispose();
+            _terminal = null;
         }
 
         private string GetDefaultWorkingDirectory()
@@ -268,13 +444,205 @@ namespace ColorVision.Solution.Terminal
             return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         }
 
+        private void SetTerminalState(TerminalLifecycleState state)
+        {
+            _terminalState = state;
+            UpdateCommandStates();
+            UpdateTerminalStatus();
+        }
+
+        private void UpdateCommandStates()
+        {
+            if (MenuNewPowerShell == null)
+                return;
+
+            bool disposed = _terminalState == TerminalLifecycleState.Disposed;
+            bool canStop = _terminalState is TerminalLifecycleState.Starting or TerminalLifecycleState.Running;
+
+            MenuNewPowerShell.IsEnabled = !disposed;
+            MenuNewCmd.IsEnabled = !disposed;
+            MenuClear.IsEnabled = !disposed;
+            MenuKill.IsEnabled = canStop;
+        }
+
+        private void UpdateTerminalStatus()
+        {
+            if (MenuStatus == null)
+                return;
+
+            string shell = _currentShell == "cmd" ? "CMD" : "PowerShell";
+            MenuStatus.Header = $"{shell} / {_terminalState}";
+        }
+
+        private void TerminalScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            QueueInitialShellStart();
+            QueueResizeToViewport();
+        }
+
+        private void QueueResizeToViewport()
+        {
+            if (_disposed || _resizeQueued)
+                return;
+
+            _resizeQueued = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+            {
+                _resizeQueued = false;
+                SynchronizeTerminalSize();
+            });
+        }
+
+        private void SynchronizeTerminalSize()
+        {
+            if (_disposed)
+                return;
+
+            var terminalSize = CalculateTerminalSize();
+            if (terminalSize.cols == _terminalCols && terminalSize.rows == _terminalRows)
+                return;
+
+            _terminalCols = terminalSize.cols;
+            _terminalRows = terminalSize.rows;
+            _screenBuffer.Resize(_terminalCols, _terminalRows);
+
+            if (_terminal != null && _terminalState is TerminalLifecycleState.Starting or TerminalLifecycleState.Running)
+            {
+                try
+                {
+                    _terminal.Resize(_terminalCols, _terminalRows);
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Terminal: resize failed: {ex.Message}");
+                }
+            }
+
+            RenderBuffer();
+        }
+
+        private (short cols, short rows) CalculateTerminalSize()
+        {
+            double width = TerminalScrollViewer.ViewportWidth;
+            if (double.IsNaN(width) || double.IsInfinity(width) || width <= 0)
+                width = TerminalScrollViewer.ActualWidth;
+
+            double height = TerminalScrollViewer.ViewportHeight;
+            if (double.IsNaN(height) || double.IsInfinity(height) || height <= 0)
+                height = TerminalScrollViewer.ActualHeight;
+
+            double charWidth = Math.Max(1, TerminalDisplay.CharWidth);
+            double lineHeight = Math.Max(1, TerminalDisplay.LineHeight);
+
+            if (width <= 0 || height <= 0)
+                return (_terminalCols, _terminalRows);
+
+            int cols = Math.Clamp((int)Math.Floor(width / charWidth), MinTerminalColumns, MaxTerminalColumns);
+            int rows = Math.Clamp((int)Math.Floor(height / lineHeight), MinTerminalRows, MaxTerminalRows);
+            return ((short)cols, (short)rows);
+        }
+
         #region Input Tracking & History
 
-        private void ResetInputTracking()
+        private void ResetTrackedInput()
         {
             _currentInput.Clear();
             _inputCursorPos = 0;
             _commandHistory.ResetNavigation();
+        }
+
+        private bool SendText(string text, bool trackInput = true)
+        {
+            if (string.IsNullOrEmpty(text) || !EnsureTerminalReadyForInput())
+                return false;
+
+            _terminal!.Write(text);
+            if (trackInput)
+                TrackSentText(text);
+            return true;
+        }
+
+        private bool SendControlSequence(string sequence)
+        {
+            if (string.IsNullOrEmpty(sequence) || !EnsureTerminalReadyForInput())
+                return false;
+
+            _terminal!.Write(sequence);
+            return true;
+        }
+
+        private bool EnsureTerminalReadyForInput()
+        {
+            if (CanSendInput)
+                return true;
+
+            if (_disposed)
+                return false;
+
+            if (_terminalState is TerminalLifecycleState.Exited or TerminalLifecycleState.Killed)
+            {
+                if (!CanStartShellForVisibleControl())
+                {
+                    QueueInitialShellStart();
+                    return false;
+                }
+
+                MarkInitialShellStarted();
+                StartShell();
+            }
+
+            return CanSendInput;
+        }
+
+        private void TrackSentText(string text)
+        {
+            foreach (char ch in text)
+            {
+                if (ch == '\r' || ch == '\n')
+                {
+                    ResetTrackedInput();
+                }
+                else if (ch == '\b' || ch == '\x7f')
+                {
+                    RemoveTrackedInputBeforeCursor();
+                }
+                else if (ch == '\t')
+                {
+                    ResetTrackedInput();
+                }
+                else if (!char.IsControl(ch))
+                {
+                    _currentInput.Insert(_inputCursorPos, ch);
+                    _inputCursorPos++;
+                }
+            }
+        }
+
+        private void RemoveTrackedInputBeforeCursor()
+        {
+            if (_inputCursorPos <= 0)
+                return;
+
+            _inputCursorPos--;
+            _currentInput.Remove(_inputCursorPos, 1);
+        }
+
+        private bool PasteClipboardText()
+        {
+            if (!Clipboard.ContainsText())
+                return false;
+
+            return SendText(Clipboard.GetText());
+        }
+
+        private bool CopySelectedText()
+        {
+            var selectedText = TerminalDisplay.GetSelectedText();
+            if (string.IsNullOrEmpty(selectedText))
+                return false;
+
+            Clipboard.SetText(selectedText);
+            return true;
         }
 
         /// <summary>
@@ -293,7 +661,7 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         private void ReplaceCurrentInput(string newText)
         {
-            if (_terminal == null) return;
+            if (!CanSendInput) return;
 
             var sb = new StringBuilder();
             // Move cursor to end of current input
@@ -305,7 +673,7 @@ namespace ColorVision.Solution.Terminal
                 sb.Append("\x7f");
             // Type the new text
             sb.Append(newText);
-            _terminal.Write(sb.ToString());
+            SendControlSequence(sb.ToString());
 
             _currentInput.Clear();
             _currentInput.Append(newText);
@@ -321,11 +689,8 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         private void OutputTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
+            if (SendText(e.Text))
             {
-                _terminal.Write(e.Text);
-                _currentInput.Insert(_inputCursorPos, e.Text);
-                _inputCursorPos += e.Text.Length;
                 e.Handled = true;
             }
         }
@@ -336,11 +701,8 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         private void ImeProxy_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
+            if (SendText(e.Text))
             {
-                _terminal.Write(e.Text);
-                _currentInput.Insert(_inputCursorPos, e.Text);
-                _inputCursorPos += e.Text.Length;
                 e.Handled = true;
                 // Clear residual composition text from the proxy TextBox
                 Dispatcher.BeginInvoke(DispatcherPriority.Input, () => ImeProxy.Clear());
@@ -362,11 +724,9 @@ namespace ColorVision.Solution.Terminal
 
         private void TerminalScrollViewer_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
+            QueueInitialShellStart();
+            if (SendText(e.Text))
             {
-                _terminal.Write(e.Text);
-                _currentInput.Insert(_inputCursorPos, e.Text);
-                _inputCursorPos += e.Text.Length;
                 e.Handled = true;
             }
         }
@@ -376,7 +736,7 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         private void OutputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (_terminal == null || !_isShellRunning) return;
+            if (!EnsureTerminalReadyForInput()) return;
 
             // Let IME framework handle composition keys (Chinese/Japanese input)
             if (e.Key == Key.ImeProcessed) return;
@@ -387,8 +747,8 @@ namespace ColorVision.Solution.Terminal
                 var selectedText = TerminalDisplay.GetSelectedText();
                 if (string.IsNullOrEmpty(selectedText))
                 {
-                    _terminal.Write("\x03");
-                    ResetInputTracking();
+                    SendControlSequence("\x03");
+                    ResetTrackedInput();
                     e.Handled = true;
                 }
                 else
@@ -401,21 +761,15 @@ namespace ColorVision.Solution.Terminal
 
             if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                if (Clipboard.ContainsText())
-                {
-                    var text = Clipboard.GetText();
-                    _terminal.Write(text);
-                    _currentInput.Insert(_inputCursorPos, text);
-                    _inputCursorPos += text.Length;
+                if (PasteClipboardText())
                     e.Handled = true;
-                }
                 return;
             }
 
             if (e.Key == Key.L && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 ClearOutput();
-                _terminal.Write("\x0C");
+                SendControlSequence("\x0C");
                 e.Handled = true;
                 return;
             }
@@ -447,8 +801,8 @@ namespace ColorVision.Solution.Terminal
                 var cmd = _currentInput.ToString();
                 UpdateHistoryContext();
                 _commandHistory.Add(cmd);
-                _terminal.Write("\r");
-                ResetInputTracking();
+                SendControlSequence("\r");
+                ResetTrackedInput();
                 e.Handled = true;
                 return;
             }
@@ -456,9 +810,7 @@ namespace ColorVision.Solution.Terminal
             // --- Space ---
             if (e.Key == Key.Space)
             {
-                _terminal.Write(" ");
-                _currentInput.Insert(_inputCursorPos, ' ');
-                _inputCursorPos++;
+                SendText(" ");
                 e.Handled = true;
                 return;
             }
@@ -466,12 +818,8 @@ namespace ColorVision.Solution.Terminal
             // --- Backspace ---
             if (e.Key == Key.Back)
             {
-                _terminal.Write("\x7f");
-                if (_inputCursorPos > 0)
-                {
-                    _inputCursorPos--;
-                    _currentInput.Remove(_inputCursorPos, 1);
-                }
+                SendControlSequence("\x7f");
+                RemoveTrackedInputBeforeCursor();
                 e.Handled = true;
                 return;
             }
@@ -479,7 +827,7 @@ namespace ColorVision.Solution.Terminal
             // --- Delete ---
             if (e.Key == Key.Delete)
             {
-                _terminal.Write("\x1b[3~");
+                SendControlSequence("\x1b[3~");
                 if (_inputCursorPos < _currentInput.Length)
                     _currentInput.Remove(_inputCursorPos, 1);
                 e.Handled = true;
@@ -489,28 +837,28 @@ namespace ColorVision.Solution.Terminal
             // --- Cursor movement (track position) ---
             if (e.Key == Key.Left && Keyboard.Modifiers == ModifierKeys.None)
             {
-                _terminal.Write("\x1b[D");
+                SendControlSequence("\x1b[D");
                 if (_inputCursorPos > 0) _inputCursorPos--;
                 e.Handled = true;
                 return;
             }
             if (e.Key == Key.Right && Keyboard.Modifiers == ModifierKeys.None)
             {
-                _terminal.Write("\x1b[C");
+                SendControlSequence("\x1b[C");
                 if (_inputCursorPos < _currentInput.Length) _inputCursorPos++;
                 e.Handled = true;
                 return;
             }
             if (e.Key == Key.Home && Keyboard.Modifiers == ModifierKeys.None)
             {
-                _terminal.Write("\x1b[H");
+                SendControlSequence("\x1b[H");
                 _inputCursorPos = 0;
                 e.Handled = true;
                 return;
             }
             if (e.Key == Key.End && Keyboard.Modifiers == ModifierKeys.None)
             {
-                _terminal.Write("\x1b[F");
+                SendControlSequence("\x1b[F");
                 _inputCursorPos = _currentInput.Length;
                 e.Handled = true;
                 return;
@@ -519,9 +867,9 @@ namespace ColorVision.Solution.Terminal
             // --- Other special keys: Tab, Escape, function keys, etc. ---
             if (e.Key == Key.Tab)
             {
-                _terminal.Write("\t");
+                SendControlSequence("\t");
                 // Tab completion changes input unpredictably; reset tracking
-                ResetInputTracking();
+                ResetTrackedInput();
                 e.Handled = true;
                 return;
             }
@@ -530,9 +878,9 @@ namespace ColorVision.Solution.Terminal
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key >= Key.A && e.Key <= Key.Z)
             {
                 char c = (char)(e.Key - Key.A + 1);
-                _terminal.Write(c.ToString());
+                SendControlSequence(c.ToString());
                 if (e.Key == Key.U) // Ctrl+U clears line
-                    ResetInputTracking();
+                    ResetTrackedInput();
                 e.Handled = true;
                 return;
             }
@@ -541,7 +889,7 @@ namespace ColorVision.Solution.Terminal
             string? seq = KeyToVTSequence(e.Key);
             if (seq != null)
             {
-                _terminal.Write(seq);
+                SendControlSequence(seq);
                 e.Handled = true;
             }
         }
@@ -550,23 +898,22 @@ namespace ColorVision.Solution.Terminal
         {
             if (ImeProxy.IsFocused) return;
 
-            if (_terminal == null || !_isShellRunning) return;
+            if (!CanSendInput)
+            {
+                QueueInitialShellStart();
+                FocusTerminalInput();
+                return;
+            }
 
             if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                if (Clipboard.ContainsText())
-                {
-                    var text = Clipboard.GetText();
-                    _terminal.Write(text);
-                    _currentInput.Insert(_inputCursorPos, text);
-                    _inputCursorPos += text.Length;
+                if (PasteClipboardText())
                     e.Handled = true;
-                }
                 return;
             }
 
             // Redirect to ImeProxy for consistent handling
-            ImeProxy.Focus();
+            FocusTerminalInput();
         }
 
         /// <summary>
@@ -599,38 +946,79 @@ namespace ColorVision.Solution.Terminal
 
         private void TerminalScrollViewer_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            ImeProxy.Focus();
+            QueueInitialShellStart();
+
+            if (e.ChangedButton == MouseButton.Right)
+                return;
+
+            FocusTerminalInput(force: true);
         }
 
         private void TerminalScrollViewer_GotFocus(object sender, RoutedEventArgs e)
         {
+            QueueInitialShellStart();
             if (!ImeProxy.IsFocused)
-                ImeProxy.Focus();
+                FocusTerminalInput();
         }
 
-        private void ButtonNewShell_Click(object sender, RoutedEventArgs e)
+        private void StartShellFromMenu(string shell)
         {
+            _currentShell = shell;
+            MarkInitialShellStarted();
+            UpdateTerminalStatus();
             StartShell();
-            ImeProxy.Focus();
+            FocusTerminalInput(force: true);
         }
 
-        private void ButtonClear_Click(object sender, RoutedEventArgs e)
+        private void MenuNewPowerShell_Click(object sender, RoutedEventArgs e)
         {
-            ClearOutput();
+            StartShellFromMenu("powershell");
+            e.Handled = true;
         }
 
-        private void ButtonKill_Click(object sender, RoutedEventArgs e)
+        private void MenuNewCmd_Click(object sender, RoutedEventArgs e)
+        {
+            StartShellFromMenu("cmd");
+            e.Handled = true;
+        }
+
+        private void MenuKill_Click(object sender, RoutedEventArgs e)
         {
             KillShell();
             AppendOutput("[终端已终止]\r\n");
+            FocusTerminalInput(force: true);
+            e.Handled = true;
         }
 
-        private void ShellSelector_Changed(object sender, SelectionChangedEventArgs e)
+        private void TerminalContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (ShellSelector?.SelectedIndex == 1)
-                _currentShell = "cmd";
-            else
-                _currentShell = "powershell";
+            QueueInitialShellStart();
+            bool hasSelection = !string.IsNullOrEmpty(TerminalDisplay.GetSelectedText());
+            MenuCopy.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
+            MenuPaste.IsEnabled = Clipboard.ContainsText() && CanSendInput;
+            UpdateCommandStates();
+            UpdateTerminalStatus();
+        }
+
+        private void MenuCopy_Click(object sender, RoutedEventArgs e)
+        {
+            CopySelectedText();
+            FocusTerminalInput(force: true);
+            e.Handled = true;
+        }
+
+        private void MenuPaste_Click(object sender, RoutedEventArgs e)
+        {
+            PasteClipboardText();
+            FocusTerminalInput(force: true);
+            e.Handled = true;
+        }
+
+        private void MenuClear_Click(object sender, RoutedEventArgs e)
+        {
+            ClearOutput();
+            FocusTerminalInput(force: true);
+            e.Handled = true;
         }
 
         #endregion
@@ -641,10 +1029,13 @@ namespace ColorVision.Solution.Terminal
                 return;
 
             _disposed = true;
-            _flushTimer?.Stop();
-            _flushTimer = null;
+            SetTerminalState(TerminalLifecycleState.Disposed);
+            Interlocked.Exchange(ref _flushQueued, 0);
             TerminalDisplay.UrlClicked -= OnUrlClicked;
-            KillShell();
+            IsVisibleChanged -= TerminalControl_IsVisibleChanged;
+            LayoutUpdated -= TerminalControl_LayoutUpdated;
+            StopShell(TerminalLifecycleState.Disposed);
+            TerminalService.GetInstance().ClearTerminalControl(this);
             GC.SuppressFinalize(this);
         }
     }

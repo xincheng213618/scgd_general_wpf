@@ -35,7 +35,12 @@ namespace ColorVision.Engine.Services
             if (string.IsNullOrEmpty(json)) return CreateDefaultConfig<T>();
             try
             {
-                return JsonConvert.DeserializeObject<T>(json) ?? CreateDefaultConfig<T>();
+                T config = CreateDefaultConfig<T>();
+                JsonConvert.PopulateObject(json, config, new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+                return config;
             }
             catch(Exception ex)
             {

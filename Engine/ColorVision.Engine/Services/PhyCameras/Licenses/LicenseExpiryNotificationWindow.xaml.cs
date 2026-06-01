@@ -48,15 +48,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
             if (expiredCount > 0 && expiringCount > 0)
             {
-                TextBlockSummary.Text = $"检测到 {expiredCount} 个相机许可证已过期，{expiringCount} 个相机许可证即将过期";
+                TextBlockSummary.Text = string.Format(Properties.Resources.MixedCameraLicensesSummary, expiredCount, expiringCount);
             }
             else if (expiredCount > 0)
             {
-                TextBlockSummary.Text = $"检测到 {expiredCount} 个相机许可证已过期";
+                TextBlockSummary.Text = string.Format(Properties.Resources.ExpiredCameraLicensesSummary, expiredCount);
             }
             else if (expiringCount > 0)
             {
-                TextBlockSummary.Text = $"检测到 {expiringCount} 个相机许可证即将过期";
+                TextBlockSummary.Text = string.Format(Properties.Resources.ExpiringCameraLicensesSummary, expiringCount);
             }
 
             // Bind camera list

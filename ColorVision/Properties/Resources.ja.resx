@@ -138,6 +138,9 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
   </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>起動時に、前回閉じる前のメイン ウィンドウの位置とサイズを復元します。</value>
+  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>ソフトウェアバージョン</value>
   </data>
@@ -146,6 +149,9 @@
   </data>
   <data name="CheckUpdatesOnStartup" xml:space="preserve">
     <value>ソフトウェアの起動時にアップデートを検出する</value>
+  </data>
+  <data name="CheckUpdatesOnStartupDescription" xml:space="preserve">
+    <value>アプリケーション起動時に利用可能な更新を自動的に確認します。</value>
   </data>
   <data name="Project" xml:space="preserve">
     <value>プロジェクト</value>
@@ -258,6 +264,9 @@
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Windows 10 デスクトップのクラシックメニュー</value>
   </data>
+  <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
+    <value>サポートされているシステムでクラシックなデスクトップ右クリック メニューを使用します。</value>
+  </data>
   <data name="SaveConfiguration" xml:space="preserve">
     <value>設定を保存</value>
   </data>
@@ -308,5 +317,989 @@
   </data>
   <data name="CheckPluginUpdates" xml:space="preserve">
     <value>プラグインの更新を確認</value>
+  </data>
+  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
+    <value>更新を確認しています</value>
+  </data>
+  <data name="UpdatePreviewCheckingSummary" xml:space="preserve">
+    <value>メインアプリ、プラグイン、テーマの最新バージョン情報を取得しています。しばらくお待ちください。</value>
+  </data>
+  <data name="UpdatePreviewScanningTitle" xml:space="preserve">
+    <value>利用可能な更新をスキャンしています</value>
+  </data>
+  <data name="UpdatePreviewNoUpdatesTitle" xml:space="preserve">
+    <value>利用可能な更新はありません</value>
+  </data>
+  <data name="UpdatePreviewNoUpdatesMessage" xml:space="preserve">
+    <value>メインアプリ、プラグイン、テーマはすべて最新です。</value>
+  </data>
+  <data name="UpdatePreviewFoundUpdatesHeading" xml:space="preserve">
+    <value>更新が見つかりました</value>
+  </data>
+  <data name="UpdatePreviewAlreadyLatestHeading" xml:space="preserve">
+    <value>最新バージョンです</value>
+  </data>
+  <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
+    <value>今すぐ更新</value>
+  </data>
+  <data name="UpdatePreviewUpdatingButtonText" xml:space="preserve">
+    <value>更新中...</value>
+  </data>
+  <data name="UpdatePreviewLaterButtonText" xml:space="preserve">
+    <value>後で</value>
+  </data>
+  <data name="UpdatePreviewCancelButtonText" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="UpdatePreviewCloseButtonText" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="UpdatePreviewSkipVersionButtonText" xml:space="preserve">
+    <value>このバージョンをスキップ</value>
+  </data>
+  <data name="UpdatePreviewRequiredBadge" xml:space="preserve">
+    <value>必須</value>
+  </data>
+  <data name="UpdatePreviewUnknownVersion" xml:space="preserve">
+    <value>不明</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateCategory" xml:space="preserve">
+    <value>アプリ更新</value>
+  </data>
+  <data name="UpdatePreviewApplicationIncrementalCategory" xml:space="preserve">
+    <value>アプリ差分更新</value>
+  </data>
+  <data name="UpdatePreviewPluginUpdateCategory" xml:space="preserve">
+    <value>プラグイン更新</value>
+  </data>
+  <data name="UpdatePreviewApplicationFullPackageLabel" xml:space="preserve">
+    <value>完全なアプリインストーラー</value>
+  </data>
+  <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
+    <value>アプリ</value>
+  </data>
+  <data name="UpdatePreviewUpdateKindPlugin" xml:space="preserve">
+    <value>プラグイン</value>
+  </data>
+  <data name="UpdatePreviewNoInstallableUpdatesMessage" xml:space="preserve">
+    <value>インストールが必要な更新は見つかりませんでした。</value>
+  </data>
+  <data name="UpdatePreviewPackageDownloadFailed" xml:space="preserve">
+    <value>更新パッケージのダウンロードに失敗しました。後でもう一度お試しください。</value>
+  </data>
+  <data name="UpdatePreviewPluginDownloadFailed" xml:space="preserve">
+    <value>プラグインのダウンロードが正常に完了しませんでした。後でもう一度お試しください。</value>
+  </data>
+  <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
+    <value>更新可能なプラグインはありません。</value>
+  </data>
+  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
+    <value>統合更新パッケージのダウンロードが不完全です。後でもう一度お試しください。</value>
+  </data>
+  <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
+    <value>アプリとプラグインはすでに最新です。</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryNoUpdates" xml:space="preserve">
+    <value>メインアプリ、プラグイン、テーマはすべて最新です。</value>
+  </data>
+  <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
+    <value>完全なインストーラーをダウンロードし、現在のアプリ更新フローで更新します。</value>
+  </data>
+  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
+    <value>アプリ更新を含む</value>
+  </data>
+  <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
+    <value>必須更新を含む</value>
+  </data>
+  <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
+    <value>更新完了後にアプリが再起動します</value>
+  </data>
+  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
+    <value>更新前に自動でバックアップが作成され、完了後に再起動が必要になる場合があります</value>
+  </data>
+  <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
+    <value>ホスト要件: {0}</value>
+  </data>
+  <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
+    <value>メインアプリのバージョン {0}</value>
+  </data>
+  <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
+    <value>メインアプリのバージョン</value>
+  </data>
+  <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
+    <value>次の更新は互換性要件のため表示されていません: {0}</value>
+  </data>
+  <data name="UpdatePreviewApplicationIncrementalPackagesFormat" xml:space="preserve">
+    <value>差分更新パッケージ {0} 個</value>
+  </data>
+  <data name="UpdatePreviewApplicationCardSummaryIncrementalFormat" xml:space="preserve">
+    <value>今回の更新では、アプリ差分パッケージ {0} 個を選択した更新とあわせて適用します。</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryWithKinds" xml:space="preserve">
+    <value>利用可能な更新が {0} 件あります。内容: {1}。</value>
+  </data>
+  <data name="UpdatePreviewDialogSummaryDefault" xml:space="preserve">
+    <value>利用可能な更新が {0} 件あります。必要なものを選んで今すぐインストールできます。</value>
+  </data>
+  <data name="UpdatePreviewDialogSummarySkippedCount" xml:space="preserve">
+    <value>互換性要件のため、さらに {0} 件の更新が表示されていません。</value>
+  </data>
+  <data name="UpdatePreviewHeaderApplicationCount" xml:space="preserve">
+    <value>アプリ更新 {0} 件</value>
+  </data>
+  <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
+    <value>プラグイン更新 {0} 件</value>
+  </data>
+  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
+    <value>テーマ更新 {0} 件</value>
+  </data>
+  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
+    <value>その他の更新 {0} 件</value>
+  </data>
+  <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
+    <value>選択済み {0} / {1} 個のプラグイン</value>
+  </data>
+  <data name="UpdatePreviewSelectionSelectedUpdatesFormat" xml:space="preserve">
+    <value>選択済み {0} / {1} 件の任意更新</value>
+  </data>
+  <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
+    <value>実行可能な統合更新はありません。次のプラグインは互換性要件のためスキップされました: {0}</value>
+  </data>
+  <data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>サムネイル プレビューを登録</value>
+  </data>
+  <data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>サムネイル プレビューを解除</value>
+  </data>
+  <data name="MenuFileAssociation" xml:space="preserve">
+    <value>ファイル関連付け</value>
+  </data>
+  <data name="CopilotNewConversation" xml:space="preserve">
+    <value>新しい会話</value>
+  </data>
+  <data name="CopilotExpandConversationList" xml:space="preserve">
+    <value>会話リストを展開</value>
+  </data>
+  <data name="CopilotConfigureCopilot" xml:space="preserve">
+    <value>Copilotを設定</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>コピー</value>
+  </data>
+  <data name="CopilotCopyMessage" xml:space="preserve">
+    <value>現在のメッセージをコピー</value>
+  </data>
+  <data name="CopilotRetry" xml:space="preserve">
+    <value>再試行</value>
+  </data>
+  <data name="CopilotRegenerateAnswer" xml:space="preserve">
+    <value>現在の回答を再生成</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="CopilotRefreshWebContext" xml:space="preserve">
+    <value>Webコンテキストを再取得して回答を生成</value>
+  </data>
+  <data name="CopilotCurrentWindowContext" xml:space="preserve">
+    <value>現在のウィンドウコンテキスト</value>
+  </data>
+  <data name="CopilotAttachTooltip" xml:space="preserve">
+    <value>ファイル、画像、またはコンテキストを添付</value>
+  </data>
+  <data name="CopilotPasteImage" xml:space="preserve">
+    <value>画像を貼り付け</value>
+  </data>
+  <data name="CopilotSpecifyWebPage" xml:space="preserve">
+    <value>Webページを指定</value>
+  </data>
+  <data name="CopilotAddFile" xml:space="preserve">
+    <value>ファイルを追加</value>
+  </data>
+  <data name="CopilotAddContext" xml:space="preserve">
+    <value>コンテキストを追加</value>
+  </data>
+  <data name="CopilotCollapseConversationList" xml:space="preserve">
+    <value>会話リストを折りたたむ</value>
+  </data>
+  <data name="CopilotConversations" xml:space="preserve">
+    <value>会話</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>名前を変更</value>
+  </data>
+  <data name="CopilotLanguageModel" xml:space="preserve">
+    <value>言語モデル</value>
+  </data>
+  <data name="CopilotModelConfigDescription" xml:space="preserve">
+    <value>複数のモデル構成を保存できます。保存後、右側のAIパネルがこのモデルリストを直接使用します。</value>
+  </data>
+  <data name="CopilotAddModel" xml:space="preserve">
+    <value>+ モデルを追加</value>
+  </data>
+  <data name="CopilotVendorHint" xml:space="preserve">
+    <value>まずベンダーを選択してから追加します。右側で互換性、アドレス、モデル、システムプロンプトを引き続き変更できます。</value>
+  </data>
+  <data name="CopilotName" xml:space="preserve">
+    <value>名前</value>
+  </data>
+  <data name="CopilotVendor" xml:space="preserve">
+    <value>ベンダー</value>
+  </data>
+  <data name="CopilotProtocol" xml:space="preserve">
+    <value>プロトコル</value>
+  </data>
+  <data name="CopilotModel" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="CopilotMaxToken" xml:space="preserve">
+    <value>最大トークン</value>
+  </data>
+  <data name="CopilotTemperature" xml:space="preserve">
+    <value>温度</value>
+  </data>
+  <data name="CopilotToolRounds" xml:space="preserve">
+    <value>ツールラウンド</value>
+  </data>
+  <data name="CopilotSystemPrompt" xml:space="preserve">
+    <value>システムプロンプト</value>
+  </data>
+  <data name="CopilotSettingsHint" xml:space="preserve">
+    <value>ベンダープリセット、モデルプリセット、手動アドレス入力をサポート。AIパネルは送信前にモデルを切り替えられます。</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="CopilotExceptionDiagnosis" xml:space="preserve">
+    <value>例外診断</value>
+  </data>
+  <data name="CopilotUnhandledException" xml:space="preserve">
+    <value>ColorVisionが未処理の例外をキャッチしました</value>
+  </data>
+  <data name="CopilotExceptionDetails" xml:space="preserve">
+    <value>例外の詳細</value>
+  </data>
+  <data name="CopilotRecentLogs" xml:space="preserve">
+    <value>最近のログ</value>
+  </data>
+  <data name="CopilotRecentNLines" xml:space="preserve">
+    <value>最近のN行</value>
+  </data>
+  <data name="CopilotLines" xml:space="preserve">
+    <value>行</value>
+  </data>
+  <data name="CopilotTodayLog" xml:space="preserve">
+    <value>今日のログ</value>
+  </data>
+  <data name="CopilotRefreshLog" xml:space="preserve">
+    <value>ログを更新</value>
+  </data>
+  <data name="CopilotAiRequest" xml:space="preserve">
+    <value>AIリクエスト</value>
+  </data>
+  <data name="CopilotCopyDetails" xml:space="preserve">
+    <value>詳細をコピー</value>
+  </data>
+  <data name="CopilotAskAi" xml:space="preserve">
+    <value>AIに質問</value>
+  </data>
+  <data name="CopilotGoogleSearch" xml:space="preserve">
+    <value>Google検索</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="Input" xml:space="preserve">
+    <value>入力</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>開く</value>
+  </data>
+  <data name="OpenWithSystemDefault" xml:space="preserve">
+    <value>システム既定で開く</value>
+  </data>
+  <data name="DesktopPetSendTestReminder" xml:space="preserve">
+    <value>テストリマインダーを送信</value>
+  </data>
+  <data name="DesktopPetReminder" xml:space="preserve">
+    <value>ペットリマインダー</value>
+  </data>
+  <data name="DesktopPetTestMessage" xml:space="preserve">
+    <value>これはデスクトップペットからのテストメッセージです。</value>
+  </data>
+  <data name="DesktopPetShowMainWindow" xml:space="preserve">
+    <value>メインウィンドウを表示</value>
+  </data>
+  <data name="DesktopPetSettings" xml:space="preserve">
+    <value>ペット設定</value>
+  </data>
+  <data name="DesktopPetAlwaysOnTop" xml:space="preserve">
+    <value>常に最前面に表示</value>
+  </data>
+  <data name="DesktopPetShowNotifications" xml:space="preserve">
+    <value>通知を表示</value>
+  </data>
+  <data name="DesktopPetHide" xml:space="preserve">
+    <value>ペットを隠す</value>
+  </data>
+  <data name="DesktopPetExit" xml:space="preserve">
+    <value>プログラムを終了</value>
+  </data>
+  <data name="DesktopPetIdleTip1" xml:space="preserve">
+    <value>ここにいます。メッセージがあれば通知します。</value>
+  </data>
+  <data name="DesktopPetIdleTip2" xml:space="preserve">
+    <value>目を休めて、現在の作業を保存してください。</value>
+  </data>
+  <data name="DesktopPetIdleTip3" xml:space="preserve">
+    <value>静かにしてほしい場合は、右クリックで通知をオフにしてください。</value>
+  </data>
+  <data name="DesktopPetIdleTip4" xml:space="preserve">
+    <value>ローカルLive2Dモデルがある場合は、設定で接続できます。</value>
+  </data>
+  <data name="DesktopPetStartupGreeting" xml:space="preserve">
+    <value>ColorVisionが起動しました。ここで通知します。</value>
+  </data>
+  <data name="DesktopPetLive2DError" xml:space="preserve">
+    <value>モデル読み込み失敗、内蔵形象に切り替えました。</value>
+  </data>
+  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
+    <value>モデル読み込み失敗: {0}</value>
+  </data>
+  <data name="DesktopPetSettingsTitle" xml:space="preserve">
+    <value>デスクトップペット設定</value>
+  </data>
+  <data name="DesktopPetInitializerName" xml:space="preserve">
+    <value>デスクトップペット</value>
+  </data>
+  <data name="ConfigDesktopPet" xml:space="preserve">
+    <value>Desktop Pet</value>
+  </data>
+  <data name="ConfigDesktopPetName" xml:space="preserve">
+    <value>ペット名前</value>
+  </data>
+  <data name="ConfigDesktopPetCategory" xml:space="preserve">
+    <value>Desktop Pet</value>
+  </data>
+  <data name="ConfigDesktopPetAlwaysOnTop" xml:space="preserve">
+    <value>常に最前面</value>
+  </data>
+  <data name="ConfigDesktopPetShowNotifications" xml:space="preserve">
+    <value>メッセージ通知を表示</value>
+  </data>
+  <data name="ConfigDesktopPetStartupGreeting" xml:space="preserve">
+    <value>起動時の挨拶</value>
+  </data>
+  <data name="ConfigDesktopPetEnableIdleTips" xml:space="preserve">
+    <value>Enable Idle Tips</value>
+  </data>
+  <data name="ConfigDesktopPetIdleTipInterval" xml:space="preserve">
+    <value>Idle Tip Interval (Minutes)</value>
+  </data>
+  <data name="ConfigDesktopPetMessageDisplaySeconds" xml:space="preserve">
+    <value>メッセージ表示秒数</value>
+  </data>
+  <data name="ConfigDesktopPetScale" xml:space="preserve">
+    <value>ペットスケール</value>
+  </data>
+  <data name="ConfigDesktopPetOpacity" xml:space="preserve">
+    <value>ペット透明度</value>
+  </data>
+  <data name="ConfigLive2DEnable" xml:space="preserve">
+    <value>Live2Dレンダリングを有効にする</value>
+  </data>
+  <data name="ConfigLive2DPath" xml:space="preserve">
+    <value>Live2DモデルまたはHTMLパス</value>
+  </data>
+  <data name="ConfigLive2DMaxFps" xml:space="preserve">
+    <value>Live2D Max FPS</value>
+  </data>
+  <data name="ConfigLive2DRenderScale" xml:space="preserve">
+    <value>Live2D Render Scale</value>
+  </data>
+  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
+    <value>Live2D Lightweight Motion Effects</value>
+  </data>
+  <data name="ConfigEnableDesktopPet" xml:space="preserve">
+    <value>デスクトップペットを有効にする</value>
+  </data>
+  <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
+    <value>デスクトップ ペット コンポーネントを表示または非表示にします。</value>
+  </data>
+  <data name="UnsupportedFileFormat" xml:space="preserve">
+    <value>Unsupported file format</value>
+  </data>
+  <data name="PluginLoadFailedPrompt" xml:space="preserve">
+    <value>The software failed to open last time. Do you want to disable plugins?</value>
+  </data>
+  <data name="UpdateCurrentVersion" xml:space="preserve">
+    <value>Current Version</value>
+  </data>
+  <data name="UpdateTargetVersion" xml:space="preserve">
+    <value>Target Version</value>
+  </data>
+  <data name="UpdateMethod" xml:space="preserve">
+    <value>Update Method</value>
+  </data>
+  <data name="UpdateIncrementalPackage" xml:space="preserve">
+    <value>Incremental Package</value>
+  </data>
+  <data name="UpdateFullPackage" xml:space="preserve">
+    <value>Full Package</value>
+  </data>
+  <data name="UpdatePackageCount" xml:space="preserve">
+    <value>Package Count</value>
+  </data>
+  <data name="UpdateScope" xml:space="preserve">
+    <value>Update Scope</value>
+  </data>
+  <data name="UpdateFullApplicationUpdate" xml:space="preserve">
+    <value>Full Application Update</value>
+  </data>
+  <data name="UpdatePluginId" xml:space="preserve">
+    <value>Plugin ID</value>
+  </data>
+  <data name="UpdateHostRequirement" xml:space="preserve">
+    <value>Host Requirement</value>
+  </data>
+  <data name="UpdateCompatibilityStability" xml:space="preserve">
+    <value>Includes compatibility and stability updates.</value>
+  </data>
+  <data name="UpdateUnnamedPlugin" xml:space="preserve">
+    <value>Unnamed Plugin</value>
+  </data>
+  <data name="UpdatePluginCount" xml:space="preserve">
+    <value>and {0} other plugins</value>
+  </data>
+  <data name="UpdateIncrementalChain" xml:space="preserve">
+    <value>Incremental chain: {0}</value>
+  </data>
+  <data name="UpdateExecutionIncremental" xml:space="preserve">
+    <value>Execution: Incremental packages and plugin packages will be downloaded first, then applied in one go.</value>
+  </data>
+  <data name="UpdateExecutionFull" xml:space="preserve">
+    <value>Execution: Download the full installer and install using the current application update process.\nPlugins are not included in this automatic update.</value>
+  </data>
+  <data name="UpdateNotes" xml:space="preserve">
+    <value>Update Notes:</value>
+  </data>
+  <data name="UpdatePlugin" xml:space="preserve">
+    <value>Plugin:</value>
+  </data>
+  <data name="UpdatePluginIdLabel" xml:space="preserve">
+    <value>Plugin ID:</value>
+  </data>
+  <data name="UpdateCurrentVersionLabel" xml:space="preserve">
+    <value>Current Version:</value>
+  </data>
+  <data name="UpdateTargetVersionLabel" xml:space="preserve">
+    <value>Target Version:</value>
+  </data>
+  <data name="UpdateHostRequirementLabel" xml:space="preserve">
+    <value>Host Requirement:</value>
+  </data>
+  <data name="UpdatePluginDescription" xml:space="preserve">
+    <value>Plugin Description:</value>
+  </data>
+  <data name="UpdateVersionNotes" xml:space="preserve">
+    <value>Version Notes:</value>
+  </data>
+  <data name="CannotFindUpdateRecord" xml:space="preserve">
+    <value>Cannot find update record</value>
+  </data>
+  <data name="ReadUpdateRecordFailed" xml:space="preserve">
+    <value>Failed to read update record: {0}</value>
+  </data>
+  <data name="ShellExtensionNotFound" xml:space="preserve">
+    <value>Shell Extension not found:\n{0}</value>
+  </data>
+  <data name="ComRegistrationFailed" xml:space="preserve">
+    <value>COM registration failed. Please confirm administrator privileges have been granted.</value>
+  </data>
+  <data name="ThumbnailRegistrationSuccess" xml:space="preserve">
+    <value>Thumbnail preview registered successfully!\nAfter restarting the file explorer, .cvraw and .cvcie files will display image thumbnails.</value>
+  </data>
+  <data name="RegistrationFailed" xml:space="preserve">
+    <value>Registration failed: {0}</value>
+  </data>
+  <data name="ThumbnailUnregistered" xml:space="preserve">
+    <value>Thumbnail preview unregistered.</value>
+  </data>
+  <data name="UnregistrationFailed" xml:space="preserve">
+    <value>Unregistration failed: {0}</value>
+  </data>
+  <data name="RegistryAppliedSuccess" xml:space="preserve">
+    <value>Registry applied successfully</value>
+  </data>
+  <data name="CopilotNoSendableContent" xml:space="preserve">
+    <value>No sendable exception content.</value>
+  </data>
+  <data name="CopilotAiViewNotReady" xml:space="preserve">
+    <value>The AI view in the main interface is not ready yet.</value>
+  </data>
+  <data name="CopilotAiNotConfigured" xml:space="preserve">
+    <value>AI is not configured, cannot directly send exception diagnosis request.</value>
+  </data>
+  <data name="CopilotSentToAiView" xml:space="preserve">
+    <value>Sent to the AI view in the main interface.</value>
+  </data>
+  <data name="CopilotAiGenerating" xml:space="preserve">
+    <value>AI is generating, exception context has been placed in the input box.</value>
+  </data>
+  <data name="CopilotContextPlaced" xml:space="preserve">
+    <value>Exception context has been placed in the AI input box.</value>
+  </data>
+  <data name="CopilotCallerContext" xml:space="preserve">
+    <value># Caller Additional Context</value>
+  </data>
+  <data name="CopilotContext" xml:space="preserve">
+    <value>Context</value>
+  </data>
+  <data name="CopilotSummary" xml:space="preserve">
+    <value>要約:</value>
+  </data>
+  <data name="CopilotChatAssistant" xml:space="preserve">
+    <value>Chat Assistant</value>
+  </data>
+  <data name="CopilotNoRecentLog" xml:space="preserve">
+    <value>No recent logs found.</value>
+  </data>
+  <data name="CopilotNoLogFile" xml:space="preserve">
+    <value>No readable log files found in the current environment.</value>
+  </data>
+  <data name="CopilotFilterKeyword" xml:space="preserve">
+    <value>[フィルターキーワード {0}]</value>
+  </data>
+  <data name="CopilotContentTruncated" xml:space="preserve">
+    <value>...&amp;lt;Content truncated, only the last {0} characters are retained.&amp;gt;</value>
+  </data>
+  <data name="CopilotReadLogFailed" xml:space="preserve">
+    <value>Failed to read recent logs.</value>
+  </data>
+  <data name="CopilotReadTodayLog" xml:space="preserve">
+    <value>Read today's log: {0}, {2} lines matched keyword {1}.</value>
+  </data>
+  <data name="CopilotReadRecentLog" xml:space="preserve">
+    <value>Read recent log: {0}, {2} lines matched keyword {1}.</value>
+  </data>
+  <data name="CopilotTodayLogSummary" xml:space="preserve">
+    <value>Read today's log: {0}, {1} lines total.</value>
+  </data>
+  <data name="CopilotRecentLogSummary" xml:space="preserve">
+    <value>Read recent log: {0}, showing {2} of the last {1} lines.</value>
+  </data>
+  <data name="CopilotContentLargeTruncated" xml:space="preserve">
+    <value>Content is large, display truncated.</value>
+  </data>
+  <data name="CopilotUpdateSnapshot" xml:space="preserve">
+    <value>Update Snapshot</value>
+  </data>
+  <data name="CopilotAttachToQuestion" xml:space="preserve">
+    <value>質問に添付</value>
+  </data>
+  <data name="CopilotSelectHistoryOrNew" xml:space="preserve">
+    <value>Select a history session from the right, or click + to create a new session.</value>
+  </data>
+  <data name="CopilotConfigureModelFirst" xml:space="preserve">
+    <value>Click the configuration in the upper right corner to add a model, then start chatting.</value>
+  </data>
+  <data name="CopilotStopGeneration" xml:space="preserve">
+    <value>Stop Generation</value>
+  </data>
+  <data name="CopilotSend" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="CopilotExecuteAgent" xml:space="preserve">
+    <value>Execute Agent</value>
+  </data>
+  <data name="CopilotTokenUsageAfterSend" xml:space="preserve">
+    <value>Show real token usage after sending</value>
+  </data>
+  <data name="CopilotLocalEstimateRemoved" xml:space="preserve">
+    <value>No local estimation is done now, only showing real token usage returned by the API.</value>
+  </data>
+  <data name="CopilotReplyCancelled" xml:space="preserve">
+    <value>Current reply cancelled.</value>
+  </data>
+  <data name="CopilotRequestFailed" xml:space="preserve">
+    <value>Request failed: {0}</value>
+  </data>
+  <data name="CopilotContextNotInitialized" xml:space="preserve">
+    <value>Request context not initialized.</value>
+  </data>
+  <data name="CopilotReusedContext" xml:space="preserve">
+    <value>Reused context from previous execution, tools were not called again.</value>
+  </data>
+  <data name="CopilotStatus" xml:space="preserve">
+    <value>ステータス:</value>
+  </data>
+  <data name="CopilotSuccess" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="CopilotFailed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="CopilotResult" xml:space="preserve">
+    <value>Result:</value>
+  </data>
+  <data name="CopilotError" xml:space="preserve">
+    <value>エラー:</value>
+  </data>
+  <data name="CopilotNoFinalAnswer" xml:space="preserve">
+    <value>No final answer received, only execution process or reasoning content.</value>
+  </data>
+  <data name="CopilotNoDisplayText" xml:space="preserve">
+    <value>API returned success, but no displayable text.</value>
+  </data>
+  <data name="CopilotTitleGeneratorPrompt" xml:space="preserve">
+    <value>You are a conversation title generator. Generate a short, natural Chinese title based on the given conversation. Return only the title itself, no explanation.</value>
+  </data>
+  <data name="CopilotRenameConversation" xml:space="preserve">
+    <value>Rename Conversation</value>
+  </data>
+  <data name="CopilotEnterNewName" xml:space="preserve">
+    <value>Enter new conversation name</value>
+  </data>
+  <data name="CopilotDeleteConversationConfirm" xml:space="preserve">
+    <value>Are you sure you want to delete conversation "{0}"?</value>
+  </data>
+  <data name="CopilotAllFiles" xml:space="preserve">
+    <value>All Files|*.*</value>
+  </data>
+  <data name="CopilotMountContext" xml:space="preserve">
+    <value>コンテキストをマウント</value>
+  </data>
+  <data name="CopilotEnterContextDescription" xml:space="preserve">
+    <value>Enter context description to attach to the current session</value>
+  </data>
+  <data name="CopilotMountWebPage" xml:space="preserve">
+    <value>Webページをマウント</value>
+  </data>
+  <data name="CopilotEnterWebPageUrl" xml:space="preserve">
+    <value>Enter web page URL to fetch and attach to the current session</value>
+  </data>
+  <data name="CopilotInvalidUrl" xml:space="preserve">
+    <value>Invalid web page URL format.</value>
+  </data>
+  <data name="CopilotFetchFailed" xml:space="preserve">
+    <value>Failed to fetch web page: {0}</value>
+  </data>
+  <data name="CopilotNoImageInClipboard" xml:space="preserve">
+    <value>No mountable image in clipboard.</value>
+  </data>
+  <data name="CopilotPasteImageTitle" xml:space="preserve">
+    <value>Paste Image {0}</value>
+  </data>
+  <data name="CopilotPasteImageFailed" xml:space="preserve">
+    <value>Failed to paste image: {0}</value>
+  </data>
+  <data name="CopilotCopyMessageFailed" xml:space="preserve">
+    <value>Failed to copy message: {0}</value>
+  </data>
+  <data name="CopilotExecutionProcess" xml:space="preserve">
+    <value>Execution Process:</value>
+  </data>
+  <data name="CopilotReasoning" xml:space="preserve">
+    <value>Reasoning:</value>
+  </data>
+  <data name="CopilotAnswer" xml:space="preserve">
+    <value>Answer:</value>
+  </data>
+  <data name="CopilotWaitingTokenUsage" xml:space="preserve">
+    <value>Waiting for API to return real token usage...</value>
+  </data>
+  <data name="CopilotNoModelSelected" xml:space="preserve">
+    <value>No model selected</value>
+  </data>
+  <data name="CopilotSelectModelFirst" xml:space="preserve">
+    <value>Please select or configure a model before sending. This panel only shows real token usage returned by the API.</value>
+  </data>
+  <data name="CopilotNoTokenUsage" xml:space="preserve">
+    <value>Last request did not return token usage</value>
+  </data>
+  <data name="CopilotLatestRequest" xml:space="preserve">
+    <value>Latest: Input {0} · Output {1} · Total {2}</value>
+  </data>
+  <data name="CopilotModelLabel" xml:space="preserve">
+    <value>Model:</value>
+  </data>
+  <data name="CopilotModeLabel" xml:space="preserve">
+    <value>モード:</value>
+  </data>
+  <data name="CopilotInputTokens" xml:space="preserve">
+    <value>入力トークン:</value>
+  </data>
+  <data name="CopilotOutputTokens" xml:space="preserve">
+    <value>出力トークン:</value>
+  </data>
+  <data name="CopilotTotalTokens" xml:space="preserve">
+    <value>合計トークン:</value>
+  </data>
+  <data name="CopilotRealUsageNote" xml:space="preserve">
+    <value>Note: This shows the real token usage from the most recent API request.</value>
+  </data>
+  <data name="CopilotAgentAccumulated" xml:space="preserve">
+    <value>Agent mode has accumulated multiple model calls from planner and final answer.</value>
+  </data>
+  <data name="CopilotCurrentRequestUsage" xml:space="preserve">
+    <value>Note: Only showing real usage returned by the API. Statistics will refresh after this request completes.</value>
+  </data>
+  <data name="CopilotLocalEstimateNote" xml:space="preserve">
+    <value>Note: This panel no longer does local estimation, only showing real usage returned by the API. The last request did not return a usage field, so there are no input/output tokens to display.</value>
+  </data>
+  <data name="CopilotSendToSeeUsage" xml:space="preserve">
+    <value>Note: After sending, if the API returns a usage field, this will show real input, output, and total tokens.</value>
+  </data>
+  <data name="CopilotUnnamedModel" xml:space="preserve">
+    <value>Unnamed Model</value>
+  </data>
+  <data name="CopilotTitlePrompt" xml:space="preserve">
+    <value>Generate a short Chinese conversation title for the following conversation.</value>
+  </data>
+  <data name="CopilotTitleRequirements" xml:space="preserve">
+    <value>Requirements: 6 to 14 characters, return only the title, no explanation, no quotes, no period.</value>
+  </data>
+  <data name="CopilotUserPrefix" xml:space="preserve">
+    <value>ユーザー:</value>
+  </data>
+  <data name="CopilotAssistantPrefix" xml:space="preserve">
+    <value>Assistant:</value>
+  </data>
+  <data name="CopilotTitlePrefix" xml:space="preserve">
+    <value>タイトル</value>
+  </data>
+  <data name="CopilotAdditionalContext" xml:space="preserve">
+    <value>Additional Context</value>
+  </data>
+  <data name="CopilotContextInjection" xml:space="preserve">
+    <value>The following is the additional context mounted in the current session. They are reference information explicitly provided by the user. Please use them as needed when answering:</value>
+  </data>
+  <data name="CopilotContextTag" xml:space="preserve">
+    <value>[コンテキスト {0}]</value>
+  </data>
+  <data name="CopilotExplicitSnapshot" xml:space="preserve">
+    <value>The following is an explicit business snapshot attached by the user. It was captured when clicking "Ask Copilot" or manually attaching; answers should prioritize analysis based on these snapshots.</value>
+  </data>
+  <data name="CopilotFileAttachment" xml:space="preserve">
+    <value>[ファイル {0}]</value>
+  </data>
+  <data name="CopilotFileNotExist" xml:space="preserve">
+    <value>File does not exist, cannot read.</value>
+  </data>
+  <data name="CopilotFileTruncated" xml:space="preserve">
+    <value>...&amp;lt;Truncated&amp;gt;</value>
+  </data>
+  <data name="CopilotFileReadFailed" xml:space="preserve">
+    <value>Read failed: {0}</value>
+  </data>
+  <data name="CopilotImageAttachment" xml:space="preserve">
+    <value>[画像 {0}]</value>
+  </data>
+  <data name="CopilotImageNotExist" xml:space="preserve">
+    <value>Local image attachment does not exist: {0}</value>
+  </data>
+  <data name="CopilotImagePath" xml:space="preserve">
+    <value>Local image path: {0}</value>
+  </data>
+  <data name="CopilotImagePreviewNote" xml:space="preserve">
+    <value>The current version displays image preview in the interface, but does not automatically upload pixel content to the model.</value>
+  </data>
+  <data name="CopilotWebPageAttachment" xml:space="preserve">
+    <value>[Web Page] {0}</value>
+  </data>
+  <data name="CopilotSource" xml:space="preserve">
+    <value>ソース:</value>
+  </data>
+  <data name="CopilotLocalWebPageContext" xml:space="preserve">
+    <value>[Local Web Page Context Injection]</value>
+  </data>
+  <data name="CopilotWebPageContextInstruction" xml:space="preserve">
+    <value>The following web page content was actually fetched by the local program before sending. You must answer web page questions based only on these fetch results, and must not say you cannot browse the internet; if the fetch failed or the fetched content does not contain relevant information, you must clearly state that you cannot complete the analysis based on real web page content, and cannot assume the web page contains information that was not fetched.</value>
+  </data>
+  <data name="CopilotWebPageContextTruncated" xml:space="preserve">
+    <value>...&amp;lt;Web page context truncated&amp;gt;</value>
+  </data>
+  <data name="CopilotCurrentWindowContextTag" xml:space="preserve">
+    <value>[現在のウィンドウコンテキスト]</value>
+  </data>
+  <data name="CopilotLocation" xml:space="preserve">
+    <value>Location:</value>
+  </data>
+  <data name="CopilotWindowContextNote" xml:space="preserve">
+    <value>The above is only a lightweight summary of the current business window; if the current session also has an explicit snapshot mounted, please prioritize combining that snapshot when answering.</value>
+  </data>
+  <data name="CopilotExceptionDetailsCopied" xml:space="preserve">
+    <value>Exception details copied to clipboard.</value>
+  </data>
+  <data name="CopilotCopyFailed" xml:space="preserve">
+    <value>Copy failed: {0}</value>
+  </data>
+  <data name="CopilotSendToAiFailed" xml:space="preserve">
+    <value>Failed to send to AI: {0}</value>
+  </data>
+  <data name="CopilotNoSearchKeyword" xml:space="preserve">
+    <value>No searchable keywords in the current exception.</value>
+  </data>
+  <data name="CopilotGoogleSearchOpened" xml:space="preserve">
+    <value>Google search results opened in default browser.</value>
+  </data>
+  <data name="CopilotCanSendToAi" xml:space="preserve">
+    <value>Can send the current exception and recent logs directly to the AI view in the main interface.</value>
+  </data>
+  <data name="CopilotCannotAskAi" xml:space="preserve">
+    <value>AI is not configured or the main interface is not ready, cannot ask directly.</value>
+  </data>
+  <data name="CopilotInvalidLineCount" xml:space="preserve">
+    <value>Invalid line count input, restored to {0} lines.</value>
+  </data>
+  <data name="CopilotDuplicateException" xml:space="preserve">
+    <value>Detected {0} duplicate exceptions of the same type, merged into the current window.</value>
+  </data>
+  <data name="CopilotAdditionalException" xml:space="preserve">
+    <value>[Additional Exception {0}]</value>
+  </data>
+  <data name="CopilotExtraExceptions" xml:space="preserve">
+    <value>{0} additional exceptions caught in a short time, merged into the current window.</value>
+  </data>
+  <data name="CopilotExceptionDetailsTag" xml:space="preserve">
+    <value>[例外詳細]</value>
+  </data>
+  <data name="CopilotRecentLogsTag" xml:space="preserve">
+    <value>[Recent Logs]</value>
+  </data>
+  <data name="CopilotAiRequestTag" xml:space="preserve">
+    <value>[AIリクエスト]</value>
+  </data>
+  <data name="CopilotNoExceptionMessage" xml:space="preserve">
+    <value>No exception message provided</value>
+  </data>
+  <data name="CopilotCaptureSource" xml:space="preserve">
+    <value>キャプチャソース:</value>
+  </data>
+  <data name="CopilotOccurredTime" xml:space="preserve">
+    <value>Occurred At:</value>
+  </data>
+  <data name="CopilotFirstSource" xml:space="preserve">
+    <value>初回ソース:</value>
+  </data>
+  <data name="CopilotRepeatCount" xml:space="preserve">
+    <value>Repeated: {0} times</value>
+  </data>
+  <data name="CopilotAdditionalExceptionCount" xml:space="preserve">
+    <value>Additional Exceptions: {0}</value>
+  </data>
+  <data name="CopilotType" xml:space="preserve">
+    <value>タイプ:</value>
+  </data>
+  <data name="CopilotMessage" xml:space="preserve">
+    <value>Message:</value>
+  </data>
+  <data name="CopilotStack" xml:space="preserve">
+    <value>スタック:</value>
+  </data>
+  <data name="CopilotDiagnosticPrompt" xml:space="preserve">
+    <value>Please help me analyze the unhandled exception in the ColorVision WPF client. Based on the exception content and recent logs, provide the most likely cause, priority troubleshooting points, and minimal viable fix direction; if information is insufficient, please clearly indicate what is missing.</value>
+  </data>
+  <data name="CopilotExceptionTag" xml:space="preserve">
+    <value>[例外]</value>
+  </data>
+  <data name="CopilotLogFile" xml:space="preserve">
+    <value>ログファイル:</value>
+  </data>
+  <data name="CopilotSupplementaryNote" xml:space="preserve">
+    <value>[補足説明 {0}]</value>
+  </data>
+  <data name="CopilotOpenAiPanel" xml:space="preserve">
+    <value>Open AI Chat Panel</value>
+  </data>
+  <data name="CopilotDocsOnlineSearch" xml:space="preserve">
+    <value>[オンラインドキュメント検索]</value>
+  </data>
+  <data name="CopilotDocsQuery" xml:space="preserve">
+    <value>Query:</value>
+  </data>
+  <data name="CopilotDocsIndexUrl" xml:space="preserve">
+    <value>Index URL:</value>
+  </data>
+  <data name="CopilotDocsHitPages" xml:space="preserve">
+    <value>Hit Pages:</value>
+  </data>
+  <data name="CopilotDocsCandidateFragments" xml:space="preserve">
+    <value>候補フラグメント:</value>
+  </data>
+  <data name="CopilotDocsPage" xml:space="preserve">
+    <value>ページ:</value>
+  </data>
+  <data name="CopilotDocsDomain" xml:space="preserve">
+    <value>Doc Domain:</value>
+  </data>
+  <data name="CopilotDocsPageLink" xml:space="preserve">
+    <value>ページリンク:</value>
+  </data>
+  <data name="CopilotDocsSourcePath" xml:space="preserve">
+    <value>Source Path:</value>
+  </data>
+  <data name="CopilotDocsTitleChain" xml:space="preserve">
+    <value>タイトルチェーン:</value>
+  </data>
+  <data name="CopilotDocsFragmentLink" xml:space="preserve">
+    <value>フラグメントリンク:</value>
+  </data>
+  <data name="CopilotDocsExcerpt" xml:space="preserve">
+    <value>抜粋:</value>
+  </data>
+  <data name="CopilotDocsIndexNotPublished" xml:space="preserve">
+    <value>Online documentation index not published, please confirm GitHub Pages has completed the latest deployment.</value>
+  </data>
+  <data name="CopilotDocsIndexFormatError" xml:space="preserve">
+    <value>Online documentation index format cannot be recognized: {0}</value>
+  </data>
+  <data name="CopilotDocsIndexEmpty" xml:space="preserve">
+    <value>Online documentation index is empty, cannot answer software documentation questions at this time.</value>
+  </data>
+  <data name="CopilotDocsIndexAccessError" xml:space="preserve">
+    <value>Cannot access online documentation index: {0}</value>
+  </data>
+  <data name="CopilotPlannerNoTools" xml:space="preserve">
+    <value>No tools currently available.</value>
+  </data>
+  <data name="CopilotPlannerFallback" xml:space="preserve">
+    <value>Planner did not return parseable JSON, falling back to default tool selection.</value>
+  </data>
+  <data name="CopilotPlannerContextSufficient" xml:space="preserve">
+    <value>Planner determined current context is sufficient.</value>
+  </data>
+  <data name="CopilotPlannerExecuteTool" xml:space="preserve">
+    <value>Prioritize executing {0} to obtain missing information.</value>
+  </data>
+  <data name="CopilotPlannerUnknownTool" xml:space="preserve">
+    <value>Planner selected unknown tool {0}, falling back to default tool selection.</value>
+  </data>
+  <data name="CopilotPlannerOutputUnrecognized" xml:space="preserve">
+    <value>Planner output cannot be recognized, falling back to default tool selection.</value>
+  </data>
+  <data name="CopilotObservationTruncated" xml:space="preserve">
+    <value>...&amp;lt;Observation content truncated&amp;gt;</value>
+  </data>
+  <data name="CopilotBase64" xml:space="preserve">
+    <value>Base URL</value>
+  </data>
+  <data name="CopilotApiKey" xml:space="preserve">
+    <value>API Key</value>
+  </data>
+  <data name="CopilotDuplicateProfile" xml:space="preserve">
+    <value>{0} Copy</value>
+  </data>
+  <data name="AllowMultipleInstances" xml:space="preserve">
+    <value>Allow Multiple Instances</value>
+  </data>
+  <data name="AllowMultipleInstancesDescription" xml:space="preserve">
+    <value>複数の ColorVision インスタンスを同時に起動できるようにします。</value>
   </data>
 </root>

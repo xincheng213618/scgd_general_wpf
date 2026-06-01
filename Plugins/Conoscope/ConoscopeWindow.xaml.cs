@@ -1,5 +1,6 @@
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.FileIO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
@@ -9,6 +10,7 @@ using Conoscope.MVS;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
@@ -26,8 +28,7 @@ namespace Conoscope
 
         public override void Execute()
         {
-            ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
-            conoscopeWindow.Show();
+            ConoscopeModuleService.OpenModule();
         }
     }
 
@@ -73,15 +74,17 @@ namespace Conoscope
             StopOperationProgress();
 
             Instance = this;
-            Title = "Conoscope " + (Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? string.Empty);
+            string version = Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? string.Empty;
+            Title = string.IsNullOrWhiteSpace(version)
+                ? Properties.Resources.WindowTitleConoscope
+                : Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.WindowTitleConoscopeWithVersion, version);
             DataContext = ConoscopeManager.GetInstance();
             this.ApplyCaption();
             ConoscopeWindowConfig.Instance.SetWindow(this);
             InitializeTheme();
             InitializeLanguageAndThemeSelectors();
             InitializeModelSelector();
-            InitializeOperationControls();
-            InitializeAnalysisRibbonControls();
+            InitializeRibbonControls();
 
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -111,10 +114,15 @@ namespace Conoscope
         private ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
         private ConoscopeRenderingSettings RenderingConfig => ConoscopeConfig.Rendering;
         private ConoscopePreprocessSettings PreprocessConfig => ConoscopeConfig.Preprocess;
-        private ConoscopeCaptureSettings CaptureConfig => ConoscopeConfig.Capture;
 
         public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {
+            if (!File.Exists(filename) || !CVFileUtil.IsCVCIEFile(filename))
+            {
+                MessageBox.Show(Properties.Resources.PleaseSelectCVCIEFile, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             ConoscopeView? reuseView = preferReuseActiveView ? ActiveView : null;
             AddConoscopeView(filename, activate: true, exposureSummary, reuseView);
         }
@@ -123,10 +131,7 @@ namespace Conoscope
         {
             ConoscopeView? activeView = ActiveView;
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
-            btnOpenActiveView3D.IsEnabled = activeView != null;
-            btnOpenActiveViewCie.IsEnabled = activeView != null;
-            RefreshHomeQuickControlState(activeView);
-            RefreshAnalysisRibbonState(activeView);
+            RefreshRibbonState(activeView);
 
             if (tbExposureStatus == null)
             {
@@ -185,7 +190,14 @@ namespace Conoscope
             // Theme selector
             cbTheme.Items.Clear();
             var themeNames = new[] { Theme.UseSystem, Theme.Light, Theme.Dark, Theme.Pink, Theme.Cyan };
-            var themeDisplayNames = new[] { Properties.Resources.GroupConfig + ": System", "Light", "Dark", "Pink", "Cyan" };
+            var themeDisplayNames = new[]
+            {
+                $"{Properties.Resources.GroupConfig}: {Properties.Resources.ThemeSystem}",
+                Properties.Resources.ThemeLight,
+                Properties.Resources.ThemeDark,
+                Properties.Resources.ThemePink,
+                Properties.Resources.ThemeCyan
+            };
             for (int i = 0; i < themeNames.Length; i++)
             {
                 cbTheme.Items.Add(new ComboBoxItem { Content = themeDisplayNames[i], Tag = themeNames[i] });
@@ -223,15 +235,6 @@ namespace Conoscope
             {
                 isUpdatingModelSelection = false;
             }
-        }
-
-        private void InitializeOperationControls()
-        {
-            RefreshFlowTemplates();
-            RefreshCameraDevices();
-            EnsureCaptureTimedButtonOperations();
-            InitializePreprocessControls();
-            RefreshActiveViewUi();
         }
 
         private void StartOperationProgress(string label, double expectedDurationMs)
@@ -310,13 +313,11 @@ namespace Conoscope
                 ConfigService.Instance.Save<ConoscopeConfig>();
                 ConfigService.Instance.Save<ConoscopeWindowConfig>();
                 ConfigService.Instance.Save<FlowEngineConfig>();
-                SetOperationStatus(Properties.Resources.MsgConfigSaved, Brushes.LimeGreen);
-                MessageBox.Show(Properties.Resources.MsgConfigSaved, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgConfigSaved, Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                SetOperationStatus(Properties.Resources.MsgConfigSaveFailed, Brushes.OrangeRed);
-                MessageBox.Show($"{Properties.Resources.MsgConfigSaveFailed}: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"{Properties.Resources.MsgConfigSaveFailed}: {ex.Message}", Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -324,6 +325,8 @@ namespace Conoscope
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog
             {
+                Filter = Properties.Resources.Conoscope_CvcieFileFilter,
+                DefaultExt = "cvcie",
                 RestoreDirectory = true,
                 Multiselect = true
             };
@@ -340,13 +343,11 @@ namespace Conoscope
         private void btnNewView_Click(object sender, RoutedEventArgs e)
         {
             AddConoscopeView(null, activate: true);
-            SetOperationStatus(Properties.Resources.MsgNewViewCreated, Brushes.LimeGreen);
         }
 
         private void btnRefreshCameraDevices_Click(object sender, RoutedEventArgs e)
         {
             RefreshCameraDevices();
-            SetOperationStatus(Properties.Resources.MsgCameraListRefreshed, Brushes.LimeGreen);
         }
 
         private void btnApplyPreprocessToActiveView_Click(object sender, RoutedEventArgs e)
@@ -354,12 +355,11 @@ namespace Conoscope
             ConoscopeView? activeView = ActiveView;
             if (activeView == null)
             {
-                MessageBox.Show(Properties.Resources.MsgNoActiveView, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgNoActiveView, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             activeView.ApplyPreprocessFromCurrentSettings();
-            SetOperationStatus(Properties.Resources.MsgPreprocessApplied, Brushes.LimeGreen);
         }
 
         private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -397,7 +397,7 @@ namespace Conoscope
             ConoscopeManager.GetInstance().Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.GetInstance().Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
             ServiceManager.GetInstance().ServiceChanged -= ServiceManager_ServiceChanged;
-            DetachHomeQuickControlView();
+            DetachActiveViewControlView();
             operationProgressTimer.Stop();
             operationProgressTimer.Tick -= OperationProgressTimer_Tick;
             this.DisposeTimedButtonOperations();

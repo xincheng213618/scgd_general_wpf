@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
             SaveIndex.Clear();
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 List<ThirdPartyAlgorithmsModel> models = new List<ThirdPartyAlgorithmsModel>();
                 if (DLLId > 0)
@@ -146,7 +146,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(ModThirdPartyManagerParam)}模板失败", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.DbCreateTemplateFailed, typeof(ModThirdPartyManagerParam)), "ColorVision");
             }
 
         }

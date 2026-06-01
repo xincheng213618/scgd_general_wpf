@@ -1,3 +1,4 @@
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates.Jsons;
@@ -18,6 +19,9 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 {
     public class NodePanelBuilder
     {
+        private const double DefaultSignLabelMinWidth = 90;
+        private const double ShortSignLabelMinWidth = 40;
+
         private readonly NodeConfiguratorContext _context;
 
         public NodePanelBuilder(NodeConfiguratorContext context)
@@ -25,20 +29,29 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             _context = context;
         }
 
+        private static TextBlock CreateSignLabel(string text, double minWidth = DefaultSignLabelMinWidth)
+        {
+            return new TextBlock
+            {
+                Text = text,
+                MinWidth = minWidth,
+                Margin = new Thickness(0, 0, 6, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = text,
+                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+            };
+        }
+
         public void Device<TDevice>(Func<string> getDeviceCode, Action<string> updateDeviceCode, string signName = "") where TDevice : DeviceService
         {
             AddDevicePanel(updateDeviceCode, getDeviceCode(), signName, ServiceManager.GetInstance().DeviceServices.OfType<TDevice>().ToList());
         }
 
-        public void AddImagePath(Action<string> updateStorageAction, string filename, string tag = "图像")
+        public void AddImagePath(Action<string> updateStorageAction, string filename, string tag = null)
         {
+            tag ??= Properties.Resources.Image;
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock
-            {
-                Text = tag,
-                Width = 70,
-                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
-            });
+            dockPanel.Children.Add(CreateSignLabel(tag));
 
             var textBox = new TextBox
             {
@@ -178,7 +191,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public void AddTemplateCollectionPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(CreateSignLabel(signName));
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
@@ -212,7 +225,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public void AddSensorTemplatePanel(Action<string> updateStorageAction, string tempName, string signName, Func<string?>? getCategory = null)
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(CreateSignLabel(signName));
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
@@ -320,7 +333,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public void AddTemplateJsonPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(CreateSignLabel(signName));
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
                 SelectedValuePath = "Value",
@@ -379,7 +392,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public void AddTemplatePanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(CreateSignLabel(signName));
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
@@ -438,7 +451,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public void AddTemplateKBPanel(Action<string> updateStorageAction, string tempName, string signName, TemplateKB template)
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 30, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(CreateSignLabel(signName, ShortSignLabelMinWidth));
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
                 SelectedValuePath = "Value",

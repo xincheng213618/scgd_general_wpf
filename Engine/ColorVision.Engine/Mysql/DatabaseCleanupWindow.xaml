@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Database"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:DatabaseCleanupWindowViewModel}"
-        Title="数据清理"
+        Title="{x:Static properties:Resources.DataCleanup}"
         Width="1080"
         Height="720"
         MinWidth="900"
@@ -31,10 +32,10 @@
         </Grid.RowDefinitions>
 
         <StackPanel Margin="0,0,0,10">
-            <TextBlock Text="数据清理" FontSize="18" FontWeight="SemiBold"/>
+            <TextBlock Text="{x:Static properties:Resources.DataCleanup}" FontSize="18" FontWeight="SemiBold"/>
             <TextBlock Margin="0,6,0,0"
                        Opacity="0.82"
-                       Text="独立窗口统一展示 MySQL 与插件侧 SQLite 的结果表，显示表名、行数和占用大小，并提供历史清理与整表清空。"
+                       Text="{x:Static properties:Resources.DataCleanupDesc}"
                        TextWrapping="Wrap"/>
         </StackPanel>
 
@@ -59,11 +60,11 @@
 
                             <StackPanel Grid.Row="1" Margin="0,12,0,12">
                                 <WrapPanel Margin="0,0,0,8">
-                                    <TextBlock Margin="0,0,8,0" Text="保留月数"/>
+                                    <TextBlock Margin="0,0,8,0" Text="{x:Static properties:Resources.RetainMonths}"/>
                                     <TextBox Width="72" Margin="0,0,12,0" Text="{Binding KeepMonthsText, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <Button Content="刷新统计" Command="{Binding RefreshCommand}" Margin="0,0,6,0"/>
-                                    <Button Content="清理历史数据" Command="{Binding CleanupHistoryCommand}" Margin="0,0,6,0"/>
-                                    <Button Content="清空全部数据" Command="{Binding CleanupAllCommand}" Background="Firebrick" Foreground="White"/>
+                                    <Button Content="{x:Static properties:Resources.RefreshStats}" Command="{Binding RefreshCommand}" Margin="0,0,6,0"/>
+                                    <Button Content="{x:Static properties:Resources.CleanupHistory}" Command="{Binding CleanupHistoryCommand}" Margin="0,0,6,0"/>
+                                    <Button Content="{x:Static properties:Resources.ClearAllData}" Command="{Binding CleanupAllCommand}" Background="Firebrick" Foreground="White"/>
                                 </WrapPanel>
                                 <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
                             </StackPanel>
@@ -83,10 +84,10 @@
                                       EnableRowVirtualization="True"
                                       ItemsSource="{Binding Tables}">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="表名" Binding="{Binding TableName}" Width="*"/>
-                                    <DataGridTextColumn Header="状态" Binding="{Binding ExistsDisplay}" Width="90"/>
-                                    <DataGridTextColumn Header="行数" Binding="{Binding RowCountDisplay}" Width="140"/>
-                                    <DataGridTextColumn Header="占用" Binding="{Binding SizeDisplay}" Width="140"/>
+                                    <DataGridTextColumn Header="{x:Static properties:Resources.TableName}" Binding="{Binding TableName}" Width="*"/>
+                                    <DataGridTextColumn Header="{x:Static properties:Resources.Status}" Binding="{Binding ExistsDisplay}" Width="90"/>
+                                    <DataGridTextColumn Header="{x:Static properties:Resources.RowCount}" Binding="{Binding RowCountDisplay}" Width="140"/>
+                                    <DataGridTextColumn Header="{x:Static properties:Resources.Size_Column}" Binding="{Binding SizeDisplay}" Width="140"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>

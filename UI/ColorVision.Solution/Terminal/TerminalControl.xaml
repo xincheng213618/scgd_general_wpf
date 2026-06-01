@@ -4,60 +4,73 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:ColorVision.Solution.Terminal"
+             xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
+             xmlns:uiProperties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
-             Background="#1E1E1E"
-             Loaded="UserControl_Loaded">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <!-- Toolbar -->
-        <ToolBar Grid.Row="0" Background="Transparent" Band="0" BandIndex="0">
-            <ComboBox x:Name="ShellSelector" Width="120" Margin="2" SelectionChanged="ShellSelector_Changed">
-                <ComboBoxItem Content="PowerShell" IsSelected="True"/>
-                <ComboBoxItem Content="CMD"/>
-            </ComboBox>
-            <Separator/>
-            <Button x:Name="ButtonNewShell" Content="+ 新终端" Click="ButtonNewShell_Click" Padding="6,2" Margin="2"
-                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="启动新的终端会话"/>
-            <Button x:Name="ButtonClear" Content="清屏" Click="ButtonClear_Click" Padding="6,2" Margin="2"
-                    Foreground="{DynamicResource GlobalTextBrush}"/>
-            <Button x:Name="ButtonKill" Content="终止" Click="ButtonKill_Click" Padding="6,2" Margin="2"
-                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="终止当前终端进程"/>
-        </ToolBar>
-
-        <!-- Terminal area: custom drawn terminal view with IME proxy overlay -->
-        <Grid Grid.Row="1">
-            <ScrollViewer x:Name="TerminalScrollViewer"
-                          Background="#1E1E1E"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          Focusable="True"
-                          PreviewKeyDown="TerminalScrollViewer_PreviewKeyDown"
-                          PreviewTextInput="TerminalScrollViewer_PreviewTextInput"
-                          MouseDown="TerminalScrollViewer_MouseDown"
-                          GotFocus="TerminalScrollViewer_GotFocus">
-                <local:TerminalView x:Name="TerminalDisplay"
-                                    Focusable="False"/>
-            </ScrollViewer>
-            <!-- Invisible TextBox positioned at cursor for correct IME candidate window placement -->
-            <Canvas x:Name="ImeCanvas" IsHitTestVisible="False">
-                <TextBox x:Name="ImeProxy"
-                         Width="2" Height="20"
-                         Background="Transparent"
-                         Foreground="Transparent"
-                         CaretBrush="Transparent"
-                         BorderThickness="0"
-                         FontFamily="Cascadia Mono, Consolas, Courier New"
-                         FontSize="14"
-                         Focusable="True"
-                         AcceptsReturn="False"
-                         PreviewKeyDown="OutputTextBox_PreviewKeyDown"
-                         PreviewTextInput="ImeProxy_PreviewTextInput"/>
-            </Canvas>
-        </Grid>
+             Background="{DynamicResource TerminalBackgroundBrush}"
+    Loaded="UserControl_Loaded">
+    <!-- Terminal area: custom drawn terminal view with IME proxy overlay -->
+    <Grid x:Name="TerminalRoot" Background="{DynamicResource TerminalBackgroundBrush}">
+        <Grid.ContextMenu>
+            <ContextMenu Opened="TerminalContextMenu_Opened">
+                <MenuItem x:Name="MenuCopy"
+                          Header="{x:Static uiProperties:Resources.MenuCopy}"
+                          InputGestureText="Ctrl+C"
+                          Click="MenuCopy_Click"/>
+                <MenuItem x:Name="MenuPaste"
+                          Header="{x:Static uiProperties:Resources.MenuPaste}"
+                          InputGestureText="Ctrl+V"
+                          Click="MenuPaste_Click"/>
+                <Separator/>
+                <MenuItem x:Name="MenuNewPowerShell"
+                          Header="{x:Static properties:Resources.Terminal_NewPowerShell}"
+                          Click="MenuNewPowerShell_Click"/>
+                <MenuItem x:Name="MenuNewCmd"
+                          Header="{x:Static properties:Resources.Terminal_NewCmd}"
+                          Click="MenuNewCmd_Click"/>
+                <MenuItem x:Name="MenuClear"
+                          Header="{x:Static properties:Resources.Sol_ClearScreen}"
+                          Click="MenuClear_Click"/>
+                <MenuItem x:Name="MenuKill"
+                          Header="{x:Static properties:Resources.Sol_Terminate}"
+                          Click="MenuKill_Click"/>
+                <Separator/>
+                <MenuItem x:Name="MenuStatus" IsEnabled="False" Header="PowerShell / Exited"/>
+            </ContextMenu>
+        </Grid.ContextMenu>
+        <ScrollViewer x:Name="TerminalScrollViewer"
+                      Background="{DynamicResource TerminalBackgroundBrush}"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Focusable="True"
+                      SizeChanged="TerminalScrollViewer_SizeChanged"
+                      PreviewKeyDown="TerminalScrollViewer_PreviewKeyDown"
+                      PreviewTextInput="TerminalScrollViewer_PreviewTextInput"
+                      MouseDown="TerminalScrollViewer_MouseDown"
+                      GotFocus="TerminalScrollViewer_GotFocus">
+            <local:TerminalView x:Name="TerminalDisplay"
+                                DefaultBackgroundColor="{DynamicResource TerminalBackgroundColor}"
+                                DefaultForegroundColor="{DynamicResource TerminalForegroundColor}"
+                                CursorBrush="{DynamicResource TerminalCursorBrush}"
+                                SelectionBrush="{DynamicResource TerminalSelectionBrush}"
+                                UrlBrush="{DynamicResource TerminalUrlBrush}"
+                                Focusable="False"/>
+        </ScrollViewer>
+        <!-- Invisible TextBox positioned at cursor for correct IME candidate window placement -->
+        <Canvas x:Name="ImeCanvas" IsHitTestVisible="False">
+            <TextBox x:Name="ImeProxy"
+                     Width="2" Height="20"
+                     Background="Transparent"
+                     Foreground="Transparent"
+                     CaretBrush="Transparent"
+                     BorderThickness="0"
+                     FontFamily="Cascadia Mono, Consolas, Courier New"
+                     FontSize="14"
+                     Focusable="True"
+                     AcceptsReturn="False"
+                     PreviewKeyDown="OutputTextBox_PreviewKeyDown"
+                     PreviewTextInput="ImeProxy_PreviewTextInput"/>
+        </Canvas>
     </Grid>
 </UserControl>

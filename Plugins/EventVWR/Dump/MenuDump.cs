@@ -52,7 +52,7 @@ namespace  EventVWR.Dump
             MenuItemMetadata menuItemMetaclear = new MenuItemMetadata
             {
                 OwnerGuid = nameof(MenuDump),
-                Header = "清空Dmp",
+                Header = Properties.Resources.EventVWR_ClearDmp,
                 Icon = null, // Set your icon here if needed
                 Order = 10000, // Adjust order based on the enum value
                 Command = clearCommand,
@@ -62,7 +62,7 @@ namespace  EventVWR.Dump
             MenuItemMetadata menuItemMetasave = new MenuItemMetadata
             {
                 OwnerGuid = nameof(MenuDump),
-                Header = "保存Dmp",
+                Header = Properties.Resources.EventVWR_SaveDmp,
                 Icon = null, // Set your icon here if needed
                 Order = 10000, // Adjust order based on the enum value
                 Command = clearCommand,

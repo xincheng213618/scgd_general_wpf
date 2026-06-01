@@ -100,14 +100,38 @@
   <data name="CommunicationProtocol" xml:space="preserve">
     <value>通信协议</value>
   </data>
+  <data name="CommunicationProtocolDescription" xml:space="preserve">
+    <value>配置本机通信服务的监听地址、端口和数据格式。</value>
+  </data>
   <data name="ServerPort" xml:space="preserve">
     <value>端口</value>
+  </data>
+  <data name="ServerPortDescription" xml:space="preserve">
+    <value>Socket 服务监听的端口，范围为 0 到 65535。</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
     <value>IP地址</value>
   </data>
+  <data name="IPAddressDescription" xml:space="preserve">
+    <value>服务监听的本机地址，0.0.0.0 表示监听所有网卡。</value>
+  </data>
   <data name="IsServerEnabled" xml:space="preserve">
     <value>服务器启用状态</value>
+  </data>
+  <data name="IsServerEnabledDescription" xml:space="preserve">
+    <value>启用或关闭本机 Socket 通信服务。</value>
+  </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>Socket 缓冲区大小</value>
+  </data>
+  <data name="SocketBufferSizeDescription" xml:space="preserve">
+    <value>单次接收数据时使用的缓冲区大小。</value>
+  </data>
+  <data name="SocketPhraseType" xml:space="preserve">
+    <value>消息解析格式</value>
+  </data>
+  <data name="SocketPhraseTypeDescription" xml:space="preserve">
+    <value>通信消息的解析格式。</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket 连接管理器</value>
@@ -276,5 +300,20 @@
   </data>
   <data name="SocketServerDisconnected" xml:space="preserve">
     <value>Socket 服务未连接</value>
+  </data>
+  <data name="Socket_Receive" xml:space="preserve">
+    <value>接收</value>
+  </data>
+  <data name="Socket_Send" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="Socket_QueryCount" xml:space="preserve">
+    <value>查询数量</value>
+  </data>
+  <data name="Socket_SortByType" xml:space="preserve">
+    <value>按类型排序</value>
+  </data>
+  <data name="Socket_MessageTable" xml:space="preserve">
+    <value>Socket 消息</value>
   </data>
 </root>

@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using SystemMonitor.Properties;
 
 namespace ColorVision.UI.Configs
 {
@@ -84,8 +85,8 @@ namespace ColorVision.UI.Configs
         public OperationalStatus Status { get; set; }
         public long Speed { get; set; }
         public string SpeedText => Speed >= 1_000_000_000 ? $"{Speed / 1_000_000_000.0:F0} Gbps" : $"{Speed / 1_000_000.0:F0} Mbps";
-        public string IPAddress { get; set; } = "N/A";
-        public string MacAddress { get; set; } = "N/A";
+        public string IPAddress { get; set; } = Resources.NotAvailable;
+        public string MacAddress { get; set; } = Resources.NotAvailable;
         public bool IsUp => Status == OperationalStatus.Up;
         public string StatusColor => IsUp ? "#43A047" : "#9E9E9E";
     }
@@ -236,10 +237,10 @@ namespace ColorVision.UI.Configs
 
         // 状态栏显示文本 (更醒目)
         public string CPUStatusText { get => _CPUStatusText; set { _CPUStatusText = value; OnPropertyChanged(); } }
-        private string _CPUStatusText = "CPU 0.0%";
+        private string _CPUStatusText = string.Empty;
 
         public string RAMStatusText { get => _RAMStatusText; set { _RAMStatusText = value; OnPropertyChanged(); } }
-        private string _RAMStatusText = "RAM 0.0%";
+        private string _RAMStatusText = string.Empty;
 
         // 系统启动时间
         public string OSUptime { get => _OSUptime; set { _OSUptime = value; OnPropertyChanged(); } }
@@ -285,6 +286,8 @@ namespace ColorVision.UI.Configs
         {
             Config = ConfigService.Instance.GetRequiredService<SystemMonitorSetting>();
             _totalRAMGB = (double)Common.NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
+            CPUStatusText = FormatUsageStatus(Resources.CPU, 0);
+            RAMStatusText = FormatUsageStatus(Resources.RAM, 0);
 
             MachineName = Environment.MachineName;
             ProcessorCount = Environment.ProcessorCount;
@@ -400,11 +403,23 @@ namespace ColorVision.UI.Configs
                         InterfaceType = nic.NetworkInterfaceType,
                         Status = nic.OperationalStatus,
                         Speed = nic.Speed,
-                        IPAddress = ipv4?.Address.ToString() ?? "N/A",
-                        MacAddress = mac != null ? string.Join(":", mac.GetAddressBytes().Select(b => b.ToString("X2"))) : "N/A",
+                        IPAddress = ipv4?.Address.ToString() ?? Resources.NotAvailable,
+                        MacAddress = mac != null ? string.Join(":", mac.GetAddressBytes().Select(b => b.ToString("X2"))) : Resources.NotAvailable,
                     });
                 }
             });
+        }
+
+        private static string FormatDuration(TimeSpan timeSpan)
+        {
+            return timeSpan.Days > 0
+                ? string.Format(Resources.DurationWithDaysFormat, timeSpan.Days, timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds)
+                : $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
+        }
+
+        private static string FormatUsageStatus(string label, double value)
+        {
+            return string.Format(Resources.StatusBarUsageFormat, label, value);
         }
 
         public void LoadTopProcesses()
@@ -465,15 +480,11 @@ namespace ColorVision.UI.Configs
             {
                 // 应用运行时长
                 var ts = SystemHelper.GetUptime();
-                GetUptime = ts.Days == 0
-                    ? $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}"
-                    : $"{ts.Days}天 {ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}";
+                GetUptime = FormatDuration(ts);
 
                 // 系统运行时长
                 var osTs = TimeSpan.FromMilliseconds(Environment.TickCount64);
-                OSUptime = osTs.Days > 0
-                    ? $"{osTs.Days}天 {osTs.Hours:00}:{osTs.Minutes:00}:{osTs.Seconds:00}"
-                    : $"{osTs.Hours:00}:{osTs.Minutes:00}:{osTs.Seconds:00}";
+                OSUptime = FormatDuration(osTs);
 
                 // 当前进程信息
                 try
@@ -508,8 +519,8 @@ namespace ColorVision.UI.Configs
                     ProcessorTotal = CPUPercent.ToString("f1") + "%";
 
                     // 状态栏醒目文本
-                    CPUStatusText = "CPU " + CPUPercent.ToString("f1") + "%";
-                    RAMStatusText = "RAM " + RAMPercent.ToString("f1") + "%";
+                    CPUStatusText = FormatUsageStatus(Resources.CPU, CPUPercent);
+                    RAMStatusText = FormatUsageStatus(Resources.RAM, RAMPercent);
                 }
             }
             catch (Exception ex)
@@ -550,12 +561,12 @@ namespace ColorVision.UI.Configs
                         }
                     }
                 }
-                MessageBox.Show($"清除成功，删除了 {deletedCount} 个文件");
+                MessageBox.Show(string.Format(Resources.CacheClearSucceededDetail, deletedCount), Resources.PerformanceTest, MessageBoxButton.OK, MessageBoxImage.Information);
                 UpdateCacheSize();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"清除失败: {ex.Message}");
+                MessageBox.Show(string.Format(Resources.CacheClearFailedDetail, ex.Message), Resources.PerformanceTest, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

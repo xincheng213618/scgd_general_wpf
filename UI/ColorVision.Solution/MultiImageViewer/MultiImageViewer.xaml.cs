@@ -32,7 +32,7 @@ namespace ColorVision.Solution.MultiImageViewer
                         window.Show();
                         multiImageViewer.LoadFromFolderAsync(DirectoryPath);
                     });
-                    MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MultiImageViewerEditor", Order = 10, Header = "MultiImageViewer", Command = OpenMultiImageViewerEditorCommand });
+                    MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MultiImageViewerEditor", Order = 10, Header = Properties.Resources.MultiImageViewer, Command = OpenMultiImageViewerEditorCommand });
                 }
             }
             return MenuItemMetadatas;
@@ -143,7 +143,7 @@ namespace ColorVision.Solution.MultiImageViewer
         {
             if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
             {
-                MessageBox.Show($"文件夹不存在: {folderPath}", "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_FileNotExist, folderPath), "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -275,7 +275,7 @@ namespace ColorVision.Solution.MultiImageViewer
 
         private void UpdateFileCountText()
         {
-            FileCountText.Text = $"共 {ImageFiles.Count} 个文件";
+            FileCountText.Text = $"{ImageFiles.Count} files";
         }
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)

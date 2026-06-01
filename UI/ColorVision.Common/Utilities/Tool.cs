@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿#pragma warning disable CA1861,CA5351
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -40,7 +41,7 @@ namespace ColorVision.Common.Utilities
             {
                 key.SetValue("", "", RegistryValueKind.String);
             }
-            if (MessageBox.Show("切换到Win10的右键菜单需要重启桌面，才能生效","Windows",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox.Show(Properties.Resources.Common_RestartDesktop,"Windows",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 foreach (var process in Process.GetProcessesByName("explorer"))
                 {
@@ -547,7 +548,7 @@ namespace ColorVision.Common.Utilities
             }
             catch (Exception ex)
             {
-                MessageBox.Show("无法以管理员权限重新启动程序：" + ex.Message);
+                MessageBox.Show(Properties.Resources.Common_AdminRestartFailed + ex.Message);
             }
             Environment.Exit(0);
         }

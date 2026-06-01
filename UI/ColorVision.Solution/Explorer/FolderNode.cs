@@ -162,25 +162,55 @@ namespace ColorVision.Solution.Explorer
             if (!DirectoryInfo.Exists)
                 return;
 
-            var service = CopilotServiceRegistry.Current;
-            if (service == null || !service.Ask(new CopilotPromptRequest
+            var contextItem = BuildCopilotFolderContextItem();
+            CopilotLiveContextRegistry.Publish(new CopilotLiveContext
+            {
+                SourceId = "solution-folder-node",
+                Title = contextItem.Title,
+                Summary = contextItem.Summary,
+                AttachmentTitle = contextItem.Title,
+                SnapshotItems = new[] { contextItem },
+            });
+
+            var result = CopilotPromptRequestHelper.Dispatch(new CopilotPromptRequestOptions
                 {
                     Mode = CopilotPromptMode.Code,
                     Prompt = $"请总结这个文件夹的内容结构、主要用途，以及建议优先阅读的文件。文件夹路径：{DirectoryInfo.FullName}。如有必要，请先列出目录并读取关键文本文件。",
-                    ContextItems = new[]
-                    {
-                        new CopilotContextItem
-                        {
-                            Id = "solution-folder-node",
-                            Title = "解决方案树选中文件夹",
-                            Summary = DirectoryInfo.Name,
-                            Content = $"路径：{DirectoryInfo.FullName}",
-                        },
-                    },
-                }))
+                    ContextItems = new[] { contextItem },
+                });
+
+            if (!result.WasSent)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "Copilot 当前不可用。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), result.StatusMessage, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        private CopilotContextItem BuildCopilotFolderContextItem()
+        {
+            var directories = 0;
+            var files = 0;
+            try
+            {
+                directories = DirectoryInfo.GetDirectories().Length;
+                files = DirectoryInfo.GetFiles().Length;
+            }
+            catch
+            {
+            }
+
+            return new CopilotContextItem
+            {
+                Id = "solution-folder-node",
+                Title = "Selected solution folder",
+                Summary = DirectoryInfo.Name,
+                Content = string.Join(Environment.NewLine, new[]
+                {
+                    $"Path: {DirectoryInfo.FullName}",
+                    $"Child directories: {directories}",
+                    $"Child files: {files}",
+                    $"Last modified: {DirectoryInfo.LastWriteTime:O}",
+                }),
+            };
         }
 
         private void OpenFusionWithFolderImages()

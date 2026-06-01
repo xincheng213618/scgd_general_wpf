@@ -1,90 +1,33 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-		Microsoft ResX Schema
-
-		Version 1.3
-
-		The primary goals of this format is to allow a simple XML format 
-		that is mostly human readable. The generation and parsing of the 
-		various data types are done through the TypeConverter classes 
-		associated with the data types.
-
-		Example:
-
-		... ado.net/XML headers & schema ...
-		<resheader name="resmimetype">text/microsoft-resx</resheader>
-		<resheader name="version">1.3</resheader>
-		<resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-		<resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-		<data name="Name1">this is my long string</data>
-		<data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-		<data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-			[base64 mime encoded serialized .NET Framework object]
-		</data>
-		<data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-			[base64 mime encoded string representing a byte array form of the .NET Framework object]
-		</data>
-
-		There are any number of "resheader" rows that contain simple 
-		name/value pairs.
-
-		Each data row contains a name, and value. The row also contains a 
-		type or mimetype. Type corresponds to a .NET class that support 
-		text/value conversion through the TypeConverter architecture. 
-		Classes that don't support this are serialized and stored with the 
-		mimetype set.
-
-		The mimetype is used for serialized objects, and tells the 
-		ResXResourceReader how to depersist the object. This is currently not 
-		extensible. For a given mimetype the value must be set accordingly:
-
-		Note - application/x-microsoft.net.object.binary.base64 is the format 
-		that the ResXResourceWriter will generate, however the reader can 
-		read any of the formats listed below.
-
-		mimetype: application/x-microsoft.net.object.binary.base64
-		value   : The object must be serialized with 
-			: System.Serialization.Formatters.Binary.BinaryFormatter
-			: and then encoded with base64 encoding.
-
-		mimetype: application/x-microsoft.net.object.soap.base64
-		value   : The object must be serialized with 
-			: System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-			: and then encoded with base64 encoding.
-
-		mimetype: application/x-microsoft.net.object.bytearray.base64
-		value   : The object must be serialized into a byte array 
-			: using a System.ComponentModel.TypeConverter
-			: and then encoded with base64 encoding.
-	-->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:schema id="root">
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -321,5 +264,590 @@
   </data>
   <data name="UserName" xml:space="preserve">
     <value>用户名:</value>
+  </data>
+  <data name="MenuSaveLayout" xml:space="preserve">
+    <value>保存窗口布局</value>
+  </data>
+  <data name="MenuApplyLayout" xml:space="preserve">
+    <value>应用窗口布局</value>
+  </data>
+  <data name="MenuResetLayout" xml:space="preserve">
+    <value>重置窗口布局</value>
+  </data>
+  <data name="LayoutNotFoundMessage" xml:space="preserve">
+    <value>未找到已保存的窗口布局。</value>
+  </data>
+  <data name="LayoutNotFoundTitle" xml:space="preserve">
+    <value>应用窗口布局</value>
+  </data>
+  <data name="MenuFusion" xml:space="preserve">
+    <value>景深融合(_F)</value>
+  </data>
+<data name="MultiImageViewer" xml:space="preserve"><value>多图浏览器</value></data>
+  <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>显示文件列表</value></data>
+  <data name="Sol_MivCfg_View" xml:space="preserve"><value>视图</value></data>
+  <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>列表高度</value></data>
+  <data name="Sol_MivCfg_ThumbSize" xml:space="preserve"><value>缩略图大小</value></data>
+  <data name="Sol_MivCfg_Thumbnail" xml:space="preserve"><value>缩略图</value></data>
+  <data name="Sol_MivCfg_MaxDisplay" xml:space="preserve"><value>最大显示数量</value></data>
+  <data name="Sol_MivCfg_EnableCache" xml:space="preserve"><value>启用缩略图缓存</value></data>
+  <data name="Sol_MivCfg_ShowThumb" xml:space="preserve"><value>显示缩略图</value></data>
+  <data name="Sol_MivCfg_ReadDelay" xml:space="preserve"><value>图像读取延迟(ms)</value></data>
+  <data name="Sol_MivCfg_CacheSize" xml:space="preserve"><value>缓存大小</value></data>
+  <data name="Sol_MivCfg_Cache" xml:space="preserve"><value>缓存</value></data>
+  <data name="Sol_MivCfg_CacheCount" xml:space="preserve"><value>缓存数量</value></data>
+  <data name="Sol_FileInfo_Path" xml:space="preserve"><value>文件路径</value></data>
+  <data name="Sol_FileInfo_Name" xml:space="preserve"><value>文件名</value></data>
+  <data name="Sol_FileInfo_Dir" xml:space="preserve"><value>目录</value></data>
+  <data name="Sol_FileInfo_Ext" xml:space="preserve"><value>扩展名</value></data>
+  <data name="Sol_FileInfo_FileSize" xml:space="preserve"><value>文件大小</value></data>
+  <data name="Sol_FileInfo_Size" xml:space="preserve"><value>大小</value></data>
+  <data name="Sol_FileInfo_Modified" xml:space="preserve"><value>修改时间</value></data>
+  <data name="Sol_FileInfo_Width" xml:space="preserve"><value>宽度</value></data>
+  <data name="Sol_FileInfo_Height" xml:space="preserve"><value>高度</value></data>
+  <data name="Sol_FileInfo_Resolution" xml:space="preserve"><value>分辨率</value></data>
+  <data name="Sol_FileInfo_Exists" xml:space="preserve"><value>存在</value></data>
+  <data name="Sol_FileInfo_FileNameLabel" xml:space="preserve"><value>文件名:</value></data>
+  <data name="Sol_FileInfo_PathLabel" xml:space="preserve"><value>路径:</value></data>
+  <data name="Sol_FileInfo_SizeLabel" xml:space="preserve"><value>大小:</value></data>
+  <data name="Sol_FileInfo_ResLabel" xml:space="preserve"><value>分辨率:</value></data>
+  <data name="Sol_FileInfo_ModLabel" xml:space="preserve"><value>修改时间:</value></data>
+  <data name="Sol_FileInfo_Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Sol_Editor_WebView2" xml:space="preserve"><value>WebView2编辑器</value></data>
+  <data name="Sol_Editor_Image" xml:space="preserve"><value>图片编辑器</value></data>
+  <data name="Sol_Editor_Text" xml:space="preserve"><value>文本编辑器</value></data>
+  <data name="Sol_Editor_Hex" xml:space="preserve"><value>Hex文本编辑器</value></data>
+  <data name="Sol_Editor_Project" xml:space="preserve"><value>图片编辑器</value></data>
+  <data name="Sol_Editor_System" xml:space="preserve"><value>系统默认</value></data>
+  <data name="Sol_Fusion_CudaAvail" xml:space="preserve"><value>CUDA: 可用</value></data>
+  <data name="Sol_Fusion_CudaUnavail" xml:space="preserve"><value>CUDA: 不可用</value></data>
+  <data name="Sol_Fusion_Executing" xml:space="preserve"><value>正在执行融合...</value></data>
+  <data name="Sol_Fusion_Failed" xml:space="preserve"><value>融合失败: {0}</value></data>
+  <data name="Sol_Fusion_Converting" xml:space="preserve"><value>融合完成，正在转换结果...</value></data>
+  <data name="Sol_Fusion_Done" xml:space="preserve"><value>完成  融合: {0}</value></data>
+  <data name="Sol_Fusion_MissingLib" xml:space="preserve"><value>缺少运行库</value></data>
+  <data name="Sol_Fusion_Error" xml:space="preserve"><value>融合出错</value></data>
+  <data name="Sol_Fusion_Result" xml:space="preserve"><value>融合结果 - {0}</value></data>
+  <data name="Sol_Fusion_SelectMin2" xml:space="preserve"><value>请至少选择2张图像文件。</value></data>
+  <data name="Sol_Fusion_Hint" xml:space="preserve"><value>提示</value></data>
+  <data name="Sol_Fusion_FileNotExist" xml:space="preserve"><value>文件不存在: {0}</value></data>
+  <data name="Sol_Fusion_CalcFailed" xml:space="preserve"><value>融合计算失败: {0}</value></data>
+  <data name="Sol_Fusion_MissingRuntime" xml:space="preserve"><value>缺少必要的运行库: {0}</value></data>
+  <data name="Sol_Fusion_ProcessError" xml:space="preserve"><value>融合过程中发生错误: {0}</value></data>
+  <data name="Sol_Fusion_ImageFiles" xml:space="preserve"><value>图像文件</value></data>
+  <data name="Sol_Fusion_AllFiles" xml:space="preserve"><value>所有文件</value></data>
+  <data name="Sol_Workspace_Home" xml:space="preserve"><value>  主页</value></data>
+  <data name="Sol_Hex_LoadFailed" xml:space="preserve"><value>加载文件失败: {0}</value></data>  <data name="Sol_Fusion_Title" xml:space="preserve">
+    <value>景深融合 (Fusion)</value>
+  </data>
+  <data name="Sol_Fusion_Label" xml:space="preserve">
+    <value>景深融合</value>
+  </data>
+  <data name="Sol_Fusion_FileList" xml:space="preserve">
+    <value>图像文件列表（按顺序排列）</value>
+  </data>
+  <data name="Sol_Fusion_AddFile" xml:space="preserve">
+    <value>添加文件</value>
+  </data>
+  <data name="Sol_Fusion_Remove" xml:space="preserve">
+    <value>移除选中</value>
+  </data>
+  <data name="Sol_Fusion_Clear" xml:space="preserve">
+    <value>清空</value>
+  </data>
+  <data name="Sol_Fusion_MoveUp" xml:space="preserve">
+    <value>上移 ↑</value>
+  </data>
+  <data name="Sol_Fusion_MoveDown" xml:space="preserve">
+    <value>下移 ↓</value>
+  </data>
+  <data name="Sol_Fusion_Config" xml:space="preserve">
+    <value>融合配置</value>
+  </data>
+  <data name="Sol_Fusion_Mode" xml:space="preserve">
+    <value>计算模式：</value>
+  </data>
+  <data name="Sol_Fusion_Auto" xml:space="preserve">
+    <value>自动 (CUDA可用时使用GPU)</value>
+  </data>
+  <data name="Sol_Fusion_Async" xml:space="preserve">
+    <value>GPU 异步 (CUDA Async)</value>
+  </data>
+  <data name="Sol_Fusion_Perf" xml:space="preserve">
+    <value>性能统计</value>
+  </data>
+  <data name="Sol_Fusion_ModeCol" xml:space="preserve">
+    <value>模式</value>
+  </data>
+  <data name="Sol_Fusion_LoadMs" xml:space="preserve">
+    <value>加载(ms)</value>
+  </data>
+  <data name="Sol_Fusion_FusionMs" xml:space="preserve">
+    <value>融合(ms)</value>
+  </data>
+  <data name="Sol_Fusion_ConvertMs" xml:space="preserve">
+    <value>转换(ms)</value>
+  </data>
+  <data name="Sol_Fusion_TotalMs" xml:space="preserve">
+    <value>总计(ms)</value>
+  </data>
+  <data name="Sol_Fusion_ImageCount" xml:space="preserve">
+    <value>图像数</value>
+  </data>
+  <data name="Sol_Fusion_ClearBtn" xml:space="preserve">
+    <value>清除</value>
+  </data>
+  <data name="Sol_Fusion_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sol_Fusion_Execute" xml:space="preserve">
+    <value>执行融合</value>
+  </data>
+  <data name="Sol_Miv_Loading" xml:space="preserve">
+    <value>加载中...</value>
+  </data>
+  <data name="Sol_Miv_FileNotExist" xml:space="preserve">
+    <value>文件不存在</value>
+  </data>
+  <data name="Sol_Miv_Refresh" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="Sol_Miv_Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Sol_Miv_OpenInExplorer" xml:space="preserve">
+    <value>在资源管理器中打开</value>
+  </data>
+  <data name="Sol_Miv_CopyPath" xml:space="preserve">
+    <value>复制文件路径</value>
+  </data>
+  <data name="Sol_Miv_SelectImage" xml:space="preserve">
+    <value>请从左侧列表选择图片</value>
+  </data>
+  <data name="Sol_Miv_FileCount" xml:space="preserve">
+    <value>共 {0} 个文件</value>
+  </data>
+  <data name="Sol_Miv_FolderNotExist" xml:space="preserve">
+    <value>文件夹不存在: {0}</value>
+  </data>
+  <data name="Sol_Miv_Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Sol_AddProject_Title" xml:space="preserve">
+    <value>添加新项目</value>
+  </data>
+  <data name="Sol_AddProject_Category" xml:space="preserve">
+    <value>类别:</value>
+  </data>
+  <data name="Sol_AddProject_Search" xml:space="preserve">
+    <value>搜索项目模板...</value>
+  </data>
+  <data name="Sol_AddProject_Name" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="Sol_AddProject_CategoryCol" xml:space="preserve">
+    <value>类别</value>
+  </data>
+  <data name="Sol_AddProject_Desc" xml:space="preserve">
+    <value>描述</value>
+  </data>
+  <data name="Sol_AddProject_ProjectName" xml:space="preserve">
+    <value>项目名称:</value>
+  </data>
+  <data name="Sol_AddProject_Create" xml:space="preserve">
+    <value>创建</value>
+  </data>
+  <data name="Sol_AddProject_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sol_AddItem_Title" xml:space="preserve">
+    <value>添加新建项</value>
+  </data>
+  <data name="Sol_AddItem_Category" xml:space="preserve">
+    <value>类别:</value>
+  </data>
+  <data name="Sol_AddItem_Search" xml:space="preserve">
+    <value>搜索模板...</value>
+  </data>
+  <data name="Sol_AddItem_Extension" xml:space="preserve">
+    <value>扩展名</value>
+  </data>
+  <data name="Sol_AddItem_Name" xml:space="preserve">
+    <value>名称:</value>
+  </data>
+  <data name="Sol_AddItem_Add" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="Sol_AddItem_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sol_TreeView_New" xml:space="preserve">
+    <value>新建</value>
+  </data>
+  <data name="Sol_OpenAs" xml:space="preserve">
+    <value>打开方式</value>
+  </data>
+  <data name="Sol_OpenFileHint" xml:space="preserve">
+    <value>选择要用来打开此文件的程序</value>
+  </data>
+  <data name="Sol_OpenFolderHint" xml:space="preserve">
+    <value>选择要用来打开此文件夹的程序</value>
+  </data>
+  <data name="Sol_OK" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="Sol_OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="Sol_OpenFolderDesc" xml:space="preserve">
+    <value>直接将本地目录作为工作区打开</value>
+  </data>
+  <data name="Sol_NewTerminal" xml:space="preserve">
+    <value>+ 新终端</value>
+  </data>
+  <data name="Sol_NewTerminalTooltip" xml:space="preserve">
+    <value>启动新的终端会话</value>
+  </data>
+  <data name="Terminal_NewPowerShell" xml:space="preserve">
+    <value>新建 PowerShell</value>
+  </data>
+  <data name="Terminal_NewCmd" xml:space="preserve">
+    <value>新建 CMD</value>
+  </data>
+  <data name="Sol_ClearScreen" xml:space="preserve">
+    <value>清屏</value>
+  </data>
+  <data name="Sol_Terminate" xml:space="preserve">
+    <value>终止</value>
+  </data>
+  <data name="Sol_TerminateTooltip" xml:space="preserve">
+    <value>终止当前终端进程</value>
+  </data>
+  <data name="Sol_Login_Welcome" xml:space="preserve">
+    <value>欢迎使用 ColorVision 系统</value>
+  </data>
+  <data name="Sol_Login_AutoLogin" xml:space="preserve">
+    <value>勾选后，下次启动软件将自动登录</value>
+  </data>
+  <data name="Sol_Login_Register" xml:space="preserve">
+    <value>注册新账户</value>
+  </data>
+  <data name="Sol_Register_Title" xml:space="preserve">
+    <value>注册新用户</value>
+  </data>
+  <data name="Sol_Register_Create" xml:space="preserve">
+    <value>创建新账户</value>
+  </data>
+  <data name="Sol_Register_Join" xml:space="preserve">
+    <value>加入 ColorVision 系统</value>
+  </data>
+  <data name="Sol_Register_Username" xml:space="preserve">
+    <value>用户名</value>
+  </data>
+  <data name="Sol_Register_ConfirmPassword" xml:space="preserve">
+    <value>确认密码</value>
+  </data>
+  <data name="Sol_Register_EnterUsername" xml:space="preserve">
+    <value>请输入用户名</value>
+  </data>
+  <data name="Sol_Register_EnterPassword" xml:space="preserve">
+    <value>请输入密码（至少6位）</value>
+  </data>
+  <data name="Sol_Register_ReenterPassword" xml:space="preserve">
+    <value>再次输入密码</value>
+  </data>
+  <data name="Sol_Register_Register" xml:space="preserve">
+    <value>注册</value>
+  </data>
+  <data name="Sol_Register_Terms" xml:space="preserve">
+    <value>注册即表示您同意 ColorVision 使用条款</value>
+  </data>
+  <data name="Sol_ChangePwd_Title" xml:space="preserve">
+    <value>修改密码</value>
+  </data>
+  <data name="Sol_ChangePwd_Label" xml:space="preserve">
+    <value>修改密码</value>
+  </data>
+  <data name="Sol_ChangePwd_Current" xml:space="preserve">
+    <value>当前密码</value>
+  </data>
+  <data name="Sol_ChangePwd_CurrentPlaceholder" xml:space="preserve">
+    <value>请输入当前密码</value>
+  </data>
+  <data name="Sol_ChangePwd_New" xml:space="preserve">
+    <value>新密码</value>
+  </data>
+  <data name="Sol_ChangePwd_NewPlaceholder" xml:space="preserve">
+    <value>至少6个字符</value>
+  </data>
+  <data name="Sol_ChangePwd_Confirm" xml:space="preserve">
+    <value>确认新密码</value>
+  </data>
+  <data name="Sol_ChangePwd_ConfirmPlaceholder" xml:space="preserve">
+    <value>再次输入新密码</value>
+  </data>
+  <data name="Sol_ChangePwd_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Sol_ChangePwd_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sol_CreateUser_Title" xml:space="preserve">
+    <value>创建新用户</value>
+  </data>
+  <data name="Sol_CreateUser_Subtitle" xml:space="preserve">
+    <value>填写用户信息并分配角色</value>
+  </data>
+  <data name="Sol_CreateUser_Username" xml:space="preserve">
+    <value>用户名</value>
+  </data>
+  <data name="Sol_CreateUser_UsernameDesc" xml:space="preserve">
+    <value>用户登录名，必须唯一</value>
+  </data>
+  <data name="Sol_CreateUser_Password" xml:space="preserve">
+    <value>密码</value>
+  </data>
+  <data name="Sol_CreateUser_PasswordDesc" xml:space="preserve">
+    <value>至少6个字符</value>
+  </data>
+  <data name="Sol_CreateUser_Role" xml:space="preserve">
+    <value>角色</value>
+  </data>
+  <data name="Sol_CreateUser_RoleDesc" xml:space="preserve">
+    <value>选择用户的初始角色</value>
+  </data>
+  <data name="Sol_CreateUser_Remark" xml:space="preserve">
+    <value>备注</value>
+  </data>
+  <data name="Sol_CreateUser_RemarkDesc" xml:space="preserve">
+    <value>用户的描述信息（可选）</value>
+  </data>
+  <data name="Sol_CreateUser_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sol_CreateUser_Create" xml:space="preserve">
+    <value>创建用户</value>
+  </data>
+  <data name="Sol_UserMgr_Title" xml:space="preserve">
+    <value>用户管理 - RBAC</value>
+  </data>
+  <data name="Sol_UserMgr_Label" xml:space="preserve">
+    <value>用户和角色管理</value>
+  </data>
+  <data name="Sol_UserMgr_Admin" xml:space="preserve">
+    <value>系统管理员模式</value>
+  </data>
+  <data name="Sol_UserMgr_Refresh" xml:space="preserve">
+    <value>刷新数据</value>
+  </data>
+  <data name="Sol_UserMgr_Ops" xml:space="preserve">
+    <value>用户管理操作</value>
+  </data>
+  <data name="Sol_UserMgr_CreateUser" xml:space="preserve">
+    <value>创建用户</value>
+  </data>
+  <data name="Sol_UserMgr_CreateUserTooltip" xml:space="preserve">
+    <value>打开创建用户窗口</value>
+  </data>
+  <data name="Sol_UserMgr_RoleMgmt" xml:space="preserve">
+    <value>角色管理</value>
+  </data>
+  <data name="Sol_UserMgr_RoleName" xml:space="preserve">
+    <value>角色名称:</value>
+  </data>
+  <data name="Sol_UserMgr_RoleNameTooltip" xml:space="preserve">
+    <value>输入角色显示名称</value>
+  </data>
+  <data name="Sol_UserMgr_RoleCode" xml:space="preserve">
+    <value>角色代码:</value>
+  </data>
+  <data name="Sol_UserMgr_RoleCodeTooltip" xml:space="preserve">
+    <value>输入角色的唯一标识代码</value>
+  </data>
+  <data name="Sol_UserMgr_Remark" xml:space="preserve">
+    <value>备注:</value>
+  </data>
+  <data name="Sol_UserMgr_RemarkTooltip" xml:space="preserve">
+    <value>角色描述信息</value>
+  </data>
+  <data name="Sol_UserMgr_CreateRole" xml:space="preserve">
+    <value>创建角色</value>
+  </data>
+  <data name="Sol_UserMgr_PermMgmt" xml:space="preserve">
+    <value>权限管理</value>
+  </data>
+  <data name="Sol_UserMgr_Col_RoleName" xml:space="preserve">
+    <value>角色名称</value>
+  </data>
+  <data name="Sol_UserMgr_Col_RoleCode" xml:space="preserve">
+    <value>角色代码</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Remark" xml:space="preserve">
+    <value>备注</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Status" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="Sol_UserMgr_Col_CreateTime" xml:space="preserve">
+    <value>创建时间</value>
+  </data>
+  <data name="Sol_UserMgr_SearchTooltip" xml:space="preserve">
+    <value>搜索用户名...</value>
+  </data>
+  <data name="Sol_UserMgr_UserCount" xml:space="preserve">
+    <value>共 {0} 个用户</value>
+  </data>
+  <data name="Sol_UserMgr_UserList" xml:space="preserve">
+    <value>用户列表</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Username" xml:space="preserve">
+    <value>用户名</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Role" xml:space="preserve">
+    <value>角色</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Action" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="Sol_UserMgr_EditRoleTooltip" xml:space="preserve">
+    <value>编辑角色</value>
+  </data>
+  <data name="Sol_UserMgr_DeleteUserTooltip" xml:space="preserve">
+    <value>删除用户</value>
+  </data>
+  <data name="Sol_UserMgr_ResetPwdTooltip" xml:space="preserve">
+    <value>重置密码</value>
+  </data>
+  <data name="Sol_UserMgr_PermStats" xml:space="preserve">
+    <value>权限缓存统计: 加载中...</value>
+  </data>
+  <data name="Sol_UserMgr_DoubleClickHint" xml:space="preserve">
+    <value>提示: 双击用户可查看详细信息</value>
+  </data>
+  <data name="Sol_EditRoles_Title" xml:space="preserve">
+    <value>编辑用户角色 - RBAC</value>
+  </data>
+  <data name="Sol_EditRoles_Label" xml:space="preserve">
+    <value>编辑用户角色</value>
+  </data>
+  <data name="Sol_EditRoles_Subtitle" xml:space="preserve">
+    <value>选择用户的角色分配</value>
+  </data>
+  <data name="Sol_EditRoles_Search" xml:space="preserve">
+    <value>搜索角色名称</value>
+  </data>
+  <data name="Sol_EditRoles_Selected" xml:space="preserve">
+    <value>已选择 {0} 个角色</value>
+  </data>
+  <data name="Sol_EditRoles_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sol_EditRoles_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Sol_EditUser_Title" xml:space="preserve">
+    <value>编辑用户信息</value>
+  </data>
+  <data name="Sol_EditUser_Label" xml:space="preserve">
+    <value>编辑用户信息</value>
+  </data>
+  <data name="Sol_EditUser_Subtitle" xml:space="preserve">
+    <value>修改个人资料</value>
+  </data>
+  <data name="Sol_EditUser_Email" xml:space="preserve">
+    <value>邮箱</value>
+  </data>
+  <data name="Sol_EditUser_Phone" xml:space="preserve">
+    <value>电话</value>
+  </data>
+  <data name="Sol_EditUser_PhonePlaceholder" xml:space="preserve">
+    <value>联系电话</value>
+  </data>
+  <data name="Sol_EditUser_Company" xml:space="preserve">
+    <value>公司</value>
+  </data>
+  <data name="Sol_EditUser_CompanyPlaceholder" xml:space="preserve">
+    <value>公司名称</value>
+  </data>
+  <data name="Sol_EditUser_Dept" xml:space="preserve">
+    <value>部门</value>
+  </data>
+  <data name="Sol_EditUser_DeptPlaceholder" xml:space="preserve">
+    <value>所属部门</value>
+  </data>
+  <data name="Sol_EditUser_Position" xml:space="preserve">
+    <value>职位</value>
+  </data>
+  <data name="Sol_EditUser_PositionPlaceholder" xml:space="preserve">
+    <value>职位名称</value>
+  </data>
+  <data name="Sol_EditUser_Address" xml:space="preserve">
+    <value>地址</value>
+  </data>
+  <data name="Sol_EditUser_AddressPlaceholder" xml:space="preserve">
+    <value>联系地址</value>
+  </data>
+  <data name="Sol_EditUser_Remark" xml:space="preserve">
+    <value>备注</value>
+  </data>
+  <data name="Sol_EditUser_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Sol_EditUser_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sol_PermMgr_Label" xml:space="preserve">
+    <value>角色权限管理</value>
+  </data>
+  <data name="Sol_PermMgr_Subtitle" xml:space="preserve">
+    <value>分配和管理角色的系统权限</value>
+  </data>
+  <data name="Sol_PermMgr_Refresh" xml:space="preserve">
+    <value>刷新角色</value>
+  </data>
+  <data name="Sol_PermMgr_Available" xml:space="preserve">
+    <value>可用权限</value>
+  </data>
+  <data name="Sol_PermMgr_SelectAll" xml:space="preserve">
+    <value>✓ 全选</value>
+  </data>
+  <data name="Sol_PermMgr_DeselectAll" xml:space="preserve">
+    <value>✗ 全不选</value>
+  </data>
+  <data name="Sol_PermMgr_CurrentRole" xml:space="preserve">
+    <value>当前角色：</value>
+  </data>
+  <data name="Sol_PermMgr_NotSelected" xml:space="preserve">
+    <value>未选择</value>
+  </data>
+  <data name="Sol_PermMgr_Save" xml:space="preserve">
+    <value>保存权限分配</value>
+  </data>
+  <data name="Sol_PermMgr_Ready" xml:space="preserve">
+    <value>就绪</value>
+  </data>
+  <data name="Sol_RbacMgr_LoginTooltip" xml:space="preserve">
+    <value>点击登录或切换账户</value>
+  </data>
+  <data name="Sol_RbacMgr_EditUserTooltip" xml:space="preserve">
+    <value>编辑当前用户详细信息</value>
+  </data>
+  <data name="Sol_RbacMgr_ChangePwdTooltip" xml:space="preserve">
+    <value>修改当前账户密码</value>
+  </data>
+  <data name="Sol_RbacMgr_ChangePwdLabel" xml:space="preserve">
+    <value>修改密码</value>
+  </data>
+  <data name="Sol_RbacMgr_UserMgmtTooltip" xml:space="preserve">
+    <value>管理系统用户和角色（仅管理员可用）</value>
+  </data>
+  <data name="Sol_RbacMgr_LogoutTooltip" xml:space="preserve">
+    <value>退出登录</value>
+  </data>
+  <data name="Sol_Rbac_Close" xml:space="preserve">
+    <value>关闭</value>
   </data>
 </root>

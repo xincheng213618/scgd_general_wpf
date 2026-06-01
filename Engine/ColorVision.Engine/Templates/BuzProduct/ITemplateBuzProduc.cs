@@ -80,7 +80,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
             SaveIndex.Clear();
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
 
 
@@ -149,7 +149,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
                 sfd.Filter = "*.cfg|*.cfg";
                 sfd.AddExtension = false;
                 sfd.RestoreDirectory = true;
-                sfd.Title = "导出模板";
+                sfd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ExportTemplate;
                 sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
                 if (sfd.FileName.Contains('.'))
                     sfd.FileName = sfd.FileName + ".cfg";
@@ -163,7 +163,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
                 sfd.Filter = "*.zip|*.zip";
                 sfd.AddExtension = true;
                 sfd.RestoreDirectory = true;
-                sfd.Title = "导出";
+                sfd.Title = ColorVision.Engine.Properties.Resources.Export;
                 sfd.FileName = $"{Code}.zip";
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
@@ -248,7 +248,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.cfg|*.cfg";
-            ofd.Title = "导入模板";
+            ofd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ImportTemplate;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
             //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(sfd.FileName), StringComparison.OrdinalIgnoreCase)))

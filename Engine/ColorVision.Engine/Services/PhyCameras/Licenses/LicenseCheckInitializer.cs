@@ -63,9 +63,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                         var info = new LicenseExpiryInfo
                         {
                             Camera = camera,
-                            CameraName = camera.Name ?? camera.Code ?? "未知相机",
-                            StatusMessage = $"许可证已过期",
-                            LicenseInfo = $"过期日期: {expiryDate:yyyy-MM-dd}",
+                            CameraName = camera.Name ?? camera.Code ?? Properties.Resources.UnknownCamera,
+                            StatusMessage = Properties.Resources.LicenseExpiredStatusMessage,
+                            LicenseInfo = string.Format(Properties.Resources.ExpiryDateFormat, $"{expiryDate:yyyy-MM-dd}"),
                             StatusColor = new SolidColorBrush(Colors.Red),
                             StatusTextColor = new SolidColorBrush(Colors.Red),
                             IsExpired = true,
@@ -79,9 +79,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                         var info = new LicenseExpiryInfo
                         {
                             Camera = camera,
-                            CameraName = camera.Name ?? camera.Code ?? "未知相机",
-                            StatusMessage = $"许可证即将过期 (剩余 {daysRemaining} 天)",
-                            LicenseInfo = $"过期日期: {expiryDate:yyyy-MM-dd}",
+                            CameraName = camera.Name ?? camera.Code ?? Properties.Resources.UnknownCamera,
+                            StatusMessage = string.Format(Properties.Resources.LicenseExpiringSoonStatusMessage, daysRemaining),
+                            LicenseInfo = string.Format(Properties.Resources.ExpiryDateFormat, $"{expiryDate:yyyy-MM-dd}"),
                             StatusColor = new SolidColorBrush(Colors.Orange),
                             StatusTextColor = new SolidColorBrush(Colors.DarkOrange),
                             IsExpired = false,

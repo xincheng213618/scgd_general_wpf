@@ -14,6 +14,7 @@ namespace Conoscope.Core
         public static ConoscopeManager GetInstance() { lock (_locker) { return _instance ??= new ConoscopeManager(); } }
 
         public ConoscopeConfig Config { get; set; }
+        public ConoscopeGlobalReferenceStore GlobalReferences { get; }
         public RelayCommand EditConoscopeConfigCommand { get; set; }
 
         public void EditConoscopeConfig()
@@ -25,6 +26,7 @@ namespace Conoscope.Core
         public ConoscopeManager() 
         {
             Config =ConfigService.Instance.GetRequiredService<ConoscopeConfig>();
+            GlobalReferences = new ConoscopeGlobalReferenceStore(Config);
             EditConoscopeConfigCommand = new RelayCommand(a=> EditConoscopeConfig());
         }
 

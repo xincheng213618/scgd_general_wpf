@@ -7,11 +7,19 @@ namespace Conoscope.Analysis
 {
     public partial class ContrastResultWindow : Window
     {
+        private readonly ContrastComputationResult result;
+
         public ContrastResultWindow(ContrastComputationResult result)
         {
             InitializeComponent();
+            this.result = result;
             ResultGrid.ItemsSource = result.Points.Select(item => new ContrastRowViewModel(item)).ToList();
-            tbSummary.Text = string.Format(Properties.Resources.FocusPointCountAndAverageContrast, result.Points.Count, result.AverageRatio.ToString("F3"), result.MinimumRatio.ToString("F3"), result.MaximumRatio.ToString("F3"));
+            tbSummary.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.FocusPointCountAndAverageContrast, result.Points.Count, result.AverageRatio.ToString("F3"), result.MinimumRatio.ToString("F3"), result.MaximumRatio.ToString("F3"));
+        }
+
+        private void btnExportCsv_Click(object sender, RoutedEventArgs e)
+        {
+            AnalysisResultCsvExporter.ExportContrast(this, result);
         }
 
         private sealed class ContrastRowViewModel
@@ -40,7 +48,7 @@ namespace Conoscope.Analysis
 
             private static string FormatChromaticity(ImageMeasurement measurement)
             {
-                return string.Format(Properties.Resources.ChromaticityFormat, measurement.Chromaticity.x.ToString("F4"), measurement.Chromaticity.y.ToString("F4"));
+                return Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.ChromaticityFormat, measurement.Chromaticity.x.ToString("F4"), measurement.Chromaticity.y.ToString("F4"));
             }
         }
     }

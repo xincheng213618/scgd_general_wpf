@@ -35,22 +35,22 @@ namespace ColorVision.Copilot
 
             var summaryParts = new[]
             {
-                string.IsNullOrWhiteSpace(request.SolutionDirectoryPath) ? null : "已定位解决方案根目录",
-                string.IsNullOrWhiteSpace(request.ActiveDocumentPath) ? null : "已定位当前活动内容",
-                searchRoots.Length == 0 ? null : $"搜索根 {searchRoots.Length} 个",
+                string.IsNullOrWhiteSpace(request.SolutionDirectoryPath) ? null : "solution root detected",
+                string.IsNullOrWhiteSpace(request.ActiveDocumentPath) ? null : "active content detected",
+                searchRoots.Length == 0 ? null : $"search roots {searchRoots.Length}",
             }
             .Where(part => !string.IsNullOrWhiteSpace(part));
 
             var builder = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(request.SolutionDirectoryPath))
-                builder.AppendLine($"解决方案根目录：{request.SolutionDirectoryPath}");
+                builder.AppendLine($"Solution root: {request.SolutionDirectoryPath}");
 
             if (!string.IsNullOrWhiteSpace(request.ActiveDocumentPath))
-                builder.AppendLine($"当前活动内容：{request.ActiveDocumentPath}");
+                builder.AppendLine($"Active content: {request.ActiveDocumentPath}");
 
             if (searchRoots.Length > 0)
             {
-                builder.AppendLine("当前搜索根：");
+                builder.AppendLine("Current search roots:");
                 foreach (var root in searchRoots)
                     builder.Append("- ").AppendLine(root);
             }
@@ -58,8 +58,8 @@ namespace ColorVision.Copilot
             return Task.FromResult<CopilotContextItem?>(new CopilotContextItem
             {
                 Id = "workspace",
-                Title = "当前工作区",
-                Summary = string.Join("，", summaryParts),
+                Title = "Current workspace",
+                Summary = string.Join(", ", summaryParts),
                 Content = builder.ToString().TrimEnd(),
             });
         }

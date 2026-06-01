@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Windows;
 
 namespace ColorVision.Solution.MultiImageViewer
@@ -48,8 +49,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 是否显示文件列表
         /// </summary>
-        [DisplayName("显示文件列表")]
-        [Category("视图")]
+        [Display(Name = "Sol_MivCfg_ShowFileList", GroupName = "Sol_MivCfg_View", ResourceType = typeof(Properties.Resources))]
         public bool IsShowListView
         {
             get => _IsShowListView;
@@ -60,8 +60,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 文件列表高度
         /// </summary>
-        [DisplayName("列表高度")]
-        [Category("视图")]
+        [Display(Name = "Sol_MivCfg_ListHeight", GroupName = "Sol_MivCfg_View", ResourceType = typeof(Properties.Resources))]
         public double ListHeight
         {
             get => _ListHeight;
@@ -72,8 +71,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 缩略图大小
         /// </summary>
-        [DisplayName("缩略图大小")]
-        [Category("缩略图")]
+        [Display(Name = "Sol_MivCfg_ThumbSize", GroupName = "Sol_MivCfg_Thumbnail", ResourceType = typeof(Properties.Resources))]
         public int ThumbnailSize
         {
             get => _ThumbnailSize;
@@ -84,8 +82,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 最大显示文件数量
         /// </summary>
-        [DisplayName("最大显示数量")]
-        [Category("视图")]
+        [Display(Name = "Sol_MivCfg_MaxDisplay", GroupName = "Sol_MivCfg_View", ResourceType = typeof(Properties.Resources))]
         public int MaxDisplayCount
         {
             get => _MaxDisplayCount;
@@ -96,8 +93,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 是否启用缩略图缓存
         /// </summary>
-        [DisplayName("启用缩略图缓存")]
-        [Category("缩略图")]
+        [Display(Name = "Sol_MivCfg_EnableCache", GroupName = "Sol_MivCfg_Thumbnail", ResourceType = typeof(Properties.Resources))]
         public bool EnableThumbnailCache
         {
             get => _EnableThumbnailCache;
@@ -108,8 +104,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 是否显示缩略图
         /// </summary>
-        [DisplayName("显示缩略图")]
-        [Category("缩略图")]
+        [Display(Name = "Sol_MivCfg_ShowThumb", GroupName = "Sol_MivCfg_Thumbnail", ResourceType = typeof(Properties.Resources))]
         public bool ShowThumbnail
         {
             get => _ShowThumbnail;
@@ -120,8 +115,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 图像读取延迟（毫秒）
         /// </summary>
-        [DisplayName("图像读取延迟(ms)")]
-        [Category("视图")]
+        [Display(Name = "Sol_MivCfg_ReadDelay", GroupName = "Sol_MivCfg_View", ResourceType = typeof(Properties.Resources))]
         public int ImageReadDelay
         {
             get => _ImageReadDelay;
@@ -133,8 +127,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// 缓存大小显示（只读）
         /// </summary>
         [JsonIgnore]
-        [DisplayName("缓存大小")]
-        [Category("缓存")]
+        [Display(Name = "Sol_MivCfg_CacheSize", GroupName = "Sol_MivCfg_Cache", ResourceType = typeof(Properties.Resources))]
         public string CacheSizeDisplay
         {
             get
@@ -150,9 +143,8 @@ namespace ColorVision.Solution.MultiImageViewer
         /// 缓存条目数量显示（只读）
         /// </summary>
         [JsonIgnore]
-        [DisplayName("缓存数量")]
-        [Category("缓存")]
-        public string CacheCountDisplay => $"{ThumbnailCacheManager.Instance.GetCacheCount()} 个";
+        [Display(Name = "Sol_MivCfg_CacheCount", GroupName = "Sol_MivCfg_Cache", ResourceType = typeof(Properties.Resources))]
+        public string CacheCountDisplay => $"{ThumbnailCacheManager.Instance.GetCacheCount()}";
 
         /// <summary>
         /// 支持的图像扩展名

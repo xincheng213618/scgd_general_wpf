@@ -120,14 +120,38 @@
   <data name="CommunicationProtocol" xml:space="preserve">
     <value>Протокол связи</value>
   </data>
+  <data name="CommunicationProtocolDescription" xml:space="preserve">
+    <value>Настройка адреса прослушивания, порта и формата данных локальной службы связи.</value>
+  </data>
   <data name="ServerPort" xml:space="preserve">
     <value>порт</value>
+  </data>
+  <data name="ServerPortDescription" xml:space="preserve">
+    <value>Порт, который прослушивает служба Socket, от 0 до 65535.</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
     <value>IP-адрес</value>
   </data>
+  <data name="IPAddressDescription" xml:space="preserve">
+    <value>Локальный адрес для прослушивания. 0.0.0.0 означает все сетевые адаптеры.</value>
+  </data>
   <data name="IsServerEnabled" xml:space="preserve">
     <value>Сервер включен</value>
+  </data>
+  <data name="IsServerEnabledDescription" xml:space="preserve">
+    <value>Включает или отключает локальную службу связи Socket.</value>
+  </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>Размер буфера Socket</value>
+  </data>
+  <data name="SocketBufferSizeDescription" xml:space="preserve">
+    <value>Размер буфера для каждой операции приема.</value>
+  </data>
+  <data name="SocketPhraseType" xml:space="preserve">
+    <value>Формат разбора сообщений</value>
+  </data>
+  <data name="SocketPhraseTypeDescription" xml:space="preserve">
+    <value>Формат разбора сообщений связи.</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Диспетчер сокетных соединений</value>
@@ -296,5 +320,20 @@
   </data>
   <data name="SocketServerDisconnected" xml:space="preserve">
     <value>Socket-сервер отключен</value>
+  </data>
+  <data name="Socket_Receive" xml:space="preserve">
+    <value>Receive</value>
+  </data>
+  <data name="Socket_Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Socket_QueryCount" xml:space="preserve">
+    <value>Query Count</value>
+  </data>
+  <data name="Socket_SortByType" xml:space="preserve">
+    <value>Sort by Type</value>
+  </data>
+  <data name="Socket_MessageTable" xml:space="preserve">
+    <value>Socket Messages</value>
   </data>
 </root>

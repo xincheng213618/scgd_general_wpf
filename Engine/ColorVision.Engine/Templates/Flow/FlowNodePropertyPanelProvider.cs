@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (layoutManager == null) return;
 
             var panel = new FlowNodePropertyPanel();
-            layoutManager.RegisterPanel(FlowNodePropertyPanel.PanelId, panel, "节点属性", PanelPosition.Right);
+            layoutManager.RegisterPanel(FlowNodePropertyPanel.PanelId, panel, Properties.Resources.NodeProperty, PanelPosition.Right);
         }
     }
 }

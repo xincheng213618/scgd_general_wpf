@@ -63,8 +63,8 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
-                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "线条颜色" },
-                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(StrokeThickness), Icon = CompactInspectorIcons.CreateText("━"), Width = 56, Order = 20, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "线宽" },
+                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LineColor },
+                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(StrokeThickness), Icon = CompactInspectorIcons.CreateText("━"), Width = 56, Order = 20, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LineWidth },
             };
         }
 

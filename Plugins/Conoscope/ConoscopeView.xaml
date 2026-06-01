@@ -9,7 +9,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Conoscope:ConoscopeManager}"
-        Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Background="{DynamicResource GlobalBackground}" d:Height="720" d:Width="1280" Initialized="Window_Initialized">
     <UserControl.Resources>
         <Style x:Key="PanelHeaderTextStyle" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -17,15 +17,90 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
         <Style x:Key="PanelMutedTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Opacity" Value="0.72"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style x:Key="PanelCompactButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="9,3"/>
             <Setter Property="MinHeight" Value="26"/>
         </Style>
-        <Style x:Key="PanelPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
-            <Setter Property="FontWeight" Value="SemiBold"/>
+        <Style x:Key="PanelSurfaceButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PanelSurfaceToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="MinWidth" Value="68"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="PanelCompactToggleStyle" TargetType="ToggleButton">
             <Setter Property="Padding" Value="9,3"/>
@@ -33,26 +108,25 @@
             <Setter Property="MinWidth" Value="68"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
-        <Style x:Key="OverlayToolButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelCompactButtonStyle}">
-            <Setter Property="Width" Value="34"/>
+        <Style x:Key="OverlayToolButtonStyle" TargetType="Button" BasedOn="{StaticResource PanelSurfaceButtonStyle}">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="MinWidth" Value="36"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
-        <Style x:Key="OverlayToolToggleStyle" TargetType="ToggleButton">
-            <Setter Property="Padding" Value="6,2"/>
-            <Setter Property="MinWidth" Value="46"/>
+        <Style x:Key="OverlayToolToggleStyle" TargetType="ToggleButton" BasedOn="{StaticResource PanelSurfaceToggleStyle}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="MinWidth" Value="36"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
         <DrawingBrush x:Key="TransparentGridBrush" Opacity="0.1" TileMode="Tile" Viewport="0 0 20 20" ViewportUnits="Absolute">
             <DrawingBrush.Drawing>
                 <DrawingGroup>
-                    <!--  Gray square  -->
                     <GeometryDrawing Brush="Gray" Geometry="M0,0 L0,10 10,10 10,0 Z" />
-                    <!--  Transparent square  -->
                     <GeometryDrawing Brush="Transparent" Geometry="M10,0 L10,10 20,10 20,0 Z" />
-                    <!--  Another row  -->
                     <GeometryDrawing Brush="Transparent" Geometry="M0,10 L0,20 10,20 10,10 Z" />
                     <GeometryDrawing Brush="Gray" Geometry="M10,10 L10,20 20,20 20,10 Z" />
                 </DrawingGroup>
@@ -62,30 +136,13 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="*" />
             <ColumnDefinition Width="6"/>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Grid x:Name="ImageViewHost" Grid.Column="0" Background="{StaticResource TransparentGridBrush}">
             <local:ConoscopeImageHost x:Name="ImageView" />
-            <Border HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
-                <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ToggleButton x:Name="tglPanMode" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbPan}" ToolTip="{x:Static properties:Resources.TbPanTip}" IsChecked="True" Checked="tglPanMode_Checked" Unchecked="tglPanMode_Unchecked" />
-                    <ToggleButton x:Name="tglReferenceInteraction" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbRefDrag}" ToolTip="{x:Static properties:Resources.TbRefDragTip}" IsChecked="True" Checked="tglReferenceInteraction_Checked" Unchecked="tglReferenceInteraction_Unchecked" />
-                    <Separator/>
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="-" FontSize="16" FontWeight="Bold" ToolTip="{x:Static properties:Resources.TbZoomOut}" Click="ToolbarZoomOut_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="+" FontSize="16" FontWeight="Bold" ToolTip="{x:Static properties:Resources.TbZoomIn}" Click="ToolbarZoomIn_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="1:1" ToolTip="{x:Static properties:Resources.TbOriginalSize}" Click="ToolbarZoomNone_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFit}" ToolTip="{x:Static properties:Resources.TbFitTip}" Click="ToolbarZoomUniform_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFill}" ToolTip="{x:Static properties:Resources.TbFillTip}" Click="ToolbarZoomUniformToFill_Click" />
-                    <TextBox x:Name="txtToolbarZoomRatio" Width="54" Margin="4,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Text="1.00" ToolTip="{x:Static properties:Resources.TbZoomRatioTip}" PreviewKeyDown="txtToolbarZoomRatio_PreviewKeyDown" LostFocus="txtToolbarZoomRatio_LostFocus" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbFullscreen}" ToolTip="{x:Static properties:Resources.TbFullscreenTip}" Click="ToolbarFullScreen_Click" />
-                    <Separator/>
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="3D" ToolTip="{x:Static properties:Resources.TipOpen3DView}" Click="ToolbarOpen3D_Click" />
-                    <Button Style="{StaticResource OverlayToolButtonStyle}" Content="CIE" ToolTip="{x:Static properties:Resources.TipOpenCieDiagram}" Click="ToolbarOpenCie_Click" />
-                </ToolBar>
-            </Border>
             <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Padding="8" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False">
                 <StackPanel>
                     <TextBlock x:Name="tbPseudoColorLegendTitle" Foreground="White" FontWeight="SemiBold" Text="Y" HorizontalAlignment="Center" />
@@ -99,20 +156,27 @@
             <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
                 <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
             </Border>
-            <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="#F2F4F4F4" BorderBrush="#CCB8B8B8" BorderThickness="1" CornerRadius="6">
+            <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEditFocusPoint}" ToolTip="{x:Static properties:Resources.TbEditFocusPointTip}" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbCircle}" ToolTip="{x:Static properties:Resources.TbCircleTip}" IsChecked="True" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEdit}" ToolTip="{x:Static properties:Resources.TbEditTip}" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" />
-                    <ToggleButton x:Name="tglFocusCircleEraseTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEraser}" ToolTip="{x:Static properties:Resources.TbEraserTip}" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbEditFocusPointTip}" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbCircleTip}" IsChecked="False" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEdit}" ToolTip="{x:Static properties:Resources.TbEditTip}" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" Visibility="Collapsed" />
+                    <ToggleButton x:Name="tglFocusCircleEraseTool" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbEraserTip}" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
                     <Separator/>
-                    <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbCalc}" ToolTip="{x:Static properties:Resources.TbCalcTip}" Click="btnCalculateFocusCircles_Click" />
-                    <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbClearAll}" ToolTip="{x:Static properties:Resources.TbClearAllTip}" Click="btnClearFocusCircles_Click" />
+                    <Button x:Name="btnCircleFit" Style="{StaticResource OverlayToolButtonStyle}" ToolTip="{x:Static properties:Resources.TbCircleFitTip}" Click="btnCircleFit_Click" />
+                    <Button x:Name="btnCalculateFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" ToolTip="{x:Static properties:Resources.TbCalcTip}" Click="btnCalculateFocusCircles_Click" />
+                    <Button x:Name="btnClearFocusCircles" Style="{StaticResource OverlayToolButtonStyle}" Content="{x:Static properties:Resources.TbClearAll}" ToolTip="{x:Static properties:Resources.TbClearAllTip}" Click="btnClearFocusCircles_Click" Visibility="Collapsed" />
+                    <Separator Visibility="Collapsed"/>
+                    <TextBlock x:Name="tbSelectedFocusPointInfo" Width="280" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Visibility="Collapsed" Foreground="{DynamicResource GlobalTextBrush}" ToolTip="{x:Static properties:Resources.TipSelectedFocusPoint}" />
+                    <Separator x:Name="sepSelectedFocusPointInfo" Visibility="Collapsed"/>
+                    <ComboBox x:Name="cbFocusPoiTemplate" Width="118" Height="28" DisplayMemberPath="Key" SelectedValuePath="Value" ToolTip="{x:Static properties:Resources.TipFocusPoiTemplate}" SelectionChanged="cbFocusPoiTemplate_SelectionChanged"/>
+                    <Button x:Name="btnSaveFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" ToolTip="{x:Static properties:Resources.TipSaveFocusPoiTemplate}" Click="btnSaveFocusPoiTemplate_Click" />
+                    <Button x:Name="btnManageFocusPoiTemplate" Style="{StaticResource OverlayToolButtonStyle}" Content="POI" ToolTip="{x:Static properties:Resources.TipManageFocusPoiTemplate}" Click="btnManageFocusPoiTemplate_Click" Visibility="Collapsed" />
                 </ToolBar>
             </Border>
         </Grid>
 
-        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}"/>
+        <GridSplitter Grid.Column="1" Width="2" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}"/>
 
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
@@ -120,144 +184,107 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <TabControl Grid.Row="0" MaxHeight="220" MinHeight="112">
-                <TabItem Header="{x:Static properties:Resources.PanelDisplay}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                                <WrapPanel Margin="0,0,0,2">
-                                    <Button Content="{x:Static properties:Resources.BtnApplyPreset}" Click="btnApplyFilter_Click" Style="{StaticResource PanelPrimaryButtonStyle}" Margin="0,0,8,0"/>
-                                    <Button Content="{x:Static properties:Resources.BtnPreprocessSettings}" Click="btnOpenPreprocessSettings_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+            <StackPanel Grid.Row="0" Margin="5" Visibility="Collapsed">
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="132"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="132"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="68"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="{x:Static properties:Resources.LabelChannel}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="cbDisplayChannel" Grid.Column="1" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,12,0">
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelContrast}" Tag="Contrast"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Column="2" Text="{x:Static properties:Resources.LabelRefMode}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="cbQuickReferenceMode" Grid.Column="3" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged" Margin="0,0,12,0">
+                            <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
+                            <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
+                        </ComboBox>
+
+                        <Grid x:Name="rowReferenceAngle" Grid.Column="5" Grid.ColumnSpan="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="68"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="sliderQuickReferenceAngle" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceAngle_ValueChanged"/>
+                            <TextBox x:Name="txtQuickReferenceAngle" Grid.Column="2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceAngle_LostFocus"/>
+                        </Grid>
+
+                        <Grid x:Name="rowReferenceRadius" Grid.Column="5" Grid.ColumnSpan="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="68"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="sliderQuickReferenceRadius" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceRadius_ValueChanged"/>
+                            <TextBox x:Name="txtQuickReferenceRadius" Grid.Column="2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceRadius_LostFocus"/>
+                        </Grid>
+                    </Grid>
+
+                    <StackPanel Visibility="Collapsed">
+                        <Border x:Name="gbColorDifference" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.LabelColorDiffCalc}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                <WrapPanel Margin="0,4,0,4">
+                                    <TextBlock Text="{x:Static properties:Resources.LabelBaseRef}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="D65"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="D50"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiA}" Tag="A"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiD75}" Tag="D75"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiCenter50px}" Tag="ImageCenter"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiCustomCoord}" Tag="Custom"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiMeasuredBase}" Tag="ReferenceImage"/>
+                                    </ComboBox>
+                                    <Button x:Name="btnSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnSaveBaseImage}" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
+                                    <Button Content="{x:Static properties:Resources.BtnComputeColorDiff}" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
                                 </WrapPanel>
-                            </Border>
+                                <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
+                                    <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <TextBox x:Name="txtColorDifferenceCustomU" Width="72" Text="0.1978" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                    <TextBlock Text="v:" VerticalAlignment="Center" Margin="12,0,5,0"/>
+                                    <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
 
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                                <StackPanel>
-                                    <TextBlock Text="{x:Static properties:Resources.LabelDisplayAndReference}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                                    <WrapPanel Margin="0,4,0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.LabelDisplayChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbDisplayChannel" MinWidth="120" SelectedIndex="1" SelectionChanged="DisplayChannel_SelectionChanged" Margin="0,0,14,0">
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
-                                        </ComboBox>
-                                        <TextBlock Text="{x:Static properties:Resources.LabelRefMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbQuickReferenceMode" MinWidth="120" SelectionChanged="QuickReferenceMode_SelectionChanged">
-                                            <ComboBoxItem Content="{x:Static properties:Resources.RefAzimuthLine}" Tag="AzimuthLine"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.RefPolarCircle}" Tag="PolarCircle"/>
-                                        </ComboBox>
-                                    </WrapPanel>
-
-                                    <Grid x:Name="rowReferenceAngle" Margin="5,4,5,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="58"/>
-                                            <ColumnDefinition Width="8"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{x:Static properties:Resources.LabelRefAzimuth}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="txtQuickReferenceAngle" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceAngle_LostFocus"/>
-                                        <Slider x:Name="sliderQuickReferenceAngle" Grid.Column="3" Minimum="0" Maximum="180" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceAngle_ValueChanged"/>
-                                    </Grid>
-
-                                    <Grid x:Name="rowReferenceRadius" Margin="5,4,5,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="58"/>
-                                            <ColumnDefinition Width="8"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{x:Static properties:Resources.LabelRefPolar}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="txtQuickReferenceRadius" Grid.Column="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" PreviewKeyDown="QuickReferenceTextBox_PreviewKeyDown" LostFocus="txtQuickReferenceRadius_LostFocus"/>
-                                        <Slider x:Name="sliderQuickReferenceRadius" Grid.Column="3" Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="False" ValueChanged="QuickReferenceRadius_ValueChanged"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <TabItem Header="{x:Static properties:Resources.PanelColorDiff}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Border x:Name="gbColorDifference" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
-                                <StackPanel>
-                                    <TextBlock Text="{x:Static properties:Resources.LabelColorDiffCalc}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                                    <WrapPanel Margin="0,4,0,4">
-                                        <TextBlock Text="{x:Static properties:Resources.LabelBaseRef}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <ComboBox x:Name="cbColorDifferenceReference" MinWidth="170" SelectionChanged="ColorDifferenceReference_SelectionChanged">
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="D65"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="D50"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiA}" Tag="A"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiD75}" Tag="D75"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiCenter50px}" Tag="ImageCenter"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiCustomCoord}" Tag="Custom"/>
-                                            <ComboBoxItem Content="{x:Static properties:Resources.CbiMeasuredBase}" Tag="ReferenceImage"/>
-                                        </ComboBox>
-                                        <Button x:Name="btnSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnSaveBaseImage}" Click="btnSaveColorDifferenceReference_Click" Padding="10,3" Margin="10,0,6,0"/>
-                                        <Button Content="{x:Static properties:Resources.BtnComputeColorDiff}" Click="btnCalculateColorDifference_Click" Padding="10,3"/>
-                                    </WrapPanel>
-                                    <WrapPanel x:Name="panelColorDifferenceCustomUv" Margin="0,2,0,4">
-                                        <TextBlock Text="u:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <TextBox x:Name="txtColorDifferenceCustomU" Width="72" Text="0.1978" LostFocus="ColorDifferenceCustom_LostFocus"/>
-                                        <TextBlock Text="v:" VerticalAlignment="Center" Margin="12,0,5,0"/>
-                                        <TextBox x:Name="txtColorDifferenceCustomV" Width="72" Text="0.4684" LostFocus="ColorDifferenceCustom_LostFocus"/>
-                                    </WrapPanel>
-                                    <TextBlock x:Name="tbColorDifferenceReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <TabItem Header="{x:Static properties:Resources.PanelExport}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,5">
-                                <StackPanel>
-                                    <TextBlock Text="{x:Static properties:Resources.LabelExportSettings}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
-                                    <WrapPanel Margin="0,0,0,0">
-                                    <TextBlock Text="{x:Static properties:Resources.LabelExportMode}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <ComboBox x:Name="cbExportMode" MinWidth="120" SelectedIndex="0" Margin="0,0,14,0">
-                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiAzimuthExport}" Tag="Angle"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.CbiPolarExport}" Tag="Circle"/>
+                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,6" Margin="0,0,0,6">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.TitleContrastCalc}" Style="{StaticResource PanelHeaderTextStyle}" Margin="0,0,0,6"/>
+                                <WrapPanel Margin="0,4,0,4">
+                                    <TextBlock Text="{x:Static properties:Resources.LabelCurrentImage}" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbContrastReferenceKind" MinWidth="100" SelectionChanged="ContrastReferenceKind_SelectionChanged">
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageBlack}" Tag="Black"/>
+                                        <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageWhite}" Tag="White"/>
                                     </ComboBox>
-                                    <TextBlock Text="{x:Static properties:Resources.LabelExportChannel}" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="1" Margin="0,0,14,0" SelectionChanged="ExportChannel_SelectionChanged">
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelXShort}" Tag="X"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelYShort}" Tag="Y"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelZShort}" Tag="Z"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieXShort}" Tag="CieX"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieYShort}" Tag="CieY"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieUShort}" Tag="CieU"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieVShort}" Tag="CieV"/>
-                                        <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUVShort}" Tag="ColorDifference"/>
-                                    </ComboBox>
-                                    <Button Content="{x:Static properties:Resources.BtnAzimuthExport}" Click="btnExportAngleMode_Click" Padding="10,4" Margin="0,0,6,0"/>
-                                    <Button Content="{x:Static properties:Resources.BtnPolarExport}" Click="btnExportCircleMode_Click" Padding="10,4"/>
-                                    </WrapPanel>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
+                                    <Button Content="{x:Static properties:Resources.BtnComputeContrast}" Click="btnCalculateContrast_Click" Padding="10,3" Margin="10,0,0,0"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="tbContrastReferenceStatus" Margin="5,0,5,2" Foreground="Gray" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
 
-                <TabItem Header="{x:Static properties:Resources.PanelSettings}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="5">
-                            <Button Content="{x:Static properties:Resources.BtnSaveConfig}" Click="btnSaveConoscopeConfig_Click" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8"/>
-                            <Grid x:Name="GridSetting" Margin="0,0,0,10" />
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>
+                        <Grid x:Name="GridSetting" Margin="0,0,0,10" />
+                    </StackPanel>
+                </StackPanel>
 
-            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Margin="0,6,0,0">
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,1,0,0" CornerRadius="3" Margin="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -272,14 +299,14 @@
                                 <TextBlock Text="{x:Static properties:Resources.LabelCurrentValue}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
                                 <TextBlock x:Name="tbReferenceValue" MinWidth="78" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                 <TextBlock Text="{x:Static properties:Resources.LabelGraph}" Style="{StaticResource PanelMutedTextStyle}" Margin="0,0,5,0"/>
-                                <ToggleButton x:Name="tglReferencePolarMode" Content="{x:Static properties:Resources.BtnPolarCoord}" Style="{StaticResource PanelCompactToggleStyle}" Checked="tglReferencePolarMode_Checked" Unchecked="tglReferencePolarMode_Unchecked" Margin="0,0,12,0"/>
-                                <Button Content="{x:Static properties:Resources.BtnExportCurrent}" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelCompactButtonStyle}"/>
+                                <ToggleButton x:Name="tglReferencePolarMode" Content="{x:Static properties:Resources.BtnPolarCoord}" Style="{StaticResource PanelSurfaceToggleStyle}" Checked="tglReferencePolarMode_Checked" Unchecked="tglReferencePolarMode_Unchecked" Margin="0,0,12,0"/>
+                                <Button Content="{x:Static properties:Resources.BtnExportCurrent}" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelSurfaceButtonStyle}"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>
                     <Grid Grid.Row="1">
                         <ScottPlot:WpfPlot x:Name="wpfPlotReference" Margin="5" />
-                        <local:ConoscopePolarPlot x:Name="polarPlotReference" Margin="5" Visibility="Collapsed" IsHitTestVisible="False"/>
+                        <local:ConoscopePolarPlot x:Name="polarPlotReference" Margin="5" Visibility="Collapsed"/>
                     </Grid>
                 </Grid>
             </Border>

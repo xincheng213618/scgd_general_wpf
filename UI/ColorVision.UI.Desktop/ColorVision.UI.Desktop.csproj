@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net10.0-windows</TargetFrameworks>
+		<TargetFrameworks>net10.0-windows7.0</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<VersionPrefix>1.5.5.1</VersionPrefix>
+		<VersionPrefix>1.5.5.2</VersionPrefix>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageReadmeFile></PackageReadmeFile>
-		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -23,8 +23,8 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Markdig.Signed" Version="1.1.2" />
-		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3912.50" />
+		<PackageReference Include="Markdig.Signed" Version="1.2.0" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="README.md">

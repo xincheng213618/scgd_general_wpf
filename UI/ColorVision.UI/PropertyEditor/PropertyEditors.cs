@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿#pragma warning disable CA1716
+using System.Reflection;
 using System.Windows.Controls;
 
 namespace System.ComponentModel

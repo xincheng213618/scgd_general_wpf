@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CA5351
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;

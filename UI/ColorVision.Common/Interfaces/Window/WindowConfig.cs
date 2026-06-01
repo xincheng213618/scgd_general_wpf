@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8602,CA1852
+using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -12,6 +13,7 @@ namespace ColorVision.UI
     public abstract class WindowConfig : ViewModelBase, IConfig
     {
         [DisplayName("StartRecoverUILayout")]
+        [Description("StartRecoverUILayoutDescription")]
         public bool IsRestoreWindow { get; set; } = true;
 
         public double Width { get; set; }

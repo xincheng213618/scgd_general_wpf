@@ -36,6 +36,7 @@ def filter_and_sort_plugins(
     *,
     keyword: str = "",
     category: str = "",
+    author: str = "",
     sort_by: str = "updated",
     sort_order: str | None = None,
 ) -> tuple[list[PluginItem], str, str]:
@@ -45,6 +46,7 @@ def filter_and_sort_plugins(
         plugins,
         keyword=keyword,
         category=category,
+        author=author,
     )
     return (
         sort_plugin_summaries(
@@ -61,6 +63,7 @@ def _build_catalog_url(
     *,
     keyword: str,
     category: str,
+    author: str,
     sort_by: str,
     page: int | None = None,
     page_size: int | None = None,
@@ -70,6 +73,8 @@ def _build_catalog_url(
         params.append(("q", keyword))
     if category:
         params.append(("category", category))
+    if author:
+        params.append(("author", author))
     if sort_by and sort_by != "updated":
         params.append(("sort", sort_by))
     if page_size and page_size != DEFAULT_HTML_PAGE_SIZE:
@@ -86,6 +91,7 @@ def _build_pagination_items(
     total_pages: int,
     keyword: str,
     category: str,
+    author: str,
     sort_by: str,
     page_size: int,
 ) -> list[dict[str, Any]]:
@@ -112,6 +118,7 @@ def _build_pagination_items(
             "href": _build_catalog_url(
                 keyword=keyword,
                 category=category,
+                author=author,
                 sort_by=sort_by,
                 page=page - 1,
                 page_size=page_size,
@@ -143,6 +150,7 @@ def _build_pagination_items(
                 "href": _build_catalog_url(
                     keyword=keyword,
                     category=category,
+                    author=author,
                     sort_by=sort_by,
                     page=candidate,
                     page_size=page_size,
@@ -160,6 +168,7 @@ def _build_pagination_items(
             "href": _build_catalog_url(
                 keyword=keyword,
                 category=category,
+                author=author,
                 sort_by=sort_by,
                 page=page + 1,
                 page_size=page_size,
@@ -213,12 +222,14 @@ def build_plugin_catalog_page_context(
     *,
     keyword: str = "",
     category: str = "",
+    author: str = "",
     sort_by: str = "updated",
     page: int = 1,
     page_size: int = DEFAULT_HTML_PAGE_SIZE,
 ) -> dict[str, Any]:
     keyword = keyword.strip()
     category = category.strip()
+    author = author.strip()
     page_size = max(int(page_size), 1)
 
     all_items = list(all_plugins)
@@ -226,6 +237,7 @@ def build_plugin_catalog_page_context(
         all_items,
         keyword=keyword,
         category=category,
+        author=author,
         sort_by=sort_by,
     )
     total_count = len(filtered_sorted)
@@ -244,6 +256,7 @@ def build_plugin_catalog_page_context(
         "plugins": paged_plugins,
         "keyword": keyword,
         "category": category,
+        "author": author,
         "sort_by": normalized_sort,
         "sort_order": normalized_order,
         "categories": collect_catalog_categories(all_items),
@@ -257,12 +270,13 @@ def build_plugin_catalog_page_context(
         "has_pagination": total_pages > 1,
         "showing_from": showing_from,
         "showing_to": showing_to,
-        "active_filter_count": sum(1 for value in (keyword, category) if value) + (0 if normalized_sort == "updated" else 1),
+        "active_filter_count": sum(1 for value in (keyword, category, author) if value) + (0 if normalized_sort == "updated" else 1),
         "pagination_items": _build_pagination_items(
             page=current_page,
             total_pages=total_pages,
             keyword=keyword,
             category=category,
+            author=author,
             sort_by=normalized_sort,
             page_size=page_size,
         ),
@@ -275,6 +289,7 @@ def build_plugin_search_api_result(
     *,
     keyword: str = "",
     category: str = "",
+    author: str = "",
     sort_by: str = "updated",
     sort_order: str = "desc",
     page: int = 1,
@@ -285,6 +300,7 @@ def build_plugin_search_api_result(
         all_plugins,
         keyword=keyword,
         category=category,
+        author=author,
         sort_by=sort_by,
         sort_order=sort_order,
     )

@@ -41,6 +41,9 @@ namespace Conoscope.MVS
         public double MaxExposure { get => _MaxExposure; set { _MaxExposure = value; OnPropertyChanged(); } }
         private double _MaxExposure = 2499;
 
+        public bool OnlyShowCs200Devices { get => _OnlyShowCs200Devices; set { if (_OnlyShowCs200Devices == value) return; _OnlyShowCs200Devices = value; OnPropertyChanged(); } }
+        private bool _OnlyShowCs200Devices = true;
+
         public double SelectedGratingDiameterMillimeters { get => _SelectedGratingDiameterMillimeters; set { _SelectedGratingDiameterMillimeters = value; OnPropertyChanged(); } }
         private double _SelectedGratingDiameterMillimeters;
 

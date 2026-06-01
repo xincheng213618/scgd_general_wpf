@@ -168,4 +168,34 @@
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
+  <data name="MsgBox_DontShowAgain" xml:space="preserve">
+    <value>不再提示(_O)</value>
+  </data>
+  <data name="MsgBox_Prompt" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="Upload_DragHint" xml:space="preserve">
+    <value>拖拽到此处也可上传</value>
+  </data>
+  <data name="Upload_SelectFile" xml:space="preserve">
+    <value>选择文件</value>
+  </data>
+  <data name="Upload_Title" xml:space="preserve">
+    <value>上传</value>
+  </data>
+  <data name="Upload_Upload" xml:space="preserve">
+    <value>上传</value>
+  </data>
+  <data name="Upload_File" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="Upload_FileSize" xml:space="preserve">
+    <value>文件大小</value>
+  </data>
+  <data name="Upload_Result" xml:space="preserve">
+    <value>结果</value>
+  </data>
+  <data name="Upload_NoFileSelected" xml:space="preserve">
+    <value>您未选择文件</value>
+  </data>
 </root>

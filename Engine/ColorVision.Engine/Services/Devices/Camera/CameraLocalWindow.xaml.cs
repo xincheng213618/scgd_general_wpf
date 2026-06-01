@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (showFailureMessage)
                 {
-                    MessageBox1.Show(Application.Current.GetActiveWindow(), "获取相机 ID 失败", "ColorVision");
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.GetCameraIdFailed, "ColorVision");
                 }
                 return;
             }
@@ -567,7 +567,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             string cameraId = GetSelectedCameraId();
             if (string.IsNullOrEmpty(cameraId))
             {
-                MessageBox.Show("没有相机ID!");
+                MessageBox.Show(Properties.Resources.NoCameraId);
                 return;
             }
 
@@ -926,7 +926,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             else
             {
-                MessageBox.Show("请设置正确的参数！");
+                MessageBox.Show(Properties.Resources.SetCorrectParameters);
             }
         }
 
@@ -938,7 +938,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             else
             {
-                MessageBox.Show("请设置正确的参数！");
+                MessageBox.Show(Properties.Resources.SetCorrectParameters);
             }
         }
 
@@ -1015,13 +1015,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (Device.PhyCamera == null)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
-                return;
-            }
-
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfigurePhysicalCameraBeforeCalibration, "ColorVision");
                 return;
             }
 

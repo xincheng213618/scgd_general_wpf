@@ -9,7 +9,7 @@ using System.Windows;
 namespace ColorVision.Solution.Editor
 {
     // 声明支持的图片扩展名，设置为默认编辑器
-    [EditorForExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff|.cvraw|.cvcie", "图片编辑器", isDefault: true)]
+    [EditorForExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff|.cvraw|.cvcie", "图片编辑器", isDefault: true, resourceKey: "Sol_Editor_Image")]
     public class ImageEditor : EditorBase
     {
         public override void Open(string filePath)

@@ -138,6 +138,69 @@
   <data name="ManagementService" xml:space="preserve">
     <value>관리 서비스</value>
   </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>서비스 구성 읽기</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>서비스 CFG 바꾸기</value>
+  </data>
+  <data name="ServiceManager" xml:space="preserve">
+    <value>서비스 관리자</value>
+  </data>
+  <data name="CVWinSMSPath" xml:space="preserve">
+    <value>CVWinSMS 경로</value>
+  </data>
+  <data name="CVWinSMSPathDescription" xml:space="preserve">
+    <value>CVWinSMS 서비스 도구의 실행 파일 경로입니다.</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
+    <value>CVWinSMS 자동 업데이트</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
+    <value>CVWinSMS 서비스 도구가 업데이트를 자동으로 감지하고 적용하도록 허용합니다.</value>
+  </data>
+  <data name="ServiceManagerBaseLocation" xml:space="preserve">
+    <value>서비스 설치 루트</value>
+  </data>
+  <data name="ServiceManagerBaseLocationDescription" xml:space="preserve">
+    <value>서비스 구성 요소, 데이터베이스, MQTT 패키지의 루트 폴더입니다.</value>
+  </data>
+  <data name="ServiceManagerMySqlPort" xml:space="preserve">
+    <value>MySQL 포트</value>
+  </data>
+  <data name="ServiceManagerMySqlPortDescription" xml:space="preserve">
+    <value>MySQL 서비스 수신 포트입니다.</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrl" xml:space="preserve">
+    <value>서비스 업데이트 URL</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrlDescription" xml:space="preserve">
+    <value>서비스 패키지를 온라인으로 업데이트하고 다운로드하는 데 사용하는 서버 URL입니다.</value>
+  </data>
+  <data name="ServiceManagerDownloadLocation" xml:space="preserve">
+    <value>다운로드 폴더</value>
+  </data>
+  <data name="ServiceManagerDownloadLocationDescription" xml:space="preserve">
+    <value>서비스 패키지, MySQL, MQTT 등의 온라인 다운로드를 저장하는 폴더입니다.</value>
+  </data>
+  <data name="ServiceManagerInstallServiceChecked" xml:space="preserve">
+    <value>서비스 패키지 기본 선택</value>
+  </data>
+  <data name="ServiceManagerInstallServiceCheckedDescription" xml:space="preserve">
+    <value>서비스 설치 마법사를 열 때 서비스 패키지 설치 항목을 기본으로 선택합니다.</value>
+  </data>
+  <data name="ServiceManagerInstallMySqlChecked" xml:space="preserve">
+    <value>MySQL 기본 선택</value>
+  </data>
+  <data name="ServiceManagerInstallMySqlCheckedDescription" xml:space="preserve">
+    <value>서비스 설치 마법사를 열 때 MySQL 설치 항목을 기본으로 선택합니다.</value>
+  </data>
+  <data name="ServiceManagerInstallMqttChecked" xml:space="preserve">
+    <value>MQTT 기본 선택</value>
+  </data>
+  <data name="ServiceManagerInstallMqttCheckedDescription" xml:space="preserve">
+    <value>서비스 설치 마법사를 열 때 MQTT 설치 항목을 기본으로 선택합니다.</value>
+  </data>
   <data name="Service" xml:space="preserve">
     <value>서비스</value>
   </data>

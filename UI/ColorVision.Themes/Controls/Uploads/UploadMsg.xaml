@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Themes.Controls.Uploads"
+        xmlns:properties="clr-namespace:ColorVision.Themes.Properties"
         mc:Ignorable="d"
         Title="UploadMsg" Height="450" Width="800" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
@@ -31,21 +32,21 @@
                             <Setter Property="BorderThickness" Value="0"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Header="文件" Width="400">
+                    <GridViewColumn  Header="{x:Static properties:Resources.Upload_File}" Width="400">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type local:FileUploadInfo}">
                                 <TextBlock Text="{Binding FileName}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="文件大小" Width="100">
+                    <GridViewColumn  Header="{x:Static properties:Resources.Upload_FileSize}" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type local:FileUploadInfo}">
                                 <TextBlock Text="{Binding FileSize}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="结果" Width="100">
+                    <GridViewColumn  Header="{x:Static properties:Resources.Upload_Result}" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type local:FileUploadInfo}">
                                 <TextBlock Text="{Binding UploadStatus}"/>

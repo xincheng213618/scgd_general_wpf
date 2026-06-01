@@ -58,7 +58,7 @@
                         <!--  CPU  -->
                         <Border Grid.Column="0" Margin="0,0,6,0" Padding="16" Background="{DynamicResource RegionBrush}" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1" CornerRadius="6">
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,10" FontSize="15" FontWeight="Bold" Text="CPU" />
+                                <TextBlock Margin="0,0,0,10" FontSize="15" FontWeight="Bold" Text="{x:Static properties:Resources.CPU}" />
                                 <Grid Margin="0,4" HorizontalAlignment="Center">
                                     <hc:WaveProgressBar Width="130" Height="130" Value="{Binding CPUPercent}" />
                                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -88,7 +88,7 @@
                         <Border Grid.Column="1" Margin="6,0,0,0" Padding="16" Background="{DynamicResource RegionBrush}" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1" CornerRadius="6">
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,10">
-                                    <TextBlock FontSize="15" FontWeight="Bold" Text="RAM" />
+                                    <TextBlock FontSize="15" FontWeight="Bold" Text="{x:Static properties:Resources.RAM}" />
                                     <TextBlock FontSize="15" Style="{StaticResource InfoValue}" Text="{Binding TotalRAMText}" />
                                 </DockPanel>
                                 <Grid Margin="0,4" HorizontalAlignment="Center">
@@ -187,7 +187,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="100" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" FontWeight="SemiBold" Style="{StaticResource InfoLabel}" Text="PID" />
+                        <TextBlock Grid.Column="0" FontWeight="SemiBold" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.PID}" />
                         <TextBlock Grid.Column="1" FontWeight="SemiBold" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.ProcessName}" />
                         <TextBlock Grid.Column="2" HorizontalAlignment="Right" FontWeight="SemiBold" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.MemoryUsage}" />
                     </Grid>
@@ -232,7 +232,7 @@
                                 <TextBlock Style="{StaticResource InfoValue}" Text="{Binding OSVersion}" TextTrimming="CharacterEllipsis" />
                             </DockPanel>
                             <DockPanel Margin="0,3">
-                                <TextBlock Style="{StaticResource InfoLabel}" Text="CPU" />
+                                <TextBlock Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.CPU}" />
                                 <TextBlock Style="{StaticResource InfoValue}" Text="{Binding ProcessorName}" TextTrimming="CharacterEllipsis" />
                             </DockPanel>
                             <DockPanel Margin="0,3">
@@ -247,7 +247,7 @@
 
                         <StackPanel Grid.Column="1" Margin="12,0,0,0">
                             <DockPanel Margin="0,3">
-                                <TextBlock Style="{StaticResource InfoLabel}" Text="GPU" />
+                                <TextBlock Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.GPU}" />
                                 <TextBlock Style="{StaticResource InfoValue}" Text="{Binding GPUName}" TextTrimming="CharacterEllipsis" />
                             </DockPanel>
                             <DockPanel Margin="0,3">
@@ -283,11 +283,11 @@
 
                         <StackPanel Grid.Column="0" Margin="0,0,12,0">
                             <DockPanel Margin="0,3">
-                                <TextBlock Style="{StaticResource InfoLabel}" Text=".NET" />
+                                <TextBlock Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.DotNet}" />
                                 <TextBlock Style="{StaticResource InfoValue}" Text="{Binding DotNetVersion}" TextTrimming="CharacterEllipsis" />
                             </DockPanel>
                             <DockPanel Margin="0,3">
-                                <TextBlock Style="{StaticResource InfoLabel}" Text="PID" />
+                                <TextBlock Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.PID}" />
                                 <TextBlock Style="{StaticResource InfoValue}" Text="{Binding CurrentPID}" />
                             </DockPanel>
                             <DockPanel Margin="0,3">
@@ -339,9 +339,12 @@
                                         <StackPanel Grid.Column="1">
                                             <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding Name}" />
                                             <TextBlock FontSize="11" Style="{StaticResource InfoLabel}">
-                                                <Run Text="IP: " />
+                                                <Run Text="{x:Static properties:Resources.IPAddress}" />
+                                                <Run Text=": " />
                                                 <Run Text="{Binding IPAddress, Mode=OneWay}" />
-                                                <Run Text="  |  MAC: " />
+                                                <Run Text="  |  " />
+                                                <Run Text="{x:Static properties:Resources.MacAddress}" />
+                                                <Run Text=": " />
                                                 <Run Text="{Binding MacAddress, Mode=OneWay}" />
                                             </TextBlock>
                                         </StackPanel>
@@ -362,7 +365,7 @@
                     <DockPanel Margin="0,4">
                         <TextBlock Width="120" VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.UpdateSpeed}" />
                         <TextBox Width="120" Margin="8,0" HorizontalAlignment="Left" HorizontalContentAlignment="Right" Text="{Binding UpdateSpeed}" />
-                        <TextBlock VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="ms" />
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.MillisecondUnit}" />
                     </DockPanel>
                     <DockPanel Margin="0,4">
                         <TextBlock Width="120" VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.DateFormat}" />

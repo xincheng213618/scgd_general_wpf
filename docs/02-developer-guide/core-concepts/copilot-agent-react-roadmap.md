@@ -10,6 +10,8 @@
 
 最近一轮已经开始削弱“用户原话关键词门槛”这一层静态限制：工具注册表不再把 planner 可见工具硬截断到前 6 个，SearchFiles、GrepText、GetRecentLog 也已经改成以运行时能力为主的可见性判断，让 planner 在存在搜索根或最近日志时自己决定是否先做便宜检索。planner 解析失败时，也不再盲目执行注册表里的第一个工具，而是按当前模式和已知上下文做保守回退；如果没有合适候选，则直接结束工具阶段。
 
+当前业务上下文 v2 已在 Agent 输入侧补上 ImageEditor、Flow、Device 三类 `CopilotContextItem` 快照入口，并抽出 `CopilotPromptRequestHelper`/`CopilotBusinessContextBuilder` 作为公共层。Agent 仍然是只读回答链路，但它现在能在用户从业务界面发起提问时看到当前图像、流程或设备的结构化摘要，而不是只依赖手动描述。
+
 它已经具备最小工具层和最小 planner-executor 雏形，但还没有以下能力：
 
 - 像代码代理那样继续做检索、修改、构建、看错误、再迭代
@@ -45,36 +47,71 @@ flowchart TD
 
 ## 当前工具层到底做了什么
 
-当前默认只注册了七个只读工具：
+当前默认注册了十一个工具，其中八个只读工具加三个受控执行工具：
 
-1. FetchUrl
+1. ExecuteMenu
+   作用：按菜单名称或路径执行主菜单命令，例如“选项”“VAM”“检查更新”，也能命中主题、语言这类菜单子项。
+
+2. SetTheme
+   作用：按用户明确意图切换应用主题，例如浅色、深色、粉色、青色或跟随系统。
+
+3. SetLanguage
+   作用：按用户明确意图切换界面语言，并复用现有重启确认流程。
+
+4. SearchDocs
+   作用：查询发布后的 ColorVision 在线文档索引，按章节、页面和页面内标题返回最相关片段，适合软件使用、菜单、设备、插件、开发指南和架构说明问题。
+
+5. FetchUrl
    作用：优先抓取 planner 通过 query 指定的 URL；如果 planner 没给出 URL，再回退到用户文本里的 URL 并抓取网页正文。
 
-2. SearchFiles
+6. SearchFiles
    作用：按文件名或路径片段在当前解决方案搜索根里找候选文件。
 
-3. GrepText
+7. GrepText
    作用：按关键字或标识符在当前解决方案文本文件里找命中行。
 
-4. ListDirectory
+8. ListDirectory
    作用：列出用户在当前消息中明确提到的本地文件夹内容，并产出后续可读文件候选。
 
-5. ReadAttachedFile
+9. ReadAttachedFile
    作用：读取“当前会话已经挂载的文件附件”。
 
-6. ReadLocalFile
+10. ReadLocalFile
    作用：读取用户在当前消息中明确提到的本地文本文件。
 
-7. GetRecentLog
+11. GetRecentLog
    作用：读取最近日志，并可按 planner 提供的 query 过滤结果。
 
-这说明当前 Agent 的文件读取能力有明确边界：
+MCP 侧在同一 capability 层上额外暴露了面向外部 Codex operator 的健康与诊断工具：
+
+- `get_server_status`
+- `get_enabled_tools`
+- `get_audit_log`
+- `get_last_tool_error`
+- `get_runtime_environment_summary`
+
+这些工具不改变应用状态，只帮助外部 agent 判断 ColorVision 是否运行、MCP 是否启用、认证是否通过、最近哪个工具失败，以及当前 workspace/live context/flow/log 是否可用。
+
+MCP 侧还暴露了稳定只读资源：
+
+- `colorvision://live-context/current`
+- `colorvision://workspace/current`
+- `colorvision://logs/recent`
+- `colorvision://template/current`
+- `colorvision://flow/current`
+- `colorvision://mcp/audit-log`
+
+这说明当前 Agent 仍然有明确的受控能力边界：
 
 - 它能读取已经挂到会话里的文件。
 - 它也能读取当前用户消息里显式出现的本地文本文件路径。
 - 它还能基于当前解决方案根目录、活动文档目录和附件所在目录，先做一轮轻量文件名/文本检索。
-- 它仍不能根据模型在对话里临时生成的新路径去读取任意本地文件。
-- 它没有“路径参数”这一层，也没有更细粒度的文件访问策略对象。
+- 它还能消费业务模块通过公共契约附加的 ImageEditor、Flow、Device 结构化上下文快照。
+- 它现在还能访问发布后的 ColorVision 在线文档索引，用较小上下文回答软件使用和开发文档问题。
+- 它现在还能在显式用户意图下执行少量受控动作，例如执行主菜单命令、切换主题和界面语言。
+- 外部 MCP operator 也只能做只读检查和低风险导航，不能控制设备、执行流程、修改配置、删除文件、执行 shell 或读取任意文件。
+- 它仍不能根据模型在对话里临时生成的新路径去读取任意本地文件，也不能执行任意副作用操作。
+- 它已经有最小结构化参数层，但参数面仍然比较窄。
 
 ## 它和 ReAct 的核心差异
 
@@ -86,7 +123,7 @@ ReAct 的典型模式是：
 4. 模型基于 Observation 继续决定下一步
 5. 多轮后再给出最终答案
 
-而当前实现不是这个模式，差异主要有四点：
+而当前实现和理想中的完整 coding agent 仍有差距，主要有四点：
 
 ### 1. 工具不是模型决定的，而是规则提前决定的
 
@@ -97,32 +134,33 @@ ReAct 的典型模式是：
 - 工具是否执行，取决于本地 C# 规则
 - 不是模型在上下文中动态决定“下一步该读哪个文件”
 
-### 2. 工具没有结构化参数
+### 2. 工具已有轻量结构化参数，但参数面仍有限
 
 当前 ICopilotTool 的签名是：
 
 ```csharp
 bool CanHandle(CopilotAgentRequest request);
-Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CancellationToken cancellationToken);
+Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken);
 ```
 
-这意味着工具拿到的是整个 request，而不是一个结构化的 tool call，例如：
+这意味着工具除了拿到整个 request，也会拿到一个最小结构化输入对象，例如：
 
 ```json
 { "tool": "read_file", "path": "...", "startLine": 1, "endLine": 200 }
 ```
 
-所以它目前更像“请求级触发器”，不像“可被模型参数化调用的函数”。
+当前这层结构化输入主要覆盖 query、path、startLine、endLine 四个字段，已经足以支持搜索、文件读取，以及 SetTheme/SetLanguage 这类小型应用控制动作；但它仍不像完整函数调用那样有更细的 schema、权限模型和参数验证体系。
 
-### 3. 工具执行完就直接进入最终回答
+### 3. 服务层已经有最小 planner-executor 循环，但还不是完整闭环
 
 CopilotAgentService.RunAsync 的模式是：
 
-- 先把所有选中的工具都执行完
-- 再一次性把工具结果喂给模型
-- 模型直接输出最终回答
+- 每轮先让 planner 在当前可用工具里选择一个动作
+- 执行该工具并记录 observation
+- 在 MaxToolRounds 范围内继续下一轮，直到 planner finish 或工具阶段收敛
+- 最后再把累计工具观察喂给模型输出最终回答
 
-中间没有“工具执行一轮后，再决定下一轮动作”的闭环。
+所以它已经不是单轮“先全执行工具，再统一回答”的模式，但还没有演进到带编辑、测试、验证的完整 coding loop。
 
 ### 4. 没有针对代码代理的便宜检索层
 
@@ -145,8 +183,9 @@ CopilotAgentService.RunAsync 的模式是：
 
 ```text
 用户任务
--> 规则选工具
--> 执行只读工具
+-> 规则暴露工具
+-> planner 选下一步
+-> 执行受控工具
 -> 压缩结果
 -> 调大模型
 -> 结束
@@ -160,7 +199,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 1. 当前仍然不能让模型跳出允许列表，去读取任意新路径
 2. request 里已经有最小的统一工具参数对象，但接口层和权限策略对象还没有彻底独立出来
-3. 结构化参数目前已覆盖 ReadLocalFile 与 ListDirectory 的 path，以及 SearchFiles、GrepText、GetRecentLog、FetchUrl 的 query；其中 SearchFiles、GrepText、GetRecentLog 的可见性也已开始从“用户原话关键词”放宽为“能力优先”，而 FetchUrl 虽然已支持结构化 query 执行，但工具可见性仍主要依赖请求级 URL 提取
+3. 结构化参数目前已覆盖 ReadLocalFile 与 ListDirectory 的 path，以及 SearchFiles、GrepText、GetRecentLog、SearchDocs、FetchUrl 的 query；其中 SearchFiles、GrepText、GetRecentLog 的可见性也已开始从“用户原话关键词”放宽为“能力优先”，SearchDocs 则走发布后的稳定文档索引，FetchUrl 虽然已支持结构化 query 执行，但工具可见性仍主要依赖请求级 URL 提取
 4. 服务层虽然已经能做最小 planner-executor 循环，但还不是更强的多工具规划闭环
 5. 当前文件读取虽然支持按行范围精读，但还没有更细的片段定位、symbol 级读取和 AST 级上下文
 
@@ -177,6 +216,8 @@ CopilotAgentService.RunAsync 的模式是：
 这一步不要求完整 ReAct，只需要把当前最小多轮 Agent 扩一下即可。
 
 当前状态：已实现最小版本，能够从当前用户消息里提取显式本地路径，并把显式文件与显式文件夹分流处理；也已经补上基于解决方案搜索根的 SearchFiles 和 GrepText，以及针对本地文件夹的 ListDirectory，并支持 `ListDirectory(path) -> ReadLocalFile(batch-all)` 与 `SearchFiles/GrepText -> ReadLocalFile(path, startLine, endLine)` 这种最小两轮链式执行。对于显式目录分析场景，首个 ReadLocalFile 会优先批量读取当前目录下全部候选文件，而不是继续逐文件消耗轮次。
+
+当前测试覆盖：`Test/ColorVision.UI.Tests` 已加入离线纯逻辑测试，验证 `CopilotAgentContextBuilder` 会拼入业务上下文和工具观察；验证 SearchFiles/GrepText/ReadLocalFile/ListDirectory 在临时目录中的允许路径、批量读取和越界拒绝行为；验证业务上下文 builder 的图像 ROI、Flow 节点参数和 Device 敏感字段脱敏。
 
 #### 建议新增能力
 
@@ -235,7 +276,7 @@ CopilotAgentService.RunAsync 的模式是：
 
 目标：让 Agent 在调用大模型前，先自己收集候选上下文，而不是只靠附件和 URL。
 
-当前状态：阶段 2 已完成最小落地版本，SearchFiles 与 GrepText 已接入默认工具表，GetRecentLog 也已纳入最小结构化 query 链路；同时工具注册表已去掉前 6 项硬截断，SearchFiles、GrepText、GetRecentLog 现在会优先按运行时能力暴露给 planner，但还没有按 glob/正则/符号级别继续细化。执行层对 FetchUrl 也已补齐结构化 query、重复检测和执行摘要，不再只把它当成“用户原句里附带 URL 的特例工具”。
+当前状态：阶段 2 已完成最小落地版本，SearchFiles、GrepText、GetRecentLog 与 SearchDocs 已接入默认工具表；其中 SearchDocs 通过发布后的 docs-search-index.json 查询 ColorVision 在线文档，不再要求用户先给出 URL。工具注册表也已去掉前 6 项硬截断，SearchFiles、GrepText、GetRecentLog 现在会优先按运行时能力暴露给 planner，但还没有按 glob/正则/符号级别继续细化。执行层对 FetchUrl 也已补齐结构化 query、重复检测和执行摘要，不再只把它当成“用户原句里附带 URL 的特例工具”。
 
 后续建议新增或增强的只读工具：
 
@@ -389,6 +430,16 @@ public interface ICopilotTool
 
 这部分是本地文件读取最需要的入口。
 
+### 7. 公共业务上下文层
+
+当前状态：已新增 `CopilotPromptRequestHelper` 和 `CopilotBusinessContextBuilder`，业务模块通过 `ColorVision.UI` 公共契约构造请求和快照，不直接引用 `ColorVision.Copilot` 实现。
+
+后续建议：
+
+- 把 Algorithm 结果页、诊断包摘要、当前窗口/页面状态继续补成同样的 `CopilotContextItem` builder。
+- 对 Device/Flow 的日志摘要继续做更稳定的错误行提取和截断策略。
+- 如需支持业务工具，优先新增只读工具，例如 `GetFlowRunSummaryTool`、`GetDeviceStatusTool`，仍保持不执行流程、不改配置、不控设备。
+
 ## 对“本地文件读取”最务实的下一步建议
 
 如果目标是尽快解决截图里的问题，推荐不要直接做完整 ReAct，而是按下面顺序推进：
@@ -442,6 +493,8 @@ Phase 4
 - 有工具注册表
 - 有执行过程面板
 - 有工具结果压缩层
+- 有公共业务上下文入口，能从 ImageEditor、Flow、Device 附加只读快照
+- 有 MCP 外部 operator 入口，Codex 可以通过健康工具、只读资源、审计日志、workspace 搜索和低风险导航来辅助诊断
 
 但它离 ReAct 还差三个关键层：
 

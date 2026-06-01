@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Templates.POI
             using (System.Windows.Forms.OpenFileDialog saveFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
                 saveFileDialog.Filter = "标定文件 (*.dat)|*.dat";
-                saveFileDialog.Title = "选择标定文件";
+                saveFileDialog.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_SelectCalibrationFile;
                 saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 saveFileDialog.RestoreDirectory = true;
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -1473,47 +1473,8 @@ namespace ColorVision.Engine.Templates.POI
 
         private void CalPoiPointParamB(RectangleTextProperties rectangle)
         {
-
             if (!IsInitialKB) return;
             InitialKBKey(false);
-            return;
-            if (rectangle.Param is KBPoiVMParam poiPointParam)
-            {
-                IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
-                if (PoiConfig.DefaultDoKey && Calibratiohandle != IntPtr.Zero)
-                {
-                    if (!Directory.Exists(PoiConfig.SaveFolderPath))
-                    {
-                        MessageBox.Show($"找不到保存路径{PoiConfig.SaveFolderPath}");
-                        return;
-                    }
-
-                    ushort[] keygray1 = new ushort[256];
-                    uint Keygraynum = 0;
-
-                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", keygray1, ref Keygraynum);
-                    byte[] byteArray = BitConverter.GetBytes(keygray1[0]);
-                    byte[] byteArray1 = new byte[4];
-                    cvCameraCSLib.CM_SCGD_SDP_Luminance(Calibratiohandle, 1, 1, 16, 1, byteArray, byteArray1, new float[] { PoiConfig.Exp, PoiConfig.Exp, PoiConfig.Exp });
-                    keyGray = (float)BitConverter.ToSingle(byteArray1);
-
-                    keyGray = (float)(keyGray * poiPointParam.KeyScale);
-                    if (poiPointParam.Area != 0)
-                    {
-                        poiPointParam.Brightness = keyGray / poiPointParam.Area;
-                        poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
-                    }
-                    else
-                    {
-                        poiPointParam.Brightness = keyGray;
-                        poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
-                    }
-
-                }
-
-            }
-
-
         }
         nint Calibratiohandle = IntPtr.Zero;
 
@@ -1732,12 +1693,12 @@ namespace ColorVision.Engine.Templates.POI
                                 if (poiPointParam.Area != 0)
                                 {
                                     poiPointParam.Brightness = keyGray / poiPointParam.Area;
-                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
+                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum *KBJson.KBLVSacle;
                                 }
                                 else
                                 {
                                     poiPointParam.Brightness = keyGray;
-                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
+                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * KBJson.KBLVSacle;
                                 }
 
                             }

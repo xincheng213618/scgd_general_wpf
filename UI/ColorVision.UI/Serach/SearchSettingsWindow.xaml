@@ -1,0 +1,99 @@
+<Window x:Class="ColorVision.UI.Serach.SearchSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Search Settings"
+        Width="520"
+        Height="460"
+        MinWidth="480"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlobalBackground}">
+    <Window.Resources>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,6,0,0" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        </Style>
+        <Style x:Key="CaptionText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+        <Style x:Key="HintText" TargetType="TextBlock">
+            <Setter Property="Opacity" Value="0.78" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+        <Style x:Key="SectionBorder" TargetType="Border">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource RegionBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}">
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource ComboBox.Small}">
+            <Setter Property="Margin" Value="0,8,0,0" />
+            <Setter Property="Width" Value="180" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="CloseButton" MinWidth="88" Margin="8,0,0,0" IsCancel="True" Click="CloseButton_Click" />
+        </StackPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock x:Name="HeaderText" Style="{StaticResource CaptionText}" />
+                <TextBlock x:Name="HeaderHintText" Style="{StaticResource HintText}" />
+
+                <Border Style="{StaticResource SectionBorder}">
+                    <StackPanel>
+                        <TextBlock x:Name="IndexedSourcesTitleText" Style="{StaticResource CaptionText}" FontSize="15" />
+                        <TextBlock x:Name="IndexedSourcesDescriptionText" Style="{StaticResource HintText}" />
+
+                        <CheckBox x:Name="MenuCommandsCheckBox" IsChecked="{Binding EnableMenuIndex}" />
+                        <TextBlock x:Name="MenuCommandsHintText" Style="{StaticResource HintText}" Margin="24,0,0,0" />
+
+                        <CheckBox x:Name="TemplatesCheckBox" IsChecked="{Binding EnableTemplateIndex}" />
+                        <TextBlock x:Name="TemplatesHintText" Style="{StaticResource HintText}" Margin="24,0,0,0" />
+
+                        <CheckBox x:Name="ThirdPartyAppsCheckBox" IsChecked="{Binding EnableThirdPartyAppIndex}" />
+                        <TextBlock x:Name="ThirdPartyAppsHintText" Style="{StaticResource HintText}" Margin="24,0,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SectionBorder}">
+                    <StackPanel>
+                        <TextBlock x:Name="ExternalActionsTitleText" Style="{StaticResource CaptionText}" FontSize="15" />
+                        <TextBlock x:Name="ExternalActionsDescriptionText" Style="{StaticResource HintText}" />
+
+                        <CheckBox x:Name="EverythingCheckBox" IsChecked="{Binding EnableEverythingSearch}" />
+                        <TextBlock x:Name="EverythingHintText" Style="{StaticResource HintText}" Margin="24,0,0,0" />
+                        <TextBlock x:Name="EverythingPathLabelText" Margin="24,8,0,0" />
+                        <TextBox Margin="24,6,0,0"
+                                 Text="{Binding EverythingPath, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding EnableEverythingSearch}" />
+
+                        <CheckBox x:Name="BrowserSearchCheckBox" IsChecked="{Binding EnableBrowserSearch}" />
+                        <TextBlock x:Name="BrowserHintText" Style="{StaticResource HintText}" Margin="24,0,0,0" />
+                        <TextBlock x:Name="BrowserEngineLabelText" Margin="24,8,0,0" />
+                        <ComboBox x:Name="SearchEngineComboBox"
+                                  Margin="24,6,0,0"
+                                  SelectedItem="{Binding SearchEngine}"
+                                  IsEnabled="{Binding EnableBrowserSearch}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

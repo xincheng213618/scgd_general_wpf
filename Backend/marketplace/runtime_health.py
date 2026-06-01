@@ -91,6 +91,7 @@ def build_ready_payload(
     config: dict[str, Any],
     get_db: GetDb,
     get_upload_auth: GetUploadAuth,
+    cache_manager: Any = None,
 ) -> dict[str, Any]:
     storage_check = directory_check(storage, ensure=True)
     plugins_check = directory_check(storage / "Plugins", ensure=True)
@@ -108,8 +109,24 @@ def build_ready_payload(
     if not auth_ok:
         issues.append("upload authentication is not configured")
 
+    # Index status summary (non-breaking addition)
+    index_summary: dict[str, Any] = {}
+    if cache_manager is not None and db_ok:
+        try:
+            db = cache_manager.get_db()
+            for scope in ("plugins", "releases", "updates", "tools"):
+                row = db.execute("SELECT status, item_count, last_error FROM index_state WHERE scope = ?", (scope,)).fetchone()
+                index_summary[scope] = {
+                    "status": row["status"] if row else "not_initialized",
+                    "item_count": row["item_count"] if row else 0,
+                    "has_error": bool(row and row["last_error"]),
+                }
+            db.close()
+        except Exception:
+            pass
+
     ready = not issues
-    return {
+    payload: dict[str, Any] = {
         "status": "ready" if ready else "degraded",
         "ready": ready,
         "time": datetime.now(timezone.utc).isoformat(),
@@ -129,4 +146,7 @@ def build_ready_payload(
         },
         "issues": issues,
     }
+    if index_summary:
+        payload["indexes"] = index_summary
+    return payload
 

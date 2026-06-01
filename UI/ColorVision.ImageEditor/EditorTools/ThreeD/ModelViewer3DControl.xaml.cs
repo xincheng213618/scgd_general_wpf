@@ -807,12 +807,12 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             UpdateStatusBar();
         }
 
-        private void FrontView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("前", new Vector3D(0, -1, 0), new Vector3D(0, 0, 1));
-        private void BackView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("后", new Vector3D(0, 1, 0), new Vector3D(0, 0, 1));
-        private void LeftView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("左", new Vector3D(1, 0, 0), new Vector3D(0, 0, 1));
-        private void RightView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("右", new Vector3D(-1, 0, 0), new Vector3D(0, 0, 1));
-        private void TopView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("上", new Vector3D(0, 0, -1), new Vector3D(0, 1, 0));
-        private void BottomView_Click(object sender, RoutedEventArgs e) => ApplyPresetView("下", new Vector3D(0, 0, 1), new Vector3D(0, -1, 0));
+        private void FrontView_Click(object sender, RoutedEventArgs e) => ApplyPresetView(Properties.Resources.ThreeD_Front, new Vector3D(0, -1, 0), new Vector3D(0, 0, 1));
+        private void BackView_Click(object sender, RoutedEventArgs e) => ApplyPresetView(Properties.Resources.ThreeD_Back, new Vector3D(0, 1, 0), new Vector3D(0, 0, 1));
+        private void LeftView_Click(object sender, RoutedEventArgs e) => ApplyPresetView(Properties.Resources.ThreeD_Left, new Vector3D(1, 0, 0), new Vector3D(0, 0, 1));
+        private void RightView_Click(object sender, RoutedEventArgs e) => ApplyPresetView(Properties.Resources.ThreeD_Right, new Vector3D(-1, 0, 0), new Vector3D(0, 0, 1));
+        private void TopView_Click(object sender, RoutedEventArgs e) => ApplyPresetView(Properties.Resources.ThreeD_Top, new Vector3D(0, 0, -1), new Vector3D(0, 1, 0));
+        private void BottomView_Click(object sender, RoutedEventArgs e) => ApplyPresetView(Properties.Resources.ThreeD_Bottom, new Vector3D(0, 0, 1), new Vector3D(0, -1, 0));
         private void IsoView_Click(object sender, RoutedEventArgs e) => ResetView_Click(sender, e);
 
         private void ProjectionToggle_Checked(object sender, RoutedEventArgs e)
@@ -917,16 +917,16 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
         private void UpdateStatusBar()
         {
-            StatusProjectionText.Text = $"投影: {(isOrthographic ? "正交" : "透视")}";
-            StatusViewText.Text = $"视图: {currentViewName}";
+            StatusProjectionText.Text = $"{Properties.Resources.ThreeD_Projection}: {(isOrthographic ? Properties.Resources.ThreeD_Orthographic : Properties.Resources.ThreeD_Perspective)}";
+            StatusViewText.Text = $"{Properties.Resources.ThreeD_View}: {currentViewName}";
 
             if (viewport?.Camera is ProjectionCamera camera)
             {
-                StatusCameraText.Text = $"相机: X {camera.Position.X:F0}  Y {camera.Position.Y:F0}  Z {camera.Position.Z:F0}";
+                StatusCameraText.Text = $"{Properties.Resources.ThreeD_Camera}: X {camera.Position.X:F0}  Y {camera.Position.Y:F0}  Z {camera.Position.Z:F0}";
             }
             else
             {
-                StatusCameraText.Text = "相机: -";
+                StatusCameraText.Text = $"{Properties.Resources.ThreeD_Camera}: -";
             }
         }
 

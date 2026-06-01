@@ -4,9 +4,11 @@
     public class GenericEditorAttribute : Attribute
     {
         public string? Name { get; }
-        public GenericEditorAttribute(string? name = null)
+        public string? ResourceKey { get; }
+        public GenericEditorAttribute(string? name = null, string? resourceKey = null)
         {
             Name = name;
+            ResourceKey = resourceKey;
         }
     }
 
@@ -14,9 +16,11 @@
     public class FolderEditorAttribute : Attribute
     {
         public string? Name { get; }
-        public FolderEditorAttribute(string? name = null)
+        public string? ResourceKey { get; }
+        public FolderEditorAttribute(string? name = null, string? resourceKey = null)
         {
             Name = name;
+            ResourceKey = resourceKey;
         }
     }
 

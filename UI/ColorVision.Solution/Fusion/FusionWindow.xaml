@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
         mc:Ignorable="d"
-        Title="景深融合 (Fusion)" Height="620" Width="780" 
+        Title="{x:Static properties:Resources.Sol_Fusion_Title}" Height="620" Width="780"
         Background="{DynamicResource GlobalBackground}"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="10">
@@ -17,10 +18,10 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <TextBlock Grid.Row="0" Text="景深融合" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.Sol_Fusion_Label}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
 
         <!-- File List -->
-        <GroupBox Grid.Row="1" Header="图像文件列表（按顺序排列）" Margin="0,0,0,10">
+        <GroupBox Grid.Row="1" Header="{x:Static properties:Resources.Sol_Fusion_FileList}" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -36,31 +37,31 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
                 <StackPanel Grid.Column="1" Margin="5,0,0,0" VerticalAlignment="Center">
-                    <Button Content="添加文件" Width="80" Height="28" Margin="0,2" Click="AddFiles_Click"/>
-                    <Button Content="移除选中" Width="80" Height="28" Margin="0,2" Click="RemoveSelected_Click"/>
-                    <Button Content="清空" Width="80" Height="28" Margin="0,2" Click="ClearAll_Click"/>
-                    <Button Content="上移 ↑" Width="80" Height="28" Margin="0,10,0,2" Click="MoveUp_Click"/>
-                    <Button Content="下移 ↓" Width="80" Height="28" Margin="0,2" Click="MoveDown_Click"/>
+                    <Button Content="{x:Static properties:Resources.Sol_Fusion_AddFile}" Width="80" Height="28" Margin="0,2" Click="AddFiles_Click"/>
+                    <Button Content="{x:Static properties:Resources.Sol_Fusion_Remove}" Width="80" Height="28" Margin="0,2" Click="RemoveSelected_Click"/>
+                    <Button Content="{x:Static properties:Resources.Sol_Fusion_Clear}" Width="80" Height="28" Margin="0,2" Click="ClearAll_Click"/>
+                    <Button Content="{x:Static properties:Resources.Sol_Fusion_MoveUp}" Width="80" Height="28" Margin="0,10,0,2" Click="MoveUp_Click"/>
+                    <Button Content="{x:Static properties:Resources.Sol_Fusion_MoveDown}" Width="80" Height="28" Margin="0,2" Click="MoveDown_Click"/>
                 </StackPanel>
             </Grid>
         </GroupBox>
 
         <!-- Configuration -->
-        <GroupBox Grid.Row="2" Header="融合配置" Margin="0,0,0,10">
+        <GroupBox Grid.Row="2" Header="{x:Static properties:Resources.Sol_Fusion_Config}" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" Margin="5">
-                <TextBlock Text="计算模式：" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Text="{x:Static properties:Resources.Sol_Fusion_Mode}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <ComboBox x:Name="ComboBoxMode" Width="200" SelectedIndex="0">
-                    <ComboBoxItem Content="自动 (CUDA可用时使用GPU)"/>
+                    <ComboBoxItem Content="{x:Static properties:Resources.Sol_Fusion_Auto}"/>
                     <ComboBoxItem Content="CPU (OpenCV)"/>
                     <ComboBoxItem Content="GPU (CUDA)"/>
-                    <ComboBoxItem Content="GPU 异步 (CUDA Async)"/>
+                    <ComboBoxItem Content="{x:Static properties:Resources.Sol_Fusion_Async}"/>
                 </ComboBox>
                 <TextBlock x:Name="TextBlockCudaStatus" VerticalAlignment="Center" Margin="20,0,0,0"/>
             </StackPanel>
         </GroupBox>
 
         <!-- Timing Statistics -->
-        <GroupBox Grid.Row="3" Header="性能统计" Margin="0,0,0,10">
+        <GroupBox Grid.Row="3" Header="{x:Static properties:Resources.Sol_Fusion_Perf}" Margin="0,0,0,10">
             <Grid Margin="5,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -70,16 +71,16 @@
                           BorderThickness="0" Background="Transparent">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="模式" Width="140" DisplayMemberBinding="{Binding Mode}"/>
-                            <GridViewColumn Header="加载(ms)" Width="80" DisplayMemberBinding="{Binding LoadMs}"/>
-                            <GridViewColumn Header="融合(ms)" Width="80" DisplayMemberBinding="{Binding FusionMs}"/>
-                            <GridViewColumn Header="转换(ms)" Width="80" DisplayMemberBinding="{Binding ConvertMs}"/>
-                            <GridViewColumn Header="总计(ms)" Width="80" DisplayMemberBinding="{Binding TotalMs}"/>
-                            <GridViewColumn Header="图像数" Width="55" DisplayMemberBinding="{Binding ImageCount}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ModeCol}" Width="140" DisplayMemberBinding="{Binding Mode}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_LoadMs}" Width="80" DisplayMemberBinding="{Binding LoadMs}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_FusionMs}" Width="80" DisplayMemberBinding="{Binding FusionMs}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ConvertMs}" Width="80" DisplayMemberBinding="{Binding ConvertMs}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_TotalMs}" Width="80" DisplayMemberBinding="{Binding TotalMs}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ImageCount}" Width="55" DisplayMemberBinding="{Binding ImageCount}"/>
                         </GridView>
                     </ListView.View>
                 </ListView>
-                <Button Grid.Column="1" Content="清除" Width="50" Height="24" VerticalAlignment="Top"
+                <Button Grid.Column="1" Content="{x:Static properties:Resources.Sol_Fusion_ClearBtn}" Width="50" Height="24" VerticalAlignment="Top"
                         Margin="5,0,0,0" Click="ClearTiming_Click"/>
             </Grid>
         </GroupBox>
@@ -87,8 +88,8 @@
         <!-- Actions -->
         <DockPanel Grid.Row="4" LastChildFill="False">
             <TextBlock x:Name="StatusText" VerticalAlignment="Center" DockPanel.Dock="Left"/>
-            <Button Content="取消" Width="80" Height="30" DockPanel.Dock="Right" Margin="5,0,0,0" Click="Cancel_Click"/>
-            <Button x:Name="ButtonExecute" Content="执行融合" Width="100" Height="30" DockPanel.Dock="Right" Click="Execute_Click" IsEnabled="False"/>
+            <Button Content="{x:Static properties:Resources.Sol_Fusion_Cancel}" Width="80" Height="30" DockPanel.Dock="Right" Margin="5,0,0,0" Click="Cancel_Click"/>
+            <Button x:Name="ButtonExecute" Content="{x:Static properties:Resources.Sol_Fusion_Execute}" Width="100" Height="30" DockPanel.Dock="Right" Click="Execute_Click" IsEnabled="False"/>
         </DockPanel>
     </Grid>
 </Window>

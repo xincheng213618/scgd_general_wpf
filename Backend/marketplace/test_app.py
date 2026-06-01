@@ -7,6 +7,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from urllib.parse import urlsplit
 from unittest.mock import patch
 
 import app as marketplace_app
@@ -70,6 +71,7 @@ class MarketplaceAppTests(unittest.TestCase):
         manifest_text: str,
         readme_text: str = "",
         changelog_text: str = "",
+        icon_bytes: bytes | None = None,
     ) -> Path:
         plugin_dir = self.storage / "Plugins" / plugin_id
         plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -82,6 +84,8 @@ class MarketplaceAppTests(unittest.TestCase):
                 archive.writestr(root + "README.md", readme_text)
             if changelog_text:
                 archive.writestr(root + "CHANGELOG.md", changelog_text)
+            if icon_bytes is not None:
+                archive.writestr(root + "PackageIcon.png", icon_bytes)
         return archive_path
 
     def _create_update_package(self, version: str, payload: bytes = b"update") -> Path:
@@ -116,13 +120,42 @@ class MarketplaceAppTests(unittest.TestCase):
             os.utime(path, (mtime, mtime))
         return path
 
-    def test_upload_page_requires_basic_auth(self):
-        response = self.client.get("/upload")
-        self.assertEqual(response.status_code, 401)
-        self.assertIn("Basic", response.headers.get("WWW-Authenticate", ""))
+    def test_upload_page_requires_web_login(self):
+        response = self.client.get("/upload", follow_redirects=False)
+        self.assertIn(response.status_code, [302, 303])
+        self.assertIn("login", response.headers.get("Location", ""))
 
-        authed = self.client.get("/upload", headers=self._auth_headers())
-        self.assertEqual(authed.status_code, 200)
+    def test_api_app_changelog_returns_plain_text(self):
+        self._create_changelog("## 1.2.3.4\n- update notes")
+
+        response = self.client.get("/api/app/changelog")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("update notes", response.get_data(as_text=True))
+        self.assertTrue(response.content_type.startswith("text/plain"))
+
+    def test_api_app_release_download_returns_matching_installer(self):
+        self._create_app_release("1.2.3.4", suffix=".exe", payload=b"installer")
+        self._create_app_release("1.2.3.4", in_history=True, suffix=".zip", payload=b"archive")
+
+        response = self.client.get("/api/app/releases/1.2.3.4/download")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_data(), b"installer")
+        response.close()
+
+    def test_api_app_incremental_download_repairs_legacy_update_layout(self):
+        legacy_dir = self.storage / "ColorVision" / "Update"
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+        misplaced = legacy_dir / "ColorVision-Update-[2.3.4.5].cvx"
+        misplaced.write_bytes(b"incremental-update")
+
+        response = self.client.get("/api/app/updates/2.3.4.5/download")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_data(), b"incremental-update")
+        self.assertTrue((self.storage / "Update" / misplaced.name).exists())
+        response.close()
 
     def test_api_plugins_invalid_page_returns_json_error(self):
         response = self.client.get("/api/plugins?Page=abc")
@@ -389,6 +422,51 @@ class MarketplaceAppTests(unittest.TestCase):
         items = second_response.get_json()["items"]
         self.assertTrue(any(item["pluginId"] == "CachedListPlugin" for item in items))
 
+    def test_plugin_catalog_cache_hit_skips_filesystem_signature_scan(self):
+        self._create_plugin_archive_with_metadata(
+            "NoSignatureScanPlugin",
+            "1.0.0",
+            manifest_text='{"Id":"NoSignatureScanPlugin","Name":"No Signature Scan Plugin"}',
+        )
+
+        first_response = self.client.get("/api/plugins")
+        self.assertEqual(first_response.status_code, 200)
+
+        with patch("plugin_marketplace.plugin_catalog_signature", side_effect=AssertionError("catalog hit should not scan")), \
+             patch("plugin_marketplace.get_plugin_summary", side_effect=AssertionError("catalog hit should not rebuild summaries")):
+            second_response = self.client.get("/api/plugins")
+
+        self.assertEqual(second_response.status_code, 200)
+        items = second_response.get_json()["items"]
+        self.assertTrue(any(item["pluginId"] == "NoSignatureScanPlugin" for item in items))
+
+    def test_publish_updates_cached_catalog_without_rebuild(self):
+        self._create_plugin("SeedPlugin", "1.0.0")
+        seed_response = self.client.get("/api/plugins")
+        self.assertEqual(seed_response.status_code, 200)
+
+        publish_response = self.client.post(
+            "/api/packages/publish",
+            headers=self._auth_headers(),
+            data={
+                "PluginId": "PublishedFastPlugin",
+                "Version": "1.0.0",
+                "Name": "Published Fast Plugin",
+                "Description": "updates the cached catalog",
+                "package": (io.BytesIO(b"pkg"), "PublishedFastPlugin-1.0.0.cvxp"),
+            },
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(publish_response.status_code, 201)
+
+        with patch("plugin_marketplace.plugin_catalog_signature", side_effect=AssertionError("publish should update catalog cache")), \
+             patch("plugin_marketplace.get_plugin_summary", side_effect=AssertionError("publish should not force catalog rebuild")):
+            catalog_response = self.client.get("/api/plugins?pageSize=20")
+
+        self.assertEqual(catalog_response.status_code, 200)
+        items = catalog_response.get_json()["items"]
+        self.assertTrue(any(item["pluginId"] == "PublishedFastPlugin" for item in items))
+
     def test_plugin_detail_can_fallback_to_archive_readme_and_changelog(self):
         self._create_plugin_archive_with_metadata(
             "ZipDocPlugin",
@@ -404,6 +482,32 @@ class MarketplaceAppTests(unittest.TestCase):
         payload = response.get_json()
         self.assertIn("Hello from archive", payload["readme"])
         self.assertIn("archive changelog", payload["changelog"])
+
+    def test_plugin_icon_url_can_serve_archive_icon_when_directory_icon_missing(self):
+        icon_payload = b"archive-icon-bytes"
+        self._create_plugin_archive_with_metadata(
+            "ArchiveIconPlugin",
+            "1.0.0",
+            manifest_text='{"id":"ArchiveIconPlugin","name":"Archive Icon Plugin","description":"archive icon"}',
+            icon_bytes=icon_payload,
+        )
+
+        list_response = self.client.get("/api/plugins")
+        self.assertEqual(list_response.status_code, 200)
+        list_payload = list_response.get_json()
+        summary = next(item for item in list_payload["items"] if item["pluginId"] == "ArchiveIconPlugin")
+        self.assertTrue(summary["iconUrl"])
+
+        detail_response = self.client.get("/api/plugins/ArchiveIconPlugin")
+        self.assertEqual(detail_response.status_code, 200)
+        detail_payload = detail_response.get_json()
+        self.assertTrue(detail_payload["iconUrl"])
+
+        icon_path = urlsplit(detail_payload["iconUrl"]).path
+        icon_response = self.client.get(icon_path)
+        self.assertEqual(icon_response.status_code, 200)
+        self.assertEqual(icon_response.get_data(), icon_payload)
+        icon_response.close()
 
     def test_plugin_detail_returns_richer_remote_metadata(self):
         self._create_plugin_archive_with_metadata(
@@ -434,6 +538,31 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertIn("richer detail", payload["changelog"])
         self.assertEqual(payload["versions"][0]["source"], "current")
         self.assertEqual(payload["archivedVersions"][0]["source"], "archive")
+
+    def test_plugin_detail_reuses_cached_package_hashes_when_detail_cache_is_cleared(self):
+        self._create_plugin_archive_with_metadata(
+            "CachedHashPlugin",
+            "1.2.3",
+            manifest_text='{"id":"CachedHashPlugin","name":"Cached Hash Plugin","description":"hash cache"}',
+        )
+
+        history_dir = self.storage / "History" / "Plugins" / "CachedHashPlugin"
+        history_dir.mkdir(parents=True, exist_ok=True)
+        (history_dir / "CachedHashPlugin-1.0.0.cvxp").write_bytes(b"old-package")
+
+        first_response = self.client.get("/api/plugins/CachedHashPlugin")
+        self.assertEqual(first_response.status_code, 200)
+        first_payload = first_response.get_json()
+        self.assertTrue(first_payload["versions"][0]["fileHash"])
+
+        marketplace_app._invalidate_cache_prefix("plugin_detail:")
+
+        with patch("plugin_marketplace._compute_file_hash", side_effect=AssertionError("hash should come from cache")):
+            second_response = self.client.get("/api/plugins/CachedHashPlugin")
+
+        self.assertEqual(second_response.status_code, 200)
+        second_payload = second_response.get_json()
+        self.assertEqual(first_payload["versions"][0]["fileHash"], second_payload["versions"][0]["fileHash"])
 
     def test_plugin_query_filter_and_sort_are_consistent_between_html_and_api(self):
         alpha_dir = self._create_plugin("AlphaPlugin", "1.0.0")
@@ -469,6 +598,40 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(api_response.status_code, 200)
         payload = api_response.get_json()
         self.assertEqual([item["pluginId"] for item in payload["items"]], ["AlphaPlugin", "BetaPlugin"])
+
+    def test_plugin_query_author_filter_and_paging_are_consistent_between_html_and_api(self):
+        alpha_dir = self._create_plugin("AuthorAlpha", "1.0.0")
+        (alpha_dir / "manifest.json").write_text(
+            '{"id":"AuthorAlpha","name":"Alice Plugin","description":"alpha tools","category":"Tools","author":"Alice"}',
+            encoding="utf-8",
+        )
+
+        beta_dir = self._create_plugin("AuthorBeta", "1.0.0")
+        (beta_dir / "manifest.json").write_text(
+            '{"id":"AuthorBeta","name":"Bob Plugin A","description":"beta tools","category":"Tools","author":"Bob"}',
+            encoding="utf-8",
+        )
+
+        gamma_dir = self._create_plugin("AuthorGamma", "1.0.0")
+        (gamma_dir / "manifest.json").write_text(
+            '{"id":"AuthorGamma","name":"Bob Plugin B","description":"gamma tools","category":"Tools","author":"Bob"}',
+            encoding="utf-8",
+        )
+
+        page_response = self.client.get("/plugins?q=plugin&category=Tools&author=Bob&sort=name&page=2&pageSize=1")
+        api_response = self.client.get(
+            "/api/plugins?Keyword=plugin&Category=Tools&Author=Bob&SortBy=name&SortOrder=asc&Page=2&PageSize=1"
+        )
+
+        self.assertEqual(page_response.status_code, 200)
+        html = page_response.get_data(as_text=True)
+        self.assertIn("Bob Plugin B", html)
+        self.assertNotIn("Alice Plugin", html)
+        self.assertNotIn("Bob Plugin A", html)
+
+        self.assertEqual(api_response.status_code, 200)
+        payload = api_response.get_json()
+        self.assertEqual([item["pluginId"] for item in payload["items"]], ["AuthorGamma"])
 
     def test_plugins_page_supports_html_pagination(self):
         for index in range(1, 6):
@@ -693,6 +856,25 @@ class MarketplaceAppTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["error"], "PluginIds must be an array")
+
+    def test_api_batch_version_check_reports_missing_and_invalid_plugin_ids(self):
+        self._create_plugin("BatchPlugin", "2.1.0")
+
+        response = self.client.post(
+            "/api/plugins/batch-version-check",
+            json={"PluginIds": ["BatchPlugin", "MissingPlugin", "bad!"]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        lookup = {item["pluginId"]: item for item in payload}
+
+        self.assertEqual(lookup["BatchPlugin"]["latestVersion"], "2.1.0")
+        self.assertEqual(lookup["BatchPlugin"].get("status", "ok"), "ok")
+        self.assertIsNone(lookup["MissingPlugin"]["latestVersion"])
+        self.assertEqual(lookup["MissingPlugin"]["status"], "missing")
+        self.assertIsNone(lookup["bad!"]["latestVersion"])
+        self.assertEqual(lookup["bad!"]["status"], "invalid")
 
     def test_api_feedback_rejects_too_many_files(self):
         attachments = []

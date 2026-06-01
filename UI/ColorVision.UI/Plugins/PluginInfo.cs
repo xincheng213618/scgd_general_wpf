@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1859
+using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System.IO;
 using System.Reflection;

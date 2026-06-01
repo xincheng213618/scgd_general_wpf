@@ -163,6 +163,9 @@
   <data name="Language" xml:space="preserve">
     <value>用户界面语言</value>
   </data>
+  <data name="LanguageDescription" xml:space="preserve">
+    <value>选择界面显示语言，跟随系统时使用系统语言。</value>
+  </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>自动切换选中视图</value>
   </data>
@@ -217,6 +220,15 @@
   <data name="MenuOpen" xml:space="preserve">
     <value>打开(_O)</value>
   </data>
+  <data name="MenuSave" xml:space="preserve">
+    <value>保存(_S)</value>
+  </data>
+  <data name="MenuSaveAs" xml:space="preserve">
+    <value>另存为(_A)</value>
+  </data>
+  <data name="MenuSelectAll" xml:space="preserve">
+    <value>全选(_A)</value>
+  </data>
   <data name="Reset" xml:space="preserve">
     <value>重置</value>
   </data>
@@ -268,11 +280,122 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>通用设置</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>没有匹配的设置。</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>找到 {0} 项匹配设置</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>{0} 项设置</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>设置项不可用</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>设置项加载失败</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>设置页类型无效</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>设置页不可用</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>设置页加载失败</value>
+  </data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
+    <value>启动时检查更新</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
+    <value>启动应用时检查主程序、插件和主题是否有可用更新。</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
+    <value>插件更新 主程序更新 启动检测 软件启动时检测更新 检查插件更新 自动更新 主题更新</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>基础</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>文件归档</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>服务</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>路径</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>扩展页面</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>控制应用写入日志的详细程度。</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>插件市场服务地址</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>插件市场、更新检查和在线包接口使用的服务地址。</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>插件名称</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>搜索</value>
+  </data>
+  <data name="SearchSettingsTitle" xml:space="preserve">
+    <value>搜索设置</value>
+  </data>
+  <data name="SearchSettingsHint" xml:space="preserve">
+    <value>双击搜索图标可打开此窗口。勾选的来源会参与 Ctrl+F 快捷搜索。</value>
+  </data>
+  <data name="SearchIndexedSourcesTitle" xml:space="preserve">
+    <value>索引来源</value>
+  </data>
+  <data name="SearchIndexedSourcesDescription" xml:space="preserve">
+    <value>这些来源会被收集到本地快捷搜索索引中。</value>
+  </data>
+  <data name="SearchMenuCommands" xml:space="preserve">
+    <value>菜单命令</value>
+  </data>
+  <data name="SearchMenuCommandsDescription" xml:space="preserve">
+    <value>内置菜单和插件提供的菜单项。</value>
+  </data>
+  <data name="SearchTemplates" xml:space="preserve">
+    <value>模板</value>
+  </data>
+  <data name="SearchTemplatesDescription" xml:space="preserve">
+    <value>由引擎搜索提供器提供的模板项。</value>
+  </data>
+  <data name="SearchThirdPartyApps" xml:space="preserve">
+    <value>第三方应用</value>
+  </data>
+  <data name="SearchThirdPartyAppsDescription" xml:space="preserve">
+    <value>从第三方应用启动器中发现的应用。</value>
+  </data>
+  <data name="SearchExternalActionsTitle" xml:space="preserve">
+    <value>外部搜索动作</value>
+  </data>
+  <data name="SearchExternalActionsDescription" xml:space="preserve">
+    <value>这些动作会根据当前关键字附加到结果列表末尾。</value>
+  </data>
+  <data name="SearchEverythingDescription" xml:space="preserve">
+    <value>使用当前关键字启动 Everything。</value>
+  </data>
+  <data name="SearchBrowserDescription" xml:space="preserve">
+    <value>用网页搜索引擎打开当前关键字。</value>
+  </data>
+  <data name="SearchBrowserEngine" xml:space="preserve">
+    <value>浏览器搜索引擎</value>
+  </data>
+  <data name="SearchIconSettingsTooltip" xml:space="preserve">
+    <value>双击打开搜索设置</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>更新</value>
@@ -505,6 +628,9 @@
   <data name="Theme" xml:space="preserve">
     <value>主题</value>
   </data>
+  <data name="ThemeDescription" xml:space="preserve">
+    <value>选择应用界面的颜色主题。</value>
+  </data>
   <data name="SearchEngine" xml:space="preserve">
     <value>搜索引擎</value>
   </data>
@@ -516,5 +642,371 @@
   </data>
   <data name="EverythingPath" xml:space="preserve">
     <value>Everything路径</value>
+  </data>
+  <data name="MenuTreemapViewer" xml:space="preserve">
+    <value>Treemap 查看器</value>
+  </data>
+  <data name="Treemap_Title" xml:space="preserve">
+    <value>磁盘空间分析 - Treemap Viewer</value>
+  </data>
+  <data name="Treemap_DriveLabel" xml:space="preserve">
+    <value>盘符：</value>
+  </data>
+  <data name="Treemap_BrowseDirectory" xml:space="preserve">
+    <value>浏览目录…</value>
+  </data>
+  <data name="Treemap_BrowseDirectoryTooltip" xml:space="preserve">
+    <value>选择要扫描的目录</value>
+  </data>
+  <data name="Treemap_Scan" xml:space="preserve">
+    <value>扫 描</value>
+  </data>
+  <data name="Treemap_ScanTooltip" xml:space="preserve">
+    <value>扫描选定目录并显示树图</value>
+  </data>
+  <data name="Treemap_Cancel" xml:space="preserve">
+    <value>取 消</value>
+  </data>
+  <data name="Treemap_CancelTooltip" xml:space="preserve">
+    <value>中止当前扫描</value>
+  </data>
+  <data name="Treemap_Save" xml:space="preserve">
+    <value>保 存</value>
+  </data>
+  <data name="Treemap_SaveTooltip" xml:space="preserve">
+    <value>将当前扫描结果保存为 JSON 文件</value>
+  </data>
+  <data name="Treemap_Load" xml:space="preserve">
+    <value>加 载</value>
+  </data>
+  <data name="Treemap_LoadTooltip" xml:space="preserve">
+    <value>从已保存的 JSON 文件加载扫描结果</value>
+  </data>
+  <data name="Treemap_Up" xml:space="preserve">
+    <value>↑ 上级</value>
+  </data>
+  <data name="Treemap_UpTooltip" xml:space="preserve">
+    <value>返回父目录节点</value>
+  </data>
+  <data name="Treemap_ShowLabels" xml:space="preserve">
+    <value>显示标签</value>
+  </data>
+  <data name="Treemap_NodeCount" xml:space="preserve">
+    <value>节点数：</value>
+  </data>
+  <data name="Treemap_File" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="Treemap_Folder" xml:space="preserve">
+    <value>文件夹</value>
+  </data>
+  <data name="Treemap_SelectDirPrompt" xml:space="preserve">
+    <value>请选择目录并点击"扫描"，或点击"加载"读取已保存的扫描结果。</value>
+  </data>
+  <data name="Treemap_Scanning" xml:space="preserve">
+    <value>扫描中…</value>
+  </data>
+  <data name="Treemap_ScannedFiles" xml:space="preserve">
+    <value>已扫描 {0:N0} 个文件…</value>
+  </data>
+  <data name="Treemap_Cancelled" xml:space="preserve">
+    <value>已取消。</value>
+  </data>
+  <data name="Treemap_Complete" xml:space="preserve">
+    <value>完成。共 {0:N0} 个文件。</value>
+  </data>
+  <data name="Treemap_ScanError" xml:space="preserve">
+    <value>扫描出错：{0}</value>
+  </data>
+  <data name="Treemap_SaveDialogTitle" xml:space="preserve">
+    <value>保存扫描结果</value>
+  </data>
+  <data name="Treemap_Saved" xml:space="preserve">
+    <value>已保存：{0}</value>
+  </data>
+  <data name="Treemap_SaveFailed" xml:space="preserve">
+    <value>保存失败：{0}</value>
+  </data>
+  <data name="Treemap_LoadDialogTitle" xml:space="preserve">
+    <value>加载扫描结果</value>
+  </data>
+  <data name="Treemap_InvalidFormat" xml:space="preserve">
+    <value>文件格式无效或为空。</value>
+  </data>
+  <data name="Treemap_Loaded" xml:space="preserve">
+    <value>已加载：{0}</value>
+  </data>
+  <data name="Treemap_LoadFailed" xml:space="preserve">
+    <value>加载失败：{0}</value>
+  </data>
+  <data name="Treemap_OpenFile" xml:space="preserve">
+    <value>打开文件</value>
+  </data>
+  <data name="Treemap_OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="Treemap_OpenInExplorer" xml:space="preserve">
+    <value>在资源管理器中打开</value>
+  </data>
+  <data name="Treemap_ShowInExplorer" xml:space="preserve">
+    <value>在资源管理器中显示</value>
+  </data>
+  <data name="Treemap_CopyPath" xml:space="preserve">
+    <value>复制路径</value>
+  </data>
+  <data name="Treemap_DrillDown" xml:space="preserve">
+    <value>向下钻取（以此为根）</value>
+  </data>
+  <data name="Treemap_GoUp" xml:space="preserve">
+    <value>返回上级</value>
+  </data>
+  <data name="Treemap_DeleteFile" xml:space="preserve">
+    <value>删除文件{0}</value>
+  </data>
+  <data name="Treemap_ConfirmDelete" xml:space="preserve">
+    <value>确认删除文件：\n{0}</value>
+  </data>
+  <data name="Treemap_ConfirmDeleteTitle" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="Treemap_DeleteFailed" xml:space="preserve">
+    <value>删除失败：{0}</value>
+  </data>
+  <data name="Treemap_Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Treemap_Prompt" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="Treemap_SelectValidDir" xml:space="preserve">
+    <value>请先选择有效的目录。</value>
+  </data>
+  <data name="PropEditor_SearchPlaceholder" xml:space="preserve">
+    <value>搜索属性...</value>
+  </data>
+  <data name="PropEditor_ResetToDefault" xml:space="preserve">
+    <value>恢复到默认</value>
+  </data>
+  <data name="PropEditor_ResetTooltip" xml:space="preserve">
+    <value>重置到类默认值</value>
+  </data>
+  <data name="PropEditor_SortDefault" xml:space="preserve">
+    <value>默认排序</value>
+  </data>
+  <data name="PropEditor_SortNameAsc" xml:space="preserve">
+    <value>按名称排序 (升序)</value>
+  </data>
+  <data name="PropEditor_SortNameDesc" xml:space="preserve">
+    <value>按名称排序 (降序)</value>
+  </data>
+  <data name="PropEditor_SortCategoryAsc" xml:space="preserve">
+    <value>按分类排序 (升序)</value>
+  </data>
+  <data name="PropEditor_SortCategoryDesc" xml:space="preserve">
+    <value>按分类排序 (降序)</value>
+  </data>
+  <data name="PropEditor_JsonParseError" xml:space="preserve">
+    <value>JSON 解析错误：</value>
+  </data>
+  <data name="PropEditor_LoadError" xml:space="preserve">
+    <value>加载错误：</value>
+  </data>
+  <data name="PropEditor_NoEditableProperties" xml:space="preserve">
+    <value>没有可编辑的属性</value>
+  </data>
+  <data name="PropEditor_JsonGenerateError" xml:space="preserve">
+    <value>JSON 生成错误：</value>
+  </data>
+  <data name="PropEditor_ValidationError" xml:space="preserve">
+    <value>验证失败：</value>
+  </data>
+  <data name="ListEditor_Title" xml:space="preserve">
+    <value>编辑列表</value>
+  </data>
+  <data name="ListEditor_Add" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="ListEditor_Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="ListEditor_DeleteAll" xml:space="preserve">
+    <value>全部删除</value>
+  </data>
+  <data name="ListEditor_MoveUp" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="ListEditor_MoveDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="ListEditor_Index" xml:space="preserve">
+    <value>索引</value>
+  </data>
+  <data name="ListEditor_Value" xml:space="preserve">
+    <value>值</value>
+  </data>
+  <data name="ListItemEditor_Title" xml:space="preserve">
+    <value>编辑项</value>
+  </data>
+  <data name="ListItemEditor_EditorType" xml:space="preserve">
+    <value>编辑器类型:</value>
+  </data>
+  <data name="DictEditor_Title" xml:space="preserve">
+    <value>编辑字典</value>
+  </data>
+  <data name="DictEditor_Key" xml:space="preserve">
+    <value>键 (Key)</value>
+  </data>
+  <data name="DictEditor_Value" xml:space="preserve">
+    <value>值 (Value)</value>
+  </data>
+  <data name="DictItemEditor_Title" xml:space="preserve">
+    <value>编辑字典项</value>
+  </data>
+  <data name="DictItemEditor_Count" xml:space="preserve">
+    <value>当前包含 {0} 个项</value>
+  </data>
+  <data name="DictItemEditor_Empty" xml:space="preserve">
+    <value>空列表</value>
+  </data>
+  <data name="DictItemEditor_EditList" xml:space="preserve">
+    <value>编辑列表...</value>
+  </data>
+  <data name="DictItemEditor_Key" xml:space="preserve">
+    <value>键:</value>
+  </data>
+  <data name="DictItemEditor_Value" xml:space="preserve">
+    <value>值:</value>
+  </data>
+  <data name="DictItemEditor_KeyEmpty" xml:space="preserve">
+    <value>键不能为空！</value>
+  </data>
+  <data name="DictItemEditor_ValidationError" xml:space="preserve">
+    <value>验证错误</value>
+  </data>
+  <data name="DictItemEditor_KeyExists" xml:space="preserve">
+    <value>键 '{0}' 已存在！请使用不同的键。</value>
+  </data>
+  <data name="DictEditor_CollectionCount" xml:space="preserve">
+    <value>集合: {0} 项</value>
+  </data>
+  <data name="DictEditor_ConfirmDeleteSelected" xml:space="preserve">
+    <value>确定要删除选中的 {0} 项吗？</value>
+  </data>
+  <data name="DictEditor_ConfirmDeleteTitle" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="DictEditor_ConfirmDeleteAll" xml:space="preserve">
+    <value>确定要删除全部 {0} 项吗？</value>
+  </data>
+  <data name="DictEditor_ConfirmDeleteAllTitle" xml:space="preserve">
+    <value>确认全部删除</value>
+  </data>
+  <data name="Config_Parameters" xml:space="preserve">
+    <value>配置相关参数</value>
+  </data>
+  <data name="Config_EnableBackup" xml:space="preserve">
+    <value>是否启用定时备份</value>
+  </data>
+  <data name="HotKey_RestoreDefault" xml:space="preserve">
+    <value>恢复默认</value>
+  </data>
+  <data name="HotKey_SaveHotkey" xml:space="preserve">
+    <value>保存热键</value>
+  </data>
+  <data name="HotKey_LoadHotkey" xml:space="preserve">
+    <value>加载热键</value>
+  </data>
+  <data name="Log_ReverseOrder" xml:space="preserve">
+    <value>倒序</value>
+  </data>
+  <data name="Log_OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="TimedOp_ViewStats" xml:space="preserve">
+    <value>查看耗时统计</value>
+  </data>
+  <data name="TimedOp_NoHistory" xml:space="preserve">
+    <value>暂无历史耗时。</value>
+  </data>
+  <data name="TimedOp_Warmup" xml:space="preserve">
+    <value>预热:</value>
+  </data>
+  <data name="TimedOp_NoStableSamples" xml:space="preserve">
+    <value>稳定样本暂无记录。</value>
+  </data>
+  <data name="TimedOp_WarmupNote" xml:space="preserve">
+    <value>本次软件启动的首轮样本按预热处理，不参与平均。</value>
+  </data>
+  <data name="TimedOp_Last" xml:space="preserve">
+    <value>上次:</value>
+  </data>
+  <data name="TimedOp_Average" xml:space="preserve">
+    <value>平均:</value>
+  </data>
+  <data name="TimedOp_Fastest" xml:space="preserve">
+    <value>最快:</value>
+  </data>
+  <data name="TimedOp_Slowest" xml:space="preserve">
+    <value>最慢:</value>
+  </data>
+  <data name="TimedOp_StableSamples" xml:space="preserve">
+    <value>稳定样本:</value>
+  </data>
+  <data name="TimedOp_RightClickHint" xml:space="preserve">
+    <value>右键按钮可打开统计窗口。</value>
+  </data>
+  <data name="TimedOp_FewSamples" xml:space="preserve">
+    <value>稳定样本仍然较少，继续执行后会更准确。</value>
+  </data>
+  <data name="TimedOp_StatsRecorded" xml:space="preserve">
+    <value>耗时统计已记录。</value>
+  </data>
+  <data name="TimedOp_CloseToAverage" xml:space="preserve">
+    <value>本次与历史平均接近。</value>
+  </data>
+  <data name="TimedOp_FasterThanAverage" xml:space="preserve">
+    <value>本次比历史平均快 {0}。</value>
+  </data>
+  <data name="TimedOp_SlowerThanAverage" xml:space="preserve">
+    <value>本次比历史平均慢 {0}。</value>
+  </data>
+  <data name="UpdateRecovery_Restored" xml:space="preserve">
+    <value>上次更新未完成，已恢复到更新前版本。</value>
+  </data>
+  <data name="UpdateRecovery_Failed" xml:space="preserve">
+    <value>上次更新未完成，且自动恢复失败，请手动重新安装或检查备份目录。</value>
+  </data>
+  <data name="ListEditor_ListCount" xml:space="preserve">
+    <value>[列表: {0} 项]</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteSelected" xml:space="preserve">
+    <value>确定要删除选中的 {0} 项吗？</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteTitle" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteAll" xml:space="preserve">
+    <value>确定要删除全部 {0} 项吗？</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteAllTitle" xml:space="preserve">
+    <value>确认全部删除</value>
+  </data>
+  <data name="ListItemEditor_NestedList" xml:space="preserve">
+    <value>嵌套列表:</value>
+  </data>
+  <data name="ListItemEditor_FileSelector" xml:space="preserve">
+    <value>文件选择器</value>
+  </data>
+  <data name="ListItemEditor_FolderSelector" xml:space="preserve">
+    <value>文件夹选择器</value>
+  </data>
+  <data name="ListItemEditor_Textbox" xml:space="preserve">
+    <value>文本框</value>
+  </data>
+  <data name="ListItemEditor_Dropdown" xml:space="preserve">
+    <value>下拉选择</value>
+  </data>
+  <data name="ListItemEditor_Checkbox" xml:space="preserve">
+    <value>复选框</value>
   </data>
 </root>

@@ -1,8 +1,9 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from page_contexts import build_index_page_context, build_releases_page_context
+from page_contexts import build_browse_page_context, build_index_page_context, build_releases_page_context
 
 
 class PageContextsTests(unittest.TestCase):
@@ -167,6 +168,25 @@ class PageContextsTests(unittest.TestCase):
         self.assertEqual(context["recent_change_dashboard"][0]["title"], "ColorVision 1.2.0.1")
         self.assertTrue(any(item["category"] == "目录" for item in context["recent_change_dashboard"]))
         self.assertGreaterEqual(context["recent_change_summary"]["change_count"], 3)
+
+    def test_build_browse_page_context_only_builds_current_page_items(self):
+        for index in range(5):
+            (self.storage / f"item-{index}.txt").write_text(str(index), encoding="utf-8")
+
+        import storage_browser
+        original = storage_browser._build_listing_item
+        built_items: list[str] = []
+
+        def wrapped(entry: Path, relative_path: str):
+            built_items.append(entry.name)
+            return original(entry, relative_path)
+
+        with patch("storage_browser._build_listing_item", side_effect=wrapped):
+            context = build_browse_page_context(self.storage, "", limit=2, offset=1)
+
+        self.assertEqual(context["total_count"], 5)
+        self.assertEqual([item["name"] for item in context["items"]], ["item-1.txt", "item-2.txt"])
+        self.assertEqual(built_items, ["item-1.txt", "item-2.txt"])
 
 
 if __name__ == "__main__":

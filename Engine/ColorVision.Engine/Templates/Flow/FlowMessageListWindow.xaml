@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="流程MQTT消息查询" Height="720" Width="1280"
+        Title="{x:Static properties:Resources.Flow_MessageList_Title}" Height="720" Width="1280"
         Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -24,25 +25,25 @@
         <Grid Margin="5,5,5,5">
             <ToolBarTray IsLocked="True">
                 <ToolBar Padding="3,2">
-                    <TextBlock Text="节点:" VerticalAlignment="Center" Margin="2,0,2,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_MessageList_Node}" VerticalAlignment="Center" Margin="2,0,2,0"/>
                     <TextBox x:Name="FilterNodeName" Width="100" VerticalAlignment="Center" Margin="0,0,4,0"/>
                     <TextBlock Text="EventName:" VerticalAlignment="Center" Margin="2,0,2,0"/>
                     <TextBox x:Name="FilterEventName" Width="100" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                    <TextBlock Text="状态:" VerticalAlignment="Center" Margin="2,0,2,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_MessageList_State}" VerticalAlignment="Center" Margin="2,0,2,0"/>
                     <ComboBox x:Name="FilterState" Width="90" VerticalAlignment="Center" Margin="0,0,4,0">
-                        <ComboBoxItem Content="全部" IsSelected="True"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.Flow_MessageList_All}" Tag="All" IsSelected="True"/>
                         <ComboBoxItem Content="Sended"/>
                         <ComboBoxItem Content="Success"/>
                         <ComboBoxItem Content="Fail"/>
                         <ComboBoxItem Content="Timeout"/>
                     </ComboBox>
                     <Separator/>
-                    <Button Content="查询" Click="QueryButton_Click" Margin="2,0,0,0"/>
-                    <Button Content="刷新" Click="RefreshButton_Click" Margin="2,0,0,0"/>
+                    <Button Content="{x:Static properties:Resources.Flow_MessageList_Query}" Click="QueryButton_Click" Margin="2,0,0,0"/>
+                    <Button Content="{x:Static properties:Resources.Flow_MessageList_Refresh}" Click="RefreshButton_Click" Margin="2,0,0,0"/>
                     <Separator/>
-                    <Button Content="清空记录" Click="DeleteAllButton_Click" Margin="2,0,0,0" Foreground="#E53935"/>
+                    <Button Content="{x:Static properties:Resources.Flow_MessageList_ClearRecords}" Click="DeleteAllButton_Click" Margin="2,0,0,0" Foreground="#E53935"/>
                     <Separator/>
-                    <TextBlock Text="加载条数:" VerticalAlignment="Center" Margin="4,0,2,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_MessageList_LoadCount}" VerticalAlignment="Center" Margin="4,0,2,0"/>
                     <TextBox x:Name="LoadCount" Width="50" VerticalAlignment="Center" Text="500"/>
                 </ToolBar>
             </ToolBarTray>
@@ -78,7 +79,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="节点" Width="120">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_MessageList_NodeHeader}" Width="120">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding NodeName}"/>
@@ -92,35 +93,35 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="发送时间" Width="130">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_MessageList_SendTime}" Width="130">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding SendTime, StringFormat=HH:mm:ss.fff}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="接收时间" Width="130">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_MessageList_RecvTime}" Width="130">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding RecvTime, StringFormat=HH:mm:ss.fff}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="耗时(ms)" Width="70">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_MessageList_ElapsedMs}" Width="70">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding ElapsedMs}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="状态" Width="70">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_MessageList_StateHeader}" Width="70">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding State}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="状态码" Width="50">
+                        <GridViewColumn Header="{x:Static properties:Resources.Flow_MessageList_StatusCode}" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding StatusCode}"/>
@@ -150,7 +151,7 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0">
-                    <TextBlock Text="发送数据 (Send)" FontWeight="Bold" Margin="2"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_MessageList_SendData}" FontWeight="Bold" Margin="2"/>
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="2">
                         <TextBlock Text="Topic: " VerticalAlignment="Center"/>
                         <TextBlock x:Name="SendTopicText" VerticalAlignment="Center" Foreground="Gray"/>
@@ -163,7 +164,7 @@
                          FontFamily="Consolas" FontSize="12"/>
 
                 <Grid Grid.Row="2">
-                    <TextBlock Text="接收数据 (Receive)" FontWeight="Bold" Margin="2"/>
+                    <TextBlock Text="{x:Static properties:Resources.Flow_MessageList_RecvData}" FontWeight="Bold" Margin="2"/>
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="2">
                         <TextBlock Text="Topic: " VerticalAlignment="Center"/>
                         <TextBlock x:Name="RecvTopicText" VerticalAlignment="Center" Foreground="Gray"/>
@@ -180,9 +181,9 @@
         <!-- Status Bar -->
         <Border Grid.Row="2" Height="28" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                <TextBlock Text="总条数:" Margin="0,0,5,0"/>
+                <TextBlock Text="{x:Static properties:Resources.Flow_MessageList_TotalCount}" Margin="0,0,5,0"/>
                 <TextBlock x:Name="TotalCountText" FontWeight="Bold" Margin="0,0,20,0"/>
-                <TextBlock Text="当前显示:" Margin="0,0,5,0"/>
+                <TextBlock Text="{x:Static properties:Resources.Flow_MessageList_DisplayCount}" Margin="0,0,5,0"/>
                 <TextBlock x:Name="DisplayCountText" FontWeight="Bold"/>
             </StackPanel>
         </Border>

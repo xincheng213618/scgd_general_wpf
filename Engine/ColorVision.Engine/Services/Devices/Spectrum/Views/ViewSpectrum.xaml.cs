@@ -127,53 +127,32 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private void DisplayConfig_IsIsLuminousFluxModeChanged()
         {
-            List<string> EQE = new List<string>();
-            EQE.Add("EQE");
-            EQE.Add("光通量(lm)");
-            EQE.Add("辐射通量(W)");
-            EQE.Add("光效(lm/W)");
-            List<string> Nomarl = new List<string>();
-            Nomarl.Add(Properties.Resources.Lv);
+            bool isLuminousFluxMode = DisplayConfig.IsLuminousFluxMode;
 
-            if (DisplayConfig.IsLuminousFluxMode)
-            {
-                wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "W/nm");
-                foreach (var item in GridViewColumnVisibilitys)
-                {
-                    if (EQE.Contains(item.ColumnName))
-                    {
-                        item.IsVisible = true;
-                    }
-                    if (Nomarl.Contains(item.ColumnName))
-                    {
-                        item.IsVisible = false;
-                    }
-                }
+            wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + (isLuminousFluxMode ? "W/nm" : "w/sr·m^2·nm"));
 
-            }
-            else
-            {
-                wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "w/sr·m^2·nm");
+            SetColumnVisibility(new[] { EqeColumn, LuminousFluxColumn, RadiantFluxColumn, LuminousEfficacyColumn }, isLuminousFluxMode);
+            SetColumnVisibility(new[] { LvColumn }, !isLuminousFluxMode);
 
-                foreach (var item in GridViewColumnVisibilitys)
-                {
-                    if (EQE.Contains(item.ColumnName))
-                    {
-                        item.IsVisible = false;
-                    }
-                    if (Nomarl.Contains(item.ColumnName))
-                    {
-                        item.IsVisible = true;
-                    }
-                }
-
-            }
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
 
             }
 
+        }
+
+        private void SetColumnVisibility(IEnumerable<GridViewColumn> columns, bool isVisible)
+        {
+            HashSet<GridViewColumn> targetColumns = new(columns);
+
+            foreach (var item in GridViewColumnVisibilitys)
+            {
+                if (targetColumns.Contains(item.GridViewColumn))
+                {
+                    item.IsVisible = isVisible;
+                }
+            }
         }
 
         private void Delete()

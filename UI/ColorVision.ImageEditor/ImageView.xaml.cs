@@ -8,6 +8,7 @@ using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Layers;
 using ColorVision.ImageEditor.Realtime;
+using ColorVision.ImageEditor.Properties;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -635,14 +636,14 @@ namespace ColorVision.ImageEditor
             List<DrawingVisualBase> visuals = EditorContext.DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
             if (visuals.Count == 0)
             {
-                MessageBox.Show("当前没有可导出的标注。", "导出标注", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.ImageView_NoExportableAnnotations, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             AnnotationDocument document = AnnotationMapper.CreateDocument(visuals);
             if (document.Items.Count == 0)
             {
-                MessageBox.Show("当前图元里没有已接入 annotation 的类型。", "导出标注", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.ImageView_NoAnnotationTypes, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -658,9 +659,9 @@ namespace ColorVision.ImageEditor
 
             int skippedCount = visuals.Count - document.Items.Count;
             string message = skippedCount > 0
-                ? $"已导出 {document.Items.Count} 个标注，跳过 {skippedCount} 个未接入 annotation 的图元。"
-                : $"已导出 {document.Items.Count} 个标注。";
-            MessageBox.Show(message, "导出标注", MessageBoxButton.OK, MessageBoxImage.Information);
+                ? string.Format(Properties.Resources.ImageView_ExportedAnnotationsWithSkip, document.Items.Count, skippedCount)
+                : string.Format(Properties.Resources.ImageView_ExportedAnnotations, document.Items.Count);
+            MessageBox.Show(message, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public void ImportAnnotations()
@@ -683,11 +684,11 @@ namespace ColorVision.ImageEditor
                     ImageShow.AddVisual(visual);
                 }
 
-                MessageBox.Show($"已导入 {visuals.Count} 个标注。", "导入标注", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, visuals.Count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导入标注失败: {ex.Message}", "导入标注", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.ImageView_ImportAnnotationsFailed, ex.Message), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -821,13 +822,13 @@ namespace ColorVision.ImageEditor
             EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
             SetLayerController(null);
-            Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, filePath, nameof(ImageView), "当前打开图像的绝对路径");
+            Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, filePath, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FilePath);
             try
             {
                 if (filePath != null && File.Exists(filePath))
                 {
                     long fileSize = new FileInfo(filePath).Length;
-                    Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), "当前打开文件大小（字节）");
+                    Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FileSize);
 
                     string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                     if (IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
@@ -839,7 +840,7 @@ namespace ColorVision.ImageEditor
                     }
                     else
                     {
-                        MessageBox.Show($"不支持的图片格式 {ext}");
+                        MessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, ext));
                     }
                 }
             }
@@ -946,20 +947,20 @@ namespace ColorVision.ImageEditor
                         depth = 32; // 16 bits per channel
                         break;
                     default:
-                        MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
+                        MessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedPixelFormat, writeableBitmap.Format));
                         throw new NotSupportedException("The pixel format is not supported.");
                 }
 
                 int stride = cols * channels * (depth / 8);
 
-                Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, writeableBitmap.Format, nameof(ImageView), "当前图像像素格式");
-                Config.SetImageMetadata(ImageViewPropertyKeys.Cols, cols, nameof(ImageView), "当前图像列数");
-                Config.SetImageMetadata(ImageViewPropertyKeys.Rows, rows, nameof(ImageView), "当前图像行数");
-                Config.SetImageMetadata(ImageViewPropertyKeys.Channel, channels, nameof(ImageView), "当前图像通道数");
-                Config.SetImageMetadata(ImageViewPropertyKeys.Depth, depth, nameof(ImageView), "当前图像位深");
-                Config.SetImageMetadata(ImageViewPropertyKeys.Stride, stride, nameof(ImageView), "当前图像 stride");
-                Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(ImageView), "当前图像水平 DPI");
-                Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(ImageView), "当前图像垂直 DPI");
+                Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, writeableBitmap.Format, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_PixelFormat);
+                Config.SetImageMetadata(ImageViewPropertyKeys.Cols, cols, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_Cols);
+                Config.SetImageMetadata(ImageViewPropertyKeys.Rows, rows, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_Rows);
+                Config.SetImageMetadata(ImageViewPropertyKeys.Channel, channels, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_Channel);
+                Config.SetImageMetadata(ImageViewPropertyKeys.Depth, depth, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_Depth);
+                Config.SetImageMetadata(ImageViewPropertyKeys.Stride, stride, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_Stride);
+                Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_DpiX);
+                Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_DpiY);
                 if (enableEditorImageServices)
                 {
                     PseudoColorService?.ConfigureForImage();

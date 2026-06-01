@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Configs"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="Filter Wheel Configuration"
+        Title="{x:Static properties:Resources.EditFilterWheelConfig}"
         Background="{DynamicResource GlobalBackground}"
         Height="520" Width="640" MinHeight="420" MinWidth="520"
         WindowStartupLocation="CenterOwner"
@@ -40,7 +40,7 @@
                 <StackPanel>
                     <TextBlock Text="{x:Static properties:Resources.FilterWheel}" FontSize="20"
                                FontWeight="SemiBold"/>
-                    <TextBlock Text="Hole mapping" FontSize="12" Opacity="0.6" Margin="0,4,0,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.FilterWheelHoleMapping}" FontSize="12" Opacity="0.6" Margin="0,4,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="{x:Static properties:Resources.Add}" Click="Button_Add_Click"
@@ -62,8 +62,8 @@
                       Background="Transparent"
                       BorderThickness="0">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Hole Index" Binding="{Binding HoleIndex}" Width="160" IsReadOnly="False"/>
-                    <DataGridTextColumn Header="Hole Name" Binding="{Binding HoleName}" Width="*" IsReadOnly="False"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.FilterWheelHoleIndex}" Binding="{Binding HoleIndex}" Width="160" IsReadOnly="False"/>
+                    <DataGridTextColumn Header="{x:Static properties:Resources.FilterWheelHoleName}" Binding="{Binding HoleName}" Width="*" IsReadOnly="False"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

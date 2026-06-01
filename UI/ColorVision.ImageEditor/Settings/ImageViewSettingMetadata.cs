@@ -1,5 +1,6 @@
-using ColorVision.ImageEditor.Draw;
+﻿using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
+using ColorVision.ImageEditor.Properties;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.UI;
 using System;
@@ -26,7 +27,7 @@ namespace ColorVision.ImageEditor.Settings
     public sealed class ImageViewSettingMetadata
     {
         public int Order { get; set; } = 999;
-        public string Group { get; set; } = "通用";
+        public string Group { get; set; } = Properties.Resources.Settings_GroupGeneral;
         public string? Name { get; set; }
         public string? Description { get; set; }
         public ImageViewSettingScope Scope { get; set; } = ImageViewSettingScope.CurrentView;
@@ -51,19 +52,19 @@ namespace ColorVision.ImageEditor.Settings
     {
         public IEnumerable<ImageViewSettingMetadata> GetImageViewSettings(ImageView imageView)
         {
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 10, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsLayoutUpdated) };
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 20, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowText) };
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 30, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowMsg) };
-            yield return new ImageViewSettingMetadata { Group = "显示", Order = 40, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.DrawingTextFontSize) };
+            yield return new ImageViewSettingMetadata { Group = Properties.Resources.Settings_GroupDisplay, Order = 10, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsLayoutUpdated) };
+            yield return new ImageViewSettingMetadata { Group = Properties.Resources.Settings_GroupDisplay, Order = 20, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowText) };
+            yield return new ImageViewSettingMetadata { Group = Properties.Resources.Settings_GroupDisplay, Order = 30, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.IsShowMsg) };
+            yield return new ImageViewSettingMetadata { Group = Properties.Resources.Settings_GroupDisplay, Order = 40, Scope = ImageViewSettingScope.CurrentView, Source = imageView.Config, BindingName = nameof(ImageViewConfig.DrawingTextFontSize) };
 
             yield return new ImageViewSettingMetadata
             {
-                Group = "上下文",
+                Group = Properties.Resources.Settings_GroupContext,
                 Order = 10,
                 Scope = ImageViewSettingScope.CurrentView,
                 Type = ImageViewSettingType.View,
-                Name = "当前图像上下文",
-                Description = "按作用域只读展示当前 ImageView 的属性字典，帮助区分图像元数据、当前视窗状态、打开器运行态和仍待迁移的旧键。",
+                Name = Properties.Resources.Settings_CurrentImageContext,
+                Description = Properties.Resources.Settings_CurrentImageContextDesc,
                 ViewFactory = () => new ImageViewContextSettingsView(imageView),
             };
         }
@@ -75,56 +76,56 @@ namespace ColorVision.ImageEditor.Settings
         {
             yield return new ImageViewSettingMetadata
             {
-                Group = "默认值",
+                Group = Properties.Resources.Settings_GroupDefaults,
                 Order = 5,
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
-                Name = "默认图像缩放",
-                Description = "控制 ImageView 初始化时播种的 BitmapScalingMode。初始化之后保留当前值，只有用户显式调整或特定加载器覆盖时才会变化。",
+                Name = Properties.Resources.Settings_DefaultImageScaling,
+                Description = Properties.Resources.Settings_DefaultImageScalingDesc,
                 Source = DefaultBitmapScalingConfig.Current,
             };
 
             yield return new ImageViewSettingMetadata
             {
-                Group = "默认值",
+                Group = Properties.Resources.Settings_GroupDefaults,
                 Order = 10,
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
-                Name = "默认显示参数",
-                Description = "控制 Zoombox 的全局最大/最小缩放，以及 NearestNeighbor 像素值叠层的性能阈值。",
+                Name = Properties.Resources.Settings_DefaultDisplayParams,
+                Description = Properties.Resources.Settings_DefaultDisplayParamsDesc,
                 Source = DefaultImageViewDisplayConfig.Current,
             };
 
             yield return new ImageViewSettingMetadata
             {
-                Group = "默认值",
+                Group = Properties.Resources.Settings_GroupDefaults,
                 Order = 20,
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
-                Name = "默认文本样式",
-                Description = "控制新建文本和带文字图元的默认字体、颜色和排版。",
+                Name = Properties.Resources.Settings_DefaultTextStyle,
+                Description = Properties.Resources.Settings_DefaultTextStyleDesc,
                 Source = DefaultTextStyleConfig.Current,
             };
 
             yield return new ImageViewSettingMetadata
             {
-                Group = "默认值",
+                Group = Properties.Resources.Settings_GroupDefaults,
                 Order = 30,
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
-                Name = "物理尺寸默认值",
-                Description = "控制标尺、网格等物理尺寸换算的默认长度和单位。",
+                Name = Properties.Resources.Settings_PhysicalSizeDefaults,
+                Description = Properties.Resources.Settings_PhysicalSizeDefaultsDesc,
                 Source = DefalutTextAttribute.Defalut,
             };
 
             yield return new ImageViewSettingMetadata
             {
-                Group = "默认值",
+                Group = Properties.Resources.Settings_GroupDefaults,
                 Order = 40,
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
-                Name = "默认实时相机参数",
-                Description = "控制 realtime 相机入口共享的显示 FPS、清晰度计算和 ROI/状态文字样式。",
+                Name = Properties.Resources.Settings_DefaultRealtimeCameraParams,
+                Description = Properties.Resources.Settings_DefaultRealtimeCameraParamsDesc,
                 Source = DefaultRealtimeCameraConfig.Current,
             };
         }
@@ -145,23 +146,23 @@ namespace ColorVision.ImageEditor.Settings
         {
             yield return new ImageViewSettingMetadata
             {
-                Group = "工作台",
+                Group = Properties.Resources.Settings_GroupWorkspace,
                 Order = 10,
                 Scope = ImageViewSettingScope.Workspace,
                 Type = ImageViewSettingType.View,
-                Name = "工具栏、工具与打开器",
-                Description = "统一管理当前 ImageView 的工具栏显示、已加载 IEditorTool 的可见性，以及支持的 IImageOpen 打开器。",
+                Name = Properties.Resources.Settings_ToolbarToolsAndOpeners,
+                Description = Properties.Resources.Settings_ToolbarToolsAndOpenersDesc,
                 ViewFactory = () => new ImageViewWorkspaceSettingsView(imageView),
             };
 
             yield return new ImageViewSettingMetadata
             {
-                Group = "加载器",
+                Group = Properties.Resources.Settings_GroupLoader,
                 Order = 10,
                 Scope = ImageViewSettingScope.LoaderDefault,
                 Type = ImageViewSettingType.Class,
-                Name = "TIF 打开器",
-                Description = "控制 Gray32Float TIFF 打开时是否转换为 Gray16 等加载策略。",
+                Name = Properties.Resources.Settings_TifOpener,
+                Description = Properties.Resources.Settings_TifOpenerDesc,
                 Source = TifOpenConfig.Current,
             };
         }

@@ -1,4 +1,5 @@
 ﻿
+#pragma warning disable CS8602,CS8603
 using System;
 using System.Linq;
 using System.Reflection;

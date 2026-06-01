@@ -1,3 +1,4 @@
+using ColorVision.UI.Properties;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -406,7 +407,7 @@ namespace ColorVision.UI.Controls
                     _hoverPopup.HorizontalOffset = screenPos.X + 15;
                     _hoverPopup.VerticalOffset = screenPos.Y + 15;
 
-                    string typeStr = hit.IsLeaf ? "文件" : "文件夹";
+                    string typeStr = hit.IsLeaf ? Properties.Resources.Treemap_File : Properties.Resources.Treemap_Folder;
                     string sizeStr = FormatSize(hit.Size);
                     string pathLine = hit.FullPath != null ? $"\n{hit.FullPath}" : string.Empty;
                     _hoverText.Text = $"{hit.Name}\n{typeStr}  {sizeStr}{pathLine}";

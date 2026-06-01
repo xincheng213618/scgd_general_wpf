@@ -33,7 +33,7 @@ namespace ColorVision.Solution.Workspace
             }
             else
             {
-                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title ="  主页 " };
+                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Properties.Resources.Sol_Workspace_Home };
                 layoutDocument.Content = new SoloutionEditorControl();
                 WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
                 WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);

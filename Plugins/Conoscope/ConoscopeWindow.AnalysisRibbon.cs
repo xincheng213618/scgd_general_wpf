@@ -1,5 +1,8 @@
 using Conoscope.Analysis;
+using Conoscope.ApplicationServices.Analysis;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -8,14 +11,8 @@ namespace Conoscope
 {
     public partial class ConoscopeWindow
     {
-        private readonly DefaultBatchColorGamutCalculator batchColorGamutCalculator = new();
-        private readonly DefaultBatchContrastCalculator batchContrastCalculator = new();
-
-        private MeasurementCapture? gamutRedCapture;
-        private MeasurementCapture? gamutGreenCapture;
-        private MeasurementCapture? gamutBlueCapture;
-        private MeasurementCapture? contrastWhiteCapture;
-        private MeasurementCapture? contrastBlackCapture;
+        private readonly ConoscopeAnalysisWorkflow analysisWorkflow = new();
+        private readonly Dictionary<Button, (object? Content, object? ToolTip)> recordButtonVisualStates = new();
 
         private void InitializeAnalysisRibbonControls()
         {
@@ -25,17 +22,8 @@ namespace Conoscope
             }
 
             cbRibbonGamutStandard.ItemsSource = ColorGamutStandards.All;
-            ColorGamutStandard? selectedStandard = null;
-            for (int index = 0; index < ColorGamutStandards.All.Count; index++)
-            {
-                ColorGamutStandard standard = ColorGamutStandards.All[index];
-                if (string.Equals(standard.Name, "sRGB", StringComparison.OrdinalIgnoreCase))
-                {
-                    selectedStandard = standard;
-                    break;
-                }
-            }
-
+            ColorGamutStandard? selectedStandard = ColorGamutStandards.All
+                .FirstOrDefault(standard => string.Equals(standard.Name, "sRGB", StringComparison.OrdinalIgnoreCase));
             cbRibbonGamutStandard.SelectedItem = selectedStandard ?? (ColorGamutStandards.All.Count > 0 ? ColorGamutStandards.All[0] : null);
             RefreshAnalysisRibbonState(ActiveView);
         }
@@ -55,141 +43,114 @@ namespace Conoscope
             btnRecordContrastWhite.IsEnabled = hasActiveView;
             btnRecordContrastBlack.IsEnabled = hasActiveView;
 
-            btnComputeGamut.IsEnabled = gamutRedCapture != null && gamutGreenCapture != null && gamutBlueCapture != null && cbRibbonGamutStandard?.SelectedItem is ColorGamutStandard;
-            btnClearGamut.IsEnabled = gamutRedCapture != null || gamutGreenCapture != null || gamutBlueCapture != null;
-            btnComputeContrast.IsEnabled = contrastWhiteCapture != null && contrastBlackCapture != null;
-            btnClearContrast.IsEnabled = contrastWhiteCapture != null || contrastBlackCapture != null;
+            btnComputeGamut.IsEnabled = analysisWorkflow.CanComputeGamut(cbRibbonGamutStandard?.SelectedItem as ColorGamutStandard);
+            btnClearGamut.IsEnabled = analysisWorkflow.HasAnyGamutCapture;
+            btnComputeContrast.IsEnabled = analysisWorkflow.CanComputeContrast;
+            btnClearContrast.IsEnabled = analysisWorkflow.HasAnyContrastCapture;
 
-            UpdateRecordButton(btnRecordGamutRed, gamutRedCapture, Color.FromRgb(214, 69, 65), "R");
-            UpdateRecordButton(btnRecordGamutGreen, gamutGreenCapture, Color.FromRgb(66, 165, 79), "G");
-            UpdateRecordButton(btnRecordGamutBlue, gamutBlueCapture, Color.FromRgb(52, 120, 246), "B");
-            UpdateRecordButton(btnRecordContrastWhite, contrastWhiteCapture, Color.FromRgb(160, 160, 160), Properties.Resources.SlotWhite);
-            UpdateRecordButton(btnRecordContrastBlack, contrastBlackCapture, Color.FromRgb(90, 90, 90), Properties.Resources.SlotBlack);
+            UpdateRecordButton(btnRecordGamutRed, analysisWorkflow.GamutRedCapture, Color.FromRgb(214, 69, 65), "R");
+            UpdateRecordButton(btnRecordGamutGreen, analysisWorkflow.GamutGreenCapture, Color.FromRgb(66, 165, 79), "G");
+            UpdateRecordButton(btnRecordGamutBlue, analysisWorkflow.GamutBlueCapture, Color.FromRgb(52, 120, 246), "B");
+            UpdateRecordButton(btnRecordContrastWhite, analysisWorkflow.ContrastWhiteCapture, Color.FromRgb(160, 160, 160), Properties.Resources.SlotWhite);
+            UpdateRecordButton(btnRecordContrastBlack, analysisWorkflow.ContrastBlackCapture, Color.FromRgb(90, 90, 90), Properties.Resources.SlotBlack);
         }
 
-        private static void UpdateRecordButton(Button button, MeasurementCapture? capture, Color accentColor, string slotName)
+        private (object? Content, object? ToolTip) GetRecordButtonVisualState(Button button)
         {
+            if (recordButtonVisualStates.TryGetValue(button, out var state))
+            {
+                return state;
+            }
+
+            state = (button.Content, button.ToolTip);
+            recordButtonVisualStates.Add(button, state);
+            return state;
+        }
+
+        private void UpdateRecordButton(Button button, MeasurementCapture? capture, Color accentColor, string slotName)
+        {
+            var baseState = GetRecordButtonVisualState(button);
+            button.Content = baseState.Content;
+
             if (capture == null)
             {
-                button.Content = string.Format(Properties.Resources.MsgRecordedSlot, slotName);
                 button.ClearValue(Control.BackgroundProperty);
                 button.ClearValue(Control.BorderBrushProperty);
                 button.ClearValue(Control.ForegroundProperty);
                 button.ClearValue(Control.FontWeightProperty);
+                button.ToolTip = baseState.ToolTip;
                 return;
             }
 
-            button.Content = string.Format(Properties.Resources.MsgRecordedSlot, slotName);
             button.Background = new SolidColorBrush(Color.FromArgb(64, accentColor.R, accentColor.G, accentColor.B));
             button.BorderBrush = new SolidColorBrush(accentColor);
             button.Foreground = Brushes.White;
             button.FontWeight = FontWeights.SemiBold;
-            button.ToolTip = $"{slotName} {Properties.Resources.MsgRecordedSlot}\n{Properties.Resources.MsgSlotRecordedDetail}\n{capture.PointCount}";
+            button.ToolTip = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgSlotRecordedDetail, slotName, capture.SourceDisplayName, capture.PointCount);
         }
 
-        private void btnRecordGamutRed_Click(object sender, RoutedEventArgs e)
-        {
-            RecordFocusCapture("R", capture => gamutRedCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "R"));
-        }
-
-        private void btnRecordGamutGreen_Click(object sender, RoutedEventArgs e)
-        {
-            RecordFocusCapture("G", capture => gamutGreenCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "G"));
-        }
-
-        private void btnRecordGamutBlue_Click(object sender, RoutedEventArgs e)
-        {
-            RecordFocusCapture("B", capture => gamutBlueCapture = capture, string.Format(Properties.Resources.MsgRecordedRGamut, "B"));
-        }
+        private void btnRecordGamutRed_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutRed, "R");
+        private void btnRecordGamutGreen_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutGreen, "G");
+        private void btnRecordGamutBlue_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.GamutBlue, "B");
 
         private void btnClearGamut_Click(object sender, RoutedEventArgs e)
         {
-            gamutRedCapture = null;
-            gamutGreenCapture = null;
-            gamutBlueCapture = null;
+            analysisWorkflow.ClearGamut();
             RefreshAnalysisRibbonState(ActiveView);
-            SetOperationStatus(Properties.Resources.MsgClearedGamut, Brushes.Gray);
         }
 
         private void btnComputeGamut_Click(object sender, RoutedEventArgs e)
         {
-            if (gamutRedCapture == null || gamutGreenCapture == null || gamutBlueCapture == null)
-            {
-                MessageBox.Show(this, Properties.Resources.MsgNeedRGBData, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
             if (cbRibbonGamutStandard.SelectedItem is not ColorGamutStandard standard)
             {
                 MessageBox.Show(this, Properties.Resources.MsgSelectGamutStandard, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            try
+            var (gamutResult, gamutError) = analysisWorkflow.ComputeGamut(standard);
+            if (gamutError != null)
             {
-                ColorGamutComputationResult result = batchColorGamutCalculator.Calculate(gamutRedCapture, gamutGreenCapture, gamutBlueCapture, standard);
-                ColorGamutResultWindow window = new(result)
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-                window.Show();
-                window.Activate();
-                SetOperationStatus(string.Format(Properties.Resources.MsgGamutComputed, standard.Name), Brushes.LimeGreen);
+                MessageBox.Show(this, gamutError, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
+
+            ColorGamutResultWindow window = new(gamutResult!)
             {
-                MessageBox.Show(this, ex.Message, Properties.Resources.TitleGamutCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus(Properties.Resources.MsgGamutFailed, Brushes.OrangeRed);
-            }
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.Show();
+            window.Activate();
         }
 
-        private void btnRecordContrastWhite_Click(object sender, RoutedEventArgs e)
-        {
-            RecordFocusCapture(Properties.Resources.SlotWhite, capture => contrastWhiteCapture = capture, Properties.Resources.MsgRecordedWhite);
-        }
-
-        private void btnRecordContrastBlack_Click(object sender, RoutedEventArgs e)
-        {
-            RecordFocusCapture(Properties.Resources.SlotBlack, capture => contrastBlackCapture = capture, Properties.Resources.MsgRecordedBlack);
-        }
+        private void btnRecordContrastWhite_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.ContrastWhite, Properties.Resources.SlotWhite);
+        private void btnRecordContrastBlack_Click(object sender, RoutedEventArgs e) => RecordFocusCapture(CaptureSlot.ContrastBlack, Properties.Resources.SlotBlack);
 
         private void btnClearContrast_Click(object sender, RoutedEventArgs e)
         {
-            contrastWhiteCapture = null;
-            contrastBlackCapture = null;
+            analysisWorkflow.ClearContrast();
             RefreshAnalysisRibbonState(ActiveView);
-            SetOperationStatus(Properties.Resources.MsgClearedContrast, Brushes.Gray);
         }
 
         private void btnComputeContrast_Click(object sender, RoutedEventArgs e)
         {
-            if (contrastWhiteCapture == null || contrastBlackCapture == null)
+            var (contrastResult, contrastError) = analysisWorkflow.ComputeContrast();
+            if (contrastError != null)
             {
-                MessageBox.Show(this, Properties.Resources.MsgNeedWhiteBlackData, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, contrastError, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            try
+            ContrastResultWindow window = new(contrastResult!)
             {
-                ContrastComputationResult result = batchContrastCalculator.Calculate(contrastWhiteCapture, contrastBlackCapture);
-                ContrastResultWindow window = new(result)
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-                window.Show();
-                window.Activate();
-                SetOperationStatus(Properties.Resources.MsgContrastComputed, Brushes.LimeGreen);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, ex.Message, Properties.Resources.TitleContrastCalc, MessageBoxButton.OK, MessageBoxImage.Warning);
-                SetOperationStatus(Properties.Resources.MsgContrastFailed, Brushes.OrangeRed);
-            }
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.Show();
+            window.Activate();
         }
 
-        private void RecordFocusCapture(string slotName, Action<MeasurementCapture> applyCapture, string successMessage)
+        private void RecordFocusCapture(CaptureSlot slot, string slotName)
         {
             ConoscopeView? activeView = ActiveView;
             if (activeView == null)
@@ -204,9 +165,8 @@ namespace Conoscope
                 return;
             }
 
-            applyCapture(capture);
+            analysisWorkflow.RecordCapture(slot, capture);
             RefreshAnalysisRibbonState(activeView);
-            SetOperationStatus(successMessage, Brushes.LimeGreen);
         }
     }
 }

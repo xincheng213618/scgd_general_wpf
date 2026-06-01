@@ -13,7 +13,7 @@ namespace WindowsServicePlugin
         {
             public override int Order => 2;
 
-            public override string Header => "读取服务的配置";
+            public override string Header => Properties.Resources.ReadServiceConfig;
             public override string Description => GetDescription(); 
 
             public string GetDescription()

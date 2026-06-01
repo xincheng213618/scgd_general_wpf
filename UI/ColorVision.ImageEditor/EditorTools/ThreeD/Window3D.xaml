@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
         mc:Ignorable="d"
-        Title="3D视图" Height="600" Width="1000"
+        Title="{x:Static properties:Resources.ThreeD_View3D}" Height="600" Width="1000"
         Initialized="Window_Initialized" Closed="Window_Closed">
     <Window.Resources>
         <ResourceDictionary>
@@ -30,17 +31,17 @@
                 <StackPanel Width="130">
                     <!-- Height Scale -->
                     <DockPanel>
-                        <TextBlock Text="高度缩放" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Static properties:Resources.ThreeD_HeightScale}" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Style="{StaticResource ToolBtn}" Content="+" ToolTip="增加高度 (Num+ / +)" Click="HeightScaleIncrease_Click"/>
-                            <Button Style="{StaticResource ToolBtn}" Content="-" ToolTip="减少高度 (Num- / -)" Click="HeightScaleDecrease_Click"/>
+                            <Button Style="{StaticResource ToolBtn}" Content="+" ToolTip="{x:Static properties:Resources.ThreeD_IncreaseHeightToolTip}" Click="HeightScaleIncrease_Click"/>
+                            <Button Style="{StaticResource ToolBtn}" Content="-" ToolTip="{x:Static properties:Resources.ThreeD_DecreaseHeightToolTip}" Click="HeightScaleDecrease_Click"/>
                         </StackPanel>
                     </DockPanel>
 
                     <Separator Background="#20FFFFFF" Margin="0,4"/>
 
                     <!-- Camera Position -->
-                    <TextBlock Text="相机位置" Style="{StaticResource SectionLabel}"/>
+                    <TextBlock Text="{x:Static properties:Resources.ThreeD_CameraPosition}" Style="{StaticResource SectionLabel}"/>
                     <Grid HorizontalAlignment="Center" Width="96">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
@@ -48,16 +49,16 @@
                         <Grid.RowDefinitions>
                             <RowDefinition/><RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左移 (L)" Click="CameraMoveLeft_Click"/>
-                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="前进 (T)" Click="CameraMoveForward_Click"/>
-                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右移 (R)" Click="CameraMoveRight_Click"/>
-                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="后退 (B)" Click="CameraMoveBack_Click"/>
+                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="{x:Static properties:Resources.ThreeD_MoveLeftToolTip}" Click="CameraMoveLeft_Click"/>
+                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="{x:Static properties:Resources.ThreeD_MoveForwardToolTip}" Click="CameraMoveForward_Click"/>
+                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="{x:Static properties:Resources.ThreeD_MoveRightToolTip}" Click="CameraMoveRight_Click"/>
+                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="{x:Static properties:Resources.ThreeD_MoveBackToolTip}" Click="CameraMoveBack_Click"/>
                     </Grid>
 
                     <Separator Background="#20FFFFFF" Margin="0,4"/>
 
                     <!-- Look Direction -->
-                    <TextBlock Text="视角方向" Style="{StaticResource SectionLabel}"/>
+                    <TextBlock Text="{x:Static properties:Resources.ThreeD_LookDirection}" Style="{StaticResource SectionLabel}"/>
                     <Grid HorizontalAlignment="Center" Width="96">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
@@ -65,16 +66,16 @@
                         <Grid.RowDefinitions>
                             <RowDefinition/><RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="左看 (D)" Click="LookLeft_Click"/>
-                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="上看 (A)" Click="LookUp_Click"/>
-                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="右看 (F)" Click="LookRight_Click"/>
-                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="下看 (C)" Click="LookDown_Click"/>
+                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="&#x25C0;" ToolTip="{x:Static properties:Resources.ThreeD_LookLeftToolTip}" Click="LookLeft_Click"/>
+                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25B2;" ToolTip="{x:Static properties:Resources.ThreeD_LookUpToolTip}" Click="LookUp_Click"/>
+                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="&#x25B6;" ToolTip="{x:Static properties:Resources.ThreeD_LookRightToolTip}" Click="LookRight_Click"/>
+                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="&#x25BC;" ToolTip="{x:Static properties:Resources.ThreeD_LookDownToolTip}" Click="LookDown_Click"/>
                     </Grid>
 
                     <Separator Background="#20FFFFFF" Margin="0,4"/>
 
                     <!-- Colormap Selection -->
-                    <TextBlock Text="伪彩色" Style="{StaticResource SectionLabel}"/>
+                    <TextBlock Text="{x:Static properties:Resources.ThreeD_PseudoColor}" Style="{StaticResource SectionLabel}"/>
                     <ComboBox x:Name="ComboBoxColormap" Margin="2"
                               SelectionChanged="ComboBoxColormap_SelectionChanged">
                         <ComboBox.ItemTemplate>
@@ -94,10 +95,16 @@
                     <Separator Background="#20FFFFFF" Margin="0,4"/>
 
                     <!-- Action Buttons -->
-                    <Button Style="{StaticResource ActionBtn}" Content="&#x21BB; 重置视角" ToolTip="重置相机视角 (Home)" Click="ResetViewButton_Click"/>
-                    <Button Style="{StaticResource ActionBtn}" Content="&#x1F4F7; 截图" ToolTip="保存当前3D视图为图片" Click="ScreenshotButton_Click"/>
-                    <Button Style="{StaticResource ActionBtn}" Content="导出模型" ToolTip="导出当前3D网格为 OBJ 或 STL" Click="ExportModelButton_Click"/>
-                    <Button Style="{StaticResource ActionBtn}" Content="&#x2699; 设置" ToolTip="渲染分辨率设置" Click="SettingsButton_Click"/>
+                    <Button Style="{StaticResource ActionBtn}" ToolTip="{x:Static properties:Resources.ThreeD_ResetViewToolTip}" Click="ResetViewButton_Click">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#x21BB;" Margin="0,0,4,0"/><TextBlock Text="{x:Static properties:Resources.ThreeD_ResetView}"/></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ActionBtn}" ToolTip="{x:Static properties:Resources.ThreeD_ScreenshotToolTip}" Click="ScreenshotButton_Click">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#x1F4F7;" Margin="0,0,4,0"/><TextBlock Text="{x:Static properties:Resources.ThreeD_Screenshot}"/></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ActionBtn}" Content="{x:Static properties:Resources.ThreeD_ExportModel}" ToolTip="{x:Static properties:Resources.ThreeD_ExportModelToolTip}" Click="ExportModelButton_Click"/>
+                    <Button Style="{StaticResource ActionBtn}" ToolTip="{x:Static properties:Resources.ThreeD_SettingsToolTip}" Click="SettingsButton_Click">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#x2699;" Margin="0,0,4,0"/><TextBlock Text="{x:Static properties:Resources.ThreeD_Settings}"/></StackPanel>
+                    </Button>
                 </StackPanel>
             </Border>
 
@@ -108,13 +115,13 @@
                 <Border Background="#F0202020" CornerRadius="8" Padding="16"
                         BorderBrush="#60808080" BorderThickness="1">
                     <StackPanel Width="220">
-                        <TextBlock Text="渲染设置" Foreground="White" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"/>
-                        <TextBlock Text="目标分辨率 X:" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBlock Text="{x:Static properties:Resources.ThreeD_RenderSettings}" Foreground="White" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"/>
+                        <TextBlock Text="{x:Static properties:Resources.ThreeD_TargetResolutionX}" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,4"/>
                         <TextBox x:Name="TxtTargetX" Margin="0,0,0,8" Padding="4,2"/>
-                        <TextBlock Text="目标分辨率 Y:" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBlock Text="{x:Static properties:Resources.ThreeD_TargetResolutionY}" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,4"/>
                         <TextBox x:Name="TxtTargetY" Margin="0,0,0,12" Padding="4,2"/>
-                        <TextBlock Text="修改后需点击应用重新渲染" Foreground="#999999" FontSize="10" Margin="0,0,0,8"/>
-                        <Button Content="应用并刷新" Click="ApplySettings_Click" Padding="8,4"
+                        <TextBlock Text="{x:Static properties:Resources.ThreeD_ApplyNote}" Foreground="#999999" FontSize="10" Margin="0,0,0,8"/>
+                        <Button Content="{x:Static properties:Resources.ThreeD_ApplyRefresh}" Click="ApplySettings_Click" Padding="8,4"
                                 HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Border>

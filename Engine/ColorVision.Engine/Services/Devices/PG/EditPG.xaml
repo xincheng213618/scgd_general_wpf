@@ -24,10 +24,10 @@
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                 <StackPanel x:Name="EditStackPanel">
 
-                    <GroupBox Header="配置信息" Margin="0,5">
+                    <GroupBox Header="{x:Static properties:Resources.ConfigerInfo}" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
-                                <TextBlock Text="类别型号" Width="140"/>
+                                <TextBlock Text="{x:Static properties:Resources.CategoryModel}" Width="140"/>
                                 <ComboBox x:Name="pgCategory" DisplayMemberPath="Key" Text="{Binding Category}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
@@ -35,15 +35,15 @@
                                 <ui:ToggleSwitch x:Name="IsNet"  IsChecked="{Binding  IsNet}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
-                                <TextBlock  x:Name="TextBlockPGIP"  Text="IP地址" Width="140"/>
+                                <TextBlock  x:Name="TextBlockPGIP"  Text="{x:Static properties:Resources.IPAddress}" Width="140"/>
                                 <TextBox Text="{Binding Addr}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
-                                <TextBlock  x:Name="TextBlockPGPort"   Text="端口" Width="140"/>
+                                <TextBlock  x:Name="TextBlockPGPort"   Text="{x:Static properties:Resources.Port}" Width="140"/>
                                 <TextBox Text="{Binding Port}"/>
                             </DockPanel>
                             <DockPanel x:Name="RegisterAddressDockPanel" Margin="0,2" >
-                                <TextBlock  Text="寄存器地址" Width="140"/>
+                                <TextBlock  Text="{x:Static properties:Resources.RegisterAddress}" Width="140"/>
                                 <TextBox Text="{Binding RegisterAddress}"/>
                             </DockPanel>
                             <DockPanel x:Name="CH341_Stream_SpeedDock"  Margin="0,2" >

@@ -10,7 +10,7 @@ using System.Windows;
 namespace ColorVision.Solution.Editor
 {
 
-    [GenericEditor("WebView2编辑器"), FolderEditor("WebView2编辑器")]
+    [GenericEditor("WebView2编辑器", resourceKey: "Sol_Editor_WebView2"), FolderEditor("WebView2编辑器", resourceKey: "Sol_Editor_WebView2")]
     public class WebView2Editor : EditorBase
     {
         public override void Open(string filePath)

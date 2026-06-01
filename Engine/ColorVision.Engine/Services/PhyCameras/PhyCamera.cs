@@ -318,7 +318,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"创建 Restore 文件失败: {ex.Message}");
+                MessageBox.Show(string.Format(Properties.Resources.CreateRestoreFileFailed, ex.Message));
             }
             finally
             {
@@ -369,7 +369,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     }
                 }
                 SaveConfig();
-                MessageBox.Show(Application.Current.GetActiveWindow(),"还原成功");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.RestoreSucceeded);
             }
             catch(Exception ex)
             {
@@ -436,18 +436,13 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void CalibrationTemplateOpen(object sender)
         {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
             var ITemplate = new TemplateCalibrationParam(this);
             new TemplateEditorWindow(ITemplate) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
         public void Reset()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(),"是否清除数据库相关项","ColorVision",MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ClearDatabaseItems, Properties.Resources.Reset, MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
             {
                 CalibrationParams.Clear();
                 this.VisualChildren.Clear();
@@ -467,7 +462,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public override void Delete()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, Properties.Resources.Delete, MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
 
@@ -629,12 +624,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 return LicenseState switch
                 {
-                    LicenseState.Unlicensed => "无许可证",
-                    LicenseState.Expired => "已过期",
-                    LicenseState.Invalid => "异常",
-                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => "即将到期",
-                    LicenseState.Licensed => "有效",
-                    _ => "异常",
+                    LicenseState.Unlicensed => Properties.Resources.LicenseStatusUnlicensed,
+                    LicenseState.Expired => Properties.Resources.LicenseStatusExpired,
+                    LicenseState.Invalid => Properties.Resources.LicenseStatusInvalid,
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => Properties.Resources.LicenseStatusExpiringSoon,
+                    LicenseState.Licensed => Properties.Resources.LicenseStatusValid,
+                    _ => Properties.Resources.LicenseStatusInvalid,
                 };
             }
         }
@@ -645,12 +640,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 return LicenseState switch
                 {
-                    LicenseState.Unlicensed => "无许可证",
-                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => $"许可证已过期 {expiryDate:yyyy-MM-dd}",
-                    LicenseState.Invalid => "许可证异常",
-                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => $"许可证即将到期 {expiryDate:yyyy-MM-dd}",
-                    LicenseState.Licensed => "许可证有效",
-                    _ => "许可证异常",
+                    LicenseState.Unlicensed => Properties.Resources.LicenseStatusUnlicensed,
+                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => string.Format(Properties.Resources.LicenseBadgeExpired, $"{expiryDate:yyyy-MM-dd}"),
+                    LicenseState.Invalid => Properties.Resources.LicenseBadgeInvalid,
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => string.Format(Properties.Resources.LicenseBadgeExpiringSoon, $"{expiryDate:yyyy-MM-dd}"),
+                    LicenseState.Licensed => Properties.Resources.LicenseBadgeValid,
+                    _ => Properties.Resources.LicenseBadgeInvalid,
                 };
             }
         }
@@ -688,10 +683,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 return LicenseState switch
                 {
-                    LicenseState.Unlicensed => "当前未检测到许可证，请导入或申请许可证。",
-                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => $"许可证已过期（{expiryDate:yyyy-MM-dd}）",
-                    LicenseState.Invalid => "许可证状态异常，请检查许可证内容。",
-                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => $"许可证即将到期（{expiryDate:yyyy-MM-dd}）",
+                    LicenseState.Unlicensed => Properties.Resources.LicenseAlertNoLicense,
+                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => string.Format(Properties.Resources.LicenseAlertExpired, $"{expiryDate:yyyy-MM-dd}"),
+                    LicenseState.Invalid => Properties.Resources.LicenseAlertInvalid,
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => string.Format(Properties.Resources.LicenseAlertExpiringSoon, $"{expiryDate:yyyy-MM-dd}"),
                     _ => string.Empty,
                 };
             }
@@ -705,10 +700,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 return LicenseState switch
                 {
-                    LicenseState.Unlicensed => "无许可证",
-                    LicenseState.Expired => "许可证过期",
-                    LicenseState.Invalid => "许可证异常",
-                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => "即将到期",
+                    LicenseState.Unlicensed => Properties.Resources.LicenseStatusUnlicensed,
+                    LicenseState.Expired => Properties.Resources.LicenseListTagExpired,
+                    LicenseState.Invalid => Properties.Resources.LicenseListTagInvalid,
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => Properties.Resources.LicenseStatusExpiringSoon,
                     _ => string.Empty,
                 };
             }
@@ -721,17 +716,17 @@ namespace ColorVision.Engine.Services.PhyCameras
             get
             {
                 if (CameraLicenseModel == null || CameraLicenseModel.ExpiryDate == null)
-                    return "无许可证";
-                
+                    return Properties.Resources.LicenseStatusUnlicensed;
+
                 var expiryDate = CameraLicenseModel.ExpiryDate.Value;
                 if (expiryDate < DateTime.Now)
-                    return $"已过期 ({expiryDate:yyyy-MM-dd})";
-                
+                    return string.Format(Properties.Resources.LicenseExpiryExpired, $"{expiryDate:yyyy-MM-dd}");
+
                 var daysRemaining = (expiryDate - DateTime.Now).Days;
                 if (daysRemaining <= 30)
-                    return $"剩余 {daysRemaining} 天 ({expiryDate:yyyy-MM-dd})";
-                
-                return $"有效期至 {expiryDate:yyyy-MM-dd}";
+                    return string.Format(Properties.Resources.LicenseExpiryDaysRemaining, daysRemaining, $"{expiryDate:yyyy-MM-dd}");
+
+                return string.Format(Properties.Resources.LicenseExpiryValidUntil, $"{expiryDate:yyyy-MM-dd}");
             }
         }
 
@@ -769,7 +764,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             openFileDialog.RestoreDirectory = true;
             openFileDialog.Multiselect = true; // 允许多选
             openFileDialog.Filter = "All files (*.*)|*.zip;*.lic"; // 可以设置特定的文件类型过滤器
-            openFileDialog.Title = "请选择许可证文件 " + SysResourceModel.Code;
+            openFileDialog.Title = string.Format(Properties.Resources.SelectLicenseFileWithCode, SysResourceModel.Code);
             openFileDialog.FilterIndex = 1;
             
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -819,7 +814,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 DeviceCamera?.RestartRCService();
                             }
 
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.AddSuccess)}", Properties.Resources.ModifyLicense);
                             if (ret == -1)
                             {
                                 return false;
@@ -830,7 +825,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExtractionFailed} :{ex.Message}", Properties.Resources.ModifyLicense);
                     return false;
                 }
             }
@@ -856,7 +851,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         DeviceCalibration?.RestartRCService();
                         DeviceCamera?.RestartRCService();
                     }
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.UpdateSuccess)}", Properties.Resources.ModifyLicense);
                     if (ret == -1)
                     {
                         return false;
@@ -865,12 +860,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
                 else
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "该相机不支持此许可证", "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseNotSupportedForCamera, Properties.Resources.ModifyLicense);
                 }
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, Properties.Resources.ModifyLicense);
             }
             return false;
         }
@@ -879,18 +874,18 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (CameraLicenseModel == null || string.IsNullOrEmpty(CameraLicenseModel.LicenseValue))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, Properties.Resources.CopyLicense);
                 return;
             }
 
             try
             {
                 Common.NativeMethods.Clipboard.SetText(CameraLicenseModel.LicenseValue);
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, Properties.Resources.CopyLicense);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", Properties.Resources.CopyLicense);
             }
         }
 
@@ -898,7 +893,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (CameraLicenseModel == null || string.IsNullOrEmpty(CameraLicenseModel.LicenseValue))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, Properties.Resources.ExportLicense);
                 return;
             }
 
@@ -915,12 +910,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     File.WriteAllText(saveFileDialog.FileName, CameraLicenseModel.LicenseValue, Encoding.UTF8);
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, Properties.Resources.ExportLicense);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", Properties.Resources.ExportLicense);
             }
         }
 
@@ -948,7 +943,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
 
             UploadList.Clear();
-            UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            UploadWindow uploadwindow = new UploadWindow(Properties.Resources.CalibrationFileFilter) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
                 UploadMsg uploadMsg = new UploadMsg(this);
@@ -967,7 +962,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public async void UploadData(string DesPath, string UploadFilePath)
         {
-            Msg = "正在解压文件：" + " 请稍后...";
+            Msg = Properties.Resources.ExtractingFilePleaseWait;
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))
             {
@@ -975,12 +970,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);
-                Msg = "正在解析校正文件：" + " 请稍后...";
+                Msg = Properties.Resources.ParsingCalibrationFilePleaseWait;
                 bool sss = ZIPHelper.ExtractToDirectoryWithOverwrite(UploadFilePath, path);
                 if (!sss)
                 {
-                    Msg = "解压失败";
-                    MessageBox.Show("解压失败");
+                    Msg = Properties.Resources.ExtractionFailedMessage;
+                    MessageBox.Show(Properties.Resources.ExtractionFailedMessage);
                     await Task.Delay(100);
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                     return;
@@ -1085,7 +1080,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         }
 
                         uploadMeta.UploadStatus = UploadStatus.Uploading;
-                        Msg = "正在上传校正文件：" + item.Title + " 请稍后...";
+                        Msg = string.Format(Properties.Resources.UploadingCalibrationFilePleaseWait, item.Title);
                         await Task.Delay(10);
 
                         try
@@ -1184,11 +1179,11 @@ namespace ColorVision.Engine.Services.PhyCameras
                         {
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
                             });
                         }
                     }
-                    Msg = "上传结束";
+                    Msg = Properties.Resources.UploadFinished;
                     if (UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
                     {
                         SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
@@ -1208,7 +1203,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                     Application.Current.Dispatcher.Invoke(() => 
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
                         UploadClosed.Invoke(this, new EventArgs());
                     } );
                     return;
@@ -1225,7 +1220,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "属性编辑器(备用)", Command = PropertyEditorEditCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.PropertyEditorFallback, Command = PropertyEditorEditCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuCopy, Command = CopyConfigCommand });
         }

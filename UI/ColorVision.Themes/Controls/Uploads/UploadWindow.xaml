@@ -6,8 +6,9 @@
         xmlns:local="clr-namespace:ColorVision.Themes.Controls.Uploads"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:controls ="clr-namespace:ColorVision.Themes.Controls.Uploads"
+        xmlns:properties="clr-namespace:ColorVision.Themes.Properties"
         mc:Ignorable="d"
-        Title="上传" Height="300" Width="600" AllowDrop="True" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" >
+        Title="{x:Static properties:Resources.Upload_Title}" Height="300" Width="600" AllowDrop="True" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" >
     <Grid>
         <Image x:Name="backImage" Stretch="UniformToFill">
             <Image.Effect>
@@ -16,7 +17,7 @@
         </Image>
         <controls:UploadControl  x:Name="Upload1"  Margin="30"/>
         <DockPanel  x:Name="ButtonUpload" HorizontalAlignment="Center" Visibility="Collapsed" VerticalAlignment="Center" Margin="0,100,0,0">
-            <Button Content="上传"  Click="Button_Click_1" Width="150" Height="25"/>
+            <Button Content="{x:Static properties:Resources.Upload_Upload}"  Click="Button_Click_1" Width="150" Height="25"/>
         </DockPanel>
     </Grid>
 </Window>

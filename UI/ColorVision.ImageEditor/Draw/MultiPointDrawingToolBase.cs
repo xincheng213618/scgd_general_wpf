@@ -78,7 +78,7 @@ namespace ColorVision.ImageEditor.Draw
                     PropertyName = nameof(StyleConfig.StrokeBrush),
                     Order = 10,
                     EditorKind = CompactInspectorEditorKind.Brush,
-                    ToolTip = "线条颜色",
+                    ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LineColor,
                 },
                 new CompactInspectorPropertyItem
                 {
@@ -88,7 +88,7 @@ namespace ColorVision.ImageEditor.Draw
                     Width = 56,
                     Order = 20,
                     EditorKind = CompactInspectorEditorKind.Number,
-                    ToolTip = "线宽",
+                    ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LineWidth,
                 },
             };
         }

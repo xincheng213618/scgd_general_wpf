@@ -1,5 +1,4 @@
 using Conoscope.Core;
-using Conoscope.Presentation.Helpers;
 using System;
 using System.Windows;
 
@@ -10,7 +9,13 @@ namespace Conoscope
         ExportChannel ExportChannel,
         ConoscopeCoordinateReferenceMode ReferenceMode,
         double ReferenceValue,
-        double ReferenceMaximum)
+        double ReferenceMaximum,
+        ContrastReferenceKind ContrastImageKind,
+        ColorDifferenceReferenceMode ColorDifferenceReferenceMode,
+        double ColorDifferenceCustomU,
+        double ColorDifferenceCustomV,
+        bool CanUseDerivedChannels,
+        bool CanUseContrastChannel)
     {
         public string ReferenceLabel => ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.LabelAzimuthDegLabel : Properties.Resources.LabelPolarDegLabel;
     }
@@ -21,13 +26,13 @@ namespace Conoscope
 
         public bool TryGetWindowQuickControlState(out ConoscopeWindowQuickControlState state)
         {
-            if (!HasXyzData())
+            if (!HasDisplayData())
             {
                 state = default;
                 return false;
             }
 
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             double referenceValue = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
                 ? axisParam.ReferenceAngle
                 : axisParam.ReferenceRadiusAngle;
@@ -38,12 +43,28 @@ namespace Conoscope
                 GetSelectedExportChannel(),
                 axisParam.ReferenceMode,
                 referenceValue,
-                referenceMaximum);
+                referenceMaximum,
+                GetCurrentContrastImageKind(),
+                GetSelectedColorDifferenceReferenceMode(),
+                ColorDifferenceConfig.CustomU,
+                ColorDifferenceConfig.CustomV,
+                HasXyzData(),
+                HasXyzData() && CanOfferContrastChannel());
             return true;
         }
 
         public void SetWindowQuickDisplayChannel(ExportChannel channel)
         {
+            if (RequiresFullXyzData(channel) && !HasXyzData())
+            {
+                channel = ExportChannel.Y;
+            }
+
+            if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
+            {
+                channel = ExportChannel.Y;
+            }
+
             if (RenderingConfig.DisplayChannel == channel)
             {
                 return;
@@ -52,8 +73,20 @@ namespace Conoscope
             RenderingConfig.DisplayChannel = channel;
             RefreshDisplayControlsFromConfig();
 
-            if (!HasXyzData())
+            if (!HasDisplayData())
             {
+                return;
+            }
+
+            if (channel == ExportChannel.ColorDifference && !CanRefreshColorDifferenceDisplay())
+            {
+                RaiseWindowQuickControlStateChanged();
+                return;
+            }
+
+            if (channel == ExportChannel.Contrast && !CanRefreshContrastDisplay())
+            {
+                RaiseWindowQuickControlStateChanged();
                 return;
             }
 
@@ -65,13 +98,13 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"刷新显示通道失败: {ex.Message}", ex);
-                MessageBox.Show(ex.Message, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(ex.Message, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
         public void SetWindowQuickReferenceMode(ConoscopeCoordinateReferenceMode mode)
         {
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             if (axisParam.ReferenceMode == mode)
             {
                 return;
@@ -84,18 +117,38 @@ namespace Conoscope
 
         public void SetWindowQuickExportChannel(ExportChannel channel)
         {
+            if (RequiresFullXyzData(channel) && !HasXyzData())
+            {
+                channel = ExportChannel.Y;
+            }
+
+            if (channel == ExportChannel.Contrast && !CanOfferContrastChannel())
+            {
+                channel = ExportChannel.Y;
+            }
+
             if (GetSelectedExportChannel() == channel)
             {
                 return;
             }
 
-            ComboBoxHelper.SelectItemByTag(cbExportChannel, channel.ToString());
+            selectedExportChannel = channel;
             RaiseWindowQuickControlStateChanged();
+        }
+
+        public void SetWindowQuickContrastImageKind(ContrastReferenceKind kind)
+        {
+            ApplyContrastImageKind(kind, refreshDisplay: true);
+        }
+
+        public void SaveWindowQuickColorDifferenceReference()
+        {
+            SaveCurrentAsGlobalColorDifferenceReference();
         }
 
         public void SetWindowQuickReferenceValue(double value)
         {
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 axisParam.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(value);

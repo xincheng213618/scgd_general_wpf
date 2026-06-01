@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Media
 {
@@ -78,23 +79,19 @@ namespace ColorVision.Engine.Media
             MagnigifierType = source.MagnigifierType;
         }
 
-        [DisplayName("取样形状")]
-        [Description("控制探针按圆形还是矩形范围取样。")]
+        [Display(Name = "Engine_PG_SampleShape", Description = "Engine_PG_SampleShapeDesc", ResourceType = typeof(Properties.Resources))]
         public MagnigifierType MagnigifierType { get => _magnigifierType; set { _magnigifierType = value; OnPropertyChanged(); } }
         private MagnigifierType _magnigifierType = MagnigifierType.Circle;
 
-        [DisplayName("取样半径")]
-        [Description("Circle 取样时使用的半径。")]
+        [Display(Name = "Engine_PG_SampleRadius", Description = "Engine_PG_SampleRadiusDesc", ResourceType = typeof(Properties.Resources))]
         public double Radius { get => _radius; set { _radius = value; OnPropertyChanged(); } }
         private double _radius = 100;
 
-        [DisplayName("矩形宽度")]
-        [Description("Rect 取样时使用的矩形宽度。")]
+        [Display(Name = "Engine_PG_RectWidth", Description = "Engine_PG_RectWidthDesc", ResourceType = typeof(Properties.Resources))]
         public int RectWidth { get => _rectWidth; set { _rectWidth = value; OnPropertyChanged(); } }
         private int _rectWidth = 120;
 
-        [DisplayName("矩形高度")]
-        [Description("Rect 取样时使用的矩形高度。")]
+        [Display(Name = "Engine_PG_RectHeight", Description = "Engine_PG_RectHeightDesc", ResourceType = typeof(Properties.Resources))]
         public int RectHeight { get => _rectHeight; set { _rectHeight = value; OnPropertyChanged(); } }
         private int _rectHeight = 120;
     }

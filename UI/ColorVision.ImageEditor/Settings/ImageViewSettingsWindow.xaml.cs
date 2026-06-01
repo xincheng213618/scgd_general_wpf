@@ -1,3 +1,4 @@
+﻿using ColorVision.ImageEditor.Properties;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -205,11 +206,11 @@ namespace ColorVision.ImageEditor.Settings
         {
             return scope switch
             {
-                ImageViewSettingScope.CurrentView => "作用域：当前视窗",
-                ImageViewSettingScope.GlobalDefault => "作用域：全局默认值",
-                ImageViewSettingScope.LoaderDefault => "作用域：打开器默认值",
-                ImageViewSettingScope.Workspace => "作用域：当前工作台",
-                _ => "作用域：未分类",
+                ImageViewSettingScope.CurrentView => Properties.Resources.Settings_ScopeCurrentView,
+                ImageViewSettingScope.GlobalDefault => Properties.Resources.Settings_ScopeGlobalDefault,
+                ImageViewSettingScope.LoaderDefault => Properties.Resources.Settings_ScopeLoaderDefault,
+                ImageViewSettingScope.Workspace => Properties.Resources.Settings_ScopeWorkspace,
+                _ => Properties.Resources.Settings_ScopeUncategorized,
             };
         }
 

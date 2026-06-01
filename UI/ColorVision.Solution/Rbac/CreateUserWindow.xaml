@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
         mc:Ignorable="d"
-        Title="创建新用户 - RBAC" Height="520" Width="520" 
+        Title="{x:Static properties:Resources.Sol_CreateUser_Title}" Height="520" Width="520" 
         WindowStartupLocation="CenterOwner" 
         Background="Transparent" 
         AllowsTransparency="True" 
@@ -44,8 +45,8 @@
                     <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="28" 
                                Foreground="White" VerticalAlignment="Center" Margin="0,0,15,0"/>
                     <StackPanel>
-                        <TextBlock Text="创建新用户" FontSize="20" FontWeight="SemiBold" Foreground="White"/>
-                        <TextBlock Text="填写用户信息并分配角色" FontSize="12" Foreground="White" Opacity="0.8" Margin="0,2,0,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_Title}" FontSize="20" FontWeight="SemiBold" Foreground="White"/>
+                        <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_Subtitle}" FontSize="12" Foreground="White" Opacity="0.8" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -58,11 +59,11 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,8,0"/>
-                            <TextBlock Text="用户名" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_Username}" FontSize="14" FontWeight="SemiBold"/>
                             <TextBlock Text="*" Foreground="Red" Margin="4,0,0,0"/>
                         </StackPanel>
                         <TextBox x:Name="TxtUsername" Padding="12,10" FontSize="14"/>
-                        <TextBlock Text="用户登录名，必须唯一" FontSize="11" Opacity="0.5" Margin="0,4,0,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_UsernameDesc}" FontSize="11" Opacity="0.5" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <!-- Password -->
@@ -70,11 +71,11 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,8,0"/>
-                            <TextBlock Text="密码" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_Password}" FontSize="14" FontWeight="SemiBold"/>
                             <TextBlock Text="*" Foreground="Red" Margin="4,0,0,0"/>
                         </StackPanel>
                         <PasswordBox x:Name="TxtPassword" Padding="12,10" FontSize="14"/>
-                        <TextBlock Text="至少6个字符" FontSize="11" Opacity="0.5" Margin="0,4,0,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_PasswordDesc}" FontSize="11" Opacity="0.5" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <!-- Role -->
@@ -82,10 +83,10 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,8,0"/>
-                            <TextBlock Text="角色" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_Role}" FontSize="14" FontWeight="SemiBold"/>
                         </StackPanel>
                         <ComboBox x:Name="CmbRole" Padding="12,10" FontSize="14"/>
-                        <TextBlock Text="选择用户的初始角色" FontSize="11" Opacity="0.5" Margin="0,4,0,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_RoleDesc}" FontSize="11" Opacity="0.5" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <!-- Remark -->
@@ -93,11 +94,11 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <TextBlock Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
                                        Foreground="{DynamicResource StatusBarBackgroundBrush}" Margin="0,0,8,0"/>
-                            <TextBlock Text="备注" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_Remark}" FontSize="14" FontWeight="SemiBold"/>
                         </StackPanel>
                         <TextBox x:Name="TxtRemark" Padding="12,10" FontSize="14" Height="80"
                                  TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
-                        <TextBlock Text="用户的描述信息（可选）" FontSize="11" Opacity="0.5" Margin="0,4,0,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Sol_CreateUser_RemarkDesc}" FontSize="11" Opacity="0.5" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <!-- Status Message -->
@@ -116,9 +117,9 @@
             <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="30,20"
                     Background="{DynamicResource ButtonBackground}" CornerRadius="0,0,12,12">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="BtnCancel" Content="取消" Width="100" Margin="0,0,10,0"
+                    <Button x:Name="BtnCancel" Content="{x:Static properties:Resources.Sol_CreateUser_Cancel}" Width="100" Margin="0,0,10,0"
                             Style="{StaticResource SecondaryButton}" Click="BtnCancel_Click"/>
-                    <Button x:Name="BtnCreate" Content="创建用户" Width="120"
+                    <Button x:Name="BtnCreate" Content="{x:Static properties:Resources.Sol_CreateUser_Create}" Width="120"
                             Style="{StaticResource PrimaryButton}" Click="BtnCreate_Click"/>
                 </StackPanel>
             </Border>

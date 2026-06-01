@@ -19,7 +19,7 @@ namespace ColorVision.Themes.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -102,6 +102,24 @@ namespace ColorVision.Themes.Properties {
         public static string Minimize {
             get {
                 return ResourceManager.GetString("Minimize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 不再提示(_O) 的本地化字符串。
+        /// </summary>
+        public static string MsgBox_DontShowAgain {
+            get {
+                return ResourceManager.GetString("MsgBox_DontShowAgain", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示 的本地化字符串。
+        /// </summary>
+        public static string MsgBox_Prompt {
+            get {
+                return ResourceManager.GetString("MsgBox_Prompt", resourceCulture);
             }
         }
         
@@ -201,6 +219,78 @@ namespace ColorVision.Themes.Properties {
         public static string TransparentWindow {
             get {
                 return ResourceManager.GetString("TransparentWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 拖拽到此处也可上传 的本地化字符串。
+        /// </summary>
+        public static string Upload_DragHint {
+            get {
+                return ResourceManager.GetString("Upload_DragHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件 的本地化字符串。
+        /// </summary>
+        public static string Upload_File {
+            get {
+                return ResourceManager.GetString("Upload_File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件大小 的本地化字符串。
+        /// </summary>
+        public static string Upload_FileSize {
+            get {
+                return ResourceManager.GetString("Upload_FileSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 您未选择文件 的本地化字符串。
+        /// </summary>
+        public static string Upload_NoFileSelected {
+            get {
+                return ResourceManager.GetString("Upload_NoFileSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 结果 的本地化字符串。
+        /// </summary>
+        public static string Upload_Result {
+            get {
+                return ResourceManager.GetString("Upload_Result", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择文件 的本地化字符串。
+        /// </summary>
+        public static string Upload_SelectFile {
+            get {
+                return ResourceManager.GetString("Upload_SelectFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上传 的本地化字符串。
+        /// </summary>
+        public static string Upload_Title {
+            get {
+                return ResourceManager.GetString("Upload_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上传 的本地化字符串。
+        /// </summary>
+        public static string Upload_Upload {
+            get {
+                return ResourceManager.GetString("Upload_Upload", resourceCulture);
             }
         }
         

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Windows;
@@ -42,6 +43,19 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DVCircleText : DrawingVisualBase<CircleTextProperties>, IDrawingVisual,ICircle, ILayoutScaleDrawingVisual, ICompactInspectorProvider
     {
+        private static readonly Vector[] TextOutlineDirections =
+        {
+            new Vector(-1, 0),
+            new Vector(1, 0),
+            new Vector(0, -1),
+            new Vector(0, 1),
+            new Vector(-1, -1),
+            new Vector(-1, 1),
+            new Vector(1, -1),
+            new Vector(1, 1)
+        };
+        private static readonly Brush TextOutlineBrush = CreateFrozenBrush(Color.FromArgb(224, 0, 0, 0));
+
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
@@ -77,16 +91,39 @@ namespace ColorVision.ImageEditor.Draw
             double size = 0;
             if (Attribute.IsShowText)
             {
-                FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = CreateFormattedText(TextAttribute.Text, TextAttribute.Brush);
                 size = formattedText.Width / 2;
-                dc.DrawText(formattedText, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2));
+                DrawOutlinedText(dc, TextAttribute.Text, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2), TextAttribute.Brush);
             }
 
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
-                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(Attribute.Center.X + size +Radius/2, Attribute.Center.Y - formattedText.Height / 2));
+                FormattedText formattedText = CreateFormattedText(Attribute.Msg, TextAttribute.Brush);
+                DrawOutlinedText(dc, Attribute.Msg, new Point(Attribute.Center.X + size + Radius / 2, Attribute.Center.Y - formattedText.Height / 2), TextAttribute.Brush);
             }
+        }
+
+        private void DrawOutlinedText(DrawingContext dc, string text, Point origin, Brush foreground)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            FormattedText outlineText = CreateFormattedText(text, TextOutlineBrush);
+            double offset = Math.Max(1.0, TextAttribute.FontSize / 18.0);
+            foreach (Vector direction in TextOutlineDirections)
+            {
+                dc.DrawText(outlineText, origin + direction * offset);
+            }
+
+            FormattedText mainText = CreateFormattedText(text, foreground);
+            dc.DrawText(mainText, origin);
+        }
+
+        private FormattedText CreateFormattedText(string text, Brush brush)
+        {
+            return new FormattedText(text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
         }
 
         public override Rect GetRect()
@@ -105,10 +142,17 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "填充" },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = "文本" },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "字号" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Fill },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Text },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FontSize },
             };
+        }
+
+        private static Brush CreateFrozenBrush(Color color)
+        {
+            SolidColorBrush brush = new(color);
+            brush.Freeze();
+            return brush;
         }
     }
 

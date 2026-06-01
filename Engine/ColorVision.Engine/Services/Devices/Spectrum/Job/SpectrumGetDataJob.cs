@@ -2,6 +2,7 @@
 using Quartz;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,7 +10,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Job
 {
-    [DisplayName("光谱仪单次测试")]
+    [Display(Name = "Engine_PG_SingleSpectrumTest", ResourceType = typeof(Properties.Resources))]
     public class SpectrumGetDataJob : IJob, IConfigurableJob
     {
         public Type ConfigType => typeof(SpectrumGetDataJobConfig);

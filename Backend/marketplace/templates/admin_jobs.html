@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}任务管理 - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header-title"><i class="bi bi-clock"></i> 定时任务</h1>
+    <p class="page-header-desc">查看、启用/禁用和手动执行定时任务</p>
+</div>
+
+{% for job in jobs %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <h6 class="card-title mb-1">
+                    {{ job.name }}
+                    {% if job.enabled %}
+                        <span class="badge bg-success ms-1">启用</span>
+                    {% else %}
+                        <span class="badge bg-secondary ms-1">禁用</span>
+                    {% endif %}
+                </h6>
+                <small class="text-muted">
+                    ID: {{ job.id }} | 类型: {{ job.job_type }} | 间隔: {{ job.interval_seconds }}s
+                    {% if job.next_run_at %}
+                        | 下次运行: {{ (job.next_run_at or '')[:19] }}
+                    {% endif %}
+                </small>
+            </div>
+            <div class="d-flex gap-1">
+                <button class="btn btn-primary btn-sm" onclick="runJob('{{ job.id }}', this)" title="手动运行">
+                    <i class="bi bi-play me-1"></i>运行
+                </button>
+                {% if job.enabled %}
+                <button class="btn btn-outline-secondary btn-sm" onclick="toggleJob('{{ job.id }}', false)">禁用</button>
+                {% else %}
+                <button class="btn btn-outline-success btn-sm" onclick="toggleJob('{{ job.id }}', true)">启用</button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if job.recent_runs %}
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead><tr><th>状态</th><th>耗时</th><th>摘要</th><th>错误</th><th>时间</th></tr></thead>
+                <tbody>
+                {% for run in job.recent_runs[:5] %}
+                <tr>
+                    <td>
+                        {% if run.status == 'success' %}
+                            <span class="badge bg-success">成功</span>
+                        {% elif run.status == 'error' %}
+                            <span class="badge bg-danger">失败</span>
+                        {% else %}
+                            <span class="badge bg-warning">{{ run.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ run.duration_ms }}ms</td>
+                    <td style="font-size:0.78rem;max-width:300px;overflow:hidden;text-overflow:ellipsis">{{ run.summary or '' }}</td>
+                    <td style="font-size:0.78rem" class="text-danger">{{ run.error or '' }}</td>
+                    <td class="text-muted" style="font-size:0.75rem">{{ (run.started_at or '')[:19] }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0" style="font-size:0.82rem">暂无执行记录</p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<div id="jobResult"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showResult(html) {
+    document.getElementById('jobResult').innerHTML = html;
+    setTimeout(() => document.getElementById('jobResult').innerHTML = '', 5000);
+}
+
+async function runJob(jobId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    try {
+        const resp = await fetch(`/api/admin/jobs/${jobId}/run`, { method: 'POST' });
+        const data = await resp.json();
+        const statusClass = data.status === 'success' ? 'success' : 'danger';
+        showResult(`<div class="alert alert-${statusClass}">${data.job_id}: ${data.status} (${data.duration_ms}ms) - ${data.summary || ''}</div>`);
+        setTimeout(() => location.reload(), 2000);
+    } catch (e) {
+        showResult(`<div class="alert alert-danger">运行失败: ${e.message}</div>`);
+    }
+}
+
+async function toggleJob(jobId, enable) {
+    const action = enable ? 'enable' : 'disable';
+    await fetch(`/api/admin/jobs/${jobId}/${action}`, { method: 'POST' });
+    location.reload();
+}
+</script>
+{% endblock %}

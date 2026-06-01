@@ -1,5 +1,6 @@
 using ColorVision.Themes;
 using log4net;
+using ColorVision.Database.Properties;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -58,7 +59,7 @@ namespace ColorVision.Database
         private void LoadProviders()
         {
             _nodes.Clear();
-            ClearTableView("请选择一个表", "从左侧展开数据源、库和表。", "就绪");
+            ClearTableView(Properties.Resources.DB_SelectTable, Properties.Resources.DB_ExpandHint, Properties.Resources.DB_Ready);
 
             try
             {
@@ -69,11 +70,11 @@ namespace ColorVision.Database
                 }
 
                 ProviderSummaryText.Text = $"共 {providers.Count} 个数据源";
-                StatusText.Text = providers.Count == 0 ? "没有注册数据库浏览器数据源" : "就绪";
+                StatusText.Text = providers.Count == 0 ? Properties.Resources.DB_NoDataSource : Properties.Resources.DB_Ready;
             }
             catch (Exception ex)
             {
-                ProviderSummaryText.Text = "加载失败";
+                ProviderSummaryText.Text = Properties.Resources.DB_LoadFailed;
                 StatusText.Text = GetBaseMessage(ex);
                 log.Error("加载数据库浏览器数据源失败", ex);
             }
@@ -108,7 +109,7 @@ namespace ColorVision.Database
                         node.Children.Add(DatabaseTreeNode.CreateCatalog(provider, database));
 
                     if (databases.Count == 0)
-                        node.Children.Add(DatabaseTreeNode.CreateError("没有可浏览的库"));
+                        node.Children.Add(DatabaseTreeNode.CreateError(Properties.Resources.DB_NoDatabase));
                 }
                 else if (node.NodeType == DatabaseTreeNodeType.Catalog && node.Provider != null && node.Catalog != null)
                 {
@@ -121,7 +122,7 @@ namespace ColorVision.Database
                         node.Children.Add(DatabaseTreeNode.CreateTable(provider, catalog, table));
 
                     if (tables.Count == 0)
-                        node.Children.Add(DatabaseTreeNode.CreateError("没有数据表"));
+                        node.Children.Add(DatabaseTreeNode.CreateError(Properties.Resources.DB_NoTable));
                 }
 
                 node.IsLoaded = true;
@@ -165,7 +166,7 @@ namespace ColorVision.Database
 
             try
             {
-                SetBusy(true, $"加载 {table.TableName}...");
+                SetBusy(true, $"{Properties.Resources.DB_Loading} {table.TableName}...");
                 TableTitleText.Text = table.TableName;
                 TableSourceText.Text = $"{table.ProviderName} / {table.DatabaseName}";
                 TableMetaText.Text = string.Empty;
@@ -186,7 +187,7 @@ namespace ColorVision.Database
             }
             catch (Exception ex)
             {
-                ClearTableView(table.TableName, $"{table.ProviderName} / {table.DatabaseName}", $"加载失败: {GetBaseMessage(ex)}");
+                ClearTableView(table.TableName, $"{table.ProviderName} / {table.DatabaseName}", $"{Properties.Resources.DB_LoadFailed}: {GetBaseMessage(ex)}");
                 log.Error($"加载表 {table.TableName} 失败", ex);
             }
             finally
@@ -208,7 +209,7 @@ namespace ColorVision.Database
             var sortColumn = _sortColumn;
             var sortDirection = _sortDirection;
 
-            SetBusy(true, "查询中...");
+            SetBusy(true, Properties.Resources.DB_Querying);
             var page = await Task.Run(() => provider.QueryPage(table, pageIndex, pageSize, keyword, sortColumn, sortDirection), token);
             token.ThrowIfCancellationRequested();
 
@@ -221,10 +222,8 @@ namespace ColorVision.Database
             UpdatePagination();
             UpdateWriteState();
             TableMetaText.Text = $"{_currentColumns.Count} 列" + (HasPrimaryKey ? "" : " / 无主键");
-            RecordCountText.Text = string.IsNullOrWhiteSpace(_searchKeyword)
-                ? $"共 {_totalCount:N0} 条记录"
-                : $"筛选 {_totalCount:N0} 条记录";
-            StatusText.Text = "就绪";
+            RecordCountText.Text = string.Format(Properties.Resources.DB_RecordCount, _totalCount.ToString("N0"));
+            StatusText.Text = Properties.Resources.DB_Ready;
         }
 
         private void RowsDataGrid_AutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
@@ -306,18 +305,18 @@ namespace ColorVision.Database
 
             try
             {
-                SetBusy(true, "插入中...");
+                SetBusy(true, Properties.Resources.DB_Inserting);
                 var provider = _currentProvider;
                 var table = _currentTable;
                 var values = window.Values;
                 var affected = await Task.Run(() => provider.InsertRow(table, values));
-                StatusText.Text = affected > 0 ? "新增成功" : "新增未影响任何记录";
+                StatusText.Text = affected > 0 ? Properties.Resources.DB_InsertSuccess : "新增未影响任何记录";
                 _pageIndex = 1;
                 await ReloadPageAsync();
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"新增失败: {GetBaseMessage(ex)}";
+                StatusText.Text = string.Format(Properties.Resources.DB_InsertFailed, GetBaseMessage(ex));
                 log.Error("新增数据库行失败", ex);
             }
             finally
@@ -358,7 +357,7 @@ namespace ColorVision.Database
 
             try
             {
-                SetBusy(true, "保存中...");
+                SetBusy(true, Properties.Resources.DB_Saving);
                 var provider = _currentProvider;
                 var table = _currentTable;
                 var columns = _currentColumns;
@@ -380,12 +379,12 @@ namespace ColorVision.Database
                     return total;
                 });
 
-                StatusText.Text = $"保存完成，影响 {affected:N0} 行";
+                StatusText.Text = string.Format(Properties.Resources.DB_SaveComplete, affected.ToString("N0"));
                 await ReloadPageAsync();
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"保存失败: {GetBaseMessage(ex)}";
+                StatusText.Text = string.Format(Properties.Resources.DB_SaveFailed, GetBaseMessage(ex));
                 log.Error("保存数据库行失败", ex);
             }
             finally
@@ -397,7 +396,7 @@ namespace ColorVision.Database
         private void RevertChanges_Click(object sender, RoutedEventArgs e)
         {
             _currentDataTable?.RejectChanges();
-            StatusText.Text = "已撤销未保存更改";
+            StatusText.Text = Properties.Resources.DB_Undone;
         }
 
         private async void DeleteRow_Click(object sender, RoutedEventArgs e)
@@ -410,26 +409,26 @@ namespace ColorVision.Database
 
             if (RowsDataGrid.SelectedItem is not DataRowView rowView)
             {
-                StatusText.Text = "请先选择一行";
+                StatusText.Text = Properties.Resources.DB_SelectRowFirst;
                 return;
             }
 
-            if (MessageBox.Show(this, $"确定删除表 {_currentTable.TableName} 中的选中行吗？", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (MessageBox.Show(this, string.Format(Properties.Resources.DB_ConfirmDeleteRows, _currentTable.TableName), Properties.Resources.DB_ConfirmDelete, MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
 
             try
             {
-                SetBusy(true, "删除中...");
+                SetBusy(true, Properties.Resources.DB_Deleting);
                 var provider = _currentProvider;
                 var table = _currentTable;
                 var keys = BuildKeys(rowView.Row, _currentColumns, rowView.Row.RowState == DataRowState.Modified ? DataRowVersion.Original : DataRowVersion.Current);
                 var affected = await Task.Run(() => provider.DeleteRow(table, keys));
-                StatusText.Text = affected > 0 ? "删除成功" : "未删除任何记录";
+                StatusText.Text = affected > 0 ? Properties.Resources.DB_DeleteSuccess : "未删除任何记录";
                 await ReloadPageAsync();
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"删除失败: {GetBaseMessage(ex)}";
+                StatusText.Text = string.Format(Properties.Resources.DB_DeleteFailed, GetBaseMessage(ex));
                 log.Error("删除数据库行失败", ex);
             }
             finally
@@ -545,7 +544,7 @@ namespace ColorVision.Database
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"查询失败: {GetBaseMessage(ex)}";
+                StatusText.Text = string.Format(Properties.Resources.DB_QueryFailed, GetBaseMessage(ex));
                 log.Error("查询数据库表失败", ex);
             }
             finally
@@ -605,7 +604,7 @@ namespace ColorVision.Database
             TableTitleText.Text = title;
             TableSourceText.Text = source;
             TableMetaText.Text = string.Empty;
-            RecordCountText.Text = "0 条记录";
+            RecordCountText.Text = string.Format(Properties.Resources.DB_RecordCount, "0");
             StatusText.Text = status;
             UpdatePagination();
             UpdateWriteState();
@@ -747,7 +746,7 @@ namespace ColorVision.Database
         {
             return new DatabaseTreeNode(DatabaseTreeNodeType.Loading)
             {
-                Header = "加载中...",
+                Header = Properties.Resources.DB_Loading,
                 IsLoaded = true
             };
         }

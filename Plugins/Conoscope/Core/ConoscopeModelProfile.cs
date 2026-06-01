@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace Conoscope.Core
 {
@@ -34,7 +35,7 @@ namespace Conoscope.Core
         /// <summary>
         /// 视场角范围（度）
         /// </summary>
-        [Category("型号"), DisplayName("视场角(度)"), Description("VA60 默认 60，VA80 默认 80。输入完整像素数时，ConoscopeCoefficient 按 视场角 / 完整像素数 解释。")]
+        [Display(Name = "Con_Model_FOV", GroupName = "Con_Category_Model", Description = "VA60 默认 60，VA80 默认 80。输入完整像素数时，ConoscopeCoefficient 按 视场角 / 完整像素数 解释。", ResourceType = typeof(Properties.Resources))]
         public int MaxAngle
         {
             get => _MaxAngle;
@@ -76,14 +77,14 @@ namespace Conoscope.Core
         }
         private double _ManualConoscopeCoefficient;
 
-        [Category("型号"), DisplayName("完整像素数(px)"), Description("对应 MaxAngle 的像素半径，也就是从圆心到最外圈的完整像素数。填 0 时使用图像短边一半；输入 3000 时，ConoscopeCoefficient 按 视场角 / 3000 解释。"), JsonIgnore]
+        [Display(Name = "Con_Model_Pixels", GroupName = "Con_Category_Model", Description = "对应 MaxAngle 的像素半径，也就是从圆心到最外圈的完整像素数。填 0 时使用图像短边一半；输入 3000 时，ConoscopeCoefficient 按 视场角 / 3000 解释。", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public double FullScalePixelCount
         {
             get => CalculationDiameterPixels > 0 ? CalculationDiameterPixels / 2.0 : 0;
             set => CalculationDiameterPixels = value > 0 ? value * 2.0 : 0;
         }
 
-        [Category("型号"), DisplayName("ConoscopeCoefficient(度/像素)"), Description("可直接输入 60/3100 这类小数。填 0 时按完整像素数自动计算。分析半径 = 视场角 / 该系数。"), JsonIgnore]
+        [Display(Name = "Con_Model_Coefficient", GroupName = "Con_Category_Model", Description = "可直接输入 60/3100 这类小数。填 0 时按完整像素数自动计算。分析半径 = 视场角 / 该系数。", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public double DirectConoscopeCoefficient
         {
             get => ManualConoscopeCoefficient > 0 ? 1.0 / ManualConoscopeCoefficient : 0;
@@ -99,7 +100,7 @@ namespace Conoscope.Core
         /// <summary>
         /// 是否包含观察相机
         /// </summary>
-        [Category("观察相机"), DisplayName("启用观察相机"), Description("VA60 默认启用，VA80 默认关闭。关闭后 Conoscope 窗口不会显示打开观察相机按钮。")]
+        [Display(Name = "Con_Model_EnableObsCam", GroupName = "Con_Category_ObserveCam", Description = "VA60 默认启用，VA80 默认关闭。关闭后 Conoscope 窗口不会显示打开观察相机按钮。", ResourceType = typeof(Properties.Resources))]
         public bool HasObservationCamera
         {
             get => _HasObservationCamera;
@@ -112,7 +113,7 @@ namespace Conoscope.Core
         /// 观察相机尺寸系数（mm/像素）
         /// 用于在观察相机图像上按 mm 尺寸画圆
         /// </summary>
-        [Category("观察相机"), DisplayName("尺寸系数(mm/像素)"), Description("红圈像素直径 = 选择尺寸(mm) / 尺寸系数。例如 0.5mm / 0.02 = 25px。")]
+        [Display(Name = "Con_Model_SizeCoeff", GroupName = "Con_Category_ObserveCam", Description = "红圈像素直径 = 选择尺寸(mm) / 尺寸系数。例如 0.5mm / 0.02 = 25px。", ResourceType = typeof(Properties.Resources))]
         public double ObservationCameraScaleCoefficient
         {
             get => _ObservationCameraScaleCoefficient;
@@ -123,7 +124,7 @@ namespace Conoscope.Core
         /// <summary>
         /// 观察相机中心点 X 坐标（像素）
         /// </summary>
-        [Category("观察相机"), DisplayName("中心点X(像素)"), Description("红色圆形在观察相机图像中的中心点 X 坐标。")]
+        [Display(Name = "Con_Model_CenterX", GroupName = "Con_Category_ObserveCam", Description = "红色圆形在观察相机图像中的中心点 X 坐标。", ResourceType = typeof(Properties.Resources))]
         public double ObservationCameraCenterX
         {
             get => _ObservationCameraCenterX;
@@ -134,7 +135,7 @@ namespace Conoscope.Core
         /// <summary>
         /// 观察相机中心点 Y 坐标（像素）
         /// </summary>
-        [Category("观察相机"), DisplayName("中心点Y(像素)"), Description("红色圆形在观察相机图像中的中心点 Y 坐标。")]
+        [Display(Name = "Con_Model_CenterY", GroupName = "Con_Category_ObserveCam", Description = "红色圆形在观察相机图像中的中心点 Y 坐标。", ResourceType = typeof(Properties.Resources))]
         public double ObservationCameraCenterY
         {
             get => _ObservationCameraCenterY;

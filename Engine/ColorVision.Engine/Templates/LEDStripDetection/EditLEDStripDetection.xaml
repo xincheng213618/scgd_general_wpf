@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Templates.LEDStripDetection"
              xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:LEDStripDetectionParam}"
              d:DesignHeight="200" d:DesignWidth="400" Width="400" Height="200" Initialized="UserControl_Initialized">
@@ -28,7 +29,7 @@
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
                             <Button DockPanel.Dock="Right" Content="..." Command="{Binding SelectFileCommand}" Margin="5,0,0,0"/>
-                            <TextBlock Text="保存路径"  MinWidth="110"  />
+                            <TextBlock Text="{x:Static properties:Resources.FileSavePath}"  MinWidth="110"  />
                             <TextBox  Text="{Binding  SaveName}" Style="{StaticResource TextBox.Small}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">

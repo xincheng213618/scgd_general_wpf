@@ -63,6 +63,7 @@ namespace ColorVision.Engine.Templates.Flow
         Stopwatch stopwatch = new Stopwatch();
         private int _pendingUiUpdate;
         private CancellationTokenSource _refreshCts;
+        private bool _suppressSelectionRefresh;
 
         public DisplayFlow(FlowEngineManager flowEngineManager)
         {
@@ -106,7 +107,10 @@ namespace ColorVision.Engine.Templates.Flow
                         LastFlowTime = time;
 
                 }
-                _ = DebouncedRefresh();
+                if (!_suppressSelectionRefresh)
+                {
+                    _ = DebouncedRefresh();
+                }
             };
 
 
@@ -156,8 +160,35 @@ namespace ColorVision.Engine.Templates.Flow
             await Refresh();
         }
 
+        private void CancelPendingRefresh()
+        {
+            _refreshCts?.Cancel();
+            _refreshCts?.Dispose();
+            _refreshCts = null;
+        }
+
+        private async Task SelectFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate, bool waitReady)
+        {
+            CancelPendingRefresh();
+
+            _suppressSelectionRefresh = true;
+            try
+            {
+                ComboBoxFlow.SelectedItem = flowTemplate;
+                FlowEngineManager.SlectFlowParam = flowTemplate.Value;
+                FlowEngineManager.TemplateFlowParamsIndex = TemplateFlow.Params.IndexOf(flowTemplate);
+                FlowEngineConfig.Instance.LastSelectFlow = flowTemplate.Id;
+            }
+            finally
+            {
+                _suppressSelectionRefresh = false;
+            }
+
+            await Refresh(waitReady);
+        }
+
         bool IsRefresh;
-        public async Task Refresh()
+        public async Task Refresh(bool waitReady = false)
         {
             if (IsRefresh) return;
             IsRefresh = true;
@@ -179,7 +210,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                 if (string.IsNullOrEmpty(flowParam.DataBase64))
                 {
-                    MessageBox.Show("再选择之前请先创建对映的模板");
+                    MessageBox.Show(ColorVision.Engine.Properties.Resources.Flow_CreateTemplateBeforeSelection);
                     View.FlowEngineControl.LoadFromBase64(string.Empty);
                     return;
                 }
@@ -192,7 +223,7 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeEndEvent -= nodeEndEvent;
                 }
                 View.FlowEngineControl.FlowClear();
-                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens, waitReady);
 
                 FlowEngineManager.SlectFlowParam = flowParam;
 
@@ -281,11 +312,7 @@ namespace ColorVision.Engine.Templates.Flow
                 return null;
             }
 
-            ComboBoxFlow.SelectedItem = flowTemplate;
-            FlowEngineManager.SlectFlowParam = flowTemplate.Value;
-            FlowEngineManager.TemplateFlowParamsIndex = TemplateFlow.Params.IndexOf(flowTemplate);
-            FlowEngineConfig.Instance.LastSelectFlow = flowTemplate.Id;
-            await Refresh();
+            await SelectFlowTemplateAsync(flowTemplate, waitReady: true);
             return await RunFlowAndWaitAsync();
         }
 
@@ -306,7 +333,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             string lastNodes = _runningNodeNames.IsEmpty ? Msg1 : string.Join(", ", _runningNodeNames.Values);
             _runningNodeNames.Clear();
-            string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
+            string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
             FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
@@ -391,7 +418,7 @@ namespace ColorVision.Engine.Templates.Flow
                 string msg;
                 if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                 {
-                    msg = $"{FlowName}{Environment.NewLine}正在执行节点:{runningNodes}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
+                    msg = $"{FlowName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}";
                 }
                 else
                 {
@@ -399,7 +426,7 @@ namespace ColorVision.Engine.Templates.Flow
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                    msg = $"{FlowName}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{runningNodes}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                    msg = $"{FlowName}{ColorVision.Engine.Properties.Resources.Flow_LastExecutionLabel}{LastFlowTime} ms{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_EstimatedRemainingLabel}{remainingTime}";
                 }
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
@@ -589,7 +616,7 @@ namespace ColorVision.Engine.Templates.Flow
                 FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
-                View.logTextBox.Text = "未选择有效的流程模板";
+                View.logTextBox.Text = ColorVision.Engine.Properties.Resources.Flow_NoValidFlowTemplateSelected;
                 log.Warn("未选择有效的流程模板");
                 return;
             }
@@ -606,7 +633,7 @@ namespace ColorVision.Engine.Templates.Flow
                 FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
-                View.logTextBox.Text = "预处理失败，流程取消执行";
+                View.logTextBox.Text = ColorVision.Engine.Properties.Resources.Flow_PreprocessFailedCancelled;
                 log.Warn("预处理失败，流程取消执行");
                 return;
             }

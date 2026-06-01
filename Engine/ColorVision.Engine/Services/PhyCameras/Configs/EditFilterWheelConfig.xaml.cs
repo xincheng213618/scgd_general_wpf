@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             var newHoleMap = new HoleMap 
             { 
                 HoleIndex = maxIndex + 1, 
-                HoleName = $"Hole{maxIndex + 1}" 
+                HoleName = string.Format(Properties.Resources.FilterWheelHoleDefaultNameFormat, maxIndex + 1)
             };
             WorkingCopy.Add(newHoleMap);
         }
@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             }
             else
             {
-                MessageBox.Show("Please select an item to delete.", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.SelectItemsToDelete, Properties.Resources.EditFilterWheelConfig, MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 

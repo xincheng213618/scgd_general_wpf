@@ -172,9 +172,9 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 10, Width = 140, EditorKind = CompactInspectorEditorKind.Text, ToolTip = "文本" },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Foreground), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = "颜色" },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "字号" },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 10, Width = 140, EditorKind = CompactInspectorEditorKind.Text, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Text },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Foreground), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Color },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FontSize },
             };
         }
 

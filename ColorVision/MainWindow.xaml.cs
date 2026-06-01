@@ -131,6 +131,7 @@ namespace ColorVision
 
             // 切换到 DeviceControl 面板时，跳转回上次显示的视图
             HookAcquirePanelActivation();
+            HookTerminalPanelActivation();
 
             // 执行延迟加载的操作
             foreach (var action in WorkspaceManager.DealyLoad)
@@ -218,6 +219,24 @@ namespace ColorVision
                         DockViewManager.ActivateLastView();
                 };
             }
+        }
+
+        private void HookTerminalPanelActivation()
+        {
+            var terminalPanel = DockingManager1.Layout.Descendents()
+                .OfType<AvalonDock.Layout.LayoutAnchorable>()
+                .FirstOrDefault(a => a.ContentId == ColorVision.Solution.Terminal.TerminalService.PanelId);
+            if (terminalPanel == null)
+                return;
+
+            void ActivateTerminalPanel()
+            {
+                if (terminalPanel.IsActive && !terminalPanel.IsHidden)
+                    ColorVision.Solution.Terminal.TerminalService.GetInstance().NotifyPanelActivated();
+            }
+
+            terminalPanel.IsActiveChanged += (_, _) => ActivateTerminalPanel();
+            ActivateTerminalPanel();
         }
 
         /// <summary>

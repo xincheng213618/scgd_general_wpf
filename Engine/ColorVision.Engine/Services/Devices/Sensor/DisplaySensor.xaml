@@ -59,11 +59,11 @@
                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template"/>
                         </Grid>
                     </DockPanel>
-                    <TextBlock Text="调试模式" Margin="0,0,0,5"/>
+                    <TextBlock Text="{x:Static properties:Resources.DebugMode}" Margin="0,0,0,5"/>
                     <StackPanel>
                         <DockPanel Margin="0,0,0,5">
                             <ComboBox x:Name="ComboBoxType" Style="{StaticResource ComboBox.Small}"/>
-                            <CheckBox x:Name="IsAddNewLine" Content="加回车换行" Margin="5,0,0,0"/>
+                            <CheckBox x:Name="IsAddNewLine" Content="{x:Static properties:Resources.AddNewLine}" Margin="5,0,0,0"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="{x:Static properties:Resources.SendCmd}" Width="60"/>

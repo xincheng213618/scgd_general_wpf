@@ -104,7 +104,7 @@ namespace ColorVision
                         process.WaitForExit(1000); 
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                 }
             }

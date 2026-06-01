@@ -5,17 +5,24 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:ColorVision.UI.Properties"
+             x:Name="RootControl"
+             HorizontalAlignment="Stretch"
              mc:Ignorable="d"
              d:DesignHeight="30" d:DesignWidth="210">
-    <Grid x:Name="SearchGrid" Width="210" HorizontalAlignment="Left" VerticalAlignment="Center">
+    <Grid x:Name="SearchGrid" MinWidth="210" HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <hc:TextBox x:Name="Searchbox" Padding="20,1,2,1" VerticalContentAlignment="Center"
                     hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}"
                     BorderBrush="#CCCEDB" BorderThickness="1"
                     GotFocus="Searchbox_GotFocus" MaxLength="15"
+                    Height="{Binding SearchBoxHeight, ElementName=RootControl}"
+                    HorizontalAlignment="Stretch"
                     PreviewKeyDown="Searchbox_PreviewKeyDown"
                     Style="{DynamicResource TextBoxPlus.Small}"
+                    Width="{Binding ActualWidth, ElementName=SearchGrid}"
                     TextChanged="Searchbox_TextChanged" />
-        <Viewbox Width="12" Height="12" Margin="4,0,0,0" HorizontalAlignment="Left">
+        <Viewbox x:Name="SearchIconViewbox" Width="12" Height="12" Margin="4,0,0,0" HorizontalAlignment="Left"
+             Cursor="Hand"
+                 MouseLeftButtonDown="SearchIconViewbox_MouseLeftButtonDown">
             <Rectangle Width="16" Height="16">
                 <Rectangle.Resources>
                     <SolidColorBrush x:Key="canvas" Opacity="0" />
@@ -43,7 +50,7 @@
                Placement="Bottom" PlacementTarget="{Binding ElementName=Searchbox}"
                PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}"
                StaysOpen="false">
-            <Border Width="210" Height="500" Margin="5">
+            <Border MinWidth="210" Width="{Binding ActualWidth, ElementName=Searchbox}" MaxHeight="500" Margin="5">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Background" Value="{DynamicResource RegionBrush}" />
@@ -71,13 +78,18 @@
                                     <Setter Property="BorderThickness" Value="0" />
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn Width="240">
+                            <GridViewColumn>
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Margin="0" HorizontalAlignment="Left" VerticalAlignment="Center"
-                                                       FontSize="12" Foreground="{DynamicResource Foreground}"
-                                                       Text="{Binding Header}" />
+                                            <TextBlock Margin="0"
+                                                       HorizontalAlignment="Left"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource Foreground}"
+                                                       MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=ListView}, Path=ActualWidth}"
+                                                       Text="{Binding Header}"
+                                                       TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

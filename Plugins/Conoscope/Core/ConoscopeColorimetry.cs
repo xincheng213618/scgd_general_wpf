@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace Conoscope.Core
 {
@@ -45,9 +46,11 @@ namespace Conoscope.Core
 
         public static double GetChannelValue(double X, double Y, double Z, ExportChannel channel)
         {
-            if (channel == ExportChannel.ColorDifference)
+            if (channel is ExportChannel.ColorDifference or ExportChannel.Contrast)
             {
-                throw new InvalidOperationException(Properties.Resources.ColorDiffNeedsUVRef);
+                throw new InvalidOperationException(channel == ExportChannel.ColorDifference
+                    ? Properties.Resources.ColorDiffNeedsUVRef
+                    : Properties.Resources.Conoscope_ContrastNeedsReference);
             }
 
             if (channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV)
@@ -83,7 +86,8 @@ namespace Conoscope.Core
                 ExportChannel.CieY => CreateXyChannelMat(XMat, YMat, ZMat, YMat),
                 ExportChannel.CieU => CreateUvChannelMat(XMat, YMat, ZMat, XMat, 4.0),
                 ExportChannel.CieV => CreateUvChannelMat(XMat, YMat, ZMat, YMat, 9.0),
-                ExportChannel.ColorDifference => throw new InvalidOperationException("色差通道需要指定 uv 基准"),
+                ExportChannel.ColorDifference => throw new InvalidOperationException(Conoscope.Properties.Resources.ColorDiffNeedsUVRef),
+                ExportChannel.Contrast => throw new InvalidOperationException(Conoscope.Properties.Resources.MsgContrastReferenceRequired),
                 _ => YMat.Clone()
             };
         }
@@ -91,13 +95,8 @@ namespace Conoscope.Core
         public static double CalculateColorDifference(double X, double Y, double Z, double referenceU, double referenceV)
         {
             ConoscopeChromaticity chromaticity = Calculate(X, Y, Z);
-            return CalculateColorDifferenceFromUv(chromaticity.u, chromaticity.v, referenceU, referenceV);
-        }
-
-        public static double CalculateColorDifferenceFromUv(double u, double v, double referenceU, double referenceV)
-        {
-            double deltaU = u - referenceU;
-            double deltaV = v - referenceV;
+            double deltaU = chromaticity.u - referenceU;
+            double deltaV = chromaticity.v - referenceV;
             return Math.Sqrt(deltaU * deltaU + deltaV * deltaV);
         }
 
@@ -117,10 +116,25 @@ namespace Conoscope.Core
             return CreateColorDifferenceMat(uMat, vMat, referenceUMat, referenceVMat);
         }
 
+        public static OpenCvSharp.Mat CreateContrastMat(OpenCvSharp.Mat currentYMat, OpenCvSharp.Mat referenceYMat, ContrastReferenceKind referenceKind)
+        {
+            EnsureSameSize(currentYMat, referenceYMat, Properties.Resources.Conoscope_ContrastReferenceImage);
+            return referenceKind == ContrastReferenceKind.Black
+                ? DivideWithZeroGuard(currentYMat, referenceYMat)
+                : DivideWithZeroGuard(referenceYMat, currentYMat);
+        }
+
+        public static double CalculateContrast(double currentY, double referenceY, ContrastReferenceKind referenceKind)
+        {
+            double numerator = referenceKind == ContrastReferenceKind.Black ? currentY : referenceY;
+            double denominator = referenceKind == ContrastReferenceKind.Black ? referenceY : currentY;
+            return denominator > double.Epsilon ? numerator / denominator : 0;
+        }
+
         private static OpenCvSharp.Mat CreateColorDifferenceMat(OpenCvSharp.Mat uMat, OpenCvSharp.Mat vMat, OpenCvSharp.Mat referenceUMat, OpenCvSharp.Mat referenceVMat)
         {
             EnsureSameSize(uMat, referenceUMat, Properties.Resources.UReferenceImage);
-            EnsureSameSize(vMat, referenceVMat, "v 基准图");
+            EnsureSameSize(vMat, referenceVMat, Properties.Resources.Conoscope_VReferenceImage);
 
             using OpenCvSharp.Mat referenceU = EnsureType(referenceUMat, uMat.Type());
             using OpenCvSharp.Mat referenceV = EnsureType(referenceVMat, vMat.Type());
@@ -144,7 +158,7 @@ namespace Conoscope.Core
         {
             if (source.Width != reference.Width || source.Height != reference.Height)
             {
-                throw new InvalidOperationException(string.Format(Properties.Resources.SizeMismatchFormat, referenceName));
+                throw new InvalidOperationException(CompositeFormatCache.Format(Properties.Resources.SizeMismatchFormat, referenceName));
             }
         }
 
@@ -188,7 +202,7 @@ namespace Conoscope.Core
             using OpenCvSharp.Mat zeroMask = new OpenCvSharp.Mat();
             using OpenCvSharp.Mat safeDenominator = denominator.Clone();
 
-            OpenCvSharp.Cv2.Compare(safeDenominator, OpenCvSharp.Scalar.All(0), zeroMask, OpenCvSharp.CmpTypes.EQ);
+            OpenCvSharp.Cv2.Compare(safeDenominator, OpenCvSharp.Scalar.All(0), zeroMask, OpenCvSharp.CmpTypes.LE);
             safeDenominator.SetTo(OpenCvSharp.Scalar.All(1), zeroMask);
             OpenCvSharp.Cv2.Divide(numerator, safeDenominator, result);
             result.SetTo(OpenCvSharp.Scalar.All(0), zeroMask);
@@ -207,20 +221,38 @@ namespace Conoscope.Core
                 ExportChannel.CieU => "u",
                 ExportChannel.CieV => "v",
                 ExportChannel.ColorDifference => "Δuv",
+                ExportChannel.Contrast => Properties.Resources.Conoscope_ContrastChannel,
                 _ => "Y"
             };
         }
 
         public static string FormatChannelValue(double value, ExportChannel channel)
         {
+            if (!double.IsFinite(value))
+            {
+                return "--";
+            }
+
+            if (channel == ExportChannel.Contrast)
+            {
+                return value.ToString("F3", CultureInfo.InvariantCulture);
+            }
+
             return channel is ExportChannel.CieX or ExportChannel.CieY or ExportChannel.CieU or ExportChannel.CieV or ExportChannel.ColorDifference
-                ? value.ToString("F6")
-                : value.ToString("F2");
+                ? value.ToString("F6", CultureInfo.InvariantCulture)
+                : value.ToString("F2", CultureInfo.InvariantCulture);
         }
 
-        public static string FormatCct(double cct)
+        public static string FormatChannelValue(double value, ExportChannel channel, int decimalPlaces)
         {
-            return cct > 0 ? $"{cct:F0}K" : "--";
+            if (!double.IsFinite(value))
+            {
+                return "--";
+            }
+
+            int normalizedDecimalPlaces = Math.Clamp(decimalPlaces, 0, 8);
+            return value.ToString($"F{normalizedDecimalPlaces}", CultureInfo.InvariantCulture);
         }
+
     }
 }

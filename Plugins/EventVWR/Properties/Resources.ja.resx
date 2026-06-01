@@ -126,4 +126,43 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>アーカイブファイルの設定</value>
   </data>
+  <data name="EventVWR_Title" xml:space="preserve">
+    <value>イベントビューアー</value>
+  </data>
+  <data name="EventVWR_WinEvents" xml:space="preserve">
+    <value>Windows イベントビューアー</value>
+  </data>
+  <data name="EventVWR_EventList" xml:space="preserve">
+    <value>イベント一覧</value>
+  </data>
+  <data name="EventVWR_Time" xml:space="preserve">
+    <value>時刻</value>
+  </data>
+  <data name="EventVWR_Source" xml:space="preserve">
+    <value>ソース</value>
+  </data>
+  <data name="EventVWR_EventDetail" xml:space="preserve">
+    <value>イベントの詳細</value>
+  </data>
+  <data name="EventVWR_SelectEvent" xml:space="preserve">
+    <value>イベントを選択して詳細を表示...</value>
+  </data>
+  <data name="EventVWR_Ready" xml:space="preserve">
+    <value>準備完了</value>
+  </data>
+  <data name="EventVWR_PluginName" xml:space="preserve">
+    <value>イベントプラグイン</value>
+  </data>
+  <data name="EventVWR_PluginDesc" xml:space="preserve">
+    <value>イベントプラグインとダンプ設定による強化された例外管理</value>
+  </data>
+  <data name="EventVWR_AdminRequired" xml:space="preserve">
+    <value>この操作には管理者権限が必要です</value>
+  </data>
+  <data name="EventVWR_ClearDmp" xml:space="preserve">
+    <value>Dmpをクリア</value>
+  </data>
+  <data name="EventVWR_SaveDmp" xml:space="preserve">
+    <value>Dmpを保存</value>
+  </data>
 </root>

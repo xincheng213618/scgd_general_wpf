@@ -21,7 +21,7 @@ namespace ColorVision.ImageEditor.Draw
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is SelectEditorVisual selectEditorVisual)
             {
-                MenuItem menuIte2 = new() { Header = "栅格化" };
+                MenuItem menuIte2 = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Rasterize };
                 menuIte2.Click += (s, e) =>
                 {
                     selectEditorVisual.RasterizeSelectionAndReplace();

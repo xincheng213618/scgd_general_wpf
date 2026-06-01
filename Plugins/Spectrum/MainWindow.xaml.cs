@@ -13,6 +13,7 @@ using ScottPlot;
 using Spectrum.Data;
 using Spectrum.Layout;
 using Spectrum.Models;
+using SpectrumResources = Spectrum.Properties.Resources;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Reflection;
@@ -25,7 +26,7 @@ namespace Spectrum
     public class MenuSpectrumWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "光谱仪测试";
+        public override string Header => SpectrumResources.SpectrumWindowTitle;
         public override int Order => 1;
         public override void Execute()
         {
@@ -159,9 +160,9 @@ namespace Spectrum
             ComboBoxPort.ItemsSource = portNames;
             ComboBoxSerial.ItemsSource = BaudRates;
 
-            string title = "相对光谱曲线";
-            wpfplot1.Plot.XLabel("波长[nm]");
-            wpfplot1.Plot.YLabel("相对光谱");
+            string title = SpectrumResources.相对光谱曲线;
+            wpfplot1.Plot.XLabel(SpectrumResources.波长Nm);
+            wpfplot1.Plot.YLabel(SpectrumResources.相对光谱);
             wpfplot1.Plot.Axes.Title.Label.Text = title;
             wpfplot1.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
             wpfplot1.Plot.Axes.Title.Label.Text = title;
@@ -178,9 +179,9 @@ namespace Spectrum
             // Add visible spectrum rainbow color bar below the plot
             AddSpectrumColorBar(wpfplot1);
 
-            string titleAbsolute = "绝对光谱曲线";
-            wpfplot2.Plot.XLabel("波长[nm]");
-            wpfplot2.Plot.YLabel("绝对光谱");
+            string titleAbsolute = SpectrumResources.AbsoluteSpectrumCurve;
+            wpfplot2.Plot.XLabel(SpectrumResources.波长Nm);
+            wpfplot2.Plot.YLabel(SpectrumResources.AbsoluteSpectrum);
             wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
             wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
             wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
@@ -275,7 +276,7 @@ namespace Spectrum
                 // Show a placeholder message when no log file is found yet
                 var placeholder = new TextBlock
                 {
-                    Text = "光谱仪原生日志文件尚未生成。连接光谱仪后日志将自动显示。",
+                    Text = SpectrumResources.NativeLogPlaceholder,
                     HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                     VerticalAlignment = System.Windows.VerticalAlignment.Center,
                     Foreground = System.Windows.Media.Brushes.Gray

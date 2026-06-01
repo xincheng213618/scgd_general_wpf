@@ -1,9 +1,10 @@
 ﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager.EditTemplateThirdManager"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ModThirdPartyManagerParam}"
@@ -53,11 +54,11 @@
                     <TextBox Text="{Binding ModThirdPartyAlgorithmsModel.Remark}" BorderThickness="0"  VerticalAlignment="Stretch" />
                 </DockPanel>
                 <DockPanel Margin="0,0,0,5">
-                    <TextBlock Text="启用" MinWidth="100"/>
+                    <TextBlock Text="{x:Static properties:Resources.IsEnable}" MinWidth="100"/>
                     <ui:ToggleSwitch  IsChecked="{Binding ModThirdPartyAlgorithmsModel.IsEnable}"/>
                 </DockPanel>
                 <DockPanel Margin="0,0,0,5">
-                    <TextBlock Text="删除" MinWidth="100"/>
+                    <TextBlock Text="{x:Static properties:Resources.Delete}" MinWidth="100"/>
                     <ui:ToggleSwitch  IsChecked="{Binding ModThirdPartyAlgorithmsModel.IsDelete}"/>
                 </DockPanel>
             </StackPanel>

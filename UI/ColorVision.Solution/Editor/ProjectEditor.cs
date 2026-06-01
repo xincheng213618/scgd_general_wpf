@@ -8,7 +8,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Solution.Editor
 {
-    [FolderEditor("图片编辑器")]
+    [FolderEditor("图片编辑器", resourceKey: "Sol_Editor_Project")]
     public class ProjectEditor : EditorBase
     {
         public override void Open(string filePath)

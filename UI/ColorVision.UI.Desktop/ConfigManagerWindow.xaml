@@ -58,7 +58,7 @@
 
             <!--  Column count selector in the middle  -->
             <StackPanel Grid.Column="1" Margin="0,0,5,0" Orientation="Horizontal">
-                <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryTextBrush}" Text="列数:" />
+                <TextBlock Margin="0,0,5,0" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryTextBrush}" Text="{x:Static properties:Resources.ConfigManager_Columns}" />
                 <ComboBox x:Name="ColumnCountComboBox" Width="60" SelectedIndex="2" SelectionChanged="ColumnCountComboBox_SelectionChanged" Style="{DynamicResource ComboBox.Small}">
                     <ComboBoxItem Content="1" />
                     <ComboBoxItem Content="2" />
@@ -93,7 +93,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Margin="5,0,0,5" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Text="程序集" />
+                    <TextBlock Grid.Row="0" Margin="5,0,0,5" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Text="{x:Static properties:Resources.ConfigManager_Assembly}" />
                     <ListView x:Name="AssemblyListView" Grid.Row="1" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="AssemblyListView_SelectionChanged">
                         <ListView.ItemContainerStyle>
                             <Style BasedOn="{StaticResource ListViewItemBaseStyle.Small}" TargetType="ListViewItem">
@@ -133,7 +133,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Margin="5,0,0,5" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Text="配置列表" />
+                    <TextBlock Grid.Row="0" Margin="5,0,0,5" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Text="{x:Static properties:Resources.ConfigManager_ConfigList}" />
                     <ScrollViewer x:Name="ConfigScrollViewer" Grid.Row="1" Background="Transparent" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ConfigContainer" Margin="5" />
                     </ScrollViewer>
@@ -150,7 +150,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock x:Name="PropertyTitle" Grid.Row="0" Margin="5,0,0,5" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Text="选择一个配置查看详情" />
+                    <TextBlock x:Name="PropertyTitle" Grid.Row="0" Margin="5,0,0,5" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Text="{x:Static properties:Resources.ConfigManager_SelectConfig}" />
                     <Border x:Name="PropertyContainer" Grid.Row="1" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
                         <!--  PropertyGrid will be loaded here dynamically  -->
                     </Border>

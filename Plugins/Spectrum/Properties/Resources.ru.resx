@@ -117,4 +117,178 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="波长Nm" xml:space="preserve"><value>Длина волны [нм]</value></data>
+  <data name="步长" xml:space="preserve"><value>Шаг</value></data>
+  <data name="参数设置" xml:space="preserve"><value>Параметры</value></data>
+  <data name="测量时间" xml:space="preserve"><value>Время измерения</value></data>
+  <data name="单次测试" xml:space="preserve"><value>Однократный тест</value></data>
+  <data name="单次校零" xml:space="preserve"><value>Однократная калибровка нуля</value></data>
+  <data name="断开光谱仪" xml:space="preserve"><value>Отключить спектрометр</value></data>
+  <data name="峰值波长LpNm" xml:space="preserve"><value>Пиковая длина волны Lp(nm)</value></data>
+  <data name="光谱校正" xml:space="preserve"><value>Спектральная коррекция</value></data>
+  <data name="积分时间011ms10s" xml:space="preserve"><value>Время интегрирования (0,11 мс-10 с)</value></data>
+  <data name="积分时间上限" xml:space="preserve"><value>Предел времени интегрирования</value></data>
+  <data name="积分时间上限Ms" xml:space="preserve"><value>Предел времени интегрирования (мс):</value></data>
+  <data name="结束" xml:space="preserve"><value>Завершить</value></data>
+  <data name="绝对光谱校正" xml:space="preserve"><value>Абсолютная спектральная коррекция</value></data>
+  <data name="开始校零" xml:space="preserve"><value>Начать калибровку нуля</value></data>
+  <data name="开始校正" xml:space="preserve"><value>Начать калибровку</value></data>
+  <data name="蓝光" xml:space="preserve"><value>Синий свет</value></data>
+  <data name="连接成功" xml:space="preserve"><value>Подключение успешно</value></data>
+  <data name="连接成功1" xml:space="preserve"><value>Подключение успешно!</value></data>
+  <data name="连接光谱仪" xml:space="preserve"><value>Подключить спектрометр</value></data>
+  <data name="连接失败" xml:space="preserve"><value>Не удалось подключиться!</value></data>
+  <data name="连接状态" xml:space="preserve"><value>Статус подключения:</value></data>
+  <data name="连续测试" xml:space="preserve"><value>Непрерывное тестирование</value></data>
+  <data name="亮度LvCdM2" xml:space="preserve"><value>Яркость Lv(cd/m2)</value></data>
+  <data name="滤波宽度110" xml:space="preserve"><value>Ширина фильтра (1-10):</value></data>
+  <data name="滤波校正" xml:space="preserve"><value>Коррекция фильтра</value></data>
+  <data name="平均次数" xml:space="preserve"><value>Число усреднений</value></data>
+  <data name="平均次数1100" xml:space="preserve"><value>Число усреднений (1-100):</value></data>
+  <data name="起始" xml:space="preserve"><value>Начало</value></data>
+  <data name="清空数据" xml:space="preserve"><value>Очистить данные</value></data>
+  <data name="取消" xml:space="preserve"><value>Отмена</value></data>
+  <data name="确定" xml:space="preserve"><value>Подтвердить</value></data>
+  <data name="色纯度" xml:space="preserve"><value>Цветовая чистота (%)</value></data>
+  <data name="色度u" xml:space="preserve"><value>Координата цветности u'</value></data>
+  <data name="色度v" xml:space="preserve"><value>Координата цветности v'</value></data>
+  <data name="色度x" xml:space="preserve"><value>Координата цветности x</value></data>
+  <data name="色度y" xml:space="preserve"><value>Координата цветности y</value></data>
+  <data name="设置" xml:space="preserve"><value>Настройки</value></data>
+  <data name="使用前请确保校零准确推荐使用自动积分" xml:space="preserve"><value>Перед использованием убедитесь, что нулевая калибровка выполнена точно. Рекомендуется использовать автоматическое интегрирование</value></data>
+  <data name="数据" xml:space="preserve"><value>Данные</value></data>
+  <data name="数据导出" xml:space="preserve"><value>Экспорт данных</value></data>
+  <data name="停止" xml:space="preserve"><value>Остановить</value></data>
+  <data name="未连接" xml:space="preserve"><value>Не подключено</value></data>
+  <data name="显色性指数Ra" xml:space="preserve"><value>Индекс цветопередачи Ra</value></data>
+  <data name="相对光谱" xml:space="preserve"><value>Относительный спектр</value></data>
+  <data name="相对光谱曲线" xml:space="preserve"><value>Кривая относительного спектра</value></data>
+  <data name="相关色温K" xml:space="preserve"><value>Коррелированная цветовая температура (K)</value></data>
+  <data name="校正" xml:space="preserve"><value>Коррекция</value></data>
+  <data name="校正文件" xml:space="preserve"><value>Калибровочный файл</value></data>
+  <data name="序号" xml:space="preserve"><value>Серийный номер</value></data>
+  <data name="选择文件" xml:space="preserve"><value>Выбрать файл</value></data>
+  <data name="验证数据0" xml:space="preserve"><value>Проверочные данные: 0</value></data>
+  <data name="已成功断开连接" xml:space="preserve"><value>Успешно отключено</value></data>
+  <data name="硬件型号" xml:space="preserve"><value>Модель оборудования:</value></data>
+  <data name="主波长LdNm" xml:space="preserve"><value>Доминирующая длина волны Ld(nm)</value></data>
+  <data name="注选择正确的校正文件后对准校正光源点击开始校正按钮" xml:space="preserve"><value>Примечание: после выбора правильного калибровочного файла совместите источник калибровочного света и нажмите кнопку «Начать калибровку»</value></data>
+  <data name="自动积分" xml:space="preserve"><value>Автоматическое интегрирование</value></data>
+  <data name="自动积分时间起始" xml:space="preserve"><value>Начальное время автоматического интегрирования</value></data>
+  <data name="自适应校零" xml:space="preserve"><value>Адаптивная калибровка нуля</value></data>
+  <data name="Exit" xml:space="preserve"><value>Выход</value></data>
+  <data name="SpectrumWindowTitle" xml:space="preserve"><value>Программа спектрометра</value></data>
+  <data name="ControlPanel" xml:space="preserve"><value>Панель управления</value></data>
+  <data name="SpectrometerConnection" xml:space="preserve"><value>Подключение спектрометра</value></data>
+  <data name="GetDeviceList" xml:space="preserve"><value>Получить список устройств</value></data>
+  <data name="SerialPortConnection" xml:space="preserve"><value>Подключение по COM-порту</value></data>
+  <data name="SerialPort" xml:space="preserve"><value>COM-порт</value></data>
+  <data name="BaudRate" xml:space="preserve"><value>Скорость передачи</value></data>
+  <data name="CalibrationFiles" xml:space="preserve"><value>Калибровочные файлы</value></data>
+  <data name="Manage" xml:space="preserve"><value>Управление...</value></data>
+  <data name="LoadGroup" xml:space="preserve"><value>Загрузить группу</value></data>
+  <data name="CurrentGroup" xml:space="preserve"><value>Текущая группа:</value></data>
+  <data name="Load" xml:space="preserve"><value>Загрузить</value></data>
+  <data name="WavelengthCalibration" xml:space="preserve"><value>Калибровка длины волны</value></data>
+  <data name="MagnitudeCalibration" xml:space="preserve"><value>Калибровка амплитуды</value></data>
+  <data name="MeasurementParameters" xml:space="preserve"><value>Параметры измерения</value></data>
+  <data name="IntegrationTimeMs" xml:space="preserve"><value>Время интегрирования (мс)</value></data>
+  <data name="TestSection" xml:space="preserve"><value>Тест</value></data>
+  <data name="ZeroCalibration" xml:space="preserve"><value>Калибровка нуля</value></data>
+  <data name="IntervalMs" xml:space="preserve"><value>Интервал (мс)</value></data>
+  <data name="MeasurementCount" xml:space="preserve"><value>Число измерений</value></data>
+  <data name="Progress" xml:space="preserve"><value>Прогресс</value></data>
+  <data name="Elapsed" xml:space="preserve"><value>Прошло:</value></data>
+  <data name="Remaining" xml:space="preserve"><value>Осталось:</value></data>
+  <data name="Shutter" xml:space="preserve"><value>Затвор</value></data>
+  <data name="Connect" xml:space="preserve"><value>Подключить</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>Отключить</value></data>
+  <data name="OpenShutter" xml:space="preserve"><value>Открыть затвор</value></data>
+  <data name="CloseShutter" xml:space="preserve"><value>Закрыть затвор</value></data>
+  <data name="FilterWheel" xml:space="preserve"><value>Фильтровое колесо</value></data>
+  <data name="CurrentPosition" xml:space="preserve"><value>Текущая позиция:</value></data>
+  <data name="Query" xml:space="preserve"><value>Запрос</value></data>
+  <data name="SwitchPosition" xml:space="preserve"><value>Переключить позицию:</value></data>
+  <data name="SpectrumChart" xml:space="preserve"><value>График спектра</value></data>
+  <data name="AbsoluteSpectrum" xml:space="preserve"><value>Абсолютный спектр</value></data>
+  <data name="GenericQuery" xml:space="preserve"><value>Универсальный запрос</value></data>
+  <data name="Reload" xml:space="preserve"><value>Перезагрузить</value></data>
+  <data name="ClearRecords" xml:space="preserve"><value>Очистить записи</value></data>
+  <data name="ResetDatabase" xml:space="preserve"><value>Сбросить базу данных</value></data>
+  <data name="LoadCount" xml:space="preserve"><value>Число загружаемых записей:</value></data>
+  <data name="TotalDurationMs" xml:space="preserve"><value>Общее время (мс)</value></data>
+  <data name="ExcitationPurity" xml:space="preserve"><value>Чистота возбуждения (%)</value></data>
+  <data name="HalfWidth" xml:space="preserve"><value>Ширина на полувысоте</value></data>
+  <data name="Log" xml:space="preserve"><value>Журнал</value></data>
+  <data name="NativeSpectrumLog" xml:space="preserve"><value>Нативный журнал спектрометра</value></data>
+  <data name="CieChromaticityDiagram" xml:space="preserve"><value>Диаграмма цветности CIE</value></data>
+  <data name="Wavelength" xml:space="preserve"><value>Длина волны</value></data>
+  <data name="AutoZeroCalibration" xml:space="preserve"><value>Автоматическая калибровка нуля</value></data>
+  <data name="OpenCalibrationGroupTooltip" xml:space="preserve"><value>Открыть окно управления группами калибровки</value></data>
+  <data name="ApplyCalibrationGroupTooltip" xml:space="preserve"><value>Загрузить файлы калибровки для выбранной группы</value></data>
+  <data name="EqeParameterConfig" xml:space="preserve"><value>Параметры светового потока</value></data>
+  <data name="VoltageLabel" xml:space="preserve"><value>Напряжение (V)</value></data>
+  <data name="CurrentMilliampLabel" xml:space="preserve"><value>Ток (mA)</value></data>
+  <data name="RecalculateEqe" xml:space="preserve"><value>Пересчитать EQE</value></data>
+  <data name="SmuSourceMeter" xml:space="preserve"><value>Источник-измеритель (SMU)</value></data>
+  <data name="SmuConnectionSettingsHint" xml:space="preserve"><value>Перед изменением параметров подключения сначала отключитесь</value></data>
+  <data name="VoltageSource" xml:space="preserve"><value>Источник напряжения</value></data>
+  <data name="ChannelA" xml:space="preserve"><value>Канал A</value></data>
+  <data name="SmuMeasureOrSet" xml:space="preserve"><value>Включить / Задать</value></data>
+  <data name="CloseOutput" xml:space="preserve"><value>Отключить выход</value></data>
+  <data name="ToggleSpectrumTypeTooltip" xml:space="preserve"><value>Переключить относительный/абсолютный спектр</value></data>
+  <data name="QueryDataTooltip" xml:space="preserve"><value>Запросить данные</value></data>
+  <data name="ReloadDataTooltip" xml:space="preserve"><value>Перезагрузить данные из базы</value></data>
+  <data name="DeleteAllRecordsTooltip" xml:space="preserve"><value>Удалить все записи из базы данных</value></data>
+  <data name="ResetDatabaseTooltip" xml:space="preserve"><value>Удалить файл базы данных и создать заново</value></data>
+  <data name="LoadCountTooltip" xml:space="preserve"><value>Количество записей для загрузки по умолчанию (-1 для всех)</value></data>
+  <data name="LuminousFlux" xml:space="preserve"><value>Световой поток (lm)</value></data>
+  <data name="RadiantFlux" xml:space="preserve"><value>Лучистый поток (W)</value></data>
+  <data name="LuminousEfficacy" xml:space="preserve"><value>Световая отдача (lm/W)</value></data>
+  <data name="DataSource" xml:space="preserve"><value>Источник данных</value></data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve"><value>Кривая абсолютного спектра</value></data>
+  <data name="NativeLogPlaceholder" xml:space="preserve"><value>Файл нативного журнала спектрометра еще не создан. После подключения спектрометра журнал появится автоматически.</value></data>
+  <data name="SampleLabel" xml:space="preserve"><value>Образец</value></data>
+  <data name="OperationInProgressPleaseWait" xml:space="preserve"><value>Операция уже выполняется. Пожалуйста, подождите.</value></data>
+  <data name="ZeroCalibrationSuccess" xml:space="preserve"><value>Калибровка нуля выполнена успешно</value></data>
+  <data name="ZeroCalibrationFailed" xml:space="preserve"><value>Ошибка калибровки нуля: {0}</value></data>
+  <data name="ZeroCalibrationException" xml:space="preserve"><value>Исключение при калибровке нуля: {0}</value></data>
+  <data name="PromptTitle" xml:space="preserve"><value>Подсказка</value></data>
+  <data name="NoShutterAutoZero" xml:space="preserve"><value>Шторка отсутствует, автоматическая калибровка нуля невозможна</value></data>
+  <data name="PleaseRunAdaptiveAutoDarkFirst" xml:space="preserve"><value>Сначала выполните адаптивную калибровку нуля один раз</value></data>
+  <data name="AdaptiveAutoDarkSuccess" xml:space="preserve"><value>Адаптивная калибровка нуля выполнена успешно</value></data>
+  <data name="AdaptiveAutoDarkFailed" xml:space="preserve"><value>Ошибка адаптивной калибровки нуля: {0}</value></data>
+  <data name="ContinuousTestCompletedWithFailureCount" xml:space="preserve"><value>Непрерывный тест завершен, ошибок: {0}</value></data>
+  <data name="SP100SetSuccess" xml:space="preserve"><value>Параметры SP100 успешно применены</value></data>
+  <data name="SP100SetFailed" xml:space="preserve"><value>Не удалось применить параметры SP100: {0}</value></data>
+  <data name="ConnectionFailedWithDeviceDetected" xml:space="preserve"><value>Ошибка подключения: {0}&#xA;&#xA;Обнаружено устройство: {1}&#xA;Причиной сбоя подключения может быть проблема с лицензией.&#xA;&#xA;Открыть менеджер лицензий?</value></data>
+  <data name="ConnectionFailedLicenseCheckTitle" xml:space="preserve"><value>Ошибка подключения - проверка лицензии</value></data>
+  <data name="ConnectionFailedWithError" xml:space="preserve"><value>Ошибка подключения: {0}</value></data>
+  <data name="ConnectSourceMeter" xml:space="preserve"><value>Подключить источник-измеритель</value></data>
+  <data name="DisconnectSourceMeter" xml:space="preserve"><value>Отключить источник-измеритель</value></data>
+  <data name="MeasureAndReadSourceMeter" xml:space="preserve"><value>Включить и считать источник-измеритель</value></data>
+  <data name="CloseSourceMeterOutput" xml:space="preserve"><value>Отключить выход источника-измерителя</value></data>
+  <data name="SelectDataToRecalculate" xml:space="preserve"><value>Сначала выберите данные для пересчета</value></data>
+  <data name="ConnectionFailedTitle" xml:space="preserve"><value>Ошибка подключения</value></data>
+  <data name="DisconnectionFailedTitle" xml:space="preserve"><value>Ошибка отключения</value></data>
+  <data name="ReadFailedTitle" xml:space="preserve"><value>Ошибка чтения</value></data>
+  <data name="SourceMeterConnectFailedCheckSettings" xml:space="preserve"><value>Не удалось подключить источник-измеритель. Проверьте имя устройства и способ подключения.</value></data>
+  <data name="SourceMeterReadFailed" xml:space="preserve"><value>Не удалось считать данные с источника-измерителя</value></data>
+  <data name="CloseOutputFailedTitle" xml:space="preserve"><value>Ошибка отключения выхода</value></data>
+  <data name="SourceMeterCloseOutputFailed" xml:space="preserve"><value>Не удалось отключить выход источника-измерителя</value></data>
+  <data name="SourceValueVoltage" xml:space="preserve"><value>Задаваемое значение (V)</value></data>
+  <data name="SourceValueCurrentMilliamp" xml:space="preserve"><value>Задаваемое значение (mA)</value></data>
+  <data name="LimitMilliamp" xml:space="preserve"><value>Предел (mA)</value></data>
+  <data name="LimitVoltage" xml:space="preserve"><value>Предел (V)</value></data>
+  <data name="VoltageSourceModeHint" xml:space="preserve"><value>Режим источника напряжения: измеряемое значение в V, предел в mA</value></data>
+  <data name="CurrentSourceModeHint" xml:space="preserve"><value>Режим источника тока: измеряемое значение в mA, предел в V</value></data>
+  <data name="LuminousFluxMode" xml:space="preserve"><value>Режим светового потока</value></data>
+  <data name="BrightnessChromaticityMode" xml:space="preserve"><value>Режим яркости и цветности</value></data>
+  <data name="DeviceNameRequired" xml:space="preserve"><value>Имя устройства не может быть пустым</value></data>
+  <data name="ConnectingSourceMeter" xml:space="preserve"><value>Подключение источника-измерителя...</value></data>
+  <data name="ConnectedStatus" xml:space="preserve"><value>Подключено</value></data>
+  <data name="DisconnectingSourceMeter" xml:space="preserve"><value>Отключение источника-измерителя...</value></data>
+  <data name="MeasuringAndReading" xml:space="preserve"><value>Включение и считывание...</value></data>
+  <data name="ReadCompletedAt" xml:space="preserve"><value>Считано {0}</value></data>
+  <data name="OutputClosed" xml:space="preserve"><value>Выход отключен</value></data>
 </root>

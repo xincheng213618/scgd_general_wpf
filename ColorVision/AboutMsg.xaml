@@ -54,7 +54,7 @@
                                     </EventTrigger>
                                 </Border.Triggers>
                                 <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                    <graphics:TextShape x:Name="TextSharp1" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" FontSize="50" StrokeThickness="2" Text="确定">
+                                    <graphics:TextShape x:Name="TextSharp1" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" FontSize="50" StrokeThickness="2" Text="{x:Static properties:Resources.OK}">
                                         <graphics:TextShape.Stroke>
                                             <LinearGradientBrush Opacity="0.8" StartPoint="1,1" EndPoint="0.0,0">
                                                 <LinearGradientBrush.RelativeTransform>
@@ -84,7 +84,7 @@
                 <TextBlock x:Name="TextBlockVision" HorizontalAlignment="Center" Text="ColorVision (64位) -  1.0.0.0" TextAlignment="Center" TextWrapping="Wrap" />
                 <TextBlock x:Name="TextCUDAVision" VerticalAlignment="Center" Text="CUDA" TextAlignment="Center" Visibility="Collapsed" />
                 <TextBox x:Name="TextBoxHardwareId" Margin="10,2,10,0" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0" IsReadOnly="True" Text="-" TextAlignment="Center" TextWrapping="Wrap" />
-                <TextBlock VerticalAlignment="Center" Text="CopyRight © 2024-2026 ColorVision All Rigths Reserved" TextAlignment="Center" />
+                <TextBlock VerticalAlignment="Center" Text="© 2023-2026 ColorVision All Rigths Reserved" TextAlignment="Center" />
             </StackPanel>
 
 

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
+using ColorVision.Database.Properties;
 
 namespace ColorVision.Database
 {
@@ -17,7 +18,7 @@ namespace ColorVision.Database
 
         public SqliteDatabaseBrowserProvider(string providerId, string providerName, Func<string> dbPathFactory, Func<string, SqlSugarClient> clientFactory)
         {
-            _providerId = string.IsNullOrWhiteSpace(providerId) ? throw new ArgumentException("ProviderId 不能为空。", nameof(providerId)) : providerId;
+            _providerId = string.IsNullOrWhiteSpace(providerId) ? throw new ArgumentException(Properties.Resources.DB_ProviderIdEmpty, nameof(providerId)) : providerId;
             _providerName = string.IsNullOrWhiteSpace(providerName) ? "SQLite" : providerName;
             _dbPathFactory = dbPathFactory ?? throw new ArgumentNullException(nameof(dbPathFactory));
             _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
@@ -170,7 +171,7 @@ ORDER BY name";
         protected override string QuoteIdentifier(string identifier)
         {
             if (string.IsNullOrWhiteSpace(identifier))
-                throw new ArgumentException("数据库标识符不能为空。", nameof(identifier));
+                throw new ArgumentException(Properties.Resources.DB_DbIdEmpty, nameof(identifier));
 
             return $"\"{identifier.Replace("\"", "\"\"")}\"";
         }

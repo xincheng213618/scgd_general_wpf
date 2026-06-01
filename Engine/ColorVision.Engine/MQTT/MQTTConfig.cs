@@ -49,7 +49,9 @@ namespace ColorVision.Engine.MQTT
 
         public override string ToString()
         {
-            return $"Host={Host};Port={Port};UserName={UserName};UserPwd={UserPwd}";
+            string userName = string.IsNullOrWhiteSpace(UserName) ? "<empty>" : "***";
+            string userPwd = string.IsNullOrWhiteSpace(UserPwd) ? "<empty>" : "***";
+            return $"Host={Host};Port={Port};UserName={userName};UserPwd={userPwd}";
         }
 
     }

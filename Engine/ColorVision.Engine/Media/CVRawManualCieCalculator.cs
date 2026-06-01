@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
 
@@ -24,69 +25,57 @@ namespace ColorVision.Engine.Media
 
         public static CVRawManualCieConfig Instance => ConfigService.Instance.GetRequiredService<CVRawManualCieConfig>();
 
-        [Category("输入归一化")]
-        [DisplayName("Gain_x")]
-        [Description("第一输入通道的增益，按历史 ColorMulti 顺序对应矩阵第一列。")]
+        [Display(Name = nameof(Gain_x), GroupName = "Engine_PG_InputNormalization", Description = "Engine_PG_GainXDesc", ResourceType = typeof(Properties.Resources))]
         public double Gain_x { get; set; } = 1d;
 
-        [Category("输入归一化")]
-        [DisplayName("Gain_y")]
-        [Description("第二输入通道的增益，按历史 ColorMulti 顺序对应矩阵第二列。")]
+        [Display(Name = nameof(Gain_y), GroupName = "Engine_PG_InputNormalization", Description = "Engine_PG_GainYDesc", ResourceType = typeof(Properties.Resources))]
         public double Gain_y { get; set; } = 1d;
 
-        [Category("输入归一化")]
-        [DisplayName("Gain_z")]
-        [Description("第三输入通道的增益，按历史 ColorMulti 顺序对应矩阵第三列。")]
+        [Display(Name = nameof(Gain_z), GroupName = "Engine_PG_InputNormalization", Description = "Engine_PG_GainZDesc", ResourceType = typeof(Properties.Resources))]
         public double Gain_z { get; set; } = 1d;
 
-        [Category("输入归一化")]
-        [DisplayName("Texp_x")]
-        [Description("第一输入通道曝光，填 0 时回退到文件里的曝光值。")]
+        [Display(Name = nameof(Texp_x), GroupName = "Engine_PG_InputNormalization", Description = "Engine_PG_TexpXDesc", ResourceType = typeof(Properties.Resources))]
         public double Texp_x { get; set; }
 
-        [Category("输入归一化")]
-        [DisplayName("Texp_y")]
-        [Description("第二输入通道曝光，填 0 时回退到文件里的曝光值。")]
+        [Display(Name = nameof(Texp_y), GroupName = "Engine_PG_InputNormalization", Description = "Engine_PG_TexpYDesc", ResourceType = typeof(Properties.Resources))]
         public double Texp_y { get; set; }
 
-        [Category("输入归一化")]
-        [DisplayName("Texp_z")]
-        [Description("第三输入通道曝光，填 0 时回退到文件里的曝光值。")]
+        [Display(Name = nameof(Texp_z), GroupName = "Engine_PG_InputNormalization", Description = "Engine_PG_TexpZDesc", ResourceType = typeof(Properties.Resources))]
         public double Texp_z { get; set; }
 
-        [Category("矩阵 X 行")]
+        [Display(GroupName = "Engine_PG_MatrixXRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("a")]
         public double A { get; set; } = DefaultA;
 
-        [Category("矩阵 X 行")]
+        [Display(GroupName = "Engine_PG_MatrixXRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("b")]
         public double B { get; set; } = DefaultB;
 
-        [Category("矩阵 X 行")]
+        [Display(GroupName = "Engine_PG_MatrixXRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("c")]
         public double C { get; set; } = DefaultC;
 
-        [Category("矩阵 Y 行")]
+        [Display(GroupName = "Engine_PG_MatrixYRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("d")]
         public double D { get; set; } = DefaultD;
 
-        [Category("矩阵 Y 行")]
+        [Display(GroupName = "Engine_PG_MatrixYRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("e")]
         public double E { get; set; } = DefaultE;
 
-        [Category("矩阵 Y 行")]
+        [Display(GroupName = "Engine_PG_MatrixYRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("f")]
         public double F { get; set; } = DefaultF;
 
-        [Category("矩阵 Z 行")]
+        [Display(GroupName = "Engine_PG_MatrixZRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("g")]
         public double G { get; set; } = DefaultG;
 
-        [Category("矩阵 Z 行")]
+        [Display(GroupName = "Engine_PG_MatrixZRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("h")]
         public double H { get; set; } = DefaultH;
 
-        [Category("矩阵 Z 行")]
+        [Display(GroupName = "Engine_PG_MatrixZRow", ResourceType = typeof(Properties.Resources))]
         [DisplayName("i")]
         public double I { get; set; } = DefaultI;
 

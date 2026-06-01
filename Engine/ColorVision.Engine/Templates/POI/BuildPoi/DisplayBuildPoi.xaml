@@ -28,7 +28,7 @@
             </StackPanel>
             <StackPanel Margin="0,2" Visibility="{Binding IsPOIBuildCommon,Converter={StaticResource bool2VisibilityConverter}}">
                 <DockPanel >
-                    <RadioButton x:Name="CircleChecked"  Content="圆形" IsChecked="True" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                    <RadioButton x:Name="CircleChecked"  Content="{x:Static properties:Resources.Circle}" IsChecked="True" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
                 <UniformGrid Columns="3">
                     <DockPanel>
@@ -48,7 +48,7 @@
             </StackPanel>
             <StackPanel Margin="0,2" Visibility="{Binding IsPOIBuildCommon,Converter={StaticResource bool2VisibilityConverter}}">
                 <DockPanel>
-                    <RadioButton  x:Name="RectChecked" Content="矩形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                    <RadioButton  x:Name="RectChecked" Content="{x:Static properties:Resources.Rect}" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
                 <UniformGrid Columns="4">
                     <DockPanel>
@@ -78,7 +78,7 @@
 
             <StackPanel Margin="0,2" Visibility="{Binding IsPOIBuildCommon,Converter={StaticResource bool2VisibilityConverter}}">
                 <DockPanel>
-                    <RadioButton  x:Name="MaskChecked" Content="四边形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                    <RadioButton  x:Name="MaskChecked" Content="{x:Static properties:Resources.Quadrilateral}" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
                 <UniformGrid Columns="4">
                     <DockPanel Margin="0,0,0,1">
@@ -188,7 +188,7 @@
                                         </BeginStoryboard>
                                     </EventTrigger>
                                 </Button.Triggers>
-                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="{x:Static properties:Resources.Refresh}">
                                     <TextBlock.RenderTransform>
                                         <RotateTransform x:Name="rotateTransform" CenterX="7.5" CenterY="7.5"/>
                                     </TextBlock.RenderTransform>

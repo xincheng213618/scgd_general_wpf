@@ -11,6 +11,7 @@ namespace FlowEngineLib;
 public class MQTTHelper
 {
     public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTHelper));
+    private const string EmptyServerMessage = "MQTT服务器地址为空。";
 
     private static string Server;
     private static int Port = 1883;
@@ -27,7 +28,7 @@ public class MQTTHelper
 
     public static void SetDefaultCfg(string server, int port, string userName, string password, bool isServer, Action<ResultData_MQTT> callback)
     {
-        Server = server;
+        Server = NormalizeServer(server);
         Port = port;
         UserName = userName;
         Password = password;
@@ -44,6 +45,33 @@ public class MQTTHelper
     public static int GetPortCfg() => Port;
     public static string GetServerCfg() => Server;
 
+    private static string NormalizeServer(string server)
+    {
+        return string.IsNullOrWhiteSpace(server) ? null : server.Trim();
+    }
+
+    private static ResultData_MQTT CreateClientConnectedResult(int resultCode, string resultMessage)
+    {
+        return new ResultData_MQTT
+        {
+            ResultCode = resultCode,
+            EventType = EventTypeEnum.ClientConnected,
+            ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>{resultMessage}"
+        };
+    }
+
+    private void NotifyCallback(ResultData_MQTT resultData)
+    {
+        try
+        {
+            _Callback?.Invoke(resultData);
+        }
+        catch (Exception ex)
+        {
+            logger.Error("MQTT回调执行失败", ex);
+        }
+    }
+
     #endregion
 
     #region Client 端逻辑
@@ -51,44 +79,55 @@ public class MQTTHelper
     public async Task<ResultData_MQTT> CreateMQTTClientAndStart(string mqttServerUrl, int port, string userName, string userPassword, Action<ResultData_MQTT> callback)
     {
         _Callback = callback;
+        var server = NormalizeServer(mqttServerUrl);
 
-        // Try to reuse a pooled connection first
-        var pooledClient = MQTTClientPool.Acquire(mqttServerUrl, port, userName);
-        if (pooledClient != null)
+        if (server == null)
         {
-            _MqttClient = pooledClient;
-            // Attach our handlers to the shared client
-            _MqttClient.ConnectedAsync += ConnectedHandle;
-            _MqttClient.DisconnectedAsync += DisconnectedHandle;
-            _MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
+            logger.Warn("CreateMQTTClientAndStart skipped because MQTT server host is empty.");
+            var invalidHostResult = CreateClientConnectedResult(-1, $"执行了开启MQTTClient_失败！{EmptyServerMessage}");
+            NotifyCallback(invalidHostResult);
+            return invalidHostResult;
+        }
 
-            var result = new ResultData_MQTT
+        try
+        {
+            var pooledClient = MQTTClientPool.Acquire(server, port, userName);
+            if (pooledClient != null)
             {
-                ResultCode = 1,
-                EventType = EventTypeEnum.ClientConnected,
-                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>复用MQTT连接_成功！[{mqttServerUrl}:{port}]"
-            };
-            _Callback?.Invoke(result);
+                _MqttClient = pooledClient;
+                _MqttClient.ConnectedAsync += ConnectedHandle;
+                _MqttClient.DisconnectedAsync += DisconnectedHandle;
+                _MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
+
+                var pooledResult = CreateClientConnectedResult(1, $"复用MQTT连接_成功！[{server}:{port}]");
+                NotifyCallback(pooledResult);
+                return pooledResult;
+            }
+
+            var optionsBuilder = BuildClientOptions(server, port, userName, userPassword);
+            var createResult = await CreateMQTTClientAndStart(optionsBuilder, callback);
+
+            if (_MqttClient != null && _MqttClient.IsConnected)
+            {
+                MQTTClientPool.Register(_MqttClient, server, port, userName);
+            }
+
+            return createResult;
+        }
+        catch (Exception ex)
+        {
+            logger.Error($"执行了开启MQTTClient_失败！[{server}:{port}]", ex);
+            var result = CreateClientConnectedResult(-1, $"执行了开启MQTTClient_失败！错误信息：{ex.Message}");
+            NotifyCallback(result);
             return result;
         }
-
-        // No pooled connection available – create a new one
-        var optionsBuilder = BuildClientOptions(mqttServerUrl, port, userName, userPassword);
-        var createResult = await CreateMQTTClientAndStart(optionsBuilder, callback);
-
-        // Register the newly created client in the pool
-        if (_MqttClient != null && _MqttClient.IsConnected)
-        {
-            MQTTClientPool.Register(_MqttClient, mqttServerUrl, port, userName);
-        }
-
-        return createResult;
     }
 
     private MqttClientOptionsBuilder BuildClientOptions(string mqttServerUrl, int port, string userName, string userPassword)
     {
+        var server = NormalizeServer(mqttServerUrl) ?? throw new ArgumentException(EmptyServerMessage, nameof(mqttServerUrl));
         var builder = new MqttClientOptionsBuilder()
-            .WithTcpServer(mqttServerUrl, port)
+            .WithTcpServer(server, port)
             .WithClientId(Guid.NewGuid().ToString("N"));
 
         if (!string.IsNullOrEmpty(userName))
@@ -137,15 +176,10 @@ public class MQTTHelper
         }
         catch (Exception ex)
         {
-            resultData = new ResultData_MQTT
-            {
-                ResultCode = -1,
-                EventType = EventTypeEnum.ClientConnected,
-                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了开启MQTTClient_失败！错误信息：{ex.Message}"
-            };
+            resultData = CreateClientConnectedResult(-1, $"执行了开启MQTTClient_失败！错误信息：{ex.Message}");
         }
 
-        _Callback?.Invoke(resultData);
+        NotifyCallback(resultData);
         return resultData;
     }
 

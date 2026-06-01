@@ -138,6 +138,69 @@
   <data name="ManagementService" xml:space="preserve">
     <value>Services de gestion</value>
   </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>Lire la configuration du service</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>Remplacer le CFG du service</value>
+  </data>
+  <data name="ServiceManager" xml:space="preserve">
+    <value>Gestionnaire de services</value>
+  </data>
+  <data name="CVWinSMSPath" xml:space="preserve">
+    <value>Chemin CVWinSMS</value>
+  </data>
+  <data name="CVWinSMSPathDescription" xml:space="preserve">
+    <value>Chemin de l'exécutable de l'outil de service CVWinSMS.</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
+    <value>Mise à jour automatique CVWinSMS</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
+    <value>Autorise l'outil de service CVWinSMS à détecter et appliquer automatiquement les mises à jour.</value>
+  </data>
+  <data name="ServiceManagerBaseLocation" xml:space="preserve">
+    <value>Racine d'installation du service</value>
+  </data>
+  <data name="ServiceManagerBaseLocationDescription" xml:space="preserve">
+    <value>Dossier racine des composants de service, de la base de données et des packages MQTT.</value>
+  </data>
+  <data name="ServiceManagerMySqlPort" xml:space="preserve">
+    <value>Port MySQL</value>
+  </data>
+  <data name="ServiceManagerMySqlPortDescription" xml:space="preserve">
+    <value>Port d'écoute du service MySQL.</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrl" xml:space="preserve">
+    <value>URL de mise à jour du service</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrlDescription" xml:space="preserve">
+    <value>URL du serveur utilisée pour mettre à jour et télécharger les packages de service en ligne.</value>
+  </data>
+  <data name="ServiceManagerDownloadLocation" xml:space="preserve">
+    <value>Dossier de téléchargement</value>
+  </data>
+  <data name="ServiceManagerDownloadLocationDescription" xml:space="preserve">
+    <value>Dossier utilisé pour enregistrer les téléchargements en ligne des packages de service, MySQL, MQTT et fichiers associés.</value>
+  </data>
+  <data name="ServiceManagerInstallServiceChecked" xml:space="preserve">
+    <value>Sélectionner le package de service par défaut</value>
+  </data>
+  <data name="ServiceManagerInstallServiceCheckedDescription" xml:space="preserve">
+    <value>Sélectionne par défaut l'installation du package de service à l'ouverture de l'assistant.</value>
+  </data>
+  <data name="ServiceManagerInstallMySqlChecked" xml:space="preserve">
+    <value>Sélectionner MySQL par défaut</value>
+  </data>
+  <data name="ServiceManagerInstallMySqlCheckedDescription" xml:space="preserve">
+    <value>Sélectionne par défaut l'installation de MySQL à l'ouverture de l'assistant.</value>
+  </data>
+  <data name="ServiceManagerInstallMqttChecked" xml:space="preserve">
+    <value>Sélectionner MQTT par défaut</value>
+  </data>
+  <data name="ServiceManagerInstallMqttCheckedDescription" xml:space="preserve">
+    <value>Sélectionne par défaut l'installation de MQTT à l'ouverture de l'assistant.</value>
+  </data>
   <data name="Service" xml:space="preserve">
     <value>Service</value>
   </data>

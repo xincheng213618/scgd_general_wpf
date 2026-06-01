@@ -169,7 +169,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             {
                 if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
                 {
-                    MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.BatchNumberCannotBeEmpty, "ColorVision");
                     return false;
                 }
                 sn = AlgBatchCode.Text;
@@ -185,7 +185,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             }
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
                 return false;
             }
 
@@ -236,7 +236,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             if (!File.Exists(ImageFile.Text))
             {
-                MessageBox.Show("找不到图像文件");
+                MessageBox.Show(Properties.Resources.ImageFileNotFound);
                 return;
             }
             Device.View.ImageView.OpenImage(ImageFile.Text);

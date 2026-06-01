@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Templates.POI.POIFilters"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:PoiFilterParam}"
              d:DesignHeight="175" d:DesignWidth="300" Width="300" Height="175" Initialized="UserControl_Initialized">
@@ -21,9 +22,9 @@
             <StackPanel Margin="5">
                 <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="0" >
                     <StackPanel Margin="5">
-                        <TextBlock Text="三个全为False时执行会报错" Foreground="Red" Margin="0,0,0,5"/>
+                        <TextBlock Text="{x:Static properties:Resources.NoAreaError}" Foreground="Red" Margin="0,0,0,5"/>
                         <DockPanel  Margin="0,0,0,5">
-                            <TextBlock Text="关注点过滤启用" MinWidth="100"/>
+                            <TextBlock Text="{x:Static properties:Resources.FilterEnabled}" MinWidth="100"/>
                             <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding Enable}"/>
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
@@ -40,7 +41,7 @@
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5" >
                             <DockPanel Margin="5,0,0,0" DockPanel.Dock="Right">
-                                <TextBlock Text="阈值启用百分比"  MinWidth="100"/>
+                                <TextBlock Text="{x:Static properties:Resources.ThresholdPercentEnable}"  MinWidth="100"/>
                                 <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding  ThresholdUsePercent}"/>
                             </DockPanel>
                             <TextBlock Text="Threshold"  MinWidth="100"/>

@@ -28,6 +28,11 @@
                             <TextBlock Text="{x:Static properties:Resources.LabelFilePrefix}" Width="100" VerticalAlignment="Center"/>
                             <TextBox x:Name="txtFilePrefix" Text="Conoscope_Export" />
                         </DockPanel>
+                        <DockPanel Margin="5,0,5,5">
+                            <TextBlock Text="{x:Static properties:Resources.LabelDecimalPlaces}" Width="100" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txtDecimalPlaces" Text="4" Width="60"/>
+                            <TextBlock Text="{x:Static properties:Resources.HintDecimalPlacesDefault4}" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                        </DockPanel>
                         <TextBlock Text="{x:Static properties:Resources.HintFileNaming}" 
                                    Margin="5" FontSize="11" Foreground="Gray"/>
                     </StackPanel>
@@ -44,6 +49,7 @@
                         <CheckBox x:Name="chkChannelCieU" Content="{x:Static properties:Resources.ChannelCieU}" IsChecked="False" Margin="5"/>
                         <CheckBox x:Name="chkChannelCieV" Content="{x:Static properties:Resources.ChannelCieV}" IsChecked="False" Margin="5"/>
                         <CheckBox x:Name="chkChannelColorDifference" Content="{x:Static properties:Resources.ChannelDeltaUV}" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelContrast" Content="{x:Static properties:Resources.ChannelContrast}" IsChecked="False" Margin="5"/>
                         <TextBlock Text="{x:Static properties:Resources.HintChannelPerFile}" 
                                    Margin="5" FontSize="11" Foreground="Gray"/>
                     </StackPanel>

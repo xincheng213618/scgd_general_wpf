@@ -8,7 +8,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.MQTT
 {
-    public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarProviderUpdatable
+    public class MQTTSettingProvider : IStatusBarProviderUpdatable
     {
         public event EventHandler StatusBarItemsChanged;
 
@@ -16,24 +16,6 @@ namespace ColorVision.Engine.MQTT
         {
             MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
                 StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata>
-            {
-                new ConfigSettingMetadata
-                {
-                    Group ="Engine",
-                    BindingName = nameof(MQTTSetting.IsUseMQTT),
-                    Source = MQTTSetting.Instance
-                },
-                new ConfigSettingMetadata
-                {
-                    BindingName = nameof(MQTTSetting.DefaultTimeout),
-                    Source = MQTTSetting.Instance
-                }
-            };
         }
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
@@ -63,21 +45,10 @@ namespace ColorVision.Engine.MQTT
     {
         public static MQTTSetting Instance { get; set; } = ConfigService.Instance.GetRequiredService<MQTTSetting>();
 
-        public static MQTTControl MQTTControl => MQTTControl.GetInstance();
         public MQTTSetting()
         {
 
         }
-
-        /// <summary>
-        /// MQTT
-        /// </summary>
-        public bool IsUseMQTT { get => _IsUseMQTT; set { _IsUseMQTT = value; OnPropertyChanged(); } }
-        private bool _IsUseMQTT = true;
-
-        public double DefaultTimeout { get => _DefaultTimeout; set { _DefaultTimeout = value; OnPropertyChanged(); } }
-        private double _DefaultTimeout = 30000;
-
 
         public MQTTConfig MQTTConfig { get; set; } = new MQTTConfig();
 

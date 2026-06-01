@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿#pragma warning disable CA1310,CA1863,CS8601,CS8602
+using log4net;
 using log4net.Util;
 using Newtonsoft.Json;
 using System.IO;

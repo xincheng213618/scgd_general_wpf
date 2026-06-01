@@ -1,74 +1,85 @@
 ﻿using ColorVision.UI.Menus;
 using log4net;
-using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
 {
-    public class MenuItemManagerService
+    public static class MenuItemManagerService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuItemManagerService));
-        private static MenuItemManagerService? _instance;
-        private static readonly object _locker = new();
-        public static MenuItemManagerService GetInstance()
+
+        public static void SyncSettingsFromMenuItems()
         {
-            lock (_locker) { return _instance ??= new MenuItemManagerService(); }
+            SyncSettingsFromMenuItems(MenuManager.GetInstance(), MenuItemManagerConfig.Instance);
         }
 
-        private MenuItemManagerService() { }
-
-        public void ApplySettings()
+        public static void ApplySettings()
         {
             var menuManager = MenuManager.GetInstance();
             var config = MenuItemManagerConfig.Instance;
 
-            // Sync settings from discovered menu items
             SyncSettingsFromMenuItems(menuManager, config);
+            ApplyConfigToMenuManager(menuManager, config);
+        }
 
-            // Apply visibility (hidden items)
+        public static void RebuildMenu()
+        {
+            ApplySettings();
+            MenuManager.GetInstance().RebuildAllMenus();
+        }
+
+        public static bool IsValidOwnerOverride(MenuItemSetting setting, string? targetOwnerGuid)
+        {
+            if (string.IsNullOrWhiteSpace(targetOwnerGuid)) return true;
+            if (string.IsNullOrWhiteSpace(setting.GuidId)) return false;
+            if (string.Equals(setting.GuidId, targetOwnerGuid, StringComparison.Ordinal)) return false;
+
+            var settingsByGuid = MenuItemManagerConfig.Instance.Settings
+                .Where(s => !string.IsNullOrWhiteSpace(s.GuidId))
+                .GroupBy(s => s.GuidId!, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+
+            var currentGuid = targetOwnerGuid;
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+
+            while (!string.IsNullOrWhiteSpace(currentGuid))
+            {
+                if (string.Equals(currentGuid, setting.GuidId, StringComparison.Ordinal)) return false;
+                if (!visited.Add(currentGuid)) return false;
+
+                if (!settingsByGuid.TryGetValue(currentGuid, out var parentSetting))
+                    break;
+
+                currentGuid = GetEffectiveOwner(parentSetting);
+            }
+
+            return true;
+        }
+
+        private static void ApplyConfigToMenuManager(MenuManager menuManager, MenuItemManagerConfig config)
+        {
+            menuManager.FilteredGuids.Clear();
+            menuManager.OrderOverrides.Clear();
+            menuManager.OwnerGuidOverrides.Clear();
+
             foreach (var setting in config.Settings.Where(s => !s.IsVisible && !string.IsNullOrEmpty(s.GuidId)))
             {
                 menuManager.AddFilteredGuid(setting.GuidId);
             }
 
-            // Apply order overrides
             foreach (var setting in config.Settings.Where(s => s.OrderOverride.HasValue && !string.IsNullOrEmpty(s.GuidId)))
             {
                 menuManager.OrderOverrides[setting.GuidId] = setting.OrderOverride!.Value;
             }
 
-            // Apply OwnerGuid overrides
             foreach (var setting in config.Settings.Where(s => !string.IsNullOrEmpty(s.OwnerGuidOverride) && !string.IsNullOrEmpty(s.GuidId)))
             {
-                menuManager.OwnerGuidOverrides[setting.GuidId] = setting.OwnerGuidOverride!;
-            }
-        }
-
-        public void ApplyHotkeys(Window mainWindow)
-        {
-            if (mainWindow == null) return;
-            var menuManager = MenuManager.GetInstance();
-            var config = MenuItemManagerConfig.Instance;
-
-            // 使用过滤后的有效菜单项来绑定快捷键
-            var activeMenuItems = menuManager.GetAllMenuItemsFiltered();
-
-            foreach (var setting in config.Settings.Where(s => !string.IsNullOrEmpty(s.HotkeyOverride) && !string.IsNullOrEmpty(s.GuidId)))
-            {
-                var menuItem = activeMenuItems.FirstOrDefault(mi => mi.GuidId == setting.GuidId);
-                if (menuItem?.Command == null) continue;
-
-                var hotkey = ParseHotkey(setting.HotkeyOverride!);
-                if (hotkey == null) continue;
-
-                try
+                if (IsValidOwnerOverride(setting, setting.OwnerGuidOverride))
                 {
-                    var binding = new KeyBinding(menuItem.Command, hotkey.Key, hotkey.ModifierKeys);
-                    mainWindow.InputBindings.Add(binding);
+                    menuManager.OwnerGuidOverrides[setting.GuidId] = setting.OwnerGuidOverride!;
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    log.Warn($"Failed to register hotkey '{setting.HotkeyOverride}' for '{setting.GuidId}': {ex.Message}");
+                    log.Warn($"Skip invalid OwnerGuid override '{setting.OwnerGuidOverride}' for '{setting.GuidId}'.");
                 }
             }
         }
@@ -77,7 +88,6 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         {
             var existingGuids = new HashSet<string>(config.Settings.Where(s => s.GuidId != null && s.GuidId.Length > 0).Select(s => s.GuidId!));
 
-            // 获取系统中所有加载的菜单项（不过滤），确保被隐藏的菜单也能在设置面板中被配置
             var allMenuItems = menuManager.GetAllMenuItems();
 
             foreach (var mi in allMenuItems)
@@ -86,6 +96,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 if (existingGuids.Contains(mi.GuidId)) continue;
 
                 var type = mi.GetType();
+                existingGuids.Add(mi.GuidId);
                 config.Settings.Add(new MenuItemSetting
                 {
                     GuidId = mi.GuidId,
@@ -98,7 +109,6 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 });
             }
 
-            // Update Header/DefaultOrder for existing settings
             var menuItemDict = allMenuItems
                 .Where(mi => mi.GuidId != null && mi.GuidId.Length > 0)
                 .GroupBy(mi => mi.GuidId!)
@@ -118,34 +128,9 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             }
         }
 
-        public void SetMenuItemVisibility(string guidId, bool visible) { /* 保持不变 */ }
-        public void SetMenuItemOrder(string guidId, int? orderOverride) { /* 保持不变 */ }
-        public void SetMenuItemHotkey(string guidId, string? hotkey) { /* 保持不变 */ }
-
-        public void RebuildMenu()
+        private static string? GetEffectiveOwner(MenuItemSetting setting)
         {
-            var menuManager = MenuManager.GetInstance();
-
-            // Clear and reapply filtered guids from config
-            menuManager.FilteredGuids.Clear();
-            menuManager.OrderOverrides.Clear();
-            menuManager.OwnerGuidOverrides.Clear();
-
-            var config = MenuItemManagerConfig.Instance;
-            foreach (var setting in config.Settings.Where(s => !s.IsVisible && !string.IsNullOrEmpty(s.GuidId)))
-                menuManager.AddFilteredGuid(setting.GuidId);
-
-            foreach (var setting in config.Settings.Where(s => s.OrderOverride.HasValue && !string.IsNullOrEmpty(s.GuidId)))
-                menuManager.OrderOverrides[setting.GuidId] = setting.OrderOverride!.Value;
-
-            foreach (var setting in config.Settings.Where(s => !string.IsNullOrEmpty(s.OwnerGuidOverride) && !string.IsNullOrEmpty(s.GuidId)))
-                menuManager.OwnerGuidOverrides[setting.GuidId] = setting.OwnerGuidOverride!;
-
-            // 替换为新的多窗口重建方法
-            menuManager.RebuildAllMenus();
+            return string.IsNullOrWhiteSpace(setting.OwnerGuidOverride) ? setting.OwnerGuid : setting.OwnerGuidOverride;
         }
-
-        private static ParsedHotkey? ParseHotkey(string hotkeyStr) { /* 保持不变 */ return null; }
-        private record ParsedHotkey(Key Key, ModifierKeys ModifierKeys);
     }
 }

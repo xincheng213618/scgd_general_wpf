@@ -297,4 +297,118 @@
   <data name="自动积分时间起始" xml:space="preserve">
     <value>Automatic integration time starts</value>
   </data>
+  <data name="SpectrumWindowTitle" xml:space="preserve"><value>Spectrometer Software</value></data>
+  <data name="ControlPanel" xml:space="preserve"><value>Control Panel</value></data>
+  <data name="SpectrometerConnection" xml:space="preserve"><value>Spectrometer Connection</value></data>
+  <data name="GetDeviceList" xml:space="preserve"><value>Get Device List</value></data>
+  <data name="SerialPortConnection" xml:space="preserve"><value>Serial Port Connection</value></data>
+  <data name="SerialPort" xml:space="preserve"><value>Serial Port</value></data>
+  <data name="BaudRate" xml:space="preserve"><value>Baud Rate</value></data>
+  <data name="CalibrationFiles" xml:space="preserve"><value>Calibration Files</value></data>
+  <data name="Manage" xml:space="preserve"><value>Manage...</value></data>
+  <data name="LoadGroup" xml:space="preserve"><value>Load Group</value></data>
+  <data name="CurrentGroup" xml:space="preserve"><value>Current Group:</value></data>
+  <data name="Load" xml:space="preserve"><value>Load</value></data>
+  <data name="WavelengthCalibration" xml:space="preserve"><value>Wavelength Calibration</value></data>
+  <data name="MagnitudeCalibration" xml:space="preserve"><value>Magnitude Calibration</value></data>
+  <data name="MeasurementParameters" xml:space="preserve"><value>Measurement Parameters</value></data>
+  <data name="IntegrationTimeMs" xml:space="preserve"><value>Integration Time (ms)</value></data>
+  <data name="TestSection" xml:space="preserve"><value>Test</value></data>
+  <data name="ZeroCalibration" xml:space="preserve"><value>Zero Calibration</value></data>
+  <data name="IntervalMs" xml:space="preserve"><value>Interval (ms)</value></data>
+  <data name="MeasurementCount" xml:space="preserve"><value>Measurement Count</value></data>
+  <data name="Progress" xml:space="preserve"><value>Progress</value></data>
+  <data name="Elapsed" xml:space="preserve"><value>Elapsed:</value></data>
+  <data name="Remaining" xml:space="preserve"><value>Remaining:</value></data>
+  <data name="Shutter" xml:space="preserve"><value>Shutter</value></data>
+  <data name="Connect" xml:space="preserve"><value>Connect</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="OpenShutter" xml:space="preserve"><value>Open Shutter</value></data>
+  <data name="CloseShutter" xml:space="preserve"><value>Close Shutter</value></data>
+  <data name="FilterWheel" xml:space="preserve"><value>Filter Wheel</value></data>
+  <data name="CurrentPosition" xml:space="preserve"><value>Current Position:</value></data>
+  <data name="Query" xml:space="preserve"><value>Query</value></data>
+  <data name="SwitchPosition" xml:space="preserve"><value>Switch Position:</value></data>
+  <data name="SpectrumChart" xml:space="preserve"><value>Spectrum Chart</value></data>
+  <data name="AbsoluteSpectrum" xml:space="preserve"><value>Absolute Spectrum</value></data>
+  <data name="GenericQuery" xml:space="preserve"><value>Generic Query</value></data>
+  <data name="Reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="ClearRecords" xml:space="preserve"><value>Clear Records</value></data>
+  <data name="ResetDatabase" xml:space="preserve"><value>Reset Database</value></data>
+  <data name="LoadCount" xml:space="preserve"><value>Load Count:</value></data>
+  <data name="TotalDurationMs" xml:space="preserve"><value>Total Duration (ms)</value></data>
+  <data name="ExcitationPurity" xml:space="preserve"><value>Excitation Purity (%)</value></data>
+  <data name="HalfWidth" xml:space="preserve"><value>FWHM</value></data>
+  <data name="Log" xml:space="preserve"><value>Log</value></data>
+  <data name="NativeSpectrumLog" xml:space="preserve"><value>Spectrometer Native Log</value></data>
+  <data name="CieChromaticityDiagram" xml:space="preserve"><value>CIE Chromaticity Diagram</value></data>
+  <data name="Wavelength" xml:space="preserve"><value>Wavelength</value></data>
+  <data name="AutoZeroCalibration" xml:space="preserve"><value>Automatic Zero Calibration</value></data>
+  <data name="OpenCalibrationGroupTooltip" xml:space="preserve"><value>Open Calibration Group Manager</value></data>
+  <data name="ApplyCalibrationGroupTooltip" xml:space="preserve"><value>Load Calibration Files for the Current Group</value></data>
+  <data name="EqeParameterConfig" xml:space="preserve"><value>Luminous Flux Parameters</value></data>
+  <data name="VoltageLabel" xml:space="preserve"><value>Voltage (V)</value></data>
+  <data name="CurrentMilliampLabel" xml:space="preserve"><value>Current (mA)</value></data>
+  <data name="RecalculateEqe" xml:space="preserve"><value>Recalculate EQE</value></data>
+  <data name="SmuSourceMeter" xml:space="preserve"><value>Source Meter (SMU)</value></data>
+  <data name="SmuConnectionSettingsHint" xml:space="preserve"><value>Disconnect before changing connection settings</value></data>
+  <data name="VoltageSource" xml:space="preserve"><value>Voltage Source</value></data>
+  <data name="ChannelA" xml:space="preserve"><value>Channel A</value></data>
+  <data name="SmuMeasureOrSet" xml:space="preserve"><value>Light On / Apply</value></data>
+  <data name="CloseOutput" xml:space="preserve"><value>Close Output</value></data>
+  <data name="ToggleSpectrumTypeTooltip" xml:space="preserve"><value>Switch Between Relative and Absolute Spectrum</value></data>
+  <data name="QueryDataTooltip" xml:space="preserve"><value>Query Data</value></data>
+  <data name="ReloadDataTooltip" xml:space="preserve"><value>Reload Data from Database</value></data>
+  <data name="DeleteAllRecordsTooltip" xml:space="preserve"><value>Delete All Records from the Database</value></data>
+  <data name="ResetDatabaseTooltip" xml:space="preserve"><value>Delete the Database File and Recreate It</value></data>
+  <data name="LoadCountTooltip" xml:space="preserve"><value>Default number of records to load (-1 for all)</value></data>
+  <data name="LuminousFlux" xml:space="preserve"><value>Luminous Flux (lm)</value></data>
+  <data name="RadiantFlux" xml:space="preserve"><value>Radiant Flux (W)</value></data>
+  <data name="LuminousEfficacy" xml:space="preserve"><value>Luminous Efficacy (lm/W)</value></data>
+  <data name="DataSource" xml:space="preserve"><value>Data Source</value></data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve"><value>Absolute Spectrum Curve</value></data>
+  <data name="NativeLogPlaceholder" xml:space="preserve"><value>Spectrometer native log file has not been generated yet. The log will appear automatically after the spectrometer connects.</value></data>
+  <data name="SampleLabel" xml:space="preserve"><value>Sample</value></data>
+  <data name="OperationInProgressPleaseWait" xml:space="preserve"><value>An operation is already in progress. Please wait.</value></data>
+  <data name="ZeroCalibrationSuccess" xml:space="preserve"><value>Zero calibration succeeded</value></data>
+  <data name="ZeroCalibrationFailed" xml:space="preserve"><value>Zero calibration failed: {0}</value></data>
+  <data name="ZeroCalibrationException" xml:space="preserve"><value>Zero calibration error: {0}</value></data>
+  <data name="PromptTitle" xml:space="preserve"><value>Prompt</value></data>
+  <data name="NoShutterAutoZero" xml:space="preserve"><value>No shutter is available, automatic zero calibration cannot be performed</value></data>
+  <data name="PleaseRunAdaptiveAutoDarkFirst" xml:space="preserve"><value>Please run adaptive zero calibration once first</value></data>
+  <data name="AdaptiveAutoDarkSuccess" xml:space="preserve"><value>Adaptive zero calibration succeeded</value></data>
+  <data name="AdaptiveAutoDarkFailed" xml:space="preserve"><value>Adaptive zero calibration failed: {0}</value></data>
+  <data name="ContinuousTestCompletedWithFailureCount" xml:space="preserve"><value>Continuous test completed, {0} failures</value></data>
+  <data name="SP100SetSuccess" xml:space="preserve"><value>SP100 settings applied successfully</value></data>
+  <data name="SP100SetFailed" xml:space="preserve"><value>SP100 settings failed: {0}</value></data>
+  <data name="ConnectionFailedWithDeviceDetected" xml:space="preserve"><value>Connection failed: {0}&#xA;&#xA;Detected device: {1}&#xA;The connection failure may be caused by a license issue.&#xA;&#xA;Open the license manager?</value></data>
+  <data name="ConnectionFailedLicenseCheckTitle" xml:space="preserve"><value>Connection Failed - License Check</value></data>
+  <data name="ConnectionFailedWithError" xml:space="preserve"><value>Connection failed: {0}</value></data>
+  <data name="ConnectSourceMeter" xml:space="preserve"><value>Connect Source Meter</value></data>
+  <data name="DisconnectSourceMeter" xml:space="preserve"><value>Disconnect Source Meter</value></data>
+  <data name="MeasureAndReadSourceMeter" xml:space="preserve"><value>Turn On and Read Source Meter</value></data>
+  <data name="CloseSourceMeterOutput" xml:space="preserve"><value>Close Source Meter Output</value></data>
+  <data name="SelectDataToRecalculate" xml:space="preserve"><value>Please select data to recalculate first</value></data>
+  <data name="ConnectionFailedTitle" xml:space="preserve"><value>Connection Failed</value></data>
+  <data name="DisconnectionFailedTitle" xml:space="preserve"><value>Disconnect Failed</value></data>
+  <data name="ReadFailedTitle" xml:space="preserve"><value>Read Failed</value></data>
+  <data name="SourceMeterConnectFailedCheckSettings" xml:space="preserve"><value>Failed to connect to the source meter. Check the device name and connection method.</value></data>
+  <data name="SourceMeterReadFailed" xml:space="preserve"><value>Failed to read the source meter</value></data>
+  <data name="CloseOutputFailedTitle" xml:space="preserve"><value>Close Output Failed</value></data>
+  <data name="SourceMeterCloseOutputFailed" xml:space="preserve"><value>Failed to close the source meter output</value></data>
+  <data name="SourceValueVoltage" xml:space="preserve"><value>Source Value (V)</value></data>
+  <data name="SourceValueCurrentMilliamp" xml:space="preserve"><value>Source Value (mA)</value></data>
+  <data name="LimitMilliamp" xml:space="preserve"><value>Limit (mA)</value></data>
+  <data name="LimitVoltage" xml:space="preserve"><value>Limit (V)</value></data>
+  <data name="VoltageSourceModeHint" xml:space="preserve"><value>Voltage source mode: measured value uses V, limit uses mA</value></data>
+  <data name="CurrentSourceModeHint" xml:space="preserve"><value>Current source mode: measured value uses mA, limit uses V</value></data>
+  <data name="LuminousFluxMode" xml:space="preserve"><value>Luminous Flux Mode</value></data>
+  <data name="BrightnessChromaticityMode" xml:space="preserve"><value>Luminance and Chromaticity Mode</value></data>
+  <data name="DeviceNameRequired" xml:space="preserve"><value>Device name cannot be empty</value></data>
+  <data name="ConnectingSourceMeter" xml:space="preserve"><value>Connecting source meter...</value></data>
+  <data name="ConnectedStatus" xml:space="preserve"><value>Connected</value></data>
+  <data name="DisconnectingSourceMeter" xml:space="preserve"><value>Disconnecting source meter...</value></data>
+  <data name="MeasuringAndReading" xml:space="preserve"><value>Turning on and reading...</value></data>
+  <data name="ReadCompletedAt" xml:space="preserve"><value>Read at {0}</value></data>
+  <data name="OutputClosed" xml:space="preserve"><value>Output closed</value></data>
 </root>

@@ -47,7 +47,7 @@ namespace ColorVision.Copilot
         private const int MaxObservedTools = 6;
         private const int MaxObservationContentChars = 1200;
         private const int MaxReasonLength = 200;
-        private const string PlannerSystemPrompt = "你是 ColorVision Copilot 的内部工具规划器。你的唯一任务是基于当前问题、已有工具观察和当前可用工具，决定下一步应该调用哪个工具，或者直接结束工具阶段。不要回答用户问题，不要输出 Markdown，不要解释额外内容。你必须只输出一个 JSON 对象。";
+        private const string PlannerSystemPrompt = "You are the internal tool planner for ColorVision Copilot. Your only task is to decide, from the current question, existing tool observations, and available tools, whether to call one next tool or finish the tool phase. Do not answer the user. Do not output Markdown. Do not add extra explanation. Output only one JSON object.";
 
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentContextBuilder _contextBuilder;
@@ -75,7 +75,7 @@ namespace ColorVision.Copilot
                     Plan = new CopilotAgentPlan
                     {
                         Action = CopilotAgentPlanAction.Finish,
-                        Reason = "当前没有可用工具。",
+                        Reason = "No tools are currently available.",
                         IsFallback = true,
                     },
                 };
@@ -114,21 +114,21 @@ namespace ColorVision.Copilot
             IReadOnlyCollection<string> readableLocalFilePaths)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("你现在要为 Agent 选择下一步动作。只返回 JSON。不要回答用户问题。");
+            builder.AppendLine("Choose the next Agent action. Return JSON only. Do not answer the user.");
             builder.AppendLine();
-            builder.AppendLine("JSON 格式：");
-            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"工具名或空字符串\",\"reason\":\"一句简短中文说明\",\"input\":{\"query\":\"SearchFiles/GrepText/GetRecentLog/FetchUrl 等工具可填写\",\"path\":\"ReadLocalFile/ListDirectory 时可填写\",\"startLine\":0,\"endLine\":0}}");
+            builder.AppendLine("JSON format:");
+            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"tool name or empty string\",\"reason\":\"one short English reason\",\"input\":{\"query\":\"use for SearchFiles/GrepText/GetRecentLog/FetchUrl and similar tools\",\"path\":\"use for ReadLocalFile/ListDirectory\",\"startLine\":0,\"endLine\":0}}");
             builder.AppendLine();
-            builder.AppendLine("决策规则：");
-            builder.AppendLine("1. 如果当前仍缺少关键事实，并且某个可用工具最可能补足信息，就返回 action=tool。");
-            builder.AppendLine("2. 如果已有上下文足够回答，或者剩余工具不会带来实质增益，就返回 action=finish。");
-            builder.AppendLine("3. toolName 只能从当前可用工具中选择。");
-            builder.AppendLine("4. 当 toolName=SearchFiles、GrepText、GetRecentLog 或 FetchUrl 时，尽量填写 input.query，使用更短、更聚焦的搜索词；当 toolName=FetchUrl 时，input.query 优先填写一个完整 URL，避免重复整段用户问题。\n5. 当 toolName=ListDirectory 时，尽量填写 input.path；path 必须来自可列出的本地文件夹列表。\n6. 当 toolName=ReadLocalFile 时，如果目标是分析整个目录或整组候选文件，优先把 input.path 留空，让工具一次性批量读取当前允许文件；只有需要精读单个文件或局部范围时，才填写 input.path、input.startLine、input.endLine。\n7. reason 保持一句话，20 到 60 字优先。");
+            builder.AppendLine("Decision rules:");
+            builder.AppendLine("1. If key facts are still missing and one available tool is likely to provide them, return action=tool.");
+            builder.AppendLine("2. If the context is sufficient to answer, or remaining tools will not add meaningful value, return action=finish.");
+            builder.AppendLine("3. toolName must be selected from the currently available tools.");
+            builder.AppendLine("4. For SearchFiles, GrepText, GetRecentLog, or FetchUrl, fill input.query with short focused terms. For FetchUrl, prefer a complete URL and avoid repeating the whole user question.\n5. For ListDirectory, fill input.path when possible; the path must come from the allowed local directory list.\n6. For ReadLocalFile, leave input.path empty when analyzing a directory or candidate set; fill input.path/startLine/endLine only for close reading of one file or line range.\n7. Keep reason to one short English sentence.");
             builder.AppendLine();
-            builder.AppendLine("# 用户问题");
+            builder.AppendLine("# User question");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
             builder.AppendLine();
-            builder.AppendLine("# 当前可用工具");
+            builder.AppendLine("# Available tools");
             foreach (var tool in availableTools)
             {
                 builder.Append("- ")
@@ -301,10 +301,39 @@ namespace ColorVision.Copilot
             if (availableTools.Count == 0)
                 return null;
 
+            if (CopilotApplicationCapability.HasMenuIntent(request.UserText))
+            {
+                var menuTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "ExecuteMenu", StringComparison.OrdinalIgnoreCase));
+                if (menuTool != null)
+                    return menuTool;
+            }
+
+            if (CopilotApplicationCapability.HasThemeIntent(request.UserText))
+            {
+                var themeTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SetTheme", StringComparison.OrdinalIgnoreCase));
+                if (themeTool != null)
+                    return themeTool;
+            }
+
+            if (CopilotApplicationCapability.HasLanguageIntent(request.UserText))
+            {
+                var languageTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SetLanguage", StringComparison.OrdinalIgnoreCase));
+                if (languageTool != null)
+                    return languageTool;
+            }
+
+            if (CopilotDocsCapability.HasDocumentationIntent(request.UserText))
+            {
+                var docsTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "SearchDocs", StringComparison.OrdinalIgnoreCase));
+                if (docsTool != null)
+                    return docsTool;
+            }
+
             var preferredToolNames = request.Mode switch
             {
                 CopilotAgentMode.Web => new[]
                 {
+                    "SearchDocs",
                     "FetchUrl",
                     "ReadAttachedFile",
                     "ReadLocalFile",
@@ -323,6 +352,7 @@ namespace ColorVision.Copilot
                 },
                 _ => new[]
                 {
+                    "SearchDocs",
                     "ReadLocalFile",
                     "ReadAttachedFile",
                     "ListDirectory",
@@ -345,6 +375,16 @@ namespace ColorVision.Copilot
 
         private static CopilotAgentToolInput BuildFallbackToolInput(CopilotAgentRequest request, string toolName)
         {
+            if (string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotAgentToolInput
+                {
+                    Query = request.UserText ?? string.Empty,
+                };
+            }
+
             if (string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotAgentToolInput
@@ -370,6 +410,14 @@ namespace ColorVision.Copilot
                 return new CopilotAgentToolInput
                 {
                     Query = CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).FirstOrDefault() ?? string.Empty,
+                };
+            }
+
+            if (string.Equals(toolName, "SearchDocs", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotAgentToolInput
+                {
+                    Query = request.UserText ?? string.Empty,
                 };
             }
 
@@ -482,7 +530,11 @@ namespace ColorVision.Copilot
             return string.Equals(toolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(toolName, "SearchDocs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string TruncateObservation(string text, int maxCharacters)

@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.ImageEditor"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
         mc:Ignorable="d"
-        Title="直方图 (Histogram)" Height="450" Width="420" 
+        Title="{x:Static properties:Resources.Histogram_Title}" Height="450" Width="420"
         WindowStartupLocation="CenterScreen" 
         Background="{DynamicResource GlobalBackground}" 
         Initialized="Window_Initialized">

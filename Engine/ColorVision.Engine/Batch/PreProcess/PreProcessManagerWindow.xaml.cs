@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using Properties = ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Batch
 {
@@ -19,7 +20,7 @@ namespace ColorVision.Engine.Batch
                 {
                     "Description" => metadata.Description,
                     "Category" => metadata.Category,
-                    "Enabled" => process.GetConfig() is PreProcessConfigBase { IsEnabled: true } ? "启用" : "停用",
+                    "Enabled" => process.GetConfig() is PreProcessConfigBase { IsEnabled: true } ? Properties.Resources.Flow_PreProcess_EnabledStatus : Properties.Resources.Flow_PreProcess_DisabledStatus,
                     "Templates" => GetTemplateText(process),
                     "TypeName" => metadata.TypeName,
                     _ => metadata.DisplayName,
@@ -57,7 +58,7 @@ namespace ColorVision.Engine.Batch
                 return string.Empty;
             }
 
-            return string.IsNullOrWhiteSpace(config.TemplateNames) ? "全部模板" : config.TemplateNames;
+            return string.IsNullOrWhiteSpace(config.TemplateNames) ? Properties.Resources.Flow_PreProcess_AllTemplates : config.TemplateNames;
         }
     }
 
@@ -129,7 +130,7 @@ namespace ColorVision.Engine.Batch
                 // Show placeholder text
                 PropertyPanel.Children.Add(new TextBlock 
                 { 
-                    Text = "请选择一个预处理器查看配置", 
+                    Text = Properties.Resources.Flow_PreProcess_SelectProcessorToViewConfig,
                     Foreground = System.Windows.Media.Brushes.Gray,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 20, 0, 0)
@@ -167,25 +168,25 @@ namespace ColorVision.Engine.Batch
             // Header
             stack.Children.Add(new TextBlock 
             { 
-                Text = "基本信息", 
+                Text = Properties.Resources.BasicInformation,
                 FontWeight = FontWeights.Bold, 
                 Margin = new Thickness(0, 0, 0, 8) 
             });
 
             // Process Type
-            AddLabeledText(stack, "处理类:", metadata.DisplayName);
-            AddLabeledText(stack, "类型:", metadata.TypeName);
+            AddLabeledText(stack, Properties.Resources.HandleClass + ":", metadata.DisplayName);
+            AddLabeledText(stack, Properties.Resources.Type + ":", metadata.TypeName);
 
             // Category
             if (!string.IsNullOrEmpty(metadata.Category))
             {
-                AddLabeledText(stack, "类别:", metadata.Category);
+                AddLabeledText(stack, Properties.Resources.Flow_PreProcess_Category + ":", metadata.Category);
             }
 
             // Description
             if (!string.IsNullOrEmpty(metadata.Description))
             {
-                AddLabeledText(stack, "描述:", metadata.Description);
+                AddLabeledText(stack, Properties.Resources.Description + ":", metadata.Description);
             }
 
             PropertyPanel.Children.Add(border);
@@ -208,7 +209,7 @@ namespace ColorVision.Engine.Batch
             // Header
             stack.Children.Add(new TextBlock 
             { 
-                Text = "预处理器配置", 
+                Text = Properties.Resources.Flow_PreProcess_ProcessorConfig,
                 FontWeight = FontWeights.Bold, 
                 Margin = new Thickness(0, 0, 0, 8) 
             });

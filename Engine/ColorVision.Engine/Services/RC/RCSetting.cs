@@ -8,7 +8,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class RCSettingProvider : IConfigSettingProvider, IStatusBarProviderUpdatable
+    public class RCSettingProvider : IStatusBarProviderUpdatable
     {
         public event EventHandler StatusBarItemsChanged;
 
@@ -16,19 +16,6 @@ namespace ColorVision.Engine.Services.RC
         {
             MqttRCService.GetInstance().RCServiceConnectChanged += (s, e) =>
                 StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata>
-            {
-                new ConfigSettingMetadata
-                {
-                    Group ="Engine",
-                    BindingName = nameof(RCSetting.IsUseRCService),
-                    Source = RCSetting.Instance
-                },
-            };
         }
 
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
@@ -57,11 +44,7 @@ namespace ColorVision.Engine.Services.RC
     {
         public static RCSetting Instance => ConfigService.Instance.GetRequiredService<RCSetting>();
 
-        public static MqttRCService MQTTRCService => MqttRCService.GetInstance();
-
         public RCServiceConfig Config { get; set; } = new RCServiceConfig();
-        public bool IsUseRCService { get => _IsUseRCService; set { _IsUseRCService = value; OnPropertyChanged(); } }
-        private bool _IsUseRCService = true;
 
         public ObservableCollection<RCServiceConfig> RCServiceConfigs { get; set; } = new ObservableCollection<RCServiceConfig>();
         public const string ConfigAESKey = "ColorVision";

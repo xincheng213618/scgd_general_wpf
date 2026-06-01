@@ -51,6 +51,33 @@ namespace Conoscope.Processing.Preprocess
             return new DustRemovalSummary(darkComponents, brightComponents, darkPixels, brightPixels);
         }
 
+        public static DustRemovalSummary ApplyToSingleChannel(ref Mat? channelMat, Mat luminanceMat, DustRemovalOptions options)
+        {
+            if (channelMat == null)
+            {
+                return default;
+            }
+
+            int darkComponents;
+            int brightComponents;
+            using Mat darkMask = ShouldDetectDarkDust(options.Mode)
+                ? CreateDustMask(luminanceMat, options, darkSpot: true, out darkComponents)
+                : CreateEmptyMask(luminanceMat, out darkComponents);
+            using Mat brightMask = ShouldDetectBrightDust(options.Mode)
+                ? CreateDustMask(luminanceMat, options, darkSpot: false, out brightComponents)
+                : CreateEmptyMask(luminanceMat, out brightComponents);
+
+            int darkPixels = Cv2.CountNonZero(darkMask);
+            int brightPixels = Cv2.CountNonZero(brightMask);
+            if (darkPixels == 0 && brightPixels == 0)
+            {
+                return new DustRemovalSummary(darkComponents, brightComponents, darkPixels, brightPixels);
+            }
+
+            channelMat = ReplaceChannelWithDustRepair(channelMat, darkMask, brightMask, options);
+            return new DustRemovalSummary(darkComponents, brightComponents, darkPixels, brightPixels);
+        }
+
         private static bool ShouldDetectDarkDust(DustRemovalMode mode)
         {
             return mode is DustRemovalMode.DarkSpot or DustRemovalMode.Both;

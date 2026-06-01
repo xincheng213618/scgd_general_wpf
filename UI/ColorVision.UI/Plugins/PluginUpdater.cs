@@ -1,5 +1,8 @@
 ﻿#pragma warning disable CS8604
+#pragma warning disable CA1863
+using ColorVision.Update;
 using ColorVision.Common.Utilities;
+using log4net;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -10,6 +13,8 @@ namespace ColorVision.UI.Plugins
 {
     public static class PluginUpdater
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(PluginUpdater));
+
         /// <summary>
         /// Deletes one or more plugins.
         /// </summary>
@@ -97,6 +102,7 @@ del ""%~f0"" & exit
         {
             if (downloadPaths == null || downloadPaths.Length == 0) return;
 
+            UpdateBackupPrepareResult? backupPrepareResult = null;
             try
             {
                 // 1. 保存配置（原逻辑）
@@ -104,7 +110,8 @@ del ""%~f0"" & exit
 
                 // 2. 定义临时与目标路径
                 string tempRoot = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
-                string stagingRoot = Path.Combine(tempRoot, "ColorVision", "Plugins"); // Staging for all plugins
+                string stageRoot = Path.Combine(tempRoot, "ColorVision");
+                string stagingRoot = Path.Combine(stageRoot, "Plugins"); // Staging for all plugins
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;     // 程序当前目录
                 string exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
                 string exeName = Path.GetFileName(exePath);
@@ -123,6 +130,14 @@ del ""%~f0"" & exit
                     ZipFile.ExtractToDirectory(downloadPath, stagingRoot);
                 }
 
+                backupPrepareResult = UpdateRecoveryService.Instance.PrepareBackup(
+                    stageRoot,
+                    baseDir,
+                    null,
+                    null,
+                    Array.Empty<string>(),
+                    downloadPaths);
+
                 // 5. 生成批处理
                 string batchFilePath = Path.Combine(tempRoot, "update.bat");
                 GenerateBatchFile(
@@ -130,7 +145,8 @@ del ""%~f0"" & exit
                     stagingRoot: stagingRoot,
                     baseDir: baseDir,
                     exeName: exeName,
-                    restartArguments: restartArguments
+                    restartArguments: restartArguments,
+                    updateRecovery: backupPrepareResult
                 );
 
                 // 6. 启动批处理（管理员权限：如果安装在 Program Files 下）
@@ -152,6 +168,10 @@ del ""%~f0"" & exit
             }
             catch (Exception ex)
             {
+                if (backupPrepareResult != null)
+                    UpdateRecoveryService.Instance.MarkFailed($"Plugin update failed before updater batch completed: {ex.Message}");
+
+                log.Error("Plugin update failed before updater batch completed.", ex);
                 MessageBox.Show($"Update failed: {ex.Message}");
             }
         }
@@ -227,8 +247,9 @@ del ""%~f0"" & exit
             string? restartArguments = "-c MenuPluginManager",
             bool mirrorMode = false,         // true = 使用 /MIR（危险：删除目标中不存在的文件）
             bool enableBackup = false,       // true = 启用备份
-            string backupParentDir = null,   // 为 null 则默认放在 baseDir 的同级目录
-            bool useUtf8 = false             // true = UTF-8 (BOM)，否则使用 GBK(936)
+            string? backupParentDir = null,   // 为 null 则默认放在 baseDir 的同级目录
+            bool useUtf8 = false,             // true = UTF-8 (BOM)，否则使用 GBK(936)
+            UpdateBackupPrepareResult? updateRecovery = null
         )
         {
             if (string.IsNullOrWhiteSpace(batchFilePath))
@@ -267,6 +288,26 @@ del ""%~f0"" & exit
             sb.AppendLine(Properties.Resources.RemStagePointsToTemp);
             sb.AppendLine("set \"STAGE=%~dp0ColorVision\"");
             sb.AppendLine($"set \"TARGET={escapedBaseDir}\"");
+            if (updateRecovery != null)
+            {
+                sb.AppendLine($"set \"UPDATE_STATE_PATH={EscapeForBatch(updateRecovery.StateFilePath)}\"");
+                sb.AppendLine($"set \"STATE_APPLYING={EscapeForBatch(updateRecovery.ApplyingStatePath)}\"");
+                sb.AppendLine($"set \"STATE_APPLIED={EscapeForBatch(updateRecovery.AppliedStatePath)}\"");
+                sb.AppendLine($"set \"STATE_FAILED={EscapeForBatch(updateRecovery.FailedStatePath)}\"");
+                sb.AppendLine($"set \"BACKUP={EscapeForBatch(updateRecovery.BackupPath)}\"");
+            }
+            else
+            {
+                sb.AppendLine("set \"UPDATE_STATE_PATH=\"");
+                sb.AppendLine("set \"STATE_APPLYING=\"");
+                sb.AppendLine("set \"STATE_APPLIED=\"");
+                sb.AppendLine("set \"STATE_FAILED=\"");
+                sb.AppendLine("set \"BACKUP=\"");
+            }
+            sb.AppendLine();
+
+            sb.AppendLine("call :mark_state \"%STATE_APPLYING%\"");
+            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine();
 
             if (enableBackup)
@@ -314,13 +355,14 @@ del ""%~f0"" & exit
             sb.AppendLine("xcopy /y /e /i \"%STAGE%\\*\" \"%TARGET%\\\" >nul");
             sb.AppendLine("if %ERRORLEVEL% NEQ 0 (");
             sb.AppendLine(Properties.Resources.EchoXCOPYFailed);
-            sb.AppendLine("  pause");
-            sb.AppendLine("  exit /b 1");
+            sb.AppendLine("  goto fail");
             sb.AppendLine(")");
             sb.AppendLine("goto copy_done");
             sb.AppendLine();
 
             sb.AppendLine(":copy_done");
+            sb.AppendLine("call :mark_state \"%STATE_APPLIED%\"");
+            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine(Properties.Resources.EchoCopyComplete);
             sb.AppendLine();
 
@@ -343,6 +385,42 @@ del ""%~f0"" & exit
 
             sb.AppendLine(Properties.Resources.EchoUpdateComplete);
             sb.AppendLine("endlocal");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine();
+
+            sb.AppendLine(":fail");
+            sb.AppendLine("call :mark_state \"%STATE_FAILED%\"");
+            sb.AppendLine("call :rollback");
+            if (string.IsNullOrWhiteSpace(restartArguments))
+            {
+                sb.AppendLine($"start \"\" \"{escapedExePath}\"");
+            }
+            else
+            {
+                sb.AppendLine($"start \"\" \"{escapedExePath}\" {restartArguments}");
+            }
+            sb.AppendLine("endlocal");
+            sb.AppendLine("exit /b 1");
+            sb.AppendLine();
+
+            sb.AppendLine(":mark_state");
+            sb.AppendLine("if \"%UPDATE_STATE_PATH%\"==\"\" exit /b 0");
+            sb.AppendLine("if \"%~1\"==\"\" exit /b 1");
+            sb.AppendLine("if not exist \"%~1\" exit /b 1");
+            sb.AppendLine("copy /y \"%~1\" \"%UPDATE_STATE_PATH%\" >nul");
+            sb.AppendLine("exit /b !ERRORLEVEL!");
+            sb.AppendLine();
+
+            sb.AppendLine(":rollback");
+            sb.AppendLine("if \"%BACKUP%\"==\"\" exit /b 0");
+            sb.AppendLine("where robocopy >nul 2>nul");
+            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
+            sb.AppendLine("  if exist \"%BACKUP%\\App\" robocopy \"%BACKUP%\\App\" \"%TARGET%\" *.* /E /NFL /NDL /NP /NJH /NJS /R:2 /W:1 >nul");
+            sb.AppendLine("  if exist \"%BACKUP%\\Plugins\" robocopy \"%BACKUP%\\Plugins\" \"%TARGET%\\Plugins\" *.* /E /NFL /NDL /NP /NJH /NJS /R:2 /W:1 >nul");
+            sb.AppendLine("  exit /b 0");
+            sb.AppendLine(")");
+            sb.AppendLine("if exist \"%BACKUP%\\App\" xcopy /y /e /i \"%BACKUP%\\App\\*\" \"%TARGET%\\\" >nul");
+            sb.AppendLine("if exist \"%BACKUP%\\Plugins\" xcopy /y /e /i \"%BACKUP%\\Plugins\\*\" \"%TARGET%\\Plugins\\\" >nul");
             sb.AppendLine("exit /b 0");
 
             var encoding = useUtf8

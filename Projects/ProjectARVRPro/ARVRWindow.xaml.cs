@@ -15,6 +15,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
+using ProjectARVRPro.Exports;
 using ProjectARVRPro.LegacyARVR;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
@@ -913,23 +914,38 @@ namespace ProjectARVRPro
 
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
-            if (ViewResultManager.Config.IsSaveCsv)
+            var outputConfig = ViewResultManager.Config;
+            DateTime exportTime = DateTime.Now;
+            string timeStr = exportTime.ToString("yyyyMMdd_HHmmss");
+            string csvOutputDirectory = outputConfig.CsvSavePath;
+            string customXlsxOutputDirectory = string.IsNullOrWhiteSpace(outputConfig.CustomXlsxSavePath)
+                ? outputConfig.CsvSavePath
+                : outputConfig.CustomXlsxSavePath;
+            if (outputConfig.SaveByDate)
             {
+                string dateFolder = exportTime.ToString("yyyy-MM-dd");
+                csvOutputDirectory = Path.Combine(csvOutputDirectory, dateFolder);
+            }
 
-                string linkPath = ViewResultManager.Config.CsvSavePath;
-                if (ViewResultManager.Config.SaveByDate)
-                {
-                    string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                    linkPath = Path.Combine(linkPath, dateFolder);
-                }
-                //
-                if (!Directory.Exists(linkPath))
-                    Directory.CreateDirectory(linkPath);
+            if (outputConfig.IsSaveCsv)
+            {
+                if (!Directory.Exists(csvOutputDirectory))
+                    Directory.CreateDirectory(csvOutputDirectory);
+            }
 
-                string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string filePath = Path.Combine(linkPath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
+            if (outputConfig.IsSaveCustomXlsx)
+            {
+                if (!Directory.Exists(customXlsxOutputDirectory))
+                    Directory.CreateDirectory(customXlsxOutputDirectory);
+            }
 
-                if (ViewResultManager.Config.UseLegacyARVROutput)
+            string baseFileName = $"TestResults_{SNtextBox.Text}_{timeStr}";
+
+            if (outputConfig.IsSaveCsv)
+            {
+                string filePath = Path.Combine(csvOutputDirectory, $"{baseFileName}_.csv");
+
+                if (outputConfig.UseLegacyARVROutput)
                 {
                     var legacyResult = LegacyARVRConverter.ToLegacy(ObjectiveTestResult);
                     LegacyARVRCsvExporter.ExportToCsv(new List<LegacyARVRObjectiveTestResult> { legacyResult }, filePath);
@@ -940,9 +956,33 @@ namespace ProjectARVRPro
                 }
             }
 
+            if (outputConfig.IsSaveCustomXlsx)
+            {
+                try
+                {
+                    string customXlsxBaseFileName = BuildDailyCustomXlsxBaseFileName(exportTime, outputConfig.CustomXlsxProjectName);
+                    string xlsxPath = CustomTestResultExportService.Export(
+                        new ObjectiveTestResultExportContext
+                        {
+                            Result = ObjectiveTestResult,
+                            SerialNumber = SNtextBox.Text,
+                            OutputDirectory = customXlsxOutputDirectory,
+                            BaseFileName = customXlsxBaseFileName,
+                            ExportTime = exportTime,
+                        },
+                        outputConfig.CustomOutputProfile);
+
+                    log.Info($"客制化XLSX导出完成:{xlsxPath}");
+                }
+                catch (Exception ex)
+                {
+                    log.Error("客制化XLSX导出失败", ex);
+                }
+            }
+
             // 根据配置决定输出格式：旧版扁平格式或新版嵌套格式
             object responseData = ObjectiveTestResult;
-            if (ViewResultManager.Config.UseLegacyARVROutput)
+            if (outputConfig.UseLegacyARVROutput)
             {
                 responseData = LegacyARVRConverter.ToLegacy(ObjectiveTestResult);
             }
@@ -1397,6 +1437,28 @@ namespace ProjectARVRPro
             {
                 _isRunAllRunning = false;
             }
+        }
+
+        private static string BuildDailyCustomXlsxBaseFileName(DateTime exportTime, string? projectName)
+        {
+            string safeProjectName = SanitizeFileName(string.IsNullOrWhiteSpace(projectName)
+                ? "ProjectARVRPro"
+                : projectName.Trim());
+
+            return $"{exportTime:yyyy-M-d}TestResults+{safeProjectName}";
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            var builder = new StringBuilder(fileName.Length);
+
+            foreach (char ch in fileName)
+            {
+                builder.Append(invalidChars.Contains(ch) ? '_' : ch);
+            }
+
+            return builder.Length == 0 ? "ProjectARVRPro" : builder.ToString();
         }
 
         private async Task<bool> ExecutePictureSwitchAsync(ProcessMeta? meta)

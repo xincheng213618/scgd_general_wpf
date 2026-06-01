@@ -118,9 +118,171 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="PerformanceTest" xml:space="preserve">
-    <value>性能試験</value>
+    <value>システムモニター</value>
   </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>更新速度</value>
+  </data>
+  <data name="StorageManagement" xml:space="preserve">
+    <value>ストレージ管理</value>
+  </data>
+  <data name="TotalStorage" xml:space="preserve">
+    <value>総容量</value>
+  </data>
+  <data name="FreeSpace" xml:space="preserve">
+    <value>空き容量</value>
+  </data>
+  <data name="Used" xml:space="preserve">
+    <value>使用量</value>
+  </data>
+  <data name="PerformanceMonitor" xml:space="preserve">
+    <value>パフォーマンスモニター</value>
+  </data>
+  <data name="TotalUsage" xml:space="preserve">
+    <value>全体使用率</value>
+  </data>
+  <data name="CurrentApp" xml:space="preserve">
+    <value>現在のアプリ</value>
+  </data>
+  <data name="SystemInfo" xml:space="preserve">
+    <value>システム情報</value>
+  </data>
+  <data name="ComputerName" xml:space="preserve">
+    <value>コンピューター名</value>
+  </data>
+  <data name="OS" xml:space="preserve">
+    <value>OS</value>
+  </data>
+  <data name="CoreCount" xml:space="preserve">
+    <value>コア数</value>
+  </data>
+  <data name="GPUMemory" xml:space="preserve">
+    <value>GPUメモリ</value>
+  </data>
+  <data name="Uptime" xml:space="preserve">
+    <value>稼働時間</value>
+  </data>
+  <data name="TotalRAM" xml:space="preserve">
+    <value>RAM総量</value>
+  </data>
+  <data name="Network" xml:space="preserve">
+    <value>ネットワーク</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="DateFormat" xml:space="preserve">
+    <value>日付形式</value>
+  </data>
+  <data name="ShowTime" xml:space="preserve">
+    <value>時刻を表示</value>
+  </data>
+  <data name="ShowRAM" xml:space="preserve">
+    <value>RAMを表示</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>キャッシュサイズ</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>キャッシュを消去</value>
+  </data>
+  <data name="LocalDisk" xml:space="preserve">
+    <value>ローカルディスク</value>
+  </data>
+  <data name="NotDetected" xml:space="preserve">
+    <value>未検出</value>
+  </data>
+  <data name="ShowCPU" xml:space="preserve">
+    <value>CPUを表示</value>
+  </data>
+  <data name="ShowUptime" xml:space="preserve">
+    <value>稼働時間を表示</value>
+  </data>
+  <data name="ShowDisk" xml:space="preserve">
+    <value>ディスクを表示</value>
+  </data>
+  <data name="StatusBarSettings" xml:space="preserve">
+    <value>ステータスバー項目</value>
+  </data>
+  <data name="ProcessMonitor" xml:space="preserve">
+    <value>プロセスモニター</value>
+  </data>
+  <data name="ProcessName" xml:space="preserve">
+    <value>プロセス名</value>
+  </data>
+  <data name="MemoryUsage" xml:space="preserve">
+    <value>メモリ使用量</value>
+  </data>
+  <data name="RuntimeInfo" xml:space="preserve">
+    <value>ランタイム情報</value>
+  </data>
+  <data name="OSUptime" xml:space="preserve">
+    <value>システム稼働時間</value>
+  </data>
+  <data name="OSBootTime" xml:space="preserve">
+    <value>起動時刻</value>
+  </data>
+  <data name="AppStartTime" xml:space="preserve">
+    <value>アプリ起動時刻</value>
+  </data>
+  <data name="ScreenResolution" xml:space="preserve">
+    <value>画面解像度</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>アーキテクチャ</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>ユーザー名</value>
+  </data>
+  <data name="ThreadCount" xml:space="preserve">
+    <value>スレッド数</value>
+  </data>
+  <data name="HandleCount" xml:space="preserve">
+    <value>ハンドル数</value>
+  </data>
+  <data name="AvailableMemory" xml:space="preserve">
+    <value>空きメモリ</value>
+  </data>
+  <data name="CPU" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="RAM" xml:space="preserve">
+    <value>RAM</value>
+  </data>
+  <data name="GPU" xml:space="preserve">
+    <value>GPU</value>
+  </data>
+  <data name="PID" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="DotNet" xml:space="preserve">
+    <value>.NET</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IPアドレス</value>
+  </data>
+  <data name="MacAddress" xml:space="preserve">
+    <value>MACアドレス</value>
+  </data>
+  <data name="MillisecondUnit" xml:space="preserve">
+    <value>ms</value>
+  </data>
+  <data name="NotAvailable" xml:space="preserve">
+    <value>N/A</value>
+  </data>
+  <data name="DurationWithDaysFormat" xml:space="preserve">
+    <value>{0}日 {1:00}:{2:00}:{3:00}</value>
+  </data>
+  <data name="StatusBarUsageFormat" xml:space="preserve">
+    <value>{0} {1:F1}%</value>
+  </data>
+  <data name="CacheClearSucceededDetail" xml:space="preserve">
+    <value>キャッシュを消去し、{0} 個のファイルを削除しました</value>
+  </data>
+  <data name="CacheClearFailedDetail" xml:space="preserve">
+    <value>キャッシュの消去に失敗しました: {0}</value>
   </data>
 </root>

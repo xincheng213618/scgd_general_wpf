@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
         {
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", 0}, { "mod_type", 5 } });
                 foreach (var model in models)

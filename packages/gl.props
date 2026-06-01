@@ -2,12 +2,15 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup>
-    <IncludePath>$(SolutionDir)packages\gl\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)packages\gl\x64;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
   <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)gl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <CudaCompile>
+      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)gl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </CudaCompile>
     <Link>
+      <AdditionalLibraryDirectories>$(MSBuildThisFileDirectory)gl\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gltools.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

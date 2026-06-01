@@ -146,16 +146,40 @@ namespace ColorVision.Solution
         {
             var attr = type.GetCustomAttributes(typeof(EditorForExtensionAttribute), false)
                 .Cast<EditorForExtensionAttribute>().FirstOrDefault();
-            if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
-                return attr.Name!;
+            if (attr != null)
+            {
+                if (!string.IsNullOrWhiteSpace(attr.ResourceKey))
+                {
+                    var localized = Properties.Resources.ResourceManager.GetString(attr.ResourceKey!, System.Globalization.CultureInfo.CurrentUICulture);
+                    if (!string.IsNullOrEmpty(localized)) return localized;
+                }
+                if (!string.IsNullOrWhiteSpace(attr.Name))
+                    return attr.Name!;
+            }
             var genericAttr = type.GetCustomAttributes(typeof(GenericEditorAttribute), false)
                 .Cast<GenericEditorAttribute>().FirstOrDefault();
-            if (genericAttr != null && !string.IsNullOrWhiteSpace(genericAttr.Name))
-                return genericAttr.Name!;
+            if (genericAttr != null)
+            {
+                if (!string.IsNullOrWhiteSpace(genericAttr.ResourceKey))
+                {
+                    var localized = Properties.Resources.ResourceManager.GetString(genericAttr.ResourceKey!, System.Globalization.CultureInfo.CurrentUICulture);
+                    if (!string.IsNullOrEmpty(localized)) return localized;
+                }
+                if (!string.IsNullOrWhiteSpace(genericAttr.Name))
+                    return genericAttr.Name!;
+            }
             var folderAttr = type.GetCustomAttributes(typeof(FolderEditorAttribute), false)
                 .Cast<FolderEditorAttribute>().FirstOrDefault();
-            if (folderAttr != null && !string.IsNullOrWhiteSpace(folderAttr.Name))
-                return folderAttr.Name!;
+            if (folderAttr != null)
+            {
+                if (!string.IsNullOrWhiteSpace(folderAttr.ResourceKey))
+                {
+                    var localized = Properties.Resources.ResourceManager.GetString(folderAttr.ResourceKey!, System.Globalization.CultureInfo.CurrentUICulture);
+                    if (!string.IsNullOrEmpty(localized)) return localized;
+                }
+                if (!string.IsNullOrWhiteSpace(folderAttr.Name))
+                    return folderAttr.Name!;
+            }
             return type.Name;
         }
 

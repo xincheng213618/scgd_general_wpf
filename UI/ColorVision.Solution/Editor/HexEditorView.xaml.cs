@@ -39,7 +39,7 @@ namespace ColorVision.Solution.Editor
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"加载文件失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(string.Format(Properties.Resources.Sol_Hex_LoadFailed, ex.Message), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }

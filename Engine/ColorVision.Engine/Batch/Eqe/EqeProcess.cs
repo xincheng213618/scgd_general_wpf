@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -99,13 +100,11 @@ namespace ColorVision.Engine.Batch.Eqe
     /// </summary>
     public class EqeProcessConfig : ViewModelBase
     {
-        [DisplayName("保存CSV")]
-        [Description("是否将EQE数据保存到CSV文件")]
+        [Display(Name = "Engine_PG_SaveCSV", Description = "Engine_PG_SaveCSV_EQE_Desc", ResourceType = typeof(Properties.Resources))]
         public bool SaveToCsv { get => _SaveToCsv; set { _SaveToCsv = value; OnPropertyChanged(); } }
         private bool _SaveToCsv = true;
 
-        [DisplayName("显示窗口")]
-        [Description("是否将EQE结果注入光谱视图")]
+        [Display(Name = "Engine_PG_ShowWindow", Description = "Engine_PG_ShowWindowDesc", ResourceType = typeof(Properties.Resources))]
         public bool ShowWindow { get => _ShowWindow; set { _ShowWindow = value; OnPropertyChanged(); } }
         private bool _ShowWindow = true;
     }

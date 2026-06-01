@@ -109,7 +109,7 @@ namespace ColorVision.Engine.Services
                     continue;
                 }
                 TypeService typeService = new();
-                typeService.Name = sysDictionaryModel.Name ?? "未配置";
+                typeService.Name = sysDictionaryModel.Name ?? Properties.Resources.NotConfigured;
                 typeService.SysDictionaryModel = sysDictionaryModel;
                 TypeServices.Add(typeService);
             }

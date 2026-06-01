@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,7 +19,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 文件完整路径
         /// </summary>
-        [DisplayName("文件路径")]
+        [Display(Name = "Sol_FileInfo_Path", ResourceType = typeof(Properties.Resources))]
         public string FilePath
         {
             get => _filePath;
@@ -36,25 +37,25 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 文件名（不含路径）
         /// </summary>
-        [DisplayName("文件名")]
+        [Display(Name = "Sol_FileInfo_Name", ResourceType = typeof(Properties.Resources))]
         public string FileName => Path.GetFileName(_filePath);
 
         /// <summary>
         /// 文件所在目录
         /// </summary>
-        [DisplayName("目录")]
+        [Display(Name = "Sol_FileInfo_Dir", ResourceType = typeof(Properties.Resources))]
         public string Directory => Path.GetDirectoryName(_filePath) ?? string.Empty;
 
         /// <summary>
         /// 文件扩展名
         /// </summary>
-        [DisplayName("扩展名")]
+        [Display(Name = "Sol_FileInfo_Ext", ResourceType = typeof(Properties.Resources))]
         public string FileExtension => Path.GetExtension(_filePath).ToLowerInvariant();
 
         /// <summary>
         /// 文件大小（字节）
         /// </summary>
-        [DisplayName("文件大小")]
+        [Display(Name = "Sol_FileInfo_FileSize", ResourceType = typeof(Properties.Resources))]
         public long FileSize
         {
             get => _fileSize;
@@ -65,7 +66,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 文件大小显示
         /// </summary>
-        [DisplayName("大小")]
+        [Display(Name = "Sol_FileInfo_Size", ResourceType = typeof(Properties.Resources))]
         public string FileSizeDisplay
         {
             get
@@ -79,7 +80,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 文件最后修改时间
         /// </summary>
-        [DisplayName("修改时间")]
+        [Display(Name = "Sol_FileInfo_Modified", ResourceType = typeof(Properties.Resources))]
         public DateTime LastModified
         {
             get => _lastModified;
@@ -90,7 +91,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 原始图像宽度
         /// </summary>
-        [DisplayName("宽度")]
+        [Display(Name = "Sol_FileInfo_Width", ResourceType = typeof(Properties.Resources))]
         public int ImageWidth
         {
             get => _imageWidth;
@@ -101,7 +102,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 原始图像高度
         /// </summary>
-        [DisplayName("高度")]
+        [Display(Name = "Sol_FileInfo_Height", ResourceType = typeof(Properties.Resources))]
         public int ImageHeight
         {
             get => _imageHeight;
@@ -112,10 +113,10 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 图像尺寸显示
         /// </summary>
-        [DisplayName("分辨率")]
+        [Display(Name = "Sol_FileInfo_Resolution", ResourceType = typeof(Properties.Resources))]
         public string ImageSizeDisplay => _imageWidth > 0 && _imageHeight > 0
             ? $"{_imageWidth} × {_imageHeight}"
-            : "未知";
+            : Properties.Resources.Sol_FileInfo_Unknown;
 
         /// <summary>
         /// 缩略图
@@ -138,7 +139,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 文件是否存在
         /// </summary>
-        [DisplayName("存在")]
+        [Display(Name = "Sol_FileInfo_Exists", ResourceType = typeof(Properties.Resources))]
         public bool FileExists
         {
             get => _fileExists;
@@ -149,11 +150,12 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 图像信息提示（用于ToolTip）
         /// </summary>
-        public string ImageInfoTooltip => $"文件名: {FileName}\n" +
-            $"路径: {FilePath}\n" +
-            $"大小: {FileSizeDisplay}\n" +
-            $"分辨率: {ImageSizeDisplay}\n" +
-            $"修改时间: {LastModified:yyyy-MM-dd HH:mm:ss}";
+        public string ImageInfoTooltip =>
+            $"{Properties.Resources.Sol_FileInfo_FileNameLabel} {FileName}\n" +
+            $"{Properties.Resources.Sol_FileInfo_PathLabel} {FilePath}\n" +
+            $"{Properties.Resources.Sol_FileInfo_SizeLabel} {FileSizeDisplay}\n" +
+            $"{Properties.Resources.Sol_FileInfo_ResLabel} {ImageSizeDisplay}\n" +
+            $"{Properties.Resources.Sol_FileInfo_ModLabel} {LastModified:yyyy-MM-dd HH:mm:ss}";
 
         public ImageFileInfo()
         {

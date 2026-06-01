@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database.Properties;
 using log4net;
 using MySqlConnector;
 using SqlSugar;
@@ -62,7 +63,7 @@ namespace ColorVision.Database
                 var newConn = new MySqlConnection() { ConnectionString = connStr };
                 newConn.Open();
 
-                log.Info($"数据库连接成功:{connStr}");
+                log.Info($"数据库连接成功:{GetConnectionSummary(Config)}");
                 using var  _DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = GetConnectionString(Config), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 // 检查数据库名是否为空
@@ -95,14 +96,14 @@ namespace ColorVision.Database
                     2003 => "无法连接到MySQL服务器，可能是端口未打开或网络不可达",
                     _ => $"MySqlException 错误码: {ex.Number}，错误信息: {ex.Message}"
                 };
-                log.Error($"数据库连接失败: {detailMsg}. 连接串: {connStr}");
+                log.Error($"数据库连接失败: {detailMsg}. 连接: {GetConnectionSummary(Config)}");
                 log.Error(ex);
                 return Task.FromResult(false);
             }
             catch (Exception ex)
             {
                 IsConnect = false;
-                log.Error($"数据库连接发生未知异常: {ex.Message}. 连接串: {connStr}");
+                log.Error($"数据库连接发生未知异常: {ex.Message}. 连接: {GetConnectionSummary(Config)}");
                 log.Error(ex);
                 return Task.FromResult(false);
             }
@@ -137,12 +138,19 @@ namespace ColorVision.Database
             return connStr;
         }
 
+        private static string GetConnectionSummary(MySqlConfig mySqlConfig)
+        {
+            string database = string.IsNullOrWhiteSpace(mySqlConfig.Database) ? "<empty>" : mySqlConfig.Database;
+            string user = string.IsNullOrWhiteSpace(mySqlConfig.UserName) ? "<empty>" : "***";
+            return $"server={mySqlConfig.Host};port={mySqlConfig.Port};uid={user};database={database}";
+        }
+
         public static void TestConnect(MySqlConfig MySqlConfig)
         {
             string connStr = GetConnectionString(MySqlConfig, 2);
             try
             {
-                log.Info($"Test数据库连接信息:{connStr}");
+                log.Info($"Test数据库连接信息:{GetConnectionSummary(MySqlConfig)}");
                 using (var mySqlConnection = new MySqlConnection(connStr))
                 {
                     mySqlConnection.Open();
@@ -151,7 +159,7 @@ namespace ColorVision.Database
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "数据库名不能为空");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_DbNameEmpty);
                         });
                     }
 
@@ -167,7 +175,7 @@ namespace ColorVision.Database
                                 log.Info("Database exists.");
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "连接成功");
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_ConnectSuccess);
                                 });
                             }
                             else
@@ -175,7 +183,7 @@ namespace ColorVision.Database
                                 log.Warn("Database does not exist.");
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库不存在。");
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_DbNotExist);
                                 });
                             }
                         }
@@ -190,13 +198,13 @@ namespace ColorVision.Database
                     switch (ex.Number)
                     {
                         case 1045:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "账号或密码错误，请检查！");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_AuthError);
                             break;
                         case 1049:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "指定的数据库不存在！");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_SpecifiedDbNotExist);
                             break;
                         case 2003:
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "无法连接到MySQL服务器，请检查端口和网络！");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_ConnectFailed);
                             break;
                         default:
                             MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库连接失败，错误码：{ex.Number}");
@@ -209,7 +217,7 @@ namespace ColorVision.Database
                 log.Error(ex);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接发生未知错误！");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DB_UnknownError);
                 });
             }
         }

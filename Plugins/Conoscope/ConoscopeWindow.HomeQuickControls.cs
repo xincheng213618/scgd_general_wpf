@@ -2,6 +2,7 @@ using Conoscope.Core;
 using Conoscope.Presentation.Helpers;
 using System;
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,73 +12,281 @@ namespace Conoscope
 {
     public partial class ConoscopeWindow
     {
-        private bool isUpdatingHomeQuickControls;
-        private ConoscopeView? subscribedHomeQuickControlView;
+        private bool isUpdatingActiveViewControls;
+        private ConoscopeView? subscribedActiveViewControlView;
 
-        private void RefreshHomeQuickControlState(ConoscopeView? activeView)
+        private void RefreshActiveViewControlState(ConoscopeView? activeView)
         {
-            AttachHomeQuickControlView(activeView);
+            AttachActiveViewControlView(activeView);
 
-            if (bdHomeQuickControls == null)
+            if (bdActiveViewControls == null || bdActiveViewExportControls == null)
             {
                 return;
             }
 
             if (activeView == null || !activeView.TryGetWindowQuickControlState(out ConoscopeWindowQuickControlState state))
             {
-                bdHomeQuickControls.Visibility = Visibility.Collapsed;
+                bdActiveViewControls.IsEnabled = false;
+                bdActiveViewExportControls.IsEnabled = false;
+
+                if (cbActiveContrastImageKind != null)
+                {
+                    cbActiveContrastImageKind.IsEnabled = false;
+                }
+
+                if (btnActiveSaveBlackContrastReference != null)
+                {
+                    btnActiveSaveBlackContrastReference.IsEnabled = false;
+                }
+
+                if (btnActiveSaveWhiteContrastReference != null)
+                {
+                    btnActiveSaveWhiteContrastReference.IsEnabled = false;
+                }
+
+                if (cbActiveColorDifferenceReference != null)
+                {
+                    cbActiveColorDifferenceReference.IsEnabled = false;
+                }
+
+                if (txtActiveColorDifferenceCustomU != null)
+                {
+                    txtActiveColorDifferenceCustomU.IsEnabled = false;
+                }
+
+                if (txtActiveColorDifferenceCustomV != null)
+                {
+                    txtActiveColorDifferenceCustomV.IsEnabled = false;
+                }
+
+                if (btnActiveSaveColorDifferenceReference != null)
+                {
+                    btnActiveSaveColorDifferenceReference.IsEnabled = false;
+                }
+
+                if (panelActiveColorDifferenceCustomUv != null)
+                {
+                    panelActiveColorDifferenceCustomUv.Visibility = Visibility.Collapsed;
+                }
+
                 return;
             }
 
-            bdHomeQuickControls.Visibility = Visibility.Visible;
+            bdActiveViewControls.IsEnabled = true;
+            bdActiveViewExportControls.IsEnabled = true;
 
-            isUpdatingHomeQuickControls = true;
+            isUpdatingActiveViewControls = true;
             try
             {
-                ComboBoxHelper.SelectItemByTag(cbHomeDisplayChannel, state.DisplayChannel.ToString());
-                ComboBoxHelper.SelectItemByTag(cbHomeExportChannel, state.ExportChannel.ToString());
-                ComboBoxHelper.SelectItemByTag(cbHomeReferenceMode, state.ReferenceMode.ToString());
-                tbHomeReferenceValueLabel.Text = state.ReferenceLabel;
-                txtHomeReferenceValue.Text = state.ReferenceValue.ToString("F2", CultureInfo.InvariantCulture);
-                txtHomeReferenceValue.ToolTip = state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
+                RefreshActiveViewChannelAvailability(state.CanUseDerivedChannels, state.CanUseContrastChannel);
+                ComboBoxHelper.SelectItemByTag(cbActiveDisplayChannel, state.DisplayChannel.ToString());
+                ComboBoxHelper.SelectItemByTag(cbActiveContrastImageKind, state.ContrastImageKind.ToString());
+                ComboBoxHelper.SelectItemByTag(cbActiveColorDifferenceReference, state.ColorDifferenceReferenceMode.ToString());
+                SetActiveReferenceModeSelection(state.ReferenceMode);
+
+                txtActiveReferenceValue.Text = state.ReferenceValue.ToString("F2", CultureInfo.InvariantCulture);
+                txtActiveReferenceValue.ToolTip = state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
                     ? Properties.Resources.TipEnterAzimuth
-                    : string.Format(Properties.Resources.TipEnterPolarAngle, state.ReferenceMaximum);
+                    : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, state.ReferenceMaximum);
+
+                txtActiveColorDifferenceCustomU.Text = state.ColorDifferenceCustomU.ToString("F4", CultureInfo.InvariantCulture);
+                txtActiveColorDifferenceCustomV.Text = state.ColorDifferenceCustomV.ToString("F4", CultureInfo.InvariantCulture);
+                UpdateActiveColorDifferenceCustomVisibility(state.ColorDifferenceReferenceMode);
+
+                cbActiveContrastImageKind.IsEnabled = true;
+                btnActiveSaveBlackContrastReference.IsEnabled = true;
+                btnActiveSaveWhiteContrastReference.IsEnabled = true;
+                cbActiveColorDifferenceReference.IsEnabled = true;
+                txtActiveColorDifferenceCustomU.IsEnabled = true;
+                txtActiveColorDifferenceCustomV.IsEnabled = true;
+                btnActiveSaveColorDifferenceReference.IsEnabled = true;
+
+                UpdateActiveContrastReferenceStatus();
+                UpdateActiveColorDifferenceReferenceStatus();
             }
             finally
             {
-                isUpdatingHomeQuickControls = false;
+                isUpdatingActiveViewControls = false;
             }
         }
 
-        private void AttachHomeQuickControlView(ConoscopeView? activeView)
+        private void RefreshActiveViewChannelAvailability(bool canUseDerivedChannels, bool canUseContrastChannel)
         {
-            if (ReferenceEquals(subscribedHomeQuickControlView, activeView))
+            UpdateActiveChannelOptionVisibility(cbActiveDisplayChannel, canUseDerivedChannels, canUseContrastChannel);
+        }
+
+        private static void UpdateActiveChannelOptionVisibility(ComboBox? comboBox, bool canUseDerivedChannels, bool canUseContrastChannel)
+        {
+            if (comboBox == null)
             {
                 return;
             }
 
-            if (subscribedHomeQuickControlView != null)
+            foreach (ExportChannel channel in new[]
             {
-                subscribedHomeQuickControlView.WindowQuickControlStateChanged -= ActiveView_WindowQuickControlStateChanged;
+                ExportChannel.X,
+                ExportChannel.Z,
+                ExportChannel.CieX,
+                ExportChannel.CieY,
+                ExportChannel.CieU,
+                ExportChannel.CieV,
+                ExportChannel.ColorDifference
+            })
+            {
+                ComboBoxHelper.SetItemVisibilityByTag(
+                    comboBox,
+                    channel.ToString(),
+                    canUseDerivedChannels ? Visibility.Visible : Visibility.Collapsed);
             }
 
-            subscribedHomeQuickControlView = activeView;
+            string contrastTag = ExportChannel.Contrast.ToString();
+            ComboBoxHelper.SetItemVisibilityByTag(comboBox, contrastTag, canUseContrastChannel ? Visibility.Visible : Visibility.Collapsed);
+            bool selectedDerivedChannelUnavailable = !canUseDerivedChannels
+                && comboBox.SelectedItem is ComboBoxItem derivedSelectedItem
+                && Enum.TryParse<ExportChannel>(derivedSelectedItem.Tag?.ToString(), out ExportChannel derivedChannel)
+                && derivedChannel is ExportChannel.X
+                    or ExportChannel.Z
+                    or ExportChannel.CieX
+                    or ExportChannel.CieY
+                    or ExportChannel.CieU
+                    or ExportChannel.CieV
+                    or ExportChannel.ColorDifference;
+            bool selectedContrastChannelUnavailable = !canUseContrastChannel
+                && comboBox.SelectedItem is ComboBoxItem selectedItem
+                && string.Equals(selectedItem.Tag?.ToString(), contrastTag, StringComparison.OrdinalIgnoreCase);
 
-            if (subscribedHomeQuickControlView != null)
+            if (selectedDerivedChannelUnavailable || selectedContrastChannelUnavailable)
             {
-                subscribedHomeQuickControlView.WindowQuickControlStateChanged += ActiveView_WindowQuickControlStateChanged;
+                ComboBoxHelper.TrySelectItemByTag(comboBox, ExportChannel.Y.ToString(), visibleOnly: true);
             }
         }
 
-        private void DetachHomeQuickControlView()
+        private void SetActiveReferenceModeSelection(ConoscopeCoordinateReferenceMode mode)
         {
-            if (subscribedHomeQuickControlView == null)
+            if (rbActiveReferenceLine != null)
+            {
+                rbActiveReferenceLine.IsChecked = mode == ConoscopeCoordinateReferenceMode.AzimuthLine;
+            }
+
+            if (rbActiveReferenceCircle != null)
+            {
+                rbActiveReferenceCircle.IsChecked = mode == ConoscopeCoordinateReferenceMode.PolarCircle;
+            }
+        }
+
+        private void UpdateActiveColorDifferenceCustomVisibility(ColorDifferenceReferenceMode mode)
+        {
+            if (panelActiveColorDifferenceCustomUv == null)
             {
                 return;
             }
 
-            subscribedHomeQuickControlView.WindowQuickControlStateChanged -= ActiveView_WindowQuickControlStateChanged;
-            subscribedHomeQuickControlView = null;
+            panelActiveColorDifferenceCustomUv.Visibility = mode == ColorDifferenceReferenceMode.Custom ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void UpdateActiveContrastReferenceStatus()
+        {
+            ConoscopeGlobalReferenceStore globalReferences = ConoscopeManager.GetInstance().GlobalReferences;
+            UpdateActiveContrastReferenceState(
+                btnActiveSaveBlackContrastReference,
+                globalReferences.HasContrastReference(ContrastReferenceKind.Black),
+                ContrastReferenceKind.Black,
+                globalReferences.GetContrastReferenceFileName(ContrastReferenceKind.Black));
+            UpdateActiveContrastReferenceState(
+                btnActiveSaveWhiteContrastReference,
+                globalReferences.HasContrastReference(ContrastReferenceKind.White),
+                ContrastReferenceKind.White,
+                globalReferences.GetContrastReferenceFileName(ContrastReferenceKind.White));
+        }
+
+        private static string GetContrastReferenceLabel(ContrastReferenceKind referenceKind)
+        {
+            return referenceKind == ContrastReferenceKind.Black
+                ? Properties.Resources.ContrastReferenceBlackField
+                : Properties.Resources.ContrastReferenceWhiteField;
+        }
+
+        private static void UpdateActiveContrastReferenceState(
+            Button? button,
+            bool isSaved,
+            ContrastReferenceKind referenceKind,
+            string? fileName)
+        {
+            if (button != null)
+            {
+                string label = GetContrastReferenceLabel(referenceKind);
+                string savedName = Path.GetFileName(fileName) ?? Properties.Resources.StateSaved;
+                button.ToolTip = isSaved
+                    ? CompositeFormatCache.Format(Properties.Resources.TipGlobalContrastReferenceSaved, label, savedName)
+                    : CompositeFormatCache.Format(Properties.Resources.TipSaveGlobalContrastReference, label);
+
+                if (isSaved)
+                {
+                    button.Background = Brushes.LightGreen;
+                    button.Foreground = Brushes.Black;
+                }
+                else
+                {
+                    button.ClearValue(Control.BackgroundProperty);
+                    button.ClearValue(Control.ForegroundProperty);
+                }
+            }
+        }
+
+        private void UpdateActiveColorDifferenceReferenceStatus()
+        {
+            ConoscopeGlobalReferenceStore globalReferences = ConoscopeManager.GetInstance().GlobalReferences;
+            bool hasReference = globalReferences.HasColorDifferenceReference;
+
+            if (btnActiveSaveColorDifferenceReference != null)
+            {
+                string savedName = Path.GetFileName(globalReferences.ColorDifferenceReferenceFileName) ?? Properties.Resources.StateSaved;
+                btnActiveSaveColorDifferenceReference.ToolTip = hasReference
+                    ? CompositeFormatCache.Format(Properties.Resources.TipGlobalColorDifferenceReferenceSaved, savedName)
+                    : Properties.Resources.TipSaveGlobalColorDifferenceReference;
+
+                if (hasReference)
+                {
+                    btnActiveSaveColorDifferenceReference.Background = Brushes.LightGreen;
+                    btnActiveSaveColorDifferenceReference.Foreground = Brushes.Black;
+                }
+                else
+                {
+                    btnActiveSaveColorDifferenceReference.ClearValue(Control.BackgroundProperty);
+                    btnActiveSaveColorDifferenceReference.ClearValue(Control.ForegroundProperty);
+                }
+            }
+        }
+
+        private void AttachActiveViewControlView(ConoscopeView? activeView)
+        {
+            if (ReferenceEquals(subscribedActiveViewControlView, activeView))
+            {
+                return;
+            }
+
+            if (subscribedActiveViewControlView != null)
+            {
+                subscribedActiveViewControlView.WindowQuickControlStateChanged -= ActiveView_WindowQuickControlStateChanged;
+            }
+
+            subscribedActiveViewControlView = activeView;
+
+            if (subscribedActiveViewControlView != null)
+            {
+                subscribedActiveViewControlView.WindowQuickControlStateChanged += ActiveView_WindowQuickControlStateChanged;
+            }
+        }
+
+        private void DetachActiveViewControlView()
+        {
+            if (subscribedActiveViewControlView == null)
+            {
+                return;
+            }
+
+            subscribedActiveViewControlView.WindowQuickControlStateChanged -= ActiveView_WindowQuickControlStateChanged;
+            subscribedActiveViewControlView = null;
         }
 
         private void ActiveView_WindowQuickControlStateChanged(object? sender, EventArgs e)
@@ -86,96 +295,233 @@ namespace Conoscope
             {
                 if (ReferenceEquals(sender, ActiveView))
                 {
-                    RefreshHomeQuickControlState(ActiveView);
+                    RefreshActiveViewControlState(ActiveView);
                 }
             }));
         }
 
-        private void cbHomeDisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void cbActiveDisplayChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (isUpdatingHomeQuickControls || !IsInitialized || ActiveView == null)
+            if (isUpdatingActiveViewControls || !IsInitialized || ActiveView == null)
             {
                 return;
             }
 
-            ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbHomeDisplayChannel, ExportChannel.Y);
+            ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbActiveDisplayChannel, ExportChannel.Y);
             ActiveView.SetWindowQuickDisplayChannel(channel);
-            SetOperationStatus(string.Format(Properties.Resources.MsgChannelSwitched, channel), Brushes.LimeGreen);
         }
 
-        private void cbHomeReferenceMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void rbActiveReferenceLine_Checked(object sender, RoutedEventArgs e)
         {
-            if (isUpdatingHomeQuickControls || !IsInitialized || ActiveView == null)
+            ApplyActiveReferenceMode(ConoscopeCoordinateReferenceMode.AzimuthLine);
+        }
+
+        private void rbActiveReferenceCircle_Checked(object sender, RoutedEventArgs e)
+        {
+            ApplyActiveReferenceMode(ConoscopeCoordinateReferenceMode.PolarCircle);
+        }
+
+        private void ApplyActiveReferenceMode(ConoscopeCoordinateReferenceMode mode)
+        {
+            if (isUpdatingActiveViewControls || !IsInitialized || ActiveView == null)
             {
                 return;
             }
 
-            ConoscopeCoordinateReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(cbHomeReferenceMode, ConoscopeCoordinateReferenceMode.AzimuthLine);
             ActiveView.SetWindowQuickReferenceMode(mode);
-            SetOperationStatus(mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.MsgRefModeSwitchedAzimuth : Properties.Resources.MsgRefModeSwitchedPolar, Brushes.LimeGreen);
+            if (txtActiveReferenceValue != null)
+            {
+                txtActiveReferenceValue.ToolTip = mode == ConoscopeCoordinateReferenceMode.AzimuthLine
+                    ? Properties.Resources.TipEnterAzimuth
+                    : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, ActiveView.MaxAngle);
+            }
         }
 
-        private void cbHomeExportChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void cbActiveContrastImageKind_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (isUpdatingHomeQuickControls || !IsInitialized || ActiveView == null)
+            if (isUpdatingActiveViewControls || !IsInitialized || ActiveView == null)
             {
                 return;
             }
 
-            ExportChannel channel = ComboBoxHelper.GetSelectedEnumByTag(cbHomeExportChannel, ExportChannel.Y);
-            ActiveView.SetWindowQuickExportChannel(channel);
-            SetOperationStatus(string.Format(Properties.Resources.MsgExportChannelSwitched, channel), Brushes.LimeGreen);
+            ContrastReferenceKind imageKind = ComboBoxHelper.GetSelectedEnumByTag(cbActiveContrastImageKind, ContrastReferenceKind.Black);
+            ActiveView.SetWindowQuickContrastImageKind(imageKind);
         }
 
-        private void btnHomeExportAngle_Click(object sender, RoutedEventArgs e)
+        private void cbActiveColorDifferenceReference_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingActiveViewControls || !IsInitialized || ActiveView == null)
+            {
+                return;
+            }
+
+            ColorDifferenceReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(cbActiveColorDifferenceReference, ColorDifferenceReferenceMode.D65);
+            UpdateActiveColorDifferenceCustomVisibility(mode);
+            ActiveView.SetWindowQuickColorDifferenceReferenceMode(mode);
+        }
+
+        private void btnActiveExportAngle_Click(object sender, RoutedEventArgs e)
         {
             ActiveView?.ExportAngleMode();
         }
 
-        private void btnHomeExportCircle_Click(object sender, RoutedEventArgs e)
+        private void btnActiveExportCircle_Click(object sender, RoutedEventArgs e)
         {
             ActiveView?.ExportCircleMode();
         }
 
-        private void txtHomeReferenceValue_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void btnActiveAdvancedExport_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.AdvancedExport();
+        }
+
+        private void btnActiveOpen3D_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.Open3DForCurrentView();
+        }
+
+        private void btnActiveOpenCie_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveView?.OpenCieForCurrentView();
+        }
+
+        private void btnActiveSaveBlackContrastReference_Click(object sender, RoutedEventArgs e)
+        {
+            SaveActiveViewContrastReference(ContrastReferenceKind.Black);
+        }
+
+        private void btnActiveSaveWhiteContrastReference_Click(object sender, RoutedEventArgs e)
+        {
+            SaveActiveViewContrastReference(ContrastReferenceKind.White);
+        }
+
+        private void btnActiveSaveColorDifferenceReference_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleColorDifferenceReference();
+        }
+
+        private void txtActiveReferenceValue_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key != Key.Enter)
             {
                 return;
             }
 
-            ApplyHomeReferenceValueFromText();
+            ApplyActiveReferenceValueFromText();
             e.Handled = true;
         }
 
-        private void txtHomeReferenceValue_LostFocus(object sender, RoutedEventArgs e)
+        private void txtActiveReferenceValue_LostFocus(object sender, RoutedEventArgs e)
         {
-            ApplyHomeReferenceValueFromText();
+            ApplyActiveReferenceValueFromText();
         }
 
-        private void ApplyHomeReferenceValueFromText()
+        private void txtActiveColorDifferenceCustom_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (isUpdatingHomeQuickControls || ActiveView == null || txtHomeReferenceValue == null)
+            if (e.Key != Key.Enter)
             {
                 return;
             }
 
-            if (!double.TryParse(txtHomeReferenceValue.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
+            ApplyActiveColorDifferenceCustomValuesFromText();
+            e.Handled = true;
+        }
+
+        private void txtActiveColorDifferenceCustom_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ApplyActiveColorDifferenceCustomValuesFromText();
+        }
+
+        private void ApplyActiveReferenceValueFromText()
+        {
+            if (isUpdatingActiveViewControls || ActiveView == null || txtActiveReferenceValue == null)
             {
-                RefreshHomeQuickControlState(ActiveView);
                 return;
             }
 
-            if (!ActiveView.TryGetWindowQuickControlState(out ConoscopeWindowQuickControlState state))
+            if (!double.TryParse(txtActiveReferenceValue.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
             {
-                RefreshHomeQuickControlState(ActiveView);
+                RefreshActiveViewControlState(ActiveView);
+                return;
+            }
+
+            if (!ActiveView.TryGetWindowQuickControlState(out _))
+            {
+                RefreshActiveViewControlState(ActiveView);
                 return;
             }
 
             ActiveView.SetWindowQuickReferenceValue(value);
-            SetOperationStatus(state.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? string.Format(Properties.Resources.MsgRefAzimuthSet, value)
-                : string.Format(Properties.Resources.MsgRefPolarSet, value), Brushes.LimeGreen);
+        }
+
+        private void ApplyActiveColorDifferenceCustomValuesFromText()
+        {
+            if (isUpdatingActiveViewControls || ActiveView == null || txtActiveColorDifferenceCustomU == null || txtActiveColorDifferenceCustomV == null)
+            {
+                return;
+            }
+
+            if (!double.TryParse(txtActiveColorDifferenceCustomU.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double u)
+                || !double.TryParse(txtActiveColorDifferenceCustomV.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double v)
+                || !double.IsFinite(u)
+                || !double.IsFinite(v))
+            {
+                MessageBox.Show(this, Properties.Resources.MsgInvalidCustomUV, Properties.Resources.PanelColorDiff, MessageBoxButton.OK, MessageBoxImage.Warning);
+                RefreshActiveViewControlState(ActiveView);
+                return;
+            }
+
+            ActiveView.SetWindowQuickColorDifferenceCustomReference(u, v);
+        }
+
+        private void ToggleColorDifferenceReference()
+        {
+            ConoscopeGlobalReferenceStore globalReferences = ConoscopeManager.GetInstance().GlobalReferences;
+            if (globalReferences.HasColorDifferenceReference)
+            {
+                globalReferences.ClearColorDifferenceReference();
+                ConoscopeModuleService.RefreshAllReferenceState();
+                return;
+            }
+
+            if (ActiveView == null)
+            {
+                return;
+            }
+
+            try
+            {
+                ActiveView.SaveWindowQuickColorDifferenceReference();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, Properties.Resources.GroupColorDifference, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void SaveActiveViewContrastReference(ContrastReferenceKind referenceKind)
+        {
+            ConoscopeGlobalReferenceStore globalReferences = ConoscopeManager.GetInstance().GlobalReferences;
+            if (globalReferences.HasContrastReference(referenceKind))
+            {
+                globalReferences.ClearContrastReference(referenceKind);
+                ConoscopeModuleService.RefreshAllReferenceState();
+                return;
+            }
+
+            if (ActiveView == null)
+            {
+                return;
+            }
+
+            try
+            {
+                ActiveView.SaveCurrentAsGlobalContrastReference(referenceKind);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, Properties.Resources.GroupContrast, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
     }
 }

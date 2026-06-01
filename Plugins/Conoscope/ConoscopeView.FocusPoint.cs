@@ -1,16 +1,27 @@
+using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI;
 using Conoscope.Analysis;
+using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Core;
 using CVCommCore.CVAlgorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media.Imaging;
+using SqlSugar;
 
 namespace Conoscope
 {
@@ -18,32 +29,309 @@ namespace Conoscope
     {
         private enum FocusCircleToolKind
         {
+            None,
             Draw,
             Select,
             Erase,
         }
 
         private bool isUpdatingFocusCircleToolSelection;
-        private bool shouldRestoreReferenceInteractionAfterFocusMode;
+        private static int lastFocusPoiTemplateId = -1;
+        private int focusPoiTemplateLoadVersion;
+        private bool isUpdatingFocusPoiTemplateSelection;
 
         private void InitializeFocusPointTools()
         {
             SyncReferenceInteractionToggle();
-            SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
+            SetFocusCircleToolSelection(FocusCircleToolKind.None);
             UpdateFocusCircleModeState();
+            LoadFocusPoiTemplatesAsync();
+            UpdateSelectedFocusPointInfo();
         }
 
-        private void SyncReferenceInteractionToggle()
+        private void LoadFocusPoiTemplatesAsync(int preferredTemplateId = -1, bool applySelectedTemplate = true)
         {
-            if (tglReferenceInteraction == null)
+            int version = ++focusPoiTemplateLoadVersion;
+            int templateId = preferredTemplateId > 0 ? preferredTemplateId : lastFocusPoiTemplateId;
+            SetFocusPoiTemplateControlsEnabled(false);
+
+            if (MySqlControl.GetInstance().IsConnect)
+            {
+                PopulateFocusPoiTemplates(version, templateId, applySelectedTemplate);
+                return;
+            }
+
+            PopulateFocusPoiTemplates(version, templateId, applySelectedTemplate);
+        }
+
+        private void PopulateFocusPoiTemplates(int version, int preferredTemplateId, bool applySelectedTemplate)
+        {
+            if (version != focusPoiTemplateLoadVersion || cbFocusPoiTemplate == null)
             {
                 return;
             }
 
-            bool isInteractionEnabled = CurrentModelProfile.CoordinateAxisParam.IsInteractionEnabled;
-            if (tglReferenceInteraction.IsChecked != isInteractionEnabled)
+            if (!MySqlControl.GetInstance().IsConnect)
             {
-                tglReferenceInteraction.IsChecked = isInteractionEnabled;
+                SetFocusPoiTemplateControlsEnabled(false);
+                return;
+            }
+
+            new TemplatePoi().Load();
+            ObservableCollection<TemplateModel<PoiParam>> templates = TemplatePoi.Params.CreateEmpty();
+
+            isUpdatingFocusPoiTemplateSelection = true;
+            try
+            {
+                cbFocusPoiTemplate.ItemsSource = templates;
+                int selectedIndex = 0;
+                if (preferredTemplateId > 0)
+                {
+                    int matchedIndex = templates.Select((item, index) => new { item, index })
+                        .FirstOrDefault(item => item.item.Value.Id == preferredTemplateId)?.index ?? -1;
+                    if (matchedIndex >= 0)
+                    {
+                        selectedIndex = matchedIndex;
+                    }
+                }
+
+                cbFocusPoiTemplate.SelectedIndex = selectedIndex;
+            }
+            finally
+            {
+                isUpdatingFocusPoiTemplateSelection = false;
+            }
+
+            SetFocusPoiTemplateControlsEnabled(true);
+            if (applySelectedTemplate && cbFocusPoiTemplate.SelectedValue is PoiParam poiParam && poiParam.Id != -1)
+            {
+                ApplyFocusPoiTemplate(poiParam);
+            }
+        }
+
+        private void SetFocusPoiTemplateControlsEnabled(bool isEnabled)
+        {
+            if (cbFocusPoiTemplate != null)
+            {
+                cbFocusPoiTemplate.IsEnabled = isEnabled;
+            }
+
+            if (btnSaveFocusPoiTemplate != null)
+            {
+                btnSaveFocusPoiTemplate.IsEnabled = isEnabled;
+            }
+
+            if (btnManageFocusPoiTemplate != null)
+            {
+                btnManageFocusPoiTemplate.IsEnabled = isEnabled;
+            }
+        }
+
+        private void cbFocusPoiTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingFocusPoiTemplateSelection || cbFocusPoiTemplate.SelectedValue is not PoiParam poiParam)
+            {
+                return;
+            }
+
+            if (poiParam.Id == -1)
+            {
+                lastFocusPoiTemplateId = -1;
+                ImageView.ClearFocusCircles();
+                UpdateFocusCircleToolbarState();
+                return;
+            }
+
+            lastFocusPoiTemplateId = poiParam.Id;
+            ApplyFocusPoiTemplate(poiParam);
+        }
+
+        private void btnSaveFocusPoiTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetFocusPoiTemplateForSave(out PoiParam? poiParam) || poiParam == null)
+            {
+                return;
+            }
+
+            if (ImageView.FocusCircles.Count == 0)
+            {
+                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (!SaveFocusPoiTemplate(poiParam))
+            {
+                return;
+            }
+
+            lastFocusPoiTemplateId = poiParam.Id;
+            LoadFocusPoiTemplatesAsync(poiParam.Id, applySelectedTemplate: false);
+            MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFocusPoiTemplateSaved, poiParam.Name), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void btnManageFocusPoiTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            int selectedIndex = cbFocusPoiTemplate.SelectedIndex > 0 ? cbFocusPoiTemplate.SelectedIndex - 1 : 0;
+            TemplateEditorWindow templateEditorWindow = new(new TemplatePoi(), selectedIndex)
+            {
+                Owner = Window.GetWindow(this),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            templateEditorWindow.ShowDialog();
+            LoadFocusPoiTemplatesAsync(lastFocusPoiTemplateId, applySelectedTemplate: false);
+        }
+
+        private bool TryGetFocusPoiTemplateForSave(out PoiParam? poiParam)
+        {
+            poiParam = null;
+            if (!MySqlControl.GetInstance().IsConnect)
+            {
+                MessageBox.Show(Properties.Resources.MsgFocusPoiTemplateSaveRequiresDatabase, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            if (cbFocusPoiTemplate.SelectedValue is PoiParam selectedPoiParam && selectedPoiParam.Id != -1)
+            {
+                poiParam = selectedPoiParam;
+                return true;
+            }
+
+            string templateName = string.Format(Properties.Resources.Conoscope_FocusPointTemplateName, DateTime.Now.ToString("yyyyMMddHHmmss"));
+            TemplatePoi templatePoi = new();
+            templatePoi.Load();
+            templatePoi.Create(templateName);
+            templatePoi.Load();
+            poiParam = TemplatePoi.Params.LastOrDefault(item => string.Equals(item.Key, templateName, StringComparison.Ordinal))?.Value;
+            if (poiParam != null)
+            {
+                return true;
+            }
+
+            MessageBox.Show(Properties.Resources.MsgFocusPoiTemplateCreateFailed, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        private void ApplyFocusPoiTemplate(PoiParam poiParam)
+        {
+            if (poiParam.Id == -1)
+            {
+                return;
+            }
+
+            lastFocusPoiTemplateId = poiParam.Id;
+            PoiParam.LoadPoiDetailFromDB(poiParam);
+            ImageView.ReplaceFocusCirclesFromPoiPoints(poiParam.PoiPoints);
+            UpdateFocusCircleToolbarState();
+        }
+
+        private bool SaveFocusPoiTemplate(PoiParam poiParam)
+        {
+            if (ImageView.ImageShow.Source is BitmapSource bmp)
+            {
+                poiParam.Width = bmp.PixelWidth;
+                poiParam.Height = bmp.PixelHeight;
+            }
+            else if (ImageView.ImageShow.Source != null)
+            {
+                poiParam.Width = (int)Math.Round(ImageView.ImageShow.Source.Width);
+                poiParam.Height = (int)Math.Round(ImageView.ImageShow.Source.Height);
+            }
+            poiParam.PoiPoints.Clear();
+            foreach (DVCircleText circle in ImageView.FocusCircles)
+            {
+                double radiusX = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
+                double radiusY = Math.Max(circle.Attribute.RadiusY, ConoscopeImageHost.MinimumFocusCircleRadius);
+                poiParam.PoiPoints.Add(new PoiPoint
+                {
+                    Id = 0,
+                    Name = ResolveFocusCircleName(circle),
+                    PointType = GraphicTypes.Circle,
+                    PixX = circle.Attribute.Center.X,
+                    PixY = circle.Attribute.Center.Y,
+                    PixWidth = Math.Max(1, radiusX * 2),
+                    PixHeight = Math.Max(1, radiusY * 2)
+                });
+            }
+            try
+            {
+                int ret = SaveFocusPoiTemplateToDb(poiParam);
+                if (ret == -1)
+                {
+                    MessageBox.Show(Properties.Resources.MsgFocusPoiTemplateSaveFailedCheckLog, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("保存 Conoscope 关注点 POI 模板失败", ex);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgFocusPoiTemplateSaveFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static int SaveFocusPoiTemplateToDb(PoiParam poiParam)
+        {
+            PoiMasterModel poiMasterModel = new(poiParam);
+            int ret = PoiMasterDao.Instance.Save(poiMasterModel);
+            if (ret == -1)
+            {
+                return ret;
+            }
+
+            if (poiParam.Id <= 0 && poiMasterModel.Id > 0)
+            {
+                poiParam.Id = poiMasterModel.Id;
+            }
+
+            List<PoiDetailModel> poiDetails = new();
+            foreach (PoiPoint point in poiParam.PoiPoints)
+            {
+                poiDetails.Add(new PoiDetailModel(poiParam.Id, point)
+                {
+                    Id = 0
+                });
+            }
+
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true
+            });
+
+            db.Ado.BeginTran();
+            try
+            {
+                db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiParam.Id).ExecuteCommand();
+                if (poiDetails.Count > 0)
+                {
+                    db.Insertable(poiDetails).ExecuteCommand();
+                }
+
+                db.Ado.CommitTran();
+                return 1;
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
+        }
+
+
+        private void SyncReferenceInteractionToggle()
+        {
+            bool isInteractionEnabled = tglFocusCircleMode?.IsChecked != true;
+            if (CoordinateAxisConfig.IsInteractionEnabled != isInteractionEnabled)
+            {
+                CoordinateAxisConfig.IsInteractionEnabled = isInteractionEnabled;
+            }
+
+            if (!isInteractionEnabled)
+            {
+                HideCoordinateDragOverlay();
             }
         }
 
@@ -65,17 +353,11 @@ namespace Conoscope
             }
 
             bool isFocusCircleModeEnabled = tglFocusCircleMode?.IsChecked == true;
-            ApplyFocusCircleReferenceInteractionLock(isFocusCircleModeEnabled);
+            SyncReferenceInteractionToggle();
 
             bool useDrawTool = isFocusCircleModeEnabled && tglFocusCircleDrawTool?.IsChecked == true;
-            bool useSelectTool = isFocusCircleModeEnabled && tglFocusCircleSelectTool?.IsChecked == true;
             bool useEraseTool = isFocusCircleModeEnabled && tglFocusCircleEraseTool?.IsChecked == true;
-
-            if (isFocusCircleModeEnabled && !useDrawTool && !useSelectTool && !useEraseTool)
-            {
-                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
-                useDrawTool = true;
-            }
+            bool useSelectTool = isFocusCircleModeEnabled && !useDrawTool && !useEraseTool;
 
             ImageView.SetFocusCircleEditMode(isFocusCircleModeEnabled);
             ImageView.SetFocusCircleSelectionEnabled(isFocusCircleModeEnabled && useSelectTool);
@@ -83,36 +365,6 @@ namespace Conoscope
             ImageView.SetFocusCircleEraseMode(useEraseTool);
             UpdateFocusCircleToolbarState();
             UpdatePanModeState();
-        }
-
-        private void ApplyFocusCircleReferenceInteractionLock(bool isFocusCircleModeEnabled)
-        {
-            if (tglReferenceInteraction == null)
-            {
-                return;
-            }
-
-            if (isFocusCircleModeEnabled)
-            {
-                if (tglReferenceInteraction.IsChecked == true)
-                {
-                    shouldRestoreReferenceInteractionAfterFocusMode = true;
-                    tglReferenceInteraction.IsChecked = false;
-                }
-
-                tglReferenceInteraction.IsEnabled = false;
-                return;
-            }
-
-            tglReferenceInteraction.IsEnabled = true;
-            if (shouldRestoreReferenceInteractionAfterFocusMode)
-            {
-                shouldRestoreReferenceInteractionAfterFocusMode = false;
-                if (tglReferenceInteraction.IsChecked != true)
-                {
-                    tglReferenceInteraction.IsChecked = true;
-                }
-            }
         }
 
         private void UpdateFocusCircleToolbarState()
@@ -188,12 +440,6 @@ namespace Conoscope
 
         private void tglFocusCircleDrawTool_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleSelectTool?.IsChecked != true && tglFocusCircleEraseTool?.IsChecked != true)
-            {
-                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
-                return;
-            }
-
             UpdateFocusCircleModeState();
         }
 
@@ -209,12 +455,6 @@ namespace Conoscope
 
         private void tglFocusCircleSelectTool_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleDrawTool?.IsChecked != true && tglFocusCircleEraseTool?.IsChecked != true)
-            {
-                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
-                return;
-            }
-
             UpdateFocusCircleModeState();
         }
 
@@ -230,12 +470,6 @@ namespace Conoscope
 
         private void tglFocusCircleEraseTool_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (!isUpdatingFocusCircleToolSelection && tglFocusCircleMode?.IsChecked == true && tglFocusCircleDrawTool?.IsChecked != true && tglFocusCircleSelectTool?.IsChecked != true)
-            {
-                SetFocusCircleToolSelection(FocusCircleToolKind.Draw);
-                return;
-            }
-
             UpdateFocusCircleModeState();
         }
 
@@ -251,30 +485,76 @@ namespace Conoscope
             UpdateFocusCircleToolbarState();
         }
 
-        private void tglReferenceInteraction_Checked(object sender, RoutedEventArgs e)
-        {
-            SetReferenceInteractionEnabled(true);
-        }
-
-        private void tglReferenceInteraction_Unchecked(object sender, RoutedEventArgs e)
-        {
-            SetReferenceInteractionEnabled(false);
-        }
-
-        private void SetReferenceInteractionEnabled(bool isEnabled)
-        {
-            CurrentModelProfile.CoordinateAxisParam.IsInteractionEnabled = isEnabled;
-            if (!isEnabled)
-            {
-                HideCoordinateDragOverlay();
-            }
-
-            UpdateFocusCircleModeState();
-        }
-
         private void ImageView_FocusCircleCalculationRequested(object? sender, ConoscopeFocusCircleCalculationRequestedEventArgs e)
         {
             CalculateFocusPoints(e.Circles);
+        }
+
+        private void ImageView_FocusCircleEditRequested(object? sender, ConoscopeFocusCircleEditRequestedEventArgs e)
+        {
+            OpenFocusPointPolarEditor(e.Circle);
+        }
+
+        private void OpenFocusPointPolarEditor(DVCircleText circle)
+        {
+            FocusPointPolarEditModel editModel = new();
+            editModel.Initialize(this, circle);
+
+            PropertyEditorWindow editorWindow = new(editModel)
+            {
+                Owner = Window.GetWindow(this),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Title = Properties.Resources.TitleFocusPointPolarEditor
+            };
+            editorWindow.Submited += (_, _) =>
+            {
+                circle.Render();
+                ImageView.RefreshFocusCircleSelection();
+                UpdateSelectedFocusPointInfo();
+            };
+            editorWindow.ShowDialog();
+        }
+
+        private void UpdateSelectedFocusPointInfo()
+        {
+            if (tbSelectedFocusPointInfo == null || sepSelectedFocusPointInfo == null || ImageView == null)
+            {
+                return;
+            }
+
+            DVCircleText? circle = (tglFocusCircleMode?.IsChecked == true) ? null : ImageView.SelectedFocusCircle;
+            if (circle == null)
+            {
+                tbSelectedFocusPointInfo.Text = string.Empty;
+                tbSelectedFocusPointInfo.ToolTip = Properties.Resources.TipSelectedFocusPoint;
+                tbSelectedFocusPointInfo.Visibility = Visibility.Collapsed;
+                sepSelectedFocusPointInfo.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            string text = BuildSelectedFocusPointInfo(circle, includeMeasurement: true);
+            tbSelectedFocusPointInfo.Text = text;
+            tbSelectedFocusPointInfo.ToolTip = text;
+            tbSelectedFocusPointInfo.Visibility = Visibility.Visible;
+            sepSelectedFocusPointInfo.Visibility = Visibility.Visible;
+        }
+
+        private string BuildSelectedFocusPointInfo(DVCircleText circle, bool includeMeasurement)
+        {
+            double radiusPixels = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
+            string circleName = ResolveFocusCircleName(circle);
+            double azimuthDegrees = FocusPointMeasurementService.GetFullAzimuthAngle(circle.Attribute.Center, currentImageCenter);
+            double polarDegrees = FocusPointMeasurementService.GetPolarRadiusAngle(circle.Attribute.Center, currentImageCenter, currentImageRadius, MaxAngle);
+            double radiusDegrees = FocusPointMeasurementService.GetFocusCircleRadiusAngle(radiusPixels, currentPixelsPerDegree, currentImageRadius, MaxAngle);
+            string info = string.Format(Properties.Resources.Conoscope_FocusPointInfo, circleName, azimuthDegrees, polarDegrees, radiusPixels, radiusDegrees);
+
+            if (includeMeasurement
+                && TryCalculateFocusPointAverage(circle.Attribute.Center, radiusPixels, out _, out double avgY, out _, out int sampleCount))
+            {
+                info += $"  N {sampleCount}  Y {avgY:F3}";
+            }
+
+            return info;
         }
 
         public bool TryGetFocusPointMeasurementCapture(string slotName, out MeasurementCapture capture, out string? errorMessage)
@@ -300,7 +580,7 @@ namespace Conoscope
                 points.Add(point);
             }
 
-            capture = MeasurementCapture.FromFocusPoints(slotName, GetFocusPointCaptureSourceLabel(), points);
+            capture = MeasurementCapture.FromFocusPoints(slotName, string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename), points);
             return true;
         }
 
@@ -322,13 +602,13 @@ namespace Conoscope
         {
             if (!HasXyzData() || XMat == null || YMat == null || ZMat == null || currentBitmapSource == null)
             {
-                MessageBox.Show(Properties.Resources.MsgFocusPointNotReady, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.MsgFocusPointNotReady, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (circles.Count == 0)
             {
-                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgDrawFocusPointsFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -337,7 +617,7 @@ namespace Conoscope
 
             foreach (DVCircleText circle in circles.Where(static item => item != null).Distinct())
             {
-                if (!TryCreateFocusPointResult(circle, out PoiResultCIExyuvData? result, out string? errorMessage))
+                if (!TryCreateFocusPointResult(circle, out PoiResultCIExyuvData? result, out int sampleCount, out string? errorMessage))
                 {
                     if (!string.IsNullOrWhiteSpace(errorMessage))
                     {
@@ -347,14 +627,15 @@ namespace Conoscope
                 }
 
                 results.Add(result);
-                circle.Attribute.Msg = string.Format(Properties.Resources.FocusPointYUV, result.Y.ToString("F3"), result.u.ToString("F4"), result.v.ToString("F4"));
+                double msgRadiusDegrees = FocusPointMeasurementService.GetFocusCircleRadiusAngle(Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius), currentPixelsPerDegree, currentImageRadius, MaxAngle);
+                circle.Attribute.Msg = $"{Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.FocusPointYUV, result.Y.ToString("F3"), result.u.ToString("F4"), result.v.ToString("F4"))}  R:{msgRadiusDegrees:F2}°  N:{sampleCount}";
                 circle.Render();
             }
 
             if (results.Count == 0)
             {
                 string message = failedCircles.Count > 0 ? string.Join(Environment.NewLine, failedCircles) : Properties.Resources.MsgNoFocusPointPixelsCalc;
-                MessageBox.Show(message, "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(message, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -367,16 +648,18 @@ namespace Conoscope
 
             if (failedCircles.Count > 0)
             {
-                MessageBox.Show(string.Join(Environment.NewLine, failedCircles), "Conoscope", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(string.Join(Environment.NewLine, failedCircles), Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             UpdateFocusCircleToolbarState();
+            UpdateSelectedFocusPointInfo();
         }
 
-        private bool TryCreateFocusPointResult(DVCircleText circle, out PoiResultCIExyuvData result, out string? errorMessage)
+        private bool TryCreateFocusPointResult(DVCircleText circle, out PoiResultCIExyuvData result, out int sampleCount, out string? errorMessage)
         {
             result = new PoiResultCIExyuvData();
-            if (!TryCreateFocusPointMeasurement(circle, out ImageMeasurement measurement, out errorMessage))
+            sampleCount = 0;
+            if (!TryCreateFocusPointMeasurement(circle, out ImageMeasurement measurement, out sampleCount, out errorMessage))
             {
                 return false;
             }
@@ -395,7 +678,7 @@ namespace Conoscope
                 PixelY = (int)Math.Round(circle.Attribute.Center.Y),
                 PointType = CVCommCore.CVAlgorithm.POIPointTypes.Circle,
                 Width = (int)Math.Round(circle.Attribute.Radius * 2),
-                Height = (int)Math.Round(circle.Attribute.Radius * 2)
+                Height = (int)Math.Round(circle.Attribute.RadiusY * 2)
             };
 
             result.Point = poiPoint;
@@ -411,43 +694,48 @@ namespace Conoscope
             return true;
         }
 
-        private bool TryCreateFocusPointMeasurement(DVCircleText circle, out ImageMeasurement measurement, out string? errorMessage)
+        private bool TryCreateFocusPointMeasurement(DVCircleText circle, out ImageMeasurement measurement, out int sampleCount, out string? errorMessage)
         {
             measurement = default!;
             errorMessage = null;
+            sampleCount = 0;
 
-            if (!TryCalculateFocusPointAverage(circle.Attribute.Center, circle.Attribute.Radius, out double avgX, out double avgY, out double avgZ, out int _))
+            if (XMat == null || YMat == null || ZMat == null || currentBitmapSource == null)
             {
-                errorMessage = string.Format(Properties.Resources.MsgFocusPointNoPixels, ResolveFocusCircleName(circle));
+                return false;
+            }
+
+            double radius = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
+            string label = $"[{Properties.Resources.FocusPointLabel}] {(string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename))} - {ResolveFocusCircleName(circle)}";
+            if (!FocusPointMeasurementService.TryCalculateCircleRoiAverage(
+                XMat, YMat, ZMat,
+                currentBitmapSource.PixelWidth, currentBitmapSource.PixelHeight,
+                circle.Attribute.Center, radius,
+                out double avgX, out double avgY, out double avgZ, out sampleCount))
+            {
+                errorMessage = CompositeFormatCache.Format(Properties.Resources.MsgFocusPointNoPixels, label);
                 return false;
             }
 
             ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(avgX, avgY, avgZ);
-            measurement = new ImageMeasurement(CreateFocusPointMeasurementLabel(circle), avgX, avgY, avgZ, chromaticity);
+            measurement = new ImageMeasurement(label, avgX, avgY, avgZ, chromaticity);
             return true;
         }
 
         private bool TryCreateFocusPointMeasurementPoint(DVCircleText circle, out MeasurementPoint point, out string? errorMessage)
         {
             point = default!;
-            if (!TryCreateFocusPointMeasurement(circle, out ImageMeasurement measurement, out errorMessage))
+            if (!TryCreateFocusPointMeasurement(circle, out ImageMeasurement measurement, out _, out errorMessage))
             {
                 return false;
             }
 
-            Point center = circle.Attribute.Center;
-            double azimuthDegrees = GetFullAzimuthAngle(center);
-            double polarDegrees = GetPolarRadiusAngle(center);
-            double radiusDegrees = GetFocusCircleRadiusAngle(circle.Attribute.Radius);
             string pointName = ResolveFocusCircleName(circle);
-
-            point = new MeasurementPoint(
-                pointName,
-                pointName,
-                measurement,
-                azimuthDegrees,
-                polarDegrees,
-                radiusDegrees);
+            double radiusPixels = Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius);
+            double azimuthDegrees = FocusPointMeasurementService.GetFullAzimuthAngle(circle.Attribute.Center, currentImageCenter);
+            double polarDegrees = FocusPointMeasurementService.GetPolarRadiusAngle(circle.Attribute.Center, currentImageCenter, currentImageRadius, MaxAngle);
+            double radiusDegrees = FocusPointMeasurementService.GetFocusCircleRadiusAngle(radiusPixels, currentPixelsPerDegree, currentImageRadius, MaxAngle);
+            point = new MeasurementPoint(pointName, pointName, measurement, azimuthDegrees, polarDegrees, radiusDegrees);
             return true;
         }
 
@@ -463,99 +751,18 @@ namespace Conoscope
                 return false;
             }
 
-            int xyzWidth = XMat.Width;
-            int xyzHeight = XMat.Height;
-            if (xyzWidth <= 0 || xyzHeight <= 0 || currentBitmapSource.PixelWidth <= 0 || currentBitmapSource.PixelHeight <= 0)
-            {
-                return false;
-            }
-
-            double scaleX = (double)xyzWidth / currentBitmapSource.PixelWidth;
-            double scaleY = (double)xyzHeight / currentBitmapSource.PixelHeight;
-            double centerX = imageCenter.X * scaleX;
-            double centerY = imageCenter.Y * scaleY;
-            double radiusX = Math.Max(imageRadius * scaleX, 0.5);
-            double radiusY = Math.Max(imageRadius * scaleY, 0.5);
-
-            int startX = Math.Max(0, (int)Math.Floor(centerX - radiusX));
-            int endX = Math.Min(xyzWidth - 1, (int)Math.Ceiling(centerX + radiusX));
-            int startY = Math.Max(0, (int)Math.Floor(centerY - radiusY));
-            int endY = Math.Min(xyzHeight - 1, (int)Math.Ceiling(centerY + radiusY));
-
-            double sumX = 0;
-            double sumY = 0;
-            double sumZ = 0;
-
-            for (int iy = startY; iy <= endY; iy++)
-            {
-                double dy = radiusY <= 0 ? 0 : (iy - centerY) / radiusY;
-                double dy2 = dy * dy;
-                if (dy2 > 1)
-                {
-                    continue;
-                }
-
-                for (int ix = startX; ix <= endX; ix++)
-                {
-                    double dx = radiusX <= 0 ? 0 : (ix - centerX) / radiusX;
-                    if (dx * dx + dy2 > 1)
-                    {
-                        continue;
-                    }
-
-                    ExtractXYZValues(ix, iy, out double xValue, out double yValue, out double zValue);
-                    if (!double.IsFinite(xValue) || !double.IsFinite(yValue) || !double.IsFinite(zValue))
-                    {
-                        continue;
-                    }
-
-                    sumX += xValue;
-                    sumY += yValue;
-                    sumZ += zValue;
-                    sampleCount++;
-                }
-            }
-
-            if (sampleCount <= 0)
-            {
-                return false;
-            }
-
-            avgX = sumX / sampleCount;
-            avgY = sumY / sampleCount;
-            avgZ = sumZ / sampleCount;
-            return true;
+            return FocusPointMeasurementService.TryCalculateCircleRoiAverage(
+                XMat, YMat, ZMat,
+                currentBitmapSource.PixelWidth, currentBitmapSource.PixelHeight,
+                imageCenter, imageRadius,
+                out avgX, out avgY, out avgZ, out sampleCount);
         }
 
         private static string ResolveFocusCircleName(DVCircleText circle)
         {
-            return string.IsNullOrWhiteSpace(circle.Attribute.Text) ? $"Focus_{circle.Attribute.Id}" : circle.Attribute.Text;
+            return FocusPointMeasurementService.ResolveFocusCircleName(circle.Attribute.Text, circle.Attribute.Id);
         }
 
-        private string CreateFocusPointMeasurementLabel(DVCircleText circle)
-        {
-            string viewName = string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename);
-            return $"[{Properties.Resources.FocusPointLabel}] {viewName} - {ResolveFocusCircleName(circle)}";
-        }
 
-        private string GetFocusPointCaptureSourceLabel()
-        {
-            return string.IsNullOrWhiteSpace(Filename) ? "CurrentView" : Path.GetFileName(Filename);
-        }
-
-        private double GetFocusCircleRadiusAngle(double radiusPixels)
-        {
-            if (currentPixelsPerDegree > double.Epsilon)
-            {
-                return Math.Max(0, radiusPixels / currentPixelsPerDegree);
-            }
-
-            if (currentImageRadius > 0)
-            {
-                return Math.Max(0, Math.Min(radiusPixels / currentImageRadius * MaxAngle, MaxAngle));
-            }
-
-            return 0;
-        }
     }
 }

@@ -8,6 +8,8 @@ namespace ColorVision.UI.Tests;
 /// </summary>
 public class ListEditorTests
 {
+    private const string RequiresStaWpfTestRunner = "Requires an STA WPF test runner.";
+
     // Test enum
     public enum TestEnum
     {
@@ -40,7 +42,7 @@ public class ListEditorTests
         public List<TestEnum> EnumList { get; set; } = new List<TestEnum> { TestEnum.Value1, TestEnum.Value2 };
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListEditorWindow_Constructor_WithIntList_DoesNotThrow()
     {
         // Arrange
@@ -51,7 +53,7 @@ public class ListEditorTests
         Assert.NotNull(window);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListEditorWindow_Constructor_WithStringList_DoesNotThrow()
     {
         // Arrange
@@ -62,7 +64,7 @@ public class ListEditorTests
         Assert.NotNull(window);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListItemEditorWindow_Constructor_WithIntType_DoesNotThrow()
     {
         // Arrange & Act & Assert
@@ -71,7 +73,7 @@ public class ListEditorTests
         Assert.Equal(42, window.EditedValue);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListItemEditorWindow_Constructor_WithStringType_DoesNotThrow()
     {
         // Arrange & Act & Assert
@@ -80,7 +82,7 @@ public class ListEditorTests
         Assert.Equal("Test", window.EditedValue);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListItemEditorWindow_Constructor_WithEnumType_DoesNotThrow()
     {
         // Arrange & Act & Assert
@@ -89,7 +91,7 @@ public class ListEditorTests
         Assert.Equal(TestEnum.Value2, window.EditedValue);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListEditorWindow_WithEnumList_DoesNotThrow()
     {
         // Arrange
@@ -100,7 +102,7 @@ public class ListEditorTests
         Assert.NotNull(window);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void PropertyEditorWindow_WithListProperties_DoesNotThrow()
     {
         // Arrange
@@ -112,7 +114,7 @@ public class ListEditorTests
         Assert.Equal(config, window.Config);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void ListEditorWindow_WorkingCopy_DoesNotModifyOriginal()
     {
         // Arrange

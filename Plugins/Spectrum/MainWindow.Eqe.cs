@@ -2,6 +2,7 @@ using ColorVision.UI;
 using Spectrum.Configs;
 using Spectrum.Data;
 using Spectrum.Models;
+using SpectrumResources = Spectrum.Properties.Resources;
 using Spectrum.TimedButtons;
 using System.ComponentModel;
 using System.Windows;
@@ -23,13 +24,13 @@ namespace Spectrum
                 operations.Register(
                     SmuConnectButton,
                     "smu-connect-toggle",
-                    "连接源表",
-                    "连接源表",
+                    SpectrumResources.ConnectSourceMeter,
+                    SpectrumResources.ConnectSourceMeter,
                     Brushes.Red,
                     contentFactory: _ => Manager.SmuController.ConnectButtonText,
                     tooltipFactory: stats => Manager.SmuController.IsOpen
-                        ? "断开源表"
-                        : TimedButtonOperationTextFormatter.BuildTooltip("连接源表", stats),
+                        ? SpectrumResources.DisconnectSourceMeter
+                        : TimedButtonOperationTextFormatter.BuildTooltip(SpectrumResources.ConnectSourceMeter, stats),
                     minimumExpectedDurationMs: 2000);
             }
 
@@ -38,8 +39,8 @@ namespace Spectrum
                 operations.Register(
                     SmuMeasureButton,
                     "smu-measure",
-                    "点亮/设置",
-                    "点亮并读取源表",
+                    SpectrumResources.SmuMeasureOrSet,
+                    SpectrumResources.MeasureAndReadSourceMeter,
                     Brushes.Red,
                     minimumExpectedDurationMs: 1000);
             }
@@ -49,8 +50,8 @@ namespace Spectrum
                 operations.Register(
                     SmuCloseOutputButton,
                     "smu-close-output",
-                    "关闭输出",
-                    "关闭源表输出",
+                    SpectrumResources.CloseOutput,
+                    SpectrumResources.CloseSourceMeterOutput,
                     Brushes.Red,
                     minimumExpectedDurationMs: 600);
             }
@@ -122,7 +123,7 @@ namespace Spectrum
             // Hide brightness column in 光通量模式
             ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
             // Update measurement mode
-            Manager.MeasurementMode = eqeEnabled ? "光通量模式" : "亮色度模式";
+            Manager.MeasurementMode = eqeEnabled ? SpectrumResources.LuminousFluxMode : SpectrumResources.BrightnessChromaticityMode;
         }
 
         private void CalculateEqe_Click(object sender, RoutedEventArgs e)
@@ -133,7 +134,7 @@ namespace Spectrum
             var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
             if (selectedItems.Count == 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "请先选择要重新计算的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), SpectrumResources.SelectDataToRecalculate, SpectrumResources.PromptTitle, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -155,7 +156,7 @@ namespace Spectrum
 
             try
             {
-                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: disconnecting ? "断开源表" : "连接源表");
+                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: disconnecting ? SpectrumResources.DisconnectSourceMeter : SpectrumResources.ConnectSourceMeter);
 
                 if (disconnecting)
                 {
@@ -176,9 +177,9 @@ namespace Spectrum
                     else
                     {
                         string errorMessage = string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage)
-                            ? "源表连接失败，请检查设备名称和连接方式"
+                            ? SpectrumResources.SourceMeterConnectFailedCheckSettings
                             : Manager.SmuController.LastErrorMessage;
-                        MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, SpectrumResources.ConnectionFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
             }
@@ -188,7 +189,7 @@ namespace Spectrum
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
                     ex.Message,
-                    disconnecting ? "断开失败" : "连接失败",
+                    disconnecting ? SpectrumResources.DisconnectionFailedTitle : SpectrumResources.ConnectionFailedTitle,
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
@@ -208,7 +209,7 @@ namespace Spectrum
 
             try
             {
-                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: "点亮/设置");
+                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: SpectrumResources.SmuMeasureOrSet);
                 success = await Manager.SmuController.MeasureAndApplyAsync();
                 if (success)
                 {
@@ -220,15 +221,15 @@ namespace Spectrum
                 else
                 {
                     string errorMessage = string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage)
-                        ? "源表读取失败"
+                        ? SpectrumResources.SourceMeterReadFailed
                         : Manager.SmuController.LastErrorMessage;
-                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "读取失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, SpectrumResources.ReadFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 log.Error("SMU 测量失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "读取失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, SpectrumResources.ReadFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             finally
             {
@@ -245,7 +246,7 @@ namespace Spectrum
 
             try
             {
-                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: "关闭输出");
+                operationScope = EnsureSmuTimedButtonOperations().Begin(button, runningText: SpectrumResources.CloseOutput);
                 success = Manager.SmuController.CloseOutput();
                 if (success)
                 {
@@ -254,15 +255,15 @@ namespace Spectrum
                 else
                 {
                     string errorMessage = string.IsNullOrWhiteSpace(Manager.SmuController.LastErrorMessage)
-                        ? "关闭源表输出失败"
+                        ? SpectrumResources.SourceMeterCloseOutputFailed
                         : Manager.SmuController.LastErrorMessage;
-                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "关闭输出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, SpectrumResources.CloseOutputFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 log.Error("SMU 关闭输出失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "关闭输出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, SpectrumResources.CloseOutputFailedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             finally
             {

@@ -126,4 +126,43 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Настройки архивного файла</value>
   </data>
+  <data name="EventVWR_Title" xml:space="preserve">
+    <value>Просмотрщик событий</value>
+  </data>
+  <data name="EventVWR_WinEvents" xml:space="preserve">
+    <value>Просмотрщик событий Windows</value>
+  </data>
+  <data name="EventVWR_EventList" xml:space="preserve">
+    <value>Список событий</value>
+  </data>
+  <data name="EventVWR_Time" xml:space="preserve">
+    <value>Время</value>
+  </data>
+  <data name="EventVWR_Source" xml:space="preserve">
+    <value>Источник</value>
+  </data>
+  <data name="EventVWR_EventDetail" xml:space="preserve">
+    <value>Подробности события</value>
+  </data>
+  <data name="EventVWR_SelectEvent" xml:space="preserve">
+    <value>Выберите событие для просмотра подробностей...</value>
+  </data>
+  <data name="EventVWR_Ready" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="EventVWR_PluginName" xml:space="preserve">
+    <value>Плагин событий</value>
+  </data>
+  <data name="EventVWR_PluginDesc" xml:space="preserve">
+    <value>Расширенное управление исключениями с плагином событий и настройками дампа</value>
+  </data>
+  <data name="EventVWR_AdminRequired" xml:space="preserve">
+    <value>Для этой операции требуются права администратора</value>
+  </data>
+  <data name="EventVWR_ClearDmp" xml:space="preserve">
+    <value>Очистить Dmp</value>
+  </data>
+  <data name="EventVWR_SaveDmp" xml:space="preserve">
+    <value>Сохранить Dmp</value>
+  </data>
 </root>

@@ -1,0 +1,1248 @@
+{
+  "navItems": [
+    {
+      "text": {
+        "root": "首页",
+        "en": "Home",
+        "zh-tw": "首頁",
+        "ja": "首页",
+        "ko": "首页"
+      },
+      "link": "/"
+    },
+    {
+      "text": {
+        "root": "入门指南",
+        "en": "Getting Started",
+        "zh-tw": "入門指南",
+        "ja": "入门指南",
+        "ko": "入门指南"
+      },
+      "link": "/00-getting-started/README"
+    },
+    {
+      "text": {
+        "root": "用户指南",
+        "en": "User Guide",
+        "zh-tw": "使用者指南",
+        "ja": "用户指南",
+        "ko": "用户指南"
+      },
+      "link": "/01-user-guide/README"
+    },
+    {
+      "text": {
+        "root": "开发指南",
+        "en": "Developer Guide",
+        "zh-tw": "開發指南",
+        "ja": "开发指南",
+        "ko": "开发指南"
+      },
+      "link": "/02-developer-guide/README"
+    },
+    {
+      "text": {
+        "root": "设计与架构",
+        "en": "Architecture",
+        "zh-tw": "設計與架構",
+        "ja": "设计与架构",
+        "ko": "设计与架构"
+      },
+      "link": "/03-architecture/README"
+    },
+    {
+      "text": {
+        "root": "API 参考",
+        "en": "API Reference",
+        "zh-tw": "API 參考",
+        "ja": "API 参考",
+        "ko": "API 参考"
+      },
+      "link": "/04-api-reference/README"
+    },
+    {
+      "text": {
+        "root": "更新日志",
+        "en": "Changelog",
+        "zh-tw": "更新日誌",
+        "ja": "更新日志",
+        "ko": "更新日志"
+      },
+      "link": "https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md"
+    },
+    {
+      "text": {
+        "root": "GitHub",
+        "en": "GitHub",
+        "zh-tw": "GitHub",
+        "ja": "GitHub",
+        "ko": "GitHub"
+      },
+      "link": "https://github.com/xincheng213618/scgd_general_wpf"
+    }
+  ],
+  "sidebarItems": [
+    {
+      "text": {
+        "root": "开始",
+        "en": "Start",
+        "zh-tw": "開始",
+        "ja": "开始",
+        "ko": "开始"
+      },
+      "collapsed": false,
+      "items": [
+        {
+          "text": {
+            "root": "文档首页",
+            "en": "Documentation Home",
+            "zh-tw": "文件首頁",
+            "ja": "文档首页",
+            "ko": "文档首页"
+          },
+          "link": "/"
+        },
+        {
+          "text": {
+            "root": "入门指南",
+            "en": "Getting Started",
+            "zh-tw": "入門指南",
+            "ja": "入门指南",
+            "ko": "入门指南"
+          },
+          "link": "/00-getting-started/README"
+        },
+        {
+          "text": {
+            "root": "用户指南",
+            "en": "User Guide",
+            "zh-tw": "使用者指南",
+            "ja": "用户指南",
+            "ko": "用户指南"
+          },
+          "link": "/01-user-guide/README"
+        },
+        {
+          "text": {
+            "root": "开发指南",
+            "en": "Developer Guide",
+            "zh-tw": "開發指南",
+            "ja": "开发指南",
+            "ko": "开发指南"
+          },
+          "link": "/02-developer-guide/README"
+        },
+        {
+          "text": {
+            "root": "架构设计",
+            "en": "Architecture",
+            "zh-tw": "架構設計",
+            "ja": "架构设计",
+            "ko": "架构设计"
+          },
+          "link": "/03-architecture/README"
+        },
+        {
+          "text": {
+            "root": "API 参考",
+            "en": "API Reference",
+            "zh-tw": "API 參考",
+            "ja": "API 参考",
+            "ko": "API 参考"
+          },
+          "link": "/04-api-reference/README"
+        },
+        {
+          "text": {
+            "root": "附录与资源",
+            "en": "Resources & Appendix",
+            "zh-tw": "附錄與資源",
+            "ja": "附录与资源",
+            "ko": "附录与资源"
+          },
+          "link": "/05-resources/README"
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "安装与首次使用",
+        "en": "Getting Started",
+        "zh-tw": "安裝與首次使用",
+        "ja": "安装与首次使用",
+        "ko": "安装与首次使用"
+      },
+      "collapsed": false,
+      "items": [
+        {
+          "text": {
+            "root": "章节概览",
+            "en": "Overview",
+            "zh-tw": "章節概覽",
+            "ja": "章节概览",
+            "ko": "章节概览"
+          },
+          "link": "/00-getting-started/README"
+        },
+        {
+          "text": {
+            "root": "什么是 ColorVision",
+            "en": "What is ColorVision",
+            "zh-tw": "什麼是 ColorVision",
+            "ja": "什么是 ColorVision",
+            "ko": "什么是 ColorVision"
+          },
+          "link": "/00-getting-started/what-is-colorvision"
+        },
+        {
+          "text": {
+            "root": "系统要求",
+            "en": "System Requirements",
+            "zh-tw": "系統要求",
+            "ja": "系统要求",
+            "ko": "系统要求"
+          },
+          "link": "/00-getting-started/prerequisites"
+        },
+        {
+          "text": {
+            "root": "安装指南",
+            "en": "Installation Guide",
+            "zh-tw": "安裝指南",
+            "ja": "安装指南",
+            "ko": "安装指南"
+          },
+          "link": "/00-getting-started/installation"
+        },
+        {
+          "text": {
+            "root": "首次运行",
+            "en": "First Run",
+            "zh-tw": "首次執行",
+            "ja": "首次运行",
+            "ko": "首次运行"
+          },
+          "link": "/00-getting-started/first-steps"
+        },
+        {
+          "text": {
+            "root": "快速上手",
+            "en": "Quick Start",
+            "zh-tw": "快速上手",
+            "ja": "快速上手",
+            "ko": "快速上手"
+          },
+          "link": "/00-getting-started/quick-start"
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "日常使用",
+        "en": "Daily Use",
+        "zh-tw": "日常使用",
+        "ja": "日常使用",
+        "ko": "日常使用"
+      },
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "章节概览",
+            "en": "Overview",
+            "zh-tw": "章節概覽",
+            "ja": "章节概览",
+            "ko": "章节概览"
+          },
+          "link": "/01-user-guide/README"
+        },
+        {
+          "text": {
+            "root": "界面使用",
+            "en": "Interface",
+            "zh-tw": "介面使用",
+            "ja": "界面使用",
+            "ko": "界面使用"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "主窗口导览",
+                "en": "Main Window",
+                "zh-tw": "主視窗導覽",
+                "ja": "主窗口导览",
+                "ko": "主窗口导览"
+              },
+              "link": "/01-user-guide/interface/main-window"
+            },
+            {
+              "text": {
+                "root": "属性编辑器",
+                "en": "Property Editor",
+                "zh-tw": "屬性編輯器",
+                "ja": "属性编辑器",
+                "ko": "属性编辑器"
+              },
+              "link": "/01-user-guide/interface/property-editor"
+            },
+            {
+              "text": {
+                "root": "日志查看器",
+                "en": "Log Viewer",
+                "zh-tw": "日誌檢視器",
+                "ja": "日志查看器",
+                "ko": "日志查看器"
+              },
+              "link": "/01-user-guide/interface/log-viewer"
+            },
+            {
+              "text": {
+                "root": "终端",
+                "en": "Terminal",
+                "zh-tw": "終端",
+                "ja": "终端",
+                "ko": "终端"
+              },
+              "link": "/01-user-guide/interface/terminal"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "图像编辑器",
+            "en": "Image Editor",
+            "zh-tw": "影像編輯器",
+            "ja": "图像编辑器",
+            "ko": "图像编辑器"
+          },
+          "link": "/01-user-guide/image-editor/overview"
+        },
+        {
+          "text": {
+            "root": "设备管理",
+            "en": "Device Management",
+            "zh-tw": "裝置管理",
+            "ja": "设备管理",
+            "ko": "设备管理"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "设备服务概览",
+                "en": "Device Services Overview",
+                "zh-tw": "裝置服務概覽",
+                "ja": "设备服务概览",
+                "ko": "设备服务概览"
+              },
+              "link": "/01-user-guide/devices/overview"
+            },
+            {
+              "text": {
+                "root": "添加与配置设备",
+                "en": "Add and Configure Devices",
+                "zh-tw": "新增與配置裝置",
+                "ja": "添加与配置设备",
+                "ko": "添加与配置设备"
+              },
+              "link": "/01-user-guide/devices/configuration"
+            },
+            {
+              "text": {
+                "root": "相机服务",
+                "en": "Camera Service",
+                "zh-tw": "相機服務",
+                "ja": "相机服务",
+                "ko": "相机服务"
+              },
+              "link": "/01-user-guide/devices/camera"
+            },
+            {
+              "text": {
+                "root": "相机管理",
+                "en": "Camera Management",
+                "zh-tw": "相機管理",
+                "ja": "相机管理",
+                "ko": "相机管理"
+              },
+              "link": "/01-user-guide/devices/camera-management"
+            },
+            {
+              "text": {
+                "root": "相机参数配置",
+                "en": "Camera Configuration",
+                "zh-tw": "相機參數配置",
+                "ja": "相机参数配置",
+                "ko": "相机参数配置"
+              },
+              "link": "/01-user-guide/devices/camera-configuration"
+            },
+            {
+              "text": {
+                "root": "电机服务",
+                "en": "Motor Service",
+                "zh-tw": "電機服務",
+                "ja": "电机服务",
+                "ko": "电机服务"
+              },
+              "link": "/01-user-guide/devices/motor"
+            },
+            {
+              "text": {
+                "root": "校准服务",
+                "en": "Calibration Service",
+                "zh-tw": "校準服務",
+                "ja": "校准服务",
+                "ko": "校准服务"
+              },
+              "link": "/01-user-guide/devices/calibration"
+            },
+            {
+              "text": {
+                "root": "SMU 服务",
+                "en": "SMU Service",
+                "zh-tw": "SMU 服務",
+                "ja": "SMU 服务",
+                "ko": "SMU 服务"
+              },
+              "link": "/01-user-guide/devices/smu"
+            },
+            {
+              "text": {
+                "root": "流程设备服务",
+                "en": "Flow Device Service",
+                "zh-tw": "流程裝置服務",
+                "ja": "流程设备服务",
+                "ko": "流程设备服务"
+              },
+              "link": "/01-user-guide/devices/flow-device"
+            },
+            {
+              "text": {
+                "root": "文件服务器",
+                "en": "File Server",
+                "zh-tw": "檔案伺服器",
+                "ja": "文件服务器",
+                "ko": "文件服务器"
+              },
+              "link": "/01-user-guide/devices/file-server"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "工作流程",
+            "en": "Workflow",
+            "zh-tw": "工作流程",
+            "ja": "工作流程",
+            "ko": "工作流程"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "工作流程概览",
+                "en": "Workflow Overview",
+                "zh-tw": "工作流程概覽",
+                "ja": "工作流程概览",
+                "ko": "工作流程概览"
+              },
+              "link": "/01-user-guide/workflow/README"
+            },
+            {
+              "text": {
+                "root": "流程设计",
+                "en": "Workflow Design",
+                "zh-tw": "流程設計",
+                "ja": "流程设计",
+                "ko": "流程设计"
+              },
+              "link": "/01-user-guide/workflow/design"
+            },
+            {
+              "text": {
+                "root": "流程执行与调试",
+                "en": "Workflow Execution & Debugging",
+                "zh-tw": "流程執行與除錯",
+                "ja": "流程执行与调试",
+                "ko": "流程执行与调试"
+              },
+              "link": "/01-user-guide/workflow/execution"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "数据管理",
+            "en": "Data Management",
+            "zh-tw": "資料管理",
+            "ja": "数据管理",
+            "ko": "数据管理"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "数据管理概览",
+                "en": "Overview",
+                "zh-tw": "資料管理概覽",
+                "ja": "数据管理概览",
+                "ko": "数据管理概览"
+              },
+              "link": "/01-user-guide/data-management/README"
+            },
+            {
+              "text": {
+                "root": "数据库操作",
+                "en": "Database Operations",
+                "zh-tw": "資料庫操作",
+                "ja": "数据库操作",
+                "ko": "数据库操作"
+              },
+              "link": "/01-user-guide/data-management/database"
+            },
+            {
+              "text": {
+                "root": "数据导出与导入",
+                "en": "Export and Import",
+                "zh-tw": "資料匯出與匯入",
+                "ja": "数据导出与导入",
+                "ko": "数据导出与导入"
+              },
+              "link": "/01-user-guide/data-management/export-import"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "故障排查",
+            "en": "Troubleshooting",
+            "zh-tw": "故障排查",
+            "ja": "故障排查",
+            "ko": "故障排查"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "常见问题",
+                "en": "Common Issues",
+                "zh-tw": "常見問題",
+                "ja": "常见问题",
+                "ko": "常见问题"
+              },
+              "link": "/01-user-guide/troubleshooting/common-issues"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "开发与交付",
+        "en": "Development & Delivery",
+        "zh-tw": "開發與交付",
+        "ja": "开发与交付",
+        "ko": "开发与交付"
+      },
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "章节概览",
+            "en": "Overview",
+            "zh-tw": "章節概覽",
+            "ja": "章节概览",
+            "ko": "章节概览"
+          },
+          "link": "/02-developer-guide/README"
+        },
+        {
+          "text": {
+            "root": "核心概念",
+            "en": "Core Concepts",
+            "zh-tw": "核心概念",
+            "ja": "核心概念",
+            "ko": "核心概念"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "扩展性概览",
+                "en": "Extensibility Overview",
+                "zh-tw": "擴充套件性概覽",
+                "ja": "扩展性概览",
+                "ko": "扩展性概览"
+              },
+              "link": "/02-developer-guide/core-concepts/extensibility"
+            },
+            {
+              "text": {
+                "root": "ColorVision MCP",
+                "en": "ColorVision MCP",
+                "zh-tw": "ColorVision MCP",
+                "ja": "ColorVision MCP",
+                "ko": "ColorVision MCP"
+              },
+              "link": "/02-developer-guide/core-concepts/colorvision-mcp"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Engine 开发总览",
+            "en": "Engine Development",
+            "zh-tw": "Engine 開發總覽",
+            "ja": "Engine 开发总览",
+            "ko": "Engine 开发总览"
+          },
+          "link": "/02-developer-guide/engine-development/README"
+        },
+        {
+          "text": {
+            "root": "插件开发",
+            "en": "Plugin Development",
+            "zh-tw": "外掛開發",
+            "ja": "插件开发",
+            "ko": "插件开发"
+          },
+          "link": "/02-developer-guide/plugin-development/README"
+        },
+        {
+          "text": {
+            "root": "性能优化",
+            "en": "Performance",
+            "zh-tw": "效能最佳化",
+            "ja": "性能优化",
+            "ko": "性能优化"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "性能优化指南",
+                "en": "Performance Guide",
+                "zh-tw": "效能最佳化指南",
+                "ja": "性能优化指南",
+                "ko": "性能优化指南"
+              },
+              "link": "/02-developer-guide/performance/overview"
+            },
+            {
+              "text": {
+                "root": "Socket 通信优化路线",
+                "en": "Socket Communication Roadmap",
+                "zh-tw": "Socket 通訊最佳化路線",
+                "ja": "Socket 通信优化路线",
+                "ko": "Socket 通信优化路线"
+              },
+              "link": "/02-developer-guide/performance/socket-protocol-optimization-roadmap"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "部署",
+            "en": "Deployment",
+            "zh-tw": "部署",
+            "ja": "部署",
+            "ko": "部署"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "部署概览",
+                "en": "Deployment Overview",
+                "zh-tw": "部署概覽",
+                "ja": "部署概览",
+                "ko": "部署概览"
+              },
+              "link": "/02-developer-guide/deployment/overview"
+            },
+            {
+              "text": {
+                "root": "自动更新系统",
+                "en": "Auto Update System",
+                "zh-tw": "自動更新系統",
+                "ja": "自动更新系统",
+                "ko": "自动更新系统"
+              },
+              "link": "/02-developer-guide/deployment/auto-update"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "后端服务",
+            "en": "Backend Services",
+            "zh-tw": "後端服務",
+            "ja": "后端服务",
+            "ko": "后端服务"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "插件市场后端",
+                "en": "Plugin Marketplace Backend",
+                "zh-tw": "外掛市場後端",
+                "ja": "插件市场后端",
+                "ko": "插件市场后端"
+              },
+              "link": "/02-developer-guide/backend/README"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "构建脚本",
+            "en": "Build Scripts",
+            "zh-tw": "建置指令碼",
+            "ja": "构建脚本",
+            "ko": "构建脚本"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "构建与发布脚本",
+                "en": "Build and Release Scripts",
+                "zh-tw": "建置與釋出指令碼",
+                "ja": "构建与发布脚本",
+                "ko": "构建与发布脚本"
+              },
+              "link": "/02-developer-guide/scripts/README"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "设计与架构",
+        "en": "Design & Architecture",
+        "zh-tw": "設計與架構",
+        "ja": "设计与架构",
+        "ko": "设计与架构"
+      },
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "章节概览",
+            "en": "Overview",
+            "zh-tw": "章節概覽",
+            "ja": "章节概览",
+            "ko": "章节概览"
+          },
+          "link": "/03-architecture/README"
+        },
+        {
+          "text": {
+            "root": "系统概览",
+            "en": "System Overview",
+            "zh-tw": "系統概覽",
+            "ja": "系统概览",
+            "ko": "系统概览"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "系统架构概览",
+                "en": "System Architecture Overview",
+                "zh-tw": "系統架構概覽",
+                "ja": "系统架构概览",
+                "ko": "系统架构概览"
+              },
+              "link": "/03-architecture/overview/system-overview"
+            },
+            {
+              "text": {
+                "root": "架构运行时",
+                "en": "Runtime Architecture",
+                "zh-tw": "架構執行時",
+                "ja": "架构运行时",
+                "ko": "架构运行时"
+              },
+              "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
+                "root": "组件交互",
+                "en": "Component Interactions",
+                "zh-tw": "元件互動",
+                "ja": "组件交互",
+                "ko": "组件交互"
+              },
+              "link": "/03-architecture/overview/component-interactions"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "组件架构",
+            "en": "Component Architecture",
+            "zh-tw": "元件架構",
+            "ja": "组件架构",
+            "ko": "组件架构"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "FlowEngineLib 架构",
+                "en": "FlowEngineLib Architecture",
+                "zh-tw": "FlowEngineLib 架構",
+                "ja": "FlowEngineLib 架构",
+                "ko": "FlowEngineLib 架构"
+              },
+              "link": "/03-architecture/components/engine/flow-engine"
+            },
+            {
+              "text": {
+                "root": "Templates 架构设计",
+                "en": "Templates Architecture",
+                "zh-tw": "Templates 架構設計",
+                "ja": "Templates 架构设计",
+                "ko": "Templates 架构设计"
+              },
+              "link": "/03-architecture/components/templates/design"
+            },
+            {
+              "text": {
+                "root": "Templates 模块分析（补充）",
+                "en": "Templates Analysis (Supplement)",
+                "zh-tw": "Templates 模組分析（補充）",
+                "ja": "Templates 模块分析（补充）",
+                "ko": "Templates 模块分析（补充）"
+              },
+              "link": "/03-architecture/components/templates/analysis"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "安全与权限",
+            "en": "Security & Permissions",
+            "zh-tw": "安全與權限",
+            "ja": "安全与权限",
+            "ko": "安全与权限"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "安全概览",
+                "en": "Security Overview",
+                "zh-tw": "安全概覽",
+                "ja": "安全概览",
+                "ko": "安全概览"
+              },
+              "link": "/03-architecture/security/overview"
+            },
+            {
+              "text": {
+                "root": "RBAC 模型",
+                "en": "RBAC Model",
+                "zh-tw": "RBAC 模型",
+                "ja": "RBAC 模型",
+                "ko": "RBAC 模型"
+              },
+              "link": "/03-architecture/security/rbac"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "API 参考",
+        "en": "API Reference",
+        "zh-tw": "API 參考",
+        "ja": "API 参考",
+        "ko": "API 参考"
+      },
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "章节概览",
+            "en": "Overview",
+            "zh-tw": "章節概覽",
+            "ja": "章节概览",
+            "ko": "章节概览"
+          },
+          "link": "/04-api-reference/README"
+        },
+        {
+          "text": {
+            "root": "UI 组件总览",
+            "en": "UI Components Overview",
+            "zh-tw": "UI 元件總覽",
+            "ja": "UI 组件总览",
+            "ko": "UI 组件总览"
+          },
+          "link": "/04-api-reference/ui-components/README"
+        },
+        {
+          "text": {
+            "root": "Engine 组件总览",
+            "en": "Engine Components Overview",
+            "zh-tw": "Engine 元件總覽",
+            "ja": "Engine 组件总览",
+            "ko": "Engine 组件总览"
+          },
+          "link": "/04-api-reference/engine-components/README"
+        },
+        {
+          "text": {
+            "root": "算法与模板",
+            "en": "Algorithms & Templates",
+            "zh-tw": "演算法與模板",
+            "ja": "算法与模板",
+            "ko": "算法与模板"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "章节概览",
+                "en": "Overview",
+                "zh-tw": "章節概覽",
+                "ja": "章节概览",
+                "ko": "章节概览"
+              },
+              "link": "/04-api-reference/algorithms/README"
+            },
+            {
+              "text": {
+                "root": "算法系统概览",
+                "en": "Algorithm System Overview",
+                "zh-tw": "演算法系統概覽",
+                "ja": "算法系统概览",
+                "ko": "算法系统概览"
+              },
+              "link": "/04-api-reference/algorithms/overview"
+            },
+            {
+              "text": {
+                "root": "检测器",
+                "en": "Detectors",
+                "zh-tw": "檢測器",
+                "ja": "检测器",
+                "ko": "检测器"
+              },
+              "collapsed": true,
+              "items": [
+                {
+                  "text": {
+                    "root": "Ghost 检测",
+                    "en": "Ghost Detection",
+                    "zh-tw": "Ghost 檢測",
+                    "ja": "Ghost 检测",
+                    "ko": "Ghost 检测"
+                  },
+                  "link": "/04-api-reference/algorithms/detectors/ghost-detection"
+                }
+              ]
+            },
+            {
+              "text": {
+                "root": "算法原语",
+                "en": "Algorithm Primitives",
+                "zh-tw": "演算法原語",
+                "ja": "算法原语",
+                "ko": "算法原语"
+              },
+              "collapsed": true,
+              "items": [
+                {
+                  "text": {
+                    "root": "ROI（感兴趣区域）",
+                    "en": "ROI (Region of Interest)",
+                    "zh-tw": "ROI（感興趣區域）",
+                    "ja": "ROI（感兴趣区域）",
+                    "ko": "ROI（感兴趣区域）"
+                  },
+                  "link": "/04-api-reference/algorithms/primitives/roi"
+                },
+                {
+                  "text": {
+                    "root": "POI（关注点）",
+                    "en": "POI (Point of Interest)",
+                    "zh-tw": "POI（關注點）",
+                    "ja": "POI（关注点）",
+                    "ko": "POI（关注点）"
+                  },
+                  "link": "/04-api-reference/algorithms/primitives/poi"
+                },
+                {
+                  "text": {
+                    "root": "通用算法模块",
+                    "en": "Common Algorithm Modules",
+                    "zh-tw": "通用演算法模組",
+                    "ja": "通用算法模块",
+                    "ko": "通用算法模块"
+                  },
+                  "link": "/04-api-reference/algorithms/primitives/common-modules"
+                }
+              ]
+            },
+            {
+              "text": {
+                "root": "模板系统",
+                "en": "Template System",
+                "zh-tw": "模板系統",
+                "ja": "模板系统",
+                "ko": "模板系统"
+              },
+              "collapsed": true,
+              "items": [
+                {
+                  "text": {
+                    "root": "流程引擎",
+                    "en": "Flow Engine",
+                    "zh-tw": "流程引擎",
+                    "ja": "流程引擎",
+                    "ko": "流程引擎"
+                  },
+                  "link": "/04-api-reference/algorithms/templates/flow-engine"
+                },
+                {
+                  "text": {
+                    "root": "模板管理",
+                    "en": "Template Management",
+                    "zh-tw": "模板管理",
+                    "ja": "模板管理",
+                    "ko": "模板管理"
+                  },
+                  "link": "/04-api-reference/algorithms/templates/template-management"
+                },
+                {
+                  "text": {
+                    "root": "POI 模板",
+                    "en": "POI Template",
+                    "zh-tw": "POI 模板",
+                    "ja": "POI 模板",
+                    "ko": "POI 模板"
+                  },
+                  "link": "/04-api-reference/algorithms/templates/poi-template"
+                },
+                {
+                  "text": {
+                    "root": "ARVR 模板",
+                    "en": "ARVR Template",
+                    "zh-tw": "ARVR 模板",
+                    "ja": "ARVR 模板",
+                    "ko": "ARVR 模板"
+                  },
+                  "link": "/04-api-reference/algorithms/templates/arvr-template"
+                },
+                {
+                  "text": {
+                    "root": "JSON 模板",
+                    "en": "JSON Templates",
+                    "zh-tw": "JSON 模板",
+                    "ja": "JSON 模板",
+                    "ko": "JSON 模板"
+                  },
+                  "link": "/04-api-reference/algorithms/templates/json-templates"
+                },
+                {
+                  "text": {
+                    "root": "Templates API 参考",
+                    "en": "Templates API Reference",
+                    "zh-tw": "Templates API 參考",
+                    "ja": "Templates API 参考",
+                    "ko": "Templates API 参考"
+                  },
+                  "link": "/04-api-reference/algorithms/templates/api-reference"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "插件与现状页",
+            "en": "Plugins & Status Pages",
+            "zh-tw": "外掛與現狀頁",
+            "ja": "插件与现状页",
+            "ko": "插件与现状页"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "章节概览",
+                "en": "Overview",
+                "zh-tw": "章節概覽",
+                "ja": "章节概览",
+                "ko": "章节概览"
+              },
+              "link": "/04-api-reference/plugins/README"
+            },
+            {
+              "text": {
+                "root": "Pattern / 图卡生成功能",
+                "en": "Pattern / Test Chart Generation",
+                "zh-tw": "Pattern / 圖卡生成功能",
+                "ja": "Pattern / 图卡生成功能",
+                "ko": "Pattern / 图卡生成功能"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/pattern"
+            },
+            {
+              "text": {
+                "root": "ImageProjector（历史状态）",
+                "en": "ImageProjector (Historical)",
+                "zh-tw": "ImageProjector（歷史狀態）",
+                "ja": "ImageProjector（历史状态）",
+                "ko": "ImageProjector（历史状态）"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/image-projector"
+            },
+            {
+              "text": {
+                "root": "ScreenRecorder（历史状态）",
+                "en": "ScreenRecorder (Historical)",
+                "zh-tw": "ScreenRecorder（歷史狀態）",
+                "ja": "ScreenRecorder（历史状态）",
+                "ko": "ScreenRecorder（历史状态）"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/screen-recorder"
+            },
+            {
+              "text": {
+                "root": "Spectrum 插件",
+                "en": "Spectrum Plugin",
+                "zh-tw": "Spectrum 外掛",
+                "ja": "Spectrum 插件",
+                "ko": "Spectrum 插件"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/spectrum"
+            },
+            {
+              "text": {
+                "root": "SystemMonitor 插件",
+                "en": "SystemMonitor Plugin",
+                "zh-tw": "SystemMonitor 外掛",
+                "ja": "SystemMonitor 插件",
+                "ko": "SystemMonitor 插件"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/system-monitor"
+            },
+            {
+              "text": {
+                "root": "EventVWR 插件",
+                "en": "EventVWR Plugin",
+                "zh-tw": "EventVWR 外掛",
+                "ja": "EventVWR 插件",
+                "ko": "EventVWR 插件"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/eventvwr"
+            },
+            {
+              "text": {
+                "root": "Windows 服务插件",
+                "en": "Windows Service Plugin",
+                "zh-tw": "Windows 服務外掛",
+                "ja": "Windows 服务插件",
+                "ko": "Windows 服务插件"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "扩展点概览",
+            "en": "Extension Points",
+            "zh-tw": "擴充套件點概覽",
+            "ja": "扩展点概览",
+            "ko": "扩展点概览"
+          },
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "章节概览",
+                "en": "Overview",
+                "zh-tw": "章節概覽",
+                "ja": "章节概览",
+                "ko": "章节概览"
+              },
+              "link": "/04-api-reference/extensions/README"
+            },
+            {
+              "text": {
+                "root": "FlowEngineLib 节点扩展",
+                "en": "FlowEngineLib Node Extensions",
+                "zh-tw": "FlowEngineLib 節點擴充套件",
+                "ja": "FlowEngineLib 节点扩展",
+                "ko": "FlowEngineLib 节点扩展"
+              },
+              "link": "/04-api-reference/extensions/flow-node"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "附录与资源",
+        "en": "Resources & Appendix",
+        "zh-tw": "附錄與資源",
+        "ja": "附录与资源",
+        "ko": "附录与资源"
+      },
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "章节概览",
+            "en": "Overview",
+            "zh-tw": "章節概覽",
+            "ja": "章节概览",
+            "ko": "章节概览"
+          },
+          "link": "/05-resources/README"
+        },
+        {
+          "text": {
+            "root": "项目结构总览",
+            "en": "Project Structure Overview",
+            "zh-tw": "專案結構總覽",
+            "ja": "项目结构总览",
+            "ko": "项目结构总览"
+          },
+          "link": "/05-resources/project-structure/README"
+        },
+        {
+          "text": {
+            "root": "模块与文档对照",
+            "en": "Module Documentation Map",
+            "zh-tw": "模組與文件對照",
+            "ja": "模块与文档对照",
+            "ko": "模块与文档对照"
+          },
+          "link": "/05-resources/project-structure/module-documentation-map"
+        },
+        {
+          "text": {
+            "root": "软件许可协议",
+            "en": "Software License Agreement",
+            "zh-tw": "軟體許可協議",
+            "ja": "软件许可协议",
+            "ko": "软件许可协议"
+          },
+          "link": "/05-resources/legal/software-agreement"
+        }
+      ]
+    }
+  ]
+}

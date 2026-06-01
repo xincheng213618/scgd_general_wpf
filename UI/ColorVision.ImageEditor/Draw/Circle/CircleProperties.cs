@@ -19,11 +19,11 @@ namespace ColorVision.ImageEditor.Draw
         public Point Center { get => _Center; set { if (_Center.Equals(value)) return; _Center = value; OnPropertyChanged(); } }
         private Point _Center = new Point(50, 50);
 
-        [Category("Circle"), DisplayName("半径")]
+        [Category("Circle"), DisplayName("半径X")]
         public double Radius { get => _Radius; set { _Radius = value; _RadiusY = value; OnPropertyChanged(); } }
         private double _Radius = 30;
 
-        [Category("Circle"), DisplayName("半径")]
+        [Category("Circle"), DisplayName("半径Y")]
         public double RadiusY { get => _RadiusY; set { _RadiusY = value; OnPropertyChanged(); } }
         private double _RadiusY = 30;  
     }

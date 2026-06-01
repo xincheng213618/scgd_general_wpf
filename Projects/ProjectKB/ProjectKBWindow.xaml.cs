@@ -20,6 +20,7 @@ using ProjectKB.Modbus;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -63,7 +64,7 @@ namespace ProjectKB
             Config.SetWindow(this);
             this.Title += "-" + Assembly.GetAssembly(typeof(ProjectKBWindow))?.GetName().Version?.ToString() ?? "";
         }
-        public LogOutput logOutput { get; set; }
+        public LogOutput? logOutput { get; set; }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -87,19 +88,13 @@ namespace ProjectKB
                 }
             });
 
-            if (ProjectKBConfig.Instance.LogControlVisibility)
-            {
-                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
-                LogGrid.Children.Add(logOutput);
-            }
-            else
-            {
-                LogGrid.Visibility = Visibility.Collapsed;
-            }
+            ProjectKBConfig.Instance.PropertyChanged += ProjectKBConfig_PropertyChanged;
+            ApplyLogControlVisibility();
 
             this.Closed += (s, e) =>
             {
                 ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
+                ProjectKBConfig.Instance.PropertyChanged -= ProjectKBConfig_PropertyChanged;
 
                 SummaryManager.GetInstance().Save();
                 ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
@@ -108,6 +103,38 @@ namespace ProjectKB
 
         }
 
+        private void ProjectKBConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ProjectKBConfig.LogControlVisibility))
+            {
+                ApplyLogControlVisibility();
+            }
+
+        }
+
+        private void ApplyLogControlVisibility()
+        {
+            if (ProjectKBConfig.Instance.LogControlVisibility)
+            {
+                LogGrid.Visibility = Visibility.Visible;
+                if (logOutput == null)
+                {
+                    logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+                    LogGrid.Children.Add(logOutput);
+                }
+                return;
+            }
+
+            LogGrid.Visibility = Visibility.Collapsed;
+            if (logOutput == null)
+            {
+                return;
+            }
+
+            LogGrid.Children.Remove(logOutput);
+            logOutput.Dispose();
+            logOutput = null;
+        }
 
         private void ProjectKBWindow_StatusChanged(object? sender, EventArgs e)
         {
@@ -755,35 +782,54 @@ namespace ProjectKB
 
         public static string BuildSummaryText(KBItemMaster kmitemmaster)
         {
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("KB");
-            sb.AppendLine(kmitemmaster.SN);
-            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}");
-            sb.AppendLine(kmitemmaster.Model);
+            var sb = new StringBuilder();
+            string modelName = string.IsNullOrWhiteSpace(kmitemmaster.Model) ? "KB" : kmitemmaster.Model;
+            sb.AppendLine($"型号: {modelName}");
+            sb.AppendLine($"系列号: {kmitemmaster.SN}");
+            sb.AppendLine($"测量设置: {GetSummaryMeasurementSetting(kmitemmaster)}");
+            sb.AppendLine($"关注点: {kmitemmaster.KBTemplate}");
+            sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/M/d HH:mm:ss}");
             sb.AppendLine();
-            sb.AppendLine($"{"PT",-15}{"Lv",-15}{"LC",-15}");
+            sb.AppendLine("PT\tLv\tLC");
 
             foreach (var item in kmitemmaster.Items)
             {
                 string key = $"[{item.Name}]";
-                sb.AppendLine($"{key,-15}{item.Lv,-15:F3}{item.Lc * 100,-15:F2}");
+                sb.AppendLine($"{key}\t{item.Lv:F3}\t{item.Lc * 100:F2}%");
             }
 
             sb.AppendLine();
-            sb.AppendLine($"Min Lv= {kmitemmaster.MinLv:F2} cd/m2");
-            sb.AppendLine($"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2");
-            sb.AppendLine($"Darkest Key= [{kmitemmaster.DrakestKey}]");
-            sb.AppendLine($"Brightest Key= [{kmitemmaster.BrightestKey}]");
+            sb.AppendLine($"最小亮度= {kmitemmaster.MinLv:F3} cd/m²");
+            sb.AppendLine($"最大亮度= {kmitemmaster.MaxLv:F3} cd/m²");
+            sb.AppendLine($"最暗的键= [{kmitemmaster.DrakestKey}]");
+            sb.AppendLine($"最亮的键= [{kmitemmaster.BrightestKey}]");
             sb.AppendLine();
-            sb.AppendLine("Pass/Fail Criteria:");
-            sb.AppendLine($"Nbr Failed Points= {kmitemmaster.NbrFailPoints}");
-            sb.AppendLine($"Avg Lv= {kmitemmaster.AvgLv:F2} cd/m2 ");
-            sb.AppendLine($"Lv Uniformity= {kmitemmaster.LvUniformity * 100:F2} % ");
-            AppendBacklightAutotuneSummary(sb, kmitemmaster);
-            sb.AppendLine($"Avg CCT= 0.0000");
-            sb.AppendLine($"ColorDiff= 0.0000  ");
+            sb.AppendLine("合格/不合格标准:");
+            sb.AppendLine($"不合格点数= {kmitemmaster.NbrFailPoints}");
+            sb.AppendLine($"平均亮度= {kmitemmaster.AvgLv:F3} cd/m²");
+            sb.AppendLine($"亮度一致性= {kmitemmaster.LvUniformity * 100:F3}%");
             sb.AppendLine(kmitemmaster.Result ? "PASS" : "FAIL");
             return sb.ToString();
+        }
+
+        private static string GetSummaryMeasurementSetting(KBItemMaster kmitemmaster)
+        {
+            if (!string.IsNullOrWhiteSpace(kmitemmaster.Exposure))
+            {
+                return kmitemmaster.Exposure;
+            }
+
+            if (!string.IsNullOrWhiteSpace(kmitemmaster.MesSpecGroup))
+            {
+                return kmitemmaster.MesSpecGroup;
+            }
+
+            if (!string.IsNullOrWhiteSpace(kmitemmaster.MesModel))
+            {
+                return kmitemmaster.MesModel;
+            }
+
+            return string.Empty;
         }
 
         private static void AppendBacklightAutotuneSummary(StringBuilder sb, KBItemMaster kmitemmaster)
@@ -1193,6 +1239,7 @@ namespace ProjectKB
         public void Dispose()
         {
             ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
+            ProjectKBConfig.Instance.PropertyChanged -= ProjectKBConfig_PropertyChanged;
             ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
             if (flowControl != null)
             {

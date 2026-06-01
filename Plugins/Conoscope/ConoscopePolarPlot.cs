@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 
 namespace Conoscope
 {
@@ -24,6 +28,34 @@ namespace Conoscope
         private string radialAxisLabel = string.Empty;
         private double radialMaximum = 1;
         private bool closePath;
+        private readonly MenuItem saveImageMenuItem;
+        private readonly MenuItem copyToClipboardMenuItem;
+        private readonly MenuItem autoscaleMenuItem;
+        private readonly MenuItem openInNewWindowMenuItem;
+
+        public ConoscopePolarPlot()
+        {
+            saveImageMenuItem = new MenuItem { Header = "Save Image" };
+            saveImageMenuItem.Click += SaveImageMenuItem_Click;
+
+            copyToClipboardMenuItem = new MenuItem { Header = "Copy to Clipboard" };
+            copyToClipboardMenuItem.Click += CopyToClipboardMenuItem_Click;
+
+            autoscaleMenuItem = new MenuItem { Header = "Autoscale" };
+            autoscaleMenuItem.Click += AutoscaleMenuItem_Click;
+
+            openInNewWindowMenuItem = new MenuItem { Header = "Open in New Window" };
+            openInNewWindowMenuItem.Click += OpenInNewWindowMenuItem_Click;
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(saveImageMenuItem);
+            ContextMenu.Items.Add(copyToClipboardMenuItem);
+            ContextMenu.Items.Add(autoscaleMenuItem);
+            ContextMenu.Items.Add(new Separator());
+            ContextMenu.Items.Add(openInNewWindowMenuItem);
+
+            ContextMenuOpening += ConoscopePolarPlot_ContextMenuOpening;
+        }
 
         public void UpdatePlot(IReadOnlyList<PolarPlotPoint>? newPoints, Brush? strokeBrush, string? axisLabel, double maxRadius, bool shouldClosePath)
         {
@@ -38,6 +70,100 @@ namespace Conoscope
         public void Clear()
         {
             UpdatePlot(Array.Empty<PolarPlotPoint>(), DefaultSeriesBrush, string.Empty, 1, false);
+        }
+
+        private void ConoscopePolarPlot_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            bool hasSurface = ActualWidth > 0 && ActualHeight > 0;
+            bool hasData = points.Any(point => double.IsFinite(point.AngleDegrees) && double.IsFinite(point.Radius));
+
+            saveImageMenuItem.IsEnabled = hasSurface;
+            copyToClipboardMenuItem.IsEnabled = hasSurface;
+            openInNewWindowMenuItem.IsEnabled = hasSurface;
+            autoscaleMenuItem.IsEnabled = hasData;
+        }
+
+        private void SaveImageMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                RenderTargetBitmap snapshot = CreateSnapshot();
+                SaveFileDialog dialog = new SaveFileDialog
+                {
+                    Filter = "PNG Image (*.png)|*.png|Bitmap Image (*.bmp)|*.bmp|JPEG Image (*.jpg;*.jpeg)|*.jpg;*.jpeg",
+                    DefaultExt = "png",
+                    FileName = $"PolarPlot_{DateTime.Now:yyyyMMdd_HHmmss}.png",
+                    RestoreDirectory = true
+                };
+
+                if (dialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                BitmapEncoder encoder = CreateBitmapEncoder(Path.GetExtension(dialog.FileName));
+                encoder.Frames.Add(BitmapFrame.Create(snapshot));
+
+                using FileStream stream = File.Create(dialog.FileName);
+                encoder.Save(stream);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void CopyToClipboardMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Clipboard.SetImage(CreateSnapshot());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to copy image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void AutoscaleMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            radialMaximum = GetNiceRadialMaximum(points.Select(point => point.Radius));
+            InvalidateVisual();
+        }
+
+        private void OpenInNewWindowMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                RenderTargetBitmap snapshot = CreateSnapshot();
+                Image image = new Image
+                {
+                    Source = snapshot,
+                    Stretch = Stretch.None,
+                    SnapsToDevicePixels = true
+                };
+
+                Window previewWindow = new Window
+                {
+                    Title = string.IsNullOrWhiteSpace(radialAxisLabel) ? "Polar Plot" : $"Polar Plot - {radialAxisLabel}",
+                    Owner = Window.GetWindow(this),
+                    Content = new ScrollViewer
+                    {
+                        HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                        Content = image
+                    },
+                    Width = Math.Min(snapshot.Width + 32, SystemParameters.WorkArea.Width * 0.9),
+                    Height = Math.Min(snapshot.Height + 40, SystemParameters.WorkArea.Height * 0.9),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                previewWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to open preview window: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         protected override Size MeasureOverride(Size availableSize)
@@ -204,6 +330,95 @@ namespace Conoscope
             }
 
             return value.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
+        private RenderTargetBitmap CreateSnapshot()
+        {
+            if (ActualWidth <= 0 || ActualHeight <= 0)
+            {
+                throw new InvalidOperationException("The polar plot is not ready to render.");
+            }
+
+            DpiScale dpi = VisualTreeHelper.GetDpi(this);
+            int pixelWidth = Math.Max(1, (int)Math.Ceiling(ActualWidth * dpi.DpiScaleX));
+            int pixelHeight = Math.Max(1, (int)Math.Ceiling(ActualHeight * dpi.DpiScaleY));
+
+            DrawingVisual snapshotVisual = new DrawingVisual();
+            using (DrawingContext context = snapshotVisual.RenderOpen())
+            {
+                context.DrawRectangle(ResolveSnapshotBackground(), null, new Rect(0, 0, ActualWidth, ActualHeight));
+                context.DrawRectangle(new VisualBrush(this), null, new Rect(0, 0, ActualWidth, ActualHeight));
+            }
+
+            RenderTargetBitmap bitmap = new RenderTargetBitmap(
+                pixelWidth,
+                pixelHeight,
+                dpi.PixelsPerInchX,
+                dpi.PixelsPerInchY,
+                PixelFormats.Pbgra32);
+
+            bitmap.Render(snapshotVisual);
+            return bitmap;
+        }
+
+        private Brush ResolveSnapshotBackground()
+        {
+            DependencyObject? current = this;
+            while (current != null)
+            {
+                switch (current)
+                {
+                    case Panel panel when panel.Background != null:
+                        return panel.Background;
+                    case Border border when border.Background != null:
+                        return border.Background;
+                    case Control control when control.Background != null:
+                        return control.Background;
+                }
+
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            return Brushes.White;
+        }
+
+        private static BitmapEncoder CreateBitmapEncoder(string extension)
+        {
+            return extension.ToLowerInvariant() switch
+            {
+                ".bmp" => new BmpBitmapEncoder(),
+                ".jpg" => new JpegBitmapEncoder(),
+                ".jpeg" => new JpegBitmapEncoder(),
+                _ => new PngBitmapEncoder(),
+            };
+        }
+
+        private static double GetNiceRadialMaximum(IEnumerable<double> values)
+        {
+            double maxValue = values
+                .Where(value => double.IsFinite(value) && value > 0)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            if (maxValue <= 0)
+            {
+                return 1;
+            }
+
+            const int ringCount = 6;
+            double rawStep = maxValue / ringCount;
+            double magnitude = Math.Pow(10, Math.Floor(Math.Log10(rawStep)));
+            double normalized = rawStep / magnitude;
+            double niceNormalized = normalized <= 1 ? 1
+                : normalized <= 1.5 ? 1.5
+                : normalized <= 2 ? 2
+                : normalized <= 2.5 ? 2.5
+                : normalized <= 3 ? 3
+                : normalized <= 4 ? 4
+                : normalized <= 5 ? 5
+                : 10;
+
+            return niceNormalized * magnitude * ringCount;
         }
 
         private static Brush CreateBrush(Color color)

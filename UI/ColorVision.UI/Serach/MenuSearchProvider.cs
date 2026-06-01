@@ -14,6 +14,7 @@ namespace ColorVision.UI.Serach
                 {
                     SearchMeta search = new SearchMeta
                     {
+                        Type = SearchType.Menu,
                         GuidId = item.GuidId,
                         Header = item.Header,
                         Icon = item.Icon,

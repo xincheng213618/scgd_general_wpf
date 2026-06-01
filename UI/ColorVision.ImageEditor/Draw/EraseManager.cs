@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS0414,CS8625
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -15,6 +16,8 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override Cursor ActiveCursor => Input.Cursors.Eraser;
         protected override Cursor InactiveCursor => Cursors.Cross;
+
+        public Func<Visual, bool>? CanEraseVisual { get; set; }
 
         DrawingVisual EraseVisual { get; set; }
 
@@ -70,15 +73,30 @@ namespace ColorVision.ImageEditor.Draw
 
             IsMouseDown = false;
 
-            DrawCanvas.RemoveVisualCommand(DrawCanvas.GetVisual<Visual>(MouseDownP));
-            DrawCanvas.RemoveVisualCommand(DrawCanvas.GetVisual<Visual>(MouseUpP));
+            RemoveVisualIfAllowed(DrawCanvas.GetVisual<Visual>(MouseDownP));
+            RemoveVisualIfAllowed(DrawCanvas.GetVisual<Visual>(MouseUpP));
 
             foreach (var item in DrawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
             {
-                DrawCanvas.RemoveVisualCommand(item);
+                RemoveVisualIfAllowed(item);
             }
             DrawCanvas.RemoveVisualCommand(EraseVisual);
             e.Handled = true;
+        }
+
+        private void RemoveVisualIfAllowed(Visual? visual)
+        {
+            if (visual == null || ReferenceEquals(visual, EraseVisual))
+            {
+                return;
+            }
+
+            if (CanEraseVisual?.Invoke(visual) == false)
+            {
+                return;
+            }
+
+            DrawCanvas.RemoveVisualCommand(visual);
         }
 
 

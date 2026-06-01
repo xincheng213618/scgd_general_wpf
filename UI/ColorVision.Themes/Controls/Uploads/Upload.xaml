@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Themes.Controls.Uploads"
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:properties="clr-namespace:ColorVision.Themes.Properties"
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="400"   AllowDrop="True" Drop="UIElement_OnDrop">
     <UserControl.Resources>
@@ -30,8 +31,8 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Image  Grid.Column="0" Grid.Row="0"  Source="{DynamicResource  UploadDrawingImage}"  />
-                        <TextBlock Grid.Row="1"  Text="拖拽到此处也可上传"   HorizontalAlignment="Center"/>
-                        <Button Grid.Row="2" Margin="10"  Content="选择文件" Click="ChoiceFile_Click"  />
+                        <TextBlock Grid.Row="1"  Text="{x:Static properties:Resources.Upload_DragHint}"   HorizontalAlignment="Center"/>
+                        <Button Grid.Row="2" Margin="10"  Content="{x:Static properties:Resources.Upload_SelectFile}" Click="ChoiceFile_Click"  />
                     </Grid>
                 </Grid>
             </Border>

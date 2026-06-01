@@ -11,14 +11,15 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
-            <DockPanel>
+            <DockPanel LastChildFill="False">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                     <TextBlock Text="{x:Static properties:Resources.LabelStandard}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBlock x:Name="tbStandardName" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,16,0"/>
                     <TextBlock Text="{x:Static properties:Resources.GroupDisplay}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <ComboBox x:Name="cbDisplayScope" Width="180" SelectionChanged="cbDisplayScope_SelectionChanged"/>
                 </StackPanel>
-                <TextBlock x:Name="tbSummary" DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="Gray"/>
+                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.BtnExport}" Padding="12,4" Click="btnExportCsv_Click"/>
+                <TextBlock x:Name="tbSummary" DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="Gray" Margin="0,0,12,0"/>
             </DockPanel>
         </Border>
 

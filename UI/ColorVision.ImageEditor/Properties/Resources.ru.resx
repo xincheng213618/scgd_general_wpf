@@ -1,110 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -242,5 +183,924 @@
   </data>
   <data name="HistogramEqualization" xml:space="preserve">
     <value>Выравнивание гистограммы</value>
+  </data>
+  <data name="MenuModelViewer3D" xml:space="preserve">
+    <value>Просмотр 3D-модели</value>
+  </data>
+  <data name="TifOpenConfig_ConvertToGray16_DisplayName" xml:space="preserve">
+    <value>Gray32Float в Gray16</value>
+  </data>
+  <data name="TifOpenConfig_ConvertToGray16_Description" xml:space="preserve">
+    <value>При включении при открытии файлов TIFF Gray32Float значения пикселей нормализуются на основе минимальных и максимальных значений текущего изображения и преобразуются в Gray16; при выключении исходное изображение Gray32Float сохраняется.</value>
+  </data>
+  <data name="Draw_Lock" xml:space="preserve">
+    <value>Заблокировать</value>
+  </data>
+  <data name="Draw_ResetToImageCenter" xml:space="preserve">
+    <value>Сбросить к центру изображения</value>
+  </data>
+  <data name="Draw_Mode" xml:space="preserve">
+    <value>Режим</value>
+  </data>
+  <data name="Draw_Color" xml:space="preserve">
+    <value>Цвет</value>
+  </data>
+  <data name="Draw_LineWidth" xml:space="preserve">
+    <value>Толщина линии</value>
+  </data>
+  <data name="Draw_Angle" xml:space="preserve">
+    <value>Угол</value>
+  </data>
+  <data name="Draw_CenterX" xml:space="preserve">
+    <value>Центр X</value>
+  </data>
+  <data name="Draw_CenterY" xml:space="preserve">
+    <value>Центр Y</value>
+  </data>
+  <data name="Draw_MaskSettings" xml:space="preserve">
+    <value>Настройки маски</value>
+  </data>
+  <data name="Draw_MaskShape" xml:space="preserve">
+    <value>Форма маски</value>
+  </data>
+  <data name="Draw_MaskTransparentSize" xml:space="preserve">
+    <value>Размер прозрачной области маски</value>
+  </data>
+  <data name="Draw_MaskOpacity" xml:space="preserve">
+    <value>Непрозрачность маски (0-255)</value>
+  </data>
+  <data name="Draw_CenterOverlay" xml:space="preserve">
+    <value>Центральное наложение</value>
+  </data>
+  <data name="Draw_OverlayShape" xml:space="preserve">
+    <value>Форма наложения</value>
+  </data>
+  <data name="Draw_OverlayColor" xml:space="preserve">
+    <value>Цвет наложения</value>
+  </data>
+  <data name="Draw_OverlaySize" xml:space="preserve">
+    <value>Размер наложения</value>
+  </data>
+  <data name="Draw_PhysicalSize" xml:space="preserve">
+    <value>Физический размер</value>
+  </data>
+  <data name="Draw_PhysicalSizeX" xml:space="preserve">
+    <value>Физический размер X (мм)</value>
+  </data>
+  <data name="Draw_PhysicalSizeY" xml:space="preserve">
+    <value>Физический размер Y (мм)</value>
+  </data>
+  <data name="Draw_PixelPerUnit" xml:space="preserve">
+    <value>Пиксель/Единица (px/мм)</value>
+  </data>
+  <data name="Draw_Highlighter" xml:space="preserve">
+    <value>Маркер</value>
+  </data>
+  <data name="Draw_SampleSpacing" xml:space="preserve">
+    <value>Интервал выборки</value>
+  </data>
+  <data name="Draw_StrokeWidth" xml:space="preserve">
+    <value>Толщина штриха</value>
+  </data>
+  <data name="Draw_Text" xml:space="preserve">
+    <value>Текст</value>
+  </data>
+  <data name="Draw_FontSize" xml:space="preserve">
+    <value>Размер шрифта</value>
+  </data>
+  <data name="Draw_FontSizeLabel" xml:space="preserve">
+    <value>Размер шрифта</value>
+  </data>
+  <data name="Draw_FontFamily" xml:space="preserve">
+    <value>Шрифт</value>
+  </data>
+  <data name="Draw_Position" xml:space="preserve">
+    <value>Позиция</value>
+  </data>
+  <data name="Draw_Background" xml:space="preserve">
+    <value>Фон</value>
+  </data>
+  <data name="Draw_Fill" xml:space="preserve">
+    <value>Заливка</value>
+  </data>
+  <data name="Draw_DefaultFontSize" xml:space="preserve">
+    <value>Размер шрифта по умолчанию</value>
+  </data>
+  <data name="Draw_DefaultColor" xml:space="preserve">
+    <value>Цвет по умолчанию</value>
+  </data>
+  <data name="Draw_FollowZoom" xml:space="preserve">
+    <value>Следовать за масштабом</value>
+  </data>
+  <data name="Draw_HighlighterMode" xml:space="preserve">
+    <value>Режим маркера</value>
+  </data>
+  <data name="Draw_ContinuousDraw" xml:space="preserve">
+    <value>Непрерывное рисование</value>
+  </data>
+  <data name="Draw_LockDefaultRadius" xml:space="preserve">
+    <value>Заблокировать радиус по умолчанию</value>
+  </data>
+  <data name="Draw_LockDefaultSize" xml:space="preserve">
+    <value>Заблокировать размер по умолчанию</value>
+  </data>
+  <data name="Draw_CreateFromCenter" xml:space="preserve">
+    <value>Создать из центра</value>
+  </data>
+  <data name="Draw_LineColor" xml:space="preserve">
+    <value>Цвет линии</value>
+  </data>
+  <data name="Draw_Rasterize" xml:space="preserve">
+    <value>Растеризация</value>
+  </data>
+  <data name="Ruler_StartPoint" xml:space="preserve">
+    <value>Начало</value>
+  </data>
+  <data name="Ruler_TotalLength" xml:space="preserve">
+    <value>Общая длина</value>
+  </data>
+  <data name="Ruler_MeasureWithRealUnits" xml:space="preserve">
+    <value>Включить физические единицы для измерения</value>
+  </data>
+  <data name="Ruler_Calculate" xml:space="preserve">
+    <value>Рассчитать</value>
+  </data>
+  <data name="Ruler_PhysicalScale" xml:space="preserve">
+    <value>Физический масштаб</value>
+  </data>
+  <data name="Ruler_PhysicalUnit" xml:space="preserve">
+    <value>Физическая единица</value>
+  </data>
+  <data name="Ruler_PixelRepresents" xml:space="preserve">
+    <value>1 пиксель представляет</value>
+  </data>
+  <data name="Ruler_Pixel" xml:space="preserve">
+    <value>Пиксель</value>
+  </data>
+  <data name="Ruler_ActualDistance" xml:space="preserve">
+    <value>Фактическое расстояние</value>
+  </data>
+  <data name="Ruler_PhysicalLength" xml:space="preserve">
+    <value>Физическая длина</value>
+  </data>
+  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
+    <value>Недостаточно точек для построения графика профиля.</value>
+  </data>
+  <data name="Annotation_CannotExtractData" xml:space="preserve">
+    <value>Не удалось извлечь данные профиля из изображения.</value>
+  </data>
+  <data name="Annotation_SectionalDrawingTitle" xml:space="preserve">
+    <value>График профиля</value>
+  </data>
+  <data name="Annotation_SamplePoints" xml:space="preserve">
+    <value>точек выборки</value>
+  </data>
+  <data name="Annotation_SourceNotReadable" xml:space="preserve">
+    <value>Источник изображения не в читаемом формате WriteableBitmap.</value>
+  </data>
+  <data name="Draw_Tip" xml:space="preserve">
+    <value>Подсказка</value>
+  </data>
+  <data name="Draw_Warning" xml:space="preserve">
+    <value>Предупреждение</value>
+  </data>
+  <data name="Draw_Error" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="ImageView_NoExportableAnnotations" xml:space="preserve">
+    <value>Нет аннотаций для экспорта.</value>
+  </data>
+  <data name="ImageView_ExportAnnotations" xml:space="preserve">
+    <value>Экспорт аннотаций</value>
+  </data>
+  <data name="ImageView_NoAnnotationTypes" xml:space="preserve">
+    <value>Не найдены примитивы с типами аннотаций.</value>
+  </data>
+  <data name="ImageView_ExportedAnnotationsWithSkip" xml:space="preserve">
+    <value>Экспортировано {0} аннотаций, пропущено {1} примитивов без аннотаций.</value>
+  </data>
+  <data name="ImageView_ExportedAnnotations" xml:space="preserve">
+    <value>Экспортировано {0} аннотаций.</value>
+  </data>
+  <data name="ImageView_ImportAnnotations" xml:space="preserve">
+    <value>Импорт аннотаций</value>
+  </data>
+  <data name="ImageView_ImportedAnnotations" xml:space="preserve">
+    <value>Импортировано {0} аннотаций.</value>
+  </data>
+  <data name="ImageView_ImportAnnotationsFailed" xml:space="preserve">
+    <value>Ошибка импорта аннотаций: {0}</value>
+  </data>
+  <data name="ImageView_UnsupportedImageFormat" xml:space="preserve">
+    <value>Неподдерживаемый формат изображения: {0}</value>
+  </data>
+  <data name="ImageView_UnsupportedPixelFormat" xml:space="preserve">
+    <value>{0} — неподдерживаемый формат. Обратитесь к разработчику.</value>
+  </data>
+  <data name="ImageView_MetadataDesc_FilePath" xml:space="preserve">
+    <value>Абсолютный путь к текущему открытому изображению</value>
+  </data>
+  <data name="ImageView_MetadataDesc_FileSize" xml:space="preserve">
+    <value>Размер текущего открытого файла (байт)</value>
+  </data>
+  <data name="ImageView_MetadataDesc_PixelFormat" xml:space="preserve">
+    <value>Формат пикселей текущего изображения</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Cols" xml:space="preserve">
+    <value>Количество столбцов текущего изображения</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Rows" xml:space="preserve">
+    <value>Количество строк текущего изображения</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Channel" xml:space="preserve">
+    <value>Количество каналов текущего изображения</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Depth" xml:space="preserve">
+    <value>Битовая глубина текущего изображения</value>
+  </data>
+  <data name="ImageView_MetadataDesc_Stride" xml:space="preserve">
+    <value>Stride текущего изображения</value>
+  </data>
+  <data name="ImageView_MetadataDesc_DpiX" xml:space="preserve">
+    <value>Горизонтальный DPI текущего изображения</value>
+  </data>
+  <data name="ImageView_MetadataDesc_DpiY" xml:space="preserve">
+    <value>Вертикальный DPI текущего изображения</value>
+  </data>
+  <data name="ImageView_Scope_ImageMetadata" xml:space="preserve">
+    <value>Метаданные изображения</value>
+  </data>
+  <data name="ImageView_Scope_ViewState" xml:space="preserve">
+    <value>Состояние текущего вида</value>
+  </data>
+  <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
+    <value>Среда выполнения открывателя</value>
+  </data>
+  <data name="ImageView_Scope_Legacy" xml:space="preserve">
+    <value>Устаревшие</value>
+  </data>
+  <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
+    <value>Определяется текущим файлом и содержимым пикселей; полностью обновляется при смене изображения.</value>
+  </data>
+  <data name="ImageView_ScopeDesc_ViewState" xml:space="preserve">
+    <value>Временное состояние для текущего ImageView; не записывается обратно в глобальные значения по умолчанию.</value>
+  </data>
+  <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
+    <value>Информация среды выполнения, значимая только в определённых рабочих процессах открывателя.</value>
+  </data>
+  <data name="ImageView_ScopeDesc_Legacy" xml:space="preserve">
+    <value>Устаревшие ключи, ещё не перенесённые в явные области; рекомендуется консолидация.</value>
+  </data>
+  <data name="Cie_Title" xml:space="preserve">
+    <value>Диаграмма цветности CIE</value>
+  </data>
+  <data name="Cie_CoordinateSystem" xml:space="preserve">
+    <value>Система координат</value>
+  </data>
+  <data name="Cie_Fit" xml:space="preserve">
+    <value>Подгонка</value>
+  </data>
+  <data name="Cie_DisplayPresets" xml:space="preserve">
+    <value>Предустановки отображения</value>
+  </data>
+  <data name="Cie_Display" xml:space="preserve">
+    <value>Монитор</value>
+  </data>
+  <data name="Cie_Cinema" xml:space="preserve">
+    <value>Кино</value>
+  </data>
+  <data name="Cie_SelectAll" xml:space="preserve">
+    <value>Выбрать все</value>
+  </data>
+  <data name="Cie_Clear" xml:space="preserve">
+    <value>Очистить</value>
+  </data>
+  <data name="Cie_ColorGamut" xml:space="preserve">
+    <value>Цветовой охват</value>
+  </data>
+  <data name="Cie_WhitePointLightSource" xml:space="preserve">
+    <value>Точка белого / Источник света</value>
+  </data>
+  <data name="Cie_ReferenceLines" xml:space="preserve">
+    <value>Эталонные линии</value>
+  </data>
+  <data name="Cie_CurrentPoint" xml:space="preserve">
+    <value>Текущая точка</value>
+  </data>
+  <data name="Settings_ImageSettingsTitle" xml:space="preserve">
+    <value>Image Settings</value>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Settings_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Settings_ScopeCurrentView" xml:space="preserve">
+    <value>Scope: Current View</value>
+  </data>
+  <data name="Settings_ScopeGlobalDefault" xml:space="preserve">
+    <value>Scope: Global Default</value>
+  </data>
+  <data name="Settings_ScopeLoaderDefault" xml:space="preserve">
+    <value>Scope: Loader Default</value>
+  </data>
+  <data name="Settings_ScopeWorkspace" xml:space="preserve">
+    <value>Scope: Workspace</value>
+  </data>
+  <data name="Settings_ScopeUncategorized" xml:space="preserve">
+    <value>Scope: Uncategorized</value>
+  </data>
+  <data name="Settings_ToolbarVisibility" xml:space="preserve">
+    <value>Toolbar Visibility</value>
+  </data>
+  <data name="Settings_ToolbarVisibilityDesc" xml:space="preserve">
+    <value>These switches control the visibility of toolbar areas in the current ImageView instance.</value>
+  </data>
+  <data name="Settings_BottomToolbar" xml:space="preserve">
+    <value>Bottom Toolbar (ToolBarAl)</value>
+  </data>
+  <data name="Settings_DrawToolbar" xml:space="preserve">
+    <value>Drawing Toolbar (ToolBarDraw)</value>
+  </data>
+  <data name="Settings_TopToolbar" xml:space="preserve">
+    <value>Top Toolbar (ToolBarTop)</value>
+  </data>
+  <data name="Settings_LeftToolbar" xml:space="preserve">
+    <value>Left Toolbar (ToolBarLeft)</value>
+  </data>
+  <data name="Settings_RightToolbar" xml:space="preserve">
+    <value>Right Toolbar (ToolBarRight)</value>
+  </data>
+  <data name="Settings_EditorTools" xml:space="preserve">
+    <value>Editor Tools</value>
+  </data>
+  <data name="Settings_EditorToolsDesc" xml:space="preserve">
+    <value>The following list shows currently loaded IEditorTools; toggles only control their visibility in toolbars and do not affect assembly discovery.</value>
+  </data>
+  <data name="Settings_ShowAll" xml:space="preserve">
+    <value>Show All</value>
+  </data>
+  <data name="Settings_HideAll" xml:space="preserve">
+    <value>Hide All</value>
+  </data>
+  <data name="Settings_ImageOpeners" xml:space="preserve">
+    <value>Image Openers</value>
+  </data>
+  <data name="Settings_ImageOpenersDesc" xml:space="preserve">
+    <value>Registered IImageOpen handlers for the current ImageView and their supported extensions.</value>
+  </data>
+  <data name="Settings_PropertySnapshot" xml:space="preserve">
+    <value>Current View Property Snapshot</value>
+  </data>
+  <data name="Settings_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Settings_NoContextProperties" xml:space="preserve">
+    <value>The current view has no context properties to display yet.</value>
+  </data>
+  <data name="Settings_DescriptionLabel" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Settings_NoPropertyContext" xml:space="preserve">
+    <value>The current view has not written any property context yet. After opening an image or running a tool, the actual state will be shown here by scope.</value>
+  </data>
+  <data name="Settings_PropertyContextSummary" xml:space="preserve">
+    <value>The current view has recorded {0} properties across {1} scope groups. This is a read-only snapshot to help diagnose whether current and default values are leaking across layers.</value>
+  </data>
+  <data name="Settings_EntryCount" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="Settings_GroupGeneral" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Settings_GroupDisplay" xml:space="preserve">
+    <value>Display</value>
+  </data>
+  <data name="Settings_GroupContext" xml:space="preserve">
+    <value>Context</value>
+  </data>
+  <data name="Settings_GroupDefaults" xml:space="preserve">
+    <value>Defaults</value>
+  </data>
+  <data name="Settings_GroupWorkspace" xml:space="preserve">
+    <value>Workspace</value>
+  </data>
+  <data name="Settings_GroupLoader" xml:space="preserve">
+    <value>Loader</value>
+  </data>
+  <data name="Settings_CurrentImageContext" xml:space="preserve">
+    <value>Current Image Context</value>
+  </data>
+  <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
+    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, loader runtime state, and legacy keys pending migration.</value>
+  </data>
+  <data name="Settings_DefaultImageScaling" xml:space="preserve">
+    <value>Default Image Scaling</value>
+  </data>
+  <data name="Settings_DefaultImageScalingDesc" xml:space="preserve">
+    <value>Controls the BitmapScalingMode seeded during ImageView initialization. After initialization the current value is preserved and only changes when explicitly adjusted by the user or overridden by a specific loader.</value>
+  </data>
+  <data name="Settings_DefaultDisplayParams" xml:space="preserve">
+    <value>Default Display Parameters</value>
+  </data>
+  <data name="Settings_DefaultDisplayParamsDesc" xml:space="preserve">
+    <value>Controls the global max/min zoom of the Zoombox and the performance threshold for NearestNeighbor pixel value overlay.</value>
+  </data>
+  <data name="Settings_DefaultTextStyle" xml:space="preserve">
+    <value>Default Text Style</value>
+  </data>
+  <data name="Settings_DefaultTextStyleDesc" xml:space="preserve">
+    <value>Controls the default font, color, and layout for new text and text-bearing primitives.</value>
+  </data>
+  <data name="Settings_PhysicalSizeDefaults" xml:space="preserve">
+    <value>Physical Size Defaults</value>
+  </data>
+  <data name="Settings_PhysicalSizeDefaultsDesc" xml:space="preserve">
+    <value>Controls the default length and unit for physical size conversions such as rulers and grids.</value>
+  </data>
+  <data name="Settings_DefaultRealtimeCameraParams" xml:space="preserve">
+    <value>Default Realtime Camera Parameters</value>
+  </data>
+  <data name="Settings_DefaultRealtimeCameraParamsDesc" xml:space="preserve">
+    <value>Controls the shared display FPS, sharpness calculation, and ROI/status text style for realtime camera entries.</value>
+  </data>
+  <data name="Settings_ToolbarToolsAndOpeners" xml:space="preserve">
+    <value>Toolbars, Tools and Openers</value>
+  </data>
+  <data name="Settings_ToolbarToolsAndOpenersDesc" xml:space="preserve">
+    <value>Unified management of toolbar display, loaded IEditorTool visibility, and supported IImageOpen handlers for the current ImageView.</value>
+  </data>
+  <data name="Settings_TifOpener" xml:space="preserve">
+    <value>TIF Opener</value>
+  </data>
+  <data name="Settings_TifOpenerDesc" xml:space="preserve">
+    <value>Controls loading strategies such as converting Gray32Float TIFF to Gray16 when opening.</value>
+  </data>
+  <data name="Draw_Delete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="Draw_Edit" xml:space="preserve">
+    <value>Редактировать</value>
+  </data>
+<data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data>
+  <data name="ThreeD_ModelViewer" xml:space="preserve">
+    <value>3D Model Viewer</value>
+  </data>
+  <data name="ThreeD_ModelStructure" xml:space="preserve">
+    <value>Model Structure</value>
+  </data>
+  <data name="ThreeD_IsolateSelected" xml:space="preserve">
+    <value>Isolate Selected</value>
+  </data>
+  <data name="ThreeD_RestoreAll" xml:space="preserve">
+    <value>Restore All</value>
+  </data>
+  <data name="ThreeD_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="ThreeD_OpenModel" xml:space="preserve">
+    <value>Open Model</value>
+  </data>
+  <data name="ThreeD_OpenModelToolTip" xml:space="preserve">
+    <value>Open model file</value>
+  </data>
+  <data name="ThreeD_CameraPosition" xml:space="preserve">
+    <value>Camera Position</value>
+  </data>
+  <data name="ThreeD_MoveLeftToolTip" xml:space="preserve">
+    <value>Move Left (L)</value>
+  </data>
+  <data name="ThreeD_MoveForwardToolTip" xml:space="preserve">
+    <value>Move Forward (T)</value>
+  </data>
+  <data name="ThreeD_MoveRightToolTip" xml:space="preserve">
+    <value>Move Right (R)</value>
+  </data>
+  <data name="ThreeD_MoveBackToolTip" xml:space="preserve">
+    <value>Move Back (B)</value>
+  </data>
+  <data name="ThreeD_LookDirection" xml:space="preserve">
+    <value>Look Direction</value>
+  </data>
+  <data name="ThreeD_LookLeftToolTip" xml:space="preserve">
+    <value>Look Left (D)</value>
+  </data>
+  <data name="ThreeD_LookUpToolTip" xml:space="preserve">
+    <value>Look Up (A)</value>
+  </data>
+  <data name="ThreeD_LookRightToolTip" xml:space="preserve">
+    <value>Look Right (F)</value>
+  </data>
+  <data name="ThreeD_LookDownToolTip" xml:space="preserve">
+    <value>Look Down (C)</value>
+  </data>
+  <data name="ThreeD_PresetViews" xml:space="preserve">
+    <value>Preset Views</value>
+  </data>
+  <data name="ThreeD_Front" xml:space="preserve">
+    <value>Front</value>
+  </data>
+  <data name="ThreeD_Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="ThreeD_Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="ThreeD_Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="ThreeD_Top" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="ThreeD_Bottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="ThreeD_FrontViewToolTip" xml:space="preserve">
+    <value>Front View</value>
+  </data>
+  <data name="ThreeD_BackViewToolTip" xml:space="preserve">
+    <value>Back View</value>
+  </data>
+  <data name="ThreeD_LeftViewToolTip" xml:space="preserve">
+    <value>Left View</value>
+  </data>
+  <data name="ThreeD_RightViewToolTip" xml:space="preserve">
+    <value>Right View</value>
+  </data>
+  <data name="ThreeD_TopViewToolTip" xml:space="preserve">
+    <value>Top View</value>
+  </data>
+  <data name="ThreeD_BottomViewToolTip" xml:space="preserve">
+    <value>Bottom View</value>
+  </data>
+  <data name="ThreeD_IsoViewToolTip" xml:space="preserve">
+    <value>Isometric View</value>
+  </data>
+  <data name="ThreeD_Projection" xml:space="preserve">
+    <value>Projection</value>
+  </data>
+  <data name="ThreeD_Orthographic" xml:space="preserve">
+    <value>Orthographic</value>
+  </data>
+  <data name="ThreeD_Perspective" xml:space="preserve">
+    <value>Perspective</value>
+  </data>
+  <data name="ThreeD_Rendering" xml:space="preserve">
+    <value>Rendering</value>
+  </data>
+  <data name="ThreeD_Wireframe" xml:space="preserve">
+    <value>Wireframe</value>
+  </data>
+  <data name="ThreeD_ShowTexture" xml:space="preserve">
+    <value>Show Texture</value>
+  </data>
+  <data name="ThreeD_ShowMaterial" xml:space="preserve">
+    <value>Show Material</value>
+  </data>
+  <data name="ThreeD_ResetView" xml:space="preserve">
+    <value>Reset View</value>
+  </data>
+  <data name="ThreeD_ResetViewToolTip" xml:space="preserve">
+    <value>Reset camera view (Home)</value>
+  </data>
+  <data name="ThreeD_Screenshot" xml:space="preserve">
+    <value>Screenshot</value>
+  </data>
+  <data name="ThreeD_ExportModel" xml:space="preserve">
+    <value>Export Model</value>
+  </data>
+  <data name="ThreeD_View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="ThreeD_Camera" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="ThreeD_View3D" xml:space="preserve">
+    <value>3D View</value>
+  </data>
+  <data name="ThreeD_HeightScale" xml:space="preserve">
+    <value>Height Scale</value>
+  </data>
+  <data name="ThreeD_IncreaseHeightToolTip" xml:space="preserve">
+    <value>Increase Height (Num+ / +)</value>
+  </data>
+  <data name="ThreeD_DecreaseHeightToolTip" xml:space="preserve">
+    <value>Decrease Height (Num- / -)</value>
+  </data>
+  <data name="ThreeD_PseudoColor" xml:space="preserve">
+    <value>Pseudo Color</value>
+  </data>
+  <data name="ThreeD_ScreenshotToolTip" xml:space="preserve">
+    <value>Save current 3D view as image</value>
+  </data>
+  <data name="ThreeD_ExportModelToolTip" xml:space="preserve">
+    <value>Export current 3D mesh as OBJ or STL</value>
+  </data>
+  <data name="ThreeD_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="ThreeD_SettingsToolTip" xml:space="preserve">
+    <value>Render resolution settings</value>
+  </data>
+  <data name="ThreeD_RenderSettings" xml:space="preserve">
+    <value>Render Settings</value>
+  </data>
+  <data name="ThreeD_TargetResolutionX" xml:space="preserve">
+    <value>Target Resolution X:</value>
+  </data>
+  <data name="ThreeD_TargetResolutionY" xml:space="preserve">
+    <value>Target Resolution Y:</value>
+  </data>
+  <data name="ThreeD_ApplyNote" xml:space="preserve">
+    <value>Click Apply to re-render after modification</value>
+  </data>
+  <data name="ThreeD_ApplyRefresh" xml:space="preserve">
+    <value>Apply and Refresh</value>
+  </data>
+  <data name="ThreeD_Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="ThreeD_Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="ThreeD_Resolution" xml:space="preserve">
+    <value>Resolution</value>
+  </data>
+  <data name="ThreeD_Mouse" xml:space="preserve">
+    <value>Mouse</value>
+  </data>
+  <data name="Graphic_Quadrilateral" xml:space="preserve">
+    <value>Quadrilateral</value>
+  </data>
+  <data name="Graphic_Circle" xml:space="preserve">
+    <value>Circle</value>
+  </data>
+  <data name="Graphic_FindLuminousAreaCorner" xml:space="preserve">
+    <value>Find Luminous Area Corners</value>
+  </data>
+  <data name="Graphic_TopLeft" xml:space="preserve">
+    <value>Top Left</value>
+  </data>
+  <data name="Graphic_TopRight" xml:space="preserve">
+    <value>Top Right</value>
+  </data>
+  <data name="Graphic_BottomRight" xml:space="preserve">
+    <value>Bottom Right</value>
+  </data>
+  <data name="Graphic_BottomLeft" xml:space="preserve">
+    <value>Bottom Left</value>
+  </data>
+  <data name="Graphic_Top" xml:space="preserve">
+    <value>Top:</value>
+  </data>
+  <data name="Graphic_Left" xml:space="preserve">
+    <value>Left:</value>
+  </data>
+  <data name="Graphic_Bottom" xml:space="preserve">
+    <value>Bottom:</value>
+  </data>
+  <data name="Graphic_Right" xml:space="preserve">
+    <value>Right:</value>
+  </data>
+  <data name="Graphic_Set" xml:space="preserve">
+    <value>Set</value>
+  </data>
+  <data name="Graphic_SetPoiArea" xml:space="preserve">
+    <value>Set POI Area</value>
+  </data>
+  <data name="Graphic_CenterPoint" xml:space="preserve">
+    <value>Center Point</value>
+  </data>
+  <data name="Graphic_Radius" xml:space="preserve">
+    <value>Radius:</value>
+  </data>
+  <data name="Graphic_Count" xml:space="preserve">
+    <value>Count:</value>
+  </data>
+  <data name="Graphic_Angle" xml:space="preserve">
+    <value>Angle:</value>
+  </data>
+  <data name="Graphic_CircleShape" xml:space="preserve">
+    <value>Circle</value>
+  </data>
+  <data name="Graphic_RectShape" xml:space="preserve">
+    <value>Rectangle</value>
+  </data>
+  <data name="Graphic_Rows" xml:space="preserve">
+    <value>Rows:</value>
+  </data>
+  <data name="Graphic_Columns" xml:space="preserve">
+    <value>Columns:</value>
+  </data>
+  <data name="Graphic_Width" xml:space="preserve">
+    <value>Width:</value>
+  </data>
+  <data name="Graphic_Height" xml:space="preserve">
+    <value>Height:</value>
+  </data>
+  <data name="Graphic_Draw" xml:space="preserve">
+    <value>Draw</value>
+  </data>
+  <data name="Graphic_ClearAll" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Graphic_ExportAnnotations" xml:space="preserve">
+    <value>Export Annotations</value>
+  </data>
+  <data name="Graphic_ImportAnnotations" xml:space="preserve">
+    <value>Import Annotations</value>
+  </data>
+  <data name="Graphic_ImportAnnotationsMenu" xml:space="preserve">
+    <value>Import Annotations</value>
+  </data>
+  <data name="Graphic_ExportAnnotationsMenu" xml:space="preserve">
+    <value>Export Annotations</value>
+  </data>
+  <data name="Graphic_ImageViewSettings" xml:space="preserve">
+    <value>Image Settings</value>
+  </data>
+  <data name="Graphic_CountMin1" xml:space="preserve">
+    <value>Draw count cannot be less than 1</value>
+  </data>
+  <data name="Graphic_ArrayCountMin1" xml:space="preserve">
+    <value>Array rows and columns cannot be less than 1</value>
+  </data>
+  <data name="Desc_BinaryThreshold" xml:space="preserve">
+    <value>Binary threshold (0-255)</value>
+  </data>
+  <data name="Desc_BeadSize" xml:space="preserve">
+    <value>Bead size</value>
+  </data>
+  <data name="Desc_MinBeadSize" xml:space="preserve">
+    <value>Minimum bead size (pixels)</value>
+  </data>
+  <data name="Desc_MaxBeadSize" xml:space="preserve">
+    <value>Maximum bead size (pixels)</value>
+  </data>
+  <data name="Desc_ExpectedRows" xml:space="preserve">
+    <value>Expected bead rows</value>
+  </data>
+  <data name="Desc_ExpectedCols" xml:space="preserve">
+    <value>Expected bead columns</value>
+  </data>
+  <data name="Desc_BinaryThresholdAuto" xml:space="preserve">
+    <value>Binary threshold, -1 for auto (OTSU)</value>
+  </data>
+  <data name="Desc_MinKeyArea" xml:space="preserve">
+    <value>Minimum key area (pixels)</value>
+  </data>
+  <data name="Desc_MaxKeyArea" xml:space="preserve">
+    <value>Maximum key area (pixels), 0 for unlimited</value>
+  </data>
+  <data name="Desc_MarginRatio" xml:space="preserve">
+    <value>Margin ratio (0~0.45), shrink detection box to better fit keys</value>
+  </data>
+  <data name="Sfr_FrequencyInputError" xml:space="preserve">
+    <value>Invalid frequency input</value>
+  </data>
+  <data name="Sfr_MtfNotFound" xml:space="preserve">
+    <value>Corresponding MTF not found</value>
+  </data>
+  <data name="Sfr_MtfInputError" xml:space="preserve">
+    <value>Invalid MTF input</value>
+  </data>
+  <data name="Sfr_FreqNotFound" xml:space="preserve">
+    <value>Corresponding frequency not found</value>
+  </data>
+  <data name="Sfr_ExportSuccess" xml:space="preserve">
+    <value>Export Successful</value>
+  </data>
+  <data name="Sfr_ExportSuccessMsg" xml:space="preserve">
+    <value>Data exported successfully to:</value>
+  </data>
+  <data name="Sfr_ExportFailed" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Algorithm_SfrMtfAnalysis" xml:space="preserve">
+    <value>SFR/MTF Analysis</value>
+  </data>
+  <data name="Histogram_Title" xml:space="preserve">
+    <value>Histogram</value>
+  </data>
+  <data name="PseudoColor_Group" xml:space="preserve">
+    <value>Pseudo Color</value>
+  </data>
+  <data name="PseudoColor_CurrentPseudoColor" xml:space="preserve">
+    <value>Current Pseudo Color</value>
+  </data>
+  <data name="PseudoColor_CurrentDescription" xml:space="preserve">
+    <value>Controls the pseudo color enable state, color map, and range for the current canvas. Changes take effect immediately and are not written back to defaults.</value>
+  </data>
+  <data name="PseudoColor_DefaultPseudoColor" xml:space="preserve">
+    <value>Pseudo Color Defaults</value>
+  </data>
+  <data name="PseudoColor_DefaultDescription" xml:space="preserve">
+    <value>Controls the default pseudo color type and auto-range setting for new images or after reset. Does not directly override the current canvas state.</value>
+  </data>
+  <data name="PseudoColor_Enable" xml:space="preserve">
+    <value>Enable Pseudo Color</value>
+  </data>
+  <data name="PseudoColor_AutoRange" xml:space="preserve">
+    <value>Auto Range</value>
+  </data>
+  <data name="PseudoColor_Type" xml:space="preserve">
+    <value>Pseudo Color Type</value>
+  </data>
+  <data name="PseudoColor_MinValue" xml:space="preserve">
+    <value>Minimum Value</value>
+  </data>
+  <data name="PseudoColor_MaxValue" xml:space="preserve">
+    <value>Maximum Value</value>
+  </data>
+  <data name="PseudoColor_DefaultType" xml:space="preserve">
+    <value>Default Pseudo Color Type</value>
+  </data>
+  <data name="PseudoColor_DefaultAutoRange" xml:space="preserve">
+    <value>Default Auto Range</value>
+  </data>
+  <data name="Artculation_MenuHeader" xml:space="preserve">
+    <value>Sharpness Evaluation</value>
+  </data>
+  <data name="Artculation_ParamSettings" xml:space="preserve">
+    <value>Sharpness Evaluation Parameters</value>
+  </data>
+  <data name="Artculation_ResultTitle" xml:space="preserve">
+    <value>Sharpness Evaluation</value>
+  </data>
+  <data name="Artculation_ResultMsg" xml:space="preserve">
+    <value>Image sharpness evaluation result:</value>
+  </data>
+  <data name="Algorithm_Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Algorithm_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Algorithm_BrightnessContrastTitle" xml:space="preserve">
+    <value>Brightness Contrast Adjustment</value>
+  </data>
+  <data name="Algorithm_AdjustBrightnessContrast" xml:space="preserve">
+    <value>Adjust Brightness and Contrast</value>
+  </data>
+  <data name="Algorithm_Brightness" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="Algorithm_Contrast" xml:space="preserve">
+    <value>Contrast</value>
+  </data>
+  <data name="Algorithm_EdgeDetectionTitle" xml:space="preserve">
+    <value>Edge Detection (Canny)</value>
+  </data>
+  <data name="Algorithm_LowThreshold" xml:space="preserve">
+    <value>Low Threshold:</value>
+  </data>
+  <data name="Algorithm_HighThreshold" xml:space="preserve">
+    <value>High Threshold:</value>
+  </data>
+  <data name="Algorithm_WhiteBalanceTitle" xml:space="preserve">
+    <value>White Balance Adjustment</value>
+  </data>
+  <data name="Algorithm_AdjustWhiteBalance" xml:space="preserve">
+    <value>Adjust White Balance</value>
+  </data>
+  <data name="Algorithm_Red" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="Algorithm_Green" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="Algorithm_Blue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="Algorithm_GaussianBlurTitle" xml:space="preserve">
+    <value>Gaussian Blur</value>
+  </data>
+  <data name="Algorithm_KernelSizeOdd" xml:space="preserve">
+    <value>Kernel Size (must be odd):</value>
+  </data>
+  <data name="Algorithm_SigmaStdDev" xml:space="preserve">
+    <value>Sigma (Standard Deviation):</value>
+  </data>
+  <data name="Algorithm_MedianBlurTitle" xml:space="preserve">
+    <value>Median Blur</value>
+  </data>
+  <data name="Algorithm_GammaCorrectionTitle" xml:space="preserve">
+    <value>Gamma Correction</value>
+  </data>
+  <data name="Algorithm_AdjustGamma" xml:space="preserve">
+    <value>Adjust Gamma Value</value>
+  </data>
+  <data name="Algorithm_GammaValue" xml:space="preserve">
+    <value>Gamma Value</value>
+  </data>
+  <data name="Algorithm_ThresholdTitle" xml:space="preserve">
+    <value>Threshold Processing</value>
+  </data>
+  <data name="Algorithm_AdjustThreshold" xml:space="preserve">
+    <value>Adjust Threshold</value>
+  </data>
+  <data name="Algorithm_ThresholdValue" xml:space="preserve">
+    <value>Threshold</value>
   </data>
 </root>

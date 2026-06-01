@@ -66,7 +66,7 @@ namespace Conoscope
 
         private void UpdateReferencePlotHeader()
         {
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.RefAzimuthLine : Properties.Resources.RefPolarCircle;
             tbReferenceValue.Text = GetReferenceValueText(axisParam.ReferenceMode, axisParam.ReferenceAngle, axisParam.ReferenceRadiusAngle);
         }
@@ -80,7 +80,7 @@ namespace Conoscope
 
         private void SetReferencePlotLimits()
         {
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 wpfPlotReference.Plot.Axes.SetLimitsX(-MaxAngle, MaxAngle);
             }
@@ -92,7 +92,7 @@ namespace Conoscope
 
         private void UpdateReferencePlot()
         {
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 UpdatePlot();
             }
@@ -114,6 +114,7 @@ namespace Conoscope
                 ExportChannel.CieU => Brushes.DodgerBlue,
                 ExportChannel.CieV => Brushes.MediumPurple,
                 ExportChannel.ColorDifference => Brushes.Crimson,
+                ExportChannel.Contrast => Brushes.DeepSkyBlue,
                 _ => Brushes.LimeGreen
             };
         }
@@ -181,7 +182,7 @@ namespace Conoscope
             polarPlotReference.UpdatePlot(
                 points,
                 GetChannelPlotBrush(channel),
-                string.Format(Properties.Resources.RadiusFormat, ConoscopeChannelDisplayFormatter.GetAxisLabel(channel)),
+                Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.RadiusFormat, ConoscopeChannelDisplayFormatter.GetAxisLabel(channel)),
                 radialMaximum,
                 closePath);
         }
@@ -198,6 +199,7 @@ namespace Conoscope
                 ExportChannel.CieU => ScottPlot.Color.FromColor(System.Drawing.Color.DodgerBlue),
                 ExportChannel.CieV => ScottPlot.Color.FromColor(System.Drawing.Color.MediumPurple),
                 ExportChannel.ColorDifference => ScottPlot.Color.FromColor(System.Drawing.Color.Crimson),
+                ExportChannel.Contrast => ScottPlot.Color.FromColor(System.Drawing.Color.DeepSkyBlue),
                 _ => ScottPlot.Color.FromColor(System.Drawing.Color.LimeGreen)
             };
         }
@@ -336,8 +338,8 @@ namespace Conoscope
                 scatter.LineWidth = 2;
                 scatter.LegendText = ConoscopeChannelDisplayFormatter.GetLabel(channel);
 
-                wpfPlotReference.Plot.Title($"方位角 {selectedPolarLine.Angle}° {ConoscopeChannelDisplayFormatter.GetLabel(channel)}分布曲线");
-                wpfPlotReference.Plot.XLabel("角度 (°)");
+                wpfPlotReference.Plot.Title(string.Format(Properties.Resources.Conoscope_PolarDistributionTitle, selectedPolarLine.Angle, ConoscopeChannelDisplayFormatter.GetLabel(channel)));
+                wpfPlotReference.Plot.XLabel(Properties.Resources.Conoscope_AngleDegrees);
                 wpfPlotReference.Plot.YLabel(ConoscopeChannelDisplayFormatter.GetAxisLabel(channel));
                 wpfPlotReference.Plot.Legend.IsVisible = true;
                 wpfPlotReference.Plot.Axes.AutoScale();
@@ -388,8 +390,8 @@ namespace Conoscope
                 scatter.LineWidth = 2;
                 scatter.LegendText = ConoscopeChannelDisplayFormatter.GetLabel(channel);
 
-                wpfPlotReference.Plot.Title($"极角 {selectedCircleLine.RadiusAngle}° {ConoscopeChannelDisplayFormatter.GetLabel(channel)}圆周分布曲线");
-                wpfPlotReference.Plot.XLabel("圆周角度 (°)");
+                wpfPlotReference.Plot.Title(string.Format(Properties.Resources.Conoscope_CircleDistributionTitle, selectedCircleLine.RadiusAngle, ConoscopeChannelDisplayFormatter.GetLabel(channel)));
+                wpfPlotReference.Plot.XLabel(Properties.Resources.Conoscope_CircleAngleDegrees);
                 wpfPlotReference.Plot.YLabel(ConoscopeChannelDisplayFormatter.GetAxisLabel(channel));
                 wpfPlotReference.Plot.Legend.IsVisible = true;
                 wpfPlotReference.Plot.Axes.AutoScale();

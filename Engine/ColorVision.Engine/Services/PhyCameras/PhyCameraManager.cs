@@ -71,7 +71,11 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
             RefreshEmptyCamera();
-            PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
+            PhyCameras.CollectionChanged += (s, e) =>
+            {
+                RefreshEmptyCamera();
+                RefreshCameraSummary();
+            };
             if(PhyCameras.Count > 0)
             {
                 PhyCameras[0].IsSelected = true;
@@ -103,8 +107,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "MVS LogViewer not found at the expected location.",
-                    "ColorVision",
+                    Properties.Resources.MvsLogViewerNotFound,
+                    Properties.Resources.PhyCamera_MvsLog,
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return;
@@ -131,8 +135,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"Failed to start MVS LogViewer:  {ex.Message}",
-                    "ColorVision",
+                    string.Format(Properties.Resources.MvsLogViewerStartFailed, ex.Message),
+                    Properties.Resources.PhyCamera_MvsLog,
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -140,8 +144,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"An unexpected error occurred: {ex.Message}",
-                    "ColorVision",
+                    string.Format(Properties.Resources.UnexpectedErrorOccurred, ex.Message),
+                    Properties.Resources.PhyCamera_MvsLog,
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -166,7 +170,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.FailedToOpenDeviceManager}: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.FailedToOpenDeviceManager}: {ex.Message}", Properties.Resources.PhysicalCameraManager);
             }
         }
 
@@ -185,6 +189,16 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count;
+
+        public int OnlineCameraCount => PhyCameras.Count(IsOnline);
+
+        public int AttentionCameraCount => PhyCameras.Count(RequiresAttention);
+
+        public void RefreshCameraSummary()
+        {
+            OnPropertyChanged(nameof(OnlineCameraCount));
+            OnPropertyChanged(nameof(AttentionCameraCount));
+        }
 
         public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);
 
@@ -287,7 +301,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (_isSearchingCameras)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "正在搜索在线相机", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SearchingOnlineCameras, Properties.Resources.PhysicalCameraManager);
                 return;
             }
 
@@ -325,7 +339,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"搜索在线相机失败: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.SearchOnlineCamerasFailed, ex.Message), Properties.Resources.PhysicalCameraManager, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -355,7 +369,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             if (Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到未创建的相机,请插上相机后在尝试",nameof(PhyCameraManager));
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoUncreatedCameraFound, Properties.Resources.PhysicalCameraManager);
                 SearchCameraIds();
                 return;
             }
@@ -377,7 +391,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 RestoreDirectory = true,
                 Multiselect = true,
                 Filter = "All files (*.*)|*.zip;*.lic",
-                Title = "请选择许可证文件",
+                Title = Properties.Resources.SelectLicenseFilePrompt,
                 FilterIndex = 1
             };
 
@@ -400,12 +414,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                         }
                         else
                         {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, Properties.Resources.LicenseImport);
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"处理文件失败 :{ex.Message}", "ColorVision");
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.FileProcessFailed, ex.Message), Properties.Resources.LicenseImport);
                     }
                 }
             }
@@ -470,7 +484,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     CreatePhysicalCameraFloder(sysDictionaryModel.Code);
                 }
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddPhysicalCameraFailed : Properties.Resources.AddPhysicalCameraSuccess)}", Properties.Resources.PhysicalCameraManager);
             }
             else
             {
@@ -548,6 +562,17 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
 
             Loaded?.Invoke(this, EventArgs.Empty);
+            RefreshCameraSummary();
+        }
+
+        private static bool IsOnline(PhyCamera camera)
+        {
+            return string.Equals(camera.SysResourceModel?.Remark, "Online", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool RequiresAttention(PhyCamera camera)
+        {
+            return !IsOnline(camera) || camera.HasLicenseAlert || camera.VisualChildren.Count == 0;
         }
 
         private static void LoadPhyCameraResources(PhyCamera phyCamera)

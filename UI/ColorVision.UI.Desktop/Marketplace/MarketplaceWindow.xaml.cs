@@ -1,15 +1,19 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1822,CA1863
+using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.Desktop.NativeMethods;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Menus;
 using log4net;
+using System.ComponentModel;
 using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using DesktopResources = ColorVision.UI.Desktop.Properties.Resources;
 
 namespace ColorVision.UI.Desktop.Marketplace
 {
@@ -19,76 +23,94 @@ namespace ColorVision.UI.Desktop.Marketplace
     /// </summary>
     public partial class MarketplaceWindow : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceWindow));
+        private enum DetailPanelMode
+        {
+            None,
+            Installed,
+            Marketplace,
+        }
 
-        private List<MarketplacePluginSummary> _marketplacePlugins = new();
-        private bool _marketplaceLoaded;
-        private int _marketplaceDetailRequestId;
+        private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceWindow));
+        private MarketplaceManager? _manager;
         private bool _isRefreshingVersions;
+        private CancellationTokenSource? _windowCancellation = new();
+        private CancellationTokenSource? _selectionCancellation;
+        private CancellationTokenSource? _refreshCancellation;
 
         public MarketplaceWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
             this.SizeChanged += (s, e) => MarketplaceWindowConfig.Instance.SetConfig(this);
+            Closed += (_, _) =>
+            {
+                if (_manager != null)
+                {
+                    _manager.PropertyChanged -= Manager_PropertyChanged;
+                }
+
+                _manager?.CancelActiveOperations();
+                CancelAndDispose(ref _selectionCancellation);
+                CancelAndDispose(ref _refreshCancellation);
+                CancelAndDispose(ref _windowCancellation);
+            };
         }
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = MarketplaceManager.GetInstance(); ;
-            DefalutSearchComboBox.ItemsSource = new List<string>() { "ImageProjector", "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin", "Spectrum" };
-            ListViewPlugins.SelectedIndex = 0;
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => MarketplaceManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
-        }
+            _manager = MarketplaceManager.GetInstance();
+            DataContext = _manager;
+            _manager.PropertyChanged += Manager_PropertyChanged;
 
-        private void SearchComboBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            // When the marketplace tab is active and loaded, filter the marketplace list
-            if (MainTabControl.SelectedIndex == 1 && _marketplaceLoaded)
+            if (_manager.SelectedInstalledPlugin == null)
             {
-                FilterMarketplacePlugins(DefalutSearchComboBox.Text);
+                _manager.SelectedInstalledPlugin = _manager.Plugins.FirstOrDefault();
             }
+
+            this.CommandBindings.Add(new CommandBinding(
+                ApplicationCommands.Delete,
+                (s, args) => _manager.SelectedInstalledPlugin?.Delete(),
+                (s, args) => args.CanExecute = _manager.SelectedInstalledPlugin != null));
         }
 
         private bool IsRefreshChangedX;
         private bool IsRefreshChangedY;
 
-        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.Source != MainTabControl) return;
-            _marketplaceDetailRequestId++;
-            if (MainTabControl.SelectedIndex == 1 && !_marketplaceLoaded)
-            {
-                _ = LoadMarketplacePluginsAsync();
-            }
-        }
 
-        private async Task LoadMarketplacePluginsAsync(bool forceReload = false)
-        {
-            if (_marketplaceLoaded && !forceReload)
+            if (_manager == null)
                 return;
 
-            _marketplaceLoaded = true;
-            MarketplaceStatus.Text = Properties.Resources.Loading + "...";
+            CancellationTokenSource operationCancellation = CreateLinkedOperationCancellation(ref _selectionCancellation);
+            CancellationToken cancellationToken = operationCancellation.Token;
+
             try
             {
-                var client = Marketplace.MarketplaceClient.GetInstance();
-                var result = await client.SearchPluginsAsync(new MarketplaceSearchRequest { PageSize = 100 });
-                _marketplacePlugins = result.Items;
-                ListViewMarketplace.ItemsSource = _marketplacePlugins;
-                MarketplaceStatus.Text = string.Format(Properties.Resources.MarketplacePluginCount, _marketplacePlugins.Count);
+                _manager.IsMarketplaceTabActive = MainTabControl.SelectedIndex == 1;
+                IsRefreshChangedX = false;
+                IsRefreshChangedY = false;
 
-                // Update search ComboBox with marketplace plugin IDs
-                if (_marketplacePlugins.Count > 0)
+                if (_manager.IsMarketplaceTabActive)
                 {
-                    DefalutSearchComboBox.ItemsSource = _marketplacePlugins.Select(p => p.PluginId).ToList();
+                    await _manager.EnsureMarketplaceCatalogLoadedAsync(cancellationToken);
                 }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                await RefreshSelectedDetailAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Marketplace tab selection refresh canceled.");
             }
             catch (Exception ex)
             {
-                log.Debug($"LoadMarketplacePlugins failed: {ex.Message}");
-                MarketplaceStatus.Text = Properties.Resources.MarketplaceLoadFailed;
-                _marketplaceLoaded = false;
+                log.Error("Marketplace tab selection refresh failed.", ex);
+            }
+            finally
+            {
+                ClearOperationCancellation(ref _selectionCancellation, operationCancellation);
             }
         }
 
@@ -97,150 +119,86 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (_isRefreshingVersions)
                 return;
 
+            CancellationTokenSource operationCancellation = CreateLinkedOperationCancellation(ref _refreshCancellation);
+            CancellationToken cancellationToken = operationCancellation.Token;
+
             _isRefreshingVersions = true;
             if (sender is Button button)
                 button.IsEnabled = false;
 
             try
             {
-                await MarketplaceManager.GetInstance().RefreshVersionsAsync();
+                await MarketplaceManager.GetInstance().RefreshVersionsAsync(cancellationToken);
 
-                if (MainTabControl.SelectedIndex == 1)
+                if (_manager?.IsMarketplaceTabActive == true)
                 {
-                    await LoadMarketplacePluginsAsync(forceReload: true);
-                    FilterMarketplacePlugins(DefalutSearchComboBox.Text);
-
-                    if (ListViewMarketplace.SelectedItem is MarketplacePluginSummary summary)
-                    {
-                        ShowMarketplaceDetail(summary);
-                    }
+                    await _manager.RefreshMarketplaceCatalogAsync(cancellationToken);
                 }
                 else
                 {
-                    await RefreshSelectedDetailAsync();
+                    await RefreshSelectedDetailAsync(cancellationToken);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Marketplace version refresh canceled.");
             }
             catch (Exception ex)
             {
-                log.Debug($"RefreshVersionsButton_Click failed: {ex.Message}");
+                log.Error("RefreshVersionsButton_Click failed.", ex);
             }
             finally
             {
                 if (sender is Button button2)
                     button2.IsEnabled = true;
                 _isRefreshingVersions = false;
+                ClearOperationCancellation(ref _refreshCancellation, operationCancellation);
             }
         }
 
-        /// <summary>
-        /// Filter the marketplace list based on the current search text.
-        /// Called when the search box text changes while the Marketplace tab is active.
-        /// </summary>
-        private void FilterMarketplacePlugins(string keyword)
+        private Task RenderMarkdownAsync(Microsoft.Web.WebView2.Wpf.WebView2 webView, string? markdown, string emptyMessage)
         {
-            if (_marketplacePlugins == null || _marketplacePlugins.Count == 0) return;
-
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                ListViewMarketplace.ItemsSource = _marketplacePlugins;
-                MarketplaceStatus.Text = string.Format(Properties.Resources.MarketplacePluginCount, _marketplacePlugins.Count);
-            }
-            else
-            {
-                var kw = keyword.Trim().ToLowerInvariant();
-                var filtered = _marketplacePlugins.Where(p =>
-                    (p.Name?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (p.PluginId?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (p.Description?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (p.Author?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (p.Category?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false)
-                ).ToList();
-                ListViewMarketplace.ItemsSource = filtered;
-                MarketplaceStatus.Text = string.Format(Properties.Resources.MarketplacePluginCount, filtered.Count);
-            }
+            return MarketplaceMarkdownPresenter.RenderAsync(webView, markdown, emptyMessage);
         }
 
-        private void ListViewMarketplace_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async Task RefreshSelectedDetailAsync(CancellationToken cancellationToken = default)
         {
-            if (ListViewMarketplace.SelectedIndex > -1 && ListViewMarketplace.SelectedItem is MarketplacePluginSummary summary)
-            {
-                IsRefreshChangedX = false;
-                IsRefreshChangedY = false;
-                // Show marketplace detail in the right panel using a temporary PluginInfoVM-like data context
-                ShowMarketplaceDetail(summary);
-            }
-        }
-
-        private async void ShowMarketplaceDetail(MarketplacePluginSummary summary)
-        {
-            int requestId = ++_marketplaceDetailRequestId;
-            try
-            {
-                var client = Marketplace.MarketplaceClient.GetInstance();
-                var detail = await client.GetPluginDetailAsync(summary.PluginId);
-                if (detail == null) return;
-
-                if (requestId != _marketplaceDetailRequestId)
-                    return;
-
-                // Check if this plugin is installed locally
-                var installed = MarketplaceManager.GetInstance().Plugins.FirstOrDefault(p => string.Equals(p.PackageName, summary.PluginId, StringComparison.OrdinalIgnoreCase));
-                var ctx = new MarketplaceDetailContext(detail, installed);
-                BorderContent.DataContext = ctx;
-
-                await ctx.InitializeAsync();
-                if (requestId != _marketplaceDetailRequestId)
-                    return;
-
-                await RefreshSelectedDetailAsync();
-            }
-            catch (Exception ex)
-            {
-                log.Debug($"ShowMarketplaceDetail failed: {ex.Message}");
-            }
-        }
-
-        private async Task RenderMarkdownAsync(Microsoft.Web.WebView2.Wpf.WebView2 webView, string markdown)
-        {
-            string html = Markdig.Markdown.ToHtml(markdown ?? string.Empty);
-            await WebViewService.EnsureWebViewInitializedAsync(webView);
-            WebViewService.RenderMarkdown(webView, html);
-        }
-
-        private async Task RefreshSelectedDetailAsync()
-        {
+            cancellationToken.ThrowIfCancellationRequested();
             switch (BorderContent.DataContext)
             {
                 case PluginInfoVM pluginInfoVM:
-                    await RefreshInstalledPluginDetailAsync(pluginInfoVM);
+                    SetDetailPanelMode(DetailPanelMode.Installed);
+                    MarketplaceDetailScrollViewer.DataContext = null;
+                    await RefreshInstalledPluginDetailAsync(pluginInfoVM, cancellationToken);
                     break;
                 case MarketplaceDetailContext marketplaceDetail:
-                    await RefreshMarketplaceDetailAsync(marketplaceDetail);
+                    SetDetailPanelMode(DetailPanelMode.Marketplace);
+                    MarketplaceDetailScrollViewer.DataContext = marketplaceDetail;
+                    await RefreshMarketplaceDetailAsync(marketplaceDetail, cancellationToken);
                     break;
                 default:
+                    SetDetailPanelMode(DetailPanelMode.None);
+                    MarketplaceDetailScrollViewer.DataContext = null;
                     DetailInfo.Children.Clear();
                     DependentsListView.ItemsSource = null;
                     break;
             }
         }
 
-        private async Task RefreshMarketplaceDetailAsync(MarketplaceDetailContext context)
+        private async Task RefreshMarketplaceDetailAsync(MarketplaceDetailContext context, CancellationToken cancellationToken)
         {
             if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
             {
                 IsRefreshChangedX = true;
-                await RenderMarkdownAsync(webViewReadMe, context.Readme ?? string.Empty);
+                await RenderMarkdownAsync(webViewReadMe, context.Readme, DesktopResources.MarketplaceReadmeEmpty);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
             {
                 IsRefreshChangedY = true;
-                await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog ?? string.Empty);
-            }
-
-            if (TabControl1.SelectedIndex == 2)
-            {
-                context.PopulateDetailInfo(DetailInfo, DependentsListView);
+                await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog, DesktopResources.MarketplaceChangelogEmpty);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (TabControl1.SelectedIndex == 3)
@@ -249,18 +207,20 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        private async Task RefreshInstalledPluginDetailAsync(PluginInfoVM pluginInfoVM)
+        private async Task RefreshInstalledPluginDetailAsync(PluginInfoVM pluginInfoVM, CancellationToken cancellationToken)
         {
             if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
             {
                 IsRefreshChangedX = true;
-                await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README ?? string.Empty);
+                await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README, DesktopResources.MarketplaceReadmeEmpty);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
             {
                 IsRefreshChangedY = true;
-                await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog ?? string.Empty);
+                await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog, DesktopResources.MarketplaceChangelogEmpty);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (TabControl1.SelectedIndex == 2)
@@ -282,20 +242,6 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
             }
         }
-
-        private void ListViewPlugins_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            if (ListViewPlugins.SelectedIndex > -1)
-            {
-                _marketplaceDetailRequestId++;
-                IsRefreshChangedX = false;
-                IsRefreshChangedY = false;
-                PluginInfoVM pluginInfoVM = MarketplaceManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
-                BorderContent.DataContext = pluginInfoVM;
-                Application.Current.Dispatcher.Invoke(async () => await RefreshSelectedDetailAsync());
-            }
-        }
-
 
         private void InitDetailInfo(PluginInfoVM pluginInfoVM)
         {
@@ -353,7 +299,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                             Style = PropertyEditorHelper.ButtonCommandStyle,
                             Content = textBox,
                             Command = relayCommand,
-                            ToolTip = $"点击打开 {type.Name} 配置界面"
+                            ToolTip = string.Format(Properties.Resources.Marketplace_OpenConfig, type.Name)
                         };
                         uniformGrid.Children.Add(button);
                     }
@@ -382,7 +328,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                             var button = new Button
                             {
                                 Style = PropertyEditorHelper.ButtonCommandStyle,
-                                Content = "创建快捷方式",
+                                Content = Properties.Resources.Marketplace_CreateShortcut,
                                 Command = relayCommand
                             };
                             uniformGrid.Children.Add(button);
@@ -399,11 +345,83 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        private void TabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private async void TabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (e.Source != TabControl1) return;
 
-            Application.Current.Dispatcher.Invoke(async () => await RefreshSelectedDetailAsync());
+            try
+            {
+                await RefreshSelectedDetailAsync(_windowCancellation?.Token ?? CancellationToken.None);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Marketplace detail tab refresh canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Marketplace detail tab refresh failed.", ex);
+            }
+        }
+
+        private async void Manager_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(MarketplaceManager.CurrentDetailContext))
+                return;
+
+            IsRefreshChangedX = false;
+            IsRefreshChangedY = false;
+            try
+            {
+                await RefreshSelectedDetailAsync(_windowCancellation?.Token ?? CancellationToken.None);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Marketplace manager detail refresh canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Marketplace manager detail refresh failed.", ex);
+            }
+        }
+
+        private void SetDetailPanelMode(DetailPanelMode mode)
+        {
+            InstalledDetailScrollViewer.Visibility = mode == DetailPanelMode.Installed ? Visibility.Visible : Visibility.Collapsed;
+            MarketplaceDetailScrollViewer.Visibility = mode == DetailPanelMode.Marketplace ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private CancellationTokenSource CreateLinkedOperationCancellation(ref CancellationTokenSource? operationCancellation)
+        {
+            CancelAndDispose(ref operationCancellation);
+            CancellationToken windowToken = _windowCancellation?.Token ?? CancellationToken.None;
+            operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(windowToken);
+            return operationCancellation;
+        }
+
+        private static void ClearOperationCancellation(ref CancellationTokenSource? currentCancellation, CancellationTokenSource operationCancellation)
+        {
+            if (!ReferenceEquals(currentCancellation, operationCancellation))
+                return;
+
+            operationCancellation.Dispose();
+            currentCancellation = null;
+        }
+
+        private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
+        {
+            if (cancellationTokenSource == null)
+                return;
+
+            try
+            {
+                cancellationTokenSource.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = null;
         }
     }
 }

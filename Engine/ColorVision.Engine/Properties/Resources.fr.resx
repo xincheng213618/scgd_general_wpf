@@ -1,110 +1,52 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -145,7 +87,7 @@
     <value>utilisateur</value>
   </data>
   <data name="Upload" xml:space="preserve">
-    <value>télécharger</value>
+    <value>Téléverser</value>
   </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Se désabonner</value>
@@ -154,13 +96,13 @@
     <value>En développement</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
-    <value>fenêtre transparente</value>
+    <value>Fenêtre transparente</value>
   </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>envoyer le canal</value>
   </data>
   <data name="Topic" xml:space="preserve">
-    <value>sujet</value>
+    <value>Sujet</value>
   </data>
   <data name="Timeout" xml:space="preserve">
     <value>Temps mort</value>
@@ -184,7 +126,7 @@
     <value>Démarrage (peut échouer)</value>
   </data>
   <data name="Success" xml:space="preserve">
-    <value>succès</value>
+    <value>Succès</value>
   </data>
   <data name="SubscribedTopic" xml:space="preserve">
     <value>Sujets abonnés</value>
@@ -193,7 +135,7 @@
     <value>abonnement</value>
   </data>
   <data name="Submit" xml:space="preserve">
-    <value>soumettre</value>
+    <value>Soumettre</value>
   </data>
   <data name="StopProcess" xml:space="preserve">
     <value>Arrêter le processus</value>
@@ -208,7 +150,7 @@
     <value>Service de démarrage</value>
   </data>
   <data name="Size" xml:space="preserve">
-    <value>taille</value>
+    <value>Taille</value>
   </data>
   <data name="SimulateSend" xml:space="preserve">
     <value>Envoi analogique</value>
@@ -244,7 +186,7 @@
     <value>Veuillez sélectionner la ressource que vous souhaitez charger :</value>
   </data>
   <data name="Search" xml:space="preserve">
-    <value>recherche</value>
+    <value>Rechercher</value>
   </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>Enregistrer la disposition des fenêtres</value>
@@ -253,7 +195,7 @@
     <value>Enregistrer la colonne de données</value>
   </data>
   <data name="Save" xml:space="preserve">
-    <value>sauvegarder</value>
+    <value>Enregistrer</value>
   </data>
   <data name="Result" xml:space="preserve">
     <value>résultat</value>
@@ -268,13 +210,13 @@
     <value>Réinitialiser</value>
   </data>
   <data name="Reset" xml:space="preserve">
-    <value>réinitialiser</value>
+    <value>Réinitialiser</value>
   </data>
   <data name="RegistryCenter" xml:space="preserve">
     <value>Centre d'inscription</value>
   </data>
   <data name="Refresh" xml:space="preserve">
-    <value>rafraîchir</value>
+    <value>Actualiser</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>canal de réception</value>
@@ -313,7 +255,7 @@
     <value>Ouvrir</value>
   </data>
   <data name="OK" xml:space="preserve">
-    <value>Bien sûr</value>
+    <value>OK</value>
   </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>Aucun élément associé trouvé</value>
@@ -322,7 +264,7 @@
     <value>Nouveau</value>
   </data>
   <data name="Name" xml:space="preserve">
-    <value>nom</value>
+    <value>Nom</value>
   </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>Ma licence(R)</value>
@@ -460,13 +402,13 @@
     <value>gérer</value>
   </data>
   <data name="Male" xml:space="preserve">
-    <value>mâle</value>
+    <value>Homme</value>
   </data>
   <data name="Local" xml:space="preserve">
-    <value>locale</value>
+    <value>Local</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>charger</value>
+    <value>Chargement</value>
   </data>
   <data name="LicenseManagement" xml:space="preserve">
     <value>Gestion des licences</value>
@@ -490,7 +432,7 @@
     <value>Licence d'importation</value>
   </data>
   <data name="Import" xml:space="preserve">
-    <value>importer</value>
+    <value>Importer</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>source d'images</value>
@@ -526,10 +468,10 @@
     <value>document</value>
   </data>
   <data name="Female" xml:space="preserve">
-    <value>femelle</value>
+    <value>Femme</value>
   </data>
   <data name="Failure" xml:space="preserve">
-    <value>échouer</value>
+    <value>Échec</value>
   </data>
   <data name="ExposureR" xml:space="preserve">
     <value>Exposition R</value>
@@ -562,10 +504,10 @@
     <value>Activer la base de données</value>
   </data>
   <data name="Edit" xml:space="preserve">
-    <value>modifier</value>
+    <value>Modifier</value>
   </data>
   <data name="Duration" xml:space="preserve">
-    <value>coût du temps</value>
+    <value>Durée</value>
   </data>
   <data name="DownloadCancelled" xml:space="preserve">
     <value>Téléchargement annulé</value>
@@ -583,13 +525,13 @@
     <value>L'appareil est hors ligne, veuillez d'abord configurer l'ID de la caméra</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>supprimer</value>
+    <value>Supprimer</value>
   </data>
   <data name="DefaultExportStorageFormat" xml:space="preserve">
     <value>Format de stockage d'exportation par défaut</value>
   </data>
   <data name="DefaultCreateTemplateName" xml:space="preserve">
-    <value>Défaut</value>
+    <value>défaut</value>
   </data>
   <data name="Deadline" xml:space="preserve">
     <value>Date limite</value>
@@ -604,7 +546,7 @@
     <value>La version actuelle est déjà la dernière version</value>
   </data>
   <data name="CurrentSpeed" xml:space="preserve">
-    <value>AdaptiveZeroCalibration</value>
+    <value>Vitesse actuelle :</value>
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>mesurer le temps</value>
@@ -616,7 +558,7 @@
     <value>Créer un appareil</value>
   </data>
   <data name="Create" xml:space="preserve">
-    <value>créer</value>
+    <value>Créer</value>
   </data>
   <data name="CopySerialNumber" xml:space="preserve">
     <value>Copier le numéro de série</value>
@@ -640,10 +582,10 @@
     <value>Programme de mise à jour ColorVision</value>
   </data>
   <data name="Code" xml:space="preserve">
-    <value>logo</value>
+    <value>Code</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>fermeture</value>
+    <value>Fermer</value>
   </data>
   <data name="ClearData" xml:space="preserve">
     <value>Effacer les données</value>
@@ -670,7 +612,7 @@
     <value>Étalonnage</value>
   </data>
   <data name="Calculate" xml:space="preserve">
-    <value>calculer</value>
+    <value>Calculer</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
     <value>numéro de lot</value>
@@ -694,10 +636,10 @@
     <value>réglages avancés</value>
   </data>
   <data name="Add" xml:space="preserve">
-    <value>Ajouter à</value>
+    <value>Ajouter</value>
   </data>
   <data name="Acquire" xml:space="preserve">
-    <value>collection</value>
+    <value>Acquérir</value>
   </data>
   <data name="About" xml:space="preserve">
     <value>à propos</value>
@@ -709,10 +651,10 @@
     <value>choisir</value>
   </data>
   <data name="IsDefaultOpenService" xml:space="preserve">
-    <value>EstDefaultOpenService</value>
+    <value>Ouvrir le service au démarrage</value>
   </data>
   <data name="IsRetorePlayControls" xml:space="preserve">
-    <value>IsRetorePlayControls</value>
+    <value>Restaurer la fenêtre de capture au démarrage</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>installation</value>
@@ -802,13 +744,13 @@
     <value>Seuil</value>
   </data>
   <data name="Copy" xml:space="preserve">
-    <value>copier</value>
+    <value>Copier</value>
   </data>
   <data name="Lock" xml:space="preserve">
     <value>verrouiller</value>
   </data>
   <data name="ConfirmDelete" xml:space="preserve">
-    <value>ConfirmerSupprimer</value>
+    <value>Confirmer la suppression</value>
   </data>
   <data name="CalibrationCorrection" xml:space="preserve">
     <value>Outils d'étalonnage</value>
@@ -838,7 +780,7 @@
     <value>Commande</value>
   </data>
   <data name="ProjectName" xml:space="preserve">
-    <value>NomDuProjet</value>
+    <value>Nom du projet</value>
   </data>
   <data name="Workflow" xml:space="preserve">
     <value>Flux de travail</value>
@@ -943,7 +885,7 @@
     <value>Résultats de recherche</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
-    <value>Gestion des résultats des processus</value>
+    <value>Gestion des résultats du processus</value>
   </data>
   <data name="ParsingManagement" xml:space="preserve">
     <value>Gestion de l'analyse syntaxique</value>
@@ -1075,7 +1017,7 @@
     <value>Fusion binoculaire</value>
   </data>
   <data name="CharacterBrghtnessInsp" xml:space="preserve">
-    <value>Détection du clavier</value>
+    <value>Inspection du clavier</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
     <value>Détection de LED au niveau du sous-pixel</value>
@@ -1216,7 +1158,7 @@
     <value>Points Temps</value>
   </data>
   <data name="AutoIntegra" xml:space="preserve">
-    <value>Points automatiques</value>
+    <value>Intégration automatique</value>
   </data>
   <data name="AutoZeroCalibration" xml:space="preserve">
     <value>Mise à zéro automatique</value>
@@ -1255,7 +1197,7 @@
     <value>Configuration des fichiers</value>
   </data>
   <data name="CalibrationFile" xml:space="preserve">
-    <value>Documents de correction</value>
+    <value>Fichier de calibration</value>
   </data>
   <data name="CameraType" xml:space="preserve">
     <value>Modèle d'appareil photo</value>
@@ -1366,7 +1308,7 @@
     <value>Gain maximal</value>
   </data>
   <data name="DefaultExpTime" xml:space="preserve">
-    <value>Afficher les valeurs par défaut</value>
+    <value>Temps d'exposition par défaut</value>
   </data>
   <data name="MinExpTime" xml:space="preserve">
     <value>exposition minimale</value>
@@ -1561,7 +1503,7 @@
     <value>Enregistrer dans un fichier</value>
   </data>
   <data name="Radius" xml:space="preserve">
-    <value>rayon</value>
+    <value>Rayon</value>
   </data>
   <data name="DataCorrectionFilePath" xml:space="preserve">
     <value>chemin d'accès au fichier de correction des données</value>
@@ -1597,10 +1539,10 @@
     <value>Définir la zone de placement des points</value>
   </data>
   <data name="Count" xml:space="preserve">
-    <value>quantité</value>
+    <value>Nombre</value>
   </data>
   <data name="Angle" xml:space="preserve">
-    <value>angle</value>
+    <value>Angle</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
     <value>Détecter la zone lumineuse</value>
@@ -1609,7 +1551,7 @@
     <value>Remplir la zone</value>
   </data>
   <data name="Width" xml:space="preserve">
-    <value>largeur</value>
+    <value>Largeur</value>
   </data>
   <data name="height" xml:space="preserve">
     <value>Hauteur</value>
@@ -1645,7 +1587,7 @@
     <value>Ligne brisée</value>
   </data>
   <data name="Value" xml:space="preserve">
-    <value>valeur</value>
+    <value>Valeur</value>
   </data>
   <data name="Circle" xml:space="preserve">
     <value>rond</value>
@@ -1717,7 +1659,7 @@
     <value>Éteindre</value>
   </data>
   <data name="Start" xml:space="preserve">
-    <value>Commencer</value>
+    <value>Démarrer</value>
   </data>
   <data name="End" xml:space="preserve">
     <value>Fin</value>
@@ -1762,7 +1704,7 @@
     <value>balayage</value>
   </data>
   <data name="Blue" xml:space="preserve">
-    <value>Lumière bleue</value>
+    <value>Bleu</value>
   </data>
   <data name="fx" xml:space="preserve">
     <value>Chromaticité x</value>
@@ -2512,7 +2454,7 @@
     <value>Outils d'édition</value>
   </data>
   <data name="Annotation" xml:space="preserve">
-    <value>Notes</value>
+    <value>Remarques</value>
   </data>
   <data name="PropertyEdit" xml:space="preserve">
     <value>Édition des attributs</value>
@@ -2621,5 +2563,1279 @@
   </data>
   <data name="HideGroup" xml:space="preserve">
     <value>Masquer le groupe</value>
+  </data>
+  <data name="Image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="ColorDifference" xml:space="preserve">
+    <value>Différence de couleur</value>
+  </data>
+  <data name="FindAAArea" xml:space="preserve">
+    <value>Recherche zone AA</value>
+  </data>
+  <data name="LightAreaLocation" xml:space="preserve">
+    <value>Localisation zone lumineuse</value>
+  </data>
+<data name="SubPixelLedCheck" xml:space="preserve">
+    <value>Détection LED sous-pixel</value>
+  </data>
+  <data name="PixelLedCheck" xml:space="preserve">
+    <value>Détection LED pixel</value>
+  </data>
+  <data name="CameraTemplate" xml:space="preserve">
+    <value>Modèle caméra</value>
+  </data>
+  <data name="ExposureTemplate" xml:space="preserve">
+    <value>Modèle exposition</value>
+  </data>
+<data name="POITemplate" xml:space="preserve">
+    <value>Modèle POI</value>
+  </data>
+  <data name="POIFilter" xml:space="preserve">
+    <value>Filtre POI</value>
+  </data>
+  <data name="POIRevise" xml:space="preserve">
+    <value>Correction POI</value>
+  </data>
+  <data name="POIReviseCalib" xml:space="preserve">
+    <value>Étalonnage correction POI</value>
+  </data>
+  <data name="FileOutputTemplate" xml:space="preserve">
+    <value>Modèle sortie fichier</value>
+  </data>
+  <data name="BuildTemplate" xml:space="preserve">
+    <value>Modèle disposition</value>
+  </data>
+  <data name="BuildROI" xml:space="preserve">
+    <value>ROI disposition</value>
+  </data>
+  <data name="ParamTemplate" xml:space="preserve">
+    <value>Modèle paramètres</value>
+  </data>
+  <data name="SMUParamSetting" xml:space="preserve">
+    <value>Paramètres SMU</value>
+  </data>
+  <data name="SubPixel" xml:space="preserve">
+    <value>Sous-pixel</value>
+  </data>
+  <data name="DefectCheckV2" xml:space="preserve">
+    <value>Détection défauts V2</value>
+  </data>
+  <data name="BrightSpotCheck" xml:space="preserve">
+    <value>Détection points lumineux</value>
+  </data>
+  <data name="BlackScreenCheck" xml:space="preserve">
+    <value>Détection écran noir</value>
+  </data>
+  <data name="FindLightArea" xml:space="preserve">
+    <value>Détection zone lumineuse</value>
+  </data>
+  <data name="FindLightAreaOLED" xml:space="preserve">
+    <value>Détection zone lumineuse OLED</value>
+  </data>
+  <data name="LedStripCheckV2" xml:space="preserve">
+    <value>Détection bande LED V2</value>
+  </data>
+  <data name="LedStripCheck" xml:space="preserve">
+    <value>Détection bande LED</value>
+  </data>
+  <data name="LedCheck" xml:space="preserve">
+    <value>Détection LED</value>
+  </data>
+  <data name="BinocularFusion" xml:space="preserve">
+    <value>Fusion binoculaire</value>
+  </data>
+  <data name="CrossCalc" xml:space="preserve">
+    <value>Calcul croisé</value>
+  </data>
+  <data name="AABuildPoints" xml:space="preserve">
+    <value>Points disposition AA</value>
+  </data>
+  <data name="PoiAnalysis" xml:space="preserve">
+    <value>PoiAnalysis</value>
+  </data>
+  <data name="NodeProperty" xml:space="preserve">
+    <value>Propriété du nœud</value>
+  </data>
+  <data name="AlreadySentPleaseWait" xml:space="preserve">
+    <value>Déjà envoyé, veuillez patienter</value>
+  </data>
+  <data name="FieldCannotBeEmpty" xml:space="preserve">
+    <value>{0} ne peut pas être vide</value>
+  </data>
+  <data name="FieldCannotBeBlank" xml:space="preserve">
+    <value>{0} ne peut pas être vide</value>
+  </data>
+  <data name="FieldCannotContainSpecialChars" xml:space="preserve">
+    <value>{0} ne peut pas contenir de caractères spéciaux</value>
+  </data>
+  <data name="NotConfigured" xml:space="preserve">
+    <value>Non configuré</value>
+  </data>
+  <data name="ServiceLogX64" xml:space="preserve">
+    <value>Journal du service x64</value>
+  </data>
+  <data name="ServiceLogCamera" xml:space="preserve">
+    <value>Journal du service caméra</value>
+  </data>
+  <data name="ServiceLogAlgorithm" xml:space="preserve">
+    <value>Journal du service algorithme</value>
+  </data>
+  <data name="ServiceLogCVOLED" xml:space="preserve">
+    <value>Journal du service CVOLED</value>
+  </data>
+  <data name="ServiceLogSpectrum" xml:space="preserve">
+    <value>Journal du service spectromètre</value>
+  </data>
+  <data name="ServiceLogDev" xml:space="preserve">
+    <value>Journal du service dev</value>
+  </data>
+  <data name="ServiceLogSMU" xml:space="preserve">
+    <value>Journal du service SMU</value>
+  </data>
+  <data name="Terminal" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="Device" xml:space="preserve">
+    <value>Appareil</value>
+  </data>
+  <data name="AvoidCreationUnlessNecessary" xml:space="preserve">
+    <value>Veuillez ne pas créer de nouveau service sauf nécessité</value>
+  </data>
+  <data name="AvoidDeletionOfServiceUnlessNecessary" xml:space="preserve">
+    <value>Veuillez ne pas supprimer le service sauf nécessité</value>
+  </data>
+  <data name="DeviceIdentifierAlreadyExists" xml:space="preserve">
+    <value>L'identifiant de l'appareil existe déjà, l'ajout en double n'est pas autorisé</value>
+  </data>
+  <data name="CreationSuccessRestartingService" xml:space="preserve">
+    <value>Création réussie, redémarrage du service</value>
+  </data>
+  <data name="CreationFailedDatabaseInsertFailed" xml:space="preserve">
+    <value>Échec de la création, échec de l'insertion en base de données, veuillez contacter le développeur</value>
+  </data>
+  <data name="UnsupportedDeviceTypeCreation" xml:space="preserve">
+    <value>La création d'appareils de type {0} n'est pas encore prise en charge</value>
+  </data>
+  <data name="ResourceIdentifier" xml:space="preserve">
+    <value>Identifiant de ressource</value>
+  </data>
+  <data name="ResourceName" xml:space="preserve">
+    <value>Nom de la ressource</value>
+  </data>
+  <data name="DeviceStatusUnknown" xml:space="preserve">
+    <value>Inconnu</value>
+  </data>
+  <data name="DeviceStatusUnauthorized" xml:space="preserve">
+    <value>Non autorisé</value>
+  </data>
+  <data name="DeviceStatusUnInit" xml:space="preserve">
+    <value>Non initialisé</value>
+  </data>
+  <data name="DeviceStatusOffLine" xml:space="preserve">
+    <value>Déconnecté</value>
+  </data>
+  <data name="DeviceStatusClosed" xml:space="preserve">
+    <value>Fermé</value>
+  </data>
+  <data name="DeviceStatusClosing" xml:space="preserve">
+    <value>Fermeture en cours</value>
+  </data>
+  <data name="DeviceStatusOpened" xml:space="preserve">
+    <value>Ouvert</value>
+  </data>
+  <data name="DeviceStatusOpening" xml:space="preserve">
+    <value>Ouverture en cours</value>
+  </data>
+  <data name="DeviceStatusBusy" xml:space="preserve">
+    <value>Occupé</value>
+  </data>
+  <data name="DeviceStatusFree" xml:space="preserve">
+    <value>Inactif</value>
+  </data>
+  <data name="DeviceStatusLiveOpened" xml:space="preserve">
+    <value>Mode live</value>
+  </data>
+  <data name="DeviceStatusSPContinuousMode" xml:space="preserve">
+    <value>Mode continu du spectromètre</value>
+  </data>
+<data name="AddNewLine" xml:space="preserve"><value>Add newline</value></data><data name="AddPhysicalCameraFailed" xml:space="preserve"><value>Échec de l'ajout de la caméra physique</value></data><data name="AddPhysicalCameraSuccess" xml:space="preserve"><value>Caméra physique ajoutée avec succès</value></data><data name="AllowSave" xml:space="preserve"><value>Allow saving</value></data><data name="AppSecretTooltip" xml:space="preserve"><value>Secret de l'application</value></data><data name="AutoCopyFolderConfirm" xml:space="preserve"><value>Auto copy folder {0} to {1}</value></data><data name="AutoExposureFailedCheckLog" xml:space="preserve"><value>Auto exposure failed, check log {0}{1}</value></data><data name="AutoExposureParamSettings" xml:space="preserve"><value>Paramètres d'exposition automatique</value></data><data name="AutoExposureTimeoutCheckLog" xml:space="preserve"><value>Auto exposure timeout, check service log</value></data><data name="AutoFocusTest" xml:space="preserve"><value>Test de mise au point automatique</value></data><data name="BasicParamSettings" xml:space="preserve"><value>Paramètres de base</value></data><data name="BatchNumberCannotBeEmpty" xml:space="preserve"><value>Batch number cannot be empty, enter first</value></data><data name="BatchNumberEmpty" xml:space="preserve"><value>Batch number cannot be empty, enter first</value></data><data name="BindDLL" xml:space="preserve"><value>Lier DLL</value></data><data name="ButtonCFWConfig" xml:space="preserve"><value>Configuration CFW</value></data><data name="ButtonCalibrationEdit" xml:space="preserve"><value>Modifier l'étalonnage</value></data><data name="ButtonCalibrationManual" xml:space="preserve"><value>Manuel d'étalonnage</value></data><data name="ButtonCalibrationTemplateSettings" xml:space="preserve"><value>Paramètres du modèle d'étalonnage</value></data><data name="ButtonCancel" xml:space="preserve"><value>Annuler</value></data><data name="ButtonCopyLicense" xml:space="preserve"><value>Copier la licence</value></data><data name="ButtonCreateRestorePoint" xml:space="preserve"><value>Créer un point de restauration</value></data><data name="ButtonDefault" xml:space="preserve"><value>Défaut</value></data><data name="ButtonDelete" xml:space="preserve"><value>Supprimer</value></data><data name="ButtonEditConfig" xml:space="preserve"><value>Modifier la configuration</value></data><data name="ButtonExportLicense" xml:space="preserve"><value>Exporter la licence</value></data><data name="ButtonFilterWheelConfig" xml:space="preserve"><value>Configuration de la roue à filtres</value></data><data name="ButtonGoToCameraManager" xml:space="preserve"><value>Aller au gestionnaire de caméras</value></data><data name="ButtonLoadRestorePoint" xml:space="preserve"><value>Charger le point de restauration</value></data><data name="ButtonModifyConfig" xml:space="preserve"><value>Modifier la configuration</value></data><data name="ButtonModifyLicense" xml:space="preserve"><value>Modifier la licence</value></data><data name="ButtonOK" xml:space="preserve"><value>OK</value></data><data name="ButtonOnlineDownloadLicense" xml:space="preserve"><value>Télécharger la licence en ligne</value></data><data name="ButtonOpenConfigFile" xml:space="preserve"><value>Ouvrir le fichier de configuration</value></data><data name="ButtonPropertyEditor" xml:space="preserve"><value>Property Editor</value></data><data name="ButtonPropertyEditorTooltip" xml:space="preserve"><value>Property Editor</value></data><data name="ButtonReset" xml:space="preserve"><value>Réinitialiser</value></data><data name="ButtonResetChannel" xml:space="preserve"><value>Réinitialiser le canal</value></data><data name="ButtonResetChannels" xml:space="preserve"><value>Reset Channel</value></data><data name="ButtonScanOnlineCameras" xml:space="preserve"><value>Scanner les caméras en ligne</value></data><data name="ButtonSelectAll" xml:space="preserve"><value>Tout sélectionner</value></data><data name="ButtonSuppressWarning" xml:space="preserve"><value>Ne plus afficher cet avertissement</value></data><data name="ButtonUpdateLicense" xml:space="preserve"><value>Mettre à jour la licence</value></data><data name="ButtonUploadCalibrationFile" xml:space="preserve"><value>Télécharger le fichier d'étalonnage</value></data><data name="CalcAutoExposure" xml:space="preserve"><value>Calculer l'exposition automatique</value></data><data name="CalcPosition" xml:space="preserve"><value>Calculer la position</value></data><data name="CalculateEQE" xml:space="preserve"><value>Calculer l'EQE</value></data><data name="CaliEditToolTipAngleShift" xml:space="preserve"><value>Color difference correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value></data><data name="CaliEditToolTipAngleShiftShort" xml:space="preserve"><value>Angle Correction</value></data><data name="CaliEditToolTipColorDiff" xml:space="preserve"><value>Color difference correction (ColorDiff): corrects color difference shift between channels</value></data><data name="CaliEditToolTipColorDiffShort" xml:space="preserve"><value>Eliminates color difference shift between channels</value></data><data name="CaliEditToolTipColorShift" xml:space="preserve"><value>Correction du décalage de couleur (ColorShift) : compensation du décalage spatial inter-canaux
+Algorithme : décalage de canal sub-pixel par transformation affine OpenCV
+Configuration : format JSON (paramètres fillOffset et offset/offsets)</value></data><data name="CaliEditToolTipColorShiftShort" xml:space="preserve"><value>Compensates spatial shift between color channels in multi-channel optical systems</value></data><data name="CaliEditToolTipDSNU" xml:space="preserve"><value>Correction DSNU (Dark Signal Non-Uniformity) : compensation de la non-uniformité du signal sombre
+Algorithme : pixel_out = max(pixel_in - DSNU_ref, 0)
+Configuration : format binaire (en-tête V0/V1 + données de référence de trame sombre ushort)</value></data><data name="CaliEditToolTipDSNUShort" xml:space="preserve"><value>Dark signal non-uniformity compensation, eliminates pixel-level dark current differences via pre-acquired dark frame subtraction</value></data><data name="CaliEditToolTipDarkNoise" xml:space="preserve"><value>Correction du courant sombre (DarkNoise) : éliminer le bruit du courant sombre du capteur sans illumination
+Algorithme : pixel_out = pixel_in × DarkNoiseRatio
+Configuration : format JSON (bpp et DarkNoiseRatio)</value></data><data name="CaliEditToolTipDarkNoiseShort" xml:space="preserve"><value>Eliminates inherent sensor dark current signal via pre-calibrated ratio per-pixel compensation</value></data><data name="CaliEditToolTipDefectPoint" xml:space="preserve"><value>Correction des points défectueux (DefectPoint) : détecter et réparer les pixels défectueux
+Algorithme : remplacer les coordonnées pré-calibrées par un filtre médian 7×7
+Configuration : format binaire (nombre de défauts sur 4 octets + liste de coordonnées)</value></data><data name="CaliEditToolTipDefectPointShort" xml:space="preserve"><value>Detects and interpolates defective pixels, 7x7 neighborhood median filter</value></data><data name="CaliEditToolTipDistortion" xml:space="preserve"><value>Correction de distorsion (Distortion) : correction de la distorsion radiale/tangentielle de l'objectif
+Algorithme : prend en charge le modèle standard (k1,k2,p1,p2,k3) et fisheye
+Configuration : format JSON (matrice intrinsèque fx,fy,cx,cy et coefficients de distorsion)</value></data><data name="CaliEditToolTipDistortionShort" xml:space="preserve"><value>Corrects lens distortion using OpenCV camera calibration model, supports standard pinhole and fisheye models</value></data><data name="CaliEditToolTipFourColor" xml:space="preserve"><value>Correction quatre couleurs (LumFourColor) : matrice 3×3 (9 coefficients a-i)
+Algorithme : [X,Y,Z] = matrice 3×3 × [R,G,B] (chaque canal normalisé par Texp/Gain)
+Configuration : format JSON (9 coefficients a-i)
+Précision supérieure à la correction monocouleur</value></data><data name="CaliEditToolTipFourColorShort" xml:space="preserve"><value>3x3 matrix full channel mixing, higher accuracy than single color</value></data><data name="CaliEditToolTipLineArity" xml:space="preserve"><value>Correction de linéarité (LineArity) : corriger les caractéristiques de réponse non linéaire du capteur
+Assure que les valeurs de gris de sortie sont linéaires avec l'intensité lumineuse réelle</value></data><data name="CaliEditToolTipLineArityShort" xml:space="preserve"><value>Corrects non-linear relationship between sensor output grayscale and actual light intensity</value></data><data name="CaliEditToolTipLuminance" xml:space="preserve"><value>Correction de luminance (Luminance) : conversion linéaire des valeurs de gris en luminance absolue Lv(cd/m²)
+Algorithme : Lv = (a / Texp) × pixel
+Configuration : format JSON (bpp, temps d'exposition et coefficients a,b,c,d)
+Sortie : carte de luminance flottante 32 bits à canal unique</value></data><data name="CaliEditToolTipLuminanceShort" xml:space="preserve"><value>Lv = (a / Texp) x pixel, outputs single-channel luminance value only</value></data><data name="CaliEditToolTipMultiColor" xml:space="preserve"><value>Correction multicolore (LumMultiColor) : matrice de coefficients dynamique N/3×3
+Algorithme : prend en charge l'ajustement de conversion couleur d'ordre supérieur
+Configuration : format JSON (coefficients dynamiques et tableau de gains)
+Adapté aux scénarios nécessitant une précision plus élevée</value></data><data name="CaliEditToolTipMultiColorShort" xml:space="preserve"><value>Dynamic size coefficient matrix, supports higher-order color fitting</value></data><data name="CaliEditToolTipOneColor" xml:space="preserve"><value>Correction monocouleur (LumOneColor) : modèle linéaire à 4 coefficients
+Algorithme : X = aR+dB, Y = bG, Z = cB (normalisé par exposition/gain)
+Configuration : format JSON (coefficients a,b,c,d et Texp/Gain)
+Prend en charge l'accélération multi-thread</value></data><data name="CaliEditToolTipOneColorShort" xml:space="preserve"><value>4-coefficient model: X=aR+dB, Y=bG, Z=cB</value></data><data name="CaliEditToolTipUniformity" xml:space="preserve"><value>Correction d'uniformité (Uniformity) : compenser le vignettage de l'objectif et la variation spatiale de sensibilité du capteur
+Algorithme : pixel_out = pixel_in × Uniformity_factor
+Configuration : format binaire (en-tête V0/V1 + matrice de facteurs float)</value></data><data name="CaliEditToolTipUniformityShort" xml:space="preserve"><value>Compensates lens vignetting and sensor response non-uniformity using pre-calibrated multiplication factor matrix</value></data><data name="CalibrationFileFilter" xml:space="preserve"><value>Calibration files (*.zip, *.cvcal)|*.zip;*.cvcal</value></data><data name="CalibrationFileNotConfiguredWithTemplate" xml:space="preserve"><value>Using {0} template, confirm calibration file configured</value></data><data name="CalibrationServiceRequiredForTemplate" xml:space="preserve"><value>Service d'étalonnage requis pour le modèle d'étalonnage</value></data><data name="CalibrationTemplate" xml:space="preserve"><value>Modèle d'étalonnage</value></data><data name="CameraActionCreate" xml:space="preserve"><value>Créer</value></data><data name="CameraActionCreated" xml:space="preserve"><value>Créé</value></data><data name="CameraGetDataReturnedEmpty" xml:space="preserve"><value>La fonction GetData de la caméra a renvoyé vide</value></data><data name="CameraID" xml:space="preserve"><value>ID de la caméra</value></data><data name="CameraNotConfiguredError" xml:space="preserve"><value>Physical camera not configured</value></data><data name="CameraParamSettings" xml:space="preserve"><value>Paramètres de la caméra</value></data><data name="CameraReset" xml:space="preserve"><value>Reset</value></data><data name="CameraSearchFailed" xml:space="preserve"><value>Failed: {0}</value></data><data name="CameraSearchNotFound" xml:space="preserve"><value>Non trouvé</value></data><data name="CameraSearchSuccess" xml:space="preserve"><value>Succès</value></data><data name="CameraStatusNotCreated" xml:space="preserve"><value>Non créé</value></data><data name="CameraStatusOnline" xml:space="preserve"><value>En ligne</value></data><data name="CameraTypeLabel" xml:space="preserve"><value>Type de caméra</value></data><data name="CannotCreateCameraWithoutCode" xml:space="preserve"><value>Impossible de créer une caméra sans code</value></data><data name="CaptureMode" xml:space="preserve"><value>Capture mode</value></data><data name="CaptureSettings" xml:space="preserve"><value>Paramètres de capture</value></data><data name="CaptureTimeoutConfigureCalibration" xml:space="preserve"><value>Capture timeout, configure calibration for physical camera?</value></data><data name="CaptureTimeoutResetTime" xml:space="preserve"><value>Capture timeout, please reset timeout</value></data><data name="ChannelCount" xml:space="preserve"><value>Nombre de canaux</value></data><data name="ChannelOrder" xml:space="preserve"><value>Ordre des canaux</value></data><data name="ChannelParamSettings" xml:space="preserve"><value>Paramètres des canaux</value></data><data name="CheckBoxDoNotShowAgain" xml:space="preserve"><value>Do not show this warning again</value></data><data name="ClearDatabaseItems" xml:space="preserve"><value>Effacer les éléments liés à la base de données ?</value></data><data name="CloseCamera" xml:space="preserve"><value>Fermer la caméra</value></data><data name="CloseCameraTimeoutCheckLog" xml:space="preserve"><value>Délai d'attente de fermeture de la caméra, vérifiez les journaux</value></data><data name="CloseLocalVideo" xml:space="preserve"><value>Fermer la vidéo locale</value></data><data name="CloseSMU" xml:space="preserve"><value>Fermer le mètre source</value></data><data name="CloseSourceMeter" xml:space="preserve"><value>Fermer le mètre source</value></data><data name="CloseWindowInSeconds" xml:space="preserve"><value>Fermer la fenêtre dans 1s</value></data><data name="CommandSentPleaseWait" xml:space="preserve"><value>Command sent, please wait</value></data><data name="Configuration" xml:space="preserve"><value>Configuration</value></data><data name="ConfigureAssociatedDllFirst" xml:space="preserve"><value>Veuillez d'abord configurer la DLL associée</value></data><data name="ConnectingRC" xml:space="preserve"><value>Connecting to registry center</value></data><data name="CopyFileFailed" xml:space="preserve"><value>File copy failed: {0}</value></data><data name="CreateDirectoryFailed" xml:space="preserve"><value>Directory creation failed: {0}</value></data><data name="CreateGroupFailed" xml:space="preserve"><value>Échec de la création</value></data><data name="CreateRestoreFileFailed" xml:space="preserve"><value>Restore file creation failed: {0}</value></data><data name="CreateServiceFailed" xml:space="preserve"><value>Échec de la création du service</value></data><data name="CurrentSource" xml:space="preserve"><value>Source de courant</value></data><data name="DatabaseResetFailed" xml:space="preserve"><value>Impossible de réinitialiser, vérifiez la configuration de la base de données</value></data><data name="DbCreateTemplateFailed" xml:space="preserve"><value>Échec de la création du modèle {0} de la base de données</value></data><data name="DebugMode" xml:space="preserve"><value>Debug mode</value></data><data name="DecimalPlaces" xml:space="preserve"><value>Decimal Places:</value></data><data name="DeleteSucceeded" xml:space="preserve"><value>Suppression réussie</value></data><data name="DescriptionAngleShiftShort" xml:space="preserve"><value>Angle Correction</value></data><data name="DescriptionBasicPipeline" xml:space="preserve"><value>Calibration pipeline: Raw Image → Dark Current → Defect Point → DSNU → Uniformity → Color Shift → Distortion → Corrected Image</value></data><data name="DescriptionBindNDNote" xml:space="preserve"><value>Uses device list for binding, not serial port parameters directly.</value></data><data name="DescriptionCFWChannelMapping" xml:space="preserve"><value>Each column corresponds to an image channel, each row to a filter wheel port position.</value></data><data name="DescriptionCFWDisableNote" xml:space="preserve"><value>Channel mapping will be cleared on save when disabled.</value></data><data name="DescriptionCFWEnableNote" xml:space="preserve"><value>Configure serial port, wheel count and channel position mapping when enabled.</value></data><data name="DescriptionCalibrationControl" xml:space="preserve"><value>Select calibration group then check calibration files for current camera processing chain.</value></data><data name="DescriptionCalibrationEdit" xml:space="preserve"><value>Maintain camera calibration groups, upload calibration files, and select calibration resources for current group.</value></data><data name="DescriptionCameraListSort" xml:space="preserve"><value>Sort by device status, prioritize online cameras</value></data><data name="DescriptionColorCalibration" xml:space="preserve"><value>Convert sensor grayscale/RGB to CIE XYZ tristimulus or absolute luminance Lv(cd/m²), four mutually exclusive modes below</value></data><data name="DescriptionColorDiffShort" xml:space="preserve"><value>Channel color difference elimination</value></data><data name="DescriptionColorShiftShort" xml:space="preserve"><value>Channel spatial shift compensation</value></data><data name="DescriptionCreateDevice" xml:space="preserve"><value>Complete basic parameters and filter wheel configuration after selecting camera to register.</value></data><data name="DescriptionCreateUnregistered" xml:space="preserve"><value>Create unregistered cameras using the action column.</value></data><data name="DescriptionDSNUShort" xml:space="preserve"><value>Dark signal non-uniformity compensation</value></data><data name="DescriptionDarkNoiseShort" xml:space="preserve"><value>Eliminate dark current noise</value></data><data name="DescriptionDefectPointShort" xml:space="preserve"><value>Defective pixel median repair</value></data><data name="DescriptionDistortionShort" xml:space="preserve"><value>Lens distortion correction</value></data><data name="DescriptionFourColorShort" xml:space="preserve"><value>9-coefficient 3x3 → CIE XYZ</value></data><data name="DescriptionLineArityShort" xml:space="preserve"><value>Sensor linearity correction</value></data><data name="DescriptionLuminanceShort" xml:space="preserve"><value>Grayscale → Luminance Lv(cd/m²)</value></data><data name="DescriptionMultiColorShort" xml:space="preserve"><value>N-coefficient higher-order → CIE XYZ</value></data><data name="DescriptionOneColorShort" xml:space="preserve"><value>4-coefficient → CIE XYZ</value></data><data name="DescriptionSelectCamera" xml:space="preserve"><value>Select a physical camera from the left to view details and management operations</value></data><data name="DescriptionSelectCameraType" xml:space="preserve"><value>Select camera model for online search</value></data><data name="DescriptionSerialPortNote" xml:space="preserve"><value>Shows serial port and baud rate when no ND device is bound.</value></data><data name="DescriptionUniformityShort" xml:space="preserve"><value>Lens vignetting/response compensation</value></data><data name="DetectingLocalRC" xml:space="preserve"><value>Local RC config detected, starting</value></data><data name="DeviceSerialNumber" xml:space="preserve"><value>Device serial number: {0}</value></data><data name="DevicesDetected" xml:space="preserve"><value>Detected {0} devices:</value></data><data name="DisplaySettings" xml:space="preserve"><value>Paramètres d'affichage</value></data><data name="EditTemplate" xml:space="preserve"><value>Modifier le modèle</value></data><data name="EnterCurrentMA" xml:space="preserve"><value>Entrez le courant (mA) :</value></data><data name="EnterValidCurrent" xml:space="preserve"><value>Veuillez entrer une valeur de courant valide.</value></data><data name="EnterValidVoltage" xml:space="preserve"><value>Veuillez entrer une valeur de tension valide.</value></data><data name="EnterVoltageV" xml:space="preserve"><value>Entrez la tension (V) :</value></data><data name="ExecuteDisto" xml:space="preserve"><value>Exécuter Disto</value></data><data name="ExecuteFOV" xml:space="preserve"><value>Exécuter FOV</value></data><data name="ExecuteSFR" xml:space="preserve"><value>Exécuter SFR</value></data><data name="ExpiredCameraLicensesSummary" xml:space="preserve"><value>Detected {0} expired camera license(s)</value></data><data name="ExpiringCameraLicensesSummary" xml:space="preserve"><value>Detected {0} camera license(s) expiring soon</value></data><data name="ExpiryDateFormat" xml:space="preserve"><value>Expiry date: {0}</value></data><data name="ExportCalibrationSuccess" xml:space="preserve"><value>{0} exportation réussie</value></data><data name="ExportFailedMessage" xml:space="preserve"><value>Échec de l'exportation : {0}</value></data><data name="ExportSuccess" xml:space="preserve"><value>Exportation réussie !</value></data><data name="ExposureBLabel" xml:space="preserve"><value>Exposition B</value></data><data name="ExposureGLabel" xml:space="preserve"><value>Exposition G</value></data><data name="ExposureRLabel" xml:space="preserve"><value>Exposition R</value></data><data name="ExtractingFilePleaseWait" xml:space="preserve"><value>Extracting file, please wait...</value></data><data name="ExtractionFailedMessage" xml:space="preserve"><value>Extraction failed</value></data><data name="FileCopyServiceRestartHint" xml:space="preserve"><value>You need to manually restart the service and copy the original folder to the new folder, otherwise it won't take effect. If you haven't copied the files, please reset the calibration files</value></data><data name="FileDeletionPermanent" xml:space="preserve"><value>La suppression de fichier est permanente</value></data><data name="FileProcessFailed" xml:space="preserve"><value>Échec du traitement du fichier : {0}</value></data><data name="FileServiceCleanupComplete" xml:space="preserve"><value>Nettoyage du service de fichiers terminé</value></data><data name="FolderCopyFailed" xml:space="preserve"><value>Folder copy failed: {0}</value></data><data name="FolderCopySucceeded" xml:space="preserve"><value>Folder copy successful!</value></data><data name="FontSizeLabel" xml:space="preserve"><value>Font Size:</value></data><data name="FoundCamerasCount" xml:space="preserve"><value>Found {0} cameras</value></data><data name="FrameSelect" xml:space="preserve"><value>Sélection de cadre</value></data><data name="GetCameraIdFailed" xml:space="preserve"><value>Failed to get camera ID</value></data><data name="GetCameraIdMd5Failed" xml:space="preserve"><value>Failed to get camera ID MD5</value></data><data name="HeaderBasicCalibrationPipeline" xml:space="preserve"><value>Étalonnage de base (exécuté en séquence)</value></data><data name="HeaderCFWAdvancedParams" xml:space="preserve"><value>Paramètres avancés CFW</value></data><data name="HeaderChannel1" xml:space="preserve"><value>Canal 1</value></data><data name="HeaderChannel2" xml:space="preserve"><value>Canal 2</value></data><data name="HeaderChannel3" xml:space="preserve"><value>Canal 3</value></data><data name="HeaderColorCalibrationMutual" xml:space="preserve"><value>Étalonnage des couleurs (choisir un parmi quatre, mutuellement exclusif)</value></data><data name="HeaderFilterWheel1" xml:space="preserve"><value>Roue à filtres 1</value></data><data name="HeaderFilterWheel2" xml:space="preserve"><value>Roue à filtres 2</value></data><data name="HeaderFilterWheel3" xml:space="preserve"><value>Roue à filtres 3</value></data><data name="HeartbeatTimeLabel" xml:space="preserve"><value>Temps de battement cardiaque</value></data><data name="HelpAlgorithmDescLabel" xml:space="preserve"><value>Description de l'algorithme :</value></data><data name="HelpAlgorithmStepsLabel" xml:space="preserve"><value>Étapes de l'algorithme :</value></data><data name="HelpCalibrationSystemDesc" xml:space="preserve"><value>This system provides a complete calibration pipeline from raw image acquisition to CIE color space (XYZ/xy/uv/CCT) conversion</value></data><data name="HelpCalibrationSystemTitle" xml:space="preserve"><value>Image Calibration System Reference Manual</value></data><data name="HelpChromaticParamsLabel" xml:space="preserve"><value>Paramètres de chromaticité pris en charge :</value></data><data name="HelpColorCalibrationTip" xml:space="preserve"><value>Conseil : Les modes d'étalonnage des couleurs sont mutuellement exclusifs. La sélection d'un désélectionne les autres.</value></data><data name="HelpColorDiffDesc" xml:space="preserve"><value>Principle: Corrects color difference shift between channels, eliminates inter-channel color errors from optical system.</value></data><data name="HelpColorDiffTitle" xml:space="preserve"><value>2.8 Color Difference Correction (ColorDiff)</value></data><data name="HelpColorShiftDesc" xml:space="preserve"><value>Principle: In multi-channel optical systems, different color channels may have spatial shifts. Channel-level shift compensation via OpenCV affine transform.</value></data><data name="HelpColorShiftTitle" xml:space="preserve"><value>2.5 Color Shift Correction (ColorShift)</value></data><data name="HelpDSNUDesc" xml:space="preserve"><value>Principle: DSNU is inherent pixel-level dark current variation. Compensated by per-pixel subtraction using pre-acquired dark frame reference.</value></data><data name="HelpDSNUTitle" xml:space="preserve"><value>2.2 Dark Signal Non-Uniformity Correction (DSNU)</value></data><data name="HelpDarkNoiseDesc" xml:space="preserve"><value>Principle: Sensors produce dark current without illumination. Eliminates dark current noise by per-pixel multiplication using pre-calibrated ratio.</value></data><data name="HelpDarkNoiseNote" xml:space="preserve"><value>Note: Per-pixel multiplication by dark current coefficient in ROI, overflow truncated to max.</value></data><data name="HelpDarkNoiseTitle" xml:space="preserve"><value>2.1 Dark Current Correction (DarkNoise)</value></data><data name="HelpDefectPointDesc" xml:space="preserve"><value>Principle: Pre-calibrated defective pixel list, each replaced by 7x7 neighborhood median. Multi-channel independent processing.</value></data><data name="HelpDefectPointTitle" xml:space="preserve"><value>2.3 Defective Pixel Correction (DefectPoint)</value></data><data name="HelpDistortionDesc" xml:space="preserve"><value>Principle: Uses OpenCV camera calibration, supports pinhole and fisheye models. Pre-computes remap table then executes via cv::remap.</value></data><data name="HelpDistortionTitle" xml:space="preserve"><value>2.6 Distortion Correction (Distortion)</value></data><data name="HelpEngineFooter" xml:space="preserve"><value>-- Based on C++ DLL Calibration Engine (CVCommCore.dll) --</value></data><data name="HelpFileFormatBinary" xml:space="preserve"><value>Configuration file format: Binary</value></data><data name="HelpFileFormatColorShift" xml:space="preserve"><value>Offset unifié : { "fillOffset": true, "offset": { "X": 2, "Y": -1 } }
+Offset indépendant multi-canal : { "fillOffset": false, "offsets": [{"X":1,"Y":0}, {"X":0,"Y":-1}, ...] }</value></data><data name="HelpFileFormatDSNU" xml:space="preserve"><value>V0 : [en-tête 8 octets : height, width] + [données ushort : height × width]
+V1 : [en-tête 20 octets : height, width, databpp, channels, typebpp] + [données ushort : height × width × channels]</value></data><data name="HelpFileFormatDefectPoint" xml:space="preserve"><value>[4 octets : nombre de défauts N]
+[4 octets : coordonnée y][4 octets : coordonnée x] × N</value></data><data name="HelpFileFormatJSON" xml:space="preserve"><value>Configuration file format: JSON</value></data><data name="HelpFileFormatUniformity" xml:space="preserve"><value>V0 : [en-tête 8 octets : height, width] + [données float : height × width]
+V1 : [en-tête 20 octets : height, width, databpp, channels, typebpp] + [données float : height × width × channels]</value></data><data name="HelpFilterDesc" xml:space="preserve"><value>Filtering: supports threshold, out-of-region, XYZ channel, percentage filtering and other anomaly pixel exclusion mechanisms.</value></data><data name="HelpFormulaChromatic" xml:space="preserve"><value>Chromaticité CIE xy : x = X/(X+Y+Z), y = Y/(X+Y+Z)
+Chromaticité CIE u'v' : u' = 4X/(X+15Y+3Z), v' = 9Y/(X+15Y+3Z)
+CCT (Température de couleur corrélée) et Longueur d'onde dominante</value></data><data name="HelpFormulaColorShift" xml:space="preserve"><value>Construire la matrice de transformation affine 2×3 :
+M = | 1  0  dx |
+    | 0  1  dy |
+
+Appeler cv::warpAffine pour exécuter le décalage sub-pixel
+Lorsque fillOffset=true, remplir la zone vide avec des données miroir de bord</value></data><data name="HelpFormulaDSNU" xml:space="preserve"><value>pixel_out = max(pixel_in - DSNU_ref[i], 0)
+
+Supports single and multi-channel (R/G/B subtract corresponding channel DSNU reference)
+Underflow truncated to 0</value></data><data name="HelpFormulaDefectPoint" xml:space="preserve"><value>1. Lire la liste des défauts (row, col)
+2. Pour chaque défaut, prendre les pixels du voisinage dans ±3 autour du centre
+3. Trier les pixels du voisinage, prendre la médiane comme valeur de réparation
+4. Traitement indépendant multi-canal
+
+Filtre médian : 7×7, bord automatiquement recadré aux limites de l'image</value></data><data name="HelpFormulaDistortion" xml:space="preserve"><value>1. Charger les paramètres de calibration (fx, fy, cx, cy, k1-k3, p1-p2)
+2. Thread d'arrière-plan pré-calcule la table de remappage :
+   Modèle standard → cv::initUndistortRectifyMap
+   Modèle fisheye → cv::fisheye::initUndistortRectifyMap
+3. Utiliser cv::remap pour le remappage de pixels pendant la calibration
+4. Le paramètre alpha contrôle la mise à l'échelle (0=pas de bord noir, 1=conserver tous les pixels)
+
+Modèle de distorsion :
+  Standard : k1, k2, p1, p2, k3 (radial + tangentiel)
+  Fisheye : 4 coefficients de distorsion</value></data><data name="HelpFormulaFourColor" xml:space="preserve"><value>| X |   | a/(Tx·Gx)  b/(Ty·Gy)  c/(Tz·Gz) |   | R |
+| Y | = | d/(Tx·Gx)  e/(Ty·Gy)  f/(Tz·Gz) | × | G |
+| Z |   | g/(Tx·Gx)  h/(Ty·Gy)  i/(Tz·Gz) |   | B |
+
+Configuration file contains 9 coefficients a-i, plus each channel exposure time and gain
+Also supports multi-threaded parallel calculation</value></data><data name="HelpFormulaLabel" xml:space="preserve"><value>Formule de l'algorithme :</value></data><data name="HelpFormulaLuminance" xml:space="preserve"><value>Lv[i] = (a / Texp) × pixel[i]
+
+Conversion linéaire, coefficient a normalisé par le temps d'exposition
+Traite uniquement les pixels valides en dehors de la zone noire optique (OB)
+Sortie : carte de luminance flottante 32 bits à canal unique (cd/m²)</value></data><data name="HelpFormulaMultiColor" xml:space="preserve"><value>Tableau de coefficients pa[N], tableau de gains Gain[N/3]
+Tous les 3 coefficients forment un groupe (pa[3k], pa[3k+1], pa[3k+2]) :
+  output[k] = pa[3k]×R + pa[3k+1]×G + pa[3k+2]×B
+
+Adapté aux systèmes optiques spéciaux nécessitant une précision plus élevée</value></data><data name="HelpFormulaOneColor" xml:space="preserve"><value>X[i] = (a / Tx·Gx) × R[i] + (d / Tz·Gz) × B[i]
+Y[i] = (b / Ty·Gy) × G[i]
+Z[i] = (c / Tz·Gz) × B[i]
+
+Where Tx/Ty/Tz = each channel exposure time, Gx/Gy/Gz = each channel gain
+Supports BGR interleaved and channel-separated input layouts
+Multi-threaded acceleration: image divided into 4 thread blocks by row for parallel calculation
+Output: 3 channels of 32-bit float [CIE_X][CIE_Y][CIE_Z]</value></data><data name="HelpFormulaUniformity" xml:space="preserve"><value>pixel_out = min(pixel_in × Uniformity_factor[i], MaxValue)
+
+Overflow truncated to max (8-bit: 255, 16-bit: 65535)
+Supports single channel and RGB three-channel independent correction
+Supports BGR interleaved and channel-separated memory layouts</value></data><data name="HelpFourColorDesc" xml:space="preserve"><value>Principle: Uses full 3x3 matrix (9 coefficients a-i) for channel mixing color conversion. Each output channel is weighted sum of all 3 input channels, higher accuracy than single color.</value></data><data name="HelpFourColorTitle" xml:space="preserve"><value>3.3 Four-color correction (LumFourColor) — 3x3 matrix (9 coefficients)</value></data><data name="HelpIndicatorChecked" xml:space="preserve"><value>● Checkbox (checked): enables this calibration step, applied during calibration execution</value></data><data name="HelpIndicatorGray" xml:space="preserve"><value>● Gray indicator (off): calibration file not found or invalid, step will be skipped</value></data><data name="HelpIndicatorGreen" xml:space="preserve"><value>● Green indicator (on): calibration file ready, file exists on server and available</value></data><data name="HelpIndicatorUnchecked" xml:space="preserve"><value>● Checkbox (unchecked): disables this calibration step, not applied even if file exists</value></data><data name="HelpLineArityDesc" xml:space="preserve"><value>Principle: Corrects non-linear response between sensor output grayscale and actual light intensity, ensuring linear mapping.</value></data><data name="HelpLineArityTitle" xml:space="preserve"><value>2.7 Linearity Correction (LineArity)</value></data><data name="HelpLuminanceDesc" xml:space="preserve"><value>Principle: Converts single-channel grayscale to absolute luminance Lv (cd/m²), outputs 32-bit float CIE-Y channel.</value></data><data name="HelpLuminanceTitle" xml:space="preserve"><value>3.1 Luminance Correction (Luminance)</value></data><data name="HelpMultiColorDesc" xml:space="preserve"><value>Principle: Uses dynamic-size coefficient matrix (N coefficients), supports higher-order color conversion. Coefficient array length N, gain array length N/3, linear combination of RGB per 3-coefficient group.</value></data><data name="HelpMultiColorTitle" xml:space="preserve"><value>3.4 Multi-color correction (LumMultiColor) — Dynamic higher-order matrix</value></data><data name="HelpOneColorDesc" xml:space="preserve"><value>Principle: Uses 4-coefficient model to convert 3-channel (RGB) grayscale to CIE XYZ tristimulus. Assumes X from R+B linear combination, Y from G only, Z from B only.</value></data><data name="HelpOneColorTitle" xml:space="preserve"><value>3.2 Single-color correction (LumOneColor) — 4-coefficient model</value></data><data name="HelpPipelineAdvanced" xml:space="preserve"><value>Advanced Calibration Pipeline</value></data><data name="HelpPipelineBasic" xml:space="preserve"><value>  →  DarkNoise  →  DefectPoint  →  DSNU</value></data><data name="HelpPipelineColorConversion" xml:space="preserve"><value>Color Conversion</value></data><data name="HelpPipelineCorrectedImage" xml:space="preserve"><value>Corrected Image</value></data><data name="HelpPipelineRawImage" xml:space="preserve"><value>Raw Image</value></data><data name="HelpSection1Desc" xml:space="preserve"><value>Calibration executes in fixed order below. Each step output feeds next step input, skipping disabled steps.</value></data><data name="HelpSection1Title" xml:space="preserve"><value>1. Calibration Pipeline Overview</value></data><data name="HelpSection2Title" xml:space="preserve"><value>2. Basic Calibration Details</value></data><data name="HelpSection3Desc" xml:space="preserve"><value>Four color calibration modes are mutually exclusive, only one enabled at a time. They convert sensor grayscale/RGB to CIE XYZ tristimulus or absolute luminance.</value></data><data name="HelpSection3Title" xml:space="preserve"><value>3. Color Calibration Details (choose one of four, mutually exclusive)</value></data><data name="HelpSection4Desc" xml:space="preserve"><value>After calibration, chromaticity data can be extracted from CIE XYZ float image. Supports circular and rectangular ROI regions.</value></data><data name="HelpSection4Title" xml:space="preserve"><value>4. CIE Chromaticity Data Extraction</value></data><data name="HelpSection5Title" xml:space="preserve"><value>5. UI Indicator Description</value></data><data name="HelpUniformityDesc" xml:space="preserve"><value>Principle: Compensates lens vignetting and sensor sensitivity spatial variation. Uses pre-calibrated multiplication factor matrix, multiplying each pixel by corresponding correction coefficient.</value></data><data name="HelpUniformityTitle" xml:space="preserve"><value>2.4 Uniformity Correction (Uniformity)</value></data><data name="IgniteMeasurement" xml:space="preserve"><value>Mesure d'allumage</value></data><data name="ImageFileCannotBeEmpty" xml:space="preserve"><value>Le fichier image ne peut pas être vide, sélectionnez d'abord une image</value></data><data name="ImageFileEmpty" xml:space="preserve"><value>Image file cannot be empty, select image first</value></data><data name="ImportLicenseConfirm" xml:space="preserve"><value>Import license {0}?</value></data><data name="InvalidSerialPort" xml:space="preserve"><value>Serial port name {0} invalid or does not exist.
+
+Please check serial port settings.</value></data><data name="InvalidSerialPortTitle" xml:space="preserve"><value>Port série invalide</value></data><data name="JsonConfig" xml:space="preserve"><value>Configuration JSON</value></data><data name="Keithley2450MaxCurrent100mA" xml:space="preserve"><value>Keithley 2450: when output voltage &gt;20V, max output current is 100mA. Please adjust measurement parameters and retry!</value></data><data name="Keithley2450MaxCurrent1A" xml:space="preserve"><value>Keithley 2450: when output voltage &lt;20V, max output current is 1A. Please adjust measurement parameters and retry!</value></data><data name="Keithley2450MaxVoltage200V" xml:space="preserve"><value>Keithley 2450: max output voltage is 200V. Please adjust measurement parameters and retry!</value></data><data name="Keithley2600MaxCurrent1A" xml:space="preserve"><value>Keithley 2600: when output voltage &gt;6V, max output current is 1A. Please adjust measurement parameters and retry!</value></data><data name="Keithley2600MaxCurrent3A" xml:space="preserve"><value>Keithley 2600: when output voltage &lt;6V, max output current is 3A. Please adjust measurement parameters and retry!</value></data><data name="Keithley2600MaxVoltage40V" xml:space="preserve"><value>Keithley 2600: max output voltage is 40V. Please adjust measurement parameters and retry!</value></data><data name="LabelAutoFocusTemplate" xml:space="preserve"><value>Mise au point automatique</value></data><data name="LabelBackupRestoreSection" xml:space="preserve"><value>Backup and Restore</value></data><data name="LabelBasicCalibration" xml:space="preserve"><value>Étalonnage de base</value></data><data name="LabelBasicCalibrationHeader" xml:space="preserve"><value>Basic Calibration (executed in sequence)</value></data><data name="LabelBindNDDevice" xml:space="preserve"><value>Bind ND Device</value></data><data name="LabelBindNDHint" xml:space="preserve"><value>Uses device list for binding, not serial port parameters directly.</value></data><data name="LabelCFWConfig" xml:space="preserve"><value>CFW Configuration</value></data><data name="LabelCFWDisabled" xml:space="preserve"><value>CFW disabled</value></data><data name="LabelCFWDisabledSaveHint" xml:space="preserve"><value>Channel mapping will be cleared on save when disabled.</value></data><data name="LabelCFWMatrixHint" xml:space="preserve"><value>Each column corresponds to an image channel, each row to a filter wheel port position.</value></data><data name="LabelCFWNotEnabled" xml:space="preserve"><value>CFW not enabled</value></data><data name="LabelCalcEQE" xml:space="preserve"><value>Calculate EQE</value></data><data name="LabelCalibrationEditHint" xml:space="preserve"><value>Maintain camera calibration groups, upload calibration files, and select calibration resources for current group.</value></data><data name="LabelCalibrationFileManagement" xml:space="preserve"><value>Gestion des fichiers d'étalonnage</value></data><data name="LabelCalibrationGroupHint" xml:space="preserve"><value>Select calibration group then check calibration files for current camera processing chain.</value></data><data name="LabelCalibrationHelpDesc" xml:space="preserve"><value>This system provides a complete calibration pipeline from raw image acquisition to CIE color space (XYZ/xy/uv/CCT) conversion</value></data><data name="LabelCalibrationHelpTitle" xml:space="preserve"><value>Image Calibration System Reference Manual</value></data><data name="LabelCalibrationPipelineHint" xml:space="preserve"><value>Calibration pipeline: Raw Image → Dark Current → Defect Point → DSNU → Uniformity → Color Shift → Distortion → Corrected Image</value></data><data name="LabelCalibrationSection" xml:space="preserve"><value>Étalonnage</value></data><data name="LabelCameraConsole" xml:space="preserve"><value>Camera Console</value></data><data name="LabelCameraList" xml:space="preserve"><value>Camera List</value></data><data name="LabelCameraListHint" xml:space="preserve"><value>Sort by device status, prioritize online cameras</value></data><data name="LabelCameraRunParams" xml:space="preserve"><value>Paramètres de la caméra</value></data><data name="LabelCameraType" xml:space="preserve"><value>Type de caméra</value></data><data name="LabelCamerasSuffix" xml:space="preserve"><value> cameras</value></data><data name="LabelChannel1" xml:space="preserve"><value>Channel 1</value></data><data name="LabelChannel2" xml:space="preserve"><value>Channel 2</value></data><data name="LabelChannel3" xml:space="preserve"><value>Channel 3</value></data><data name="LabelColorCalibration" xml:space="preserve"><value>Correction des couleurs</value></data><data name="LabelColorCalibrationDesc" xml:space="preserve"><value>Convert sensor grayscale/RGB to CIE XYZ tristimulus or absolute luminance Lv(cd/m²), four mutually exclusive modes below</value></data><data name="LabelColorCalibrationHeader" xml:space="preserve"><value>Color Calibration (choose one of four, mutually exclusive)</value></data><data name="LabelConfigInfo" xml:space="preserve"><value>Informations de configuration</value></data><data name="LabelConfigSection" xml:space="preserve"><value>Configuration</value></data><data name="LabelCreateDeviceHint" xml:space="preserve"><value>Complete basic parameters and filter wheel configuration after selecting camera to register.</value></data><data name="LabelCreateDeviceTitle" xml:space="preserve"><value>Create Device</value></data><data name="LabelCropROI" xml:space="preserve"><value>Crop ROI</value></data><data name="LabelDangerousOperations" xml:space="preserve"><value>Dangerous Operations</value></data><data name="LabelDeviceManagementConsole" xml:space="preserve"><value>Device Management Console</value></data><data name="LabelEditConfigTooltip" xml:space="preserve"><value>Edit current camera configuration</value></data><data name="LabelEnableCFW" xml:space="preserve"><value>Enable CFW</value></data><data name="LabelEnableCFWSerialHint" xml:space="preserve"><value>Configure serial port, wheel count and channel position mapping when enabled.</value></data><data name="LabelEnableSerialPort" xml:space="preserve"><value>Enable serial port transmission</value></data><data name="LabelEnterCurrent" xml:space="preserve"><value>Enter current (mA):</value></data><data name="LabelEnterValidCurrent" xml:space="preserve"><value>Please enter a valid current value.</value></data><data name="LabelEnterValidVoltage" xml:space="preserve"><value>Please enter a valid voltage value.</value></data><data name="LabelEnterVoltage" xml:space="preserve"><value>Enter voltage (V):</value></data><data name="LabelExportBatchID" xml:space="preserve"><value>Batch ID</value></data><data name="LabelExportDataPoints" xml:space="preserve"><value>Data Points</value></data><data name="LabelExportDataType" xml:space="preserve"><value>Data Type</value></data><data name="LabelExportLimitValue" xml:space="preserve"><value>Valeur limite</value></data><data name="LabelExportMeasuredCurrent" xml:space="preserve"><value>Measured Current (A)</value></data><data name="LabelExportMeasuredVoltage" xml:space="preserve"><value>Measured Voltage (V)</value></data><data name="LabelExportMeasurementType" xml:space="preserve"><value>Measurement Type</value></data><data name="LabelExportParamValue" xml:space="preserve"><value>Parameter, Value</value></data><data name="LabelExportScanEnd" xml:space="preserve"><value>Scan End Value</value></data><data name="LabelExportScanStart" xml:space="preserve"><value>Scan Start Value</value></data><data name="LabelExportSeqVoltageCurrent" xml:space="preserve"><value>Serial Number, Voltage(V), Current(A)</value></data><data name="LabelExportTime" xml:space="preserve"><value>Heure de création</value></data><data name="LabelFilterWheel1" xml:space="preserve"><value>Filter Wheel 1</value></data><data name="LabelFilterWheel2" xml:space="preserve"><value>Filter Wheel 2</value></data><data name="LabelFilterWheel3" xml:space="preserve"><value>Filter Wheel 3</value></data><data name="LabelFilterWheelCount" xml:space="preserve"><value>Nombre de roues à filtres</value></data><data name="LabelFrameCropROI" xml:space="preserve"><value>Frame Crop ROI</value></data><data name="LabelJsonConfig" xml:space="preserve"><value>JSON Configuration</value></data><data name="LabelLicenseExpiredNotification" xml:space="preserve"><value>License expired notification</value></data><data name="LabelLicenseSection" xml:space="preserve"><value>License</value></data><data name="LabelLuminousEfficacy" xml:space="preserve"><value>Luminous Efficacy (lm/W)</value></data><data name="LabelMeasurementTypeCurrent" xml:space="preserve"><value>Current Source</value></data><data name="LabelMeasurementTypeVoltage" xml:space="preserve"><value>Measurement Type: Voltage</value></data><data name="LabelOpenCalibrationManual" xml:space="preserve"><value>Open Calibration Manual</value></data><data name="LabelResetFailed" xml:space="preserve"><value>Cannot reset, check database configuration</value></data><data name="LabelResourceCount" xml:space="preserve"><value>Resource Count</value></data><data name="LabelSelectCameraHint" xml:space="preserve"><value>Select a physical camera from the left to view details and management operations</value></data><data name="LabelSerialPortHint" xml:space="preserve"><value>Shows serial port and baud rate when no ND device is bound.</value></data><data name="LabelTools" xml:space="preserve"><value>Tools</value></data><data name="LabelTotalCameras" xml:space="preserve"><value>Total Cameras</value></data><data name="LabelTotalPrefix" xml:space="preserve"><value>Total: </value></data><data name="LicenseAlertExpired" xml:space="preserve"><value>License expired ({0})</value></data><data name="LicenseAlertExpiringSoon" xml:space="preserve"><value>License expiring soon ({0})</value></data><data name="LicenseAlertInvalid" xml:space="preserve"><value>License status is abnormal. Please check the license content.</value></data><data name="LicenseAlertNoLicense" xml:space="preserve"><value>No license detected. Please import or apply for a license.</value></data><data name="LicenseBadgeExpired" xml:space="preserve"><value>License expired {0}</value></data><data name="LicenseBadgeExpiringSoon" xml:space="preserve"><value>License expiring soon {0}</value></data><data name="LicenseBadgeInvalid" xml:space="preserve"><value>Invalid license</value></data><data name="LicenseBadgeValid" xml:space="preserve"><value>License valid</value></data><data name="LicenseExpired" xml:space="preserve"><value>Expired</value></data><data name="LicenseExpiredStatusMessage" xml:space="preserve"><value>License expired</value></data><data name="LicenseExpiringSoon" xml:space="preserve"><value>Expiring soon</value></data><data name="LicenseExpiringSoonStatusMessage" xml:space="preserve"><value>License expiring soon ({0} days remaining)</value></data><data name="LicenseExpiryDaysRemaining" xml:space="preserve"><value>{0} days remaining ({1})</value></data><data name="LicenseExpiryExpired" xml:space="preserve"><value>Expired ({0})</value></data><data name="LicenseExpiryValidUntil" xml:space="preserve"><value>Valid until {0}</value></data><data name="LicenseExportCompleted" xml:space="preserve"><value>License file exported successfully!</value></data><data name="LicenseExportedByAdmin" xml:space="preserve"><value>License file exported successfully with admin privileges!</value></data><data name="LicenseListTagExpired" xml:space="preserve"><value>License expired</value></data><data name="LicenseListTagInvalid" xml:space="preserve"><value>Invalid license</value></data><data name="LicenseNormal" xml:space="preserve"><value>Normal</value></data><data name="LicenseNotSupportedForCamera" xml:space="preserve"><value>This camera does not support this license</value></data><data name="LicenseStatusExpired" xml:space="preserve"><value>Expired</value></data><data name="LicenseStatusExpiringSoon" xml:space="preserve"><value>Expiring soon</value></data><data name="LicenseStatusInvalid" xml:space="preserve"><value>Invalid</value></data><data name="LicenseStatusUnlicensed" xml:space="preserve"><value>No license</value></data><data name="LicenseStatusValid" xml:space="preserve"><value>Valid</value></data><data name="LicenseTypeCamera" xml:space="preserve"><value>Camera</value></data><data name="LicenseTypeSpectrometer" xml:space="preserve"><value>Spectrometer</value></data><data name="LicenseTypeUnknown" xml:space="preserve"><value>Inconnu</value></data><data name="LimitEnd" xml:space="preserve"><value>End Value</value></data><data name="LineWidth" xml:space="preserve"><value>Line Width</value></data><data name="LocalCamera" xml:space="preserve"><value>Local Camera</value></data><data name="LocalPortOpenFailedInVideoMode" xml:space="preserve"><value>Local port open failed in video mode</value></data><data name="LocalVideo" xml:space="preserve"><value>Local Video</value></data><data name="LuminousEfficacy" xml:space="preserve"><value>Luminous Efficacy</value></data><data name="LuminousEfficiency" xml:space="preserve"><value>Luminous Efficiency</value></data><data name="LuminousFlux" xml:space="preserve"><value>Luminous Flux</value></data><data name="Measure" xml:space="preserve"><value>Measure</value></data><data name="MeasuredCurrentA" xml:space="preserve"><value>Measured Current (A)</value></data><data name="MeasuredVoltageV" xml:space="preserve"><value>Measured Voltage (V)</value></data><data name="MixedCameraLicensesSummary" xml:space="preserve"><value>Detected {0} expired and {1} expiring camera license(s)</value></data><data name="MultipleDevicesDetected" xml:space="preserve"><value>Detected {0} devices:
+{1}</value></data><data name="NoAvailableCameraDevice" xml:space="preserve"><value>NoAvailableCameraDevice</value></data><data name="NoCalibrationTypeSpecified" xml:space="preserve"><value>No calibration type specified for upload</value></data><data name="NoCameraId" xml:space="preserve"><value>NoCameraId</value></data><data name="NoCameraToAdd" xml:space="preserve"><value>No camera available to add</value></data><data name="NoDeviceDetected" xml:space="preserve"><value>NoDeviceDetected</value></data><data name="NoDevicesDetected" xml:space="preserve"><value>NoDevicesDetected</value></data><data name="NoUncreatedCameraFound" xml:space="preserve"><value>No uncreated camera found, please connect a camera and try again</value></data><data name="OpenCamera" xml:space="preserve"><value>Open Camera</value></data><data name="OpenSMU" xml:space="preserve"><value>Open SMU</value></data><data name="OpenSourceMeter" xml:space="preserve"><value>Open Source Meter</value></data><data name="OpenSuccess" xml:space="preserve"><value>Open Success</value></data><data name="ParsingCalibrationFilePleaseWait" xml:space="preserve"><value>Parsing calibration file, please wait...</value></data><data name="PhysicalCameraNotConfigured" xml:space="preserve"><value>PhysicalCameraNotConfigured</value></data><data name="PhysicalCameraNotFound" xml:space="preserve"><value>Physical camera not found</value></data><data name="PixelBits" xml:space="preserve"><value>PixelBits</value></data><data name="PleaseConfigureDllFirst" xml:space="preserve"><value>Please configure the associated DLL first</value></data><data name="PleaseSelectDataFirst" xml:space="preserve"><value>PleaseSelectDataFirst</value></data><data name="PortConfigError" xml:space="preserve"><value>PortConfigError</value></data><data name="PreciseS100MaxCurrent1A" xml:space="preserve"><value>Precise S100: when output voltage &lt;30V, max output current is 1A. Please adjust measurement parameters and retry!</value></data><data name="PreciseS100MaxVoltage30V" xml:space="preserve"><value>Precise S100: max output voltage is 30V. Please adjust measurement parameters and retry!</value></data><data name="PropertyEditorFallback" xml:space="preserve"><value>Property Editor (Fallback)</value></data><data name="RadiantFlux" xml:space="preserve"><value>RadiantFlux(W)</value></data><data name="ReRendering" xml:space="preserve"><value>ReRendering</value></data><data name="RegisterAddress" xml:space="preserve"><value>Register Address</value></data><data name="ResetFailedCheckDbConfig" xml:space="preserve"><value>Cannot reset, check database configuration</value></data><data name="RestoreSucceeded" xml:space="preserve"><value>Restore succeeded</value></data><data name="SMUKeithley2450MaxCurrentAboveThreshold" xml:space="preserve"><value>Keithley 2450: when output voltage &gt;20V, max output current is 100mA. Please adjust measurement parameters and retry!</value></data><data name="SMUKeithley2450MaxCurrentBelowThreshold" xml:space="preserve"><value>Keithley 2450: when output voltage &lt;20V, max output current is 1A. Please adjust measurement parameters and retry!</value></data><data name="SMUKeithley2450MaxVoltage" xml:space="preserve"><value>Keithley 2450: max output voltage is 200V. Please adjust measurement parameters and retry!</value></data><data name="SMUKeithley2600MaxCurrentAboveThreshold" xml:space="preserve"><value>Keithley 2600: when output voltage &gt;6V, max output current is 1A. Please adjust measurement parameters and retry!</value></data><data name="SMUKeithley2600MaxCurrentBelowThreshold" xml:space="preserve"><value>Keithley 2600: when output voltage &lt;6V, max output current is 3A. Please adjust measurement parameters and retry!</value></data><data name="SMUKeithley2600MaxVoltage" xml:space="preserve"><value>Keithley 2600: max output voltage is 40V. Please adjust measurement parameters and retry!</value></data><data name="SMUPreciseS100MaxCurrentBelowThreshold" xml:space="preserve"><value>Precise S100: when output voltage &lt;30V, max output current is 1A. Please adjust measurement parameters and retry!</value></data><data name="SMUPreciseS100MaxVoltage" xml:space="preserve"><value>Precise S100: max output voltage is 30V. Please adjust measurement parameters and retry!</value></data><data name="SMUSwitch" xml:space="preserve"><value>SMU Switch</value></data><data name="SaveChart" xml:space="preserve"><value>Save Chart</value></data><data name="SaveDirectory" xml:space="preserve"><value>Save Directory</value></data><data name="SaveFile" xml:space="preserve"><value>Save File</value></data><data name="SaveResourceRecordFailed" xml:space="preserve"><value>Failed to save resource record</value></data><data name="SearchCameraType" xml:space="preserve"><value>SearchCameraType</value></data><data name="SearchOnlineCamerasFailed" xml:space="preserve"><value>Failed to search online cameras: {0}</value></data><data name="SearchTotalElapsed" xml:space="preserve"><value>Total elapsed: {0}</value></data><data name="SearchingOnlineCameras" xml:space="preserve"><value>Searching online cameras</value></data><data name="SectionAdvancedConfig" xml:space="preserve"><value>AdvancedConfig</value></data><data name="SectionBackupRestore" xml:space="preserve"><value>BackupRestore</value></data><data name="SectionBasicCalibration" xml:space="preserve"><value>Étalonnage de base</value></data><data name="SectionCFWAdvanced" xml:space="preserve"><value>CFW Advanced Parameters</value></data><data name="SectionCFWConfig" xml:space="preserve"><value>CFW Configuration</value></data><data name="SectionCameraList" xml:space="preserve"><value>SectionCameraList</value></data><data name="SectionColorCalibration" xml:space="preserve"><value>Correction des couleurs</value></data><data name="SectionDangerousOperations" xml:space="preserve"><value>SectionDangerousOperations</value></data><data name="SectionFileService" xml:space="preserve"><value>SectionFileService</value></data><data name="SectionMotorParams" xml:space="preserve"><value>SectionMotorParams</value></data><data name="SectionParamLimits" xml:space="preserve"><value>SectionParamLimits</value></data><data name="SelectCalibrationFileDialog" xml:space="preserve"><value>Select {0} calibration file</value></data><data name="SelectCalibrationFileFilter" xml:space="preserve"><value>Calibration File (*.cvcal;*.bin;*.json;*.txt;*.dat)|*.cvcal;*.bin;*.json;*.txt;*.dat|All Files (*.*)|*.*</value></data><data name="SelectCameraModelForSearch" xml:space="preserve"><value>Select camera model for online search</value></data><data name="SelectCameraType" xml:space="preserve"><value>Please select camera type</value></data><data name="SelectItemsToDelete" xml:space="preserve"><value>Please select items to delete</value></data><data name="SelectLicenseFileWithCode" xml:space="preserve"><value>Please select license file {0}</value></data><data name="SelectSaveFolder" xml:space="preserve"><value>SelectSaveFolder</value></data><data name="SerialPortError" xml:space="preserve"><value>Serial port {0} cannot be opened.
+
+Exception: {1}</value></data><data name="SerialPortErrorTitle" xml:space="preserve"><value>SerialPortErrorTitle</value></data><data name="SerialPortException" xml:space="preserve"><value>Serial port {0} cannot be opened.
+
+Exception: {1}</value></data><data name="SerialPortExceptionTitle" xml:space="preserve"><value>SerialPortExceptionTitle</value></data><data name="SerialPortOccupied" xml:space="preserve"><value>Serial port {0} is occupied by another program.
+
+Please close camera or other programs using this serial port, or check device connection.</value></data><data name="SerialPortOccupiedTitle" xml:space="preserve"><value>SerialPortOccupiedTitle</value></data><data name="ServiceAlreadyRunning" xml:space="preserve"><value>RegistrationCenterService is already running.</value></data><data name="ServiceNotInstalled" xml:space="preserve"><value>RegistrationCenterService not detected, please confirm correct installation.</value></data><data name="SetCorrectParameters" xml:space="preserve"><value>Please set correct parameters!</value></data><data name="ShowCenterLine" xml:space="preserve"><value>Show Center Line</value></data><data name="SkipRCConnection" xml:space="preserve"><value>SkipRCConnection</value></data><data name="SourceMeterSwitch" xml:space="preserve"><value>SourceMeterSwitch</value></data><data name="StartupServiceFailed" xml:space="preserve"><value>Failed to start RegistrationCenterService with administrator privileges.</value></data><data name="SwapRB" xml:space="preserve"><value>Exchange R/B</value></data><data name="SzComId" xml:space="preserve"><value>Serial Port ID</value></data><data name="Temperature" xml:space="preserve"><value>Temperature</value></data><data name="TemperatureAxisLabel" xml:space="preserve"><value>Temperature (°C)</value></data><data name="TemperatureChart" xml:space="preserve"><value>TemperatureChart</value></data><data name="TemperatureChartTitle" xml:space="preserve"><value>TemperatureChartTitle</value></data><data name="TemperatureChartTitleWithDate" xml:space="preserve"><value>Temperature Chart - {0}</value></data><data name="TemperatureLabel" xml:space="preserve"><value>Temperature:</value></data><data name="TemperatureUnit" xml:space="preserve"><value>°C</value></data><data name="TemplateCalibrationFileRequired" xml:space="preserve"><value>Using {0} template, confirm calibration file configured</value></data><data name="TemplateFileMissing" xml:space="preserve"><value>Template file missing</value></data><data name="TemplateFileNotExist" xml:space="preserve"><value>Using {0} template, {1} file does not exist</value></data><data name="ThirdPartyAlgorithm" xml:space="preserve"><value>ThirdPartyAlgorithm</value></data><data name="ThresholdRange" xml:space="preserve"><value>Threshold (0-255)</value></data><data name="Time" xml:space="preserve"><value>Time</value></data><data name="TimeLabel" xml:space="preserve"><value>Time</value></data><data name="TitleCacheManagement" xml:space="preserve"><value>Gestion du cache</value></data><data name="TitleCalibrationHelp" xml:space="preserve"><value>TitleCalibrationHelp</value></data><data name="TitleCameraSearchResults" xml:space="preserve"><value>TitleCameraSearchResults</value></data><data name="TitleCreateDevice" xml:space="preserve"><value>TitleCreateDevice</value></data><data name="TitleEditCameraConfig" xml:space="preserve"><value>TitleEditCameraConfig</value></data><data name="TitleLicenseExpiryNotification" xml:space="preserve"><value>TitleLicenseExpiryNotification</value></data><data name="TitleSearchCameraType" xml:space="preserve"><value>TitleSearchCameraType</value></data><data name="ToggleSpectrum" xml:space="preserve"><value>ToggleSpectrum</value></data><data name="ToolTipAngleShift" xml:space="preserve"><value>Color correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value></data><data name="ToolTipCalibrationHelpDetail" xml:space="preserve"><value>Open calibration system reference manual, view algorithm principles and configuration instructions for each calibration step</value></data><data name="ToolTipColorDiff" xml:space="preserve"><value>Color correction (ColorDiff): corrects color difference between channels</value></data><data name="ToolTipColorShift" xml:space="preserve"><value>Color shift correction (ColorShift): inter-channel spatial shift compensation. Configuration: JSON format (fillOffset and offset parameters)</value></data><data name="ToolTipDSNU" xml:space="preserve"><value>DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation. Configuration: Binary format (V0/V1 header + ushort data)</value></data><data name="ToolTipDarkNoise" xml:space="preserve"><value>Dark current correction (DarkNoise): eliminate sensor dark current noise. Configuration: JSON format (bpp and DarkNoiseRatio)</value></data><data name="ToolTipDefectPoint" xml:space="preserve"><value>Defect point correction (DefectPoint): detect and repair defective pixels. Configuration: Binary format (defect count + coordinate list)</value></data><data name="ToolTipDistortion" xml:space="preserve"><value>Distortion correction (Distortion): lens radial/tangential distortion correction. Configuration: JSON format (camera intrinsic matrix and distortion coefficients)</value></data><data name="ToolTipEditCameraConfig" xml:space="preserve"><value>Edit current camera configuration</value></data><data name="ToolTipFourColor" xml:space="preserve"><value>Four-color correction (LumFourColor): 3×3 matrix full channel mixing color conversion.</value></data><data name="ToolTipLineArity" xml:space="preserve"><value>Linearity correction (LineArity): corrects non-linear sensor response characteristics</value></data><data name="ToolTipLuminance" xml:space="preserve"><value>Luminance correction (Luminance): linear conversion from grayscale to absolute luminance Lv(cd/m²). Configuration: JSON format (bpp, exposure time, coefficient a)</value></data><data name="ToolTipMultiColor" xml:space="preserve"><value>Multi-color correction (LumMultiColor): dynamic size coefficient matrix, supports higher-order color conversion.</value></data><data name="ToolTipOneColor" xml:space="preserve"><value>Single-color correction (LumOneColor): 4-coefficient model converts 3-channel grayscale to CIE XYZ tristimulus.</value></data><data name="ToolTipOpenCalibrationHelp" xml:space="preserve"><value>Open calibration system reference manual</value></data><data name="ToolTipUniformity" xml:space="preserve"><value>Uniformity correction (Uniformity): compensates lens vignetting and sensor response non-uniformity. Configuration: Binary format (V0/V1 header + float factor matrix)</value></data><data name="TryRestartService" xml:space="preserve"><value>Try restarting service</value></data><data name="UnknownCalibrationType" xml:space="preserve"><value>Unknown calibration type: {0}</value></data><data name="UnknownCamera" xml:space="preserve"><value>Unknown camera</value></data><data name="UpdateSuccess" xml:space="preserve"><value>Mise à jour réussie</value></data><data name="UploadFinished" xml:space="preserve"><value>Upload finished</value></data><data name="UploadingCalibrationFilePleaseWait" xml:space="preserve"><value>Uploading calibration file: {0}, please wait...</value></data><data name="UserCancelledOrElevationFailed" xml:space="preserve"><value>User cancelled the operation or elevation failed.</value></data><data name="VIScan" xml:space="preserve"><value>VIScan</value></data><data name="VideoCaptureMode" xml:space="preserve"><value>Video Mode</value></data><data name="VideoCaptureTimeoutCheckLog" xml:space="preserve"><value>VideoCaptureTimeoutCheckLog</value></data><data name="VoltageSource" xml:space="preserve"><value>Voltage Source</value></data><data name="WindowCloseAfter1s" xml:space="preserve"><value>Close window in 1s</value></data><data name="Flow_ConfirmDeleteFlow" xml:space="preserve"><value>Confirm delete flow "{0}"?</value></data><data name="Flow_ExportFlow" xml:space="preserve"><value>Export Flow</value></data><data name="Flow_GetCanvasDataFailed" xml:space="preserve"><value>Failed to get canvas data</value></data><data name="Flow_ImportFlow" xml:space="preserve"><value>Importer le processus</value></data><data name="Flow_ImportModuleFailed" xml:space="preserve"><value>Failed to import module: {0}</value></data><data name="Flow_ImportTemplateAsModule" xml:space="preserve"><value>Import Template as Module</value></data><data name="Flow_Module" xml:space="preserve"><value> Module</value></data><data name="Flow_NewFlow" xml:space="preserve"><value>New Flow</value></data><data name="Flow_NoFlowParamSelected" xml:space="preserve"><value>No flow parameter selected, cannot save</value></data><data name="Flow_NoFlowTemplate" xml:space="preserve"><value>No flow templates available</value></data><data name="Flow_NodeTimeAnalysis" xml:space="preserve"><value>Node Time Analysis</value></data><data name="Flow_RunFlowFirst" xml:space="preserve"><value>Please run the flow first</value></data><data name="Flow_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data><data name="Flow_TemplateNoFlowData" xml:space="preserve"><value>Selected template has no flow data</value></data><data name="Flow_Display_NoTemplateSelected" xml:space="preserve"><value>No valid flow template selected</value></data><data name="Flow_Display_PreprocessFailed" xml:space="preserve"><value>Pre-processing failed, flow cancelled</value></data><data name="Flow_Display_SelectTemplateFirst" xml:space="preserve"><value>Create corresponding template before selecting</value></data><data name="Flow_MessageList_All" xml:space="preserve"><value>All</value></data><data name="Flow_MessageList_ClearRecords" xml:space="preserve"><value>Clear Records</value></data><data name="Flow_MessageList_DisplayCount" xml:space="preserve"><value>Showing:</value></data><data name="Flow_MessageList_ElapsedMs" xml:space="preserve"><value>Elapsed(ms)</value></data><data name="Flow_MessageList_LoadCount" xml:space="preserve"><value>Load Count:</value></data><data name="Flow_MessageList_Node" xml:space="preserve"><value>Node:</value></data><data name="Flow_MessageList_NodeHeader" xml:space="preserve"><value>Node</value></data><data name="Flow_MessageList_Query" xml:space="preserve"><value>Query</value></data><data name="Flow_MessageList_RecvData" xml:space="preserve"><value>Receive Data</value></data><data name="Flow_MessageList_RecvTime" xml:space="preserve"><value>Receive Time</value></data><data name="Flow_MessageList_Refresh" xml:space="preserve"><value>Actualiser</value></data><data name="Flow_MessageList_SendData" xml:space="preserve"><value>Send Data</value></data><data name="Flow_MessageList_SendTime" xml:space="preserve"><value>Send Time</value></data><data name="Flow_MessageList_State" xml:space="preserve"><value>State:</value></data><data name="Flow_MessageList_StateHeader" xml:space="preserve"><value>State</value></data><data name="Flow_MessageList_StatusCode" xml:space="preserve"><value>Status Code</value></data><data name="Flow_MessageList_Title" xml:space="preserve"><value>Flow MQTT Message Query</value></data><data name="Flow_MessageList_TotalCount" xml:space="preserve"><value>Total:</value></data><data name="Flow_NodeAnalysis_All" xml:space="preserve"><value>All</value></data><data name="Flow_NodeAnalysis_BatchSelection" xml:space="preserve"><value>Batch Selection:</value></data><data name="Flow_NodeAnalysis_Compare" xml:space="preserve"><value>Compare</value></data><data name="Flow_NodeAnalysis_CsvHeader" xml:space="preserve"><value>BatchId,NodeName,NodeType,StartTime,EndTime,Elapsed(ms),SN</value></data><data name="Flow_NodeAnalysis_ElapsedMs" xml:space="preserve"><value>Elapsed(ms)</value></data><data name="Flow_NodeAnalysis_EndTime" xml:space="preserve"><value>End Time</value></data><data name="Flow_NodeAnalysis_Export" xml:space="preserve"><value>Export</value></data><data name="Flow_NodeAnalysis_FileNamePrefix" xml:space="preserve"><value>NodeTimeAnalysis_</value></data><data name="Flow_NodeAnalysis_GanttCompareTitle" xml:space="preserve"><value>Flow Node Comparison (Multi-batch)</value></data><data name="Flow_NodeAnalysis_GanttTitle" xml:space="preserve"><value>Flow Node Gantt Chart</value></data><data name="Flow_NodeAnalysis_Load" xml:space="preserve"><value>Load</value></data><data name="Flow_NodeAnalysis_MessageQueryWindow" xml:space="preserve"><value>Message Query Window</value></data><data name="Flow_NodeAnalysis_MqttCsvHeader" xml:space="preserve"><value>BatchId,Node,NodeId,EventName,MsgId,SendTopic,SendTime,RecvTopic,RecvTime,Elapsed(ms),StatusCode,StatusMessage,State</value></data><data name="Flow_NodeAnalysis_MqttMessageTrace" xml:space="preserve"><value>MQTT Message Trace</value></data><data name="Flow_NodeAnalysis_NoDataToExport" xml:space="preserve"><value>No data to export, please load batch data first</value></data><data name="Flow_NodeAnalysis_Node" xml:space="preserve"><value>Node</value></data><data name="Flow_NodeAnalysis_NodeFilter" xml:space="preserve"><value>Node Filter:</value></data><data name="Flow_NodeAnalysis_NodeName" xml:space="preserve"><value>Node Name</value></data><data name="Flow_NodeAnalysis_NodeType" xml:space="preserve"><value>Node Type</value></data><data name="Flow_NodeAnalysis_RecvData" xml:space="preserve"><value>Receive Data</value></data><data name="Flow_NodeAnalysis_RecvTime" xml:space="preserve"><value>Receive Time</value></data><data name="Flow_NodeAnalysis_SelectAtLeastOneBatch" xml:space="preserve"><value>Please select at least one batch</value></data><data name="Flow_NodeAnalysis_SelectAtLeastTwoBatches" xml:space="preserve"><value>Please select at least two batches to compare</value></data><data name="Flow_NodeAnalysis_SendData" xml:space="preserve"><value>Send Data</value></data><data name="Flow_NodeAnalysis_SendTime" xml:space="preserve"><value>Send Time</value></data><data name="Flow_NodeAnalysis_StartTime" xml:space="preserve"><value>Start Time</value></data><data name="Flow_NodeAnalysis_State" xml:space="preserve"><value>State</value></data><data name="Flow_NodeAnalysis_StateFilter" xml:space="preserve"><value>State Filter:</value></data><data name="Flow_NodeAnalysis_Title" xml:space="preserve"><value>Flow Node Time Analysis</value></data><data name="Flow_NodeAnalysis_TotalTime" xml:space="preserve"><value>Total Time</value></data><data name="Flow_NodeAnalysis_XLabelElapsed" xml:space="preserve"><value>Elapsed (ms)</value></data><data name="Flow_NodeAnalysis_XLabelTime" xml:space="preserve"><value>Time (ms)</value></data><data name="Flow_PreProcess_Title" xml:space="preserve"><value>Pre-Process Configuration</value></data><data name="Flow_MessageList_ConfirmClearAll" xml:space="preserve"><value>Are you sure you want to clear all flow MQTT message records?</value></data><data name="Flow_NodeAnalysis_ComparisonTitle" xml:space="preserve"><value>Flow Node Comparison (Multi-batch)</value></data><data name="Flow_NodeAnalysis_ElapsedMsLabel" xml:space="preserve"><value>Elapsed (ms)</value></data><data name="Flow_NodeAnalysis_ExportSuccess" xml:space="preserve"><value>Exportation réussie</value></data><data name="Flow_NodeAnalysis_TimeMs" xml:space="preserve"><value>Time (ms)</value></data><data name="Flow_NodeAnalysis_Timeout" xml:space="preserve"><value>Timeout</value></data><data name="Flow_MeasureBatch_AllArchiveSent" xml:space="preserve"><value>All archive commands sent</value></data><data name="Flow_MeasureBatch_ArchiveSent" xml:space="preserve"><value>Archive command sent</value></data><data name="Flow_MeasureBatch_BatchResult" xml:space="preserve"><value>Batch {0} Results</value></data><data name="Flow_MeasureBatch_Description" xml:space="preserve"><value>Description:</value></data><data name="Flow_MeasureBatch_Name" xml:space="preserve"><value>Name:</value></data><data name="Flow_MeasureBatch_NodeTimeAnalysis" xml:space="preserve"><value>Node Time Analysis</value></data><data name="Flow_MeasureBatch_PostProcessExecution" xml:space="preserve"><value>Post-Process Execution</value></data><data name="Flow_MeasureBatch_SelectProcessTypeLabel" xml:space="preserve"><value>Select process type:</value></data><data name="Flow_MeasureBatch_SelectToViewConfig" xml:space="preserve"><value>Select process type to view config</value></data><data name="Flow_MeasureBatch_SelectedBatch" xml:space="preserve"><value>Selected Batch:</value></data><data name="Flow_MeasureBatch_Title" xml:space="preserve"><value>Flow Batch Configuration</value></data><data name="Flow_NoEndNode" xml:space="preserve"><value>Flow end node not found</value></data><data name="Flow_NoStartNode" xml:space="preserve"><value>Flow start node not found</value></data><data name="Flow_NoTemplateAvailable" xml:space="preserve"><value>(No templates available)</value></data><data name="Flow_PreProcess_AutoSaved" xml:space="preserve"><value>Auto-saved {0}</value></data><data name="Flow_PreProcess_BasicInfo" xml:space="preserve"><value>Basic Info</value></data><data name="Flow_PreProcess_Close" xml:space="preserve"><value>Close</value></data><data name="Flow_PreProcess_Config" xml:space="preserve"><value>Pre-processor Configuration</value></data><data name="Flow_PreProcess_ConfigLoaded" xml:space="preserve"><value>Config loaded {0}</value></data><data name="Flow_PreProcess_ConfigNotFound" xml:space="preserve"><value>Config file not found</value></data><data name="Flow_PreProcess_Description" xml:space="preserve"><value>Description:</value></data><data name="Flow_PreProcess_Disabled" xml:space="preserve"><value>Disabled</value></data><data name="Flow_PreProcess_Enabled" xml:space="preserve"><value>Enabled</value></data><data name="Flow_PreProcess_LoadFailed" xml:space="preserve"><value>Failed to load config</value></data><data name="Flow_PreProcess_NotSaved" xml:space="preserve"><value>Not saved yet</value></data><data name="Flow_PreProcess_ProcessClass" xml:space="preserve"><value>Processor:</value></data><data name="Flow_PreProcess_SaveFailed" xml:space="preserve"><value>Save failed, check log</value></data><data name="Flow_PreProcess_SelectProcessor" xml:space="preserve"><value>Select a pre-processor to view config</value></data><data name="Flow_PreProcess_Type" xml:space="preserve"><value>Type:</value></data><data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data><data name="BilateralFilter" xml:space="preserve"><value>Bilateral Filter</value></data><data name="Blur" xml:space="preserve"><value>Blur</value></data><data name="Dilate" xml:space="preserve"><value>Dilate</value></data><data name="Erode" xml:space="preserve"><value>Erode</value></data><data name="FilterDenoise" xml:space="preserve"><value>Filter / Denoise</value></data><data name="ImageProcessing" xml:space="preserve"><value>Image Processing</value></data><data name="KernelSize" xml:space="preserve"><value>Kernel Size</value></data><data name="MorphologyEx" xml:space="preserve"><value>Morphology</value></data><data name="OpenWithImageJ" xml:space="preserve"><value>Open with ImageJ</value></data><data name="GaussianBlur" xml:space="preserve"><value>Gaussian Blur</value></data><data name="MedianFilter" xml:space="preserve"><value>Median Filter</value></data><data name="ThresholdProcessing" xml:space="preserve"><value>Threshold Processing</value></data><data name="DownloadingOpenCvSharpFix" xml:space="preserve"><value>Downloading OpenCvSharp fix patch...</value></data><data name="FixOpenCvSharpExportCrash" xml:space="preserve"><value>Fix OpenCvSharp Export Crash</value></data><data name="OpenCvSharpFixBackupFailed" xml:space="preserve"><value>Failed to backup existing DLL: {0}</value></data><data name="OpenCvSharpFixDllLocked" xml:space="preserve"><value>OpenCvSharp DLL verrouillé, tentative de réparation...</value></data><data name="OpenCvSharpFixFailed" xml:space="preserve"><value>Fix patch installation failed: {0}</value></data><data name="OpenCvSharpFixSuccess" xml:space="preserve"><value>Fix patch installed. Please restart ColorVision for changes to take effect.</value></data><data name="OpenCvSharpFixConfirmClose" xml:space="preserve"><value>Fix patch downloaded. ColorVision will close to install the patch and restart automatically. Continue?</value></data>
+  <data name="Engine_Msg_ConfigFileFormatError" xml:space="preserve">
+    <value>Config file format error: {0}</value>
+  </data>
+  <data name="Engine_Msg_ParseError" xml:space="preserve">
+    <value>Parse error</value>
+  </data>
+  <data name="Engine_Msg_FileProcessError" xml:space="preserve">
+    <value>Error processing file: {0}</value>
+  </data>
+  <data name="Engine_Msg_RCConfigInfoNotFound" xml:space="preserve">
+    <value>{0} configuration info not found</value>
+  </data>
+  <data name="Engine_Msg_ConfirmDeleteAllRecords" xml:space="preserve">
+    <value>Are you sure you want to delete all records in the database? This action cannot be undone.</value>
+  </data>
+  <data name="Engine_Msg_ConfirmDeleteTitle" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="Engine_Msg_ConfirmResetDatabase" xml:space="preserve">
+    <value>Are you sure you want to reset the database? The database file will be deleted and recreated. This action cannot be undone.</value>
+  </data>
+  <data name="Engine_Msg_ConfirmResetTitle" xml:space="preserve">
+    <value>Confirm Reset</value>
+  </data>
+  <data name="Engine_Msg_MessageRecord" xml:space="preserve">
+    <value>Message Record</value>
+  </data>
+  <data name="Engine_Msg_MqttHistoryCleared" xml:space="preserve">
+    <value>MQTT history cleared</value>
+  </data>
+  <data name="Engine_Msg_ConnectSuccess" xml:space="preserve">
+    <value>Connection successful</value>
+  </data>
+  <data name="Engine_Msg_ConnectFailed" xml:space="preserve">
+    <value>Connection failed</value>
+  </data>
+  <data name="Engine_Msg_RestoreSuccessRestartRequired" xml:space="preserve">
+    <value>Restore successful, service restart required to load resource files</value>
+  </data>
+  <data name="Engine_Msg_LoadingResultTableStats" xml:space="preserve">
+    <value>Failed to load result table stats: {0}</value>
+  </data>
+  <data name="Engine_Msg_DataCleanupComplete" xml:space="preserve">
+    <value>Data table cleanup complete</value>
+  </data>
+  <data name="Engine_Msg_CleanupHistoryFailed" xml:space="preserve">
+    <value>Failed to cleanup history results: {0}</value>
+  </data>
+  <data name="Engine_Msg_AllTablesCleared" xml:space="preserve">
+    <value>All data tables have been cleared.</value>
+  </data>
+  <data name="Engine_Msg_ClearResultTablesFailed" xml:space="preserve">
+    <value>Failed to clear result tables: {0}</value>
+  </data>
+  <data name="Engine_Msg_BackupInProgress" xml:space="preserve">
+    <value>Backup in progress</value>
+  </data>
+  <data name="Engine_Msg_BackupSuccess" xml:space="preserve">
+    <value>Backup successful</value>
+  </data>
+  <data name="Engine_Msg_RestoreSuccessRestarting" xml:space="preserve">
+    <value>Restore successful, restarting service</value>
+  </data>
+  <data name="Engine_Msg_ServiceRestartSuccess" xml:space="preserve">
+    <value>Service restart successful, restarting software</value>
+  </data>
+  <data name="Engine_Msg_ServiceRestartFailed" xml:space="preserve">
+    <value>Service restart failed</value>
+  </data>
+  <data name="Engine_Msg_EnterValidKeepMonths" xml:space="preserve">
+    <value>Please enter a retention period greater than 0 months</value>
+  </data>
+  <data name="Engine_Msg_NoCalculableCvRaw" xml:space="preserve">
+    <value>No calculable CVRAW files available.</value>
+  </data>
+  <data name="Engine_Msg_OnlyThreeChannelCvRaw" xml:space="preserve">
+    <value>Only three-channel CVRAW files are supported for CIE calculation.</value>
+  </data>
+  <data name="Engine_Msg_CalculateCieFailed" xml:space="preserve">
+    <value>CIE calculation failed: {0}</value>
+  </data>
+  <data name="Engine_Msg_CalculateCie" xml:space="preserve">
+    <value>Calculate CIE</value>
+  </data>
+  <data name="Engine_Msg_ResultOnlyYNoColorCoords" xml:space="preserve">
+    <value>Current result only has Y, no color coordinates, cannot display on CIE chart.</value>
+  </data>
+  <data name="Engine_Msg_NoDisplayableCiePoints" xml:space="preserve">
+    <value>No displayable CIE points available.</value>
+  </data>
+  <data name="Engine_Msg_SelectCalibrationFileFirst" xml:space="preserve">
+    <value>Please select a camera calibration file first.</value>
+  </data>
+  <data name="Engine_Msg_ImportFourColorCalFailed" xml:space="preserve">
+    <value>Failed to import four-color calibration file.</value>
+  </data>
+  <data name="Engine_Msg_Prompt" xml:space="preserve">
+    <value>Prompt</value>
+  </data>
+  <data name="Engine_Msg_FileReadFailedUnsupported" xml:space="preserve">
+    <value>File read failed or unsupported format.</value>
+  </data>
+  <data name="Engine_Msg_NotSingleChannelImage" xml:space="preserve">
+    <value>Cannot extract: the file is not a single-channel image.</value>
+  </data>
+  <data name="Engine_Msg_TiffReadFailed" xml:space="preserve">
+    <value>File read failed or corrupted TIFF file.</value>
+  </data>
+  <data name="Engine_Msg_UnsupportedFileType" xml:space="preserve">
+    <value>Unsupported file type.</value>
+  </data>
+  <data name="Engine_Msg_ConvertToMatFailed" xml:space="preserve">
+    <value>Failed to convert to Mat.</value>
+  </data>
+  <data name="Engine_Msg_SaveSuccessTo" xml:space="preserve">
+    <value>Successfully saved to: {0}</value>
+  </data>
+  <data name="Engine_Msg_ErrorWithDetail" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="Engine_Msg_FilePathEmpty" xml:space="preserve">
+    <value>Folder path cannot be empty</value>
+  </data>
+  <data name="Engine_Dlg_ExportTemplate" xml:space="preserve">
+    <value>Export Template</value>
+  </data>
+  <data name="Engine_Dlg_ImportTemplate" xml:space="preserve">
+    <value>Import Template</value>
+  </data>
+  <data name="Engine_Dlg_SelectCalibrationFile" xml:space="preserve">
+    <value>Select Calibration File</value>
+  </data>
+  <data name="Engine_Dlg_SelectProjectLocation" xml:space="preserve">
+    <value>Select Location for New Project</value>
+  </data>
+  <data name="Engine_Dlg_SelectSingleChannelFile" xml:space="preserve">
+    <value>Select Single-Channel File to Convert</value>
+  </data>
+  <data name="Engine_Dlg_SaveCsvFile" xml:space="preserve">
+    <value>Save CSV File</value>
+  </data>
+  <data name="Engine_Dlg_SelectDatFile" xml:space="preserve">
+    <value>Select DAT File to Read</value>
+  </data>
+  <data name="Engine_Dlg_OpenFile" xml:space="preserve">
+    <value>Open File</value>
+  </data>
+  <data name="Engine_PG_DecimalPlaces" xml:space="preserve">
+    <value>Decimal Places</value>
+  </data>
+  <data name="Engine_PG_FontSize" xml:space="preserve">
+    <value>Font Size</value>
+  </data>
+  <data name="Engine_PG_PenThickness" xml:space="preserve">
+    <value>Pen Thickness</value>
+  </data>
+  <data name="Engine_PG_Render" xml:space="preserve">
+    <value>Render</value>
+  </data>
+  <data name="Engine_PG_Tag" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="Engine_PG_TagDesc" xml:space="preserve">
+    <value>User-defined tag information</value>
+  </data>
+  <data name="Engine_PG_CleanupFolder" xml:space="preserve">
+    <value>Cleanup Folder</value>
+  </data>
+  <data name="Engine_PG_FileExtensions" xml:space="preserve">
+    <value>File Extensions</value>
+  </data>
+  <data name="Engine_PG_FilePattern" xml:space="preserve">
+    <value>File Name Pattern</value>
+  </data>
+  <data name="Engine_PG_IncludeSubfolders" xml:space="preserve">
+    <value>Include Subfolders</value>
+  </data>
+  <data name="Engine_PG_KeepRecentFiles" xml:space="preserve">
+    <value>Keep Recent N Files</value>
+  </data>
+  <data name="Engine_PG_DeleteOlderThanDays" xml:space="preserve">
+    <value>Only Delete Files Older Than N Days</value>
+  </data>
+  <data name="Engine_PG_Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Engine_PG_DeleteEmptyFolders" xml:space="preserve">
+    <value>Delete Empty Folders</value>
+  </data>
+  <data name="Engine_PG_SaveCSV" xml:space="preserve">
+    <value>Save CSV</value>
+  </data>
+  <data name="Engine_PG_ShowWindow" xml:space="preserve">
+    <value>Show Window</value>
+  </data>
+  <data name="Engine_PG_SaveCameraCsv" xml:space="preserve">
+    <value>Save Camera CSV</value>
+  </data>
+  <data name="Engine_PG_SaveSpectrumCsv" xml:space="preserve">
+    <value>Save Spectrum CSV</value>
+  </data>
+  <data name="Engine_PG_ShowPlot" xml:space="preserve">
+    <value>Show Plot</value>
+  </data>
+  <data name="Engine_PG_MonitorFolder" xml:space="preserve">
+    <value>Monitor Folder</value>
+  </data>
+  <data name="Engine_PG_TriggerSize" xml:space="preserve">
+    <value>Trigger Size</value>
+  </data>
+  <data name="Engine_PG_CleanupLimit" xml:space="preserve">
+    <value>Cleanup Limit</value>
+  </data>
+  <data name="Engine_PG_ApplyTemplate" xml:space="preserve">
+    <value>Applied Templates</value>
+  </data>
+  <data name="Engine_PG_SampleShape" xml:space="preserve">
+    <value>Sample Shape</value>
+  </data>
+  <data name="Engine_PG_SampleRadius" xml:space="preserve">
+    <value>Sample Radius</value>
+  </data>
+  <data name="Engine_PG_RectWidth" xml:space="preserve">
+    <value>Rectangle Width</value>
+  </data>
+  <data name="Engine_PG_RectHeight" xml:space="preserve">
+    <value>Rectangle Height</value>
+  </data>
+  <data name="Engine_PG_InputNorm" xml:space="preserve">
+    <value>Input Normalization</value>
+  </data>
+  <data name="Engine_PG_MatrixXRow" xml:space="preserve">
+    <value>Matrix X Row</value>
+  </data>
+  <data name="Engine_PG_MatrixYRow" xml:space="preserve">
+    <value>Matrix Y Row</value>
+  </data>
+  <data name="Engine_PG_MatrixZRow" xml:space="preserve">
+    <value>Matrix Z Row</value>
+  </data>
+  <data name="Engine_PG_ShowRecordData" xml:space="preserve">
+    <value>Show Record Data</value>
+  </data>
+  <data name="Engine_PG_DataTemplate" xml:space="preserve">
+    <value>Data Display Template</value>
+  </data>
+  <data name="Engine_PG_CameraSettings" xml:space="preserve">
+    <value>Camera Settings</value>
+  </data>
+  <data name="Engine_PG_CameraDeviceName" xml:space="preserve">
+    <value>Camera Device Name</value>
+  </data>
+  <data name="Engine_PG_CameraDeviceNameDesc" xml:space="preserve">
+    <value>Enter the camera device name to use</value>
+  </data>
+  <data name="Engine_PG_CameraTask" xml:space="preserve">
+    <value>Camera Task</value>
+  </data>
+  <data name="Engine_PG_RegisterAddress" xml:space="preserve">
+    <value>Register Address</value>
+  </data>
+  <data name="Engine_PG_AutoIntegration" xml:space="preserve">
+    <value>Auto Integration</value>
+  </data>
+  <data name="Engine_PG_MaxIntegrationTime" xml:space="preserve">
+    <value>Max Integration Time</value>
+  </data>
+  <data name="Engine_PG_MaxAverageCount" xml:space="preserve">
+    <value>Max Average Count</value>
+  </data>
+  <data name="Engine_PG_NegativeLuminanceGuard" xml:space="preserve">
+    <value>Negative Luminance Guard</value>
+  </data>
+  <data name="Engine_PG_MinLuminanceValue" xml:space="preserve">
+    <value>Min Luminance Value</value>
+  </data>
+  <data name="Engine_PG_SpectrumSettings" xml:space="preserve">
+    <value>Spectrometer Settings</value>
+  </data>
+  <data name="Engine_PG_SpectrumDeviceName" xml:space="preserve">
+    <value>Spectrometer Device Name</value>
+  </data>
+  <data name="Engine_PG_SpectrumDeviceNameDesc" xml:space="preserve">
+    <value>Enter the spectrometer device name to use</value>
+  </data>
+  <data name="Engine_PG_SpectrumTask" xml:space="preserve">
+    <value>Spectrometer Single Test</value>
+  </data>
+  <data name="Engine_PG_Voltage" xml:space="preserve">
+    <value>Voltage</value>
+  </data>
+  <data name="Engine_PG_Current" xml:space="preserve">
+    <value>Actuel</value>
+  </data>
+  <data name="Engine_PG_LicenseNotify" xml:space="preserve">
+    <value>License Notification</value>
+  </data>
+  <data name="Engine_PG_WarningDays" xml:space="preserve">
+    <value>Warning Days</value>
+  </data>
+  <data name="Engine_PG_WarningDaysDesc" xml:space="preserve">
+    <value>Days before license expiry to start warning</value>
+  </data>
+  <data name="Engine_PG_HideExpiredPrompt" xml:space="preserve">
+    <value>Hide Expired License Prompt</value>
+  </data>
+  <data name="Engine_PG_HideExpiringPrompt" xml:space="preserve">
+    <value>Hide Expiring License Prompt</value>
+  </data>
+  <data name="Engine_PG_PoiTransform" xml:space="preserve">
+    <value>POI Transform</value>
+  </data>
+  <data name="Engine_PG_XOffset" xml:space="preserve">
+    <value>X Offset</value>
+  </data>
+  <data name="Engine_PG_YOffset" xml:space="preserve">
+    <value>Y Offset</value>
+  </data>
+  <data name="Engine_PG_XScale" xml:space="preserve">
+    <value>X Scale</value>
+  </data>
+  <data name="Engine_PG_YScale" xml:space="preserve">
+    <value>Y Scale</value>
+  </data>
+  <data name="Engine_PG_ScaleSize" xml:space="preserve">
+    <value>Scale Size</value>
+  </data>
+  <data name="Engine_PG_PositionOffset" xml:space="preserve">
+    <value>Position Offset</value>
+  </data>
+  <data name="Engine_PG_Scale" xml:space="preserve">
+    <value>Scale</value>
+  </data>
+  <data name="Engine_PG_Threshold" xml:space="preserve">
+    <value>Threshold</value>
+  </data>
+  <data name="Engine_PG_Area" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="Engine_PG_ShapeCircle" xml:space="preserve">
+    <value>Shape Circle</value>
+  </data>
+  <data name="Engine_PG_ShapeGap" xml:space="preserve">
+    <value>Shape Gap</value>
+  </data>
+  <data name="Engine_PG_ShapeEllipse" xml:space="preserve">
+    <value>Shape Ellipse</value>
+  </data>
+  <data name="Engine_PG_Global" xml:space="preserve">
+    <value>Global</value>
+  </data>
+  <data name="Engine_PG_AutoEditSave" xml:space="preserve">
+    <value>Auto Edit Save Prompt</value>
+  </data>
+  <data name="Engine_PG_FilePath" xml:space="preserve">
+    <value>File Path</value>
+  </data>
+  <data name="Engine_PG_LocalImage" xml:space="preserve">
+    <value>Local Image</value>
+  </data>
+  <data name="Engine_PG_Diff" xml:space="preserve">
+    <value>Difference</value>
+  </data>
+  <data name="Engine_PG_Ratio" xml:space="preserve">
+    <value>Ratio</value>
+  </data>
+  <data name="Engine_PG_NoCorrection" xml:space="preserve">
+    <value>No Correction</value>
+  </data>
+  <data name="Engine_PG_BrightnessOnly" xml:space="preserve">
+    <value>Brightness Only</value>
+  </data>
+  <data name="Engine_PG_ChromaOnly" xml:space="preserve">
+    <value>Chroma Only</value>
+  </data>
+  <data name="Engine_PG_BrightnessAndChroma" xml:space="preserve">
+    <value>Brightness and Chroma</value>
+  </data>
+  <data name="Engine_PG_BatchConfig" xml:space="preserve">
+    <value>Batch Configuration</value>
+  </data>
+  <data name="Engine_Msg_ResultTableStatsLoaded" xml:space="preserve">
+    <value>Loaded {0} cleanable result tables.</value>
+  </data>
+  <data name="Engine_Msg_NoCleanableResultTables" xml:space="preserve">
+    <value>No cleanable result tables found. Please check database connection and table structure.</value>
+  </data>
+  <data name="Engine_Msg_LoadResultTableStatsFailed" xml:space="preserve">
+    <value>Failed to load result table stats</value>
+  </data>
+  <data name="Engine_Msg_LoadResultTableStatsFailedDetail" xml:space="preserve">
+    <value>Failed to load result table stats: {0}</value>
+  </data>
+  <data name="Engine_Msg_DataTableCleanupComplete" xml:space="preserve">
+    <value>Data table cleanup complete</value>
+  </data>
+  <data name="Engine_Msg_CleanupHistoryFailedDetail" xml:space="preserve">
+    <value>Failed to cleanup history: {0}</value>
+  </data>
+  <data name="Engine_Msg_ClearingResultTables" xml:space="preserve">
+    <value>Clearing result tables...</value>
+  </data>
+  <data name="Engine_Msg_AllResultTablesCleared" xml:space="preserve">
+    <value>All result tables have been cleared.</value>
+  </data>
+  <data name="Engine_Msg_ClearResultTablesFailedDetail" xml:space="preserve">
+    <value>Failed to clear result tables: {0}</value>
+  </data>
+  <data name="Engine_Msg_SavedSuccessfully" xml:space="preserve">
+    <value>Successfully saved to: {0}</value>
+  </data>
+  <data name="Engine_Msg_FileReadFailedCorruptedTiff" xml:space="preserve">
+    <value>File read failed or corrupted TIFF file.</value>
+  </data>
+  <data name="CalcCIE" xml:space="preserve">
+    <value>Calculate CIE</value>
+  </data>
+  <data name="OriginalImage" xml:space="preserve">
+    <value>Original Image</value>
+  </data>
+  <data name="ColorSigma" xml:space="preserve">
+    <value>Color Sigma</value>
+  </data>
+  <data name="Iterations" xml:space="preserve">
+    <value>Iterations</value>
+  </data>
+  <data name="ShowOnCieDiagram" xml:space="preserve">
+    <value>Show on CIE Diagram</value>
+  </data>
+  <data name="MysqlTool" xml:space="preserve">
+    <value>MySQL Tool</value>
+  </data>
+  <data name="SFRInfo" xml:space="preserve">
+    <value>SFR Info</value>
+  </data>
+  <data name="SelectTemplateAsModule" xml:space="preserve">
+    <value>Select Template as Module Import</value>
+  </data>
+  <data name="ExplainTemplate" xml:space="preserve">
+    <value>Explain Current Template</value>
+  </data>
+  <data name="DisplayType" xml:space="preserve">
+    <value>Display Type</value>
+  </data>
+  <data name="POITransform" xml:space="preserve">
+    <value>POI Transform</value>
+  </data>
+  <data name="KeyboardTemplateEdit" xml:space="preserve">
+    <value>Keyboard Template Edit</value>
+  </data>
+  <data name="NoAreaError" xml:space="preserve">
+    <value>Execution will error when all three are False</value>
+  </data>
+  <data name="CorrectionMethod" xml:space="preserve">
+    <value>Correction Method</value>
+  </data>
+  <data name="BenchmarkParams" xml:space="preserve">
+    <value>Benchmark Parameters</value>
+  </data>
+  <data name="CreateSource" xml:space="preserve">
+    <value>Create Source</value>
+  </data>
+  <data name="SampleGroup" xml:space="preserve">
+    <value>Sample Group</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="AutoCreateGroupHint" xml:space="preserve">
+    <value>Entering a non-existent group name will auto-create on save</value>
+  </data>
+  <data name="AutoDetectKeyRegions" xml:space="preserve">
+    <value>Auto Detect Key Regions</value>
+  </data>
+  <data name="AutoDetectKeyRegionsToolTip" xml:space="preserve">
+    <value>Auto-detect glowing key areas in image and create POI</value>
+  </data>
+  <data name="Background" xml:space="preserve">
+    <value>Background</value>
+  </data>
+  <data name="CalcMethod" xml:space="preserve">
+    <value>Calculation Method</value>
+  </data>
+  <data name="CameraFourColorCalFile" xml:space="preserve">
+    <value>Camera Four-Color Calibration File</value>
+  </data>
+  <data name="CapturePhoto" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="ChannelB" xml:space="preserve">
+    <value>B Channel</value>
+  </data>
+  <data name="ChannelG" xml:space="preserve">
+    <value>G Channel</value>
+  </data>
+  <data name="ChannelR" xml:space="preserve">
+    <value>R Channel</value>
+  </data>
+  <data name="ChannelX" xml:space="preserve">
+    <value>X Channel</value>
+  </data>
+  <data name="ChannelY" xml:space="preserve">
+    <value>Y Channel</value>
+  </data>
+  <data name="ChannelZ" xml:space="preserve">
+    <value>Z Channel</value>
+  </data>
+  <data name="CheckConfigAnomaly" xml:space="preserve">
+    <value>Check Configuration Anomaly</value>
+  </data>
+  <data name="CleanupHistory" xml:space="preserve">
+    <value>Cleanup History Data</value>
+  </data>
+  <data name="ClearAllData" xml:space="preserve">
+    <value>Clear All Data</value>
+  </data>
+  <data name="CurveName" xml:space="preserve">
+    <value>Curve Name:</value>
+  </data>
+  <data name="DataCleanupDesc" xml:space="preserve">
+    <value>Unified display in standalone window...</value>
+  </data>
+  <data name="DefaultUseInitialMatrix" xml:space="preserve">
+    <value>Default values use the initial matrix from the class.</value>
+  </data>
+  <data name="EditConfigInWindow" xml:space="preserve">
+    <value>Edit configuration in standalone window</value>
+  </data>
+  <data name="ExecuteHalo" xml:space="preserve">
+    <value>Execute Halo</value>
+  </data>
+  <data name="ExecuteKey" xml:space="preserve">
+    <value>Execute Key</value>
+  </data>
+  <data name="ExplainParameters" xml:space="preserve">
+    <value>Explain Current Parameters</value>
+  </data>
+  <data name="ExportCSV" xml:space="preserve">
+    <value>Export CSV</value>
+  </data>
+  <data name="FileName_Mysql" xml:space="preserve">
+    <value>File Name</value>
+  </data>
+  <data name="FileName_Poi" xml:space="preserve">
+    <value>File Name</value>
+  </data>
+  <data name="FilterEnabled" xml:space="preserve">
+    <value>Focus Point Filter Enabled</value>
+  </data>
+  <data name="FrameSelectArea" xml:space="preserve">
+    <value>Frame Select Area</value>
+  </data>
+  <data name="FrameSelectAreaToolTip" xml:space="preserve">
+    <value>Frame-select layout area on image</value>
+  </data>
+  <data name="FreqAtMtfQuery" xml:space="preserve">
+    <value>Freq@MTF Query</value>
+  </data>
+  <data name="Frequency" xml:space="preserve">
+    <value>Frequency:</value>
+  </data>
+  <data name="FullBackup" xml:space="preserve">
+    <value>Full Backup</value>
+  </data>
+  <data name="ImportSelected" xml:space="preserve">
+    <value>Import Selected</value>
+  </data>
+  <data name="IntermediateVariables" xml:space="preserve">
+    <value>Intermediate Variables</value>
+  </data>
+  <data name="LayoutAreaDisplay" xml:space="preserve">
+    <value>Layout Area Display</value>
+  </data>
+  <data name="LoadBackup" xml:space="preserve">
+    <value>Load Backup</value>
+  </data>
+  <data name="MarginCalc" xml:space="preserve">
+    <value>Margin Calculation</value>
+  </data>
+  <data name="MarginSettings" xml:space="preserve">
+    <value>Margin Settings</value>
+  </data>
+  <data name="MigrationBackup" xml:space="preserve">
+    <value>Migration Database Backup (flows and resources only)</value>
+  </data>
+  <data name="MtfAtFreqQuery" xml:space="preserve">
+    <value>MTF@Freq Query</value>
+  </data>
+  <data name="MysqlMovedToWindow" xml:space="preserve">
+    <value>MySQL result table cleanup moved to standalone window...</value>
+  </data>
+  <data name="NewTemplateName" xml:space="preserve">
+    <value>New Template Name</value>
+  </data>
+  <data name="PoiParamHeader" xml:space="preserve">
+    <value>   Point Description                    Coordinates</value>
+  </data>
+  <data name="PointDescCoordinates" xml:space="preserve">
+    <value>HaloOutMOVE  HaloThreadV HaloScale...</value>
+  </data>
+  <data name="ProcessOrderHint" xml:space="preserve">
+    <value>(Multiple processes can be configured per flow template...)</value>
+  </data>
+  <data name="PropertyConfig" xml:space="preserve">
+    <value>Property Configuration</value>
+  </data>
+  <data name="RefreshStats" xml:space="preserve">
+    <value>Refresh Statistics</value>
+  </data>
+  <data name="ResetToClassDefault" xml:space="preserve">
+    <value>Reset to Class Default</value>
+  </data>
+  <data name="ResetToDefault" xml:space="preserve">
+    <value>Reset to Default</value>
+  </data>
+  <data name="Restore_Mysql" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="RetainMonths" xml:space="preserve">
+    <value>Retain Months</value>
+  </data>
+  <data name="SampleGroupPlaceholder" xml:space="preserve">
+    <value>Select existing group or enter new one</value>
+  </data>
+  <data name="SampleName" xml:space="preserve">
+    <value>Sample Name</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>Save As</value>
+  </data>
+  <data name="SaveFocusPoints" xml:space="preserve">
+    <value>Save Focus Points</value>
+  </data>
+  <data name="SelectDataLine" xml:space="preserve">
+    <value>Select Data Line</value>
+  </data>
+  <data name="SelectFlowTemplateToImport" xml:space="preserve">
+    <value>Select flow template to import:</value>
+  </data>
+  <data name="SelectProcessToViewConfig" xml:space="preserve">
+    <value>Select a process item to view config</value>
+  </data>
+  <data name="ShowOnCieDiagramToolTip" xml:space="preserve">
+    <value>Show current result point on CIE chromaticity diagram</value>
+  </data>
+  <data name="Size_Column" xml:space="preserve">
+    <value>Taille</value>
+  </data>
+  <data name="TableName" xml:space="preserve">
+    <value>Table Name</value>
+  </data>
+  <data name="Tag_Column" xml:space="preserve">
+    <value>Heure de création</value>
+  </data>
+  <data name="ThresholdPercentEnable" xml:space="preserve">
+    <value>Threshold Enable Percentage</value>
+  </data>
+  <data name="UseCCT" xml:space="preserve">
+    <value>Use CCT</value>
+  </data>
+  <data name="UseDrawToAddLayoutArea" xml:space="preserve">
+    <value>Use drawing to add layout area</value>
+  </data>
+  <data name="UseLab" xml:space="preserve">
+    <value>Use Lab</value>
+  </data>
+  <data name="UseU" xml:space="preserve">
+    <value>Use u</value>
+  </data>
+  <data name="UseV" xml:space="preserve">
+    <value>Use v</value>
+  </data>
+  <data name="UseWave" xml:space="preserve">
+    <value>Use Wave</value>
+  </data>
+  <data name="UseX" xml:space="preserve">
+    <value>Use X</value>
+  </data>
+  <data name="UseXLower" xml:space="preserve">
+    <value>Use x</value>
+  </data>
+  <data name="UseXYZ" xml:space="preserve">
+    <value>Use XYZ</value>
+  </data>
+  <data name="UseY" xml:space="preserve">
+    <value>Use Y</value>
+  </data>
+  <data name="UseYLower" xml:space="preserve">
+    <value>Use y</value>
+  </data>
+  <data name="UseZ" xml:space="preserve">
+    <value>Use Z</value>
+  </data>
+  <data name="PhyCamera_MvsLog" xml:space="preserve">
+    <value>MVS Log</value>
+  </data>
+  <data name="PhyCamera_Detail_CameraModel" xml:space="preserve">
+    <value>Modèle de caméra</value>
+  </data>
+  <data name="PhyCamera_Detail_CameraMode" xml:space="preserve">
+    <value>Mode caméra</value>
+  </data>
+  <data name="PhyCamera_Detail_Channel" xml:space="preserve">
+    <value>Channel</value>
+  </data>
+  <data name="PhyCamera_Detail_ImageBpp" xml:space="preserve">
+    <value>Image Bit Depth</value>
+  </data>
+  <data name="PhyCamera_Detail_DeviceMode" xml:space="preserve">
+    <value>Device Mode</value>
+  </data>
+  <data name="PhyCamera_Detail_IssueDate" xml:space="preserve">
+    <value>Issue Date</value>
+  </data>
+  <data name="PhyCamera_Detail_ExpiryDate" xml:space="preserve">
+    <value>Expiry Date</value>
+  </data>
+  <data name="PhyCamera_Detail_Licensee" xml:space="preserve">
+    <value>Licensee</value>
+  </data>
+  <data name="LabelCameraCode" xml:space="preserve">
+    <value>Code caméra</value>
+  </data>
+  <data name="DSNU" xml:space="preserve">
+    <value>DSNU</value>
+  </data>
+  <data name="LineArity" xml:space="preserve">
+    <value>Linéarité</value>
+  </data>
+  <data name="AngleShift" xml:space="preserve">
+    <value>Décalage angulaire</value>
+  </data>
+  <data name="NDFilter" xml:space="preserve">
+    <value>Filtre ND</value>
+  </data>
+  <data name="FilterWheelHoleMapping" xml:space="preserve">
+    <value>Mappage des positions</value>
+  </data>
+  <data name="FilterWheelHoleIndex" xml:space="preserve">
+    <value>Index de position</value>
+  </data>
+  <data name="FilterWheelHoleName" xml:space="preserve">
+    <value>Nom de position</value>
+  </data>
+  <data name="FilterWheelHoleDefaultNameFormat" xml:space="preserve">
+    <value>Position {0}</value>
+  </data>
+  <data name="GetCameraLicense" xml:space="preserve">
+    <value>Obtenir la licence caméra</value>
+  </data>
+  <data name="GetSpectrumLicense" xml:space="preserve">
+    <value>Obtenir la licence spectromètre</value>
+  </data>
+  <data name="SaveToLicenseFolder" xml:space="preserve">
+    <value>Enregistrer dans le dossier de licences</value>
+  </data>
+  <data name="LicenseNotice" xml:space="preserve">
+    <value>Alerte de licence</value>
+  </data>
+  <data name="LicenseCountFormat" xml:space="preserve">
+    <value>{0} licences</value>
+  </data>
+  <data name="Id" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="MacOrSn" xml:space="preserve">
+    <value>MAC/SN</value>
+  </data>
+  <data name="HelpPipelineOutputLabel" xml:space="preserve">
+    <value>CIE XYZ / Lv</value>
+  </data>
+  <data name="HelpFormulaDarkNoiseText" xml:space="preserve">
+    <value>pixel_out = min(pixel_in × DarkNoiseRatio, MaxValue)
+
+MaxValue : 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
+  </data>
+  <data name="ObLeft" xml:space="preserve">
+    <value>Zone exclue gauche</value>
+  </data>
+  <data name="ObRight" xml:space="preserve">
+    <value>Zone exclue droite</value>
+  </data>
+  <data name="ObTop" xml:space="preserve">
+    <value>Zone exclue haute</value>
+  </data>
+  <data name="ObBottom" xml:space="preserve">
+    <value>Zone exclue basse</value>
+  </data>
+  <data name="Roi" xml:space="preserve">
+    <value>ROI</value>
+  </data>
+  <data name="RoiX" xml:space="preserve">
+    <value>ROI X</value>
+  </data>
+  <data name="RoiY" xml:space="preserve">
+    <value>ROI Y</value>
+  </data>
+  <data name="RoiWidth" xml:space="preserve">
+    <value>Largeur ROI</value>
+  </data>
+  <data name="RoiHeight" xml:space="preserve">
+    <value>Hauteur ROI</value>
+  </data>
+  <data name="EnableVidMapping" xml:space="preserve">
+    <value>Activer le mappage VID</value>
+  </data>
+  <data name="MappingFile" xml:space="preserve">
+    <value>Fichier de mappage</value>
+  </data>
+  <data name="FitOrder" xml:space="preserve">
+    <value>Ordre d'ajustement</value>
+  </data>
+  <data name="MvsLogViewerNotFound" xml:space="preserve">
+    <value>MVS LogViewer introuvable à l’emplacement attendu.</value>
+  </data>
+  <data name="MvsLogViewerStartFailed" xml:space="preserve">
+    <value>Échec du démarrage de MVS LogViewer : {0}</value>
+  </data>
+  <data name="UnexpectedErrorOccurred" xml:space="preserve">
+    <value>Une erreur inattendue s'est produite : {0}</value>
+  </data>
+  <data name="Flow_CreateTemplateBeforeSelection" xml:space="preserve">
+    <value>Veuillez créer le modèle correspondant avant de sélectionner</value>
+  </data>
+  <data name="Flow_Elapsed" xml:space="preserve">
+    <value>Temps écoulé :</value>
+  </data>
+  <data name="Flow_ElapsedTimeLabel" xml:space="preserve">
+    <value>Déjà exécuté :</value>
+  </data>
+  <data name="Flow_EndNodeNotFound" xml:space="preserve">
+    <value>Nœud de fin du processus introuvable</value>
+  </data>
+  <data name="Flow_EstimatedRemainingLabel" xml:space="preserve">
+    <value>Estimation restante :</value>
+  </data>
+  <data name="Flow_ExecutingNodeLabel" xml:space="preserve">
+    <value>Exécution du nœud :</value>
+  </data>
+  <data name="Flow_ExportFlowFilter" xml:space="preserve">
+    <value>Package de processus (*.cvflow)|*.cvflow|Fichier STN (*.stn)|*.stn</value>
+  </data>
+  <data name="Flow_FlowNotStartedMessage" xml:space="preserve">
+    <value>Le processus n'a pas démarré : la validation a peut-être échoué, le processus est déjà en cours d'exécution ou aucun modèle n'est sélectionné</value>
+  </data>
+  <data name="Flow_ImportFlowFilter" xml:space="preserve">
+    <value>Fichier de processus (*.cvflow;*.stn)|*.cvflow;*.stn|Package de processus (*.cvflow)|*.cvflow|Fichier STN (*.stn)|*.stn</value>
+  </data>
+  <data name="Flow_ImportFlowPackageError" xml:space="preserve">
+    <value>Erreur lors de l'importation du package de processus : {0}</value>
+  </data>
+  <data name="Flow_LastExecutionLabel" xml:space="preserve">
+    <value>Dernière exécution :</value>
+  </data>
+  <data name="Flow_MeasureBatch_AllArchiveCommandSent" xml:space="preserve">
+    <value>Toutes les commandes d'archivage ont été envoyées</value>
+  </data>
+  <data name="Flow_MeasureBatch_ArchiveCommandSent" xml:space="preserve">
+    <value>La commande d'archivage a été envoyée</value>
+  </data>
+  <data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve">
+    <value>Résultats du lot {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ClassificationLabel" xml:space="preserve">
+    <value>Classification :</value>
+  </data>
+  <data name="Flow_MeasureBatch_ConfigOptions" xml:space="preserve">
+    <value>Options de configuration</value>
+  </data>
+  <data name="Flow_MeasureBatch_DescriptionLabel" xml:space="preserve">
+    <value>Description :</value>
+  </data>
+  <data name="Flow_MeasureBatch_ExecutePostProcess" xml:space="preserve">
+    <value>Exécuter le post-traitement</value>
+  </data>
+  <data name="Flow_MeasureBatch_NameLabel" xml:space="preserve">
+    <value>Nom :</value>
+  </data>
+  <data name="Flow_MeasureBatch_NotSelected" xml:space="preserve">
+    <value>Non sélectionné</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessError" xml:space="preserve">
+    <value>Erreur de traitement : {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessFailed" xml:space="preserve">
+    <value>Échec du traitement : {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessInfo" xml:space="preserve">
+    <value>Informations de traitement</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessResult" xml:space="preserve">
+    <value>Résultat du traitement</value>
+  </data>
+  <data name="Flow_MeasureBatch_ProcessSuccess" xml:space="preserve">
+    <value>Traitement réussi : {0}</value>
+  </data>
+  <data name="Flow_MeasureBatch_SelectProcessType" xml:space="preserve">
+    <value>Sélectionner le type de traitement :</value>
+  </data>
+  <data name="Flow_MeasureBatch_SelectProcessTypeToViewConfig" xml:space="preserve">
+    <value>Veuillez sélectionner un type de traitement pour afficher la configuration</value>
+  </data>
+  <data name="Flow_NoAvailableTemplates" xml:space="preserve">
+    <value>(Aucun modèle disponible)</value>
+  </data>
+  <data name="Flow_NoPathFromStartToEnd" xml:space="preserve">
+    <value>Impossible de trouver un chemin valide du nœud de départ au nœud de fin</value>
+  </data>
+  <data name="Flow_NoValidFlowTemplateSelected" xml:space="preserve">
+    <value>Aucun modèle de processus valide sélectionné</value>
+  </data>
+  <data name="Flow_NodeLabel" xml:space="preserve">
+    <value>Nœud :</value>
+  </data>
+  <data name="Flow_NotStarted" xml:space="preserve">
+    <value>Non démarré</value>
+  </data>
+  <data name="Flow_ParseFlowSampleError" xml:space="preserve">
+    <value>Erreur lors de l'analyse de l'exemple de processus : {0}</value>
+  </data>
+  <data name="Flow_PreProcess_AllTemplates" xml:space="preserve">
+    <value>Tous les modèles</value>
+  </data>
+  <data name="Flow_PreProcess_AppliedTemplates" xml:space="preserve">
+    <value>Modèles appliqués</value>
+  </data>
+  <data name="Flow_PreProcess_Category" xml:space="preserve">
+    <value>Catégorie</value>
+  </data>
+  <data name="Flow_PreProcess_DisabledStatus" xml:space="preserve">
+    <value>Désactivé</value>
+  </data>
+  <data name="Flow_PreProcess_EnabledCountFormat" xml:space="preserve">
+    <value>{0} activés</value>
+  </data>
+  <data name="Flow_PreProcess_EnabledStatus" xml:space="preserve">
+    <value>Activé</value>
+  </data>
+  <data name="Flow_PreProcess_Processor" xml:space="preserve">
+    <value>Processeur</value>
+  </data>
+  <data name="Flow_PreProcess_ProcessorConfig" xml:space="preserve">
+    <value>Configuration du préprocesseur</value>
+  </data>
+  <data name="Flow_PreProcess_ProcessorCountFormat" xml:space="preserve">
+    <value>{0} processeurs</value>
+  </data>
+  <data name="Flow_PreProcess_SaveNow" xml:space="preserve">
+    <value>Enregistrer maintenant</value>
+  </data>
+  <data name="Flow_PreProcess_SelectProcessorToViewConfig" xml:space="preserve">
+    <value>Veuillez sélectionner un préprocesseur pour afficher la configuration</value>
+  </data>
+  <data name="Flow_PreprocessFailedCancelled" xml:space="preserve">
+    <value>Échec du prétraitement, exécution du processus annulée</value>
+  </data>
+  <data name="Flow_StartNodeNotFound" xml:space="preserve">
+    <value>Nœud de départ du processus introuvable</value>
+  </data>
+  <data name="Flow_StartupException" xml:space="preserve">
+    <value>Exception de démarrage</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Mettre à jour</value>
+  </data>
+  <data name="SerialPortUnknownDevice" xml:space="preserve">
+    <value>Appareil inconnu</value>
+  </data>
+  <data name="SerialPortChecking" xml:space="preserve">
+    <value>Vérification...</value>
+  </data>
+  <data name="SerialPortCheckingDetail" xml:space="preserve">
+    <value>Vérification de l'état du port...</value>
+  </data>
+  <data name="SerialPortAvailable" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="SerialPortAvailableDetail" xml:space="preserve">
+    <value>Le port est libre et prêt à être connecté</value>
+  </data>
+  <data name="SerialPortOccupiedShort" xml:space="preserve">
+    <value>Occupé</value>
+  </data>
+  <data name="SerialPortOccupiedDetail" xml:space="preserve">
+    <value>Le port est déjà utilisé par un autre programme (Unauthorized Access)</value>
+  </data>
+  <data name="SerialPortErrorShort" xml:space="preserve">
+    <value>Erreur</value>
+  </data>
+  <data name="SerialPortOpenFailedDetail" xml:space="preserve">
+    <value>Impossible d'ouvrir le port : {0}</value>
   </data>
 </root>

@@ -9,7 +9,7 @@ namespace ColorVision.UI.Authorizations
         public static Authorization Instance { get; set; } 
 
         public PermissionMode PermissionMode { get => _PermissionMode; set { _PermissionMode = value; OnPermissionModeChanged();  } }
-        private PermissionMode _PermissionMode = PermissionMode.Guest;
+        private PermissionMode _PermissionMode = PermissionMode.Administrator;
 
         public event EventHandler PermissionModeChanged;
 

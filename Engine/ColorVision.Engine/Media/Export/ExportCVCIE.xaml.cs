@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Media
         {
             if (!CVFileUtil.IsCIEFile(VExportCIE.FilePath))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "导出仅支持CIE文件", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExportSupportsCieFilesOnly, "ColorVision");
                 return;
             }
             DataContext = VExportCIE;
@@ -50,12 +50,12 @@ namespace ColorVision.Engine.Media
         {
             System.Windows.Forms.FolderBrowserDialog dialog = new();
             dialog.UseDescriptionForTitle = true;
-            dialog.Description = "为新项目选择位置";
+            dialog.Description = ColorVision.Engine.Properties.Resources.Engine_Dlg_SelectProjectLocation;
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 if (string.IsNullOrEmpty(dialog.SelectedPath))
                 {
-                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    MessageBox.Show(ColorVision.Engine.Properties.Resources.FolderPathCannotBeEmpty, ColorVision.Engine.Properties.Resources.Engine_Msg_Prompt);
                     return;
                 }
                 VExportCIE.SavePath = dialog.SelectedPath;

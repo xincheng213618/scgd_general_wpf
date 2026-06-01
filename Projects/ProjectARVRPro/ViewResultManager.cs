@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
+using ProjectARVRPro.Exports;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -63,6 +64,40 @@ namespace ProjectARVRPro
         [Description("启用后，CSV和Socket输出将使用旧版ProjectARVR扁平格式，保持对方系统兼容")]
         public bool UseLegacyARVROutput { get => _UseLegacyARVROutput; set { _UseLegacyARVROutput = value; OnPropertyChanged(); } }
         private bool _UseLegacyARVROutput;
+
+        [DisplayName("保存客制化XLSX"), Category("客制化输出")]
+        [Description("启用后，测试完成时会在标准CSV之外追加输出指定客户格式的XLSX")]
+        public bool IsSaveCustomXlsx { get => _IsSaveCustomXlsx; set { _IsSaveCustomXlsx = value; OnPropertyChanged(); } }
+        private bool _IsSaveCustomXlsx;
+
+        [DisplayName("客制化输出类型"), Category("客制化输出")]
+        [Description("选择需要追加输出的客户表格格式")]
+        public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); } }
+        private CustomTestResultOutputProfile _CustomOutputProfile = CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
+
+        [DisplayName("客制化项目名称"), Category("客制化输出")]
+        [Description("用于生成每天汇总XLSX文件名，例如 2026-5-21TestResults+ProjectARVRPro.xlsx")]
+        public string CustomXlsxProjectName { get => _CustomXlsxProjectName; set { _CustomXlsxProjectName = value; OnPropertyChanged(); } }
+        private string _CustomXlsxProjectName = "ProjectARVRPro";
+
+        [DisplayName("客制化XLSX保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("客制化输出")]
+        [Description("客制化XLSX的输出文件夹。留空时默认使用CSV保存路径")]
+        public string CustomXlsxSavePath { get => _CustomXlsxSavePath; set { _CustomXlsxSavePath = value; OnPropertyChanged(); } }
+        private string _CustomXlsxSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
+
+        [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
+        public string CustomXlsxTemplateDirectory
+        {
+            get => CustomXlsxSavePath;
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    CustomXlsxSavePath = value;
+            }
+        }
+
+        public bool ShouldSerializeCustomXlsxTemplateDirectory() => false;
+
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable
@@ -129,6 +164,8 @@ namespace ProjectARVRPro
                 Directory.CreateDirectory(Config.TextSavePath);
             if (!Directory.Exists(Config.CsvSavePath))
                 Directory.CreateDirectory(Config.CsvSavePath);
+            if (!string.IsNullOrWhiteSpace(Config.CustomXlsxSavePath) && !Directory.Exists(Config.CustomXlsxSavePath))
+                Directory.CreateDirectory(Config.CustomXlsxSavePath);
         }
         public void SlectSqlLiteDb()
         {

@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -18,7 +19,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             string status = value as string;
             if (string.IsNullOrEmpty(status))
-                return "未知";
+                return ColorVision.Engine.Properties.Resources.DeviceStatusUnknown;
 
             switch (status.ToLowerInvariant())
             {
@@ -26,9 +27,45 @@ namespace ColorVision.Engine.Services.PhyCameras
                     return ColorVision.Engine.Properties.Resources.Online;
                 case "offline":
                     return ColorVision.Engine.Properties.Resources.offline;
+                case "unknown":
+                    return ColorVision.Engine.Properties.Resources.DeviceStatusUnknown;
                 default:
                     return status;
             }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class StatusToBrushConverter : IValueConverter
+    {
+        private static readonly SolidColorBrush OnlineBrush = CreateBrush("#FF2EAD4F");
+        private static readonly SolidColorBrush OfflineBrush = CreateBrush("#FFE53935");
+        private static readonly SolidColorBrush UnknownBrush = CreateBrush("#FF8A8F98");
+
+        private static SolidColorBrush CreateBrush(string color)
+        {
+            var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
+            brush.Freeze();
+            return brush;
+        }
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string status = value as string;
+            if (string.IsNullOrWhiteSpace(status))
+                return UnknownBrush;
+
+            return status.ToLowerInvariant() switch
+            {
+                "online" => OnlineBrush,
+                "offline" => OfflineBrush,
+                "unknown" => UnknownBrush,
+                _ => UnknownBrush,
+            };
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

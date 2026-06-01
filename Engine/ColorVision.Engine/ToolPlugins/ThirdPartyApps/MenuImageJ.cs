@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.ToolPlugins.ThirdPartyApps;
 using ColorVision.ImageEditor;
 using ColorVision.FileIO;
@@ -65,7 +66,7 @@ namespace WindowsServicePlugin.Tools
 
             if (File.Exists(EditorContext.Config.FilePath))
             {
-                MenuItemMetadata menuItemMetadata = new MenuItemMetadata() { GuidId = "ImageJ", Order = 500, Header = "通过ImageJ打开", Command = relayCommand };
+                MenuItemMetadata menuItemMetadata = new MenuItemMetadata() { GuidId = "ImageJ", Order = 500, Header = ColorVision.Engine.Properties.Resources.OpenWithImageJ, Command = relayCommand };
                 values.Add(menuItemMetadata);
             }
             return values;

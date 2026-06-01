@@ -2,6 +2,7 @@ using ColorVision.Themes;
 using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI.Desktop.Properties;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
 {
@@ -19,7 +20,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
             if (_editing != null)
             {
-                Title = "编辑自定义应用";
+                Title = Properties.Resources.CustomApp_EditTitle;
                 TxtName.Text = _editing.Name;
                 TxtCommand.Text = _editing.Command;
                 TxtArguments.Text = _editing.Arguments;
@@ -47,19 +48,19 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             switch (tag)
             {
                 case "Executable":
-                    LblCommand.Text = "路径";
+                    LblCommand.Text = Properties.Resources.CustomApp_Path;
                     BtnBrowse.Visibility = Visibility.Visible;
-                    LblHint.Text = "提示：填写 exe 文件的完整路径。分组为空时使用默认分组。";
+                    LblHint.Text = Properties.Resources.CustomApp_HintPath;
                     break;
                 case "CmdScript":
-                    LblCommand.Text = "命令";
+                    LblCommand.Text = Properties.Resources.CustomApp_Command;
                     BtnBrowse.Visibility = Visibility.Collapsed;
-                    LblHint.Text = "提示：直接填写 CMD 命令（如 ipconfig /all）。会通过 cmd /c 执行。";
+                    LblHint.Text = Properties.Resources.CustomApp_HintCmd;
                     break;
                 case "PowerShellScript":
-                    LblCommand.Text = "命令";
+                    LblCommand.Text = Properties.Resources.CustomApp_Command;
                     BtnBrowse.Visibility = Visibility.Collapsed;
-                    LblHint.Text = "提示：填写 PowerShell 命令或 .ps1 脚本路径。会以 -NoProfile -ExecutionPolicy Bypass 执行。";
+                    LblHint.Text = Properties.Resources.CustomApp_HintPs;
                     break;
             }
         }
@@ -68,8 +69,8 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             var dlg = new OpenFileDialog
             {
-                Filter = "可执行文件 (*.exe)|*.exe|批处理文件 (*.bat;*.cmd)|*.bat;*.cmd|所有文件 (*.*)|*.*",
-                Title = "选择应用程序"
+                Filter = Properties.Resources.CustomApp_ExeFilter,
+                Title = Properties.Resources.CustomApp_SelectApp
             };
             if (dlg.ShowDialog() == true)
             {
@@ -85,9 +86,9 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             var dlg = new OpenFileDialog
             {
-                Title = "选择工作目录（选择该目录下任意文件）",
+                Title = Properties.Resources.CustomApp_SelectWorkDir,
                 CheckFileExists = false,
-                FileName = "选择此文件夹"
+                FileName = Properties.Resources.CustomApp_SelectFolder
             };
             if (dlg.ShowDialog() == true)
             {
@@ -99,13 +100,13 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             if (string.IsNullOrWhiteSpace(TxtName.Text))
             {
-                MessageBox.Show("请填写应用名称", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.CustomApp_NameRequired, Properties.Resources.ConfigManager_Prompt, MessageBoxButton.OK, MessageBoxImage.Warning);
                 TxtName.Focus();
                 return;
             }
             if (string.IsNullOrWhiteSpace(TxtCommand.Text))
             {
-                MessageBox.Show("请填写路径或命令", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.CustomApp_PathRequired, Properties.Resources.ConfigManager_Prompt, MessageBoxButton.OK, MessageBoxImage.Warning);
                 TxtCommand.Focus();
                 return;
             }

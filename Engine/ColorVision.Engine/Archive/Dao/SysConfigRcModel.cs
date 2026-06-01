@@ -83,7 +83,7 @@ namespace ColorVision.Engine.Archive.Dao
             SysConfigRcModel sysConfigRcModel = SysConfigRcDao.Instance.GetByCode(RCSetting.Instance.Config.RCName);
             if (sysConfigRcModel == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到{RCSetting.Instance.Config.RCName}配置信息", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_RCConfigInfoNotFound, RCSetting.Instance.Config.RCName), "ColorVision");
                 return;
             }
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sysConfigRcModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };

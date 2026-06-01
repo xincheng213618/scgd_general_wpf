@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1865
+using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

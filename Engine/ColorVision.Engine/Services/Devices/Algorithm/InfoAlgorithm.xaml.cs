@@ -31,12 +31,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (sender is Button button)
             {
-                if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.FileDeletionPermanent, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     var MsgRecord = DService.CacheClear();
                     MsgRecord.MsgSucessed += (s,e) =>
                     {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.FileServiceCleanupComplete, "ColorVison");
                     };
                     ServicesHelper.SendCommand(button, MsgRecord);
                 }

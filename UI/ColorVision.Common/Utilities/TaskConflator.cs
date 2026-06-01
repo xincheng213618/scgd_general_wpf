@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8625,CA1852,CA1001
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;

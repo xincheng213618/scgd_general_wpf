@@ -1,3 +1,4 @@
+#pragma warning disable CA1510
 using ColorVision.Database.SqliteLog;
 using System;
 using System.Collections.Generic;

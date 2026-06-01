@@ -3,21 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.UI.Desktop.Settings"
-        xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
-        xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:properties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
         mc:Ignorable="d"     
-        Height="500" Title="{x:Static properties:Resources.Options}" WindowStartupLocation="CenterScreen"  Background="{DynamicResource GlobalBackground}" Width="650" Initialized="Window_Initialized">
+        Height="640" Width="1040" MinHeight="560" MinWidth="920"
+        Title="{x:Static properties:Resources.Options}"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource GlobalBackground}"
+        Initialized="Window_Initialized">
     <Window.Resources>
-        <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Margin" Value="10,10,15,5"/>
-            <Setter Property="CornerRadius" Value="8"/>
-        </Style>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -26,40 +19,168 @@
         <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBox.Small}">
             <Setter Property="Width" Value="150"/>
         </Style>
-        <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Opacity" Value="0.8" />
-                    <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                </Trigger>
-            </Style.Triggers>
+
+        <Style x:Key="SettingsSearchTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="140"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+
+        <Style x:Key="SettingsNavigationListBoxStyle" TargetType="{x:Type ListBox}">
             <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        </Style>
+
+        <Style x:Key="SettingsNavigationItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource BorderBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
-    <Grid Margin="0,5,0,0">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <TabControl x:Name="TabControlSetting" TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
-            <TabControl.Resources>
-                <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                    <Style.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Opacity" Value="0.8" />
-                            <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                        </Trigger>
-                    </Style.Triggers>
-                    <Setter Property="Background" Value="Transparent"/>
-                </Style>
-            </TabControl.Resources>
-            <TabItem  x:Name="UniversalTabItem" Background="Transparent" MinWidth="125" Header="{x:Static properties:Resources.GeneralSettings}" >
-                <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <StackPanel x:Name="UniversalStackPanel" Margin="10">
 
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-        </TabControl>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="248" MinWidth="224"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Background="{DynamicResource GlobalBorderBrush1}"
+                BorderBrush="{DynamicResource GlobalBorderBrush}"
+                BorderThickness="0,0,1,0">
+            <Grid Margin="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="{x:Static properties:Resources.Options}"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource GlobalTextBrush}"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <Grid Grid.Row="1" Margin="0,14,0,12">
+                    <TextBox x:Name="SearchTextBox"
+                             Style="{StaticResource SettingsSearchTextBoxStyle}"
+                             TextChanged="SearchTextBox_TextChanged"
+                             ToolTip="{x:Static properties:Resources.SearchSettingsTitle}"/>
+                    <TextBlock Margin="11,0,8,0"
+                               VerticalAlignment="Center"
+                               IsHitTestVisible="False"
+                               FontSize="12"
+                               Opacity="0.58"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               Text="{x:Static properties:Resources.Search}">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=SearchTextBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+
+                <ListBox x:Name="NavigationListBox"
+                         Grid.Row="2"
+                         Style="{StaticResource SettingsNavigationListBoxStyle}"
+                         ItemContainerStyle="{StaticResource SettingsNavigationItemStyle}"
+                         SelectionChanged="NavigationListBox_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel LastChildFill="True">
+                                <Border DockPanel.Dock="Right"
+                                        MinWidth="24"
+                                        Height="20"
+                                        Margin="8,0,0,0"
+                                        CornerRadius="10"
+                                        Background="{DynamicResource GlobalBackground}">
+                                    <TextBlock Text="{Binding Count}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                                </Border>
+                                <TextBlock Text="{Binding DisplayName}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" Background="{DynamicResource GlobalBackground}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border BorderBrush="{DynamicResource GlobalBorderBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="28,18,28,14">
+                <StackPanel>
+                    <TextBlock x:Name="CurrentGroupTitle"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="CurrentGroupDescription"
+                               Margin="0,4,0,0"
+                               FontSize="12"
+                               Opacity="0.72"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="1"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <Grid HorizontalAlignment="Stretch"
+                      Margin="28,16,28,28">
+                    <StackPanel x:Name="SettingsContentPanel"/>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Window>

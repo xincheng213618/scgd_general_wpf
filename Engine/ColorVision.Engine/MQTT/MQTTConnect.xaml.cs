@@ -117,7 +117,7 @@ namespace ColorVision.Engine.MQTT
                 bool IsConnect = await MQTTControl.GetInstance().TestConnect(MQTTConfig);
                 await Dispatcher.BeginInvoke(() =>
                 {
-                    MessageBox1.Show(Application.Current.GetActiveWindow(),$"连接{(IsConnect ? "成功" : "失败")}", "ColorVision");
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), IsConnect ? ColorVision.Engine.Properties.Resources.Engine_Msg_ConnectSuccess : ColorVision.Engine.Properties.Resources.Engine_Msg_ConnectFailed, "ColorVision");
                 });
             });
 

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +18,7 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
 
-            return CopilotRecentLogSupport.HasAvailableLogFile();
+            return CopilotRecentLogCapability.HasAvailableLogFile();
         }
 
         public Task<CopilotToolResult> ExecuteAsync(
@@ -31,30 +29,8 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var query = (toolInput?.Query ?? string.Empty).Trim();
-
-            var snapshot = CopilotRecentLogSupport.Capture(query, CopilotRecentLogMode.RecentLines, MaxLogLines, MaxLogChars);
-            if (!snapshot.Success)
-            {
-                return Task.FromResult(new CopilotToolResult
-                {
-                    ToolName = Name,
-                    Success = false,
-                    Summary = snapshot.Summary,
-                    ErrorMessage = snapshot.ErrorMessage,
-                });
-            }
-
-            return Task.FromResult(new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = true,
-                Summary = snapshot.Summary,
-                Content = string.Join(Environment.NewLine, new[]
-                {
-                    $"[日志文件] {snapshot.FilePath}",
-                    snapshot.Content,
-                }),
-            });
+            var result = CopilotRecentLogCapability.Capture(query, CopilotRecentLogMode.RecentLines, MaxLogLines, MaxLogChars);
+            return Task.FromResult(result.ToToolResult(Name));
         }
     }
 }

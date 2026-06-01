@@ -169,6 +169,735 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 + 添加 的本地化字符串。
+        /// </summary>
+        public static string DB_Add {
+            get {
+                return ResourceManager.GetString("DB_Add", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全部添加 的本地化字符串。
+        /// </summary>
+        public static string DB_AddAll {
+            get {
+                return ResourceManager.GetString("DB_AddAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 一次添加所有可用字段 的本地化字符串。
+        /// </summary>
+        public static string DB_AddAllTooltip {
+            get {
+                return ResourceManager.GetString("DB_AddAllTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加选中字段到查询条件 的本地化字符串。
+        /// </summary>
+        public static string DB_AddTooltip {
+            get {
+                return ResourceManager.GetString("DB_AddTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 高级查询 的本地化字符串。
+        /// </summary>
+        public static string DB_AdvancedQuery {
+            get {
+                return ResourceManager.GetString("DB_AdvancedQuery", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 归档保留数量 的本地化字符串。
+        /// </summary>
+        public static string DB_ArchiveCount {
+            get {
+                return ResourceManager.GetString("DB_ArchiveCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 超过该数量后将自动删除最旧的归档。 的本地化字符串。
+        /// </summary>
+        public static string DB_ArchiveCountDesc {
+            get {
+                return ResourceManager.GetString("DB_ArchiveCountDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 账号或密码错误，请检查！ 的本地化字符串。
+        /// </summary>
+        public static string DB_AuthError {
+            get {
+                return ResourceManager.GetString("DB_AuthError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库浏览器 的本地化字符串。
+        /// </summary>
+        public static string DB_Browser_Title {
+            get {
+                return ResourceManager.GetString("DB_Browser_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清空 的本地化字符串。
+        /// </summary>
+        public static string DB_Clear {
+            get {
+                return ResourceManager.GetString("DB_Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清空表 的本地化字符串。
+        /// </summary>
+        public static string DB_ClearTable {
+            get {
+                return ResourceManager.GetString("DB_ClearTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认删除 的本地化字符串。
+        /// </summary>
+        public static string DB_ConfirmDelete {
+            get {
+                return ResourceManager.GetString("DB_ConfirmDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定删除表 {0} 中的选中行吗？ 的本地化字符串。
+        /// </summary>
+        public static string DB_ConfirmDeleteRows {
+            get {
+                return ResourceManager.GetString("DB_ConfirmDeleteRows", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 无法连接到MySQL服务器，请检查端口和网络！ 的本地化字符串。
+        /// </summary>
+        public static string DB_ConnectFailed {
+            get {
+                return ResourceManager.GetString("DB_ConnectFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接成功 的本地化字符串。
+        /// </summary>
+        public static string DB_ConnectSuccess {
+            get {
+                return ResourceManager.GetString("DB_ConnectSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据源 的本地化字符串。
+        /// </summary>
+        public static string DB_DataSource {
+            get {
+                return ResourceManager.GetString("DB_DataSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库标识符不能为空。 的本地化字符串。
+        /// </summary>
+        public static string DB_DbIdEmpty {
+            get {
+                return ResourceManager.GetString("DB_DbIdEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库名不能为空 的本地化字符串。
+        /// </summary>
+        public static string DB_DbNameEmpty {
+            get {
+                return ResourceManager.GetString("DB_DbNameEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库不存在。 的本地化字符串。
+        /// </summary>
+        public static string DB_DbNotExist {
+            get {
+                return ResourceManager.GetString("DB_DbNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除 的本地化字符串。
+        /// </summary>
+        public static string DB_Delete {
+            get {
+                return ResourceManager.GetString("DB_Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string DB_DeleteFailed {
+            get {
+                return ResourceManager.GetString("DB_DeleteFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除成功 的本地化字符串。
+        /// </summary>
+        public static string DB_DeleteSuccess {
+            get {
+                return ResourceManager.GetString("DB_DeleteSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除中... 的本地化字符串。
+        /// </summary>
+        public static string DB_Deleting {
+            get {
+                return ResourceManager.GetString("DB_Deleting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑行 的本地化字符串。
+        /// </summary>
+        public static string DB_EditRow {
+            get {
+                return ResourceManager.GetString("DB_EditRow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用压缩归档 的本地化字符串。
+        /// </summary>
+        public static string DB_EnableCompress {
+            get {
+                return ResourceManager.GetString("DB_EnableCompress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 如果启用，日志超过大小限制后将被压缩保存。 的本地化字符串。
+        /// </summary>
+        public static string DB_EnableCompressDesc {
+            get {
+                return ResourceManager.GetString("DB_EnableCompressDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用日志记录 的本地化字符串。
+        /// </summary>
+        public static string DB_EnableLogging {
+            get {
+                return ResourceManager.GetString("DB_EnableLogging", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 错误 的本地化字符串。
+        /// </summary>
+        public static string DB_Error {
+            get {
+                return ResourceManager.GetString("DB_Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 从左侧展开数据源、库和表。 的本地化字符串。
+        /// </summary>
+        public static string DB_ExpandHint {
+            get {
+                return ResourceManager.GetString("DB_ExpandHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 单文件大小限制 (MB) 的本地化字符串。
+        /// </summary>
+        public static string DB_FileSizeLimit {
+            get {
+                return ResourceManager.GetString("DB_FileSizeLimit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 初始化Mysql表失败，请查看日志。 的本地化字符串。
+        /// </summary>
+        public static string DB_InitFailed {
+            get {
+                return ResourceManager.GetString("DB_InitFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mysql表初始化完成。 的本地化字符串。
+        /// </summary>
+        public static string DB_InitSuccess {
+            get {
+                return ResourceManager.GetString("DB_InitSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新增失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string DB_InsertFailed {
+            get {
+                return ResourceManager.GetString("DB_InsertFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 插入中... 的本地化字符串。
+        /// </summary>
+        public static string DB_Inserting {
+            get {
+                return ResourceManager.GetString("DB_Inserting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新增成功 的本地化字符串。
+        /// </summary>
+        public static string DB_InsertSuccess {
+            get {
+                return ResourceManager.GetString("DB_InsertSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载失败 的本地化字符串。
+        /// </summary>
+        public static string DB_LoadFailed {
+            get {
+                return ResourceManager.GetString("DB_LoadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载中... 的本地化字符串。
+        /// </summary>
+        public static string DB_Loading {
+            get {
+                return ResourceManager.GetString("DB_Loading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Mysql配置 的本地化字符串。
+        /// </summary>
+        public static string DB_MysqlConfig {
+            get {
+                return ResourceManager.GetString("DB_MysqlConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户可以在这里配置数据库的连接 的本地化字符串。
+        /// </summary>
+        public static string DB_MysqlConfigDesc {
+            get {
+                return ResourceManager.GetString("DB_MysqlConfigDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新增 的本地化字符串。
+        /// </summary>
+        public static string DB_New {
+            get {
+                return ResourceManager.GetString("DB_New", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 暂无数据 的本地化字符串。
+        /// </summary>
+        public static string DB_NoData {
+            get {
+                return ResourceManager.GetString("DB_NoData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 没有可浏览的库 的本地化字符串。
+        /// </summary>
+        public static string DB_NoDatabase {
+            get {
+                return ResourceManager.GetString("DB_NoDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 没有注册数据库浏览器数据源 的本地化字符串。
+        /// </summary>
+        public static string DB_NoDataSource {
+            get {
+                return ResourceManager.GetString("DB_NoDataSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前表没有可插入的列。 的本地化字符串。
+        /// </summary>
+        public static string DB_NoInsertableColumn {
+            get {
+                return ResourceManager.GetString("DB_NoInsertableColumn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 没有数据表 的本地化字符串。
+        /// </summary>
+        public static string DB_NoTable {
+            get {
+                return ResourceManager.GetString("DB_NoTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 第 的本地化字符串。
+        /// </summary>
+        public static string DB_Page {
+            get {
+                return ResourceManager.GetString("DB_Page", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 10 条/页 的本地化字符串。
+        /// </summary>
+        public static string DB_PageSize10 {
+            get {
+                return ResourceManager.GetString("DB_PageSize10", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 100 条/页 的本地化字符串。
+        /// </summary>
+        public static string DB_PageSize100 {
+            get {
+                return ResourceManager.GetString("DB_PageSize100", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 20 条/页 的本地化字符串。
+        /// </summary>
+        public static string DB_PageSize20 {
+            get {
+                return ResourceManager.GetString("DB_PageSize20", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 50 条/页 的本地化字符串。
+        /// </summary>
+        public static string DB_PageSize50 {
+            get {
+                return ResourceManager.GetString("DB_PageSize50", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 页 的本地化字符串。
+        /// </summary>
+        public static string DB_PageSuffix {
+            get {
+                return ResourceManager.GetString("DB_PageSuffix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主键 的本地化字符串。
+        /// </summary>
+        public static string DB_PrimaryKey {
+            get {
+                return ResourceManager.GetString("DB_PrimaryKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 ProviderId 不能为空。 的本地化字符串。
+        /// </summary>
+        public static string DB_ProviderIdEmpty {
+            get {
+                return ResourceManager.GetString("DB_ProviderIdEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询 的本地化字符串。
+        /// </summary>
+        public static string DB_Query {
+            get {
+                return ResourceManager.GetString("DB_Query", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询完成: {0} 的本地化字符串。
+        /// </summary>
+        public static string DB_QueryComplete {
+            get {
+                return ResourceManager.GetString("DB_QueryComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询数量 的本地化字符串。
+        /// </summary>
+        public static string DB_QueryCount {
+            get {
+                return ResourceManager.GetString("DB_QueryCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string DB_QueryFailed {
+            get {
+                return ResourceManager.GetString("DB_QueryFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询中... 的本地化字符串。
+        /// </summary>
+        public static string DB_Querying {
+            get {
+                return ResourceManager.GetString("DB_Querying", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 就绪 的本地化字符串。
+        /// </summary>
+        public static string DB_Ready {
+            get {
+                return ResourceManager.GetString("DB_Ready", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 条记录 的本地化字符串。
+        /// </summary>
+        public static string DB_RecordCount {
+            get {
+                return ResourceManager.GetString("DB_RecordCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string DB_Refresh {
+            get {
+                return ResourceManager.GetString("DB_Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 移除此条件 的本地化字符串。
+        /// </summary>
+        public static string DB_RemoveCondition {
+            get {
+                return ResourceManager.GetString("DB_RemoveCondition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重置 的本地化字符串。
+        /// </summary>
+        public static string DB_Reset {
+            get {
+                return ResourceManager.GetString("DB_Reset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已重置所有查询条件 的本地化字符串。
+        /// </summary>
+        public static string DB_ResetDone {
+            get {
+                return ResourceManager.GetString("DB_ResetDone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清除所有查询条件 的本地化字符串。
+        /// </summary>
+        public static string DB_ResetTooltip {
+            get {
+                return ResourceManager.GetString("DB_ResetTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存 的本地化字符串。
+        /// </summary>
+        public static string DB_Save {
+            get {
+                return ResourceManager.GetString("DB_Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存完成: {0} 的本地化字符串。
+        /// </summary>
+        public static string DB_SaveComplete {
+            get {
+                return ResourceManager.GetString("DB_SaveComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string DB_SaveFailed {
+            get {
+                return ResourceManager.GetString("DB_SaveFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存中... 的本地化字符串。
+        /// </summary>
+        public static string DB_Saving {
+            get {
+                return ResourceManager.GetString("DB_Saving", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索 的本地化字符串。
+        /// </summary>
+        public static string DB_Search {
+            get {
+                return ResourceManager.GetString("DB_Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请先选择一行 的本地化字符串。
+        /// </summary>
+        public static string DB_SelectRowFirst {
+            get {
+                return ResourceManager.GetString("DB_SelectRowFirst", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请选择一个表 的本地化字符串。
+        /// </summary>
+        public static string DB_SelectTable {
+            get {
+                return ResourceManager.GetString("DB_SelectTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按类型排序 的本地化字符串。
+        /// </summary>
+        public static string DB_SortByType {
+            get {
+                return ResourceManager.GetString("DB_SortByType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 指定的数据库不存在！ 的本地化字符串。
+        /// </summary>
+        public static string DB_SpecifiedDbNotExist {
+            get {
+                return ResourceManager.GetString("DB_SpecifiedDbNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 SQLite 日志 的本地化字符串。
+        /// </summary>
+        public static string DB_SqliteLogTable {
+            get {
+                return ResourceManager.GetString("DB_SqliteLogTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 SQL 预览 的本地化字符串。
+        /// </summary>
+        public static string DB_SqlPreview {
+            get {
+                return ResourceManager.GetString("DB_SqlPreview", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 成功 的本地化字符串。
+        /// </summary>
+        public static string DB_Success {
+            get {
+                return ResourceManager.GetString("DB_Success", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 截断表 的本地化字符串。
+        /// </summary>
+        public static string DB_TruncateTable {
+            get {
+                return ResourceManager.GetString("DB_TruncateTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 撤销 的本地化字符串。
+        /// </summary>
+        public static string DB_Undo {
+            get {
+                return ResourceManager.GetString("DB_Undo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已撤销未保存更改 的本地化字符串。
+        /// </summary>
+        public static string DB_Undone {
+            get {
+                return ResourceManager.GetString("DB_Undone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库连接发生未知错误！ 的本地化字符串。
+        /// </summary>
+        public static string DB_UnknownError {
+            get {
+                return ResourceManager.GetString("DB_UnknownError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
         public static string Delete {
@@ -273,6 +1002,33 @@ namespace ColorVision.Database.Properties {
         public static string Logger {
             get {
                 return ResourceManager.GetString("Logger", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据库浏览器 的本地化字符串。
+        /// </summary>
+        public static string MenuEntityBrowser {
+            get {
+                return ResourceManager.GetString("MenuEntityBrowser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 MySQL 的本地化字符串。
+        /// </summary>
+        public static string MenuMySql {
+            get {
+                return ResourceManager.GetString("MenuMySql", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 初始化 MySQL 表(调试) 的本地化字符串。
+        /// </summary>
+        public static string MenuMySqlInitTables {
+            get {
+                return ResourceManager.GetString("MenuMySqlInitTables", resourceCulture);
             }
         }
         

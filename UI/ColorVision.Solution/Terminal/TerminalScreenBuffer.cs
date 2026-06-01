@@ -29,7 +29,7 @@ namespace ColorVision.Solution.Terminal
 
         public TerminalLine(TerminalCell[] cells)
         {
-            Cells = cells;
+            Cells = (TerminalCell[])cells.Clone();
             Length = cells.Length;
             while (Length > 0 && Cells[Length - 1].Char == ' ' && Cells[Length - 1].Fg == 0 && Cells[Length - 1].Bg == 0 && Cells[Length - 1].Flags == 0)
                 Length--;
@@ -54,8 +54,8 @@ namespace ColorVision.Solution.Terminal
     /// </summary>
     internal class TerminalScreenBuffer
     {
-        private readonly int _cols;
-        private readonly int _rows;
+        private int _cols;
+        private int _rows;
         private TerminalCell[][] _screen;
         private int _curRow, _curCol;
 
@@ -74,14 +74,20 @@ namespace ColorVision.Solution.Terminal
 
         public TerminalScreenBuffer(int cols = 120, int rows = 30)
         {
-            _cols = cols;
-            _rows = rows;
-            _screen = new TerminalCell[rows][];
+            _cols = Math.Max(1, cols);
+            _rows = Math.Max(1, rows);
+            _screen = CreateScreen(_rows, _cols);
+        }
+
+        private TerminalCell[][] CreateScreen(int rows, int cols)
+        {
+            var screen = new TerminalCell[rows][];
             for (int r = 0; r < rows; r++)
             {
-                _screen[r] = new TerminalCell[cols];
-                FillRow(_screen[r]);
+                screen[r] = new TerminalCell[cols];
+                FillRow(screen[r]);
             }
+            return screen;
         }
 
         private void FillRow(TerminalCell[] row)
@@ -156,10 +162,7 @@ namespace ColorVision.Solution.Terminal
             }
             else
             {
-                // Scroll up: push first line to scrollback
-                _scrollbackLines.Enqueue(new TerminalLine(_screen[0]));
-                if (_scrollbackLines.Count > MaxScrollbackLines)
-                    _scrollbackLines.Dequeue();
+                EnqueueScrollback(_screen[0]);
 
                 // Shift rows up
                 for (int r = 1; r < _rows; r++)
@@ -167,6 +170,61 @@ namespace ColorVision.Solution.Terminal
                 _screen[_rows - 1] = new TerminalCell[_cols];
                 FillRow(_screen[_rows - 1]);
             }
+        }
+
+        private void EnqueueScrollback(TerminalCell[] row)
+        {
+            _scrollbackLines.Enqueue(new TerminalLine(row));
+            if (_scrollbackLines.Count > MaxScrollbackLines)
+                _scrollbackLines.Dequeue();
+        }
+
+        public void Resize(int cols, int rows)
+        {
+            cols = Math.Max(1, cols);
+            rows = Math.Max(1, rows);
+
+            if (cols == _cols && rows == _rows)
+                return;
+
+            var oldScreen = _screen;
+            int oldRows = _rows;
+            int oldCols = _cols;
+            int droppedRows = Math.Max(0, oldRows - rows);
+
+            for (int r = 0; r < droppedRows; r++)
+            {
+                if (!IsBlankRow(oldScreen[r]))
+                    EnqueueScrollback(oldScreen[r]);
+            }
+
+            var resizedScreen = CreateScreen(rows, cols);
+            int rowsToCopy = Math.Min(oldRows - droppedRows, rows);
+            for (int r = 0; r < rowsToCopy; r++)
+                CopyRow(oldScreen[droppedRows + r], resizedScreen[r], Math.Min(oldCols, cols));
+
+            _cols = cols;
+            _rows = rows;
+            _screen = resizedScreen;
+            _curRow = Math.Clamp(_curRow - droppedRows, 0, _rows - 1);
+            _curCol = Math.Clamp(_curCol, 0, _cols);
+        }
+
+        private static void CopyRow(TerminalCell[] source, TerminalCell[] destination, int count)
+        {
+            for (int i = 0; i < count; i++)
+                destination[i] = source[i];
+        }
+
+        private static bool IsBlankRow(TerminalCell[] row)
+        {
+            for (int i = 0; i < row.Length; i++)
+            {
+                if (row[i].Char != ' ' || row[i].Fg != 0 || row[i].Bg != 0 || row[i].Flags != 0)
+                    return false;
+            }
+
+            return true;
         }
 
         #region Escape Sequence Handling

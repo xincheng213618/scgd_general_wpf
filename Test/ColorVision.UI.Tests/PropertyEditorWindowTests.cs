@@ -7,6 +7,8 @@ namespace ColorVision.UI.Tests;
 /// </summary>
 public class PropertyEditorWindowTests
 {
+    private const string RequiresStaWpfTestRunner = "Requires an STA WPF test runner.";
+
     // Test enum for visibility testing
     public enum TestMode
     {
@@ -95,7 +97,7 @@ public class PropertyEditorWindowTests
 
 
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void PropertyEditorWindow_CategoryGroups_IsInitializedEmpty()
     {
         // Arrange
@@ -155,7 +157,7 @@ public class PropertyEditorWindowTests
         Assert.Equal(TestMode.ModeB, attr.ExpectedValue);
     }
 
-    [Fact]
+    [Fact(Skip = RequiresStaWpfTestRunner)]
     public void PropertyEditorWindow_WithEnumVisibilityConfig_DoesNotThrow()
     {
         // Arrange

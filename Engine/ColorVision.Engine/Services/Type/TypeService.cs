@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Services.Types
         {
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
-                if (MessageBox.Show("如果非必要情况，请勿创建新的服务", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Properties.Resources.AvoidCreationUnlessNecessary, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     CreateType createType = new CreateType(this);
                     createType.Owner = Application.Current.GetActiveWindow();
@@ -88,7 +88,7 @@ namespace ColorVision.Engine.Services.Types
 
         public override void Delete()
         {
-            if (MessageBox.Show("如果非必要情况，请勿删除服务","ColorVision",MessageBoxButton.YesNo)==MessageBoxResult.Yes)
+            if (MessageBox.Show(Properties.Resources.AvoidDeletionOfServiceUnlessNecessary,"ColorVision",MessageBoxButton.YesNo)==MessageBoxResult.Yes)
             {
                 base.Delete();
             }

@@ -13,7 +13,8 @@
 
 ## 安全默认值
 
-- 未登录、登录态无效或配置缺失时，`Authorization.PermissionMode` 必须保持 `Guest`。
+- 应用启动且尚未恢复有效登录态时，`Authorization.PermissionMode` 默认保持 `Administrator`，保证受管理员级别保护的功能可直接使用。
+- 登录成功后，全局权限会立即切换为当前用户的 `PermissionMode`；用户主动登出后，权限会重置为 `Guest`。
 - `LoginResultDto.UserDetail.PermissionMode` 的默认值为 `Guest`，避免空 DTO 被误判为高权限。
 - 新建普通用户的 `UserDetailEntity.PermissionMode` 显式设置为 `User`。
 - 只有首次引导的内置管理员允许显式赋予 `SuperAdministrator`。
@@ -22,7 +23,8 @@
 ## 登录态持久化
 
 - 自动登录成功后会保存 `RbacManagerConfig`，保证刷新后的会话令牌和用户详情落盘。
-- 自动登录失败、登录态无效或用户主动登出时，会清理 `LoginResult`、关闭 `RememberMe`，并把全局权限重置为 `Guest` 后保存配置。
+- 自动登录失败或登录态无效时，会清理本地会话凭据并回到默认管理员级全局权限。
+- 用户主动登出时，会清理 `LoginResult`、关闭 `RememberMe`，并把全局权限重置为 `Guest` 后保存配置。
 - 登出流程会撤销当前会话，随后清空本地登录态。
 
 ## 维护约定
@@ -40,7 +42,7 @@ dotnet build UI/ColorVision.Solution/ColorVision.Solution.csproj -p:Platform=x64
 
 建议在 UI 中补充手工验证：
 
-- 启动无登录态应用，确认权限为 `Guest`。
+- 启动无登录态应用，确认权限默认为 `Administrator`。
 - 注册普通用户，确认默认权限为 `User`。
 - 勾选自动登录后重启，确认有效会话可恢复。
 - 登出后重启，确认不会恢复旧权限。

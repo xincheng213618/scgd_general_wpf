@@ -1,0 +1,166 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="UpdateDialog.Background"
+                     Color="{DynamicResource UpdateDialogBackgroundColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.Surface"
+                     Color="{DynamicResource UpdateDialogSurfaceColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.SurfaceAlt"
+                     Color="{DynamicResource UpdateDialogSurfaceHoverColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.SurfaceHover"
+                     Color="{DynamicResource UpdateDialogSurfaceHoverColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.WindowBorder"
+                     Color="{DynamicResource UpdateDialogBorderColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.Border"
+                     Color="{DynamicResource UpdateDialogBorderColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.WeakBorder"
+                     Color="{DynamicResource UpdateDialogBorderColor}"
+                     Opacity="0.5" />
+    <SolidColorBrush x:Key="UpdateDialog.TextPrimary"
+                     Color="{DynamicResource UpdateDialogTextPrimaryColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.TextSecondary"
+                     Color="{DynamicResource UpdateDialogTextSecondaryColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.Accent"
+                     Color="{DynamicResource UpdateDialogAccentColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.AccentHover"
+                     Color="{DynamicResource UpdateDialogAccentHoverColor}" />
+    <SolidColorBrush x:Key="UpdateDialog.TagBackground"
+                     Color="{DynamicResource UpdateDialogAccentColor}"
+                     Opacity="0.14" />
+    <SolidColorBrush x:Key="UpdateDialog.TagForeground"
+                     Color="{DynamicResource UpdateDialogAccentColor}" />
+
+    <Style x:Key="UpdateDialogTagBorderStyle"
+           TargetType="{x:Type Border}">
+        <Setter Property="Background" Value="{DynamicResource UpdateDialog.TagBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.WeakBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="UpdateDialogPrimaryButtonStyle"
+           TargetType="{x:Type Button}">
+        <Setter Property="MinWidth" Value="116" />
+        <Setter Property="Padding" Value="16,9" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Background" Value="{DynamicResource UpdateDialog.Accent}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.Accent}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource UpdateDialog.AccentHover}" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource UpdateDialog.AccentHover}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.88" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpdateDialogSecondaryButtonStyle"
+           TargetType="{x:Type Button}">
+        <Setter Property="MinWidth" Value="96" />
+        <Setter Property="Padding" Value="16,9" />
+        <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}" />
+        <Setter Property="Background" Value="{DynamicResource UpdateDialog.Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource UpdateDialog.SurfaceHover}" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource UpdateDialog.Accent}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.88" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpdateDialogTextButtonStyle"
+           TargetType="{x:Type Button}">
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.Accent}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="TextButtonBorder"
+                            Background="Transparent"
+                            CornerRadius="6">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="TextButtonBorder" Property="Background" Value="{DynamicResource UpdateDialog.SurfaceHover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.AccentHover}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="TextButtonBorder" Property="Opacity" Value="0.88" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="TextButtonBorder" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UpdateDialogCardStyle"
+           TargetType="{x:Type Border}">
+        <Setter Property="Background" Value="{DynamicResource UpdateDialog.Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.WeakBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="18,16" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UpdateDialog.SurfaceHover}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

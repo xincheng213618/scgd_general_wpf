@@ -28,13 +28,13 @@ namespace ColorVision.Engine.Templates.POI
         public override void PreviewMouseDoubleClick(int index)
         {
             EditWindow = new EditPoiParam(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
-            EditWindow.ShowDialog();
+            EditWindow.Show();
         }
 
         public override void Load()
         {
             var backup = Params.ToDictionary(tp => tp.Id, tp => tp);
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", 0}, { "is_delete", 0 } });
                 foreach (var dbModel in poiMasters)
@@ -161,7 +161,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.cfg|*.cfg";
-            ofd.Title = "导入模板";
+            ofd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ImportTemplate;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
             //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))

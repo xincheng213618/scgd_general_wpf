@@ -149,7 +149,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox1.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.SelectDataFirst, "ColorVision");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();

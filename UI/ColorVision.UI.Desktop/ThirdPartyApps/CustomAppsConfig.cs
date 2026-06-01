@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
 {
@@ -9,62 +10,61 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
     /// </summary>
     public class CustomAppEntry : ViewModelBase
     {
-        [DisplayName("名称")]
+        [Display(Name = "CfgApp_Name", ResourceType = typeof(Properties.Resources))]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name = string.Empty;
 
-        [DisplayName("分组")]
+        [Display(Name = "CfgApp_Group", ResourceType = typeof(Properties.Resources))]
         public string Group { get => _Group; set { _Group = value; OnPropertyChanged(); } }
         private string _Group = string.Empty;
 
-        [DisplayName("类型")]
+        [Display(Name = "CfgApp_Type", ResourceType = typeof(Properties.Resources))]
         public CustomAppType AppType { get => _AppType; set { _AppType = value; OnPropertyChanged(); } }
         private CustomAppType _AppType = CustomAppType.Executable;
 
-        [DisplayName("路径/命令")]
-        [Description("可执行文件路径或脚本命令")]
+        [Display(Name = "CfgApp_PathOrCmd", Description = "CfgApp_PathOrCmdDesc", ResourceType = typeof(Properties.Resources))]
         public string Command { get => _Command; set { _Command = value; OnPropertyChanged(); } }
         private string _Command = string.Empty;
 
-        [DisplayName("参数")]
+        [Display(Name = "CfgApp_Arguments", ResourceType = typeof(Properties.Resources))]
         public string Arguments { get => _Arguments; set { _Arguments = value; OnPropertyChanged(); } }
         private string _Arguments = string.Empty;
 
-        [DisplayName("工作目录")]
+        [Display(Name = "CfgApp_WorkDir", ResourceType = typeof(Properties.Resources))]
         public string WorkingDirectory { get => _WorkingDirectory; set { _WorkingDirectory = value; OnPropertyChanged(); } }
         private string _WorkingDirectory = string.Empty;
 
-        [DisplayName("排序")]
+        [Display(Name = "CfgApp_Sort", ResourceType = typeof(Properties.Resources))]
         public int Order { get => _Order; set { _Order = value; OnPropertyChanged(); } }
         private int _Order = 100;
     }
 
     public enum CustomAppType
     {
-        [Description("可执行文件")]
+        [Display(Name = "CfgApp_ExeDesc", ResourceType = typeof(Properties.Resources))]
         Executable,
-        [Description("CMD 脚本")]
+        [Display(Name = "CfgApp_CmdDesc", ResourceType = typeof(Properties.Resources))]
         CmdScript,
-        [Description("PowerShell 脚本")]
+        [Display(Name = "CfgApp_PsDesc", ResourceType = typeof(Properties.Resources))]
         PowerShellScript,
     }
 
     /// <summary>
     /// 自定义应用配置，自动持久化到 JSON 配置文件
     /// </summary>
-    [DisplayName("自定义应用配置")]
+    [Display(Name = "CfgApp_ConfigTitle", ResourceType = typeof(Properties.Resources))]
     public class CustomAppsConfig : ViewModelBase, IConfig
     {
         public static CustomAppsConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CustomAppsConfig>();
 
-        [DisplayName("自定义应用列表")]
+        [Display(Name = "CfgApp_ListTitle", ResourceType = typeof(Properties.Resources))]
         public ObservableCollection<CustomAppEntry> Entries { get; set; } = new ObservableCollection<CustomAppEntry>();
 
-        [DisplayName("默认自定义分组名")]
+        [Display(Name = "CfgApp_DefaultCustomGroup", ResourceType = typeof(Properties.Resources))]
         public string DefaultCustomGroup { get => _DefaultCustomGroup; set { _DefaultCustomGroup = value; OnPropertyChanged(); } }
         private string _DefaultCustomGroup = "自定义";
 
-        [DisplayName("默认脚本分组名")]
+        [Display(Name = "CfgApp_DefaultScriptGroup", ResourceType = typeof(Properties.Resources))]
         public string DefaultScriptGroup { get => _DefaultScriptGroup; set { _DefaultScriptGroup = value; OnPropertyChanged(); } }
         private string _DefaultScriptGroup = "快捷脚本";
     }

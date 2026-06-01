@@ -1,12 +1,14 @@
+#pragma warning disable CA1872
 using ColorVision.UI.Marketplace;
-using ColorVision.UI.Plugins;
 using ColorVision.Themes;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -34,40 +36,20 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
         }
 
-        /// <summary>
-        /// Returns the base URL for the marketplace API, or empty if not configured.
-        /// </summary>
-        private static string BaseUrl
-        {
-            get
-            {
-                string url = MarketplaceConfig.Instance.MarketplaceApiUrl?.TrimEnd('/') ?? string.Empty;
-                if (string.IsNullOrEmpty(url))
-                {
-                    // Derive from legacy PluginUpdatePath: http://host:port/D%3A/ColorVision/Marketplaces/ -> http://host:port
-                    string legacy = PluginLoaderrConfig.Instance.PluginUpdatePath ?? string.Empty;
-                    if (!string.IsNullOrEmpty(legacy))
-                    {
-                        try
-                        {
-                            var uri = new Uri(legacy);
-                            url = $"{uri.Scheme}://{uri.Authority}";
-                        }
-                        catch { }
-                    }
-                }
-                return url;
-            }
-        }
+        private static string BaseUrl => MarketplaceConfig.ServiceBaseUrl;
 
-        public async Task<bool> IsAvailableAsync()
+        public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
         {
             string baseUrl = BaseUrl;
             if (string.IsNullOrEmpty(baseUrl)) return false;
             try
             {
-                var response = await _httpClient.GetAsync($"{baseUrl}/api/plugins/categories");
+                using var response = await _httpClient.GetAsync($"{baseUrl}/api/plugins/categories", cancellationToken);
                 return response.IsSuccessStatusCode;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch
             {
@@ -75,34 +57,37 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        public async Task<MarketplaceSearchResult> SearchPluginsAsync(MarketplaceSearchRequest request)
+        public async Task<MarketplaceSearchResult> SearchPluginsAsync(MarketplaceSearchRequest request, CancellationToken cancellationToken = default)
         {
             string baseUrl = BaseUrl;
             if (string.IsNullOrEmpty(baseUrl))
-                return new MarketplaceSearchResult();
+                throw new InvalidOperationException("Marketplace service base URL is not configured.");
 
-            try
-            {
-                var url = $"{baseUrl}/api/plugins?Keyword={Uri.EscapeDataString(request.Keyword ?? "")}&Category={Uri.EscapeDataString(request.Category ?? "")}&SortBy={request.SortBy}&SortOrder={request.SortOrder}&Page={request.Page}&PageSize={request.PageSize}";
-                string json = await _httpClient.GetStringAsync(url);
-                return JsonConvert.DeserializeObject<MarketplaceSearchResult>(json) ?? new MarketplaceSearchResult();
-            }
-            catch (Exception ex)
-            {
-                log.Debug($"SearchPluginsAsync failed: {ex.Message}");
-                return new MarketplaceSearchResult();
-            }
+            string url = $"{baseUrl}/api/plugins?Keyword={Uri.EscapeDataString(request.Keyword ?? "")}&Category={Uri.EscapeDataString(request.Category ?? "")}&Author={Uri.EscapeDataString(request.Author ?? "")}&SortBy={Uri.EscapeDataString(request.SortBy ?? "updated")}&SortOrder={Uri.EscapeDataString(request.SortOrder ?? "desc")}&Page={request.Page}&PageSize={request.PageSize}";
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            string json = await response.Content.ReadAsStringAsync(cancellationToken);
+            return JsonConvert.DeserializeObject<MarketplaceSearchResult>(json) ?? new MarketplaceSearchResult();
         }
 
-        public async Task<MarketplacePluginDetail?> GetPluginDetailAsync(string pluginId)
+        public async Task<MarketplacePluginDetail?> GetPluginDetailAsync(string pluginId, CancellationToken cancellationToken = default)
         {
             string baseUrl = BaseUrl;
             if (string.IsNullOrEmpty(baseUrl)) return null;
 
             try
             {
-                string json = await _httpClient.GetStringAsync($"{baseUrl}/api/plugins/{Uri.EscapeDataString(pluginId)}");
+                using var response = await _httpClient.GetAsync($"{baseUrl}/api/plugins/{Uri.EscapeDataString(pluginId)}", cancellationToken);
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    return null;
+
+                response.EnsureSuccessStatusCode();
+                string json = await response.Content.ReadAsStringAsync(cancellationToken);
                 return JsonConvert.DeserializeObject<MarketplacePluginDetail>(json);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -111,15 +96,21 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        public async Task<string?> GetLatestVersionAsync(string pluginId)
+        public async Task<string?> GetLatestVersionAsync(string pluginId, CancellationToken cancellationToken = default)
         {
             string baseUrl = BaseUrl;
             if (string.IsNullOrEmpty(baseUrl)) return null;
 
             try
             {
-                string version = await _httpClient.GetStringAsync($"{baseUrl}/api/plugins/{Uri.EscapeDataString(pluginId)}/latest-version");
+                using var response = await _httpClient.GetAsync($"{baseUrl}/api/plugins/{Uri.EscapeDataString(pluginId)}/latest-version", cancellationToken);
+                response.EnsureSuccessStatusCode();
+                string version = await response.Content.ReadAsStringAsync(cancellationToken);
                 return version?.Trim();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -128,7 +119,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        public async Task<Dictionary<string, string?>> BatchVersionCheckAsync(IEnumerable<string> pluginIds)
+        public async Task<Dictionary<string, string?>> BatchVersionCheckAsync(IEnumerable<string> pluginIds, CancellationToken cancellationToken = default)
         {
             string baseUrl = BaseUrl;
             if (string.IsNullOrEmpty(baseUrl))
@@ -138,10 +129,10 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 var body = new { PluginIds = pluginIds.ToList() };
                 var content = new StringContent(JsonConvert.SerializeObject(body), System.Text.Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync($"{baseUrl}/api/plugins/batch-version-check", content);
+                var response = await _httpClient.PostAsync($"{baseUrl}/api/plugins/batch-version-check", content, cancellationToken);
                 response.EnsureSuccessStatusCode();
 
-                string json = await response.Content.ReadAsStringAsync();
+                string json = await response.Content.ReadAsStringAsync(cancellationToken);
                 var items = JsonConvert.DeserializeObject<List<BatchVersionItem>>(json) ?? new List<BatchVersionItem>();
 
                 var result = new Dictionary<string, string?>();
@@ -152,6 +143,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
                 return result;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 log.Debug($"BatchVersionCheckAsync failed: {ex.Message}");
@@ -161,23 +156,24 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public string GetDownloadUrl(string pluginId, string version)
         {
-            string baseUrl = BaseUrl;
-            if (!string.IsNullOrEmpty(baseUrl))
-                return $"{baseUrl}/api/packages/{Uri.EscapeDataString(pluginId)}/{Uri.EscapeDataString(version)}";
-
-            // Fallback to legacy URL
-            return $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{pluginId}/{pluginId}-{version}.cvxp";
+            return $"{BaseUrl}/api/packages/{Uri.EscapeDataString(pluginId)}/{Uri.EscapeDataString(version)}";
         }
 
-        public async Task<List<string>> GetCategoriesAsync()
+        public async Task<List<string>> GetCategoriesAsync(CancellationToken cancellationToken = default)
         {
             string baseUrl = BaseUrl;
             if (string.IsNullOrEmpty(baseUrl)) return new List<string>();
 
             try
             {
-                string json = await _httpClient.GetStringAsync($"{baseUrl}/api/plugins/categories");
+                using var response = await _httpClient.GetAsync($"{baseUrl}/api/plugins/categories", cancellationToken);
+                response.EnsureSuccessStatusCode();
+                string json = await response.Content.ReadAsStringAsync(cancellationToken);
                 return JsonConvert.DeserializeObject<List<string>>(json) ?? new List<string>();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {

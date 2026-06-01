@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
         mc:Ignorable="d"
-        Title="编辑用户角色 - RBAC" Height="600" Width="500" 
+        Title="{x:Static properties:Resources.Sol_EditRoles_Title}" Height="600" Width="500" 
         WindowStartupLocation="CenterOwner" 
         Background="Transparent" 
         AllowsTransparency="True" 
@@ -45,8 +46,8 @@
                     <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="28" 
                                Foreground="White" VerticalAlignment="Center" Margin="0,0,15,0"/>
                     <StackPanel>
-                        <TextBlock x:Name="TxtTitle" Text="编辑用户角色" FontSize="20" FontWeight="SemiBold" Foreground="White"/>
-                        <TextBlock x:Name="TxtSubtitle" Text="选择用户的角色分配" FontSize="12" Foreground="White" Opacity="0.8" Margin="0,2,0,0"/>
+                        <TextBlock x:Name="TxtTitle" Text="{x:Static properties:Resources.Sol_EditRoles_Label}" FontSize="20" FontWeight="SemiBold" Foreground="White"/>
+                        <TextBlock x:Name="TxtSubtitle" Text="{x:Static properties:Resources.Sol_EditRoles_Subtitle}" FontSize="12" Foreground="White" Opacity="0.8" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -63,7 +64,7 @@
                                VerticalAlignment="Center" Margin="0,0,8,0" Opacity="0.5"/>
                     <TextBox x:Name="TxtSearch" Grid.Column="1" Padding="8,6" FontSize="13"
                              TextChanged="TxtSearch_TextChanged"
-                             ToolTip="搜索角色名称"/>
+                             ToolTip="{x:Static properties:Resources.Sol_EditRoles_Search}"/>
                 </Grid>
             </Border>
 
@@ -79,13 +80,13 @@
                     Background="{DynamicResource ButtonBackground}" CornerRadius="0,0,12,12">
                 <Grid>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <TextBlock x:Name="TxtSelectedCount" Text="已选择 0 个角色" FontSize="13" 
+                        <TextBlock x:Name="TxtSelectedCount" Text="{x:Static properties:Resources.Sol_EditRoles_Selected}" FontSize="13"
                                    Opacity="0.6" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="取消" Width="100" Margin="0,0,10,0"
+                        <Button Content="{x:Static properties:Resources.Sol_EditRoles_Cancel}" Width="100" Margin="0,0,10,0"
                                 Style="{StaticResource SecondaryButton}" Click="BtnCancel_Click"/>
-                        <Button x:Name="BtnSave" Content="保存" Width="100"
+                        <Button x:Name="BtnSave" Content="{x:Static properties:Resources.Sol_EditRoles_Save}" Width="100"
                                 Style="{StaticResource PrimaryButton}" Click="BtnSave_Click"/>
                     </StackPanel>
                 </Grid>

@@ -69,7 +69,7 @@ namespace ColorVision.Database
                 MySqlLocalServicesManager.GetInstance().RestoreMysql(FilePath);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "还原成功,资源文件加载需要重启服务，当前软件也需要重启加载");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_RestoreSuccessRestartRequired);
                 });
             });
         }
@@ -231,21 +231,21 @@ namespace ColorVision.Database
             return Task.Run(() =>
             {
                 SetCleanupBusy(true);
-                SetCleanupStatus("正在统计结果表使用情况...");
+                SetCleanupStatus(ColorVision.Engine.Properties.Resources.Engine_Msg_LoadingResultTableStats);
 
                 try
                 {
                     var snapshot = LoadCleanupTableInfos();
                     ApplyCleanupTableSnapshot(snapshot);
                     SetCleanupStatus(snapshot.Any(item => item.Exists)
-                        ? $"已加载 {snapshot.Count} 张可清理结果表。"
-                        : "未找到可清理结果表，请确认数据库连接和表结构。");
+                        ? string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_ResultTableStatsLoaded, snapshot.Count)
+                        : ColorVision.Engine.Properties.Resources.Engine_Msg_NoCleanableResultTables);
                 }
                 catch (Exception ex)
                 {
-                    log.Error("加载结果表统计失败", ex);
-                    SetCleanupStatus("加载结果表统计失败。");
-                    RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), $"加载结果表统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
+                    log.Error(ColorVision.Engine.Properties.Resources.Engine_Msg_LoadResultTableStatsFailed, ex);
+                    SetCleanupStatus(ColorVision.Engine.Properties.Resources.Engine_Msg_LoadResultTableStatsFailed);
+                    RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_LoadResultTableStatsFailedDetail, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
                 }
                 finally
                 {
@@ -356,14 +356,14 @@ namespace ColorVision.Database
                 }
 
                 ApplyCleanupTableSnapshot(LoadCleanupTableInfos());
-                SetCleanupStatus($"历史数据清理完成，已保留最近 {keepMonths} 个月的数据。");
-                RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), string.Join(Environment.NewLine, summary), "数据表清理完成", MessageBoxButton.OK, MessageBoxImage.Information));
+                SetCleanupStatus(string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_DataTableCleanupComplete, keepMonths));
+                RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), string.Join(Environment.NewLine, summary), ColorVision.Engine.Properties.Resources.Engine_Msg_DataTableCleanupComplete, MessageBoxButton.OK, MessageBoxImage.Information));
             }
             catch (Exception ex)
             {
-                log.Error("清理历史结果失败", ex);
-                SetCleanupStatus("历史结果清理失败。");
-                RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), $"清理历史结果失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
+                log.Error(ColorVision.Engine.Properties.Resources.Engine_Msg_CleanupHistoryFailed, ex);
+                SetCleanupStatus(ColorVision.Engine.Properties.Resources.Engine_Msg_CleanupHistoryFailed);
+                RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_CleanupHistoryFailedDetail, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
             }
             finally
             {
@@ -374,7 +374,7 @@ namespace ColorVision.Database
         private void ExecuteFullCleanup()
         {
             SetCleanupBusy(true);
-            SetCleanupStatus("正在清空结果表...");
+            SetCleanupStatus(ColorVision.Engine.Properties.Resources.Engine_Msg_ClearingResultTables);
 
             try
             {
@@ -396,14 +396,14 @@ namespace ColorVision.Database
                 }
 
                 ApplyCleanupTableSnapshot(LoadCleanupTableInfos());
-                SetCleanupStatus("数据表已清空。");
-                RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), "数据表已经全部清空。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information));
+                SetCleanupStatus(ColorVision.Engine.Properties.Resources.Engine_Msg_AllResultTablesCleared);
+                RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_AllResultTablesCleared, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information));
             }
             catch (Exception ex)
             {
-                log.Error("清空结果表失败", ex);
-                SetCleanupStatus("清空结果表失败。");
-                RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), $"清空结果表失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
+                log.Error(ColorVision.Engine.Properties.Resources.Engine_Msg_ClearResultTablesFailed, ex);
+                SetCleanupStatus(ColorVision.Engine.Properties.Resources.Engine_Msg_ClearResultTablesFailed);
+                RunOnUi(() => MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_ClearResultTablesFailedDetail, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
             }
             finally
             {
@@ -415,7 +415,7 @@ namespace ColorVision.Database
         {
             if (IsRun)
             {
-                MessageBox.Show("正在执行备份程序");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.Engine_Msg_BackupInProgress);
                 return;
             }
             Task.Run(() =>
@@ -424,7 +424,7 @@ namespace ColorVision.Database
                 BackupMysqlResource();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "备份成功");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_BackupSuccess);
                 });
                 IsRun = false;
             });
@@ -450,18 +450,18 @@ namespace ColorVision.Database
                     RestoreMysql(filePath); // Use the selected file path
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(Application.Current.MainWindow, "还原成功,正在重启服务");
+                        MessageBox.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_RestoreSuccessRestarting);
 
 
                         if (Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net start RegistrationCenterService"))
                         {
-                            MessageBox.Show(Application.Current.MainWindow, "服务重启成功，重启软件");
+                            MessageBox.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartSuccess);
                             Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
                             Application.Current.Shutdown();
                         }
                         else
                         {
-                            MessageBox.Show(Application.Current.MainWindow, "服务重启失败");
+                            MessageBox.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartFailed);
                         }
 
 
@@ -722,7 +722,7 @@ namespace ColorVision.Database
             keepMonths = 0;
             if (!int.TryParse(CleanupKeepMonthsText, out keepMonths) || keepMonths <= 0)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "请输入大于 0 的保留月数。若要整组数据清空，请使用“清空全部数据表”。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_EnterValidKeepMonths, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 

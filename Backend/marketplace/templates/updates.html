@@ -1,58 +1,36 @@
 {% extends "base.html" %}
-{% block title %}增量更新包 — ColorVision{% endblock %}
+{% block title %}增量更新 — ColorVision{% endblock %}
 
 {% block content %}
-<section class="hero-panel mb-4">
-    <div class="row g-4 align-items-center position-relative">
-        <div class="col-lg-8">
-            <span class="eyebrow mb-3"><i class="bi bi-arrow-repeat"></i> 增量更新</span>
-            <h1 class="display-5 fw-semibold mb-3">把 `H:\ColorVision\Update` 也变成可读、可控的发布页面。</h1>
-            <p class="page-lead mb-4">
-                当前策略：{{ retention_note }} 这样既保留回退和跨小版本升级需要的基线，又避免每个 fix 包无限堆积。
-            </p>
-            <div class="hero-actions">
-                <a href="/browse/Update" class="btn btn-light btn-lg"><i class="bi bi-folder2-open me-2"></i>浏览原始目录</a>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="hero-aside">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="metric-card">
-                            <span class="metric-label">识别到的增量包</span>
-                            <div class="metric-value">{{ update_summary.canonical_count }}</div>
-                            <div class="metric-note">匹配标准命名</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="metric-card">
-                            <span class="metric-label">建议保留</span>
-                            <div class="metric-value">{{ update_summary.retained_count }}</div>
-                            <div class="metric-note">最新 + 每个小版本 .1</div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="metric-card">
-                            <span class="metric-label">最新增量版本</span>
-                            <div class="metric-value">{{ update_summary.latest_version or '暂无' }}</div>
-                            <div class="metric-note">可配合构建脚本自动清理</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="panel-card p-4 table-shell mb-4">
-    <div class="section-header">
+<div class="page-header mb-3">
+    <div class="page-header-row">
         <div>
-            <h2 class="section-title"><i class="bi bi-box-arrow-up-right"></i>标准增量包</h2>
-            <div class="section-subtitle mt-2">仅识别 `ColorVision-Update-[x.y.z.w].cvx` 格式的文件。</div>
+            <h1 class="page-header-title"><i class="bi bi-arrow-repeat"></i>增量更新</h1>
+            <p class="page-header-desc">Update 目录的增量包管理 · {{ retention_note }}</p>
         </div>
-        <div class="surface-tag"><i class="bi bi-lightning-charge"></i> {{ retention_note }}</div>
+        <div class="page-header-stats">
+            <div class="page-header-stat">
+                <strong>{{ update_summary.canonical_count }}</strong>
+                <span>增量包</span>
+            </div>
+            <div class="page-header-stat">
+                <strong>{{ update_summary.retained_count }}</strong>
+                <span>建议保留</span>
+            </div>
+            <div class="page-header-stat">
+                <strong>{{ update_summary.latest_version or '暂无' }}</strong>
+                <span>最新版本</span>
+            </div>
+            <a href="/browse/Update" class="btn btn-sm btn-outline-primary align-self-center"><i class="bi bi-folder2-open me-1"></i>浏览目录</a>
+        </div>
     </div>
+</div>
 
+<section class="panel-card p-3 mb-3">
+    <div class="section-header">
+        <h2 class="section-title"><i class="bi bi-box-arrow-up-right"></i>标准增量包</h2>
+        <div class="surface-tag"><i class="bi bi-lightning-charge"></i>{{ retention_note }}</div>
+    </div>
     <div class="release-list">
         {% for item in update_packages %}
         <div class="release-row">
@@ -60,8 +38,7 @@
                 <div class="release-icon"><i class="bi bi-file-earmark-zip"></i></div>
                 <div>
                     <div class="release-title">{{ item.version }}</div>
-                    <div class="release-meta">{{ item.filename }} · {{ human_size(item.size) }}</div>
-                    <div class="release-meta">分支 {{ item.branch }} · {{ item.modified[:19] }}</div>
+                    <div class="release-meta">{{ item.filename }} · {{ human_size(item.size) }} · 分支 {{ item.branch }} · {{ item.modified[:16] }}</div>
                 </div>
             </div>
             <div class="release-actions">
@@ -71,27 +48,20 @@
         </div>
         {% endfor %}
         {% if not update_packages %}
-        <div class="text-center text-muted py-5">当前没有识别到标准增量更新包。</div>
+        <div class="text-center text-muted py-3 small">暂无标准增量更新包</div>
         {% endif %}
     </div>
 </section>
 
-<section class="panel-card p-4 table-shell">
+<section class="panel-card p-3">
     <div class="section-header">
-        <div>
-            <h2 class="section-title"><i class="bi bi-folder"></i>其它 Update 文件</h2>
-            <div class="section-subtitle mt-2">不符合标准命名的文件不会被自动清理，但也会显示在这里。</div>
-        </div>
+        <h2 class="section-title"><i class="bi bi-folder"></i>其它 Update 文件</h2>
     </div>
-
     {% set items = other_update_items %}
     {% set subpath = 'Update' %}
     {% set parent_subpath = '' %}
     {% set show_parent_link = false %}
-    {% set empty_message = '没有额外的 Update 文件。' %}
+    {% set empty_message = '没有额外的 Update 文件' %}
     {% include '_storage_listing.html' %}
 </section>
 {% endblock %}
-
-
-

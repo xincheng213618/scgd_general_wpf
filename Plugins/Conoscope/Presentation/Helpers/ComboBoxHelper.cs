@@ -1,4 +1,5 @@
 using System;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace Conoscope.Presentation.Helpers
@@ -6,6 +7,32 @@ namespace Conoscope.Presentation.Helpers
     internal static class ComboBoxHelper
     {
         public static void SelectItemByTag(ComboBox? comboBox, string tag)
+        {
+            TrySelectItemByTag(comboBox, tag);
+        }
+
+        public static bool TrySelectItemByTag(ComboBox? comboBox, string tag, bool visibleOnly = false)
+        {
+            if (comboBox == null)
+            {
+                return false;
+            }
+
+            foreach (object rawItem in comboBox.Items)
+            {
+                if (rawItem is ComboBoxItem item
+                    && (!visibleOnly || item.Visibility == Visibility.Visible)
+                    && string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+                {
+                    comboBox.SelectedItem = item;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static void SetItemVisibilityByTag(ComboBox? comboBox, string tag, Visibility visibility)
         {
             if (comboBox == null)
             {
@@ -17,7 +44,7 @@ namespace Conoscope.Presentation.Helpers
                 if (rawItem is ComboBoxItem item
                     && string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
                 {
-                    comboBox.SelectedItem = item;
+                    item.Visibility = visibility;
                     return;
                 }
             }

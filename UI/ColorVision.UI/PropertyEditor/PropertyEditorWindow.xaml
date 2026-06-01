@@ -37,7 +37,7 @@
             
             <hc:TextBox x:Name="SearchBox" Grid.Column="0" Style="{DynamicResource TextBoxPlus.Small}" 
                        Padding="20,1,2,1" BorderThickness="1" 
-                       hc:InfoElement.Placeholder="搜索属性..." 
+                       hc:InfoElement.Placeholder="{x:Static properties:Resources.PropEditor_SearchPlaceholder}" 
                        BorderBrush="#CCCEDB" VerticalContentAlignment="Center" 
                        TextChanged="SearchBox_TextChanged" Margin="0,0,0,0" />
             <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0" Grid.Column="0">
@@ -170,7 +170,7 @@
         <Grid Grid.Row="2" Margin="5">
             <DockPanel>
                 <Button Content="{x:Static properties:Resources.Reset}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" Margin="5,0,0,0" />
-                <Button Content="恢复到默认" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="ResetToFactory_Click" ToolTip="重置到类默认值" Margin="5,0,0,0"/>
+                <Button Content="{x:Static properties:Resources.PropEditor_ResetToDefault}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="ResetToFactory_Click" ToolTip="{x:Static properties:Resources.PropEditor_ResetTooltip}" Margin="5,0,0,0"/>
                 <StackPanel  Orientation="Horizontal" HorizontalAlignment="Right" >
                     <Button Content="{x:Static properties:Resources.OK}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="OK_Click" Margin="5,0,0,0"/>
                     <Button Content="{x:Static properties:Resources.Cancel}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Cancel_Click" Margin="5,0,0,0"/>

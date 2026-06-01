@@ -1,3 +1,4 @@
+#pragma warning disable CA1852,CA1863
 using ColorVision.Themes;
 using ColorVision.UI.Marketplace;
 using log4net;
@@ -295,26 +296,7 @@ namespace ColorVision.UI.Desktop.Feedback
 
             try
             {
-                string baseUrl = MarketplaceConfig.Instance.MarketplaceApiUrl?.TrimEnd('/') ?? string.Empty;
-                if (string.IsNullOrEmpty(baseUrl))
-                {
-                    string legacy = UI.Plugins.PluginLoaderrConfig.Instance.PluginUpdatePath ?? string.Empty;
-                    if (!string.IsNullOrEmpty(legacy))
-                    {
-                        try
-                        {
-                            var uri = new Uri(legacy);
-                            baseUrl = $"{uri.Scheme}://{uri.Authority}";
-                        }
-                        catch { }
-                    }
-                }
-
-                if (string.IsNullOrEmpty(baseUrl))
-                {
-                    StatusText.Text = string.Format(Properties.Resources.SendFailed, Properties.Resources.ServerAddressNotConfigured);
-                    return;
-                }
+                string baseUrl = MarketplaceConfig.ServiceBaseUrl;
 
                 using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
                 using var form = new MultipartFormDataContent();

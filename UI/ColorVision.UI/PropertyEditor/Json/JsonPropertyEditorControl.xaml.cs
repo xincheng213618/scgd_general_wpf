@@ -1,7 +1,9 @@
+#pragma warning disable CA1304,CA1310,CA1822,CA1859,CA1866
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI.Properties;
 
 namespace ColorVision.UI.PropertyEditor.Json
 {
@@ -42,11 +44,11 @@ namespace ColorVision.UI.PropertyEditor.Json
             }
             catch (JsonException ex)
             {
-                ShowError($"JSON 解析错误: {ex.Message}");
+                ShowError($"{Properties.Resources.PropEditor_JsonParseError} {ex.Message}");
             }
             catch (Exception ex)
             {
-                ShowError($"加载错误: {ex.Message}");
+                ShowError($"{Properties.Resources.PropEditor_LoadError} {ex.Message}");
             }
         }
 
@@ -59,7 +61,7 @@ namespace ColorVision.UI.PropertyEditor.Json
             {
                 var noPropsText = new TextBlock
                 {
-                    Text = "没有可编辑的属性",
+                    Text = Properties.Resources.PropEditor_NoEditableProperties,
                     Margin = new Thickness(10),
                     FontStyle = FontStyles.Italic
                 };
@@ -574,7 +576,7 @@ namespace ColorVision.UI.PropertyEditor.Json
             }
             catch (Exception ex)
             {
-                ShowError($"JSON 生成错误: {ex.Message}");
+                ShowError($"{Properties.Resources.PropEditor_JsonGenerateError} {ex.Message}");
                 return _originalJson;
             }
         }
@@ -597,7 +599,7 @@ namespace ColorVision.UI.PropertyEditor.Json
             }
             catch (Exception ex)
             {
-                ShowError($"验证失败: {ex.Message}");
+                ShowError($"{Properties.Resources.PropEditor_ValidationError} {ex.Message}");
                 return false;
             }
         }

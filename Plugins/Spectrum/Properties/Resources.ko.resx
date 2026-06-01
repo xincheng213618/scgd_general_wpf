@@ -117,4 +117,178 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="波长Nm" xml:space="preserve"><value>파장[nm]</value></data>
+  <data name="步长" xml:space="preserve"><value>스텝 크기</value></data>
+  <data name="参数设置" xml:space="preserve"><value>파라미터 설정</value></data>
+  <data name="测量时间" xml:space="preserve"><value>측정 시간</value></data>
+  <data name="单次测试" xml:space="preserve"><value>단일 테스트</value></data>
+  <data name="单次校零" xml:space="preserve"><value>단일 영점 보정</value></data>
+  <data name="断开光谱仪" xml:space="preserve"><value>분광기 연결 해제</value></data>
+  <data name="峰值波长LpNm" xml:space="preserve"><value>피크 파장 Lp(nm)</value></data>
+  <data name="光谱校正" xml:space="preserve"><value>스펙트럼 보정</value></data>
+  <data name="积分时间011ms10s" xml:space="preserve"><value>적분 시간(0.11ms-10s)</value></data>
+  <data name="积分时间上限" xml:space="preserve"><value>적분 시간 상한</value></data>
+  <data name="积分时间上限Ms" xml:space="preserve"><value>적분 시간 상한(ms):</value></data>
+  <data name="结束" xml:space="preserve"><value>완료</value></data>
+  <data name="绝对光谱校正" xml:space="preserve"><value>절대 스펙트럼 보정</value></data>
+  <data name="开始校零" xml:space="preserve"><value>영점 보정 시작</value></data>
+  <data name="开始校正" xml:space="preserve"><value>보정 시작</value></data>
+  <data name="蓝光" xml:space="preserve"><value>청색광</value></data>
+  <data name="连接成功" xml:space="preserve"><value>연결 성공</value></data>
+  <data name="连接成功1" xml:space="preserve"><value>연결 성공!</value></data>
+  <data name="连接光谱仪" xml:space="preserve"><value>분광기 연결</value></data>
+  <data name="连接失败" xml:space="preserve"><value>연결 실패!</value></data>
+  <data name="连接状态" xml:space="preserve"><value>연결 상태:</value></data>
+  <data name="连续测试" xml:space="preserve"><value>연속 테스트</value></data>
+  <data name="亮度LvCdM2" xml:space="preserve"><value>휘도 Lv(cd/m2)</value></data>
+  <data name="滤波宽度110" xml:space="preserve"><value>필터 폭(1-10):</value></data>
+  <data name="滤波校正" xml:space="preserve"><value>필터 보정</value></data>
+  <data name="平均次数" xml:space="preserve"><value>평균 횟수</value></data>
+  <data name="平均次数1100" xml:space="preserve"><value>평균 횟수(1-100):</value></data>
+  <data name="起始" xml:space="preserve"><value>시작</value></data>
+  <data name="清空数据" xml:space="preserve"><value>데이터 지우기</value></data>
+  <data name="取消" xml:space="preserve"><value>취소</value></data>
+  <data name="确定" xml:space="preserve"><value>확인</value></data>
+  <data name="色纯度" xml:space="preserve"><value>색순도(%)</value></data>
+  <data name="色度u" xml:space="preserve"><value>색도 u'</value></data>
+  <data name="色度v" xml:space="preserve"><value>색도 v'</value></data>
+  <data name="色度x" xml:space="preserve"><value>색도 x</value></data>
+  <data name="色度y" xml:space="preserve"><value>색도 y</value></data>
+  <data name="设置" xml:space="preserve"><value>설정</value></data>
+  <data name="使用前请确保校零准确推荐使用自动积分" xml:space="preserve"><value>사용 전 영점 보정이 정확한지 확인하십시오. 자동 적분 사용을 권장합니다</value></data>
+  <data name="数据" xml:space="preserve"><value>데이터</value></data>
+  <data name="数据导出" xml:space="preserve"><value>데이터 내보내기</value></data>
+  <data name="停止" xml:space="preserve"><value>중지</value></data>
+  <data name="未连接" xml:space="preserve"><value>연결 안 됨</value></data>
+  <data name="显色性指数Ra" xml:space="preserve"><value>연색 지수 Ra</value></data>
+  <data name="相对光谱" xml:space="preserve"><value>상대 스펙트럼</value></data>
+  <data name="相对光谱曲线" xml:space="preserve"><value>상대 스펙트럼 곡선</value></data>
+  <data name="相关色温K" xml:space="preserve"><value>상관 색온도(K)</value></data>
+  <data name="校正" xml:space="preserve"><value>보정</value></data>
+  <data name="校正文件" xml:space="preserve"><value>보정 파일</value></data>
+  <data name="序号" xml:space="preserve"><value>일련번호</value></data>
+  <data name="选择文件" xml:space="preserve"><value>파일 선택</value></data>
+  <data name="验证数据0" xml:space="preserve"><value>검증 데이터: 0</value></data>
+  <data name="已成功断开连接" xml:space="preserve"><value>연결 해제 완료</value></data>
+  <data name="硬件型号" xml:space="preserve"><value>하드웨어 모델:</value></data>
+  <data name="主波长LdNm" xml:space="preserve"><value>주파장 Ld(nm)</value></data>
+  <data name="注选择正确的校正文件后对准校正光源点击开始校正按钮" xml:space="preserve"><value>참고: 올바른 보정 파일을 선택한 후 보정 광원을 맞추고 보정 시작 버튼을 클릭하십시오</value></data>
+  <data name="自动积分" xml:space="preserve"><value>자동 적분</value></data>
+  <data name="自动积分时间起始" xml:space="preserve"><value>자동 적분 시간 시작값</value></data>
+  <data name="自适应校零" xml:space="preserve"><value>적응형 영점 보정</value></data>
+  <data name="Exit" xml:space="preserve"><value>종료</value></data>
+  <data name="SpectrumWindowTitle" xml:space="preserve"><value>분광기 소프트웨어</value></data>
+  <data name="ControlPanel" xml:space="preserve"><value>제어판</value></data>
+  <data name="SpectrometerConnection" xml:space="preserve"><value>분광기 연결</value></data>
+  <data name="GetDeviceList" xml:space="preserve"><value>장치 목록 가져오기</value></data>
+  <data name="SerialPortConnection" xml:space="preserve"><value>시리얼 포트 연결</value></data>
+  <data name="SerialPort" xml:space="preserve"><value>시리얼 포트</value></data>
+  <data name="BaudRate" xml:space="preserve"><value>보드레이트</value></data>
+  <data name="CalibrationFiles" xml:space="preserve"><value>보정 파일</value></data>
+  <data name="Manage" xml:space="preserve"><value>관리...</value></data>
+  <data name="LoadGroup" xml:space="preserve"><value>그룹 불러오기</value></data>
+  <data name="CurrentGroup" xml:space="preserve"><value>현재 그룹:</value></data>
+  <data name="Load" xml:space="preserve"><value>불러오기</value></data>
+  <data name="WavelengthCalibration" xml:space="preserve"><value>파장 보정</value></data>
+  <data name="MagnitudeCalibration" xml:space="preserve"><value>진폭 보정</value></data>
+  <data name="MeasurementParameters" xml:space="preserve"><value>측정 파라미터</value></data>
+  <data name="IntegrationTimeMs" xml:space="preserve"><value>적분 시간 (ms)</value></data>
+  <data name="TestSection" xml:space="preserve"><value>테스트</value></data>
+  <data name="ZeroCalibration" xml:space="preserve"><value>영점 보정</value></data>
+  <data name="IntervalMs" xml:space="preserve"><value>간격 (ms)</value></data>
+  <data name="MeasurementCount" xml:space="preserve"><value>측정 횟수</value></data>
+  <data name="Progress" xml:space="preserve"><value>진행률</value></data>
+  <data name="Elapsed" xml:space="preserve"><value>경과:</value></data>
+  <data name="Remaining" xml:space="preserve"><value>예상 남은 시간:</value></data>
+  <data name="Shutter" xml:space="preserve"><value>셔터</value></data>
+  <data name="Connect" xml:space="preserve"><value>연결</value></data>
+  <data name="Disconnect" xml:space="preserve"><value>연결 해제</value></data>
+  <data name="OpenShutter" xml:space="preserve"><value>셔터 열기</value></data>
+  <data name="CloseShutter" xml:space="preserve"><value>셔터 닫기</value></data>
+  <data name="FilterWheel" xml:space="preserve"><value>필터 휠</value></data>
+  <data name="CurrentPosition" xml:space="preserve"><value>현재 위치:</value></data>
+  <data name="Query" xml:space="preserve"><value>조회</value></data>
+  <data name="SwitchPosition" xml:space="preserve"><value>위치 전환:</value></data>
+  <data name="SpectrumChart" xml:space="preserve"><value>스펙트럼 차트</value></data>
+  <data name="AbsoluteSpectrum" xml:space="preserve"><value>절대 스펙트럼</value></data>
+  <data name="GenericQuery" xml:space="preserve"><value>범용 조회</value></data>
+  <data name="Reload" xml:space="preserve"><value>다시 불러오기</value></data>
+  <data name="ClearRecords" xml:space="preserve"><value>기록 지우기</value></data>
+  <data name="ResetDatabase" xml:space="preserve"><value>데이터베이스 재설정</value></data>
+  <data name="LoadCount" xml:space="preserve"><value>로드 개수:</value></data>
+  <data name="TotalDurationMs" xml:space="preserve"><value>총 소요 시간(ms)</value></data>
+  <data name="ExcitationPurity" xml:space="preserve"><value>흥분 순도(%)</value></data>
+  <data name="HalfWidth" xml:space="preserve"><value>반치폭</value></data>
+  <data name="Log" xml:space="preserve"><value>로그</value></data>
+  <data name="NativeSpectrumLog" xml:space="preserve"><value>분광기 네이티브 로그</value></data>
+  <data name="CieChromaticityDiagram" xml:space="preserve"><value>CIE 색도도</value></data>
+  <data name="Wavelength" xml:space="preserve"><value>파장</value></data>
+  <data name="AutoZeroCalibration" xml:space="preserve"><value>자동 영점 보정</value></data>
+  <data name="OpenCalibrationGroupTooltip" xml:space="preserve"><value>보정 그룹 관리 창 열기</value></data>
+  <data name="ApplyCalibrationGroupTooltip" xml:space="preserve"><value>현재 선택한 그룹의 보정 파일 불러오기</value></data>
+  <data name="EqeParameterConfig" xml:space="preserve"><value>광속 파라미터 설정</value></data>
+  <data name="VoltageLabel" xml:space="preserve"><value>전압 (V)</value></data>
+  <data name="CurrentMilliampLabel" xml:space="preserve"><value>전류 (mA)</value></data>
+  <data name="RecalculateEqe" xml:space="preserve"><value>EQE 다시 계산</value></data>
+  <data name="SmuSourceMeter" xml:space="preserve"><value>소스미터(SMU)</value></data>
+  <data name="SmuConnectionSettingsHint" xml:space="preserve"><value>연결 매개변수는 먼저 연결을 끊은 후 수정해야 합니다</value></data>
+  <data name="VoltageSource" xml:space="preserve"><value>전압 소스</value></data>
+  <data name="ChannelA" xml:space="preserve"><value>채널 A</value></data>
+  <data name="SmuMeasureOrSet" xml:space="preserve"><value>점등/설정</value></data>
+  <data name="CloseOutput" xml:space="preserve"><value>출력 끄기</value></data>
+  <data name="ToggleSpectrumTypeTooltip" xml:space="preserve"><value>상대/절대 스펙트럼 전환</value></data>
+  <data name="QueryDataTooltip" xml:space="preserve"><value>데이터 조회</value></data>
+  <data name="ReloadDataTooltip" xml:space="preserve"><value>데이터베이스에서 다시 불러오기</value></data>
+  <data name="DeleteAllRecordsTooltip" xml:space="preserve"><value>데이터베이스의 모든 기록 삭제</value></data>
+  <data name="ResetDatabaseTooltip" xml:space="preserve"><value>데이터베이스 파일을 삭제하고 다시 생성</value></data>
+  <data name="LoadCountTooltip" xml:space="preserve"><value>기본 불러오기 개수 (-1은 전체)</value></data>
+  <data name="LuminousFlux" xml:space="preserve"><value>광속(lm)</value></data>
+  <data name="RadiantFlux" xml:space="preserve"><value>복사속(W)</value></data>
+  <data name="LuminousEfficacy" xml:space="preserve"><value>광효율(lm/W)</value></data>
+  <data name="DataSource" xml:space="preserve"><value>데이터 소스</value></data>
+  <data name="AbsoluteSpectrumCurve" xml:space="preserve"><value>절대 스펙트럼 곡선</value></data>
+  <data name="NativeLogPlaceholder" xml:space="preserve"><value>분광기 원시 로그 파일이 아직 생성되지 않았습니다. 분광기를 연결하면 로그가 자동으로 표시됩니다.</value></data>
+  <data name="SampleLabel" xml:space="preserve"><value>샘플</value></data>
+  <data name="OperationInProgressPleaseWait" xml:space="preserve"><value>작업이 이미 실행 중입니다. 잠시만 기다려 주십시오.</value></data>
+  <data name="ZeroCalibrationSuccess" xml:space="preserve"><value>영점 보정이 완료되었습니다</value></data>
+  <data name="ZeroCalibrationFailed" xml:space="preserve"><value>영점 보정 실패: {0}</value></data>
+  <data name="ZeroCalibrationException" xml:space="preserve"><value>영점 보정 예외: {0}</value></data>
+  <data name="PromptTitle" xml:space="preserve"><value>알림</value></data>
+  <data name="NoShutterAutoZero" xml:space="preserve"><value>셔터가 없어 자동 영점 보정을 수행할 수 없습니다</value></data>
+  <data name="PleaseRunAdaptiveAutoDarkFirst" xml:space="preserve"><value>먼저 적응형 영점 보정을 한 번 실행하십시오</value></data>
+  <data name="AdaptiveAutoDarkSuccess" xml:space="preserve"><value>적응형 영점 보정이 완료되었습니다</value></data>
+  <data name="AdaptiveAutoDarkFailed" xml:space="preserve"><value>적응형 영점 보정 실패: {0}</value></data>
+  <data name="ContinuousTestCompletedWithFailureCount" xml:space="preserve"><value>연속 테스트가 완료되었습니다. 실패 {0}회</value></data>
+  <data name="SP100SetSuccess" xml:space="preserve"><value>SP100 설정이 적용되었습니다</value></data>
+  <data name="SP100SetFailed" xml:space="preserve"><value>SP100 설정 실패: {0}</value></data>
+  <data name="ConnectionFailedWithDeviceDetected" xml:space="preserve"><value>연결 실패: {0}&#xA;&#xA;감지된 장치: {1}&#xA;연결 실패는 라이선스 문제일 수 있습니다.&#xA;&#xA;라이선스 관리자를 여시겠습니까?</value></data>
+  <data name="ConnectionFailedLicenseCheckTitle" xml:space="preserve"><value>연결 실패 - 라이선스 확인</value></data>
+  <data name="ConnectionFailedWithError" xml:space="preserve"><value>연결 실패: {0}</value></data>
+  <data name="ConnectSourceMeter" xml:space="preserve"><value>소스미터 연결</value></data>
+  <data name="DisconnectSourceMeter" xml:space="preserve"><value>소스미터 연결 해제</value></data>
+  <data name="MeasureAndReadSourceMeter" xml:space="preserve"><value>점등 후 소스미터 읽기</value></data>
+  <data name="CloseSourceMeterOutput" xml:space="preserve"><value>소스미터 출력 끄기</value></data>
+  <data name="SelectDataToRecalculate" xml:space="preserve"><value>다시 계산할 데이터를 먼저 선택하십시오</value></data>
+  <data name="ConnectionFailedTitle" xml:space="preserve"><value>연결 실패</value></data>
+  <data name="DisconnectionFailedTitle" xml:space="preserve"><value>연결 해제 실패</value></data>
+  <data name="ReadFailedTitle" xml:space="preserve"><value>읽기 실패</value></data>
+  <data name="SourceMeterConnectFailedCheckSettings" xml:space="preserve"><value>소스미터 연결에 실패했습니다. 장치 이름과 연결 방식을 확인하십시오.</value></data>
+  <data name="SourceMeterReadFailed" xml:space="preserve"><value>소스미터 읽기에 실패했습니다</value></data>
+  <data name="CloseOutputFailedTitle" xml:space="preserve"><value>출력 끄기 실패</value></data>
+  <data name="SourceMeterCloseOutputFailed" xml:space="preserve"><value>소스미터 출력 끄기에 실패했습니다</value></data>
+  <data name="SourceValueVoltage" xml:space="preserve"><value>소스값 (V)</value></data>
+  <data name="SourceValueCurrentMilliamp" xml:space="preserve"><value>소스값 (mA)</value></data>
+  <data name="LimitMilliamp" xml:space="preserve"><value>제한 (mA)</value></data>
+  <data name="LimitVoltage" xml:space="preserve"><value>제한 (V)</value></data>
+  <data name="VoltageSourceModeHint" xml:space="preserve"><value>전압 소스 모드: 측정값 단위는 V, 제한값 단위는 mA</value></data>
+  <data name="CurrentSourceModeHint" xml:space="preserve"><value>전류 소스 모드: 측정값 단위는 mA, 제한값 단위는 V</value></data>
+  <data name="LuminousFluxMode" xml:space="preserve"><value>광속 모드</value></data>
+  <data name="BrightnessChromaticityMode" xml:space="preserve"><value>휘도 색도 모드</value></data>
+  <data name="DeviceNameRequired" xml:space="preserve"><value>장치 이름은 비워 둘 수 없습니다</value></data>
+  <data name="ConnectingSourceMeter" xml:space="preserve"><value>소스미터 연결 중...</value></data>
+  <data name="ConnectedStatus" xml:space="preserve"><value>연결됨</value></data>
+  <data name="DisconnectingSourceMeter" xml:space="preserve"><value>소스미터 연결 해제 중...</value></data>
+  <data name="MeasuringAndReading" xml:space="preserve"><value>점등 및 읽기 중...</value></data>
+  <data name="ReadCompletedAt" xml:space="preserve"><value>읽음 {0}</value></data>
+  <data name="OutputClosed" xml:space="preserve"><value>출력이 꺼졌습니다</value></data>
 </root>

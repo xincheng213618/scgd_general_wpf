@@ -64,15 +64,16 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            Version? version = Assembly.GetExecutingAssembly().GetName().Version;
             Topmost = true;
             CloseButton.Focus();
             #if (DEBUG == true)
-            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " Debug " : "Release")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位) - {Assembly.GetExecutingAssembly().GetName().Version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
+            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " Debug " : "Release")}{(Debugger.IsAttached ? $" ({Properties.Resources.Debugging}) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}{Properties.Resources.Bit}) - {version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
 #else
-            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " Debug" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位 -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
+            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " Debug" : "")}{(Debugger.IsAttached ? $" ({Properties.Resources.Debugging}) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}{Properties.Resources.Bit} -  {version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
 #endif
             Icon = null;
-            TextSharp1.Text = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            TextSharp1.Text = version?.ToString() ?? string.Empty;
             TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo.TrimEnd() + " " + SystemHelper.GetTotalPhysicalMemory();
             TextBoxHardwareId.Text = SystemHelper.GetHardwareId();
 

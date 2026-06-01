@@ -118,9 +118,171 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="PerformanceTest" xml:space="preserve">
-    <value>Test de performance</value>
+    <value>Moniteur système</value>
   </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>Vitesse de mise à jour</value>
+  </data>
+  <data name="StorageManagement" xml:space="preserve">
+    <value>Gestion du stockage</value>
+  </data>
+  <data name="TotalStorage" xml:space="preserve">
+    <value>Capacité totale</value>
+  </data>
+  <data name="FreeSpace" xml:space="preserve">
+    <value>Espace libre</value>
+  </data>
+  <data name="Used" xml:space="preserve">
+    <value>Utilisé</value>
+  </data>
+  <data name="PerformanceMonitor" xml:space="preserve">
+    <value>Moniteur de performances</value>
+  </data>
+  <data name="TotalUsage" xml:space="preserve">
+    <value>Utilisation globale</value>
+  </data>
+  <data name="CurrentApp" xml:space="preserve">
+    <value>Application actuelle</value>
+  </data>
+  <data name="SystemInfo" xml:space="preserve">
+    <value>Infos système</value>
+  </data>
+  <data name="ComputerName" xml:space="preserve">
+    <value>Nom de l'ordinateur</value>
+  </data>
+  <data name="OS" xml:space="preserve">
+    <value>Système d'exploitation</value>
+  </data>
+  <data name="CoreCount" xml:space="preserve">
+    <value>Cœurs</value>
+  </data>
+  <data name="GPUMemory" xml:space="preserve">
+    <value>Mémoire GPU</value>
+  </data>
+  <data name="Uptime" xml:space="preserve">
+    <value>Temps de fonctionnement</value>
+  </data>
+  <data name="TotalRAM" xml:space="preserve">
+    <value>RAM totale</value>
+  </data>
+  <data name="Network" xml:space="preserve">
+    <value>Réseau</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+  <data name="DateFormat" xml:space="preserve">
+    <value>Format de date</value>
+  </data>
+  <data name="ShowTime" xml:space="preserve">
+    <value>Afficher l'heure</value>
+  </data>
+  <data name="ShowRAM" xml:space="preserve">
+    <value>Afficher la RAM</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>Taille du cache</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>Vider le cache</value>
+  </data>
+  <data name="LocalDisk" xml:space="preserve">
+    <value>Disque local</value>
+  </data>
+  <data name="NotDetected" xml:space="preserve">
+    <value>Non détecté</value>
+  </data>
+  <data name="ShowCPU" xml:space="preserve">
+    <value>Afficher le CPU</value>
+  </data>
+  <data name="ShowUptime" xml:space="preserve">
+    <value>Afficher le temps de fonctionnement</value>
+  </data>
+  <data name="ShowDisk" xml:space="preserve">
+    <value>Afficher le disque</value>
+  </data>
+  <data name="StatusBarSettings" xml:space="preserve">
+    <value>Éléments de la barre d'état</value>
+  </data>
+  <data name="ProcessMonitor" xml:space="preserve">
+    <value>Moniteur des processus</value>
+  </data>
+  <data name="ProcessName" xml:space="preserve">
+    <value>Nom du processus</value>
+  </data>
+  <data name="MemoryUsage" xml:space="preserve">
+    <value>Utilisation mémoire</value>
+  </data>
+  <data name="RuntimeInfo" xml:space="preserve">
+    <value>Infos d'exécution</value>
+  </data>
+  <data name="OSUptime" xml:space="preserve">
+    <value>Temps de fonctionnement système</value>
+  </data>
+  <data name="OSBootTime" xml:space="preserve">
+    <value>Heure de démarrage</value>
+  </data>
+  <data name="AppStartTime" xml:space="preserve">
+    <value>Heure de lancement</value>
+  </data>
+  <data name="ScreenResolution" xml:space="preserve">
+    <value>Résolution d'écran</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>Architecture</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>Nom d'utilisateur</value>
+  </data>
+  <data name="ThreadCount" xml:space="preserve">
+    <value>Threads</value>
+  </data>
+  <data name="HandleCount" xml:space="preserve">
+    <value>Handles</value>
+  </data>
+  <data name="AvailableMemory" xml:space="preserve">
+    <value>Mémoire disponible</value>
+  </data>
+  <data name="CPU" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="RAM" xml:space="preserve">
+    <value>RAM</value>
+  </data>
+  <data name="GPU" xml:space="preserve">
+    <value>GPU</value>
+  </data>
+  <data name="PID" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="DotNet" xml:space="preserve">
+    <value>.NET</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>Adresse IP</value>
+  </data>
+  <data name="MacAddress" xml:space="preserve">
+    <value>Adresse MAC</value>
+  </data>
+  <data name="MillisecondUnit" xml:space="preserve">
+    <value>ms</value>
+  </data>
+  <data name="NotAvailable" xml:space="preserve">
+    <value>N/A</value>
+  </data>
+  <data name="DurationWithDaysFormat" xml:space="preserve">
+    <value>{0} j {1:00}:{2:00}:{3:00}</value>
+  </data>
+  <data name="StatusBarUsageFormat" xml:space="preserve">
+    <value>{0} {1:F1}%</value>
+  </data>
+  <data name="CacheClearSucceededDetail" xml:space="preserve">
+    <value>Cache vidé, {0} fichiers supprimés</value>
+  </data>
+  <data name="CacheClearFailedDetail" xml:space="preserve">
+    <value>Échec du vidage du cache : {0}</value>
   </data>
 </root>

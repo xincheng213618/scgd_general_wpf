@@ -59,7 +59,7 @@ namespace ColorVision.UI.Languages
         /// 语言
         /// </summary>
         [ConfigSetting]
-        [DisplayName("Language"),PropertyEditorType(typeof(LanguagePropertiesEditor))]
+        [DisplayName("Language"), Description("LanguageDescription"), PropertyEditorType(typeof(LanguagePropertiesEditor))]
         public string UICulture
         {
             get => LanguageManager.GetDefaultLanguages().Contains(_UICulture) ? _UICulture : CultureInfo.InstalledUICulture.Name;

@@ -124,6 +124,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 配置本机通信服务的监听地址、端口和数据格式。 的本地化字符串。
+        /// </summary>
+        public static string CommunicationProtocolDescription {
+            get {
+                return ResourceManager.GetString("CommunicationProtocolDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 连接的客户端 的本地化字符串。
         /// </summary>
         public static string ConnectedClients {
@@ -259,11 +268,29 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 服务监听的本机地址，0.0.0.0 表示监听所有网卡。 的本地化字符串。
+        /// </summary>
+        public static string IPAddressDescription {
+            get {
+                return ResourceManager.GetString("IPAddressDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 服务器启用状态 的本地化字符串。
         /// </summary>
         public static string IsServerEnabled {
             get {
                 return ResourceManager.GetString("IsServerEnabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用或关闭本机 Socket 通信服务。 的本地化字符串。
+        /// </summary>
+        public static string IsServerEnabledDescription {
+            get {
+                return ResourceManager.GetString("IsServerEnabledDescription", resourceCulture);
             }
         }
         
@@ -475,6 +502,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Socket 服务监听的端口，范围为 0 到 65535。 的本地化字符串。
+        /// </summary>
+        public static string ServerPortDescription {
+            get {
+                return ResourceManager.GetString("ServerPortDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 服务设置 的本地化字符串。
         /// </summary>
         public static string ServiceSettings {
@@ -493,11 +529,92 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Socket 消息 的本地化字符串。
+        /// </summary>
+        public static string Socket_MessageTable {
+            get {
+                return ResourceManager.GetString("Socket_MessageTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询数量 的本地化字符串。
+        /// </summary>
+        public static string Socket_QueryCount {
+            get {
+                return ResourceManager.GetString("Socket_QueryCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 接收 的本地化字符串。
+        /// </summary>
+        public static string Socket_Receive {
+            get {
+                return ResourceManager.GetString("Socket_Receive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发送 的本地化字符串。
+        /// </summary>
+        public static string Socket_Send {
+            get {
+                return ResourceManager.GetString("Socket_Send", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按类型排序 的本地化字符串。
+        /// </summary>
+        public static string Socket_SortByType {
+            get {
+                return ResourceManager.GetString("Socket_SortByType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Socket 缓冲区大小 的本地化字符串。
+        /// </summary>
+        public static string SocketBufferSize {
+            get {
+                return ResourceManager.GetString("SocketBufferSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 单次接收数据时使用的缓冲区大小。 的本地化字符串。
+        /// </summary>
+        public static string SocketBufferSizeDescription {
+            get {
+                return ResourceManager.GetString("SocketBufferSizeDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Socket 连接管理器 的本地化字符串。
         /// </summary>
         public static string SocketManagementWindow {
             get {
                 return ResourceManager.GetString("SocketManagementWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 消息解析格式 的本地化字符串。
+        /// </summary>
+        public static string SocketPhraseType {
+            get {
+                return ResourceManager.GetString("SocketPhraseType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 通信消息的解析格式。 的本地化字符串。
+        /// </summary>
+        public static string SocketPhraseTypeDescription {
+            get {
+                return ResourceManager.GetString("SocketPhraseTypeDescription", resourceCulture);
             }
         }
         

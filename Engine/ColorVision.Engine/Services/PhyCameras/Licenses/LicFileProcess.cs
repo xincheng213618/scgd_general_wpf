@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             ColorVisionLicense colorVisionLicense =  JsonConvert.DeserializeObject<ColorVisionLicense>(LicenseValue);
             if (colorVisionLicense == null) return false;
 
-            if (MessageBox.Show("是否导入许可证" + colorVisionLicense.DeviceMode, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.No) return false;
+            if (MessageBox.Show(string.Format(Properties.Resources.ImportLicenseConfirm, colorVisionLicense.DeviceMode), Properties.Resources.LicenseImport, MessageBoxButton.YesNo) == MessageBoxResult.No) return false;
             LicenseModel licenseModel = PhyLicenseDao.Instance.GetByMAC(Path.GetFileNameWithoutExtension(filePath)) ?? new LicenseModel();
             licenseModel.LicenseValue = content;
             PhyLicenseDao.Instance.Save(licenseModel);

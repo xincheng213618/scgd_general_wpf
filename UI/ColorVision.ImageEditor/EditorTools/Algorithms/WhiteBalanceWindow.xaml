@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        Title="白平衡调整" Height="300" Width="400"
+        xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
+        Title="{x:Static properties:Resources.Algorithm_WhiteBalanceTitle}" Height="300" Width="400"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource GlobalBackground}"
         ResizeMode="NoResize">
@@ -13,11 +14,11 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="调整白平衡" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.Algorithm_AdjustWhiteBalance}" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
 
         <StackPanel Grid.Row="1">
             <DockPanel Margin="0,10,0,5">
-                <TextBlock Text="红色" VerticalAlignment="Center" MinWidth="80" Margin="0,0,10,0"/>
+                <TextBlock Text="{x:Static properties:Resources.Algorithm_Red}" VerticalAlignment="Center" MinWidth="80" Margin="0,0,10,0"/>
                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=RedSlider, Path=Value, StringFormat=F3}" Width="60" Margin="5,0,0,0"/>
                 <hc:PreviewSlider x:Name="RedSlider" 
                                   TickFrequency="0.001" 
@@ -31,7 +32,7 @@
             </DockPanel>
 
             <DockPanel Margin="0,10,0,5">
-                <TextBlock Text="绿色" VerticalAlignment="Center" MinWidth="80" Margin="0,0,10,0"/>
+                <TextBlock Text="{x:Static properties:Resources.Algorithm_Green}" VerticalAlignment="Center" MinWidth="80" Margin="0,0,10,0"/>
                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=GreenSlider, Path=Value, StringFormat=F3}" Width="60" Margin="5,0,0,0"/>
                 <hc:PreviewSlider x:Name="GreenSlider" 
                                   TickFrequency="0.001" 
@@ -45,7 +46,7 @@
             </DockPanel>
 
             <DockPanel Margin="0,10,0,5">
-                <TextBlock Text="蓝色" VerticalAlignment="Center" MinWidth="80" Margin="0,0,10,0"/>
+                <TextBlock Text="{x:Static properties:Resources.Algorithm_Blue}" VerticalAlignment="Center" MinWidth="80" Margin="0,0,10,0"/>
                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=BlueSlider, Path=Value, StringFormat=F3}" Width="60" Margin="5,0,0,0"/>
                 <hc:PreviewSlider x:Name="BlueSlider" 
                                   TickFrequency="0.001" 
@@ -60,8 +61,8 @@
         </StackPanel>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="应用" Width="80" Click="Apply_Click" Margin="0,0,10,0"/>
-            <Button Content="取消" Width="80" Click="Cancel_Click"/>
+            <Button Content="{x:Static properties:Resources.Algorithm_Apply}" Width="80" Click="Apply_Click" Margin="0,0,10,0"/>
+            <Button Content="{x:Static properties:Resources.Algorithm_Cancel}" Width="80" Click="Cancel_Click"/>
         </StackPanel>
     </Grid>
 </Window>

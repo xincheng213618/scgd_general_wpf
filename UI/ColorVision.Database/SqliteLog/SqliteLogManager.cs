@@ -1,5 +1,6 @@
 ﻿#pragma warning disable
 using ColorVision.UI;
+using ColorVision.Database.Properties;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
@@ -56,7 +57,7 @@ namespace ColorVision.Database.SqliteLog
         {
             return new SqliteDatabaseBrowserProvider(
                 "sqlite.log",
-                "SQLite 日志",
+                Properties.Resources.DB_SqliteLogTable,
                 () => SqliteDbPath,
                 CreateDbClient);
         }

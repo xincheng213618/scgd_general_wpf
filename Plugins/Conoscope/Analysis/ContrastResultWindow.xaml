@@ -10,7 +10,14 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
-            <TextBlock x:Name="tbSummary" Foreground="Gray"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="tbSummary" Foreground="Gray" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="{x:Static properties:Resources.BtnExport}" Padding="12,4" Click="btnExportCsv_Click"/>
+            </Grid>
         </Border>
 
         <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">

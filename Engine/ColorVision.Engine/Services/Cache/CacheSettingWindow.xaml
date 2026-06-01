@@ -4,10 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services"
-        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CacheSettingManager}"
-        Title="缓存管理" Height="450" Width="800" Background="{StaticResource GlobalBackground}"  Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.CacheManagement}" Height="450" Width="800" Background="{StaticResource GlobalBackground}"  Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

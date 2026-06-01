@@ -124,6 +124,9 @@
   <data name="Language" xml:space="preserve">
     <value>язык пользовательского интерфейса</value>
   </data>
+  <data name="LanguageDescription" xml:space="preserve">
+    <value>Выберите язык интерфейса. При следовании системе используется системный язык.</value>
+  </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>Автоматически переключать выбранные представления</value>
   </data>
@@ -178,6 +181,15 @@
   <data name="MenuOpen" xml:space="preserve">
     <value>_Открыть</value>
   </data>
+  <data name="MenuSave" xml:space="preserve">
+    <value>Сохранить(_S)</value>
+  </data>
+  <data name="MenuSaveAs" xml:space="preserve">
+    <value>Сохранить как(_A)</value>
+  </data>
+  <data name="MenuSelectAll" xml:space="preserve">
+    <value>Выделить все(_A)</value>
+  </data>
   <data name="Reset" xml:space="preserve">
     <value>перезагрузить</value>
   </data>
@@ -229,11 +241,122 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>Общие настройки</value>
   </data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve">
+    <value>Подходящие настройки не найдены.</value>
+  </data>
+  <data name="SettingsMatchingCountFormat" xml:space="preserve">
+    <value>Найдено настроек: {0}</value>
+  </data>
+  <data name="SettingsCountFormat" xml:space="preserve">
+    <value>Настроек: {0}</value>
+  </data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve">
+    <value>Настройка недоступна</value>
+  </data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve">
+    <value>Не удалось загрузить настройку</value>
+  </data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve">
+    <value>Недопустимый тип страницы настроек</value>
+  </data>
+  <data name="SettingsPageUnavailable" xml:space="preserve">
+    <value>Страница настроек недоступна</value>
+  </data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve">
+    <value>Не удалось загрузить страницу настроек</value>
+  </data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
+    <value>Проверять обновления при запуске</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
+    <value>При запуске проверять обновления основного приложения, плагинов и тем.</value>
+  </data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
+    <value>обновление приложения обновление плагинов обновление темы запуск проверка автообновление check plugin updates startup update</value>
+  </data>
+  <data name="SettingsSectionBasic" xml:space="preserve">
+    <value>Основное</value>
+  </data>
+  <data name="SettingsSectionSearch" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve">
+    <value>Архив файлов</value>
+  </data>
+  <data name="SettingsSectionServices" xml:space="preserve">
+    <value>Службы</value>
+  </data>
+  <data name="SettingsSectionPaths" xml:space="preserve">
+    <value>Пути</value>
+  </data>
+  <data name="SettingsSectionExtensions" xml:space="preserve">
+    <value>Расширения</value>
+  </data>
+  <data name="SettingsSectionOther" xml:space="preserve">
+    <value>Другое</value>
+  </data>
+  <data name="LogLevelDescription" xml:space="preserve">
+    <value>Управляет подробностью записей в журналах приложения.</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
+    <value>URL службы Marketplace</value>
+  </data>
+  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
+    <value>URL службы для marketplace, проверки обновлений и API онлайн-пакетов.</value>
+  </data>
   <data name="PluginName" xml:space="preserve">
     <value>название плагина</value>
   </data>
   <data name="Search" xml:space="preserve">
     <value>поиск</value>
+  </data>
+  <data name="SearchSettingsTitle" xml:space="preserve">
+    <value>Настройки поиска</value>
+  </data>
+  <data name="SearchSettingsHint" xml:space="preserve">
+    <value>Дважды щелкните значок поиска, чтобы открыть это окно. Отмеченные источники участвуют в быстром поиске Ctrl+F.</value>
+  </data>
+  <data name="SearchIndexedSourcesTitle" xml:space="preserve">
+    <value>Источники индексации</value>
+  </data>
+  <data name="SearchIndexedSourcesDescription" xml:space="preserve">
+    <value>Эти источники добавляются в локальный индекс быстрого поиска.</value>
+  </data>
+  <data name="SearchMenuCommands" xml:space="preserve">
+    <value>Команды меню</value>
+  </data>
+  <data name="SearchMenuCommandsDescription" xml:space="preserve">
+    <value>Встроенные меню и пункты меню, предоставленные плагинами.</value>
+  </data>
+  <data name="SearchTemplates" xml:space="preserve">
+    <value>Шаблоны</value>
+  </data>
+  <data name="SearchTemplatesDescription" xml:space="preserve">
+    <value>Элементы шаблонов, предоставляемые поисковым провайдером движка.</value>
+  </data>
+  <data name="SearchThirdPartyApps" xml:space="preserve">
+    <value>Сторонние приложения</value>
+  </data>
+  <data name="SearchThirdPartyAppsDescription" xml:space="preserve">
+    <value>Приложения, найденные средством запуска сторонних приложений.</value>
+  </data>
+  <data name="SearchExternalActionsTitle" xml:space="preserve">
+    <value>Внешние действия поиска</value>
+  </data>
+  <data name="SearchExternalActionsDescription" xml:space="preserve">
+    <value>Эти действия добавляются в конец списка результатов для текущего ключевого слова.</value>
+  </data>
+  <data name="SearchEverythingDescription" xml:space="preserve">
+    <value>Запустить Everything с текущим ключевым словом.</value>
+  </data>
+  <data name="SearchBrowserDescription" xml:space="preserve">
+    <value>Открыть текущее ключевое слово в веб-поисковике.</value>
+  </data>
+  <data name="SearchBrowserEngine" xml:space="preserve">
+    <value>Поисковая система браузера</value>
+  </data>
+  <data name="SearchIconSettingsTooltip" xml:space="preserve">
+    <value>Дважды щелкните, чтобы открыть настройки поиска</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>возобновлять</value>
@@ -465,5 +588,166 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>тема</value>
+  </data>
+  <data name="ThemeDescription" xml:space="preserve">
+    <value>Выберите цветовую тему интерфейса приложения.</value>
+  </data>
+  <data name="MenuTreemapViewer" xml:space="preserve">
+    <value>Просмотр Treemap</value>
+  </data>
+  <data name="Treemap_Title" xml:space="preserve"><value>Disk Space Analyzer - Treemap Viewer</value></data>
+  <data name="Treemap_DriveLabel" xml:space="preserve"><value>Drive:</value></data>
+  <data name="Treemap_BrowseDirectory" xml:space="preserve"><value>Browse...</value></data>
+  <data name="Treemap_BrowseDirectoryTooltip" xml:space="preserve"><value>Select directory to scan</value></data>
+  <data name="Treemap_Scan" xml:space="preserve"><value>Scan</value></data>
+  <data name="Treemap_ScanTooltip" xml:space="preserve"><value>Scan selected directory and display treemap</value></data>
+  <data name="Treemap_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Treemap_CancelTooltip" xml:space="preserve"><value>Abort current scan</value></data>
+  <data name="Treemap_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Treemap_SaveTooltip" xml:space="preserve"><value>Save current scan results as JSON file</value></data>
+  <data name="Treemap_Load" xml:space="preserve"><value>Load</value></data>
+  <data name="Treemap_LoadTooltip" xml:space="preserve"><value>Load scan results from saved JSON file</value></data>
+  <data name="Treemap_Up" xml:space="preserve"><value>↑ Up</value></data>
+  <data name="Treemap_UpTooltip" xml:space="preserve"><value>Return to parent directory node</value></data>
+  <data name="Treemap_ShowLabels" xml:space="preserve"><value>Show Labels</value></data>
+  <data name="Treemap_NodeCount" xml:space="preserve"><value>Nodes:</value></data>
+  <data name="Treemap_File" xml:space="preserve"><value>File</value></data>
+  <data name="Treemap_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="Treemap_SelectDirPrompt" xml:space="preserve"><value>Select a directory and click "Scan", or click "Load" to read saved scan results.</value></data>
+  <data name="Treemap_Scanning" xml:space="preserve"><value>Scanning...</value></data>
+  <data name="Treemap_ScannedFiles" xml:space="preserve"><value>Scanned {0:N0} files...</value></data>
+  <data name="Treemap_Cancelled" xml:space="preserve"><value>Cancelled.</value></data>
+  <data name="Treemap_Complete" xml:space="preserve"><value>Done. {0:N0} files total.</value></data>
+  <data name="Treemap_ScanError" xml:space="preserve"><value>Scan error: {0}</value></data>
+  <data name="Treemap_SaveDialogTitle" xml:space="preserve"><value>Save Scan Results</value></data>
+  <data name="Treemap_Saved" xml:space="preserve"><value>Saved: {0}</value></data>
+  <data name="Treemap_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="Treemap_LoadDialogTitle" xml:space="preserve"><value>Load Scan Results</value></data>
+  <data name="Treemap_InvalidFormat" xml:space="preserve"><value>Invalid or empty file format.</value></data>
+  <data name="Treemap_Loaded" xml:space="preserve"><value>Loaded: {0}</value></data>
+  <data name="Treemap_LoadFailed" xml:space="preserve"><value>Load failed: {0}</value></data>
+  <data name="Treemap_OpenFile" xml:space="preserve"><value>Open File</value></data>
+  <data name="Treemap_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
+  <data name="Treemap_OpenInExplorer" xml:space="preserve"><value>Open in Explorer</value></data>
+  <data name="Treemap_ShowInExplorer" xml:space="preserve"><value>Show in Explorer</value></data>
+  <data name="Treemap_CopyPath" xml:space="preserve"><value>Copy Path</value></data>
+  <data name="Treemap_DrillDown" xml:space="preserve"><value>Drill Down (set as root)</value></data>
+  <data name="Treemap_GoUp" xml:space="preserve"><value>Go Up</value></data>
+  <data name="Treemap_DeleteFile" xml:space="preserve"><value>Delete file {0}</value></data>
+  <data name="Treemap_ConfirmDelete" xml:space="preserve"><value>Confirm delete file:\n{0}</value></data>
+  <data name="Treemap_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
+  <data name="Treemap_DeleteFailed" xml:space="preserve"><value>Delete failed: {0}</value></data>
+  <data name="Treemap_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Treemap_Prompt" xml:space="preserve"><value>Prompt</value></data>
+  <data name="Treemap_SelectValidDir" xml:space="preserve"><value>Please select a valid directory first.</value></data>
+  <data name="PropEditor_SearchPlaceholder" xml:space="preserve"><value>Search properties...</value></data>
+  <data name="PropEditor_ResetToDefault" xml:space="preserve"><value>Reset to Default</value></data>
+  <data name="PropEditor_ResetTooltip" xml:space="preserve"><value>Reset to class default values</value></data>
+  <data name="PropEditor_SortDefault" xml:space="preserve"><value>Default Sort</value></data>
+  <data name="PropEditor_SortNameAsc" xml:space="preserve"><value>Sort by Name (Ascending)</value></data>
+  <data name="PropEditor_SortNameDesc" xml:space="preserve"><value>Sort by Name (Descending)</value></data>
+  <data name="PropEditor_SortCategoryAsc" xml:space="preserve"><value>Sort by Category (Ascending)</value></data>
+  <data name="PropEditor_SortCategoryDesc" xml:space="preserve"><value>Sort by Category (Descending)</value></data>
+  <data name="PropEditor_JsonParseError" xml:space="preserve"><value>JSON parse error:</value></data>
+  <data name="PropEditor_LoadError" xml:space="preserve"><value>Load error:</value></data>
+  <data name="PropEditor_NoEditableProperties" xml:space="preserve"><value>No editable properties</value></data>
+  <data name="PropEditor_JsonGenerateError" xml:space="preserve"><value>JSON generation error:</value></data>
+  <data name="PropEditor_ValidationError" xml:space="preserve"><value>Validation failed:</value></data>
+  <data name="ListEditor_Title" xml:space="preserve"><value>Edit List</value></data>
+  <data name="ListEditor_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="ListEditor_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="ListEditor_DeleteAll" xml:space="preserve"><value>Delete All</value></data>
+  <data name="ListEditor_MoveUp" xml:space="preserve"><value>Move Up</value></data>
+  <data name="ListEditor_MoveDown" xml:space="preserve"><value>Move Down</value></data>
+  <data name="ListEditor_Index" xml:space="preserve"><value>Index</value></data>
+  <data name="ListEditor_Value" xml:space="preserve"><value>Value</value></data>
+  <data name="ListItemEditor_Title" xml:space="preserve"><value>Edit Item</value></data>
+  <data name="ListItemEditor_EditorType" xml:space="preserve"><value>Editor Type:</value></data>
+  <data name="DictEditor_Title" xml:space="preserve"><value>Edit Dictionary</value></data>
+  <data name="DictEditor_Key" xml:space="preserve"><value>Key</value></data>
+  <data name="DictEditor_Value" xml:space="preserve"><value>Value</value></data>
+  <data name="DictItemEditor_Title" xml:space="preserve"><value>Edit Dictionary Item</value></data>
+  <data name="DictItemEditor_Count" xml:space="preserve"><value>Contains {0} items</value></data>
+  <data name="DictItemEditor_Empty" xml:space="preserve"><value>Empty list</value></data>
+  <data name="DictItemEditor_EditList" xml:space="preserve"><value>Edit list...</value></data>
+  <data name="DictItemEditor_Key" xml:space="preserve"><value>Key:</value></data>
+  <data name="DictItemEditor_Value" xml:space="preserve"><value>Value:</value></data>
+  <data name="DictItemEditor_KeyEmpty" xml:space="preserve"><value>Key cannot be empty!</value></data>
+  <data name="DictItemEditor_ValidationError" xml:space="preserve"><value>Validation Error</value></data>
+  <data name="DictItemEditor_KeyExists" xml:space="preserve"><value>Key '{0}' already exists! Please use a different key.</value></data>
+  <data name="DictEditor_CollectionCount" xml:space="preserve"><value>Collection: {0} items</value></data>
+  <data name="DictEditor_ConfirmDeleteSelected" xml:space="preserve"><value>Are you sure you want to delete the selected {0} items?</value></data>
+  <data name="DictEditor_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
+  <data name="DictEditor_ConfirmDeleteAll" xml:space="preserve"><value>Are you sure you want to delete all {0} items?</value></data>
+  <data name="DictEditor_ConfirmDeleteAllTitle" xml:space="preserve"><value>Confirm Delete All</value></data>
+  <data name="Config_Parameters" xml:space="preserve"><value>Configuration Parameters</value></data>
+  <data name="Config_EnableBackup" xml:space="preserve"><value>Enable scheduled backup</value></data>
+  <data name="HotKey_RestoreDefault" xml:space="preserve"><value>Restore Default</value></data>
+  <data name="HotKey_SaveHotkey" xml:space="preserve"><value>Save Hotkey</value></data>
+  <data name="HotKey_LoadHotkey" xml:space="preserve"><value>Load Hotkey</value></data>
+  <data name="Log_ReverseOrder" xml:space="preserve"><value>Reverse</value></data>
+  <data name="Log_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
+  <data name="TimedOp_ViewStats" xml:space="preserve"><value>View Timing Stats</value></data>
+  <data name="TimedOp_NoHistory" xml:space="preserve"><value>No timing history.</value></data>
+  <data name="TimedOp_Warmup" xml:space="preserve"><value>Warmup:</value></data>
+  <data name="TimedOp_NoStableSamples" xml:space="preserve"><value>No stable samples recorded yet.</value></data>
+  <data name="TimedOp_WarmupNote" xml:space="preserve"><value>First-run samples after startup are treated as warmup and excluded from averaging.</value></data>
+  <data name="TimedOp_Last" xml:space="preserve"><value>Last:</value></data>
+  <data name="TimedOp_Average" xml:space="preserve"><value>Average:</value></data>
+  <data name="TimedOp_Fastest" xml:space="preserve"><value>Fastest:</value></data>
+  <data name="TimedOp_Slowest" xml:space="preserve"><value>Slowest:</value></data>
+  <data name="TimedOp_StableSamples" xml:space="preserve"><value>Stable samples:</value></data>
+  <data name="TimedOp_RightClickHint" xml:space="preserve"><value>Right-click the button to open stats window.</value></data>
+  <data name="TimedOp_FewSamples" xml:space="preserve"><value>Stable samples still few; continuing will improve accuracy.</value></data>
+  <data name="TimedOp_StatsRecorded" xml:space="preserve"><value>Timing stats recorded.</value></data>
+  <data name="TimedOp_CloseToAverage" xml:space="preserve"><value>Close to historical average.</value></data>
+  <data name="TimedOp_FasterThanAverage" xml:space="preserve"><value>{0} faster than historical average.</value></data>
+  <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>{0} slower than historical average.</value></data>
+  <data name="UpdateRecovery_Restored" xml:space="preserve"><value>Previous update was incomplete. System has been restored to the pre-update version.</value></data>
+  <data name="UpdateRecovery_Failed" xml:space="preserve"><value>Previous update was incomplete and automatic recovery failed. Please reinstall manually or check the backup directory.</value></data>
+  <data name="SearchEngine" xml:space="preserve">
+    <value>Search Engine</value>
+  </data>
+  <data name="EnableBrowserSearch" xml:space="preserve">
+    <value>Включить поиск в браузере</value>
+  </data>
+  <data name="EnableEverythingSearch" xml:space="preserve">
+    <value>Включить поиск Everything</value>
+  </data>
+  <data name="EverythingPath" xml:space="preserve">
+    <value>Путь Everything</value>
+  </data>
+  <data name="ListEditor_ListCount" xml:space="preserve">
+    <value>[List: {0} items]</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteSelected" xml:space="preserve">
+    <value>Are you sure you want to delete the selected {0} items?</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteTitle" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteAll" xml:space="preserve">
+    <value>Are you sure you want to delete all {0} items?</value>
+  </data>
+  <data name="ListEditor_ConfirmDeleteAllTitle" xml:space="preserve">
+    <value>Confirm Delete All</value>
+  </data>
+  <data name="ListItemEditor_NestedList" xml:space="preserve">
+    <value>Nested List:</value>
+  </data>
+  <data name="ListItemEditor_FileSelector" xml:space="preserve">
+    <value>File Selector</value>
+  </data>
+  <data name="ListItemEditor_FolderSelector" xml:space="preserve">
+    <value>Folder Selector</value>
+  </data>
+  <data name="ListItemEditor_Textbox" xml:space="preserve">
+    <value>Textbox</value>
+  </data>
+  <data name="ListItemEditor_Dropdown" xml:space="preserve">
+    <value>Dropdown</value>
+  </data>
+  <data name="ListItemEditor_Checkbox" xml:space="preserve">
+    <value>Checkbox</value>
   </data>
 </root>

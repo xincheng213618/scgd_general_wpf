@@ -70,8 +70,8 @@ namespace SystemMonitor
                 items.Add(new StatusBarMeta
                 {
                     Id = "SystemMonitor_CPU",
-                    Name = "CPU",
-                    Description = "CPU Usage",
+                    Name = Resources.CPU,
+                    Description = Resources.ShowCPU,
                     Order = 9998,
                     Type = StatusBarType.Text,
                     BindingName = nameof(SystemMonitors.CPUStatusText),
@@ -87,7 +87,7 @@ namespace SystemMonitor
                 items.Add(new StatusBarMeta
                 {
                     Id = "SystemMonitor_RAM",
-                    Name = "RAM",
+                    Name = Resources.RAM,
                     Description = Resources.ShowRAM,
                     Order = 9997,
                     Type = StatusBarType.Text,

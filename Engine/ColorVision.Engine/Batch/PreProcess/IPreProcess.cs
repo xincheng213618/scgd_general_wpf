@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -47,8 +48,7 @@ namespace ColorVision.Engine.Batch
         /// <summary>
         /// Gets or sets whether this pre-processor is enabled for execution.
         /// </summary>
-        [System.ComponentModel.DisplayName("启用")]
-        [System.ComponentModel.Description("启用此预处理器")]
+        [Display(Name = "Engine_PG_EnablePreProcess", Description = "Engine_PG_EnablePreProcessDesc", ResourceType = typeof(Properties.Resources))]
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
         private bool _IsEnabled = false;
 
@@ -56,8 +56,7 @@ namespace ColorVision.Engine.Batch
         /// Gets or sets the template names (comma-separated) this preprocessor applies to.
         /// Empty means applies to all templates.
         /// </summary>
-        [System.ComponentModel.DisplayName("应用模板")]
-        [System.ComponentModel.Description("逗号分隔的模板名称，留空表示应用于所有模板")]
+        [Display(Name = "Engine_PG_ApplyTemplate", Description = "Engine_PG_ApplyTemplateDesc", ResourceType = typeof(Properties.Resources))]
         public string TemplateNames { get => _TemplateNames; set { _TemplateNames = value; OnPropertyChanged(); } }
         private string _TemplateNames = string.Empty;
 

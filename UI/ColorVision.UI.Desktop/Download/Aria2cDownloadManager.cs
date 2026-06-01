@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1863
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -38,7 +39,7 @@ namespace ColorVision.UI.Desktop.Download
                     var application = Application.Current;
                     if (application?.Dispatcher != null && !application.Dispatcher.CheckAccess())
                     {
-                        _instance = application.Dispatcher.Invoke(() => new Aria2cDownloadManager());
+                        _instance = application.Dispatcher.InvokeAsync(() => new Aria2cDownloadManager()).Task.GetAwaiter().GetResult();
                     }
                     else
                     {
@@ -97,6 +98,63 @@ namespace ColorVision.UI.Desktop.Download
 
         public DownloadManagerConfig Config => DownloadManagerConfig.Instance;
         private bool IsDisposingOrDisposed => Volatile.Read(ref _disposeState) != 0;
+
+        private void RunFireAndForget(Func<Task> operation, string failureMessage)
+        {
+            _ = RunFireAndForgetCoreAsync(operation, failureMessage);
+        }
+
+        private async Task RunFireAndForgetCoreAsync(Func<Task> operation, string failureMessage)
+        {
+            try
+            {
+                await operation().ConfigureAwait(false);
+            }
+            catch (OperationCanceledException ex)
+            {
+                log.Debug($"{failureMessage}: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                log.Error(failureMessage, ex);
+            }
+        }
+
+        private static void PostToDispatcher(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+                return;
+            }
+
+            dispatcher.InvokeAsync(() => RunDispatcherAction(action));
+        }
+
+        private static void RunOnDispatcher(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+                return;
+            }
+
+            dispatcher.InvokeAsync(action).Task.GetAwaiter().GetResult();
+        }
+
+        private static void RunDispatcherAction(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Dispatcher action failed.", ex);
+            }
+        }
 
         private Aria2cDownloadManager()
         {
@@ -171,43 +229,29 @@ namespace ColorVision.UI.Desktop.Download
 
         private void ApplySpeedLimitAsync()
         {
-            Task.Run(async () =>
+            RunFireAndForget(async () =>
             {
-                try
-                {
-                    if (IsDisposingOrDisposed) return;
-                    if (!IsAria2cRunning) return;
-                    string limit = Config.EnableSpeedLimit ? $"{Config.SpeedLimitMB}M" : "0";
-                    var options = new Dictionary<string, string> { ["max-overall-download-limit"] = limit };
-                    await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options });
-                    Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = Properties.Resources.ConfigApplied);
-                    log.Info($"Speed limit applied: {limit}");
-                }
-                catch (Exception ex)
-                {
-                    log.Debug($"Failed to apply speed limit: {ex.Message}");
-                }
-            });
+                if (IsDisposingOrDisposed) return;
+                if (!IsAria2cRunning) return;
+                string limit = Config.EnableSpeedLimit ? $"{Config.SpeedLimitMB}M" : "0";
+                var options = new Dictionary<string, string> { ["max-overall-download-limit"] = limit };
+                await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options }).ConfigureAwait(false);
+                PostToDispatcher(() => StatusMessage = Properties.Resources.ConfigApplied);
+                log.Info($"Speed limit applied: {limit}");
+            }, "Failed to apply speed limit.");
         }
 
         private void ApplyMaxConcurrentTasksAsync()
         {
-            Task.Run(async () =>
+            RunFireAndForget(async () =>
             {
-                try
-                {
-                    if (IsDisposingOrDisposed) return;
-                    if (!IsAria2cRunning) return;
-                    var options = new Dictionary<string, string> { ["max-concurrent-downloads"] = Config.MaxConcurrentTasks.ToString() };
-                    await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options });
-                    Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = Properties.Resources.ConfigApplied);
-                    log.Info($"Max concurrent tasks applied: {Config.MaxConcurrentTasks}");
-                }
-                catch (Exception ex)
-                {
-                    log.Debug($"Failed to apply max concurrent tasks: {ex.Message}");
-                }
-            });
+                if (IsDisposingOrDisposed) return;
+                if (!IsAria2cRunning) return;
+                var options = new Dictionary<string, string> { ["max-concurrent-downloads"] = Config.MaxConcurrentTasks.ToString() };
+                await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options }).ConfigureAwait(false);
+                PostToDispatcher(() => StatusMessage = Properties.Resources.ConfigApplied);
+                log.Info($"Max concurrent tasks applied: {Config.MaxConcurrentTasks}");
+            }, "Failed to apply max concurrent tasks.");
         }
 
         /// <summary>
@@ -235,18 +279,11 @@ namespace ColorVision.UI.Desktop.Download
             if (IsDisposingOrDisposed)
                 return;
 
-            Task.Run(async () =>
+            RunFireAndForget(async () =>
             {
-                try
-                {
-                    if (IsDisposingOrDisposed) return;
-                    await EnsureAria2cRunningAsync();
-                }
-                catch (Exception ex)
-                {
-                    log.Debug($"Preload aria2c failed: {ex.Message}");
-                }
-            });
+                if (IsDisposingOrDisposed) return;
+                await EnsureAria2cRunningAsync().ConfigureAwait(false);
+            }, "Preload aria2c failed.");
         }
 
         private string FindAria2c()
@@ -556,7 +593,12 @@ namespace ColorVision.UI.Desktop.Download
             _pollTimer = null;
         }
 
-        private async void PollCallback(object? state)
+        private void PollCallback(object? state)
+        {
+            _ = PollAsync();
+        }
+
+        private async Task PollAsync()
         {
             if (Interlocked.Exchange(ref _isPollCallback, 1) == 1)
                 return;
@@ -721,7 +763,7 @@ namespace ColorVision.UI.Desktop.Download
             if (IsDisposingOrDisposed)
                 return;
 
-            Task.Run(() => AutoRestartIncompleteDownloads());
+            RunFireAndForget(() => Task.Run(AutoRestartIncompleteDownloads), "Auto-restart incomplete downloads failed.");
         }
 
         /// <summary>
@@ -814,7 +856,7 @@ namespace ColorVision.UI.Desktop.Download
                 Authorization = authorization
             };
 
-            Application.Current.Dispatcher.Invoke(() => Tasks.Insert(0, task));
+            PostToDispatcher(() => Tasks.Insert(0, task));
 
             if (reusableEntry != null && TryStartReuseCompletedDownload(task, reusableEntry))
             {
@@ -1214,7 +1256,7 @@ namespace ColorVision.UI.Desktop.Download
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher != null && !dispatcher.CheckAccess())
             {
-                dispatcher.Invoke(update);
+                dispatcher.InvokeAsync(update).Task.GetAwaiter().GetResult();
                 return;
             }
 
@@ -1422,11 +1464,11 @@ namespace ColorVision.UI.Desktop.Download
 
             if (!string.IsNullOrEmpty(task.Gid))
             {
-                Task.Run(async () =>
+                RunFireAndForget(async () =>
                 {
                     try { await RpcCallAsync("aria2.pause", new object[] { $"token:{RpcSecret}", task.Gid }); }
                     catch (Exception ex) { log.Debug($"RPC pause failed for GID {task.Gid}: {ex.Message}"); }
-                });
+                }, $"RPC pause task failed for GID {task.Gid}.");
             }
             _activeTasks.TryRemove(task.Id, out _);
             Application.Current?.Dispatcher.BeginInvoke(() =>
@@ -1454,7 +1496,7 @@ namespace ColorVision.UI.Desktop.Download
                     task.SpeedText = string.Empty;
                 });
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
-                Task.Run(async () =>
+                RunFireAndForget(async () =>
                 {
                     try
                     {
@@ -1468,7 +1510,7 @@ namespace ColorVision.UI.Desktop.Download
                         // Fall back to retry
                         Application.Current?.Dispatcher.BeginInvoke(() => RetryDownload(task));
                     }
-                });
+                }, $"RPC unpause task failed for GID {task.Gid}.");
             }
             else
             {
@@ -1520,7 +1562,7 @@ namespace ColorVision.UI.Desktop.Download
                     TryRemoveGidAsync(task.Gid);
                 _activeTasks.TryRemove(task.Id, out _);
                 _localCopyTasks.TryRemove(task.Id, out _);
-                Application.Current.Dispatcher.Invoke(() => Tasks.Remove(task));
+                RunOnDispatcher(() => Tasks.Remove(task));
             }
         }
 
@@ -1530,7 +1572,7 @@ namespace ColorVision.UI.Desktop.Download
             List<string> filePaths = new();
             if (deleteFiles)
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                RunOnDispatcher(() =>
                 {
                     foreach (var task in Tasks.Where(t => ids.Contains(t.Id)))
                     {
@@ -1543,7 +1585,7 @@ namespace ColorVision.UI.Desktop.Download
             using var db = CreateDbClient();
             db.Deleteable<DownloadEntry>().In(ids).ExecuteCommand();
 
-            Application.Current.Dispatcher.Invoke(() =>
+            RunOnDispatcher(() =>
             {
                 var toRemove = Tasks.Where(t => ids.Contains(t.Id)).ToList();
                 foreach (var task in toRemove)
@@ -1593,7 +1635,7 @@ namespace ColorVision.UI.Desktop.Download
             }
             _activeTasks.Clear();
             _localCopyTasks.Clear();
-            Application.Current.Dispatcher.Invoke(() => Tasks.Clear());
+            RunOnDispatcher(() => Tasks.Clear());
         }
 
         /// <summary>
@@ -1601,11 +1643,11 @@ namespace ColorVision.UI.Desktop.Download
         /// </summary>
         private void TryRemoveGidAsync(string gid)
         {
-            Task.Run(async () =>
+            RunFireAndForget(async () =>
             {
                 try { await RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", gid }); }
                 catch (Exception ex) { log.Debug($"RPC remove failed for GID {gid}: {ex.Message}"); }
-            });
+            }, $"RPC remove task failed for GID {gid}.");
         }
 
         public void LoadRecords(string? searchKeyword = null, int pageSize = 20, int page = 1)
@@ -1623,7 +1665,7 @@ namespace ColorVision.UI.Desktop.Download
                 .Take(pageSize)
                 .ToList();
 
-            Application.Current.Dispatcher.Invoke(() =>
+            RunOnDispatcher(() =>
             {
                 Tasks.Clear();
                 foreach (var entry in entries)

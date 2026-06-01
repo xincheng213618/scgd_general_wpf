@@ -593,6 +593,36 @@ namespace ColorVision.Engine.Templates.Flow
 
         #region ContextMenu
 
+        private static string LocalizeNodeMenuPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return path;
+
+            string displayPath = path.StartsWith("FlowEngineLib/", StringComparison.Ordinal)
+                ? path.Substring("FlowEngineLib/".Length)
+                : path;
+
+            return string.Join("/", displayPath.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(LocalizeNodeMenuText));
+        }
+
+        private static string LocalizeNodeMenuText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return text;
+
+            string localized = ST.Library.UI.Lang.Get(text);
+            if (IsValidLocalizedMenuText(text, localized))
+                return localized;
+
+            localized = ST.Library.UI.Properties.Resources.ResourceManager.GetString(text);
+            return IsValidLocalizedMenuText(text, localized) ? localized : text;
+        }
+
+        private static bool IsValidLocalizedMenuText(string key, string? value)
+        {
+            return !string.IsNullOrWhiteSpace(value) && !string.Equals(value, $"[{key}]", StringComparison.Ordinal);
+        }
+
         public void AddNodeContext()
         {
             foreach (var item in STNodeEditor.Nodes)
@@ -600,10 +630,10 @@ namespace ColorVision.Engine.Templates.Flow
                 if (item is STNode node)
                 {
                     node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                    node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
-                    node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
-                    node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
-                    node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+                    node.ContextMenuStrip.Items.Add(Properties.Resources.Copy, null, (s, e1) => CopySTNode(node));
+                    node.ContextMenuStrip.Items.Add(Properties.Resources.Delete, null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+                    node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockOption)), null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+                    node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockLocation)), null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
                 }
             }
         }
@@ -613,10 +643,10 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNode node = e.Node;
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
-            node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
-            node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
-            node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+            node.ContextMenuStrip.Items.Add(Properties.Resources.Delete, null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+            node.ContextMenuStrip.Items.Add(Properties.Resources.Copy, null, (s, e1) => CopySTNode(node));
+            node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockOption)), null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+            node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockLocation)), null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
         }
 
         public void CopySTNode(STNode sTNode)
@@ -672,7 +702,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                     foreach (var nodetype in values.OrderBy(x => x.Key, Comparer<string>.Create((x, y) => Common.NativeMethods.Shlwapi.CompareLogical(x, y))))
                     {
-                        string header = nodetype.Key.Replace("FlowEngineLib/", "");
+                        string header = LocalizeNodeMenuPath(nodetype.Key);
                         var toolStripItem = new System.Windows.Forms.ToolStripMenuItem(header);
 
 
@@ -682,7 +712,7 @@ namespace ColorVision.Engine.Templates.Flow
                             {
                                 if (Activator.CreateInstance(type) is STNode sTNode)
                                 {
-                                    toolStripItem.DropDownItems.Add(sTNode.Title, null, (s, e) =>
+                                    toolStripItem.DropDownItems.Add(LocalizeNodeMenuText(sTNode.Title), null, (s, e) =>
                                     {
                                         STNode sTNode1 = (STNode)Activator.CreateInstance(type);
                                         if (sTNode1 != null)
@@ -788,7 +818,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void AddImportModuleContextMenu()
         {
             STNodeEditor.ContextMenuStrip.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-            var importModuleItem = new System.Windows.Forms.ToolStripMenuItem("导入模板为模块");
+            var importModuleItem = new System.Windows.Forms.ToolStripMenuItem(Properties.Resources.Flow_ImportTemplateAsModule);
             importModuleItem.DropDownOpening += (s, e) =>
             {
                 importModuleItem.DropDownItems.Clear();
@@ -812,7 +842,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 if (importModuleItem.DropDownItems.Count == 0)
                 {
-                    var emptyItem = new System.Windows.Forms.ToolStripMenuItem("(无可用模板)") { Enabled = false };
+                    var emptyItem = new System.Windows.Forms.ToolStripMenuItem(Properties.Resources.Flow_NoTemplateAvailable) { Enabled = false };
                     importModuleItem.DropDownItems.Add(emptyItem);
                 }
             };
@@ -909,14 +939,14 @@ namespace ColorVision.Engine.Templates.Flow
             if (!isContainsMQTTStartNode)
             {
                 log.Warn("CheckFlow: 找不到流程起始结点 (MQTTStartNode)");
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到流程起始结点");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoStartNode);
                 return false;
             }
 
             if (!isContainsCVEndNode)
             {
                 log.Warn("CheckFlow: 找不到流程结束结点 (CVEndNode)");
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到流程结束结点");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoEndNode);
                 return false;
             }
 
@@ -924,7 +954,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (!IsPathExists(startNode, endNode))
             {
                 log.Warn("CheckFlow: 无法找到从起始结点到结束结点的有效路径");
-                MessageBox.Show(Application.Current.GetActiveWindow(), "无法找到从起始结点到结束结点的有效路径");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoPathFromStartToEnd);
                 return false;
             }
             log.Debug("CheckFlow: 流程验证通过");

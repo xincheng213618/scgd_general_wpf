@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="许可证过期提醒" Height="440" Width="660"
+        Title="{x:Static properties:Resources.TitleLicenseExpiryNotification}" Height="440" Width="660"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Background="{DynamicResource GlobalBackground}"
@@ -42,7 +43,7 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                    <TextBlock Text="许可证过期提醒" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Static properties:Resources.TitleLicenseExpiryNotification}" FontSize="18" FontWeight="SemiBold"/>
                     <TextBlock x:Name="TextBlockSummary" FontSize="12" Opacity="0.65"
                                Margin="0,5,0,0"/>
                 </StackPanel>
@@ -105,14 +106,14 @@
 
         <CheckBox x:Name="CheckBoxDontShowAgain"
                   Grid.Row="2"
-                  Content="不再提示此类警告"
+                  Content="{x:Static properties:Resources.CheckBoxDoNotShowAgain}"
                   Foreground="{DynamicResource GlobalTextBrush}"
                   Margin="2,12,0,10"
                   VerticalAlignment="Center"/>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="ButtonGoToManager"
-                    Content="前往相机管理器"
+                    Content="{x:Static properties:Resources.ButtonGoToCameraManager}"
                     Width="130" Height="32"
                     Margin="0,0,8,0"
                     Click="ButtonGoToManager_Click"
@@ -122,7 +123,7 @@
                     Cursor="Hand"
                     FontWeight="SemiBold"/>
             <Button x:Name="ButtonClose"
-                    Content="关闭"
+                    Content="{x:Static properties:Resources.Close}"
                     Width="86" Height="32"
                     Click="ButtonClose_Click"
                     Cursor="Hand"/>

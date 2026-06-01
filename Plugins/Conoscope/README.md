@@ -13,10 +13,11 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 ## 当前版本重点
 
 - 首页新增“当前视图”快捷区，可直接控制活动 View 的显示通道、参考模式和值输入。
+- 主页现在同时承接当前活动 View 的 3D、CIE、方位导出、极角导出和高级导出。
 - 图像上支持手动绘制关注点圆，并通过右键直接计算当前关注点数据。
 - 参考图形支持圆形和极角模式切换，并保留在视图中的拖拽调整能力。
 - 分析页支持从当前活动 View 批量记录 R/G/B、白/黑关注点数据，并弹出独立结果窗口。
-- 窗口页和 Help 菜单新增帮助入口，直接读取插件目录中的 README.md 与 CHANGELOG.md。
+- 系统页和 Help 菜单新增帮助入口，直接读取插件目录中的 README.md 与 CHANGELOG.md。
 
 ## 快速开始
 
@@ -31,26 +32,26 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 
 ### 主页
 
-- 负责新建、打开、保存和切换 Conoscope 视图。
-- “当前视图”快捷区会跟随活动标签页自动同步；当没有活动 View 时整组控件会自动隐藏。
+- 负责打开 CVCIE 图像、切换型号、打开观察相机，并统一放置当前活动 View 的功能入口。
+- “当前视图”快捷区会跟随活动标签页自动同步；当没有活动 View 时会保留布局并整体灰显。
 - 快捷区支持三类操作：
   - 显示通道切换。
   - 参考图形模式切换（圆 / 直线）。
   - 参考值输入，按当前模式解释为半径或角度。
+- “视图功能 / 当前通道导出”支持 3D、CIE、方位导出、极角导出和高级导出。
 
 ### 采集
 
-- 管理模板、测量相机和观察相机相关操作。
+- 管理流程模板和测量相机相关操作。
 - VA60/VA80 型号差异仍由当前模型配置决定，避免在视图层分散判断。
 
-### 预处理
+### 处理
 
 - 用于执行滤波、伪彩色、灰尘修复、阈值与裁剪等图像预处理。
 - 预处理参数由当前视图和全局配置共同驱动，处理后立即刷新显示。
 
 ### 分析
 
-- 活动 View 级工具：3D、CIE、角度导出、圆模式导出和高级导出。
 - 色域计算：
   - 从当前活动 View 一次记录全部关注点的 R/G/B 数据。
   - 选择标准色域后直接计算。
@@ -59,18 +60,20 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
   - 从当前活动 View 一次记录全部关注点的白/黑数据。
   - 直接计算关注点级黑白对比度并弹出结果窗口。
 
-### 窗口
+### 系统
 
 - 保存当前窗口配置。
-- 打开兼容保留的旧版色域窗口、旧版对比度窗口。
+- 打开 Conoscope 配置窗口。
 - 打开新的帮助窗口，查看当前版本说明与更新日志。
+- 切换主题与语言。
 
 ## 当前视图交互
 
 ### 显示通道
 
 - 图像显示仍以当前视图为中心，主页快捷区和视图内通道控件会双向同步。
-- 切换标签页时，主页快捷区会自动切换到对应 View 的状态；没有活动 View 时不会显示空控件。
+- 切换标签页时，主页快捷区会自动切换到对应 View 的状态；没有活动 View 时会保留控件位置但禁用交互。
+- 方位导出和极角导出直接沿用当前显示通道，不再单独切换导出通道。
 
 ### 关注点圆
 
@@ -120,8 +123,9 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 
 ## 结果与导出
 
-- 主窗口仍负责打开 3D 和 CIE 视图，但计算结果展示已独立到结果窗口。
-- 导出功能保留在当前视图层，支持角度模式、圆模式以及高级导出。
+- 3D 和 CIE 入口已经收口到主页的“视图功能”分组，计算结果仍独立展示。
+- 主窗口主页负责当前活动 View 的 CSV 导出，支持方位模式、极角模式以及高级导出。
+- 图像上方工具条只保留 - / + / 圆适，避免把窗口级功能继续堆在 View 内。
 - 如果只是查看综合色域或黑白对比度，不需要再打开旧版分析窗口；旧窗口目前仅用于兼容旧流程。
 
 ## 构建与输出
@@ -159,11 +163,17 @@ dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
 
 ## 相关文件
 
+- 架构文档：Docs/ARCHITECTURE.md
 - 主窗口：ConoscopeWindow.xaml / ConoscopeWindow.xaml.cs
+- Ribbon 编排：ConoscopeWindow.Ribbon.cs
 - 当前视图快捷控制：ConoscopeWindow.HomeQuickControls.cs
+- 分析 Ribbon：ConoscopeWindow.AnalysisRibbon.cs
+- 分析工作流服务：Application/Analysis/ConoscopeAnalysisWorkflow.cs
+- Ribbon 资源：Presentation/Ribbon/ConoscopeRibbonResources.xaml
 - 当前视图桥接：ConoscopeView.WindowQuickControls.cs
 - 关注点逻辑：ConoscopeView.FocusPoint.cs
 - 参考图形逻辑：ConoscopeView.ReferenceAxis.cs
 - 批量计算模型：Analysis/MeasurementCaptureModels.cs
 - 色域结果窗：Analysis/ColorGamutResultWindow.xaml
 - 对比度结果窗：Analysis/ContrastResultWindow.xaml
+- 测试项目：Test/Conoscope.Tests

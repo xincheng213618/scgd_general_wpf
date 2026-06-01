@@ -153,13 +153,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             if (parameter is not string typeName || string.IsNullOrWhiteSpace(typeName))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "未指定上传的校正类型", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoCalibrationTypeSpecified, Properties.Resources.CalibrationFileManagement);
                 return;
             }
 
             if (!CalibrationSlotDefinitions.TryGet(typeName, out var slot))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"未知的校正类型：{typeName}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.UnknownCalibrationType, typeName), Properties.Resources.CalibrationFileManagement);
                 return;
             }
 
@@ -167,16 +167,16 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
             if (this.GetAncestor<PhyCamera>() is not PhyCamera phyCamera)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对应的物理相机", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.PhysicalCameraNotFound, Properties.Resources.CalibrationFileManagement);
                 return;
             }
 
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog
             {
-                Title = $"选择 {typeName} 校正文件",
+                Title = string.Format(Properties.Resources.SelectCalibrationFileDialog, typeName),
                 RestoreDirectory = true,
                 Multiselect = false,
-                Filter = "校正文件 (*.cvcal;*.bin;*.json;*.txt;*.dat)|*.cvcal;*.bin;*.json;*.txt;*.dat|所有文件 (*.*)|*.*",
+                Filter = Properties.Resources.SelectCalibrationFileFilter,
             };
             if (openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 return;
@@ -193,7 +193,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "创建目录失败：" + ex.Message, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.CreateDirectoryFailed, ex.Message), Properties.Resources.CalibrationFileManagement);
                 return;
             }
 
@@ -205,7 +205,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "复制文件失败：" + ex.Message, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.CopyFileFailed, ex.Message), Properties.Resources.CalibrationFileManagement);
                 return;
             }
 
@@ -249,7 +249,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 int ret = SysResourceDao.Instance.Save(sysResourceModel);
                 if (ret < 0 || sysResourceModel.Id <= 0)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "保存资源记录失败", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SaveResourceRecordFailed, Properties.Resources.CalibrationFileManagement);
                     return;
                 }
 

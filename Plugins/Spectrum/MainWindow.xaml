@@ -15,7 +15,7 @@
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SpectrometerManager}"
-        Title="光谱仪软件" Width="1920" Height="1080"
+        Title="{local:Resx SpectrumWindowTitle}" Width="1920" Height="1080"
         Background="{DynamicResource GlobalBackground}"
         Initialized="Window_Initialized">
     <Window.Resources>
@@ -64,26 +64,26 @@
                     <!--  ═══ Left: Control Panel ═══  -->
                     <xcad:LayoutAnchorablePaneGroup DockWidth="330">
                         <xcad:LayoutAnchorablePane>
-                            <xcad:LayoutAnchorable x:Name="ControlPanelPane" Title="控制面板" CanAutoHide="True" CanClose="False" CanFloat="True" ContentId="ControlPanel">
+                            <xcad:LayoutAnchorable x:Name="ControlPanelPane" Title="{local:Resx ControlPanel}" CanAutoHide="True" CanClose="False" CanFloat="True" ContentId="ControlPanel">
                                 <ScrollViewer Margin="3,0,3,5">
                                     <StackPanel x:Name="MainStackPanel">
 
                                         <!--  ═══ 光谱仪连接 (Spectrometer Connection) ═══  -->
-                                        <GroupBox Header="光谱仪连接">
+                                        <GroupBox Header="{local:Resx SpectrometerConnection}">
                                             <StackPanel>
                                                 <StackPanel Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
-                                                    <Button Margin="0,0,0,4" Command="{Binding GetSpectrSerialNumberCommand}" Content="获取设备列表" />
+                                                    <Button Margin="0,0,0,4" Command="{Binding GetSpectrSerialNumberCommand}" Content="{local:Resx GetDeviceList}" />
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <ComboBox x:Name="ComboBoxSpectrometerType" Width="140" DisplayMemberPath="Value" SelectedValue="{Binding Config.SpectrometerType}" SelectedValuePath="Key" Style="{StaticResource ComboBox.Small}" />
-                                                        <CheckBox Margin="10,0,0,0" VerticalAlignment="Center" Content="串口连接" IsChecked="{Binding Config.IsComPort}" />
+                                                        <CheckBox Margin="10,0,0,0" VerticalAlignment="Center" Content="{local:Resx SerialPortConnection}" IsChecked="{Binding Config.IsComPort}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal" Visibility="{Binding Config.IsComPort, Converter={StaticResource bool2VisibilityConverter}}">
                                                         <DockPanel>
-                                                            <TextBlock Width="40" VerticalAlignment="Center" Text="串口" />
+                                                            <TextBlock Width="40" VerticalAlignment="Center" Text="{local:Resx SerialPort}" />
                                                             <ComboBox x:Name="ComboBoxPort" Width="80" IsEditable="True" Style="{StaticResource ComboBox.Small}" Text="{Binding Config.SzComName}" />
                                                         </DockPanel>
                                                         <DockPanel Margin="8,0,0,0">
-                                                            <TextBlock Width="45" VerticalAlignment="Center" Text="波特率" />
+                                                            <TextBlock Width="45" VerticalAlignment="Center" Text="{local:Resx BaudRate}" />
                                                             <ComboBox x:Name="ComboBoxSerial" Width="70" IsEditable="True" Style="{StaticResource ComboBox.Small}" Text="{Binding Config.BaudRate}" />
                                                         </DockPanel>
                                                     </StackPanel>
@@ -97,32 +97,32 @@
                                         </GroupBox>
 
                                         <!--  ═══ 标定文件 (Calibration Files) ═══  -->
-                                        <GroupBox Header="标定文件">
+                                        <GroupBox Header="{local:Resx CalibrationFiles}">
                                             <StackPanel>
                                                 <DockPanel Margin="0,0,0,6">
-                                                    <Button Margin="4,0,0,0" Padding="8,2" Command="{Binding OpenCalibrationGroupWindowCommand}" Content="管理..." DockPanel.Dock="Right" ToolTip="打开标定分组管理窗口" />
-                                                    <Button Margin="4,0,0,0" Padding="8,2" Command="{Binding ApplyActiveGroupCommand}" Content="加载分组" DockPanel.Dock="Right" ToolTip="加载当前选择分组的标定文件" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
-                                                    <TextBlock Width="60" Text="当前分组: " />
+                                                    <Button Margin="4,0,0,0" Padding="8,2" Command="{Binding OpenCalibrationGroupWindowCommand}" Content="{local:Resx Manage}" DockPanel.Dock="Right" ToolTip="{local:Resx OpenCalibrationGroupTooltip}" />
+                                                    <Button Margin="4,0,0,0" Padding="8,2" Command="{Binding ApplyActiveGroupCommand}" Content="{local:Resx LoadGroup}" DockPanel.Dock="Right" ToolTip="{local:Resx ApplyCalibrationGroupTooltip}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    <TextBlock Width="60" Text="{local:Resx CurrentGroup}" />
                                                     <ComboBox ItemsSource="{Binding CalibrationGroupNames}" SelectedItem="{Binding ActiveCalibrationGroupName, Mode=TwoWay}" Style="{StaticResource ComboBox.Small}" />
                                                 </DockPanel>
                                                 <DockPanel Margin="0,0,0,4">
-                                                    <Button Margin="5,0,0,0" Command="{Binding LoadWavelengthFileCommand}" Content="加载" DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
-                                                    <TextBlock MinWidth="60" Text="波长标定" />
+                                                    <Button Margin="5,0,0,0" Command="{Binding LoadWavelengthFileCommand}" Content="{local:Resx Load}" DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    <TextBlock MinWidth="60" Text="{local:Resx WavelengthCalibration}" />
                                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" Text="{Binding WavelengthFile}" ToolTip="{Binding WavelengthFile}" />
                                                 </DockPanel>
                                                 <DockPanel>
-                                                    <Button Margin="5,0,0,0" Command="{Binding LoadMaguideFileCommand}" Content="加载" DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
-                                                    <TextBlock MinWidth="60" Text="幅值标定" />
+                                                    <Button Margin="5,0,0,0" Command="{Binding LoadMaguideFileCommand}" Content="{local:Resx Load}" DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    <TextBlock MinWidth="60" Text="{local:Resx MagnitudeCalibration}" />
                                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" Text="{Binding MaguideFile}" ToolTip="{Binding MaguideFile}" />
                                                 </DockPanel>
                                             </StackPanel>
                                         </GroupBox>
 
                                         <!--  ═══ 测量参数 (Measurement Parameters) ═══  -->
-                                        <GroupBox Header="测量参数" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
+                                        <GroupBox Header="{local:Resx MeasurementParameters}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                             <StackPanel>
                                                 <StackPanel Margin="0,0,0,6" Orientation="Horizontal">
-                                                    <TextBlock Width="110" Text="积分时间 (ms)" />
+                                                    <TextBlock Width="110" Text="{local:Resx IntegrationTimeMs}" />
                                                     <TextBox Width="90" VerticalAlignment="Center" Style="{StaticResource TextBox.Small}" Text="{Binding IntTime}" TextWrapping="Wrap" />
                                                     <Button Width="20" Height="20" Margin="4,0,4,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditIntTimeConfigCommand}">
                                                         <Button.Triggers>
@@ -140,19 +140,19 @@
                                                             </TextBlock.RenderTransform>
                                                         </TextBlock>
                                                     </Button>
-                                                    <Button x:Name="ButtonAutoInt" Padding="10,4" Background="#E67E22" Click="AutoIntTime_Click" Content="自动积分" Foreground="White" />
+                                                    <Button x:Name="ButtonAutoInt" Padding="10,4" Background="#E67E22" Click="AutoIntTime_Click" Content="{local:Resx 自动积分}" Foreground="White" />
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Width="110" Text="平均次数" />
+                                                    <TextBlock Width="110" Text="{local:Resx 平均次数}" />
                                                     <TextBox Width="90" VerticalAlignment="Center" Style="{StaticResource TextBox.Small}" Text="{Binding Average}" TextWrapping="Wrap" />
                                                 </StackPanel>
                                             </StackPanel>
                                         </GroupBox>
 
                                         <!--  ═══ 测试 (Test & Calibration) ═══  -->
-                                        <GroupBox Header="测试" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
+                                        <GroupBox Header="{local:Resx TestSection}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                             <StackPanel>
-                                                <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="校零" />
+                                                <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="{local:Resx ZeroCalibration}" />
                                                 <StackPanel Margin="0,0,0,6" Orientation="Horizontal">
                                                     <Button x:Name="button3" Margin="0,0,4,0" Padding="10,4" Background="#E67E22" Click="Button3_Click" Content="{x:Static properties:Resources.单次校零}" Foreground="White" />
                                                     <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditAutodarkParamCommand}">
@@ -175,17 +175,17 @@
                                                 <DockPanel Margin="0,0,0,6">
                                                     <StackPanel Orientation="Horizontal">
                                                         <CheckBox Margin="0,0,8,0" Content="{x:Static properties:Resources.自动积分}" IsChecked="{Binding EnableAutoIntegration}" />
-                                                        <CheckBox Margin="0,0,8,0" Content="自适应校零" IsChecked="{Binding EnableAdaptiveAutoDark}" />
-                                                        <CheckBox Margin="0,0,8,0" Content="自动校零" IsChecked="{Binding EnableAutodark}" />
+                                                        <CheckBox Margin="0,0,8,0" Content="{local:Resx 自适应校零}" IsChecked="{Binding EnableAdaptiveAutoDark}" />
+                                                        <CheckBox Margin="0,0,8,0" Content="{local:Resx AutoZeroCalibration}" IsChecked="{Binding EnableAutodark}" />
                                                     </StackPanel>
                                                 </DockPanel>
 
                                                 <Separator Margin="0,2,0,6" />
 
-                                                <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="单次测试" />
+                                                <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="{local:Resx 单次测试}" />
                                                 <Button x:Name="button5" Margin="0,0,0,8" Padding="10,6" HorizontalAlignment="Stretch" Background="#3498DB" Click="Button5_Click" Content="{x:Static properties:Resources.单次测试}" FontWeight="SemiBold" Foreground="White" />
 
-                                                <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="连续测试" />
+                                                <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="{local:Resx 连续测试}" />
                                                 <Grid Margin="0,0,0,6">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
@@ -197,11 +197,11 @@
                                                         <RowDefinition />
                                                         <RowDefinition />
                                                     </Grid.RowDefinitions>
-                                                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,6,4" Text="间隔 (ms)" />
+                                                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,6,4" Text="{local:Resx IntervalMs}" />
                                                     <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,8,4" VerticalAlignment="Center" Style="{StaticResource TextBox.Small}" Text="{Binding MeasurementInterval}" TextWrapping="Wrap" />
-                                                    <TextBlock Grid.Row="0" Grid.Column="2" Margin="0,0,6,4" Text="测试次数" />
+                                                    <TextBlock Grid.Row="0" Grid.Column="2" Margin="0,0,6,4" Text="{local:Resx MeasurementCount}" />
                                                     <TextBox Grid.Row="0" Grid.Column="3" Margin="0,0,0,4" VerticalAlignment="Center" Style="{StaticResource TextBox.Small}" Text="{Binding MeasurementNum}" TextWrapping="Wrap" />
-                                                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,6,0" Text="进度" />
+                                                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,6,0" Text="{local:Resx Progress}" />
                                                     <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" Orientation="Horizontal">
                                                         <TextBlock FontWeight="SemiBold" Foreground="#3498DB" Text="{Binding LoopMeasureNum}" />
                                                         <TextBlock Text=" / " />
@@ -210,9 +210,9 @@
                                                 </Grid>
                                                 <ProgressBar x:Name="ContinuousProgressBar" Height="15" Margin="0,4,0,4" Foreground="#3498DB" Maximum="100" Minimum="0" Value="0" />
                                                 <StackPanel x:Name="TimeEstimationPanel" Margin="0,0,0,4" Orientation="Horizontal" Visibility="Collapsed">
-                                                    <TextBlock FontSize="11" Text="已用: " />
+                                                    <TextBlock FontSize="11" Text="{local:Resx Elapsed}" />
                                                     <TextBlock x:Name="ElapsedTimeText" FontSize="11" FontWeight="SemiBold" Foreground="#2196F3" Text="--:--" />
-                                                    <TextBlock FontSize="11" Text="  预计剩余: " />
+                                                    <TextBlock FontSize="11" Text="{local:Resx Remaining}" />
                                                     <TextBlock x:Name="RemainingTimeText" FontSize="11" FontWeight="SemiBold" Foreground="#E67E22" Text="--:--" />
                                                 </StackPanel>
 
@@ -224,12 +224,12 @@
                                         </GroupBox>
 
                                         <!--  ═══ 快门控制 (Shutter) ═══  -->
-                                        <GroupBox Header="快门 (Shutter)">
+                                        <GroupBox Header="{local:Resx Shutter}">
                                             <StackPanel>
                                                 <!--  Not connected: show connect button + gear  -->
                                                 <StackPanel Visibility="{Binding ShutterController.IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <Button Padding="10,4" Background="#2196F3" Command="{Binding ShutterController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="连接" Foreground="White" />
+                                                        <Button Padding="10,4" Background="#2196F3" Command="{Binding ShutterController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{local:Resx Connect}" Foreground="White" />
                                                         <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditShutterConfigCommand}">
                                                             <Button.Triggers>
                                                                 <EventTrigger RoutedEvent="Button.Click">
@@ -252,21 +252,21 @@
                                                 <!--  Connected: show status + disconnect + open/close  -->
                                                 <StackPanel Visibility="{Binding ShutterController.IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                                     <StackPanel Orientation="Horizontal">
-                                                        <Button Margin="0,0,4,0" Padding="8,2" Background="#E53935" Command="{Binding ShutterController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="断开" Foreground="White" />
-                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.OpenShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="Open Shutter" />
-                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.CloseShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="Close Shutter" />
+                                                        <Button Margin="0,0,4,0" Padding="8,2" Background="#E53935" Command="{Binding ShutterController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{local:Resx Disconnect}" Foreground="White" />
+                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.OpenShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{local:Resx OpenShutter}" />
+                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.CloseShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{local:Resx CloseShutter}" />
                                                     </StackPanel>
                                                 </StackPanel>
                                             </StackPanel>
                                         </GroupBox>
 
                                         <!--  ═══ 滤色轮 (Filter Wheel) ═══  -->
-                                        <GroupBox Header="滤色轮 (Filter Wheel)">
+                                        <GroupBox Header="{local:Resx FilterWheel}">
                                             <StackPanel>
                                                 <!--  Connection controls (visible when NOT connected)  -->
                                                 <StackPanel Visibility="{Binding FilterWheelController.IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <Button Padding="10,4" Background="#2196F3" Command="{Binding FilterWheelController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="连接" Foreground="White" />
+                                                        <Button Padding="10,4" Background="#2196F3" Command="{Binding FilterWheelController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{local:Resx Connect}" Foreground="White" />
                                                         <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditFilterWheelConfigCommand}">
                                                             <Button.Triggers>
                                                                 <EventTrigger RoutedEvent="Button.Click">
@@ -289,14 +289,14 @@
                                                 <!--  Connected state controls  -->
                                                 <StackPanel Visibility="{Binding FilterWheelController.IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <TextBlock VerticalAlignment="Center" Text="当前位置: " />
+                                                        <TextBlock VerticalAlignment="Center" Text="{local:Resx CurrentPosition}" />
                                                         <TextBlock Margin="4,0,8,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#2196F3" Text="{Binding FilterWheelController.CurrentPositionName}" />
-                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding FilterWheelController.QueryPositionCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="查询" />
-                                                        <Button Padding="8,2" Background="#E53935" Command="{Binding FilterWheelController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="断开" Foreground="White" />
+                                                        <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding FilterWheelController.QueryPositionCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{local:Resx Query}" />
+                                                        <Button Padding="8,2" Background="#E53935" Command="{Binding FilterWheelController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{local:Resx Disconnect}" Foreground="White" />
                                                     </StackPanel>
 
                                                     <!--  Position buttons  -->
-                                                    <TextBlock Margin="0,2,0,2" Text="切换位置:" />
+                                                    <TextBlock Margin="0,2,0,2" Text="{local:Resx SwitchPosition}" />
                                                     <ItemsControl ItemsSource="{Binding FilterWheelConfig.HoleMapping}">
                                                         <ItemsControl.ItemsPanel>
                                                             <ItemsPanelTemplate>
@@ -319,22 +319,22 @@
                                         </GroupBox>
 
                                         <!--  ═══ 光通量参数配置 ═══  -->
-                                        <GroupBox x:Name="EqeGroupBox" Header="光通量参数配置" Visibility="Collapsed">
+                                        <GroupBox x:Name="EqeGroupBox" Header="{local:Resx EqeParameterConfig}" Visibility="Collapsed">
                                             <StackPanel>
                                                 <StackPanel x:Name="EqePanel" Visibility="Collapsed">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <TextBlock Width="80" Text="电压 (V)" />
+                                                        <TextBlock Width="80" Text="{local:Resx VoltageLabel}" />
                                                         <TextBox x:Name="TextBoxVoltage" Width="80" Style="{StaticResource TextBox.Small}" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeVoltage, UpdateSourceTrigger=PropertyChanged}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <TextBlock Width="80" Text="电流 (mA)" />
+                                                        <TextBlock Width="80" Text="{local:Resx CurrentMilliampLabel}" />
                                                         <TextBox x:Name="TextBoxCurrentMA" Width="80" Style="{StaticResource TextBox.Small}" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeCurrentMA, UpdateSourceTrigger=PropertyChanged}" />
                                                     </StackPanel>
-                                                    <Button Margin="0,4,0,0" HorizontalAlignment="Left" Click="CalculateEqe_Click" Content="EQE重新计算" />
+                                                    <Button Margin="0,4,0,0" HorizontalAlignment="Left" Click="CalculateEqe_Click" Content="{local:Resx RecalculateEqe}" />
 
                                                     <!--  ═══ 源表(SMU)配置 ═══  -->
                                                     <Separator Margin="0,6,0,6" />
-                                                    <TextBlock Margin="0,0,0,4" FontWeight="Bold" Text="源表(SMU)" />
+                                                    <TextBlock Margin="0,0,0,4" FontWeight="Bold" Text="{local:Resx SmuSourceMeter}" />
                                                     <Border Margin="0,0,0,6" Padding="8" Background="#12007ACC" CornerRadius="4">
                                                         <TextBlock Foreground="DodgerBlue" Text="{Binding SmuController.StatusSummary}" TextWrapping="Wrap" />
                                                     </Border>
@@ -367,12 +367,12 @@
                                                                 </TextBlock.RenderTransform>
                                                             </TextBlock>
                                                         </Button>
-                                                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray" Text="连接参数需先断开后再修改" Visibility="{Binding SmuController.IsOpen, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray" Text="{local:Resx SmuConnectionSettingsHint}" Visibility="{Binding SmuController.IsOpen, Converter={StaticResource bool2VisibilityConverter}}" />
                                                     </StackPanel>
                                                     <TextBlock Margin="0,0,0,4" Foreground="Gray" Text="{Binding SmuController.ParameterHint}" TextWrapping="Wrap" />
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <CheckBox Margin="0,0,8,0" Content="电压源" IsChecked="{Binding SmuController.DisplayConfig.IsSourceV}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
-                                                        <CheckBox Margin="0,0,8,0" Content="通道A" IsChecked="{Binding SmuController.DisplayConfig.IsChannelA}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
+                                                        <CheckBox Margin="0,0,8,0" Content="{local:Resx VoltageSource}" IsChecked="{Binding SmuController.DisplayConfig.IsSourceV}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
+                                                        <CheckBox Margin="0,0,8,0" Content="{local:Resx ChannelA}" IsChecked="{Binding SmuController.DisplayConfig.IsChannelA}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <TextBlock Width="68" Text="{Binding SmuController.MeasureValueLabel}" />
@@ -381,8 +381,8 @@
                                                         <TextBox Width="70" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.DisplayConfig.LimitVal, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,4,0,4" Orientation="Horizontal">
-                                                        <Button x:Name="SmuMeasureButton" Width="84" Margin="0,0,4,0" Click="SmuMeasure_Click" Content="点亮/设置" IsEnabled="{Binding SmuController.CanMeasure}" />
-                                                        <Button x:Name="SmuCloseOutputButton" Width="80" Click="SmuCloseOutput_Click" Content="关闭输出" IsEnabled="{Binding SmuController.CanCloseOutput}" />
+                                                        <Button x:Name="SmuMeasureButton" Width="84" Margin="0,0,4,0" Click="SmuMeasure_Click" Content="{local:Resx SmuMeasureOrSet}" IsEnabled="{Binding SmuController.CanMeasure}" />
+                                                        <Button x:Name="SmuCloseOutputButton" Width="80" Click="SmuCloseOutput_Click" Content="{local:Resx CloseOutput}" IsEnabled="{Binding SmuController.CanCloseOutput}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <TextBlock Width="20" Text="V:" />
@@ -406,7 +406,7 @@
                         <!--  ═══ Center: Spectrum Charts + Data ═══  -->
                         <xcad:LayoutDocumentPaneGroup>
                             <xcad:LayoutDocumentPane>
-                                <xcad:LayoutDocument Title="光谱图表" CanClose="False" ContentId="SpectrumChart">
+                                <xcad:LayoutDocument Title="{local:Resx SpectrumChart}" CanClose="False" ContentId="SpectrumChart">
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition x:Name="ListRow1" Height="*" />
@@ -434,21 +434,21 @@
                                                                 <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                                                             </Style>
                                                         </GridView.ColumnHeaderContainerStyle>
-                                                        <GridViewColumn Header="波长">
+                                                        <GridViewColumn Header="{local:Resx Wavelength}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:SpectralData}">
                                                                     <TextBlock Text="{Binding Wavelength}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="相对光谱">
+                                                        <GridViewColumn Header="{local:Resx 相对光谱}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:SpectralData}">
                                                                     <TextBlock Text="{Binding RelativeSpectrum, StringFormat={}{0:F4}}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="绝对光谱">
+                                                        <GridViewColumn Header="{local:Resx AbsoluteSpectrum}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:SpectralData}">
                                                                     <TextBlock Text="{Binding AbsoluteSpectrum, StringFormat={}{0:F4}}" />
@@ -471,19 +471,19 @@
                                                     <ToggleButton Margin="2,0,0,0" Click="ButtonMul_Click" IsChecked="True">
                                                         <Image Source="{DynamicResource DrawingImageSwitch}" Stretch="Uniform" />
                                                     </ToggleButton>
-                                                    <ToggleButton x:Name="ToggleSpectrumType" Margin="2,0,0,0" Click="ToggleSpectrumType_Click" ToolTip="切换相对/绝对光谱">
-                                                        <TextBlock x:Name="SpectrumTypeText" Text="相对光谱" />
+                                                    <ToggleButton x:Name="ToggleSpectrumType" Margin="2,0,0,0" Click="ToggleSpectrumType_Click" ToolTip="{local:Resx ToggleSpectrumTypeTooltip}">
+                                                        <TextBlock x:Name="SpectrumTypeText" Text="{local:Resx 相对光谱}" />
                                                     </ToggleButton>
                                                     <Separator />
-                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.QueryCommand}" Content="查询" ToolTip="查询数据" />
-                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.GenericQueryCommand}" Content="通用查询" />
-                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.ReloadCommand}" Content="刷新" ToolTip="从数据库重新加载数据" />
+                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.QueryCommand}" Content="{local:Resx Query}" ToolTip="{local:Resx QueryDataTooltip}" />
+                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.GenericQueryCommand}" Content="{local:Resx GenericQuery}" />
+                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.ReloadCommand}" Content="{local:Resx Reload}" ToolTip="{local:Resx ReloadDataTooltip}" />
                                                     <Separator />
-                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.DeleteAllCommand}" Content="清空记录" Foreground="#E53935" ToolTip="删除数据库中所有记录" />
-                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.ResetDatabaseCommand}" Content="重置数据库" Foreground="#E53935" ToolTip="删除数据库文件并重新创建" />
+                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.DeleteAllCommand}" Content="{local:Resx ClearRecords}" Foreground="#E53935" ToolTip="{local:Resx DeleteAllRecordsTooltip}" />
+                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.ResetDatabaseCommand}" Content="{local:Resx ResetDatabase}" Foreground="#E53935" ToolTip="{local:Resx ResetDatabaseTooltip}" />
                                                     <Separator />
-                                                    <TextBlock Margin="4,0,2,0" VerticalAlignment="Center" Text="加载条数:" />
-                                                    <TextBox Width="50" VerticalAlignment="Center" Text="{Binding ViewResultManager.Config.Count, UpdateSourceTrigger=PropertyChanged}" ToolTip="默认加载数据条数 (-1为全部)" />
+                                                    <TextBlock Margin="4,0,2,0" VerticalAlignment="Center" Text="{local:Resx LoadCount}" />
+                                                    <TextBox Width="50" VerticalAlignment="Center" Text="{Binding ViewResultManager.Config.Count, UpdateSourceTrigger=PropertyChanged}" ToolTip="{local:Resx LoadCountTooltip}" />
                                                 </ToolBar>
                                             </ToolBarTray>
                                             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
@@ -542,21 +542,21 @@
                                                                 <EventSetter Event="Click" Handler="GridViewColumnSort" />
                                                             </Style>
                                                         </GridView.ColumnHeaderContainerStyle>
-                                                        <GridViewColumn Header="序号">
+                                                        <GridViewColumn Header="{local:Resx 序号}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding Id}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="测量时间">
+                                                        <GridViewColumn Header="{local:Resx 测量时间}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding CreateTime, StringFormat='yyyy/MM/dd HH:mm:ssss'}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="总耗时(ms)">
+                                                        <GridViewColumn Header="{local:Resx TotalDurationMs}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding TotalDurationMs}" />
@@ -577,21 +577,21 @@
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn x:Name="ColLuminousFlux" Width="0" Header="光通量(lm)">
+                                                        <GridViewColumn x:Name="ColLuminousFlux" Width="0" Header="{local:Resx LuminousFlux}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding LuminousFlux, StringFormat={}{0:F4}}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn x:Name="ColRadiantFlux" Width="0" Header="辐射通量(W)">
+                                                        <GridViewColumn x:Name="ColRadiantFlux" Width="0" Header="{local:Resx RadiantFlux}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding RadiantFlux, StringFormat={}{0:F6}}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn x:Name="ColLuminousEfficacy" Width="0" Header="光效(lm/W)">
+                                                        <GridViewColumn x:Name="ColLuminousEfficacy" Width="0" Header="{local:Resx LuminousEfficacy}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding LuminousEfficacy, StringFormat={}{0:F4}}" />
@@ -612,7 +612,7 @@
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn x:Name="ColRecalculated" Width="0" Header="数据来源">
+                                                        <GridViewColumn x:Name="ColRecalculated" Width="0" Header="{local:Resx DataSource}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock>
@@ -631,14 +631,14 @@
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn x:Name="ColBrightness" Header="亮度Lv(cd/m2)">
+                                                        <GridViewColumn x:Name="ColBrightness" Header="{local:Resx 亮度LvCdM2}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding Lv}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="蓝光">
+                                                        <GridViewColumn Header="{local:Resx 蓝光}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding Blue}" />
@@ -666,77 +666,77 @@
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="色度x">
+                                                        <GridViewColumn Header="{local:Resx 色度x}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fx}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="色度y">
+                                                        <GridViewColumn Header="{local:Resx 色度y}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fy}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="色度u">
+                                                        <GridViewColumn Header="{local:Resx 色度u}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fu}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="色度v">
+                                                        <GridViewColumn Header="{local:Resx 色度v}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fv}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="相关色温(K)">
+                                                        <GridViewColumn Header="{local:Resx 相关色温K}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fCCT}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="主波长Ld(nm)">
+                                                        <GridViewColumn Header="{local:Resx 主波长LdNm}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fLd}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="兴奋纯度(%)">
+                                                        <GridViewColumn Header="{local:Resx ExcitationPurity}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding ExcitationPurityPercent, StringFormat={}{0:F4}}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="色纯度(%)">
+                                                        <GridViewColumn Header="{local:Resx 色纯度}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding ColorPurityPercent, StringFormat={}{0:F4}}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="峰值波长Lp(nm)">
+                                                        <GridViewColumn Header="{local:Resx 峰值波长LpNm}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fLp}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="显色性指数Ra">
+                                                        <GridViewColumn Header="{local:Resx 显色性指数Ra}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fRa}" />
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
-                                                        <GridViewColumn Header="半波宽">
+                                                        <GridViewColumn Header="{local:Resx HalfWidth}">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                                     <TextBlock Text="{Binding fHW}" />
@@ -791,13 +791,13 @@
                         <!--  ═══ Bottom: Log + Native Log + CIE Diagram ═══  -->
                         <xcad:LayoutAnchorablePaneGroup DockHeight="250">
                             <xcad:LayoutAnchorablePane>
-                                <xcad:LayoutAnchorable x:Name="LogPane" Title="日志" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="LogPanel">
+                                <xcad:LayoutAnchorable x:Name="LogPane" Title="{local:Resx Log}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="LogPanel">
                                     <Grid x:Name="LogGrid" />
                                 </xcad:LayoutAnchorable>
-                                <xcad:LayoutAnchorable x:Name="NativeLogPane" Title="光谱仪原生日志" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="NativeLogPanel">
+                                <xcad:LayoutAnchorable x:Name="NativeLogPane" Title="{local:Resx NativeSpectrumLog}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="NativeLogPanel">
                                     <Grid x:Name="NativeLogGrid" />
                                 </xcad:LayoutAnchorable>
-                                <xcad:LayoutAnchorable x:Name="CiePane" Title="CIE色度图" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="CIEDiagram">
+                                <xcad:LayoutAnchorable x:Name="CiePane" Title="{local:Resx CieChromaticityDiagram}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="CIEDiagram">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />

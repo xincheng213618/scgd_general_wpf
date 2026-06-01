@@ -1,0 +1,181 @@
+<Window x:Class="ProjectARVRPro.IntegrationDemo.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ProjectARVRPro 客户对接 Demo (.NET Framework 4.8)"
+        Width="1260"
+        Height="820"
+        MinWidth="980"
+        MinHeight="650"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="Margin" Value="0,0,8,6" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+        </Style>
+        <Style x:Key="ReadOnlyValueTextBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="FontFamily" Value="Consolas" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="MinWidth" Value="92" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="Padding" Value="10,3" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="4,0,12,6" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Padding" Value="8" />
+        </Style>
+        <Style x:Key="GridTextStyle" TargetType="TextBlock">
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="10" LastChildFill="True">
+        <WrapPanel DockPanel.Dock="Top" VerticalAlignment="Center">
+            <TextBlock Text="Host" />
+            <TextBox x:Name="HostTextBox" Text="127.0.0.1" MinWidth="135" />
+            <TextBlock Text="Port" />
+            <TextBox x:Name="PortTextBox" Text="6666" Width="68" />
+            <TextBlock Text="SN" />
+            <TextBox x:Name="SerialNumberTextBox" MinWidth="180" />
+            <TextBlock Text="超时(s)" />
+            <TextBox x:Name="TimeoutTextBox" Text="300" Width="62" />
+            <TextBlock Text="消息上限" />
+            <TextBox x:Name="MaxMessagesTextBox" Text="200" Width="62" />
+            <TextBlock Text="输出目录" />
+            <TextBox x:Name="OutputDirectoryTextBox" Text="output" MinWidth="150" />
+            <Button Content="连接 Init" Click="ConnectInitButton_Click" />
+            <Button Content="连接 RunAll" Click="ConnectRunAllButton_Click" />
+            <Button Content="SwitchPG 完成" Click="SwitchPgCompleteButton_Click" />
+            <Button Content="AOI 完成" Click="AoiCompleteButton_Click" />
+            <Button Content="断开" Click="DisconnectButton_Click" />
+            <CheckBox x:Name="AutoSwitchPgCheckBox" Content="自动确认 SwitchPG" IsChecked="True" />
+            <CheckBox x:Name="AutoAoiCheckBox" Content="自动确认 AOI" IsChecked="True" />
+        </WrapPanel>
+
+        <WrapPanel DockPanel.Dock="Top" Margin="0,2,0,8">
+            <Button Content="加载样例" Click="LoadSampleButton_Click" />
+            <Button Content="打开结果 JSON" Click="OpenJsonButton_Click" />
+            <Button Content="保存扁平 CSV" Click="SaveCsvButton_Click" />
+        </WrapPanel>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="400" MinWidth="330" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" MinWidth="480" />
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="155" />
+                    <RowDefinition Height="160" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <GroupBox Header="结果摘要" Grid.Row="0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="SummaryTextBlock"
+                                   TextWrapping="Wrap"
+                                   FontFamily="Consolas"
+                                   Margin="0" />
+                    </ScrollViewer>
+                </GroupBox>
+
+                <GroupBox Header="W51TestResult" Grid.Row="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Horizontal" Grid.Row="0" Grid.Column="0" MinWidth="86" />
+                        <TextBox x:Name="W51HorizontalTextBox" Style="{StaticResource ReadOnlyValueTextBox}" Grid.Row="0" Grid.Column="1" />
+                        <TextBlock Text="Vertical" Grid.Row="1" Grid.Column="0" MinWidth="86" />
+                        <TextBox x:Name="W51VerticalTextBox" Style="{StaticResource ReadOnlyValueTextBox}" Grid.Row="1" Grid.Column="1" />
+                        <TextBlock Text="Diagonal" Grid.Row="2" Grid.Column="0" MinWidth="86" />
+                        <TextBox x:Name="W51DiagonalTextBox" Style="{StaticResource ReadOnlyValueTextBox}" Grid.Row="2" Grid.Column="1" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="公开契约摘要" Grid.Row="2">
+                    <TextBox x:Name="ContractTextBox"
+                             Style="{StaticResource ReadOnlyValueTextBox}"
+                             AcceptsReturn="True"
+                             AcceptsTab="True"
+                             VerticalScrollBarVisibility="Auto"
+                             TextWrapping="NoWrap" />
+                </GroupBox>
+            </Grid>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+            <TabControl Grid.Column="2">
+                <TabItem Header="测试项">
+                    <DataGrid x:Name="ItemsGrid"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserResizeColumns="True"
+                              EnableRowVirtualization="True"
+                              EnableColumnVirtualization="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Screen" Binding="{Binding Screen}" Width="SizeToCells" MinWidth="110" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="Item" Binding="{Binding Item}" Width="SizeToCells" MinWidth="240" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="SizeToCells" MinWidth="360" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="SizeToCells" MinWidth="100" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="TestValue" Binding="{Binding TestValue}" Width="SizeToCells" MinWidth="110" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" Width="SizeToCells" MinWidth="80" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="LowLimit" Binding="{Binding LowLimit}" Width="SizeToCells" MinWidth="100" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="UpLimit" Binding="{Binding UpLimit}" Width="SizeToCells" MinWidth="100" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="TestResult" Binding="{Binding TestResult}" Width="SizeToCells" MinWidth="100" ElementStyle="{StaticResource GridTextStyle}" />
+                            <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="SizeToCells" MinWidth="240" ElementStyle="{StaticResource GridTextStyle}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+                <TabItem Header="原始 JSON">
+                    <TextBox x:Name="RawJsonTextBox"
+                             Style="{StaticResource ReadOnlyValueTextBox}"
+                             AcceptsReturn="True"
+                             AcceptsTab="True"
+                             VerticalScrollBarVisibility="Auto"
+                             TextWrapping="NoWrap" />
+                </TabItem>
+                <TabItem Header="字段说明">
+                    <TextBox x:Name="FieldGuideTextBox"
+                             Style="{StaticResource ReadOnlyValueTextBox}"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap" />
+                </TabItem>
+                <TabItem Header="通信日志">
+                    <TextBox x:Name="LogTextBox"
+                             Style="{StaticResource ReadOnlyValueTextBox}"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             TextWrapping="NoWrap" />
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>

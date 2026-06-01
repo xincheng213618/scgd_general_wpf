@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.ImageEditor.Settings.ImageViewSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="图像设置"
+        xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
+        Title="{x:Static properties:Resources.Settings_ImageSettingsTitle}"
         Width="760"
         Height="560"
         MinWidth="640"
@@ -17,8 +18,8 @@
         <TabControl x:Name="SettingsTabControl" Grid.Row="0" />
 
         <StackPanel Grid.Row="1" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
-            <Button MinWidth="96" Margin="0,0,8,0" Click="Save_Click" Content="保存" />
-            <Button MinWidth="96" Click="Close_Click" Content="关闭" />
+            <Button MinWidth="96" Margin="0,0,8,0" Click="Save_Click" Content="{x:Static properties:Resources.Settings_Save}" />
+            <Button MinWidth="96" Click="Close_Click" Content="{x:Static properties:Resources.Settings_Close}" />
         </StackPanel>
     </Grid>
 </Window>

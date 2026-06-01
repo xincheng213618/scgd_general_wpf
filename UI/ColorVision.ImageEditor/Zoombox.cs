@@ -358,6 +358,52 @@ namespace ColorVision.ImageEditor
             ContentMatrixChanged?.Invoke(this, new EventArgs());
         }
 
+        public void ZoomToContentRect(Rect contentRect)
+        {
+            if (this.InternalChild is null || contentRect.IsEmpty)
+            {
+                return;
+            }
+
+            if (!this.InternalChild.IsArrangeValid)
+            {
+                _ = this.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => this.ZoomToContentRect(contentRect)));
+                return;
+            }
+
+            var size = this.InternalChild.DesiredSize;
+            if (Math.Abs(size.Width) < MinScaleDelta ||
+                Math.Abs(size.Height) < MinScaleDelta ||
+                Math.Abs(this.ActualWidth) < MinScaleDelta ||
+                Math.Abs(this.ActualHeight) < MinScaleDelta)
+            {
+                return;
+            }
+
+            double x = Math.Max(0, contentRect.X);
+            double y = Math.Max(0, contentRect.Y);
+            double right = Math.Min(size.Width, contentRect.Right);
+            double bottom = Math.Min(size.Height, contentRect.Bottom);
+            double width = right - x;
+            double height = bottom - y;
+            if (width < MinScaleDelta || height < MinScaleDelta)
+            {
+                return;
+            }
+
+            var scaleX = this.ActualWidth / width;
+            var scaleY = this.ActualHeight / height;
+            var scale = Math.Min(scaleX, scaleY);
+            ScaleTransform.SetCurrentValue(ScaleTransform.CenterXProperty, 0.0);
+            ScaleTransform.SetCurrentValue(ScaleTransform.CenterYProperty, 0.0);
+            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleXProperty, scale);
+            ScaleTransform.SetCurrentValue(ScaleTransform.ScaleYProperty, scale);
+            TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * width)) / 2 - (scale * x));
+            TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * height)) / 2 - (scale * y));
+            this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
+            ContentMatrixChanged?.Invoke(this, new EventArgs());
+        }
+
         /// <summary>
         /// The content preserves its original size.
         /// </summary>

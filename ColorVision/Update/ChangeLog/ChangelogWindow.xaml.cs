@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -62,8 +61,6 @@ namespace ColorVision.Update
 
         public static ChangelogWindowConfig WindowConfig => ConfigService.Instance.GetRequiredService<ChangelogWindowConfig>();
 
-        private bool _isUpdatingSelection = false;
-
         public ChangelogWindow()
         {
             InitializeComponent();
@@ -96,13 +93,13 @@ namespace ColorVision.Update
                 }
                 else
                 {
-                    MessageBox.Show("无法找到更新记录");
+                    MessageBox.Show(Properties.Resources.CannotFindUpdateRecord);
                     ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("读取更新记录失败: " + ex.Message);
+                MessageBox.Show(string.Format(Properties.Resources.ReadUpdateRecordFailed, ex.Message));
                 ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>();
             }
         }
@@ -123,14 +120,7 @@ namespace ColorVision.Update
         {
             if (sender is ListView listView && listView.SelectedIndex > -1 && listView.SelectedItem is ChangeLogEntry selectedEntry)
             {
-                try
-                {
-                    SelectEntryInTreeView(selectedEntry);
-                }
-                finally
-                {
-                    _isUpdatingSelection = false;
-                }
+                SelectEntryInTreeView(selectedEntry);
             }
         }
 
@@ -245,7 +235,7 @@ namespace ColorVision.Update
         /// <summary>
         /// Parse ServiceVersion string to comparable tuple
         /// </summary>
-        private (int major, int minor, int build, int revision) ParseVersion(string version)
+        private static (int major, int minor, int build, int revision) ParseVersion(string version)
         {
             var parts = version.Split('.');
             int major = parts.Length > 0 && int.TryParse(parts[0], out int m) ? m : 0;
@@ -330,66 +320,66 @@ namespace ColorVision.Update
         private readonly char[] Chars1 = new[] { ' ' };
 
         public List<ChangeLogEntry> filteredResults { get; set; } = new List<ChangeLogEntry>();
-        
-        private CancellationTokenSource _searchCts;
+
+        private int _searchRequestId;
         private const int SearchDebounceMs = 300;
 
         private async void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (sender is TextBox textBox)
+            if (sender is not TextBox textBox)
+                return;
+
+            int requestId = ++_searchRequestId;
+
+            // Debounce: wait for user to stop typing.
+            await Task.Delay(SearchDebounceMs);
+            if (requestId != _searchRequestId || !IsLoaded)
+                return;
+
+            if (string.IsNullOrWhiteSpace(textBox.Text))
             {
-                // Cancel any pending search
-                _searchCts?.Cancel();
-                _searchCts = new CancellationTokenSource();
-                var token = _searchCts.Token;
+                // Reset to full tree.
+                BuildVersionTree();
+                ChangeLogDetailsPanel.ItemsSource = ChangeLogEntrys;
+                return;
+            }
 
-                try
+            if (ChangeLogEntrys == null)
+                return;
+
+            var keywords = textBox.Text.Split(Chars1, StringSplitOptions.RemoveEmptyEntries);
+
+            filteredResults = ChangeLogEntrys
+                .Where(entry => keywords.All(keyword =>
+                    (!string.IsNullOrEmpty(entry.Version) && entry.Version.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                    entry.ReleaseDate.ToString("yyyy-MM-dd").Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                    entry.ChangeLog.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                ))
+                .ToList();
+
+            // Rebuild tree with filtered results.
+            var tempEntries = ChangeLogEntrys;
+            ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>(filteredResults);
+            BuildVersionTree();
+            ChangeLogEntrys = tempEntries;
+
+            ChangeLogDetailsPanel.ItemsSource = filteredResults;
+
+            // Expand all nodes in search results.
+            foreach (var majorNode in VersionTree)
+            {
+                majorNode.IsExpanded = true;
+                foreach (var minorNode in majorNode.MinorVersions)
                 {
-                    // Debounce: wait for user to stop typing
-                    await Task.Delay(SearchDebounceMs, token);
-
-                    if (string.IsNullOrWhiteSpace(textBox.Text))
-                    {
-                        // Reset to full tree
-                        BuildVersionTree();
-                        ChangeLogDetailsPanel.ItemsSource = ChangeLogEntrys;
-                    }
-                    else if (ChangeLogEntrys != null)
-                    {
-                        var keywords = textBox.Text.Split(Chars1, StringSplitOptions.RemoveEmptyEntries);
-
-                        filteredResults = ChangeLogEntrys
-                            .Where(entry => keywords.All(keyword =>
-                                (!string.IsNullOrEmpty(entry.Version) && entry.Version.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
-                                entry.ReleaseDate.ToString("yyyy-MM-dd").Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                                entry.ChangeLog.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                            ))
-                            .ToList();
-
-                        // Rebuild tree with filtered results
-                        var tempEntries = ChangeLogEntrys;
-                        ChangeLogEntrys = new ObservableCollection<ChangeLogEntry>(filteredResults);
-                        BuildVersionTree();
-                        ChangeLogEntrys = tempEntries;
-                        
-                        ChangeLogDetailsPanel.ItemsSource = filteredResults;
-                        
-                        // Expand all nodes in search results
-                        foreach (var majorNode in VersionTree)
-                        {
-                            majorNode.IsExpanded = true;
-                            foreach (var minorNode in majorNode.MinorVersions)
-                            {
-                                minorNode.IsExpanded = true;
-                            }
-                        }
-                    }
-                }
-                catch (TaskCanceledException)
-                {
-                    // Search was cancelled, ignore
+                    minorNode.IsExpanded = true;
                 }
             }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _searchRequestId++;
+            base.OnClosed(e);
         }
 
         private void TextBox_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

@@ -1,12 +1,14 @@
 ﻿#pragma warning disable CS8604
+#pragma warning disable CA1822,CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Properties;
+using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -18,6 +20,7 @@ namespace ColorVision.UI.Desktop.Marketplace
     public class PluginInfoVM:ViewModelBase
     {  
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginInfoVM));
+        private readonly MarketplacePackageDownloadService _packageDownloadService = MarketplacePackageDownloadService.GetInstance();
 
         public ContextMenu ContextMenu { get; set; }
         public string? PackageName { get; set; }
@@ -42,14 +45,15 @@ namespace ColorVision.UI.Desktop.Marketplace
         }.Where(item => !string.IsNullOrWhiteSpace(item))!);
 
         public string? HeaderRightPrimary => PluginInfo?.Manifest?.DllName;
+        public string HeaderRightSecondary => string.Empty;
 
         public string InstalledBadgeText => string.IsNullOrWhiteSpace(AssemblyVersion?.ToString())
-            ? "Installed"
-            : $"Installed v{AssemblyVersion}";
+            ? Resources.Installed
+            : string.Format(Resources.MarketplaceInstalledVersionFormat, AssemblyVersion);
         public Visibility InstalledBadgeVisibility => Visibility.Visible;
         public Visibility UpdateBadgeVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
         public string UpdateBadgeText => HasUpdate && LastVersion != null
-            ? $"Update v{LastVersion}"
+            ? string.Format(Resources.MarketplaceUpdateVersionFormat, LastVersion)
             : string.Empty;
 
         public Visibility OpenLocalPathVisibility => Visibility.Visible;
@@ -59,6 +63,9 @@ namespace ColorVision.UI.Desktop.Marketplace
         public Visibility DownloadLatestVisibility => Visibility.Collapsed;
         public Visibility OpenProjectUrlVisibility => Visibility.Collapsed;
         public string PrimaryActionText => Resources.Update;
+
+        public bool IsBusy { get => _isBusy; private set { _isBusy = value; OnPropertyChanged(); RaiseUpdateCommandCanExecuteChanged(); } }
+        private bool _isBusy;
 
         public PluginInfo PluginInfo { get; set; }
 
@@ -74,6 +81,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 OnPropertyChanged(nameof(UpdateBadgeVisibility));
                 OnPropertyChanged(nameof(UpdateBadgeText));
                 OnPropertyChanged(nameof(PrimaryActionVisibility));
+                RaiseUpdateCommandCanExecuteChanged();
             }
         }
         private Version _LastVersion;
@@ -81,7 +89,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         public bool HasUpdate => LastVersion != null && AssemblyVersion != null && LastVersion > AssemblyVersion;
 
         public RelayCommand DeleteCommand { get; set; }
-        public RelayCommand UpdateCommand { get; set; }
+        public ICommand UpdateCommand { get; set; }
         public RelayCommand OpenLocalPathCommand { get; set; }
         public RelayCommand ExtractPluginCommand { get; set; }
         public ICommand? DownloadCommand => null;
@@ -101,24 +109,48 @@ namespace ColorVision.UI.Desktop.Marketplace
             Icon = pluginInfo.Icon ?? new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(ThemeManager.Current.CurrentUITheme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
 
             DeleteCommand = new RelayCommand(a => Delete());
-            UpdateCommand = new RelayCommand(a => Update());
+            UpdateCommand = new AsyncRelayCommand(_ => UpdateAsync(), _ => !IsBusy && HasUpdate, logger: log);
             OpenLocalPathCommand = new RelayCommand(a => OpenLocalPath());
             ExtractPluginCommand = new RelayCommand(a => ExtractPlugin());
             ContextMenu = new ContextMenu();
 
             if (PluginInfo.Enabled && !skipIndividualCheck)
             {
-                Task.Run(() => CheckVersion());
+                _ = RunInitialVersionCheckAsync();
             }
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Update, Command = UpdateCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "OpenLocalPath", Command = OpenLocalPathCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MarketplaceOpenLocalPath, Command = OpenLocalPathCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.ExtractPlugin, Command = ExtractPluginCommand });
 
 
 
+        }
+
+        private void RaiseUpdateCommandCanExecuteChanged()
+        {
+            if (UpdateCommand is AsyncRelayCommand command)
+            {
+                command.RaiseCanExecuteChanged();
+            }
+        }
+
+        private async Task RunInitialVersionCheckAsync()
+        {
+            try
+            {
+                await CheckVersionAsync().ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug($"Initial version check canceled for {PackageName}.");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Initial version check failed for {PackageName}.", ex);
+            }
         }
 
         /// <summary>
@@ -190,39 +222,22 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        public async void CheckVersion()
+        public async Task CheckVersionAsync(CancellationToken cancellationToken = default)
         {
-            await CheckVersionAsync();
-        }
-
-        public async Task CheckVersionAsync()
-        {
-            // Try marketplace API first
             try
             {
-                var client = MarketplaceClient.GetInstance();
-                string? version = await client.GetLatestVersionAsync(PackageName);
+                cancellationToken.ThrowIfCancellationRequested();
+                string? version = string.IsNullOrWhiteSpace(PackageName)
+                    ? null
+                    : await _packageDownloadService.ResolveLatestVersionAsync(PackageName, cancellationToken).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(version))
                 {
                     LastVersion = new Version(version.Trim());
-                    return;
                 }
             }
-            catch (Exception ex)
+            catch (OperationCanceledException)
             {
-                log.Debug($"Marketplace API check failed for {PackageName}, falling back to legacy: {ex.Message}");
-            }
-
-            // Fallback to legacy LATEST_RELEASE file
-            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath  + PackageName + "/LATEST_RELEASE";
-            try
-            {
-                using var httpClient = new System.Net.Http.HttpClient();
-                var byteArray = System.Text.Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-                string versionString = await httpClient.GetStringAsync(LatestReleaseUrl);
-                if (!string.IsNullOrWhiteSpace(versionString))
-                    LastVersion = new Version(versionString.Trim());
+                throw;
             }
             catch (Exception ex)
             {
@@ -231,70 +246,38 @@ namespace ColorVision.UI.Desktop.Marketplace
         }
 
 
-        public async void Update()
+        public async Task UpdateAsync(CancellationToken cancellationToken = default)
         {
             if (!HasUpdate || LastVersion == null) return;
+            if (IsBusy) return;
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmUpdate, Name, MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
 
-            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
-
-            // Try to get expected hash from marketplace API for verification
-            string? expectedHash = null;
+            IsBusy = true;
             try
             {
-                var client = MarketplaceClient.GetInstance();
-                var detail = await client.GetPluginDetailAsync(PackageName);
-                expectedHash = detail?.Versions?.FirstOrDefault(v => v.Version == LastVersion.ToString())?.FileHash;
+                cancellationToken.ThrowIfCancellationRequested();
+                string? expectedHash = await _packageDownloadService.ResolveExpectedHashAsync(PackageName!, LastVersion.ToString(), cancellationToken);
+                await _packageDownloadService.InstallPackageAsync(new MarketplacePackageRequest
+                {
+                    PluginId = PackageName!,
+                    Version = LastVersion.ToString(),
+                    ExpectedHash = expectedHash,
+                }, cancellationToken: cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Info($"Plugin update canceled for {PackageName}.");
             }
             catch (Exception ex)
             {
-                log.Debug($"Could not fetch hash for {PackageName}: {ex.Message}");
+                log.Error($"Plugin update failed for {PackageName}.", ex);
             }
-
-            // Check if the file already exists with matching hash (skip redundant download)
-            string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, PackageName, LastVersion.ToString(), expectedHash);
-            if (existingFile != null)
+            finally
             {
-                log.Info($"Plugin {PackageName} v{LastVersion} already downloaded at {existingFile}, applying directly.");
-                Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    PluginUpdater.UpdatePlugin(existingFile);
-                });
-                return;
+                IsBusy = false;
             }
-
-            // Use marketplace API URL with fallback to legacy URL
-            string url = MarketplaceClient.GetInstance().GetDownloadUrl(PackageName, LastVersion.ToString());
-            string expectedFileName = $"{PackageName}-{LastVersion}.cvxp";
-
-            DownloadWindow.ShowInstance();
-            Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
-            {
-                if (task.Status == DownloadStatus.Completed)
-                {
-                    // Verify hash if available
-                    if (!string.IsNullOrEmpty(expectedHash) && !MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
-                    {
-                        log.Error($"Hash mismatch for {PackageName} v{LastVersion}! Expected: {expectedHash}, Actual: {MarketplaceClient.ComputeFileHash(task.SavePath)}");
-                        Application.Current?.Dispatcher.Invoke(() =>
-                            MessageBox.Show(Application.Current.GetActiveWindow(),
-                                $"下载的文件哈希校验失败，文件可能已损坏。\nExpected: {expectedHash}",
-                                "Hash Verification Failed", MessageBoxButton.OK, MessageBoxImage.Error));
-                        return;
-                    }
-
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        PluginUpdater.UpdatePlugin(task.SavePath);
-                    });
-                }
-                else
-                {
-                    log.Error($"Plugin download failed for {PackageName}: {task.ErrorMessage}");
-                }
-            }, expectedFileName);
         }
 
 

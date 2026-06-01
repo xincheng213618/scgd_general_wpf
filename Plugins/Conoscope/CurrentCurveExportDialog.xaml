@@ -24,6 +24,11 @@
                     <TextBox x:Name="txtStepDegrees" Width="90" Text="1" VerticalAlignment="Center"/>
                     <TextBlock Text="{x:Static properties:Resources.HintSamplingDefault}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
                 </DockPanel>
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock Text="{x:Static properties:Resources.LabelDecimalPlaces}" Width="110" VerticalAlignment="Center"/>
+                    <TextBox x:Name="txtDecimalPlaces" Width="90" Text="4" VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static properties:Resources.HintDecimalPlacesDefault4Saved}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                </DockPanel>
                 <TextBlock Text="{x:Static properties:Resources.HintSamplingDescription}"
                            TextWrapping="Wrap"
                            Foreground="Gray"/>

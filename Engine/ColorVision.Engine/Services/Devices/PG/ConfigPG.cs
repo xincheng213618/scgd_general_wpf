@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {
@@ -19,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         public string Category { get => _Category; set { _Category = value; OnPropertyChanged(); } }
         private string _Category = "SkyCode";
 
-        [DisplayName("寄存器地址")]
+        [Display(Name = "Engine_PG_RegisterAddress", ResourceType = typeof(Properties.Resources))]
         public int RegisterAddress { get => _RegisterAddress; set { _RegisterAddress = value; OnPropertyChanged(); } }
         private int _RegisterAddress = 0x1b;
 

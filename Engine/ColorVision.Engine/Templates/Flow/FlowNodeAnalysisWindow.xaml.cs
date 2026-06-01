@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Templates.Flow
             var selectedBatchIds = BatchListView.SelectedItems.Cast<int>().ToList();
             if (selectedBatchIds.Count == 0)
             {
-                MessageBox.Show("请选择至少一个批次", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.Flow_NodeAnalysis_SelectAtLeastOneBatch, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             LoadBatchRecords(selectedBatchIds);
@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Templates.Flow
             var selectedBatchIds = BatchListView.SelectedItems.Cast<int>().ToList();
             if (selectedBatchIds.Count < 2)
             {
-                MessageBox.Show("请选择至少两个批次进行对比", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.Flow_NodeAnalysis_SelectAtLeastTwoBatches, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             LoadBatchRecords(selectedBatchIds);
@@ -74,18 +74,18 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (NodeRecords.Count == 0)
             {
-                MessageBox.Show("没有数据可导出，请先加载批次数据", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.Flow_NodeAnalysis_NoDataToExport, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv)|*.csv";
-            dialog.FileName = "节点时间分析_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            dialog.FileName = Properties.Resources.Flow_NodeAnalysis_FileNamePrefix + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             var csvBuilder = new StringBuilder();
-            csvBuilder.AppendLine("BatchId,节点名称,节点类型,开始时间,结束时间,耗时(ms),SN");
+            csvBuilder.AppendLine(Properties.Resources.Flow_NodeAnalysis_CsvHeader);
 
             foreach (var record in NodeRecords)
             {
@@ -103,8 +103,8 @@ namespace ColorVision.Engine.Templates.Flow
             if (_allMessages.Count > 0)
             {
                 csvBuilder.AppendLine();
-                csvBuilder.AppendLine("MQTT消息追踪");
-                csvBuilder.AppendLine("BatchId,节点,NodeId,EventName,MsgId,发送Topic,发送时间,接收Topic,接收时间,耗时(ms),状态码,状态消息,状态");
+                csvBuilder.AppendLine(Properties.Resources.Flow_NodeAnalysis_MqttMessageTrace);
+                csvBuilder.AppendLine(Properties.Resources.Flow_NodeAnalysis_MqttCsvHeader);
                 foreach (var msg in _allMessages)
                 {
                     csvBuilder.Append(msg.BatchId).Append(',');
@@ -125,7 +125,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             File.WriteAllText(dialog.FileName, csvBuilder.ToString(), new UTF8Encoding(true));
-            MessageBox.Show("导出成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Properties.Resources.ExportSucceeded, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private static string CsvEscape(string value)
@@ -155,7 +155,7 @@ namespace ColorVision.Engine.Templates.Flow
             // Update node filter combo
             var nodeNames = _allMessages.Select(m => m.NodeName).Where(n => !string.IsNullOrEmpty(n)).Distinct().ToList();
             MessageNodeFilter.Items.Clear();
-            MessageNodeFilter.Items.Add(new ComboBoxItem { Content = "全部", IsSelected = true });
+            MessageNodeFilter.Items.Add(new ComboBoxItem { Content = Properties.Resources.Flow_NodeAnalysis_All, Tag = "All", IsSelected = true });
             foreach (var name in nodeNames)
                 MessageNodeFilter.Items.Add(new ComboBoxItem { Content = name });
             MessageNodeFilter.SelectedIndex = 0;
@@ -167,11 +167,11 @@ namespace ColorVision.Engine.Templates.Flow
         {
             NodeMessages.Clear();
             string selectedNode = null;
-            if (MessageNodeFilter.SelectedItem is ComboBoxItem item && item.Content?.ToString() != "全部")
+            if (MessageNodeFilter.SelectedItem is ComboBoxItem item && item.Tag?.ToString() != "All")
                 selectedNode = item.Content?.ToString();
 
             string selectedState = null;
-            if (MessageStateFilter?.SelectedItem is ComboBoxItem stateItem && stateItem.Content?.ToString() != "全部")
+            if (MessageStateFilter?.SelectedItem is ComboBoxItem stateItem && stateItem.Tag?.ToString() != "All")
                 selectedState = stateItem.Content?.ToString();
 
             var filtered = _allMessages.AsEnumerable();
@@ -327,7 +327,7 @@ namespace ColorVision.Engine.Templates.Flow
                 Orientation = ScottPlot.Orientation.Horizontal,
                 Size = 0.7,
             });
-            ticks.Add(new ScottPlot.Tick(totalYPos, "总时间"));
+            ticks.Add(new ScottPlot.Tick(totalYPos, Properties.Resources.Flow_NodeAnalysis_TotalTime));
 
             // Node bars
             for (int i = 0; i < records.Count; i++)
@@ -360,8 +360,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             GanttPlot.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
 
-            GanttPlot.Plot.Title("流程节点甘特图");
-            GanttPlot.Plot.XLabel("时间 (ms)");
+            GanttPlot.Plot.Title(Properties.Resources.Flow_NodeAnalysis_GanttTitle);
+            GanttPlot.Plot.XLabel(Properties.Resources.Flow_NodeAnalysis_XLabelTime);
             GanttPlot.Plot.YLabel("");
 
             GanttPlot.Plot.Axes.AutoScale();
@@ -430,8 +430,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             GanttPlot.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
 
-            GanttPlot.Plot.Title("流程节点对比 (多批次)");
-            GanttPlot.Plot.XLabel("耗时 (ms)");
+            GanttPlot.Plot.Title(Properties.Resources.Flow_NodeAnalysis_GanttCompareTitle);
+            GanttPlot.Plot.XLabel(Properties.Resources.Flow_NodeAnalysis_XLabelElapsed);
             GanttPlot.Plot.YLabel("");
 
             // Add legend for batch colors
@@ -445,7 +445,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             GanttPlot.Plot.Legend.ManualItems.Add(new ScottPlot.LegendItem
             {
-                LabelText = "超时",
+                LabelText = Properties.Resources.Flow_NodeAnalysis_Timeout,
                 FillColor = timeoutColor,
             });
             GanttPlot.Plot.Legend.IsVisible = true;

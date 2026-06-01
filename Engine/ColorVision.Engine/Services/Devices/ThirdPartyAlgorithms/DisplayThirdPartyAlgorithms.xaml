@@ -52,22 +52,22 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel  Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.Unregistered}" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,2">
-                        <TextBlock Text="第三方算法" Margin="0,0,5,0" MinWidth="50"/>
+                        <TextBlock Text="{x:Static properties:Resources.ThirdPartyAlgorithm}" Margin="0,0,5,0" MinWidth="50"/>
                         <ComboBox x:Name="CB_ThirdPartyAlgorithms"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Name" />
                     </DockPanel>
                     <TabControl BorderThickness="0" Background="Transparent">
                         <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" IsSelected="{Binding IsLocalFile}" >
                             <StackPanel Orientation="Horizontal" Margin="0,2">
-                                <TextBlock Text="文件" Margin="10,0,0,0" Width="40"/>
+                                <TextBlock Text="{x:Static properties:Resources.File}" Margin="10,0,0,0" Width="40"/>
                                 <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Text="{Binding ImageFilePath}" Margin="0,0,2,0" HorizontalAlignment="Left" />
                                 <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />
                             </StackPanel>
                         </TabItem>
-                        <TabItem Background="Transparent" Header="服务" x:Name="AlgRawSelect" IsSelected="True">
+                        <TabItem Background="Transparent" Header="{x:Static properties:Resources.Service}" x:Name="AlgRawSelect" IsSelected="True">
                             <StackPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="10,0,0,0" Width="40"/>
@@ -84,7 +84,7 @@
                                                 </BeginStoryboard>
                                             </EventTrigger>
                                         </Button.Triggers>
-                                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
+                                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="{x:Static properties:Resources.Refresh}">
                                             <TextBlock.RenderTransform>
                                                 <RotateTransform x:Name="rotateTransform" CenterX="7.5" CenterY="7.5"/>
                                             </TextBlock.RenderTransform>
@@ -96,10 +96,10 @@
                             </StackPanel>
 
                         </TabItem>
-                        <TabItem  Background="Transparent" Header="批次号" x:Name="AlgBatchSelect" >
+                        <TabItem  Background="Transparent" Header="{x:Static properties:Resources.BatchNumber}" x:Name="AlgBatchSelect" >
                             <StackPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="批次号" Margin="10,0,0,0" Width="40"/>
+                                    <TextBlock Text="{x:Static properties:Resources.BatchNumber}" Margin="10,0,0,0" Width="40"/>
                                     <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}"  Width="150" HorizontalAlignment="Left" />
                                 </DockPanel>
                             </StackPanel>

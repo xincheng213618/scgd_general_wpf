@@ -1,6 +1,8 @@
+using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Core;
 using Conoscope.Presentation.Formatters;
 using Conoscope.Presentation.Helpers;
+using Conoscope.Properties;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -21,7 +23,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
 
             isUpdatingQuickControls = true;
             try
@@ -58,7 +60,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateReferenceMode mode = CurrentModelProfile.CoordinateAxisParam.ReferenceMode;
+            ConoscopeCoordinateReferenceMode mode = CoordinateAxisConfig.ReferenceMode;
             rowReferenceAngle.Visibility = mode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Visibility.Visible : Visibility.Collapsed;
             rowReferenceRadius.Visibility = mode == ConoscopeCoordinateReferenceMode.PolarCircle ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -72,9 +74,9 @@ namespace Conoscope
 
             ConoscopeCoordinateReferenceMode mode = ComboBoxHelper.GetSelectedEnumByTag(
                 cbQuickReferenceMode,
-                CurrentModelProfile.CoordinateAxisParam.ReferenceMode);
+                CoordinateAxisConfig.ReferenceMode);
 
-            CurrentModelProfile.CoordinateAxisParam.ReferenceMode = mode;
+            CoordinateAxisConfig.ReferenceMode = mode;
             UpdateReferenceControlVisibility();
             ApplyCoordinateAxisReference();
         }
@@ -86,7 +88,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             axisParam.ReferenceAngle = e.NewValue;
             if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
@@ -101,7 +103,7 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             axisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(e.NewValue, MaxAngle));
             if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
             {
@@ -151,9 +153,9 @@ namespace Conoscope
                 return;
             }
 
-            CurrentModelProfile.CoordinateAxisParam.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
+            CoordinateAxisConfig.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
             RefreshQuickControlsFromAxisParam();
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 ApplyCoordinateAxisReference();
             }
@@ -172,9 +174,9 @@ namespace Conoscope
                 return;
             }
 
-            CurrentModelProfile.CoordinateAxisParam.ReferenceRadiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
+            CoordinateAxisConfig.ReferenceRadiusAngle = Math.Max(0, Math.Min(radiusAngle, MaxAngle));
             RefreshQuickControlsFromAxisParam();
-            if (CurrentModelProfile.CoordinateAxisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
+            if (CoordinateAxisConfig.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
             {
                 ApplyCoordinateAxisReference();
             }
@@ -182,7 +184,7 @@ namespace Conoscope
 
         private void InitializeCoordinateAxis(Point center, int radius)
         {
-            ConoscopeCoordinateAxisParam axisParam = CurrentModelProfile.CoordinateAxisParam;
+            ConoscopeCoordinateAxisParam axisParam = CoordinateAxisConfig;
             axisParam.PropertyChanged -= CoordinateAxisParam_PropertyChanged;
             axisParam.PropertyChanged += CoordinateAxisParam_PropertyChanged;
             axisParam.MaxAngle = MaxAngle;
@@ -283,17 +285,17 @@ namespace Conoscope
 
             ExportChannel displayChannel = GetSelectedDisplayChannel();
             double displayValue = GetChannelValue(sample.XyzX, sample.XyzY, sample.X, sample.Y, sample.Z, displayChannel);
-            double azimuthAngle = GetFullAzimuthAngle(e.Position);
-            double polarAngle = GetPolarRadiusAngle(e.Position);
+            double azimuthAngle = FocusPointMeasurementService.GetFullAzimuthAngle(e.Position, currentImageCenter);
+            double polarAngle = FocusPointMeasurementService.GetPolarRadiusAngle(e.Position, currentImageCenter, currentImageRadius, MaxAngle);
 
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine(string.Format(Properties.Resources.ReferenceFormat, GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)));
-            builder.AppendLine(string.Format(Properties.Resources.PixelCoordFormat, sample.ImageX, sample.ImageY));
-            builder.AppendLine(string.Format(Properties.Resources.PolarCoordFormat, azimuthAngle.ToString("F2"), polarAngle.ToString("F2")));
-            builder.AppendLine($"{ConoscopeChannelDisplayFormatter.GetLabel(displayChannel)}: {displayValue:F6}");
+            builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.ReferenceFormat, GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)));
+            builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.PixelCoordFormat, sample.ImageX, sample.ImageY));
+            builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.PolarCoordFormat, azimuthAngle.ToString("F2"), polarAngle.ToString("F2")));
+            builder.AppendLine($"{ConoscopeChannelDisplayFormatter.GetLabel(displayChannel)}: {ConoscopeChannelDisplayFormatter.FormatValue(displayValue, displayChannel)}");
             builder.AppendLine($"XYZ: X={sample.X:F4}, Y={sample.Y:F4}, Z={sample.Z:F4}");
             builder.AppendLine($"xy: x={sample.Chromaticity.x:F6}, y={sample.Chromaticity.y:F6}");
-            builder.Append($"uv: u={sample.Chromaticity.u:F6}, v={sample.Chromaticity.v:F6}, CCT={ConoscopeColorimetry.FormatCct(sample.Chromaticity.Cct)}");
+            builder.Append($"uv: u={sample.Chromaticity.u:F6}, v={sample.Chromaticity.v:F6}, CCT={(sample.Chromaticity.Cct > 0 ? $"{sample.Chromaticity.Cct:F0}K" : "--")}");
             return builder.ToString();
         }
 
@@ -341,25 +343,6 @@ namespace Conoscope
             ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
             sample = new PixelChromaticitySample(imageX, imageY, xyzX, xyzY, X, Y, Z, chromaticity);
             return true;
-        }
-
-        private double GetFullAzimuthAngle(Point point)
-        {
-            double deltaX = point.X - currentImageCenter.X;
-            double deltaY = currentImageCenter.Y - point.Y;
-            double angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
-            return angle < 0 ? angle + 360.0 : angle;
-        }
-
-        private double GetPolarRadiusAngle(Point point)
-        {
-            if (currentImageRadius <= 0)
-            {
-                return 0;
-            }
-
-            double distance = (point - currentImageCenter).Length;
-            return Math.Max(0, Math.Min(distance / currentImageRadius * MaxAngle, MaxAngle));
         }
 
         private void HideCoordinateDragOverlay()
@@ -478,6 +461,8 @@ namespace Conoscope
                 currentImageCenter = center;
                 currentImageRadius = radius;
 
+                ImageView.SetFocusCircleBoundary(center, radius);
+
                 InitializeCoordinateAxis(center, radius);
 
                 log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}, 系数: {currentPixelsPerDegree:F6}px/deg");
@@ -494,7 +479,7 @@ namespace Conoscope
             catch (Exception ex)
             {
                 log.Error($"创建极角线失败: {ex.Message}", ex);
-                MessageBox.Show(string.Format(Properties.Resources.MsgPolarLineCreateFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgPolarLineCreateFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

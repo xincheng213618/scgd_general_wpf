@@ -22,7 +22,7 @@ namespace Conoscope.Analysis
             rows = result.Points.Select(item => new ColorGamutRowViewModel(item)).ToList();
 
             tbStandardName.Text = result.Standard.Name;
-            tbSummary.Text = string.Format(Properties.Resources.FocusPointCountAndAverageGamut, rows.Count, result.AverageCoveragePercent.ToString("F2"));
+            tbSummary.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.FocusPointCountAndAverageGamut, rows.Count, result.AverageCoveragePercent.ToString("F2"));
 
             ResultGrid.ItemsSource = rows;
             cbDisplayScope.ItemsSource = CreateScopeOptions();
@@ -38,7 +38,7 @@ namespace Conoscope.Analysis
         {
             List<DisplayScopeOption> options = new()
             {
-                new DisplayScopeOption(string.Empty, "全部关注点")
+                new DisplayScopeOption(string.Empty, Properties.Resources.Conoscope_AllFocusPoints)
             };
 
             options.AddRange(rows.Select(row => new DisplayScopeOption(row.PointKey, $"{row.Index}. {row.PointName}")));
@@ -72,6 +72,11 @@ namespace Conoscope.Analysis
             cbDisplayScope.SelectedItem = option;
             isSyncingSelection = false;
             RenderDiagram();
+        }
+
+        private void btnExportCsv_Click(object sender, RoutedEventArgs e)
+        {
+            AnalysisResultCsvExporter.ExportColorGamut(this, result);
         }
 
         private void RenderDiagram()
@@ -134,7 +139,7 @@ namespace Conoscope.Analysis
             SolidColorBrush stroke = new(accentColor);
             SolidColorBrush fill = new(Color.FromArgb(28, accentColor.R, accentColor.G, accentColor.B));
             return new CieGamut(
-                string.Format(Properties.Resources.Measured, pointResult.PointName),                new[]
+                Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.Measured, pointResult.PointName),                new[]
                 {
                     pointResult.RedChromaticity,
                     pointResult.GreenChromaticity,
@@ -190,7 +195,7 @@ namespace Conoscope.Analysis
 
             private static string FormatChromaticity(ImageMeasurement measurement)
             {
-                return string.Format(Properties.Resources.ChromaticityFormat, measurement.Chromaticity.x.ToString("F4"), measurement.Chromaticity.y.ToString("F4"));
+                return Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.ChromaticityFormat, measurement.Chromaticity.x.ToString("F4"), measurement.Chromaticity.y.ToString("F4"));
             }
         }
     }

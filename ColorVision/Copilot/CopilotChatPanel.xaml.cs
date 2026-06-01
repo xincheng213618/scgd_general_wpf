@@ -9,8 +9,8 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatPanel : UserControl
     {
-        private const double CompactSidebarThreshold = 900;
-        private const double ExpandedSidebarWidth = 184;
+        private const double CompactSidebarThreshold = 960;
+        private const double ExpandedSidebarWidth = 220;
         private const double CollapsedSidebarWidth = 48;
 
         private CopilotChatViewModel? _attachedViewModel;

@@ -4,8 +4,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.UI.Properties"
         mc:Ignorable="d"
-        Title="编辑列表" Height="600" Width="800" 
+        Title="{x:Static properties:Resources.ListEditor_Title}" Height="600" Width="800" 
         Background="{DynamicResource GlobalBackground}"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
@@ -23,17 +24,17 @@
 
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10" VerticalAlignment="Top">
-            <Button x:Name="AddButton" Content="添加" Width="80" Click="AddButton_Click" 
+            <Button x:Name="AddButton" Content="{x:Static properties:Resources.ListEditor_Add}" Width="80" Click="AddButton_Click"
                     Margin="0,0,5,0" />
-            <Button x:Name="EditButton" Content="编辑" Width="80" Click="EditButton_Click" 
+            <Button x:Name="EditButton" Content="{x:Static properties:Resources.Edit}" Width="80" Click="EditButton_Click"
                     Margin="0,0,5,0" IsEnabled="False"/>
-            <Button x:Name="DeleteButton" Content="删除" Width="80" Click="DeleteButton_Click" 
+            <Button x:Name="DeleteButton" Content="{x:Static properties:Resources.ListEditor_Delete}" Width="80" Click="DeleteButton_Click"
                     Margin="0,0,5,0" IsEnabled="False" />
-            <Button x:Name="DeleteAllButton" Content="全部删除" Width="80" Click="DeleteAllButton_Click" 
+            <Button x:Name="DeleteAllButton" Content="{x:Static properties:Resources.ListEditor_DeleteAll}" Width="80" Click="DeleteAllButton_Click"
                     Margin="0,0,5,0" IsEnabled="False" />
-            <Button x:Name="MoveUpButton" Content="上移" Width="80" Click="MoveUpButton_Click" 
+            <Button x:Name="MoveUpButton" Content="{x:Static properties:Resources.ListEditor_MoveUp}" Width="80" Click="MoveUpButton_Click"
                     Margin="0,0,5,0" IsEnabled="False"/>
-            <Button x:Name="MoveDownButton" Content="下移" Width="80" Click="MoveDownButton_Click" 
+            <Button x:Name="MoveDownButton" Content="{x:Static properties:Resources.ListEditor_MoveDown}" Width="80" Click="MoveDownButton_Click"
                     IsEnabled="False"/>
         </StackPanel>
 
@@ -46,8 +47,8 @@
                       MouseDoubleClick="ItemsListView_MouseDoubleClick">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="索引" Width="60" DisplayMemberBinding="{Binding Index}"/>
-                        <GridViewColumn Header="值" Width="550" DisplayMemberBinding="{Binding DisplayValue}"/>
+                        <GridViewColumn Header="{x:Static properties:Resources.ListEditor_Index}" Width="60" DisplayMemberBinding="{Binding Index}"/>
+                        <GridViewColumn Header="{x:Static properties:Resources.ListEditor_Value}" Width="550" DisplayMemberBinding="{Binding DisplayValue}"/>
                     </GridView>
                 </ListView.View>
             </ListView>
@@ -55,11 +56,11 @@
 
         <!-- Bottom Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="确定" Width="80" Click="OkButton_Click" 
-                    Margin="0,0,5,0" Background="{StaticResource PrimaryBrush}" 
+            <Button Content="{x:Static properties:Resources.OK}" Width="80" Click="OkButton_Click"
+                    Margin="0,0,5,0" Background="{StaticResource PrimaryBrush}"
                     Foreground="White" BorderThickness="0"/>
-            <Button Content="取消" Width="80" Click="CancelButton_Click" 
-                    Background="{StaticResource PrimaryBrush}" 
+            <Button Content="{x:Static properties:Resources.Cancel}" Width="80" Click="CancelButton_Click"
+                    Background="{StaticResource PrimaryBrush}"
                     Foreground="White" BorderThickness="0"/>
         </StackPanel>
     </Grid>

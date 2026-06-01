@@ -95,7 +95,7 @@ namespace ColorVision.ImageEditor.Draw
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DrawingVisualBase visual)
             {
-                MenuItem menuIte2 = new MenuItem() { Header = "删除" };
+                MenuItem menuIte2 = new MenuItem() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Delete };
                 menuIte2.Click += (s, e) =>
                 {
                     context.DrawCanvas.RemoveVisualCommand(visual);
@@ -110,7 +110,7 @@ namespace ColorVision.ImageEditor.Draw
                 };
                 MenuItems.Add(menuIte3);
 
-                MenuItem menuItem4 = new MenuItem() { Header = "编辑" };
+                MenuItem menuItem4 = new MenuItem() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Edit };
                 menuItem4.Click += (s, e) =>
                 {
                     new PropertyEditorWindow(visual.BaseAttribute) { Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog();

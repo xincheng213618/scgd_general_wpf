@@ -19,29 +19,13 @@ namespace ColorVision.Solution.Terminal
         private static readonly Typeface DefaultTypeface = new(new FontFamily("Cascadia Mono, Consolas, Courier New"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
         private static readonly Typeface BoldTypeface = new(new FontFamily("Cascadia Mono, Consolas, Courier New"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
 
-        // Frozen brushes for performance
-        private static readonly Brush DefaultBgBrush;
-        private static readonly Brush CursorBrush;
-        private static readonly Pen UrlPen;
-
-        private static readonly Color DefaultFgColor = Color.FromRgb(204, 204, 204);
-        private static readonly Color DefaultBgColor = Color.FromRgb(30, 30, 30);
-
-        static TerminalView()
-        {
-            var bg = new SolidColorBrush(DefaultBgColor);
-            bg.Freeze();
-            DefaultBgBrush = bg;
-
-            var cur = new SolidColorBrush(Color.FromArgb(128, 204, 204, 204));
-            cur.Freeze();
-            CursorBrush = cur;
-
-            var urlBrush = new SolidColorBrush(Color.FromRgb(88, 166, 255));
-            urlBrush.Freeze();
-            UrlPen = new Pen(urlBrush, 1);
-            UrlPen.Freeze();
-        }
+        private static readonly Color FallbackDefaultForegroundColor = SystemColors.WindowTextColor;
+        private static readonly Color FallbackDefaultBackgroundColor = SystemColors.WindowColor;
+        private static readonly Brush FallbackDefaultForegroundBrush = CreateFrozenBrush(FallbackDefaultForegroundColor);
+        private static readonly Brush FallbackDefaultBackgroundBrush = CreateFrozenBrush(FallbackDefaultBackgroundColor);
+        private static readonly Brush FallbackCursorBrush = SystemColors.ControlTextBrush;
+        private static readonly Brush FallbackSelectionBrush = SystemColors.HighlightBrush;
+        private static readonly Brush FallbackUrlBrush = SystemColors.HotTrackBrush;
 
         // State
         private List<TerminalLine> _lines = new();
@@ -60,8 +44,72 @@ namespace ColorVision.Solution.Terminal
         private int _selStartLine, _selStartCol;
         private int _selEndLine, _selEndCol;
         private bool _hasSelection;
+        private Brush? _defaultBackgroundBrushCache;
+        private Color _defaultBackgroundBrushCacheColor;
+        private Pen? _urlPenCache;
+        private Brush? _urlPenBrushSource;
 
         public event Action<string>? UrlClicked;
+
+        public static readonly DependencyProperty DefaultBackgroundColorProperty = DependencyProperty.Register(
+            nameof(DefaultBackgroundColor),
+            typeof(Color),
+            typeof(TerminalView),
+            new FrameworkPropertyMetadata(FallbackDefaultBackgroundColor, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty DefaultForegroundColorProperty = DependencyProperty.Register(
+            nameof(DefaultForegroundColor),
+            typeof(Color),
+            typeof(TerminalView),
+            new FrameworkPropertyMetadata(FallbackDefaultForegroundColor, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty CursorBrushProperty = DependencyProperty.Register(
+            nameof(CursorBrush),
+            typeof(Brush),
+            typeof(TerminalView),
+            new FrameworkPropertyMetadata(FallbackCursorBrush, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty SelectionBrushProperty = DependencyProperty.Register(
+            nameof(SelectionBrush),
+            typeof(Brush),
+            typeof(TerminalView),
+            new FrameworkPropertyMetadata(FallbackSelectionBrush, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public static readonly DependencyProperty UrlBrushProperty = DependencyProperty.Register(
+            nameof(UrlBrush),
+            typeof(Brush),
+            typeof(TerminalView),
+            new FrameworkPropertyMetadata(FallbackUrlBrush, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public Color DefaultBackgroundColor
+        {
+            get => (Color)GetValue(DefaultBackgroundColorProperty);
+            set => SetValue(DefaultBackgroundColorProperty, value);
+        }
+
+        public Color DefaultForegroundColor
+        {
+            get => (Color)GetValue(DefaultForegroundColorProperty);
+            set => SetValue(DefaultForegroundColorProperty, value);
+        }
+
+        public Brush? CursorBrush
+        {
+            get => (Brush?)GetValue(CursorBrushProperty);
+            set => SetValue(CursorBrushProperty, value);
+        }
+
+        public Brush? SelectionBrush
+        {
+            get => (Brush?)GetValue(SelectionBrushProperty);
+            set => SetValue(SelectionBrushProperty, value);
+        }
+
+        public Brush? UrlBrush
+        {
+            get => (Brush?)GetValue(UrlBrushProperty);
+            set => SetValue(UrlBrushProperty, value);
+        }
 
         public TerminalView()
         {
@@ -71,7 +119,7 @@ namespace ColorVision.Solution.Terminal
             ClipToBounds = true;
 
             var ft = new FormattedText("M", CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight, DefaultTypeface, DefaultFontSize, Brushes.White, 1.0);
+                FlowDirection.LeftToRight, DefaultTypeface, DefaultFontSize, FallbackDefaultForegroundBrush, 1.0);
             _charWidth = ft.WidthIncludingTrailingWhitespace;
             _lineHeight = ft.Height;
         }
@@ -81,6 +129,41 @@ namespace ColorVision.Solution.Terminal
         public int CursorLine => _cursorLine;
         public int CursorCol => _cursorCol;
         public double CursorY => _cursorLine * _lineHeight;
+
+        private static SolidColorBrush CreateFrozenBrush(Color color)
+        {
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
+        }
+
+        private Brush GetDefaultBackgroundBrush()
+        {
+            var color = DefaultBackgroundColor;
+            if (_defaultBackgroundBrushCache != null && _defaultBackgroundBrushCacheColor == color)
+                return _defaultBackgroundBrushCache;
+
+            _defaultBackgroundBrushCacheColor = color;
+            _defaultBackgroundBrushCache = color == FallbackDefaultBackgroundColor
+                ? FallbackDefaultBackgroundBrush
+                : CreateFrozenBrush(color);
+            return _defaultBackgroundBrushCache;
+        }
+
+        private Brush GetCursorRenderBrush() => CursorBrush ?? FallbackCursorBrush;
+
+        private Brush GetSelectionRenderBrush() => SelectionBrush ?? FallbackSelectionBrush;
+
+        private Pen GetUrlPen()
+        {
+            var brush = UrlBrush ?? FallbackUrlBrush;
+            if (_urlPenCache != null && ReferenceEquals(_urlPenBrushSource, brush))
+                return _urlPenCache;
+
+            _urlPenBrushSource = brush;
+            _urlPenCache = new Pen(brush, 1);
+            return _urlPenCache;
+        }
 
         /// <summary>
         /// Update the view with new terminal data. Triggers re-measure and re-render.
@@ -156,11 +239,13 @@ namespace ColorVision.Solution.Terminal
         {
             var (scrollOffset, viewportHeight) = GetViewportInfo();
             if (viewportHeight <= 0) viewportHeight = RenderSize.Height;
+            var defaultBackgroundBrush = GetDefaultBackgroundBrush();
+            var urlPen = GetUrlPen();
 
             // Background for visible area (+ buffer to avoid edge flicker)
             double bgTop = Math.Max(0, scrollOffset - _lineHeight);
             double bgBottom = scrollOffset + viewportHeight + _lineHeight;
-            dc.DrawRectangle(DefaultBgBrush, null, new Rect(0, bgTop, RenderSize.Width, bgBottom - bgTop));
+            dc.DrawRectangle(defaultBackgroundBrush, null, new Rect(0, bgTop, RenderSize.Width, bgBottom - bgTop));
 
             if (_lines.Count == 0) return;
 
@@ -193,7 +278,7 @@ namespace ColorVision.Solution.Terminal
                     double ux = m.Index * _charWidth;
                     double uw = m.Length * _charWidth;
                     double underlineY = y + _lineHeight - 2;
-                    dc.DrawLine(UrlPen, new Point(ux, underlineY), new Point(ux + uw, underlineY));
+                    dc.DrawLine(urlPen, new Point(ux, underlineY), new Point(ux + uw, underlineY));
 
                     _urlRegions.Add(new UrlHitRegion
                     {
@@ -209,7 +294,7 @@ namespace ColorVision.Solution.Terminal
                 if (lineIdx == _cursorLine)
                 {
                     double cursorX = _cursorCol * _charWidth;
-                    dc.DrawRectangle(CursorBrush, null, new Rect(cursorX, y, Math.Max(_charWidth, 2), _lineHeight));
+                    dc.DrawRectangle(GetCursorRenderBrush(), null, new Rect(cursorX, y, Math.Max(_charWidth, 2), _lineHeight));
                 }
             }
         }
@@ -220,8 +305,8 @@ namespace ColorVision.Solution.Terminal
             while (col < line.Length)
             {
                 var cell = line.Cells[col];
-                byte bg = cell.IsInverse ? cell.Fg : cell.Bg;
-                if (bg == 0)
+                Color bg = GetEffectiveBackgroundColor(cell);
+                if (bg == DefaultBackgroundColor)
                 {
                     col++;
                     continue;
@@ -231,13 +316,12 @@ namespace ColorVision.Solution.Terminal
                 while (col < line.Length)
                 {
                     var c = line.Cells[col];
-                    byte cbg = c.IsInverse ? c.Fg : c.Bg;
+                    Color cbg = GetEffectiveBackgroundColor(c);
                     if (cbg != bg) break;
                     col++;
                 }
 
-                var rgb = GetCellBgColor(bg);
-                var brush = new SolidColorBrush(Color.FromRgb(rgb.R, rgb.G, rgb.B));
+                var brush = new SolidColorBrush(bg);
                 brush.Freeze();
                 dc.DrawRectangle(brush, null, new Rect(start * _charWidth, y, (col - start) * _charWidth, _lineHeight));
             }
@@ -249,26 +333,24 @@ namespace ColorVision.Solution.Terminal
             while (col < line.Length)
             {
                 var cell = line.Cells[col];
-                byte fg = cell.IsInverse ? cell.Bg : cell.Fg;
+                Color fg = GetEffectiveForegroundColor(cell);
                 byte flags = cell.Flags;
-                if (fg == 0 && cell.IsInverse) fg = 1;
+                bool isBold = cell.IsBold;
 
                 int start = col;
                 var runChars = new System.Text.StringBuilder();
                 while (col < line.Length)
                 {
                     var c = line.Cells[col];
-                    byte cfTmp = c.IsInverse ? c.Bg : c.Fg;
-                    if (cfTmp == 0 && c.IsInverse) cfTmp = 1;
+                    Color cfTmp = GetEffectiveForegroundColor(c);
                     if (cfTmp != fg || c.Flags != flags) break;
                     runChars.Append(c.Char);
                     col++;
                 }
 
-                var color = GetCellFgColor(fg, (flags & 1) != 0);
-                var brush = new SolidColorBrush(color);
+                var brush = new SolidColorBrush(fg);
                 brush.Freeze();
-                var typeface = (flags & 1) != 0 ? BoldTypeface : DefaultTypeface;
+                var typeface = isBold ? BoldTypeface : DefaultTypeface;
 
                 var ft = new FormattedText(runChars.ToString(), CultureInfo.CurrentCulture,
                     FlowDirection.LeftToRight, typeface, DefaultFontSize, brush, pixelsPerDip);
@@ -297,14 +379,28 @@ namespace ColorVision.Solution.Terminal
             double w = (to - from) * _charWidth;
             if (w <= 0) return;
 
-            var selBrush = new SolidColorBrush(Color.FromArgb(80, 58, 150, 221));
-            selBrush.Freeze();
-            dc.DrawRectangle(selBrush, null, new Rect(x, y, w, _lineHeight));
+            dc.DrawRectangle(GetSelectionRenderBrush(), null, new Rect(x, y, w, _lineHeight));
         }
 
-        private static Color GetCellFgColor(byte fg, bool bold)
+        private Color GetEffectiveForegroundColor(TerminalCell cell)
         {
-            if (fg == 0) return DefaultFgColor;
+            if (cell.IsInverse)
+                return cell.Bg == 0 ? DefaultBackgroundColor : GetCellBgColor(cell.Bg);
+
+            return GetCellFgColor(cell.Fg, cell.IsBold);
+        }
+
+        private Color GetEffectiveBackgroundColor(TerminalCell cell)
+        {
+            if (cell.IsInverse)
+                return cell.Fg == 0 ? DefaultForegroundColor : GetCellFgColor(cell.Fg, cell.IsBold);
+
+            return GetCellBgColor(cell.Bg);
+        }
+
+        private Color GetCellFgColor(byte fg, bool bold)
+        {
+            if (fg == 0) return DefaultForegroundColor;
 
             int index = fg - 1;
             if (bold && index < 8) index += 8;
@@ -319,9 +415,9 @@ namespace ColorVision.Solution.Terminal
             return Color.FromRgb(c256.R, c256.G, c256.B);
         }
 
-        private static Color GetCellBgColor(byte bg)
+        private Color GetCellBgColor(byte bg)
         {
-            if (bg == 0) return DefaultBgColor;
+            if (bg == 0) return DefaultBackgroundColor;
 
             int index = bg - 1;
             if (index < 16)

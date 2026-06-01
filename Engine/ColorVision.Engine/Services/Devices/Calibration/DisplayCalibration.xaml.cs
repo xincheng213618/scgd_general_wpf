@@ -125,7 +125,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             if (Device.PhyCamera == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "请先配置物理相机", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.BeforeCalibrationSetupPhysicalCamera, "ColorVision");
                 return;
             }
 
@@ -163,7 +163,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 CalibrationButton,
                 "calibration",
                 Properties.Resources.Calculate,
-                "校正",
+                Properties.Resources.Calibration,
                 Brushes.Red,
                 expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTimeR + Device.DisplayConfig.ExpTimeG + Device.DisplayConfig.ExpTimeB));
             return operations;
@@ -218,17 +218,12 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             if (Device.PhyCamera == null)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfigurePhysicalCameraBeforeCalibration, "ColorVision");
                 return;
             }
             if (sender is Button button)
             {
                 TemplateEditorWindow windowTemplate;
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                    return;
-                }
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
@@ -254,7 +249,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             if (string.IsNullOrWhiteSpace(sn) && string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
                 return false;
             }
             if (Path.GetExtension(imgFileName).Contains("cvraw"))
@@ -286,7 +281,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             if (!File.Exists(ImageFile.Text))
             {
-                MessageBox.Show("找不到图像文件");
+                MessageBox.Show(Properties.Resources.ImageFileNotFound);
                 return;
             }
             Device.View.ImageView.OpenImage(ImageFile.Text);

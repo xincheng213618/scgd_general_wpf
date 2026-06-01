@@ -1,4 +1,5 @@
 ﻿
+#pragma warning disable CA1707
 using System;
 using System.Threading.Tasks;
 using System.Windows;

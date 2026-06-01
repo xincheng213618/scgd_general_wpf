@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             SaveIndex.Clear();
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (MySqlSetting.IsConnect)
             {
                 var smus = ModThirdPartyAlgorithmsDao.Instance.GetAllByPid(ThirdPartyAlgorithmsModel.Id);
                 foreach (var dbModel in smus)

@@ -119,29 +119,29 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
             // 写入通用头部信息
             writer.WriteLine($"ID,{viewResult.Id}");
-            writer.WriteLine($"创建时间,{viewResult.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"}");
+            writer.WriteLine($"{Properties.Resources.CreateTime},{viewResult.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"}");
             writer.WriteLine($"批次ID,{viewResult.BatchID}");
-            writer.WriteLine($"测量类型,{(viewResult.MeasurementType == MeasurementType.Voltage ? "电压源" : "电流源")}");
+            writer.WriteLine($"{Properties.Resources.MeasurementType},{(viewResult.MeasurementType == MeasurementType.Voltage ? Properties.Resources.VoltageSource : Properties.Resources.CurrentSource)}");
             writer.WriteLine($"数据类型,{viewResult.Type}");
             writer.WriteLine();  // 空行分隔
 
             if (viewResult.Type == "GetData")
             {
                 // GetData模式：导出单点测量结果
-                writer.WriteLine("参数,数值");
-                writer.WriteLine($"限制值,{viewResult.LimitEnd}");
-                writer.WriteLine($"测量电压(V),{viewResult.VResult}");
-                writer.WriteLine($"测量电流(A),{viewResult.IResult}");
+                writer.WriteLine($"{Properties.Resources.Parameter},{Properties.Resources.Value}");
+                writer.WriteLine($"{Properties.Resources.LimitValue},{viewResult.LimitEnd}");
+                writer.WriteLine($"{Properties.Resources.MeasuredVoltageV},{viewResult.VResult}");
+                writer.WriteLine($"{Properties.Resources.MeasuredCurrentA},{viewResult.IResult}");
             }
             else if (viewResult.Type == "Scan")
             {
                 // Scan模式：导出扫描数据表
-                writer.WriteLine($"扫描起始值,{viewResult.LimitStart}");
-                writer.WriteLine($"扫描结束值,{viewResult.LimitEnd}");
-                writer.WriteLine($"数据点数,{viewResult.SMUDatas.Count}");
+                writer.WriteLine($"{Properties.Resources.LimitStart},{viewResult.LimitStart}");
+                writer.WriteLine($"{Properties.Resources.LimitEnd},{viewResult.LimitEnd}");
+                writer.WriteLine($"{Properties.Resources.PointCount},{viewResult.SMUDatas.Count}");
                 writer.WriteLine();  // 空行分隔
 
-                writer.WriteLine("序号,电压(V),电流(A)");
+                writer.WriteLine($"{Properties.Resources.SerialNumber1},{Properties.Resources.Voltage},{Properties.Resources.ElectricCurrent}");
                 int index = 1;
                 foreach (var data in viewResult.SMUDatas)
                 {
@@ -150,7 +150,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 }
             }
 
-            MessageBox1.Show("导出成功！");
+            MessageBox1.Show(Properties.Resources.ExportSucceeded);
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)

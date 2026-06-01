@@ -7,11 +7,14 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace Conoscope
 {
     public partial class ConoscopeWindow
     {
+        private ImageFilterType lastEnabledWindowFilterType = ImageFilterType.LowPass;
+
         private sealed class PseudoColorMapOption
         {
             public PseudoColorMapOption(string name, ColormapTypes value)
@@ -31,12 +34,27 @@ namespace Conoscope
             {
                 InitializePseudoColorMapOptions();
                 chkWindowApplyFilterOnOpen.IsChecked = PreprocessConfig.ApplyFilterOnOpen;
-                cbWindowFilterType.SelectedValue = NormalizeFilterType(PreprocessConfig.FilterType);
-                tbWindowFilterConfigSummary.Text = BuildWindowFilterConfigSummary();
-                tbWindowFilterConfigSummary.ToolTip = BuildWindowFilterConfigToolTip();
                 chkWindowUsePseudoColor.IsChecked = RenderingConfig.UsePseudoColor;
+                chkWindowUsePseudoColorRangeLimit.IsChecked = RenderingConfig.UsePseudoColorRangeLimit;
                 SelectPseudoColorMap(RenderingConfig.PseudoColorMap);
-                imgWindowPseudoColorMapPreview.Source = ColormapConstats.CreatePreviewImage(RenderingConfig.PseudoColorMap);
+
+                ImageFilterType filterType = NormalizeFilterType(PreprocessConfig.FilterType);
+                if (filterType != ImageFilterType.None)
+                {
+                    lastEnabledWindowFilterType = filterType;
+                }
+
+                chkWindowEnableFilter.IsChecked = filterType != ImageFilterType.None;
+                cbWindowFilterType.SelectedValue = filterType == ImageFilterType.None ? lastEnabledWindowFilterType : filterType;
+                txtWindowFilterKernelSize.Text = PreprocessConfig.FilterKernelSize.ToString();
+                txtWindowFilterSigma.Text = PreprocessConfig.FilterSigma.ToString("0.0");
+                txtWindowFilterD.Text = PreprocessConfig.FilterD.ToString();
+                txtWindowFilterSigmaColor.Text = PreprocessConfig.FilterSigmaColor.ToString("0");
+                txtWindowFilterSigmaSpace.Text = PreprocessConfig.FilterSigmaSpace.ToString("0");
+
+                chkWindowDustRemovalEnabled.IsChecked = PreprocessConfig.DustRemovalEnabled;
+
+                UpdateWindowPreprocessVisibility();
             }
             finally
             {
@@ -46,53 +64,27 @@ namespace Conoscope
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && ActiveView != null;
         }
 
-        private string BuildWindowFilterConfigSummary()
+        private void UpdateWindowPreprocessVisibility()
         {
-            string filterSummary = NormalizeFilterType(PreprocessConfig.FilterType) switch
-            {
-                ImageFilterType.None => Properties.Resources.FilterNone,
-                ImageFilterType.LowPass => $"{Properties.Resources.FilterLowPass} 核 {PreprocessConfig.FilterKernelSize}",
-                ImageFilterType.MovingAverage => $"{Properties.Resources.FilterMean} 核 {PreprocessConfig.FilterKernelSize}",
-                ImageFilterType.Gaussian => $"{Properties.Resources.FilterGaussian} 核 {PreprocessConfig.FilterKernelSize}  σ {PreprocessConfig.FilterSigma:F1}",
-                ImageFilterType.Median => $"{Properties.Resources.FilterMedian} 核 {PreprocessConfig.FilterKernelSize}",
-                ImageFilterType.Bilateral => $"{Properties.Resources.FilterBilateral} d {PreprocessConfig.FilterD}  σC {PreprocessConfig.FilterSigmaColor:F0}  σS {PreprocessConfig.FilterSigmaSpace:F0}",
-                _ => Properties.Resources.FilterDefaultParams
-            };
+            bool usePseudoColor = chkWindowUsePseudoColor.IsChecked == true;
+            bool useFilter = chkWindowEnableFilter.IsChecked == true;
+            ImageFilterType filterType = cbWindowFilterType.SelectedValue is ImageFilterType selectedFilterType
+                ? NormalizeFilterType(selectedFilterType)
+                : lastEnabledWindowFilterType;
 
-            string dustSummary = PreprocessConfig.DustRemovalEnabled
-                ? $"{Properties.Resources.DustLabel} {FormatDustRemovalMode(PreprocessConfig.DustRemovalMode)} {PreprocessConfig.DustThresholdPercent:F1}%"
-                : Properties.Resources.DustOff;
+            panelWindowPseudoColorOptions.Visibility = usePseudoColor ? Visibility.Visible : Visibility.Collapsed;
+            panelWindowFilterOptions.Visibility = useFilter ? Visibility.Visible : Visibility.Collapsed;
 
-            return $"{filterSummary} | {dustSummary}";
-        }
-
-        private string BuildWindowFilterConfigToolTip()
-        {
-            string dustSummary = PreprocessConfig.DustRemovalEnabled
-                ? $"{Properties.Resources.HeaderDustRemoval}: {FormatDustRemovalMode(PreprocessConfig.DustRemovalMode)}，阈值 {PreprocessConfig.DustThresholdPercent:F1}% ，面积 {PreprocessConfig.DustMinArea}-{PreprocessConfig.DustMaxArea}px，修复半径 {PreprocessConfig.DustRepairRadius}px"
-                : $"{Properties.Resources.HeaderDustRemoval}: {Properties.Resources.DustOff}";
-
-            return NormalizeFilterType(PreprocessConfig.FilterType) switch
-            {
-                ImageFilterType.None => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterNone}。{dustSummary}",
-                ImageFilterType.LowPass => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterLowPass}，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
-                ImageFilterType.MovingAverage => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterMean}，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
-                ImageFilterType.Gaussian => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterGaussian}，核大小 {PreprocessConfig.FilterKernelSize}，Sigma {PreprocessConfig.FilterSigma:F1}。{dustSummary}",
-                ImageFilterType.Median => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterMedian}，核大小 {PreprocessConfig.FilterKernelSize}。{dustSummary}",
-                ImageFilterType.Bilateral => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterBilateral}，d {PreprocessConfig.FilterD}，SigmaColor {PreprocessConfig.FilterSigmaColor:F0}，SigmaSpace {PreprocessConfig.FilterSigmaSpace:F0}。{dustSummary}",
-                _ => $"{Properties.Resources.HeaderFilter}: {Properties.Resources.FilterDefaultParams}。{dustSummary}"
-            };
-        }
-
-        private static string FormatDustRemovalMode(DustRemovalMode mode)
-        {
-            return mode switch
-            {
-                DustRemovalMode.DarkSpot => Properties.Resources.DustDarkSpot,
-                DustRemovalMode.BrightSpot => Properties.Resources.DustBrightSpot,
-                DustRemovalMode.Both => Properties.Resources.DustBoth,
-                _ => mode.ToString()
-            };
+            fieldWindowFilterKernel.Visibility = filterType is ImageFilterType.LowPass or ImageFilterType.MovingAverage or ImageFilterType.Gaussian or ImageFilterType.Median
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            fieldWindowFilterSigma.Visibility = filterType == ImageFilterType.Gaussian
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            bool showBilateral = filterType == ImageFilterType.Bilateral;
+            fieldWindowFilterD.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
+            fieldWindowFilterSigmaColor.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
+            fieldWindowFilterSigmaSpace.Visibility = showBilateral ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void WindowPreprocess_Changed(object sender, RoutedEventArgs e)
@@ -106,6 +98,37 @@ namespace Conoscope
             SavePreprocessConfig();
         }
 
+        private void chkWindowEnableFilter_Changed(object sender, RoutedEventArgs e)
+        {
+            if (isUpdatingPreprocessControls || !IsInitialized)
+            {
+                return;
+            }
+
+            bool isEnabled = chkWindowEnableFilter.IsChecked == true;
+            ImageFilterType currentFilterType = NormalizeFilterType(PreprocessConfig.FilterType);
+            if (!isEnabled)
+            {
+                if (currentFilterType != ImageFilterType.None)
+                {
+                    lastEnabledWindowFilterType = currentFilterType;
+                }
+
+                PreprocessConfig.FilterType = ImageFilterType.None;
+            }
+            else
+            {
+                ImageFilterType selectedFilterType = cbWindowFilterType.SelectedValue is ImageFilterType filterType
+                    ? NormalizeFilterType(filterType)
+                    : lastEnabledWindowFilterType;
+                lastEnabledWindowFilterType = selectedFilterType;
+                PreprocessConfig.FilterType = selectedFilterType;
+            }
+
+            UpdateWindowPreprocessVisibility();
+            SavePreprocessConfig();
+        }
+
         private void cbWindowFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (isUpdatingPreprocessControls || !IsInitialized)
@@ -115,7 +138,13 @@ namespace Conoscope
 
             if (cbWindowFilterType.SelectedValue is ImageFilterType filterType)
             {
-                PreprocessConfig.FilterType = NormalizeFilterType(filterType);
+                lastEnabledWindowFilterType = NormalizeFilterType(filterType);
+                if (chkWindowEnableFilter.IsChecked == true)
+                {
+                    PreprocessConfig.FilterType = lastEnabledWindowFilterType;
+                }
+
+                UpdateWindowPreprocessVisibility();
                 SavePreprocessConfig();
             }
         }
@@ -130,7 +159,6 @@ namespace Conoscope
             if (cbWindowPseudoColorMap.SelectedItem is PseudoColorMapOption selectedItem)
             {
                 RenderingConfig.PseudoColorMap = selectedItem.Value;
-                imgWindowPseudoColorMapPreview.Source = ColormapConstats.CreatePreviewImage(selectedItem.Value);
                 SaveRenderingConfig();
             }
         }
@@ -143,7 +171,128 @@ namespace Conoscope
             }
 
             RenderingConfig.UsePseudoColor = chkWindowUsePseudoColor.IsChecked == true;
+            RenderingConfig.UsePseudoColorRangeLimit = chkWindowUsePseudoColorRangeLimit.IsChecked == true;
+            UpdateWindowPreprocessVisibility();
             SaveRenderingConfig();
+        }
+
+        private void WindowDustRemoval_Changed(object sender, RoutedEventArgs e)
+        {
+            if (isUpdatingPreprocessControls || !IsInitialized)
+            {
+                return;
+            }
+
+            PreprocessConfig.DustRemovalEnabled = chkWindowDustRemovalEnabled.IsChecked == true;
+            SavePreprocessConfig();
+        }
+
+        private void WindowPreprocessValue_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+            {
+                return;
+            }
+
+            CommitWindowPreprocessValues();
+            e.Handled = true;
+        }
+
+        private void WindowPreprocessValue_LostFocus(object sender, RoutedEventArgs e)
+        {
+            CommitWindowPreprocessValues();
+        }
+
+        private void CommitWindowPreprocessValues()
+        {
+            if (isUpdatingPreprocessControls || !IsInitialized)
+            {
+                return;
+            }
+
+            if (!TryApplyWindowPreprocessValues())
+            {
+                InitializePreprocessControls();
+                return;
+            }
+
+            SavePreprocessConfig();
+        }
+
+        private bool TryApplyWindowPreprocessValues()
+        {
+            if (chkWindowEnableFilter.IsChecked == true)
+            {
+                if (fieldWindowFilterKernel.Visibility == Visibility.Visible)
+                {
+                    if (!TryParseWindowInt(txtWindowFilterKernelSize, out int kernelSize))
+                    {
+                        return false;
+                    }
+
+                    PreprocessConfig.FilterKernelSize = ConoscopeNumericHelper.NormalizeOddKernelSize(kernelSize);
+                }
+
+                if (fieldWindowFilterSigma.Visibility == Visibility.Visible)
+                {
+                    if (!TryParseWindowDouble(txtWindowFilterSigma, out double filterSigma))
+                    {
+                        return false;
+                    }
+
+                    PreprocessConfig.FilterSigma = filterSigma;
+                }
+
+                if (fieldWindowFilterD.Visibility == Visibility.Visible)
+                {
+                    if (!TryParseWindowInt(txtWindowFilterD, out int filterD))
+                    {
+                        return false;
+                    }
+
+                    PreprocessConfig.FilterD = filterD;
+                }
+
+                if (fieldWindowFilterSigmaColor.Visibility == Visibility.Visible)
+                {
+                    if (!TryParseWindowDouble(txtWindowFilterSigmaColor, out double sigmaColor))
+                    {
+                        return false;
+                    }
+
+                    PreprocessConfig.FilterSigmaColor = sigmaColor;
+                }
+
+                if (fieldWindowFilterSigmaSpace.Visibility == Visibility.Visible)
+                {
+                    if (!TryParseWindowDouble(txtWindowFilterSigmaSpace, out double sigmaSpace))
+                    {
+                        return false;
+                    }
+
+                    PreprocessConfig.FilterSigmaSpace = sigmaSpace;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool TryParseWindowInt(TextBox? textBox, out int value)
+        {
+            value = 0;
+            if (!ConoscopeNumericHelper.TryParseDouble(textBox?.Text, out double parsedValue) || !double.IsFinite(parsedValue))
+            {
+                return false;
+            }
+
+            value = Math.Max(1, (int)Math.Round(parsedValue));
+            return true;
+        }
+
+        private static bool TryParseWindowDouble(TextBox? textBox, out double value)
+        {
+            value = 0;
+            return ConoscopeNumericHelper.TryParseDouble(textBox?.Text, out value) && double.IsFinite(value);
         }
 
         private void InitializePseudoColorMapOptions()
@@ -189,7 +338,7 @@ namespace Conoscope
             InitializePreprocessControls();
             foreach (ConoscopeView view in GetOpenViews())
             {
-                view.RefreshPreprocessControlsFromConfig();
+                view.ApplyWindowPreprocessDefaults();
             }
         }
 
@@ -199,7 +348,7 @@ namespace Conoscope
             InitializePreprocessControls();
             foreach (ConoscopeView view in GetOpenViews())
             {
-                view.RefreshRenderingFromConfig();
+                view.ApplyWindowRenderingDefaults();
             }
         }
 
@@ -224,11 +373,11 @@ namespace Conoscope
                 {
                     if (displayChanged)
                     {
-                        view.RefreshRenderingFromConfig();
+                        view.ApplyWindowRenderingDefaults();
                     }
                     else
                     {
-                        view.RefreshPreprocessControlsFromConfig();
+                        view.ApplyWindowPreprocessDefaults();
                     }
                 }
             }));
@@ -256,7 +405,8 @@ namespace Conoscope
         {
             return propertyName is nameof(ConoscopeConfig.DisplayChannel)
                 or nameof(ConoscopeConfig.PseudoColorMap)
-                or nameof(ConoscopeConfig.UsePseudoColor);
+                or nameof(ConoscopeConfig.UsePseudoColor)
+                or nameof(ConoscopeConfig.UsePseudoColorRangeLimit);
         }
 
         private static ImageFilterType NormalizeFilterType(ImageFilterType filterType)

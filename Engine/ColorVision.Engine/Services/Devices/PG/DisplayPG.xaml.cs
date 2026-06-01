@@ -28,13 +28,13 @@ namespace ColorVision.Engine.Services.Devices.PG
             PGService.DeviceStatusChanged += PGService_DeviceStatusChanged;
             if (PGService.Config.IsNet)
             {
-                TextBlockPGIP.Text = "IP地址";
-                TextBlockPGPort.Text = "端口";
+                TextBlockPGIP.Text = Properties.Resources.IPAddress;
+                TextBlockPGPort.Text = Properties.Resources.Port;
             }
             else
             {
-                TextBlockPGIP.Text = "串口";
-                TextBlockPGPort.Text = "波特率";
+                TextBlockPGIP.Text = Properties.Resources.Serial;
+                TextBlockPGPort.Text = Properties.Resources.BaudRate;
             }
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
@@ -89,13 +89,13 @@ namespace ColorVision.Engine.Services.Devices.PG
         private void DoOpen(Button button)
         {
             string btnTitle = button.Content.ToString();
-            if (btnTitle != null && btnTitle.Equals("打开", StringComparison.Ordinal))
+            if (btnTitle != null && btnTitle.Equals(Properties.Resources.Open, StringComparison.Ordinal))
             {
-                button.Content = "打开中";
+                button.Content = Properties.Resources.Opening;
                 int port;
                 if (!int.TryParse(TextBoxPGPort.Text, out port))
                 {
-                    MessageBox1.Show(Application.Current.MainWindow, "端口配置错误");
+                    MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.PortConfigError);
                     return;
                 }
                 if (PGService.Config.IsNet) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);
@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Services.Devices.PG
             }
             else
             {
-                button.Content = "关闭中";
+                button.Content = Properties.Resources.Closing;
                 PGService.Close();
             }
         }

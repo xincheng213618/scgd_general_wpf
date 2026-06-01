@@ -99,13 +99,7 @@ namespace ColorVision.Engine.Services.RC
 
         public override async Task InitializeAsync()
         {
-            if (!RCSetting.Instance.IsUseRCService)
-            {
-                log.Info("跳过注册中心连接");
-                return;
-            }
 
-            log.Info("正在尝试连接注册中心");
             bool isConnect = await MqttRCService.GetInstance().Connect();
             if (isConnect)
             {

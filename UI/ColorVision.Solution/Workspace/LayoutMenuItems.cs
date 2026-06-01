@@ -1,3 +1,4 @@
+using ColorVision.Solution.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 
@@ -9,7 +10,7 @@ namespace ColorVision.Solution.Workspace
     public class MenuSaveLayout : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "保存窗口布局";
+        public override string Header => Resources.MenuSaveLayout;
         public override int Order => 100;
 
         public override void Execute()
@@ -24,7 +25,7 @@ namespace ColorVision.Solution.Workspace
     public class MenuApplyLayout : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "应用窗口布局";
+        public override string Header => Resources.MenuApplyLayout;
         public override int Order => 101;
 
         public override void Execute()
@@ -32,7 +33,7 @@ namespace ColorVision.Solution.Workspace
             if (WorkspaceManager.LayoutManager == null) return;
             if (!WorkspaceManager.LayoutManager.LoadLayout())
             {
-                MessageBox.Show("未找到已保存的窗口布局。", "应用窗口布局", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Resources.LayoutNotFoundMessage, Resources.LayoutNotFoundTitle, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
@@ -48,7 +49,7 @@ namespace ColorVision.Solution.Workspace
     public class MenuResetLayout : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "重置窗口布局";
+        public override string Header => Resources.MenuResetLayout;
         public override int Order => 102;
 
         public override void Execute()

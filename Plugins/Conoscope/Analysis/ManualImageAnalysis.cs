@@ -1,11 +1,8 @@
 using ColorVision.ImageEditor.Cie;
-using ColorVision.FileIO;
 using Conoscope.Core;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 
 namespace Conoscope.Analysis
 {
@@ -20,133 +17,12 @@ namespace Conoscope.Analysis
         public double Luminance => Y;
     }
 
-    public interface IImageMeasurementProvider
-    {
-        string Name { get; }
-        bool CanRead(string filePath);
-        ImageMeasurement Read(string filePath);
-    }
-
-    public static class ImageMeasurementProviderRegistry
-    {
-        private static readonly ObservableCollection<IImageMeasurementProvider> providers = new()
-        {
-            new CvcieImageMeasurementProvider()
-        };
-
-        public static IReadOnlyList<IImageMeasurementProvider> Providers => providers;
-
-        public static void Register(IImageMeasurementProvider provider)
-        {
-            ArgumentNullException.ThrowIfNull(provider);
-            if (!providers.Any(item => item.GetType() == provider.GetType()))
-            {
-                providers.Add(provider);
-            }
-        }
-
-        public static ImageMeasurement Read(string filePath)
-        {
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                throw new ArgumentException("文件路径不能为空", nameof(filePath));
-            }
-
-            IImageMeasurementProvider? provider = providers.FirstOrDefault(item => item.CanRead(filePath));
-            if (provider == null)
-            {
-                throw new NotSupportedException("当前文件类型没有可用的图像测量读取器");
-            }
-
-            return provider.Read(filePath);
-        }
-    }
-
-    public sealed class CvcieImageMeasurementProvider : IImageMeasurementProvider
-    {
-        public string Name => "CVCIE XYZ";
-
-        public bool CanRead(string filePath)
-        {
-            return File.Exists(filePath)
-                && string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase)
-                && CVFileUtil.IsCVCIEFile(filePath);
-        }
-
-        public ImageMeasurement Read(string filePath)
-        {
-            if (!CanRead(filePath))
-            {
-                throw new NotSupportedException(Properties.Resources.PleaseSelectCVCIEFile);
-            }
-
-            CVFileUtil.Read(filePath, out CVCIEFile fileInfo);
-            if (fileInfo.Channels < 3)
-            {
-                throw new NotSupportedException(string.Format(Properties.Resources.CVCIEChannelCountInsufficient, fileInfo.Channels));
-            }
-
-            int bytesPerPixel = fileInfo.Bpp / 8;
-            int channelSize = fileInfo.Cols * fileInfo.Rows * bytesPerPixel;
-            if (fileInfo.Data == null || fileInfo.Data.Length < channelSize * 3)
-            {
-                throw new InvalidDataException(Properties.Resources.CVCIEDataLengthInsufficient);
-            }
-
-            using OpenCvSharp.Mat xMat = CreateFloatChannelMat(fileInfo.Data, 0, channelSize, fileInfo.Rows, fileInfo.Cols, GetSingleChannelMatType(fileInfo.Bpp));
-            using OpenCvSharp.Mat yMat = CreateFloatChannelMat(fileInfo.Data, channelSize, channelSize, fileInfo.Rows, fileInfo.Cols, GetSingleChannelMatType(fileInfo.Bpp));
-            using OpenCvSharp.Mat zMat = CreateFloatChannelMat(fileInfo.Data, channelSize * 2, channelSize, fileInfo.Rows, fileInfo.Cols, GetSingleChannelMatType(fileInfo.Bpp));
-
-            double meanX = OpenCvSharp.Cv2.Mean(xMat).Val0;
-            double meanY = OpenCvSharp.Cv2.Mean(yMat).Val0;
-            double meanZ = OpenCvSharp.Cv2.Mean(zMat).Val0;
-            ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(meanX, meanY, meanZ);
-
-            return new ImageMeasurement(filePath, meanX, meanY, meanZ, chromaticity);
-        }
-
-        private static OpenCvSharp.MatType GetSingleChannelMatType(int bpp)
-        {
-            return bpp switch
-            {
-                8 => OpenCvSharp.MatType.CV_8UC1,
-                16 => OpenCvSharp.MatType.CV_16UC1,
-                32 => OpenCvSharp.MatType.CV_32FC1,
-                64 => OpenCvSharp.MatType.CV_64FC1,
-                _ => throw new NotSupportedException($"Bpp {bpp} not supported")
-            };
-        }
-
-        private static OpenCvSharp.Mat CreateFloatChannelMat(byte[] source, int offset, int channelSize, int rows, int cols, OpenCvSharp.MatType sourceType)
-        {
-            byte[] channelData = new byte[channelSize];
-            Buffer.BlockCopy(source, offset, channelData, 0, channelSize);
-
-            using OpenCvSharp.Mat raw = OpenCvSharp.Mat.FromPixelData(rows, cols, sourceType, channelData);
-            OpenCvSharp.Mat copied = raw.Clone();
-            if (copied.Type() == OpenCvSharp.MatType.CV_32FC1)
-            {
-                return copied;
-            }
-
-            OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
-            copied.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
-            copied.Dispose();
-            return floatMat;
-        }
-    }
-
     public sealed record ContrastResult(ImageMeasurement Black, ImageMeasurement White, double Ratio)
     {
         public string RatioText => double.IsFinite(Ratio) ? $"{Ratio:F3}:1" : Properties.Resources.Invalid;
     }
 
-    public interface IContrastCalculator
-    {
-        ContrastResult Calculate(ImageMeasurement black, ImageMeasurement white);
-    }
-
-    public sealed class DefaultContrastCalculator : IContrastCalculator
+    public sealed class DefaultContrastCalculator
     {
         public ContrastResult Calculate(ImageMeasurement black, ImageMeasurement white)
         {
@@ -178,12 +54,7 @@ namespace Conoscope.Analysis
         double StandardArea,
         double CoveragePercent);
 
-    public interface IColorGamutCalculator
-    {
-        ColorGamutResult Calculate(ImageMeasurement red, ImageMeasurement green, ImageMeasurement blue, ColorGamutStandard standard);
-    }
-
-    public sealed class DefaultColorGamutCalculator : IColorGamutCalculator
+    public sealed class DefaultColorGamutCalculator
     {
         public ColorGamutResult Calculate(ImageMeasurement red, ImageMeasurement green, ImageMeasurement blue, ColorGamutStandard standard)
         {
@@ -193,7 +64,7 @@ namespace Conoscope.Analysis
             double standardArea = TriangleArea(standard.Red, standard.Green, standard.Blue);
             if (standardArea <= 0)
             {
-                throw new InvalidOperationException(string.Format(Properties.Resources.StandardGamutAreaInvalid, standard.Name));
+                throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.StandardGamutAreaInvalid, standard.Name));
             }
 
             return new ColorGamutResult(red, green, blue, standard, sampleArea, standardArea, sampleArea / standardArea * 100.0);
@@ -231,7 +102,7 @@ namespace Conoscope.Analysis
         {
             if (gamut.Vertices.Count < 3)
             {
-                throw new InvalidOperationException(string.Format(Properties.Resources.GamutNeedsAtLeastThreeVertices, gamut.Name));
+                throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.GamutNeedsAtLeastThreeVertices, gamut.Name));
             }
 
             return new ColorGamutStandard(

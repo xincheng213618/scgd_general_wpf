@@ -3,6 +3,7 @@ using ColorVision.Scheduler;
 using Quartz;
 using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,7 +11,7 @@ using System.Windows;
 namespace ColorVision.Engine.Services.Devices.Camera.Job
 {
 
-    [DisplayName("相机拍摄任务")]
+    [Display(Name = "Engine_PG_CameraCaptureJob", ResourceType = typeof(Properties.Resources))]
     public class CameraCaptureJob : IJob, IConfigurableJob
     {
         public System.Type ConfigType => typeof(CameraCaptureJobConfig);
@@ -42,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
             if (deviceCamera == null)
             {
                 // 记录错误或抛出异常，让 Listener 捕获失败
-                throw new JobExecutionException("未找到可用的相机设备");
+                throw new JobExecutionException(Properties.Resources.NoAvailableCameraDevice);
             }
 
             // 使用 TaskCompletionSource 来实现异步等待
@@ -60,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
 
             if (msgRecord == null)
             {
-                throw new JobExecutionException("相机 GetData 返回空");
+                throw new JobExecutionException(Properties.Resources.CameraGetDataReturnedEmpty);
             }
 
             // 定义事件处理函数，方便后续解绑

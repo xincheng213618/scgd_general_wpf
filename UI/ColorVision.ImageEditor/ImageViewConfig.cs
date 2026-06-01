@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Properties;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -168,10 +169,10 @@ namespace ColorVision.ImageEditor
         {
             return scope switch
             {
-                ImageViewPropertyScope.ImageMetadata => "图像元数据",
-                ImageViewPropertyScope.ViewState => "当前视窗状态",
-                ImageViewPropertyScope.OpenerRuntime => "打开器运行态",
-                _ => "遗留未分类",
+                ImageViewPropertyScope.ImageMetadata => ColorVision.ImageEditor.Properties.Resources.ImageView_Scope_ImageMetadata,
+                ImageViewPropertyScope.ViewState => ColorVision.ImageEditor.Properties.Resources.ImageView_Scope_ViewState,
+                ImageViewPropertyScope.OpenerRuntime => ColorVision.ImageEditor.Properties.Resources.ImageView_Scope_OpenerRuntime,
+                _ => ColorVision.ImageEditor.Properties.Resources.ImageView_Scope_Legacy,
             };
         }
 
@@ -179,10 +180,10 @@ namespace ColorVision.ImageEditor
         {
             return scope switch
             {
-                ImageViewPropertyScope.ImageMetadata => "由当前文件和像素内容决定，切换图像后会整体刷新。",
-                ImageViewPropertyScope.ViewState => "只作用于当前 ImageView 的临时状态，不会写回全局默认值。",
-                ImageViewPropertyScope.OpenerRuntime => "只在特定打开器工作流里有意义的运行态信息。",
-                _ => "尚未迁移到显式作用域的旧键，建议继续收口。",
+                ImageViewPropertyScope.ImageMetadata => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_ImageMetadata,
+                ImageViewPropertyScope.ViewState => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_ViewState,
+                ImageViewPropertyScope.OpenerRuntime => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_OpenerRuntime,
+                _ => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_Legacy,
             };
         }
 
@@ -199,7 +200,7 @@ namespace ColorVision.ImageEditor
 
 
         [JsonIgnore]
-        public string FilePath { get => GetProperties<string>(ImageViewPropertyKeys.FilePath); set { SetImageMetadata(ImageViewPropertyKeys.FilePath, value, nameof(ImageViewConfig), "当前打开图像的绝对路径"); OnPropertyChanged(); } }
+        public string FilePath { get => GetProperties<string>(ImageViewPropertyKeys.FilePath); set { SetImageMetadata(ImageViewPropertyKeys.FilePath, value, nameof(ImageViewConfig), ColorVision.ImageEditor.Properties.Resources.ImageView_MetadataDesc_FilePath); OnPropertyChanged(); } }
 
 
         public event EventHandler<bool> LayoutUpdatedChanged;

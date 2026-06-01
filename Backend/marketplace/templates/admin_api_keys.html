@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}API Keys - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header-title"><i class="bi bi-key"></i> API Key 管理</h1>
+    <p class="page-header-desc">创建、查看和吊销 API Key</p>
+</div>
+
+<!-- Create Key Form -->
+<div class="card mb-3">
+    <div class="card-body">
+        <h6 class="card-title">创建新 Key</h6>
+        <form id="createKeyForm" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">名称</label>
+                <input type="text" class="form-control form-control-sm" id="keyName" required placeholder="My API Key">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Scopes (逗号分隔)</label>
+                <input type="text" class="form-control form-control-sm" id="keyScopes" placeholder="plugin:read,plugin:publish">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">过期时间 (可选)</label>
+                <input type="datetime-local" class="form-control form-control-sm" id="keyExpires">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">创建</button>
+            </div>
+        </form>
+        <div id="newKeyResult" class="mt-2"></div>
+    </div>
+</div>
+
+<!-- Key List -->
+<div class="card">
+    <div class="card-body">
+        <h6 class="card-title">已有 Key</h6>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>名称</th>
+                        <th>Prefix</th>
+                        <th>Scopes</th>
+                        <th>创建时间</th>
+                        <th>过期时间</th>
+                        <th>最后使用</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for key in keys %}
+                <tr>
+                    <td>{{ key.name }}</td>
+                    <td><code>{{ key.key_prefix }}</code></td>
+                    <td style="font-size:0.75rem">{{ key.scopes or '-' }}</td>
+                    <td style="font-size:0.75rem">{{ (key.created_at or '')[:16] }}</td>
+                    <td style="font-size:0.75rem">{{ (key.expires_at or '-')[:16] }}</td>
+                    <td style="font-size:0.75rem">{{ (key.last_used_at or '-')[:16] }}</td>
+                    <td>
+                        {% if key.is_active %}
+                            <span class="badge bg-success">活跃</span>
+                        {% else %}
+                            <span class="badge bg-secondary">已吊销</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if key.is_active %}
+                        <button class="btn btn-outline-danger btn-sm" onclick="revokeKey({{ key.id }})">吊销</button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="rotateKey({{ key.id }})">轮换</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not keys %}
+                <tr><td colspan="8" class="text-muted text-center">暂无 API Key</td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('createKeyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('keyName').value;
+    const scopes = document.getElementById('keyScopes').value;
+    const expires = document.getElementById('keyExpires').value;
+
+    const body = { name, scopes };
+    if (expires) body.expires_at = new Date(expires).toISOString();
+
+    const resp = await fetch('/api/admin/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+        document.getElementById('newKeyResult').innerHTML =
+            `<div class="alert alert-warning">
+                <strong>请保存此 Key（仅显示一次）：</strong><br>
+                <code style="user-select:all">${data.key}</code>
+            </div>`;
+        setTimeout(() => location.reload(), 10000);
+    } else {
+        document.getElementById('newKeyResult').innerHTML =
+            `<div class="alert alert-danger">${data.error}</div>`;
+    }
+});
+
+async function revokeKey(id) {
+    if (!confirm('确定要吊销此 Key？')) return;
+    await fetch(`/api/admin/api-keys/${id}/revoke`, { method: 'POST' });
+    location.reload();
+}
+
+async function rotateKey(id) {
+    if (!confirm('确定要轮换此 Key？旧 Key 将被吊销。')) return;
+    const resp = await fetch(`/api/admin/api-keys/${id}/rotate`, { method: 'POST' });
+    const data = await resp.json();
+    if (resp.ok) {
+        alert(`新 Key（请保存）：\n${data.key}`);
+        location.reload();
+    }
+}
+</script>
+{% endblock %}

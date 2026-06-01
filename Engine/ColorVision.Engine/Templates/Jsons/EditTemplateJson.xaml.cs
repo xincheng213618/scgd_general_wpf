@@ -2,8 +2,12 @@
 using ColorVision.UI;
 using ColorVision.UI.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -21,8 +25,32 @@ namespace ColorVision.Engine.Templates.Jsons
         public bool UsePropertyEditor { get; set; } = false; // Default to text editor mode
     }
 
+    public sealed class CopilotTemplateJsonPatchApplyResult
+    {
+        public bool Success { get; init; }
+
+        public string ErrorCode { get; init; } = string.Empty;
+
+        public string Message { get; init; } = string.Empty;
+
+        public static CopilotTemplateJsonPatchApplyResult Ok(string message) => new()
+        {
+            Success = true,
+            Message = message ?? string.Empty,
+        };
+
+        public static CopilotTemplateJsonPatchApplyResult Fail(string errorCode, string message) => new()
+        {
+            ErrorCode = errorCode ?? string.Empty,
+            Message = message ?? string.Empty,
+        };
+    }
+
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
+        private const int MaxCopilotJsonChars = 16000;
+        private static readonly object CopilotEditorSyncRoot = new();
+        private static readonly Dictionary<string, WeakReference<EditTemplateJson>> CopilotEditors = new(StringComparer.OrdinalIgnoreCase);
         private readonly string _copilotContextSourceId = $"template-json-editor:{Guid.NewGuid():N}";
 
         private string Description { get; set; }
@@ -58,11 +86,13 @@ namespace ColorVision.Engine.Templates.Jsons
 
         private void EditTemplateJson_Loaded(object sender, RoutedEventArgs e)
         {
+            RegisterCopilotEditor();
             PublishCopilotContext();
         }
 
         private void EditTemplateJson_Unloaded(object sender, RoutedEventArgs e)
         {
+            UnregisterCopilotEditor();
             CopilotLiveContextRegistry.Clear(_copilotContextSourceId);
         }
 
@@ -98,6 +128,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             if (param is IEditTemplateJson editTemplateJson)
             {
+                RegisterCopilotEditor();
                 this.DataContext = param; 
                 if (IEditTemplateJson !=null)
                     IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
@@ -335,19 +366,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
             PublishCopilotContext();
 
-            var service = CopilotServiceRegistry.Current;
-            if (service == null || !service.IsAvailable)
-            {
-                MessageBox.Show(
-                    Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
-                    "主界面的 Copilot 面板尚未就绪。",
-                    "ColorVision",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
-
-            var request = new CopilotPromptRequest
+            var result = CopilotPromptRequestHelper.Dispatch(new CopilotPromptRequestOptions
             {
                 Prompt = prompt,
                 Mode = mode,
@@ -357,26 +376,154 @@ namespace ColorVision.Engine.Templates.Jsons
                 ContextAttachmentTitle = BuildCopilotContextDisplayLabel(),
                 ContextAttachmentSourceId = _copilotContextSourceId,
                 ContextItems = new[] { snapshotItem },
-            };
+            });
 
-            if (!service.Ask(request))
+            if (!result.WasSent)
             {
                 MessageBox.Show(
                     Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
-                    "无法把当前模板发送到 Copilot。",
+                    result.StatusMessage,
                     "ColorVision",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                    result.IsAvailable ? MessageBoxImage.Warning : MessageBoxImage.Information);
             }
         }
 
         private void PublishCopilotContext()
         {
+            RegisterCopilotEditor();
             var liveContext = BuildCopilotLiveContext();
             if (liveContext == null)
                 return;
 
             CopilotLiveContextRegistry.Publish(liveContext);
+        }
+
+        public static async Task<CopilotTemplateJsonPatchApplyResult> TryApplyCopilotJsonPatchAsync(
+            string sourceId,
+            string expectedCurrentJson,
+            string patchedJson,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (string.IsNullOrWhiteSpace(sourceId))
+                return CopilotTemplateJsonPatchApplyResult.Fail("template_source_missing", "The active template editor source id is missing.");
+
+            if (!TryGetCopilotEditor(sourceId, out var editor))
+                return CopilotTemplateJsonPatchApplyResult.Fail("active_template_editor_not_found", "No loaded active template JSON editor matches the preview source id.");
+
+            if (editor.Dispatcher.CheckAccess())
+                return editor.ApplyCopilotJsonPatch(expectedCurrentJson, patchedJson, cancellationToken);
+
+            return await editor.Dispatcher.InvokeAsync(
+                () => editor.ApplyCopilotJsonPatch(expectedCurrentJson, patchedJson, cancellationToken));
+        }
+
+        private static bool TryGetCopilotEditor(string sourceId, out EditTemplateJson editor)
+        {
+            editor = null;
+            lock (CopilotEditorSyncRoot)
+            {
+                var staleKeys = new List<string>();
+                foreach (var pair in CopilotEditors)
+                {
+                    if (!pair.Value.TryGetTarget(out _))
+                        staleKeys.Add(pair.Key);
+                }
+
+                foreach (var key in staleKeys)
+                    CopilotEditors.Remove(key);
+
+                if (CopilotEditors.TryGetValue(sourceId.Trim(), out var reference) && reference.TryGetTarget(out editor))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void RegisterCopilotEditor()
+        {
+            lock (CopilotEditorSyncRoot)
+            {
+                CopilotEditors[_copilotContextSourceId] = new WeakReference<EditTemplateJson>(this);
+            }
+        }
+
+        private void UnregisterCopilotEditor()
+        {
+            lock (CopilotEditorSyncRoot)
+            {
+                CopilotEditors.Remove(_copilotContextSourceId);
+            }
+        }
+
+        private CopilotTemplateJsonPatchApplyResult ApplyCopilotJsonPatch(string expectedCurrentJson, string patchedJson, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (IEditTemplateJson == null)
+                return CopilotTemplateJsonPatchApplyResult.Fail("template_context_unavailable", "The active template editor has no editable JSON context.");
+
+            var currentJson = GetCurrentJsonForCopilot();
+            if (!TryNormalizeJson(currentJson, out var normalizedCurrentJson, out var currentError))
+                return CopilotTemplateJsonPatchApplyResult.Fail("invalid_active_template_json", $"The active template JSON is invalid: {currentError}");
+
+            if (!TryNormalizeJson(expectedCurrentJson, out var normalizedExpectedJson, out var expectedError))
+                return CopilotTemplateJsonPatchApplyResult.Fail("invalid_preview_template_json", $"The preview template JSON is invalid: {expectedError}");
+
+            if (!string.Equals(normalizedCurrentJson, normalizedExpectedJson, StringComparison.Ordinal))
+                return CopilotTemplateJsonPatchApplyResult.Fail("template_patch_conflict", "The active template JSON changed after preview_template_patch. Re-run preview_template_patch before applying.");
+
+            if (!TryNormalizeJson(patchedJson, out _, out var patchedError))
+                return CopilotTemplateJsonPatchApplyResult.Fail("invalid_patched_template_json", $"The patched template JSON is invalid: {patchedError}");
+
+            textEditor.TextChanged -= TextEditor_TextChanged;
+            try
+            {
+                textEditor.Text = patchedJson;
+                IEditTemplateJson.JsonValue = patchedJson;
+
+                if (_isInPropertyEditorMode)
+                    propertyEditor.SetJson(patchedJson);
+            }
+            finally
+            {
+                textEditor.TextChanged += TextEditor_TextChanged;
+            }
+
+            PublishCopilotContext();
+            return CopilotTemplateJsonPatchApplyResult.Ok("Template JSON patch applied to the active editor. Review and save from ColorVision when ready.");
+        }
+
+        private static bool TryNormalizeJson(string json, out string normalizedJson, out string error)
+        {
+            normalizedJson = string.Empty;
+            error = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                error = "JSON text is empty.";
+                return false;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(json);
+                if (document.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    error = $"JSON root must be an object, but was {document.RootElement.ValueKind}.";
+                    return false;
+                }
+
+                normalizedJson = JsonSerializer.Serialize(document.RootElement);
+                return true;
+            }
+            catch (JsonException ex)
+            {
+                error = ex.Message;
+                return false;
+            }
         }
 
         private CopilotLiveContext? BuildCopilotLiveContext()
@@ -411,24 +558,24 @@ namespace ColorVision.Engine.Templates.Jsons
             var editorMode = GetEditorModeLabel();
             var windowTitle = Window.GetWindow(this)?.Title ?? string.Empty;
 
-            var summary = $"JSON {lineCount} 行 · {(hasUnsavedChanges ? "已修改" : "未修改")} · {(isValidJson ? "校验通过" : "校验失败")} · {editorMode}";
+            var summary = $"JSON lines {lineCount} · {(hasUnsavedChanges ? "modified" : "unchanged")} · {(isValidJson ? "valid" : "invalid")} · {editorMode}";
 
             var builder = new StringBuilder();
-            builder.Append("窗口：").AppendLine("模板编辑器");
-            builder.Append("模板名：").AppendLine(templateName);
-            builder.Append("当前选中项：").AppendLine(templateName);
+            builder.Append("Surface: ").AppendLine("Template JSON editor");
+            builder.Append("Template name: ").AppendLine(templateName);
+            builder.Append("Current selection: ").AppendLine(templateName);
 
             if (!string.IsNullOrWhiteSpace(windowTitle))
-                builder.Append("窗口标题：").AppendLine(windowTitle);
+                builder.Append("Window title: ").AppendLine(windowTitle);
 
-            builder.Append("编辑模式：").AppendLine(editorMode);
-            builder.Append("未保存修改：").AppendLine(hasUnsavedChanges ? "是" : "否");
-            builder.Append("JSON 校验：").AppendLine(isValidJson ? "通过" : "未通过");
-            builder.Append("JSON 行数：").AppendLine(lineCount.ToString());
+            builder.Append("Editor mode: ").AppendLine(editorMode);
+            builder.Append("Unsaved changes: ").AppendLine(hasUnsavedChanges ? "yes" : "no");
+            builder.Append("JSON validation: ").AppendLine(isValidJson ? "passed" : "failed");
+            builder.Append("JSON line count: ").AppendLine(lineCount.ToString());
             builder.AppendLine();
-            builder.AppendLine("当前 JSON：");
+            builder.AppendLine("Current JSON:");
             builder.AppendLine("```json");
-            builder.AppendLine(currentJson);
+            builder.AppendLine(TruncateForCopilot(currentJson, MaxCopilotJsonChars));
             builder.AppendLine("```");
 
             return new CopilotContextItem
@@ -448,8 +595,8 @@ namespace ColorVision.Engine.Templates.Jsons
         private static string BuildCopilotContextDisplayLabel(string templateName)
         {
             return string.IsNullOrWhiteSpace(templateName)
-                ? "模板编辑器"
-                : $"模板编辑器 · {templateName}";
+                ? "Template JSON editor"
+                : $"Template JSON editor · {templateName}";
         }
 
         private string GetCurrentTemplateName()
@@ -459,7 +606,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
             return IEditTemplateJson is TemplateJsonParam fallbackParam && !string.IsNullOrWhiteSpace(fallbackParam.Name)
                 ? fallbackParam.Name
-                : "未命名模板";
+                : "Unnamed template";
         }
 
         private string GetCurrentJsonForCopilot()
@@ -491,9 +638,17 @@ namespace ColorVision.Engine.Templates.Jsons
         private string GetEditorModeLabel()
         {
             if (DescriptionButton.IsChecked == true)
-                return "注释查看";
+                return "description view";
 
-            return _isInPropertyEditorMode ? "属性编辑" : "文本编辑";
+            return _isInPropertyEditorMode ? "property editor" : "text editor";
+        }
+
+        private static string TruncateForCopilot(string value, int maxChars)
+        {
+            var text = value ?? string.Empty;
+            return text.Length <= maxChars
+                ? text
+                : text[..maxChars] + Environment.NewLine + $"...<content truncated; kept the first {maxChars} characters.>";
         }
 
         private static int CountJsonLines(string json)

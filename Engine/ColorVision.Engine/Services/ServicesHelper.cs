@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services
             {
                 if (button.Content.ToString() == (Properties.Resources.ResourceManager.GetString(MsgRecordState.Sended.ToDescription(), CultureInfo.CurrentUICulture) ?? ""))
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "已经发送,请耐心等待","ColorVison");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.AlreadySentPleaseWait,"ColorVision");
                     return null;
                 }
                 MsgRecord msgRecord = action.Invoke();
@@ -119,21 +119,22 @@ namespace ColorVision.Engine.Services
             return msgRecord;
         }
 
-        public static bool IsInvalidPath(string Path, string Hint = "名称")
+        public static bool IsInvalidPath(string Path, string? Hint = null)
         {
+            Hint ??= Properties.Resources.Name;
             if (string.IsNullOrEmpty(Path))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(),$"{Hint}不能为空", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.FieldCannotBeEmpty, Hint), "ColorVision");
                 return false;
             }
             if (string.IsNullOrWhiteSpace(Path))
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Hint}不能为空白", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.FieldCannotBeBlank, Hint), "ColorVision");
                 return false;
             }
             if (Path.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) >= 0)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Hint}不能包含特殊字符", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.FieldCannotContainSpecialChars, Hint), "ColorVision");
                 return false;
             }
             return true;

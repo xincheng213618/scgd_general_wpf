@@ -1,3 +1,4 @@
+﻿using ColorVision.ImageEditor.Properties;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -34,10 +35,10 @@ namespace ColorVision.ImageEditor.Settings
                 int totalEntries = Sections.Sum(section => section.Entries.Count);
                 if (totalEntries == 0)
                 {
-                    return "当前视窗还没有写入属性上下文。打开图像或执行工具后，这里会按作用域展示实际状态。";
+                    return Properties.Resources.Settings_NoPropertyContext;
                 }
 
-                return $"当前视窗已记录 {totalEntries} 个属性，分布在 {Sections.Count} 个作用域分组中。这里是只读快照，方便排查当前值和默认值是否串层。";
+                return string.Format(Properties.Resources.Settings_PropertyContextSummary, totalEntries, Sections.Count);
             }
         }
 
@@ -96,7 +97,7 @@ namespace ColorVision.ImageEditor.Settings
 
         public ObservableCollection<ImageViewPropertyEntryViewModel> Entries { get; set; } = new();
 
-        public string CountText => $"{Entries.Count} 项";
+        public string CountText => string.Format(Properties.Resources.Settings_EntryCount, Entries.Count);
     }
 
     public sealed class ImageViewPropertyEntryViewModel

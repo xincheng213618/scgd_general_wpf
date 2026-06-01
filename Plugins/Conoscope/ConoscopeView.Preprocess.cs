@@ -1,32 +1,29 @@
+using ColorVision.Core;
+using ColorVision.ImageEditor;
 using Conoscope.ApplicationServices.Preprocess;
 using Conoscope.Core;
 using Conoscope.Processing.Preprocess;
+using Conoscope.Presentation.Formatters;
+using Conoscope.Presentation.Helpers;
 using System;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace Conoscope
 {
     public partial class ConoscopeView
     {
+        private ImageFilterType lastEnabledFilterType = ImageFilterType.LowPass;
+
         private void InitializePreprocessControls()
         {
             MigrateLegacyDustRemovalFilterType();
-        }
 
-        private void btnOpenPreprocessSettings_Click(object sender, RoutedEventArgs e)
-        {
-            OpenPreprocessSettings();
-        }
-
-        private void OpenPreprocessSettings()
-        {
-            ConoscopePreprocessSettingsWindow dialog = new ConoscopePreprocessSettingsWindow(ConoscopeConfig)
+            ImageFilterType filterType = NormalizeFilterType(PreprocessConfig.FilterType);
+            if (filterType != ImageFilterType.None)
             {
-                Owner = Window.GetWindow(this),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            dialog.ShowDialog();
+                lastEnabledFilterType = filterType;
+            }
         }
 
         private void MigrateLegacyDustRemovalFilterType()
@@ -39,18 +36,13 @@ namespace Conoscope
             }
         }
 
-        private void btnApplyFilter_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyPreprocessFromCurrentSettings();
-        }
-
         internal void ApplyPreprocessFromCurrentSettings()
         {
             try
             {
                 if (!HasXyzData())
                 {
-                    MessageBox.Show("请先获取图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(Properties.Resources.MsgLoadImageFirst, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -59,7 +51,7 @@ namespace Conoscope
                     RestoreOriginalMats();
                     RefreshDisplayedImage();
                     log.Info("已恢复原始数据");
-                    MessageBox.Show("已恢复原始数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(Properties.Resources.MsgOriginalDataRestored, Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
@@ -69,12 +61,12 @@ namespace Conoscope
                 RefreshDisplayedImage();
 
                 log.Info("预处理应用成功，数据已更新");
-                MessageBox.Show("预处理应用成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.MsgPreprocessApplied, Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 log.Error($"应用滤波失败: {ex.Message}", ex);
-                MessageBox.Show($"应用滤波失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgPreprocessFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -113,7 +105,27 @@ namespace Conoscope
 
         private ConoscopePreprocessOptions CreatePreprocessOptions()
         {
-            return ConoscopePreprocessOptions.FromConfig(PreprocessConfig, MinPositiveXyzValue);
+            int minArea = Math.Max(1, PreprocessConfig.DustMinArea);
+            int maxArea = Math.Max(minArea, PreprocessConfig.DustMaxArea);
+            ImageFilterType filterType = NormalizeFilterType(PreprocessConfig.FilterType);
+
+            return new ConoscopePreprocessOptions(
+                PreprocessConfig.ClampNonPositiveXyzOnLoad,
+                MinPositiveXyzValue,
+                PreprocessConfig.DustRemovalEnabled,
+                new DustRemovalOptions(
+                    PreprocessConfig.DustRemovalMode,
+                    PreprocessConfig.DustThresholdPercent,
+                    minArea,
+                    maxArea,
+                    Math.Max(1, PreprocessConfig.DustRepairRadius)),
+                new ImageFilterOptions(
+                    filterType,
+                    ConoscopeNumericHelper.NormalizeOddKernelSize(PreprocessConfig.FilterKernelSize),
+                    PreprocessConfig.FilterSigma,
+                    Math.Max(1, PreprocessConfig.FilterD),
+                    PreprocessConfig.FilterSigmaColor,
+                    PreprocessConfig.FilterSigmaSpace));
         }
 
         private static ImageFilterType NormalizeFilterType(ImageFilterType filterType)

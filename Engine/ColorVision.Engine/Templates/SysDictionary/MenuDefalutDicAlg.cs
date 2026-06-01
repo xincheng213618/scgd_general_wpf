@@ -12,14 +12,8 @@ namespace ColorVision.Engine.Templates.SysDictionary
         public override int Order => 999999;
         public override string Header => ColorVision.Engine.Properties.Resources.EditDefaultAlgorithmDictionary;
 
-        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                return;
-            }
             new TemplateEditorWindow(new TemplateModParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }

@@ -3,6 +3,7 @@ using ColorVision.UI.Menus;
 using log4net;
 using MvCamCtrl.NET;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -44,6 +45,7 @@ namespace Conoscope.MVS
         public MVSViewManager MVSViewManager { get; set; }
         MyCamera.MV_CC_DEVICE_INFO_LIST m_stDeviceList = new MyCamera.MV_CC_DEVICE_INFO_LIST();
         private MyCamera m_MyCamera = new MyCamera();
+        private readonly List<int> displayedDeviceIndices = new();
         bool m_bGrabbing = false;
         Thread m_hReceiveThread = null;
         IntPtr displayHandle = IntPtr.Zero;
@@ -132,6 +134,10 @@ namespace Conoscope.MVS
             {
                 UpdateGratingOverlay();
             }
+            else if (e.PropertyName == nameof(MVSViewWindowConfig.OnlyShowCs200Devices))
+            {
+                DeviceListAcq();
+            }
         }
 
         private void ObservationCameraProfile_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -192,7 +198,7 @@ namespace Conoscope.MVS
             if (diameterMillimeters <= 0)
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = "未显示测试区域";
+                tbGratingOverlayStatus.Text = Properties.Resources.Conoscope_TestAreaNotDisplayed;
                 return;
             }
 
@@ -201,7 +207,7 @@ namespace Conoscope.MVS
             if (scaleCoefficient <= double.Epsilon)
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = "观察相机尺寸系数未配置";
+                tbGratingOverlayStatus.Text = Properties.Resources.Conoscope_ScaleCoefficientNotConfigured;
                 return;
             }
 
@@ -209,7 +215,7 @@ namespace Conoscope.MVS
             if (imgDisplay.ImageShow.Source == null)
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = string.Format(Properties.Resources.TestAreaWaitingForImage, diameterMillimeters);
+                tbGratingOverlayStatus.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.TestAreaWaitingForImage, diameterMillimeters);
                 return;
             }
 
@@ -218,7 +224,7 @@ namespace Conoscope.MVS
                 double.IsInfinity(currentModelProfile.ObservationCameraCenterX) || double.IsInfinity(currentModelProfile.ObservationCameraCenterY))
             {
                 gratingOverlay.Clear();
-                tbGratingOverlayStatus.Text = "测试区域尺寸无效";
+                tbGratingOverlayStatus.Text = Properties.Resources.Conoscope_TestAreaSizeInvalid;
                 return;
             }
 
@@ -227,7 +233,7 @@ namespace Conoscope.MVS
                 imagePixelDiameter,
                 imgDisplay.Zoombox1.ContentMatrix.M11);
             imgDisplay.ImageShow.TopVisual(gratingOverlay);
-            tbGratingOverlayStatus.Text = string.Format(Properties.Resources.TestAreaWithCenter, diameterMillimeters, currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY);
+            tbGratingOverlayStatus.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.TestAreaWithCenter, diameterMillimeters, currentModelProfile.ObservationCameraCenterX, currentModelProfile.ObservationCameraCenterY);
         }
 
         private void BasicDemoWindow_Load(object sender, RoutedEventArgs e)
@@ -277,11 +283,80 @@ namespace Conoscope.MVS
             MessageBox.Show(errorMsg, Properties.Resources.Prompt);
         }
 
+        private int ResolveSelectedDeviceIndex()
+        {
+            int selectedIndex = cbDeviceList.SelectedIndex;
+            if (selectedIndex >= 0 && selectedIndex < displayedDeviceIndices.Count)
+            {
+                return displayedDeviceIndices[selectedIndex];
+            }
+
+            return selectedIndex;
+        }
+
+        private static bool TryBuildDeviceListItem(MyCamera.MV_CC_DEVICE_INFO device, out string displayName, out string modelName)
+        {
+            displayName = string.Empty;
+            modelName = string.Empty;
+
+            if (device.nTLayerType == MyCamera.MV_GIGE_DEVICE)
+            {
+                MyCamera.MV_GIGE_DEVICE_INFO_EX gigeInfo = (MyCamera.MV_GIGE_DEVICE_INFO_EX)MyCamera.ByteToStruct(device.SpecialInfo.stGigEInfo, typeof(MyCamera.MV_GIGE_DEVICE_INFO_EX));
+                modelName = DecodeDeviceText(gigeInfo.chModelName);
+                displayName = BuildDeviceDisplayName("GEV", DecodeDeviceText(gigeInfo.chUserDefinedName), DecodeDeviceText(gigeInfo.chManufacturerName), modelName, DecodeDeviceText(gigeInfo.chSerialNumber));
+                return true;
+            }
+
+            if (device.nTLayerType == MyCamera.MV_USB_DEVICE)
+            {
+                MyCamera.MV_USB3_DEVICE_INFO_EX usbInfo = (MyCamera.MV_USB3_DEVICE_INFO_EX)MyCamera.ByteToStruct(device.SpecialInfo.stUsb3VInfo, typeof(MyCamera.MV_USB3_DEVICE_INFO_EX));
+                modelName = DecodeDeviceText(usbInfo.chModelName);
+                displayName = BuildDeviceDisplayName("U3V", DecodeDeviceText(usbInfo.chUserDefinedName), DecodeDeviceText(usbInfo.chManufacturerName), modelName, DecodeDeviceText(usbInfo.chSerialNumber));
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string BuildDeviceDisplayName(string prefix, string userDefinedName, string manufacturerName, string modelName, string serialNumber)
+        {
+            string modelDisplayName = FormatObservationCameraModelName(modelName);
+            string name = !string.IsNullOrWhiteSpace(modelDisplayName)
+                ? modelDisplayName
+                : (!string.IsNullOrWhiteSpace(userDefinedName) ? userDefinedName : manufacturerName);
+
+            return string.IsNullOrWhiteSpace(serialNumber)
+                ? $"{prefix}: {name}"
+                : $"{prefix}: {name} ({serialNumber})";
+        }
+
+        private static string FormatObservationCameraModelName(string modelName)
+        {
+            return modelName.Contains("CS200", StringComparison.OrdinalIgnoreCase) ? "MV-CS200" : modelName.Trim();
+        }
+
+        private static string DecodeDeviceText(byte[] value)
+        {
+            if (value.Length == 0 || value[0] == '\0')
+            {
+                return string.Empty;
+            }
+
+            Encoding encoding = MyCamera.IsTextUTF8(value) ? Encoding.UTF8 : Encoding.Default;
+            return encoding.GetString(value).TrimEnd('\0').Trim();
+        }
+
+        private static string DecodeDeviceText(string value)
+        {
+            return value?.TrimEnd('\0').Trim() ?? string.Empty;
+        }
+
         private void DeviceListAcq()
         {
             // ch:创建设备列表 | en:Create Device List
             System.GC.Collect();
             cbDeviceList.Items.Clear();
+            displayedDeviceIndices.Clear();
             m_stDeviceList.nDeviceNum = 0;
             int nRet = MyCamera.MV_CC_EnumDevices_NET(MyCamera.MV_GIGE_DEVICE | MyCamera.MV_USB_DEVICE, ref m_stDeviceList);
             if (0 != nRet)
@@ -294,55 +369,24 @@ namespace Conoscope.MVS
             for (int i = 0; i < m_stDeviceList.nDeviceNum; i++)
             {
                 MyCamera.MV_CC_DEVICE_INFO device = Marshal.PtrToStructure<MV_CC_DEVICE_INFO>(m_stDeviceList.pDeviceInfo[i]);
-                string strUserDefinedName = "";
 
-                if (device.nTLayerType == MyCamera.MV_GIGE_DEVICE)
+                if (!TryBuildDeviceListItem(device, out string displayName, out string modelName))
                 {
-                    MyCamera.MV_GIGE_DEVICE_INFO_EX gigeInfo = (MyCamera.MV_GIGE_DEVICE_INFO_EX)MyCamera.ByteToStruct(device.SpecialInfo.stGigEInfo, typeof(MyCamera.MV_GIGE_DEVICE_INFO_EX));
-
-                    if ((gigeInfo.chUserDefinedName.Length > 0) && (gigeInfo.chUserDefinedName[0] != '\0'))
-                    {
-                        if (MyCamera.IsTextUTF8(gigeInfo.chUserDefinedName))
-                        {
-                            strUserDefinedName = Encoding.UTF8.GetString(gigeInfo.chUserDefinedName).TrimEnd('\0');
-                        }
-                        else
-                        {
-                            strUserDefinedName = Encoding.Default.GetString(gigeInfo.chUserDefinedName).TrimEnd('\0');
-                        }
-
-                        cbDeviceList.Items.Add("GEV: " + strUserDefinedName + " (" + gigeInfo.chSerialNumber + ")");
-                    }
-                    else
-                    {
-                        cbDeviceList.Items.Add("GEV: " + gigeInfo.chManufacturerName + " " + gigeInfo.chModelName + " (" + gigeInfo.chSerialNumber + ")");
-                    }
+                    continue;
                 }
-                else if (device.nTLayerType == MyCamera.MV_USB_DEVICE)
+
+                if (MVSViewManager?.Config.OnlyShowCs200Devices == true
+                    && !modelName.Contains("CS200", StringComparison.OrdinalIgnoreCase))
                 {
-                    MyCamera.MV_USB3_DEVICE_INFO_EX usbInfo = (MyCamera.MV_USB3_DEVICE_INFO_EX)MyCamera.ByteToStruct(device.SpecialInfo.stUsb3VInfo, typeof(MyCamera.MV_USB3_DEVICE_INFO_EX));
-                    
-                    if ((usbInfo.chUserDefinedName.Length > 0) && (usbInfo.chUserDefinedName[0] != '\0'))
-                    {
-                        if (MyCamera.IsTextUTF8(usbInfo.chUserDefinedName))
-                        {
-                            strUserDefinedName = Encoding.UTF8.GetString(usbInfo.chUserDefinedName).TrimEnd('\0');
-                        }
-                        else
-                        {
-                            strUserDefinedName = Encoding.Default.GetString(usbInfo.chUserDefinedName).TrimEnd('\0');
-                        }
-                        cbDeviceList.Items.Add("U3V: " + strUserDefinedName + " (" + usbInfo.chSerialNumber + ")");
-                    }
-                    else
-                    {
-                        cbDeviceList.Items.Add("U3V: " + usbInfo.chManufacturerName + " " + usbInfo.chModelName + " (" + usbInfo.chSerialNumber + ")");
-                    }
+                    continue;
                 }
+
+                displayedDeviceIndices.Add(i);
+                cbDeviceList.Items.Add(displayName);
             }
 
             // ch:选择第一项 | en:Select the first item
-            if (m_stDeviceList.nDeviceNum != 0)
+            if (cbDeviceList.Items.Count != 0)
             {
                 cbDeviceList.SelectedIndex = 0;
             }
@@ -362,8 +406,9 @@ namespace Conoscope.MVS
             }
 
             // ch:获取选择的设备信息 | en:Get selected device information
+            int deviceIndex = ResolveSelectedDeviceIndex();
             MyCamera.MV_CC_DEVICE_INFO device =
-                Marshal.PtrToStructure<MV_CC_DEVICE_INFO>(m_stDeviceList.pDeviceInfo[cbDeviceList.SelectedIndex]);
+                Marshal.PtrToStructure<MV_CC_DEVICE_INFO>(m_stDeviceList.pDeviceInfo[deviceIndex]);
 
             // ch:打开设备 | en:Open device
             if (null == m_MyCamera)

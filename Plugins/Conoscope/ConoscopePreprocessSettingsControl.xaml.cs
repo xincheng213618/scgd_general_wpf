@@ -137,7 +137,7 @@ namespace Conoscope
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存预处理配置失败: {ex.Message}", "Conoscope", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.MsgPreprocessConfigSaveFailedDetail, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

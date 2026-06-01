@@ -22,7 +22,7 @@ namespace ColorVision.Solution.Terminal
         private IntPtr _hThread;
         private Thread? _readThread;
         private FileStream? _writerStream;
-        private bool _disposed;
+        private volatile bool _disposed;
 
         public event Action<string>? OutputReceived;
         public event Action<int>? ProcessExited;
@@ -136,8 +136,12 @@ namespace ColorVision.Solution.Terminal
 
         public void Resize(short cols, short rows)
         {
-            if (_hPC != IntPtr.Zero)
-                ResizePseudoConsole(_hPC, new COORD { X = cols, Y = rows });
+            if (_disposed || _hPC == IntPtr.Zero || cols <= 0 || rows <= 0)
+                return;
+
+            int hr = ResizePseudoConsole(_hPC, new COORD { X = cols, Y = rows });
+            if (hr != 0)
+                log.Debug($"ConPTY resize failed: 0x{hr:X8} ({cols}x{rows})");
         }
 
         public void Kill()
@@ -163,10 +167,21 @@ namespace ColorVision.Solution.Terminal
                     OutputReceived?.Invoke(new string(charBuf, 0, chars));
                 }
             }
+            catch (ObjectDisposedException) when (_disposed)
+            {
+                return;
+            }
+            catch (IOException) when (_disposed)
+            {
+                return;
+            }
             catch (Exception ex) when (!_disposed)
             {
                 log.Debug($"ConPTY read ended: {ex.Message}");
             }
+
+            if (_disposed)
+                return;
 
             int exitCode = -1;
             if (_hProcess != IntPtr.Zero)
@@ -184,6 +199,8 @@ namespace ColorVision.Solution.Terminal
 
             try { _writerStream?.Dispose(); } catch { }
             _writerStream = null;
+            try { _pipeInWrite?.Dispose(); } catch { }
+            _pipeInWrite = null;
 
             if (_hPC != IntPtr.Zero)
             {
@@ -191,10 +208,12 @@ namespace ColorVision.Solution.Terminal
                 _hPC = IntPtr.Zero;
             }
 
-            _readThread?.Join(3000);
-
-            try { _pipeInWrite?.Dispose(); } catch { }
             try { _pipeOutRead?.Dispose(); } catch { }
+            _pipeOutRead = null;
+
+            if (_readThread != null && _readThread != Thread.CurrentThread && !_readThread.Join(150))
+                log.Debug("ConPTY read thread did not stop before dispose completed.");
+            _readThread = null;
 
             if (_hThread != IntPtr.Zero)
             {

@@ -13,7 +13,7 @@ namespace ColorVision.UI.HotKey
         {
             return (value is bool boll) && (boll) ? Properties.Resources.HotkeyNormal : Properties.Resources.HotkeyConflict;
         }
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 
     }
 
@@ -29,7 +29,7 @@ namespace ColorVision.UI.HotKey
 
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 
     }
 
@@ -71,7 +71,7 @@ namespace ColorVision.UI.HotKey
             // Get modifiers and key data
             var modifiers = Keyboard.Modifiers;
             //Get modifier Win
-            if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.Right))
+            if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin))
                 modifiers |= ModifierKeys.Windows;
 
             // If Alt is used as modifier - the key needs to be extracted from SystemKey

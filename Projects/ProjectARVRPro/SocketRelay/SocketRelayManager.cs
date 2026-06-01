@@ -91,10 +91,17 @@ namespace ProjectARVRPro.Services
         /// </summary>
         private ManualResetEventSlim _responseWaiter = new(false);
         private SocketResponse _pendingResponse;
-        private bool _generalSensorResetPatchPending;
+        private readonly object _generalSensorResetPatchLock = new();
+        private bool _generalSensorResetPatchCompletedForSocketOpen;
+        private bool _generalSensorResetPatchRunning;
 
         private const string DefaultGeneralSensorCode = "DEV.Sensor.Default";
         private const string DefaultGeneralSensorCategory = "Sensor.Default";
+
+        private SocketRelayManager()
+        {
+            ServiceManager.GetInstance().ServiceChanged += OnServiceChanged;
+        }
 
         public bool IsListening { get => _IsListening; private set { _IsListening = value; OnPropertyChanged(); } }
         private bool _IsListening;
@@ -113,7 +120,6 @@ namespace ProjectARVRPro.Services
         {
             StopServer();
             _running = true;
-            _generalSensorResetPatchPending = true;
             Config.ListenIP = ip;
             Config.ListenPort = port;
             ConfigService.Instance.SaveConfigs();
@@ -140,6 +146,7 @@ namespace ProjectARVRPro.Services
                 _listener = new TcpListener(IPAddress.Parse(Config.ListenIP), Config.ListenPort);
                 _listener.Start();
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() => IsListening = true);
+                TryRunGeneralSensorResetPatch();
 
                 log.Info($"中转服务器启动, 监听 {Config.ListenIP}:{Config.ListenPort}");
                 AddMessage(new RelayMessage
@@ -392,7 +399,7 @@ namespace ProjectARVRPro.Services
         public void StopServer()
         {
             _running = false;
-            _generalSensorResetPatchPending = false;
+            ResetGeneralSensorResetPatchForSocketOpen();
             try
             {
                 CloseFlowClient();
@@ -430,44 +437,78 @@ namespace ProjectARVRPro.Services
         {
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
             {
-                bool wasConnected = IsFlowConnected;
                 IsFlowConnected = isConnected;
-
-                if (isConnected && !wasConnected)
-                {
-                    TryRunGeneralSensorResetPatch();
-                }
             });
+        }
+
+        private void ResetGeneralSensorResetPatchForSocketOpen()
+        {
+            lock (_generalSensorResetPatchLock)
+            {
+                _generalSensorResetPatchCompletedForSocketOpen = false;
+            }
+        }
+
+        private void OnServiceChanged(object? sender, EventArgs e)
+        {
+            if (IsListening)
+            {
+                TryRunGeneralSensorResetPatch();
+            }
         }
 
         private void TryRunGeneralSensorResetPatch()
         {
-            if (!_generalSensorResetPatchPending)
+            lock (_generalSensorResetPatchLock)
             {
-                return;
+                if (_generalSensorResetPatchCompletedForSocketOpen || _generalSensorResetPatchRunning)
+                {
+                    return;
+                }
+
+                _generalSensorResetPatchRunning = true;
             }
 
-            _generalSensorResetPatchPending = false;
-            _ = ApplyGeneralSensorResetPatchAsync();
+            _ = RunGeneralSensorResetPatchAsync();
         }
 
-        // TEMP PATCH: Flow 首次接入当前中转服务后，重置一次通用传感器。
+        private async Task RunGeneralSensorResetPatchAsync()
+        {
+            bool completed = false;
+            try
+            {
+                completed = await ApplyGeneralSensorResetPatchAsync();
+            }
+            finally
+            {
+                lock (_generalSensorResetPatchLock)
+                {
+                    if (completed)
+                    {
+                        _generalSensorResetPatchCompletedForSocketOpen = true;
+                    }
+
+                    _generalSensorResetPatchRunning = false;
+                }
+            }
+        }
+
+        // TEMP PATCH: Socket 服务打开后，重置一次通用传感器。
         // 后续后台修好连接状态判断后，可以连同本方法和相关 helper 一起删除。
-        private async Task ApplyGeneralSensorResetPatchAsync()
+        private static async Task<bool> ApplyGeneralSensorResetPatchAsync()
         {
             try
             {
                 DeviceSensor? deviceSensor = await FindGeneralSensorAsync();
                 if (deviceSensor == null)
                 {
-                    log.Warn("Flow 接入中转后未找到通用传感器，无法执行自动重置");
-                    ShowSensorResetPrompt("未找到通用传感器，无法自动重置。请手动关闭后重新打开通用传感器。");
-                    return;
+                    log.Info("Socket 打开后通用传感器尚未创建，暂不执行自动重置");
+                    return false;
                 }
 
-                log.Info($"Flow 接入中转后开始重置通用传感器: {deviceSensor.Name} ({deviceSensor.Code})");
+                log.Info($"Socket 打开后开始重置通用传感器: {deviceSensor.Name} ({deviceSensor.Code})");
                 deviceSensor.DService.Close();
-                log.Info($"Flow 接入中转后已发送通用传感器关闭指令: {deviceSensor.Name} ({deviceSensor.Code})");
+                log.Info($"Socket 打开后已发送通用传感器关闭指令: {deviceSensor.Name} ({deviceSensor.Code})");
 
                 await Task.Delay(1000);
 
@@ -476,18 +517,20 @@ namespace ProjectARVRPro.Services
 
                 if (openState == MsgRecordState.Success)
                 {
-                    log.Info($"Flow 接入中转后重置通用传感器成功: {deviceSensor.Name} ({deviceSensor.Code})");
-                    return;
+                    log.Info($"Socket 打开后重置通用传感器成功: {deviceSensor.Name} ({deviceSensor.Code})");
+                    return true;
                 }
 
                 string failureMessage = BuildSensorResetFailureMessage(openRecord, openState);
-                log.Warn($"Flow 接入中转后重置通用传感器失败: {deviceSensor.Name} ({deviceSensor.Code}), {failureMessage}");
+                log.Warn($"Socket 打开后重置通用传感器失败: {deviceSensor.Name} ({deviceSensor.Code}), {failureMessage}");
                 ShowSensorResetPrompt($"通用传感器自动重置失败：{failureMessage}\n请手动关闭后重新打开通用传感器。");
+                return true;
             }
             catch (Exception ex)
             {
-                log.Error("Flow 接入中转后重置通用传感器异常", ex);
+                log.Error("Socket 打开后重置通用传感器异常", ex);
                 ShowSensorResetPrompt($"通用传感器自动重置异常：{ex.Message}\n请手动关闭后重新打开通用传感器。");
+                return true;
             }
         }
 

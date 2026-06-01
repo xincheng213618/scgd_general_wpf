@@ -104,6 +104,9 @@ namespace ColorVision.UI
                         {
                             Order = attr.Order,
                             Group = attr.Group,
+                            Name = attr.Name,
+                            Description = attr.Description,
+                            Section = attr.Section,
                             Type = ConfigSettingType.Property,
                             BindingName = prop.Name,
                             Source = instance,

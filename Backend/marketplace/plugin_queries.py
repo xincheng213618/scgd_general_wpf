@@ -23,10 +23,12 @@ def filter_plugin_summaries(
     *,
     keyword: str = "",
     category: str = "",
+    author: str = "",
 ) -> list[PluginItem]:
     items = list(plugins)
     keyword = keyword.strip().lower()
     category = category.strip().lower()
+    author = author.strip().lower()
 
     if keyword:
         items = [
@@ -35,6 +37,7 @@ def filter_plugin_summaries(
             if keyword in str(plugin.get("name", "")).lower()
             or keyword in str(plugin.get("id", "")).lower()
             or keyword in str(plugin.get("description", "")).lower()
+            or keyword in str(plugin.get("author", "")).lower()
         ]
 
     if category:
@@ -42,6 +45,13 @@ def filter_plugin_summaries(
             plugin
             for plugin in items
             if str(plugin.get("category", "")).lower() == category
+        ]
+
+    if author:
+        items = [
+            plugin
+            for plugin in items
+            if author in str(plugin.get("author", "")).lower()
         ]
 
     return items

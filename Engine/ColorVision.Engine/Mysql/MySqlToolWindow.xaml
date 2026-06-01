@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Database"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MySqlLocalServicesManager}"
-        Title="MySQL工具" Height="620" Width="860" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.MysqlTool}" Height="620" Width="860" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -37,16 +38,16 @@
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Horizontal" Grid.Row="0">
-                <Button Content="迁移数据库备份(只包含流程和资源)" Command="{Binding BackupResourcesCommand}" Margin="0,0,5,0"/>
-                <Button Content="全盘备份" Command="{Binding BackupAllResourcesCommand}" Margin="0,0,5,0"/>
-                <Button Content="加载备份" Command="{Binding RestoreSelectCommand}" Background="Red" Foreground="White" Margin="0,0,5,0"/>
-                <Button Content="数据清理" Click="OpenCleanupWindow_Click"/>
+                <Button Content="{x:Static properties:Resources.MigrationBackup}" Command="{Binding BackupResourcesCommand}" Margin="0,0,5,0"/>
+                <Button Content="{x:Static properties:Resources.FullBackup}" Command="{Binding BackupAllResourcesCommand}" Margin="0,0,5,0"/>
+                <Button Content="{x:Static properties:Resources.LoadBackup}" Command="{Binding RestoreSelectCommand}" Background="Red" Foreground="White" Margin="0,0,5,0"/>
+                <Button Content="{x:Static properties:Resources.DataCleanup}" Click="OpenCleanupWindow_Click"/>
             </StackPanel>
 
             <TextBlock Grid.Row="1"
                        Margin="0,10,0,10"
                        Opacity="0.8"
-                       Text="MySQL 结果表清理已移到独立窗口，支持固定 MySQL 结果表列表和插件侧 SQLite 清理源。"/>
+                       Text="{x:Static properties:Resources.MysqlMovedToWindow}"/>
 
             <ListView Grid.Row="2" x:Name="listView1" Background="Transparent" Margin="0" Padding="0" BorderThickness="0" ItemsSource="{Binding Backups}">
                 <ListView.ItemContainerStyle>
@@ -63,26 +64,26 @@
                                 <Setter Property="BorderThickness" Value="0"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="文件名">
+                        <GridViewColumn Header="{x:Static properties:Resources.FileName_Mysql}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Name}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="创建时间">
+                        <GridViewColumn Header="{x:Static properties:Resources.CreateDate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding CreationTimeDisplay}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="还原">
+                        <GridViewColumn Header="{x:Static properties:Resources.Restore_Mysql}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <Button Content="还原" Command="{Binding RestoreCommand}" Margin="0,0,5,0"/>
-                                        <Button Content="选中" Command="{Binding SelectCommand}"/>
+                                        <Button Content="{x:Static properties:Resources.Restore_Mysql}" Command="{Binding RestoreCommand}" Margin="0,0,5,0"/>
+                                        <Button Content="{x:Static properties:Resources.Selected}" Command="{Binding SelectCommand}"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>

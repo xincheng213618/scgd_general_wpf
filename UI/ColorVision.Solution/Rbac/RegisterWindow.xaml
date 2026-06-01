@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
         mc:Ignorable="d"
-        Title="注册新用户" Height="580" Width="440"
+        Title="{x:Static properties:Resources.Sol_Register_Title}" Height="580" Width="440"
         Background="Transparent"
         AllowsTransparency="True"
         WindowStyle="None"
@@ -49,13 +50,13 @@
                                Foreground="White"
                                HorizontalAlignment="Center"
                                Margin="0,8,0,8"/>
-                    <TextBlock Text="创建新账户" 
+                    <TextBlock Text="{x:Static properties:Resources.Sol_Register_Create}"
                                FontSize="22" 
                                FontWeight="Bold"
                                Foreground="White"
                                HorizontalAlignment="Center"
                                Margin="0,0,0,6"/>
-                    <TextBlock Text="加入 ColorVision 系统" 
+                    <TextBlock Text="{x:Static properties:Resources.Sol_Register_Join}"
                                FontSize="12" 
                                Foreground="#C0FFFFFF"
                                HorizontalAlignment="Center"/>
@@ -65,29 +66,29 @@
             <!-- 表单区域 -->
             <StackPanel Grid.Row="1" Margin="30,20,30,10" VerticalAlignment="Center">
                 <StackPanel Margin="0,0,0,15">
-                    <TextBlock Text="用户名" FontSize="13" Margin="0,0,0,6"/>
-                    <hc:TextBox x:Name="TxtUsername"   
-                                VerticalAlignment="Center" 
-                                hc:InfoElement.Placeholder="请输入用户名"  
+                    <TextBlock Text="{x:Static properties:Resources.Sol_Register_Username}" FontSize="13" Margin="0,0,0,6"/>
+                    <hc:TextBox x:Name="TxtUsername"
+                                VerticalAlignment="Center"
+                                hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_Register_EnterUsername}"
                                 Padding="10,8"
                                 FontSize="14"/>
                 </StackPanel>
                 
                 <StackPanel Margin="0,0,0,15">
-                    <TextBlock Text="密码" FontSize="13" Margin="0,0,0,6"/>
-                    <hc:PasswordBox x:Name="Pwd1"  
-                                    VerticalAlignment="Center"  
-                                    hc:InfoElement.Placeholder="请输入密码（至少6位）"  
+                    <TextBlock Text="{x:Static properties:Resources.Password}" FontSize="13" Margin="0,0,0,6"/>
+                    <hc:PasswordBox x:Name="Pwd1"
+                                    VerticalAlignment="Center"
+                                    hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_Register_EnterPassword}"
                                     Padding="10,8"
                                     FontSize="14"
                                     hc:ShowEyeButton="True"/>
                 </StackPanel>
                 
                 <StackPanel Margin="0,0,0,12">
-                    <TextBlock Text="确认密码" FontSize="13" Margin="0,0,0,6"/>
-                    <hc:PasswordBox x:Name="Pwd2"  
-                                    VerticalAlignment="Center"  
-                                    hc:InfoElement.Placeholder="再次输入密码"  
+                    <TextBlock Text="{x:Static properties:Resources.Sol_Register_ConfirmPassword}" FontSize="13" Margin="0,0,0,6"/>
+                    <hc:PasswordBox x:Name="Pwd2"
+                                    VerticalAlignment="Center"
+                                    hc:InfoElement.Placeholder="{x:Static properties:Resources.Sol_Register_ReenterPassword}"
                                     Padding="10,8"
                                     FontSize="14"
                                     hc:ShowEyeButton="True"/>
@@ -112,14 +113,14 @@
                         <ColumnDefinition Width="10"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="BtnRegister" 
+                    <Button x:Name="BtnRegister"
                             Grid.Column="0"
-                            Content="注册" 
+                            Content="{x:Static properties:Resources.Sol_Register_Register}"
                             Height="38"
                             Click="BtnRegister_Click"
                             Style="{StaticResource ModernButton}"/>
-                    <Button Grid.Column="2" 
-                            Content="取消" 
+                    <Button Grid.Column="2"
+                            Content="{x:Static properties:Resources.Sol_AddItem_Cancel}"
                             Height="38"
                             Click="BtnCancel_Click"
                             Style="{StaticResource SecondaryButton}"/>
@@ -135,7 +136,7 @@
                 <TextBlock HorizontalAlignment="Center" 
                            Opacity="0.5"
                            FontSize="11"
-                           Text="注册即表示您同意 ColorVision 使用条款"/>
+                           Text="{x:Static properties:Resources.Sol_Register_Terms}"/>
             </Border>
         </Grid>
     </Border>

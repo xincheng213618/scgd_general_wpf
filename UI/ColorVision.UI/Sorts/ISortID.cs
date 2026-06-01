@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.NativeMethods;
+﻿#pragma warning disable CA1309,CA1859
+using ColorVision.Common.NativeMethods;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.ThreeD"
+        xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
         mc:Ignorable="d"
-        Title="3D模型查看器" Height="700" Width="1100"
+        Title="{x:Static properties:Resources.ThreeD_ModelViewer}" Height="700" Width="1100"
         Closed="Window_Closed">
     <local:ModelViewer3DControl x:Name="ViewerControl"/>
 </Window>

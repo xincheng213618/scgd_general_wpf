@@ -16,11 +16,6 @@ namespace ColorVision.Engine.MQTT
         public override int Order => 2;
         public override async Task InitializeAsync()
         {
-            if (!MQTTSetting.Instance.IsUseMQTT)
-            {
-                log.Info("已经跳过MQTT服务器连接");
-                return;
-            }
             log.Info("正在检测MQTT服务器连接情况");
 
             bool isConnect = await MQTTControl.GetInstance().Connect();

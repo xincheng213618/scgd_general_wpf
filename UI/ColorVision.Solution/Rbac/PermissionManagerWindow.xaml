@@ -39,12 +39,12 @@
                            Foreground="White"
                            VerticalAlignment="Center"
                            Margin="0,0,10,0"/>
-                <TextBlock Text="角色权限管理" 
+                <TextBlock Text="{x:Static properties:Resources.Sol_PermMgr_Label}"
                            FontSize="20" 
                            FontWeight="Bold" 
                            Foreground="White"
                            VerticalAlignment="Center"/>
-                <TextBlock Text="分配和管理角色的系统权限" 
+                <TextBlock Text="{x:Static properties:Resources.Sol_PermMgr_Subtitle}"
                            FontSize="12" 
                            Foreground="White"
                            Opacity="0.8"
@@ -85,7 +85,7 @@
                             <!-- 图标部分 -->
                             <TextBlock Text="&#xE72C;"   FontFamily="Segoe MDL2 Assets"  Margin="0,0,8,0"     VerticalAlignment="Center"/>
                             <!-- 文字部分 -->
-                            <TextBlock Text="刷新角色"   FontFamily="Microsoft YaHei UI"    VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sol_PermMgr_Refresh}"   FontFamily="Microsoft YaHei UI"    VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </Grid>
@@ -102,7 +102,7 @@
                     </Grid.RowDefinitions>
                     
                     <!-- 标题 -->
-                    <TextBlock Grid.Row="0"   Text="可用权限"    FontSize="15"     FontWeight="SemiBold"     Margin="0,0,0,10"/>
+                    <TextBlock Grid.Row="0"   Text="{x:Static properties:Resources.Sol_PermMgr_Available}"    FontSize="15"     FontWeight="SemiBold"     Margin="0,0,0,10"/>
                     
                     <!-- 操作栏 -->
                     <Border Grid.Row="1" 
@@ -119,12 +119,12 @@
                             </Grid.ColumnDefinitions>
                             
                             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Button Content="✓ 全选" 
+                                <Button Content="{x:Static properties:Resources.Sol_PermMgr_SelectAll}"
                                         Width="70" 
                                         Margin="0,0,8,0" 
                                         Click="SelectAll_Click"
                                         Style="{StaticResource SecondaryButton}"/>
-                                <Button Content="✗ 全不选" 
+                                <Button Content="{x:Static properties:Resources.Sol_PermMgr_DeselectAll}"
                                         Width="80" 
                                         Click="DeselectAll_Click"
                                         Style="{StaticResource SecondaryButton}"/>
@@ -133,12 +133,12 @@
                             <StackPanel Grid.Column="1" 
                                         Orientation="Horizontal" 
                                         HorizontalAlignment="Right">
-                                <TextBlock Text="当前角色：" 
+                                <TextBlock Text="{x:Static properties:Resources.Sol_PermMgr_CurrentRole}"
                                            VerticalAlignment="Center"
                                            FontSize="13"
                                            Opacity="0.6"/>
                                 <TextBlock x:Name="CurrentRoleText" 
-                                           Text="未选择" 
+                                           Text="{x:Static properties:Resources.Sol_PermMgr_NotSelected}"
                                            FontWeight="Bold" 
                                            VerticalAlignment="Center" 
                                            Margin="5,0,0,0"
@@ -220,7 +220,7 @@
                     
                     <Button x:Name="SaveButton" 
                             Grid.Row="3"
-                            Content="保存权限分配" 
+                            Content="{x:Static properties:Resources.Sol_PermMgr_Save}"
                             HorizontalAlignment="Right" 
                             Margin="0,12,0,0"
                             Width="140"
@@ -249,7 +249,7 @@
                            VerticalAlignment="Center"
                            Margin="0,0,6,0"/>
                 <TextBlock x:Name="StatusText" 
-                           Text="就绪" 
+                           Text="{x:Static properties:Resources.Sol_PermMgr_Ready}"
                            FontSize="12"
                            VerticalAlignment="Center"/>
             </StackPanel>

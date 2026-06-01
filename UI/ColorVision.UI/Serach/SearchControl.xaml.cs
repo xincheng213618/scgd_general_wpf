@@ -10,9 +10,22 @@ namespace ColorVision.UI.Serach
 {
     public partial class SearchControl : UserControl
     {
+        public static readonly DependencyProperty SearchBoxHeightProperty = DependencyProperty.Register(
+            nameof(SearchBoxHeight),
+            typeof(double),
+            typeof(SearchControl),
+            new FrameworkPropertyMetadata(double.NaN));
+
         public SearchControl()
         {
             InitializeComponent();
+            SearchIconViewbox.ToolTip = GetText("SearchIconSettingsTooltip");
+        }
+
+        public double SearchBoxHeight
+        {
+            get => (double)GetValue(SearchBoxHeightProperty);
+            set => SetValue(SearchBoxHeightProperty, value);
         }
 
         public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
@@ -34,7 +47,16 @@ namespace ColorVision.UI.Serach
         {
             if (sender is not TextBox textBox) return;
 
-            string searchtext = textBox.Text;
+            UpdateResults(textBox.Text);
+        }
+
+        private void UpdateResults(string searchtext)
+        {
+            if (Searches.Count == 0)
+            {
+                Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
+            }
+
             if (string.IsNullOrWhiteSpace(searchtext))
             {
                 SearchPopup.IsOpen = false;
@@ -58,6 +80,7 @@ namespace ColorVision.UI.Serach
             {
                 FilteredResults.Add(new SearchMeta
                 {
+                    Type = SearchType.Link,
                     Header = $"{Properties.Resources.Search} {searchtext} (Everything)",
                     Command = new RelayCommand(a => LaunchEverything(config.EverythingPath, searchtext))
                 });
@@ -68,6 +91,7 @@ namespace ColorVision.UI.Serach
                 string engineName = config.SearchEngine.ToString();
                 FilteredResults.Add(new SearchMeta
                 {
+                    Type = SearchType.Link,
                     Header = $"{Properties.Resources.Search} {searchtext} ({engineName})",
                     Command = new RelayCommand(a => SearchInBrowser(searchtext, config.SearchEngine))
                 });
@@ -120,6 +144,27 @@ namespace ColorVision.UI.Serach
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
             }
+        }
+
+        private void SearchIconViewbox_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount < 2)
+                return;
+
+            var settingsWindow = new SearchSettingsWindow
+            {
+                Owner = Application.Current.GetActiveWindow()
+            };
+
+            settingsWindow.ShowDialog();
+            Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
+            UpdateResults(Searchbox.Text);
+            e.Handled = true;
+        }
+
+        private static string GetText(string key)
+        {
+            return Properties.Resources.ResourceManager.GetString(key, Properties.Resources.Culture) ?? key;
         }
 
         private void ListViewSearch_SelectionChanged(object sender, SelectionChangedEventArgs e)

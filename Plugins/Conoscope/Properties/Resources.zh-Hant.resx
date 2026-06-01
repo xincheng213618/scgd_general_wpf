@@ -1,51 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -53,29 +53,11 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>語言(_Language)</value>
-  </data>
-  <data name="Model" xml:space="preserve">
-    <value>型號</value>
-  </data>
-  <data name="OpenObservationCamera" xml:space="preserve">
-    <value>開啟觀察相機</value>
-  </data>
-  <data name="CaptureImage" xml:space="preserve">
-    <value>取得影像</value>
-  </data>
-  <data name="Calibration" xml:space="preserve">
-    <value>校正</value>
-  </data>
-  <data name="ImageFilter" xml:space="preserve">
-    <value>影像濾波</value>
-  </data>
   <data name="NoFilter" xml:space="preserve">
     <value>無濾波</value>
   </data>
@@ -94,17 +76,8 @@
   <data name="KernelSize" xml:space="preserve">
     <value>核大小</value>
   </data>
-  <data name="ApplyFilter" xml:space="preserve">
-    <value>應用濾波</value>
-  </data>
   <data name="MedianFilter" xml:space="preserve">
     <value>中值濾波</value>
-  </data>
-  <data name="FilterType" xml:space="preserve">
-    <value>濾波類型</value>
-  </data>
-  <data name="StatusInformation" xml:space="preserve">
-    <value>狀態資訊</value>
   </data>
   <data name="CurrentModel" xml:space="preserve">
     <value>目前型號</value>
@@ -112,23 +85,8 @@
   <data name="ObservationCameraStatus" xml:space="preserve">
     <value>觀察相機狀態</value>
   </data>
-  <data name="MeasurementCameraStatus" xml:space="preserve">
-    <value>測量相機狀態</value>
-  </data>
-  <data name="CalibrationStatus" xml:space="preserve">
-    <value>校正狀態</value>
-  </data>
   <data name="NotOpened" xml:space="preserve">
     <value>未開啟</value>
-  </data>
-  <data name="NotCalibrated" xml:space="preserve">
-    <value>未校正</value>
-  </data>
-  <data name="Azimuth" xml:space="preserve">
-    <value>方位角</value>
-  </data>
-  <data name="PolarAngle" xml:space="preserve">
-    <value>極角</value>
   </data>
   <data name="TabHome" xml:space="preserve">
     <value>首頁</value>
@@ -137,22 +95,16 @@
     <value>採集</value>
   </data>
   <data name="TabPreprocess" xml:space="preserve">
-    <value>預處理</value>
+    <value>處理</value>
   </data>
   <data name="TabAnalysis" xml:space="preserve">
     <value>分析</value>
   </data>
-  <data name="TabWindow" xml:space="preserve">
-    <value>視窗</value>
-  </data>
-  <data name="TabHelp" xml:space="preserve">
-    <value>幫助</value>
-  </data>
   <data name="GroupData" xml:space="preserve">
-    <value>資料</value>
+    <value>檔案</value>
   </data>
   <data name="GroupModel" xml:space="preserve">
-    <value>模型</value>
+    <value>型號與觀察</value>
   </data>
   <data name="GroupCurrentView" xml:space="preserve">
     <value>當前視圖</value>
@@ -162,9 +114,6 @@
   </data>
   <data name="GroupMeasurementCamera" xml:space="preserve">
     <value>測量相機</value>
-  </data>
-  <data name="GroupNdCalibration" xml:space="preserve">
-    <value>ND / 校正</value>
   </data>
   <data name="GroupEnable" xml:space="preserve">
     <value>啟用</value>
@@ -178,9 +127,6 @@
   <data name="GroupExport" xml:space="preserve">
     <value>匯出</value>
   </data>
-  <data name="GroupViews" xml:space="preserve">
-    <value>視圖</value>
-  </data>
   <data name="GroupGamut" xml:space="preserve">
     <value>色域</value>
   </data>
@@ -190,14 +136,11 @@
   <data name="GroupConfig" xml:space="preserve">
     <value>設定</value>
   </data>
-  <data name="GroupAnalysisWindows" xml:space="preserve">
-    <value>分析視窗</value>
-  </data>
   <data name="GroupOpen" xml:space="preserve">
     <value>開啟</value>
   </data>
   <data name="GroupDescription" xml:space="preserve">
-    <value>說明</value>
+    <value>視圖功能</value>
   </data>
   <data name="LabelChannel" xml:space="preserve">
     <value>通道</value>
@@ -205,32 +148,14 @@
   <data name="LabelReference" xml:space="preserve">
     <value>參考</value>
   </data>
-  <data name="LabelExport" xml:space="preserve">
-    <value>匯出</value>
-  </data>
-  <data name="LabelFlowTemplate" xml:space="preserve">
-    <value>流程模板</value>
-  </data>
-  <data name="LabelCamera" xml:space="preserve">
-    <value>相機</value>
-  </data>
   <data name="LabelStandard" xml:space="preserve">
     <value>標準</value>
-  </data>
-  <data name="LabelColorMap" xml:space="preserve">
-    <value>色帶</value>
   </data>
   <data name="LabelAzimuthDeg" xml:space="preserve">
     <value>方位角(°)</value>
   </data>
   <data name="LabelPolarDeg" xml:space="preserve">
     <value>極角(°)</value>
-  </data>
-  <data name="LabelNdPort" xml:space="preserve">
-    <value>ND 端口</value>
-  </data>
-  <data name="LabelStatus" xml:space="preserve">
-    <value>狀態</value>
   </data>
   <data name="LabelExposure" xml:space="preserve">
     <value>曝光</value>
@@ -259,30 +184,6 @@
   <data name="ChannelDeltaUV" xml:space="preserve">
     <value>色差 Δuv</value>
   </data>
-  <data name="ChannelXShort" xml:space="preserve">
-    <value>X通道</value>
-  </data>
-  <data name="ChannelYShort" xml:space="preserve">
-    <value>Y通道</value>
-  </data>
-  <data name="ChannelZShort" xml:space="preserve">
-    <value>Z通道</value>
-  </data>
-  <data name="ChannelCieXShort" xml:space="preserve">
-    <value>x色度</value>
-  </data>
-  <data name="ChannelCieYShort" xml:space="preserve">
-    <value>y色度</value>
-  </data>
-  <data name="ChannelCieUShort" xml:space="preserve">
-    <value>u色度</value>
-  </data>
-  <data name="ChannelCieVShort" xml:space="preserve">
-    <value>v色度</value>
-  </data>
-  <data name="ChannelDeltaUVShort" xml:space="preserve">
-    <value>色差Δuv</value>
-  </data>
   <data name="RefAzimuthLine" xml:space="preserve">
     <value>方位角直線</value>
   </data>
@@ -297,9 +198,6 @@
   </data>
   <data name="BtnExecute" xml:space="preserve">
     <value>執行</value>
-  </data>
-  <data name="BtnRefresh" xml:space="preserve">
-    <value>重新整理</value>
   </data>
   <data name="BtnCapturePhoto" xml:space="preserve">
     <value>拍照</value>
@@ -316,32 +214,8 @@
   <data name="BtnClear" xml:space="preserve">
     <value>清空</value>
   </data>
-  <data name="BtnRecordR" xml:space="preserve">
-    <value>記錄 R</value>
-  </data>
-  <data name="BtnRecordG" xml:space="preserve">
-    <value>記錄 G</value>
-  </data>
-  <data name="BtnRecordB" xml:space="preserve">
-    <value>記錄 B</value>
-  </data>
-  <data name="BtnRecordWhite" xml:space="preserve">
-    <value>記錄白</value>
-  </data>
-  <data name="BtnRecordBlack" xml:space="preserve">
-    <value>記錄黑</value>
-  </data>
   <data name="BtnComputeContrast" xml:space="preserve">
     <value>計算對比度</value>
-  </data>
-  <data name="BtnGamutWindow" xml:space="preserve">
-    <value>色域視窗</value>
-  </data>
-  <data name="BtnContrastWindow" xml:space="preserve">
-    <value>對比度視窗</value>
-  </data>
-  <data name="BtnHelpCenter" xml:space="preserve">
-    <value>幫助中心</value>
   </data>
   <data name="BtnClose" xml:space="preserve">
     <value>關閉</value>
@@ -351,15 +225,6 @@
   </data>
   <data name="BtnCancel" xml:space="preserve">
     <value>取消</value>
-  </data>
-  <data name="BtnApplyPreset" xml:space="preserve">
-    <value>應用當前預設</value>
-  </data>
-  <data name="BtnPreprocessSettings" xml:space="preserve">
-    <value>預處理設定</value>
-  </data>
-  <data name="BtnSaveConfig" xml:space="preserve">
-    <value>儲存設定</value>
   </data>
   <data name="BtnSaveBaseImage" xml:space="preserve">
     <value>儲存色差基準圖</value>
@@ -406,44 +271,8 @@
   <data name="BtnDeleteCurrent" xml:space="preserve">
     <value>刪除當前</value>
   </data>
-  <data name="BtnSelectRImage" xml:space="preserve">
-    <value>選擇 R 圖</value>
-  </data>
-  <data name="BtnRecordCurrentR" xml:space="preserve">
-    <value>記錄當前 R</value>
-  </data>
-  <data name="BtnSelectGImage" xml:space="preserve">
-    <value>選擇 G 圖</value>
-  </data>
-  <data name="BtnRecordCurrentG" xml:space="preserve">
-    <value>記錄當前 G</value>
-  </data>
-  <data name="BtnSelectBImage" xml:space="preserve">
-    <value>選擇 B 圖</value>
-  </data>
-  <data name="BtnRecordCurrentB" xml:space="preserve">
-    <value>記錄當前 B</value>
-  </data>
-  <data name="BtnSelectWhiteImage" xml:space="preserve">
-    <value>選擇白圖</value>
-  </data>
-  <data name="BtnRecordCurrentWhite" xml:space="preserve">
-    <value>記錄當前白點</value>
-  </data>
-  <data name="BtnSelectBlackImage" xml:space="preserve">
-    <value>選擇黑圖</value>
-  </data>
-  <data name="BtnRecordCurrentBlack" xml:space="preserve">
-    <value>記錄當前黑點</value>
-  </data>
   <data name="TipOpenFile" xml:space="preserve">
     <value>開啟一個或多個 Conoscope 影像</value>
-  </data>
-  <data name="TipNewView" xml:space="preserve">
-    <value>創建一個空白 Conoscope 視圖</value>
-  </data>
-  <data name="TipSaveConfig" xml:space="preserve">
-    <value>儲存視窗與 Conoscope 設定</value>
   </data>
   <data name="TipOpenObservationCamera" xml:space="preserve">
     <value>開啟觀察相機視窗</value>
@@ -462,18 +291,6 @@
   </data>
   <data name="TipCapturePhoto" xml:space="preserve">
     <value>使用當前相機與校正模板拍照</value>
-  </data>
-  <data name="TipSwitchNdPort" xml:space="preserve">
-    <value>切換到輸入的 ND 端口</value>
-  </data>
-  <data name="TipReadNdPort" xml:space="preserve">
-    <value>讀取當前 ND 端口</value>
-  </data>
-  <data name="TipBindNdCalibration" xml:space="preserve">
-    <value>將當前 ND 端口綁定到當前校正模板</value>
-  </data>
-  <data name="TipClearNdCalibration" xml:space="preserve">
-    <value>取消當前 ND 端口與校正模板的綁定</value>
   </data>
   <data name="TipReuseActiveView" xml:space="preserve">
     <value>勾選後，流程結果與相機拍攝結果都會直接更新目前的活動視圖，減少額外記憶體佔用。</value>
@@ -532,15 +349,6 @@
   <data name="TipOpenConoscopeSettings" xml:space="preserve">
     <value>開啟 Conoscope 設定</value>
   </data>
-  <data name="TipOpenLegacyGamut" xml:space="preserve">
-    <value>開啟舊版 RGB 色域視窗</value>
-  </data>
-  <data name="TipOpenLegacyContrast" xml:space="preserve">
-    <value>開啟舊版黑白對比度視窗</value>
-  </data>
-  <data name="TipHelpCenter" xml:space="preserve">
-    <value>開啟可搜尋的 Conoscope 幫助中心，檢視使用路徑、演算法原理與名詞解析</value>
-  </data>
   <data name="ChkEnablePreprocess" xml:space="preserve">
     <value>啟用預處理</value>
   </data>
@@ -559,9 +367,6 @@
   <data name="ChkEnableSectionExport" xml:space="preserve">
     <value>啟用截面匯出</value>
   </data>
-  <data name="StatusReady" xml:space="preserve">
-    <value>就緒</value>
-  </data>
   <data name="StatusNotRecorded" xml:space="preserve">
     <value>未記錄</value>
   </data>
@@ -577,12 +382,6 @@
   <data name="MsgConfigSaveFailed" xml:space="preserve">
     <value>設定儲存失敗</value>
   </data>
-  <data name="MsgNewViewCreated" xml:space="preserve">
-    <value>已建立視圖</value>
-  </data>
-  <data name="MsgCameraListRefreshed" xml:space="preserve">
-    <value>相機清單已重新整理</value>
-  </data>
   <data name="MsgPreprocessApplied" xml:space="preserve">
     <value>已應用當前預處理預設</value>
   </data>
@@ -595,111 +394,21 @@
   <data name="MsgSelectCamera" xml:space="preserve">
     <value>請選擇相機設備</value>
   </data>
-  <data name="MsgSelectCameraAndCalibration" xml:space="preserve">
-    <value>請選擇相機設備和有效的校正模板</value>
-  </data>
-  <data name="MsgInvalidNdPort" xml:space="preserve">
-    <value>請輸入有效的 ND 端口</value>
-  </data>
-  <data name="MsgNdBound" xml:space="preserve">
-    <value>已綁定 ND {0} -&gt; {1}</value>
-  </data>
-  <data name="MsgSelectCameraAndNd" xml:space="preserve">
-    <value>請選擇相機並輸入有效的 ND 端口</value>
-  </data>
-  <data name="MsgNdNotBound" xml:space="preserve">
-    <value>ND {0} 沒有綁定校正</value>
-  </data>
-  <data name="MsgNdUnbound" xml:space="preserve">
-    <value>已解除 ND {0} 的校正綁定</value>
-  </data>
   <data name="MsgSelectFlow" xml:space="preserve">
     <value>請選擇流程</value>
-  </data>
-  <data name="MsgFlowExecuting" xml:space="preserve">
-    <value>正在執行流程: {0}</value>
-  </data>
-  <data name="MsgFlowNotStarted" xml:space="preserve">
-    <value>流程未啟動</value>
-  </data>
-  <data name="MsgFlowFinished" xml:space="preserve">
-    <value>流程結束: {0}</value>
-  </data>
-  <data name="MsgFlowIncomplete" xml:space="preserve">
-    <value>流程執行未完成: {0}
-{1}</value>
-  </data>
-  <data name="MsgFlowResultOpened" xml:space="preserve">
-    <value>已開啟 {0}</value>
-  </data>
-  <data name="MsgFlowCvcieNotFound" xml:space="preserve">
-    <value>流程結果未找到 CVCIE</value>
   </data>
   <data name="MsgFlowCvcieNotFoundDetail" xml:space="preserve">
     <value>流程執行完成，但結果中沒有找到 .cvcie 文件</value>
   </data>
-  <data name="MsgFlowFailed" xml:space="preserve">
-    <value>流程執行失敗</value>
-  </data>
   <data name="MsgFlowFailedDetail" xml:space="preserve">
     <value>流程執行失敗: {0}</value>
-  </data>
-  <data name="MsgCapturingPhoto" xml:space="preserve">
-    <value>正在拍照: {0}</value>
-  </data>
-  <data name="MsgCaptureFailed" xml:space="preserve">
-    <value>拍照失敗: {0}</value>
   </data>
   <data name="MsgCaptureFailedDetail" xml:space="preserve">
     <value>拍照失敗: {0}
 {1}</value>
   </data>
-  <data name="MsgCaptureCvcieNotFound" xml:space="preserve">
-    <value>拍照結果未找到 CVCIE</value>
-  </data>
   <data name="MsgCaptureCvcieNotFoundDetail" xml:space="preserve">
     <value>拍照完成，但結果中沒有找到 .cvcie 文件</value>
-  </data>
-  <data name="MsgCaptureFailedTitle" xml:space="preserve">
-    <value>拍照失敗</value>
-  </data>
-  <data name="MsgSwitchingNd" xml:space="preserve">
-    <value>正在切換 ND: {0}</value>
-  </data>
-  <data name="MsgNdSwitched" xml:space="preserve">
-    <value>ND 已切換到 {0}</value>
-  </data>
-  <data name="MsgNdSwitchFailed" xml:space="preserve">
-    <value>ND 切換失敗: {0}</value>
-  </data>
-  <data name="MsgNdSwitchFailedDetail" xml:space="preserve">
-    <value>ND 切換失敗: {0}
-{1}</value>
-  </data>
-  <data name="MsgNdSwitchFailedTitle" xml:space="preserve">
-    <value>ND 切換失敗</value>
-  </data>
-  <data name="MsgReadingNd" xml:space="preserve">
-    <value>正在讀取 ND</value>
-  </data>
-  <data name="MsgCurrentNd" xml:space="preserve">
-    <value>當前 ND: {0}</value>
-  </data>
-  <data name="MsgNdReadFailed" xml:space="preserve">
-    <value>ND 讀取失敗: {0}</value>
-  </data>
-  <data name="MsgNdReadFailedDetail" xml:space="preserve">
-    <value>ND 讀取失敗: {0}
-{1}</value>
-  </data>
-  <data name="MsgNdReadFailedTitle" xml:space="preserve">
-    <value>ND 讀取失敗</value>
-  </data>
-  <data name="MsgNdNotBoundCalibration" xml:space="preserve">
-    <value>ND {0} 未綁定校正</value>
-  </data>
-  <data name="MsgNdMatchedCalibration" xml:space="preserve">
-    <value>ND {0} 已匹配校正: {1}</value>
   </data>
   <data name="MsgLoadImageFirst" xml:space="preserve">
     <value>請先載入影像</value>
@@ -714,18 +423,11 @@
   <data name="MsgPolarExportFailed" xml:space="preserve">
     <value>極角模式匯出失敗: {0}</value>
   </data>
-  <data name="MsgXyzNotLoaded" xml:space="preserve">
-    <value>XYZ 資料未載入</value>
-  </data>
   <data name="MsgAdvancedExportFailed" xml:space="preserve">
     <value>高級匯出失敗: {0}</value>
   </data>
   <data name="MsgSelectExportFolder" xml:space="preserve">
     <value>選擇匯出文件夾</value>
-  </data>
-  <data name="MsgSectionExportDone" xml:space="preserve">
-    <value>截面匯出完成，共匯出 {0} 個文件到:
-{1}</value>
   </data>
   <data name="MsgExportDone" xml:space="preserve">
     <value>匯出完成，共匯出 {0} 個文件到:
@@ -733,9 +435,6 @@
   </data>
   <data name="MsgExportFailed" xml:space="preserve">
     <value>匯出失敗: {0}</value>
-  </data>
-  <data name="MsgCurveExportConfigSaveFailed" xml:space="preserve">
-    <value>匯出已完成，但儲存當前曲線匯出設定失敗: {0}</value>
   </data>
   <data name="MsgSelectAzimuthFirst" xml:space="preserve">
     <value>請先選擇一個方位角</value>
@@ -746,140 +445,14 @@
   <data name="MsgSelectPolarFirst" xml:space="preserve">
     <value>請先選擇一個極角</value>
   </data>
-  <data name="MsgPolarExportSuccess" xml:space="preserve">
-    <value>極角 {0}° 匯出成功</value>
-  </data>
-  <data name="MsgGetImageFirst" xml:space="preserve">
-    <value>請先取得影像</value>
-  </data>
-  <data name="MsgOriginalDataRestored" xml:space="preserve">
-    <value>已恢復原始資料</value>
-  </data>
-  <data name="MsgPreprocessSuccess" xml:space="preserve">
-    <value>預處理應用成功</value>
-  </data>
-  <data name="MsgFilterApplyFailed" xml:space="preserve">
-    <value>應用濾波失敗: {0}</value>
-  </data>
-  <data name="MsgNoFixedLightSource" xml:space="preserve">
-    <value>當前色差基準不是固定光源</value>
-  </data>
-  <data name="MsgInvalidCustomUV" xml:space="preserve">
-    <value>請輸入有效的自定義 u/v 基準座標</value>
-  </data>
-  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
-    <value>實測基準圖需要儲存基準圖後逐點計算</value>
-  </data>
-  <data name="MsgNoPixelsInCenter" xml:space="preserve">
-    <value>影像中心 50px 關注點內沒有可用像素</value>
-  </data>
-  <data name="MsgBaseImageSaved" xml:space="preserve">
-    <value>基準圖已儲存</value>
-  </data>
-  <data name="MsgSaveBaseImageFailed" xml:space="preserve">
-    <value>儲存色差基準圖失敗: {0}</value>
-  </data>
-  <data name="MsgSaveColorDiffFailed" xml:space="preserve">
-    <value>儲存色差基準圖失敗: {0}</value>
-  </data>
-  <data name="MsgImageSizeMismatch" xml:space="preserve">
-    <value>當前影像尺寸與色差基準圖不一致，無法逐點計算</value>
-  </data>
-  <data name="MsgSaveBaseFirst" xml:space="preserve">
-    <value>請先點擊"儲存色差基準圖"，再計算實測圖色差</value>
-  </data>
-  <data name="MsgNoFocusPoints" xml:space="preserve">
-    <value>請先在當前視圖中繪製關注點圓。</value>
-  </data>
-  <data name="MsgFocusPointNotReady" xml:space="preserve">
-    <value>當前影像尚未準備好關注點計算。</value>
-  </data>
-  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
-    <value>請先繪製關注點圓。</value>
-  </data>
-  <data name="MsgNoFocusPointPixels" xml:space="preserve">
-    <value>沒有可用於計算的關注點像素。</value>
-  </data>
-  <data name="MsgFocusPointNoPixels" xml:space="preserve">
-    <value>{0} 沒有可用像素。</value>
-  </data>
-  <data name="Msg3DViewNotReady" xml:space="preserve">
-    <value>當前影像尚未準備好 3D 視圖</value>
-  </data>
-  <data name="Msg3DViewOpenFailed" xml:space="preserve">
-    <value>開啟 3D 視圖失敗: {0}</value>
-  </data>
-  <data name="MsgCieOpenFailed" xml:space="preserve">
-    <value>開啟 CIE 色度圖失敗</value>
-  </data>
-  <data name="TbPan" xml:space="preserve">
-    <value>平移</value>
-  </data>
-  <data name="TbPanTip" xml:space="preserve">
-    <value>開啟後左鍵拖拽可平移影像；關閉後按住 Ctrl 再平移。</value>
-  </data>
-  <data name="TbRefDrag" xml:space="preserve">
-    <value>參考拖拽</value>
-  </data>
-  <data name="TbRefDragTip" xml:space="preserve">
-    <value>允許在圖上直接拖動參考方位線和極角圓；進入關注點模式時會臨時關閉。</value>
-  </data>
-  <data name="TbZoomOut" xml:space="preserve">
-    <value>縮小</value>
-  </data>
-  <data name="TbZoomIn" xml:space="preserve">
-    <value>放大</value>
-  </data>
-  <data name="TbOriginalSize" xml:space="preserve">
-    <value>原始尺寸</value>
-  </data>
-  <data name="TbFit" xml:space="preserve">
-    <value>適</value>
-  </data>
-  <data name="TbFitTip" xml:space="preserve">
-    <value>適應視窗</value>
-  </data>
-  <data name="TbFill" xml:space="preserve">
-    <value>填</value>
-  </data>
-  <data name="TbFillTip" xml:space="preserve">
-    <value>鋪滿視窗</value>
-  </data>
-  <data name="TbZoomRatioTip" xml:space="preserve">
-    <value>當前縮放倍率</value>
-  </data>
-  <data name="TbFullscreen" xml:space="preserve">
-    <value>全</value>
-  </data>
-  <data name="TbFullscreenTip" xml:space="preserve">
-    <value>切換影像全屏</value>
-  </data>
-  <data name="TbEditFocusPoint" xml:space="preserve">
-    <value>編輯關注點</value>
-  </data>
-  <data name="TbEditFocusPointTip" xml:space="preserve">
-    <value>開啟後進入關注點工具模式...</value>
-  </data>
-  <data name="TbCircle" xml:space="preserve">
-    <value>圓</value>
-  </data>
-  <data name="TbCircleTip" xml:space="preserve">
-    <value>僅繪製新的關注點圓</value>
-  </data>
   <data name="TbEdit" xml:space="preserve">
     <value>編輯</value>
   </data>
   <data name="TbEditTip" xml:space="preserve">
     <value>選中並拖拽已有關注點圓</value>
   </data>
-  <data name="TbEraser" xml:space="preserve">
-    <value>橡皮</value>
-  </data>
   <data name="TbEraserTip" xml:space="preserve">
     <value>框選擦除關注點圓</value>
-  </data>
-  <data name="TbCalc" xml:space="preserve">
-    <value>算</value>
   </data>
   <data name="TbCalcTip" xml:space="preserve">
     <value>計算全部關注點</value>
@@ -890,44 +463,17 @@
   <data name="TbClearAllTip" xml:space="preserve">
     <value>清空全部關注點</value>
   </data>
-  <data name="PanelDisplay" xml:space="preserve">
-    <value>顯示</value>
-  </data>
   <data name="PanelColorDiff" xml:space="preserve">
     <value>色差</value>
   </data>
-  <data name="PanelExport" xml:space="preserve">
-    <value>匯出</value>
-  </data>
-  <data name="PanelSettings" xml:space="preserve">
-    <value>設定</value>
-  </data>
-  <data name="LabelDisplayChannel" xml:space="preserve">
-    <value>顯示通道:</value>
-  </data>
   <data name="LabelRefMode" xml:space="preserve">
     <value>參考模式:</value>
-  </data>
-  <data name="LabelRefAzimuth" xml:space="preserve">
-    <value>參考方位</value>
-  </data>
-  <data name="LabelRefPolar" xml:space="preserve">
-    <value>參考極角</value>
   </data>
   <data name="LabelColorDiffCalc" xml:space="preserve">
     <value>色差計算</value>
   </data>
   <data name="LabelBaseRef" xml:space="preserve">
     <value>基準:</value>
-  </data>
-  <data name="LabelExportSettings" xml:space="preserve">
-    <value>匯出設定</value>
-  </data>
-  <data name="LabelExportMode" xml:space="preserve">
-    <value>匯出模式:</value>
-  </data>
-  <data name="LabelExportChannel" xml:space="preserve">
-    <value>匯出通道:</value>
   </data>
   <data name="LabelRefCurve" xml:space="preserve">
     <value>參考曲線</value>
@@ -940,9 +486,6 @@
   </data>
   <data name="LabelGraph" xml:space="preserve">
     <value>圖形</value>
-  </data>
-  <data name="LabelDisplayAndReference" xml:space="preserve">
-    <value>顯示與參考</value>
   </data>
   <data name="CbiD65" xml:space="preserve">
     <value>D65 光源</value>
@@ -1019,23 +562,14 @@
   <data name="TitleConoscopeSettings" xml:space="preserve">
     <value>Conoscope 設定</value>
   </data>
-  <data name="TitleHelpCenter" xml:space="preserve">
-    <value>Conoscope 幫助中心</value>
-  </data>
   <data name="TitleMvsCameraView" xml:space="preserve">
     <value>MVS相機視圖</value>
   </data>
   <data name="TitleObservationCameraSettings" xml:space="preserve">
     <value>觀察相機設定</value>
   </data>
-  <data name="TitleColorGamutCalc" xml:space="preserve">
-    <value>RGB 色域計算</value>
-  </data>
   <data name="TitleColorGamutResult" xml:space="preserve">
     <value>色域計算結果</value>
-  </data>
-  <data name="TitleContrastTest" xml:space="preserve">
-    <value>對比度測試</value>
   </data>
   <data name="TitleContrastResult" xml:space="preserve">
     <value>對比度結果</value>
@@ -1163,36 +697,6 @@
   <data name="GroupBoxModelParams" xml:space="preserve">
     <value>型號參數</value>
   </data>
-  <data name="TipSearchHelp" xml:space="preserve">
-    <value>輸入功能名稱、演算法名稱或術語，例如：色域 / 對比度 / CIE / 關注點</value>
-  </data>
-  <data name="TipClearSearch" xml:space="preserve">
-    <value>清除搜尋</value>
-  </data>
-  <data name="RbAll" xml:space="preserve">
-    <value>全部</value>
-  </data>
-  <data name="RbQuickStart" xml:space="preserve">
-    <value>快速開始</value>
-  </data>
-  <data name="RbUsagePaths" xml:space="preserve">
-    <value>使用路徑</value>
-  </data>
-  <data name="RbAlgorithmPrinciples" xml:space="preserve">
-    <value>演算法原理</value>
-  </data>
-  <data name="RbGlossary" xml:space="preserve">
-    <value>名詞解析</value>
-  </data>
-  <data name="PlaceholderSelectTopic" xml:space="preserve">
-    <value>← 請從左側選擇一個幫助主題</value>
-  </data>
-  <data name="HintHelpNativeView" xml:space="preserve">
-    <value>提示：幫助內容現在使用原生 WPF 文檔視圖顯示，顏色和視窗主題保持一致。</value>
-  </data>
-  <data name="HelpDescription" xml:space="preserve">
-    <value>幫助中心視窗裡已整合快速開始、使用路徑、演算法原理與名詞解析。直接開啟一個視窗，即可在裡面搜尋或切換分類。</value>
-  </data>
   <data name="MenuView" xml:space="preserve">
     <value>視圖</value>
   </data>
@@ -1241,9 +745,6 @@
   <data name="TabTestArea" xml:space="preserve">
     <value>測試區域</value>
   </data>
-  <data name="TabObservationCamera" xml:space="preserve">
-    <value>觀察相機</value>
-  </data>
   <data name="TipCurrentModelApplies" xml:space="preserve">
     <value>當前型號參數會直接作用到當前測試區域疊加。</value>
   </data>
@@ -1258,39 +759,6 @@
   </data>
   <data name="LabelCenterYPx" xml:space="preserve">
     <value>中心 Y(px)</value>
-  </data>
-  <data name="GroupBoxRgbImageSelection" xml:space="preserve">
-    <value>RGB 影像選擇</value>
-  </data>
-  <data name="LabelRImage" xml:space="preserve">
-    <value>R 圖</value>
-  </data>
-  <data name="LabelGImage" xml:space="preserve">
-    <value>G 圖</value>
-  </data>
-  <data name="LabelBImage" xml:space="preserve">
-    <value>B 圖</value>
-  </data>
-  <data name="GroupBoxGamutStandard" xml:space="preserve">
-    <value>色域標準</value>
-  </data>
-  <data name="GroupBoxResults" xml:space="preserve">
-    <value>結果</value>
-  </data>
-  <data name="LabelRChromaticity" xml:space="preserve">
-    <value>R 色座標</value>
-  </data>
-  <data name="LabelGChromaticity" xml:space="preserve">
-    <value>G 色座標</value>
-  </data>
-  <data name="LabelBChromaticity" xml:space="preserve">
-    <value>B 色座標</value>
-  </data>
-  <data name="LabelGamutArea" xml:space="preserve">
-    <value>色域面積</value>
-  </data>
-  <data name="LabelCoverageRate" xml:space="preserve">
-    <value>覆蓋率</value>
   </data>
   <data name="ColNumber" xml:space="preserve">
     <value>編號</value>
@@ -1334,32 +802,8 @@
   <data name="ColBlackChromaticity" xml:space="preserve">
     <value>黑色座標</value>
   </data>
-  <data name="GroupBoxImageSelection" xml:space="preserve">
-    <value>影像選擇</value>
-  </data>
-  <data name="LabelWhiteImage" xml:space="preserve">
-    <value>白圖</value>
-  </data>
-  <data name="LabelBlackImage" xml:space="preserve">
-    <value>黑圖</value>
-  </data>
-  <data name="LabelWhiteLuminance" xml:space="preserve">
-    <value>白亮度</value>
-  </data>
-  <data name="LabelBlackLuminance" xml:space="preserve">
-    <value>黑亮度</value>
-  </data>
-  <data name="LabelColorCoordinates" xml:space="preserve">
-    <value>色座標</value>
-  </data>
   <data name="MenuOpenWithConoscope" xml:space="preserve">
     <value>通過 Conoscope 開啟</value>
-  </data>
-  <data name="MenuContrastTest" xml:space="preserve">
-    <value>對比度測試</value>
-  </data>
-  <data name="MenuGamutCalculation" xml:space="preserve">
-    <value>色域計算</value>
   </data>
   <data name="LabelCurrentModel" xml:space="preserve">
     <value>當前型號</value>
@@ -1370,50 +814,11 @@
   <data name="LabelSaveFilterCsv" xml:space="preserve">
     <value>CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*</value>
   </data>
-  <data name="CatFieldOfView" xml:space="preserve">
-    <value>視場</value>
-  </data>
-  <data name="PropFovAngle" xml:space="preserve">
-    <value>視場角(度)</value>
-  </data>
-  <data name="DescFovAngle" xml:space="preserve">
-    <value>設計視場角。分析半徑 = 視場角 * 生效視場係數。</value>
-  </data>
-  <data name="PropFullPixels" xml:space="preserve">
-    <value>完整像素數(px)</value>
-  </data>
-  <data name="DescFullPixels" xml:space="preserve">
-    <value>對應 MaxAngle 的像素半徑...</value>
-  </data>
-  <data name="PropConoscopeCoeff" xml:space="preserve">
-    <value>ConoscopeCoefficient(度/像素)</value>
-  </data>
-  <data name="DescConoscopeCoeff" xml:space="preserve">
-    <value>可直接輸入 60/3100 這類小數...</value>
-  </data>
   <data name="TipEnterAzimuth" xml:space="preserve">
     <value>輸入方位角並回車應用</value>
   </data>
   <data name="TipEnterPolarAngle" xml:space="preserve">
     <value>輸入 0-{0} 的極角並回車應用</value>
-  </data>
-  <data name="MsgChannelSwitched" xml:space="preserve">
-    <value>已切換顯示通道: {0}</value>
-  </data>
-  <data name="MsgRefModeSwitchedAzimuth" xml:space="preserve">
-    <value>已切換到方位角直線</value>
-  </data>
-  <data name="MsgRefModeSwitchedPolar" xml:space="preserve">
-    <value>已切換到極角圓</value>
-  </data>
-  <data name="MsgExportChannelSwitched" xml:space="preserve">
-    <value>已切換匯出通道: {0}</value>
-  </data>
-  <data name="MsgRefAzimuthSet" xml:space="preserve">
-    <value>已設定參考方位角: {0}°</value>
-  </data>
-  <data name="MsgRefPolarSet" xml:space="preserve">
-    <value>已設定參考極角: {0}°</value>
   </data>
   <data name="SlotWhite" xml:space="preserve">
     <value>白</value>
@@ -1421,19 +826,10 @@
   <data name="SlotBlack" xml:space="preserve">
     <value>黑</value>
   </data>
-  <data name="MsgRecordedSlot" xml:space="preserve">
-    <value>已記錄 {0}</value>
-  </data>
   <data name="MsgSlotRecordedDetail" xml:space="preserve">
     <value>{0} 已記錄
 來源: {1}
 數量: {2}</value>
-  </data>
-  <data name="MsgRecordedRGamut" xml:space="preserve">
-    <value>已記錄 R 關注點資料</value>
-  </data>
-  <data name="MsgClearedGamut" xml:space="preserve">
-    <value>已清空色域記錄</value>
   </data>
   <data name="MsgNeedRGBData" xml:space="preserve">
     <value>請先記錄或匯入 R/G/B 三組資料。</value>
@@ -1441,71 +837,14 @@
   <data name="MsgSelectGamutStandard" xml:space="preserve">
     <value>請選擇色域標準。</value>
   </data>
-  <data name="MsgGamutComputed" xml:space="preserve">
-    <value>已完成 {0} 色域計算</value>
-  </data>
-  <data name="MsgGamutFailed" xml:space="preserve">
-    <value>色域計算失敗</value>
-  </data>
-  <data name="MsgRecordedWhite" xml:space="preserve">
-    <value>已記錄白場關注點資料</value>
-  </data>
-  <data name="MsgRecordedBlack" xml:space="preserve">
-    <value>已記錄黑場關注點資料</value>
-  </data>
-  <data name="MsgClearedContrast" xml:space="preserve">
-    <value>已清空對比度記錄</value>
-  </data>
   <data name="MsgNeedWhiteBlackData" xml:space="preserve">
     <value>請先記錄白/黑兩組資料。</value>
-  </data>
-  <data name="MsgContrastComputed" xml:space="preserve">
-    <value>已完成對比度計算</value>
-  </data>
-  <data name="MsgContrastFailed" xml:space="preserve">
-    <value>對比度計算失敗</value>
   </data>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>當前關注點不可用。</value>
   </data>
-  <data name="MsgLineTooShort" xml:space="preserve">
-    <value>線長度太短 ({0} 像素)，無法採樣</value>
-  </data>
-  <data name="MsgAzimuthSamplingDone" xml:space="preserve">
-    <value>完成採樣: 方位角{0}°, 採樣點數{1}</value>
-  </data>
-  <data name="MsgPolarSamplingDone" xml:space="preserve">
-    <value>完成採樣: 極角半徑角度{0}°, 採樣點數{1}</value>
-  </data>
-  <data name="TitleAzimuthCurve" xml:space="preserve">
-    <value>方位角 {0}° {1}分佈曲線</value>
-  </data>
-  <data name="LabelAngleDeg" xml:space="preserve">
-    <value>角度 (°)</value>
-  </data>
-  <data name="TitlePolarCurve" xml:space="preserve">
-    <value>極角 {0}° {1}圓周分佈曲線</value>
-  </data>
-  <data name="LabelCircularAngleDeg" xml:space="preserve">
-    <value>圓周角度 (°)</value>
-  </data>
-  <data name="LabelRadius" xml:space="preserve">
-    <value>半徑: {0}</value>
-  </data>
   <data name="MsgBaseCenter50px" xml:space="preserve">
     <value>基準: 當前影像中心直徑 50px 關注點平均 uv</value>
-  </data>
-  <data name="MsgBaseNotSaved" xml:space="preserve">
-    <value>基準: 尚未儲存實測基準圖</value>
-  </data>
-  <data name="MsgBaseImageFile" xml:space="preserve">
-    <value>基準圖: {0}</value>
-  </data>
-  <data name="MsgImageNotLoadedPolar" xml:space="preserve">
-    <value>影像未載入，無法創建極角線</value>
-  </data>
-  <data name="MsgCannotGetImageSource" xml:space="preserve">
-    <value>無法取得影像源</value>
   </data>
   <data name="MsgPolarLineCreateFailed" xml:space="preserve">
     <value>創建極角線失敗: {0}</value>
@@ -1513,41 +852,8 @@
   <data name="FocusPointLabel" xml:space="preserve">
     <value>[關注點] {0} - {1}</value>
   </data>
-  <data name="FilterNone" xml:space="preserve">
-    <value>不過濾</value>
-  </data>
-  <data name="FilterLowPass" xml:space="preserve">
-    <value>低通 核{0}</value>
-  </data>
-  <data name="FilterMean" xml:space="preserve">
-    <value>均值 核{0}</value>
-  </data>
-  <data name="FilterGaussian" xml:space="preserve">
-    <value>高斯 核{0}</value>
-  </data>
-  <data name="FilterMedian" xml:space="preserve">
-    <value>中值 核{0}</value>
-  </data>
-  <data name="FilterBilateral" xml:space="preserve">
-    <value>雙邊 d{0}</value>
-  </data>
-  <data name="FilterDefaultParams" xml:space="preserve">
-    <value>使用預設參數</value>
-  </data>
   <data name="DustLabel" xml:space="preserve">
     <value>灰塵</value>
-  </data>
-  <data name="DustOff" xml:space="preserve">
-    <value>灰塵關閉</value>
-  </data>
-  <data name="DustDarkSpot" xml:space="preserve">
-    <value>暗斑</value>
-  </data>
-  <data name="DustBrightSpot" xml:space="preserve">
-    <value>亮斑</value>
-  </data>
-  <data name="DustBoth" xml:space="preserve">
-    <value>暗斑+亮斑</value>
   </data>
   <data name="TitleGamutCalc" xml:space="preserve">
     <value>色域計算</value>
@@ -1567,50 +873,17 @@
   <data name="TitleHint" xml:space="preserve">
     <value>提示</value>
   </data>
-  <data name="TitleWarning" xml:space="preserve">
-    <value>警告</value>
-  </data>
   <data name="MsgOpenImageFailed" xml:space="preserve">
     <value>開啟Conoscope影像失敗: {0}</value>
-  </data>
-  <data name="MsgOpenImageFailedShort" xml:space="preserve">
-    <value>開啟影像失敗: {0}</value>
   </data>
   <data name="MsgSaveConfigFailedDetail" xml:space="preserve">
     <value>儲存 Conoscope 設定失敗: {0}</value>
   </data>
-  <data name="MsgSaveConfigFailed" xml:space="preserve">
-    <value>儲存設定失敗: {0}</value>
-  </data>
   <data name="MsgLoadImageFirstColorDiff" xml:space="preserve">
     <value>請先載入一張實測圖</value>
   </data>
-  <data name="MsgComputeColorDiffFailed" xml:space="preserve">
-    <value>儲存色差基準圖失敗: {0}</value>
-  </data>
-  <data name="MsgFocusPointNotReadyCalc" xml:space="preserve">
-    <value>請先在當前視圖中繪製關注點圓。</value>
-  </data>
-  <data name="MsgFocusPointNotReady2" xml:space="preserve">
-    <value>當前影像尚未準備好關注點計算。</value>
-  </data>
   <data name="MsgNoFocusPointPixelsCalc" xml:space="preserve">
     <value>沒有可用於計算的關注點像素。</value>
-  </data>
-  <data name="HelpCenterTitle" xml:space="preserve">
-    <value>Conoscope 幫助中心</value>
-  </data>
-  <data name="HelpTitleWithVersion" xml:space="preserve">
-    <value>Conoscope 幫助  v{0}</value>
-  </data>
-  <data name="UnknownVersion" xml:space="preserve">
-    <value>未知版本</value>
-  </data>
-  <data name="ItemCountFormat" xml:space="preserve">
-    <value>共 {0} / {1} 條</value>
-  </data>
-  <data name="NoContentToDisplay" xml:space="preserve">
-    <value>沒有可顯示的內容。</value>
   </data>
   <data name="TestAreaWaitingForImage" xml:space="preserve">
     <value>測試區域: {0} mm | 等待影像</value>
@@ -1633,101 +906,8 @@
   <data name="ReferenceCurve" xml:space="preserve">
     <value>參考曲線 (Reference Distribution)</value>
   </data>
-  <data name="FieldOfView" xml:space="preserve">
-    <value>視場</value>
-  </data>
-  <data name="FOVAngleDegrees" xml:space="preserve">
-    <value>視場角(度)</value>
-  </data>
-  <data name="FOVAngleDesc" xml:space="preserve">
-    <value>設計視場角。分析半徑 = 視場角 * 生效視場係數。</value>
-  </data>
-  <data name="FullPixelCount" xml:space="preserve">
-    <value>完整像素數(px)</value>
-  </data>
-  <data name="FullPixelCountDesc" xml:space="preserve">
-    <value>對應 MaxAngle 的像素半徑，也就是從圓心到最外圈的完整像素數。填 0 使用影像短邊一半。輸入 3000 時，ConoscopeCoefficient 按 視場角 / 3000 計算。</value>
-  </data>
-  <data name="ConoscopeCoeffDegPerPx" xml:space="preserve">
-    <value>ConoscopeCoefficient(度/像素)</value>
-  </data>
-  <data name="ConoscopeCoeffDesc" xml:space="preserve">
-    <value>可直接輸入 60/3100 這類小數。填 0 表示按完整像素數自動計算。分析半徑 = 視場角 / 該系數。</value>
-  </data>
   <data name="XYZDataNotLoaded" xml:space="preserve">
     <value>XYZ 資料未載入</value>
-  </data>
-  <data name="ConfigDisplay" xml:space="preserve">
-    <value>顯示</value>
-  </data>
-  <data name="ConfigDisplayChannel" xml:space="preserve">
-    <value>顯示通道</value>
-  </data>
-  <data name="ConfigPseudoColorMapping" xml:space="preserve">
-    <value>偽彩色映射</value>
-  </data>
-  <data name="ConfigUsePseudoColor" xml:space="preserve">
-    <value>使用偽彩色</value>
-  </data>
-  <data name="ConfigExport" xml:space="preserve">
-    <value>匯出</value>
-  </data>
-  <data name="ConfigSamplingIntervalDeg" xml:space="preserve">
-    <value>當前曲線採樣間隔(度)</value>
-  </data>
-  <data name="ConfigSamplingIntervalDesc" xml:space="preserve">
-    <value>當前曲線 CSV 匯出的預設採樣間隔。</value>
-  </data>
-  <data name="ConfigExportMetadata" xml:space="preserve">
-    <value>當前曲線匯出中繼資料</value>
-  </data>
-  <data name="ConfigExportMetadataDesc" xml:space="preserve">
-    <value>是否在當前曲線 CSV 頂部寫入標題和中繼資料。</value>
-  </data>
-  <data name="PleaseSelectRGBImages" xml:space="preserve">
-    <value>請選擇 R/G/B 三張圖後計算色域</value>
-  </data>
-  <data name="SelectRImage" xml:space="preserve">
-    <value>選擇 R 圖</value>
-  </data>
-  <data name="SelectGImage" xml:space="preserve">
-    <value>選擇 G 圖</value>
-  </data>
-  <data name="SelectBImage" xml:space="preserve">
-    <value>選擇 B 圖</value>
-  </data>
-  <data name="CVCIEFileFilter" xml:space="preserve">
-    <value>CVCIE 文件|*.cvcie|所有文件|*.*</value>
-  </data>
-  <data name="FileRead" xml:space="preserve">
-    <value>已讀取 {0}</value>
-  </data>
-  <data name="RGBColorGamutCalc" xml:space="preserve">
-    <value>RGB 色域計算</value>
-  </data>
-  <data name="NoActiveConoscopeView" xml:space="preserve">
-    <value>目前沒有活動的 Conoscope 視圖。</value>
-  </data>
-  <data name="CurrentFocusPointUnavailable" xml:space="preserve">
-    <value>當前關注點不可用。</value>
-  </data>
-  <data name="FocusPointRecorded" xml:space="preserve">
-    <value>已記錄 {0} 關注點: {1}</value>
-  </data>
-  <data name="PleaseSelectRGBFirst" xml:space="preserve">
-    <value>請先選擇 R/G/B 三張圖</value>
-  </data>
-  <data name="PleaseSelectGamutStandard" xml:space="preserve">
-    <value>請選擇色域標準</value>
-  </data>
-  <data name="SampleAreaFormat" xml:space="preserve">
-    <value>樣本面積={0}，{1} 標準面積={2}</value>
-  </data>
-  <data name="CalculationCompleteByStandard" xml:space="preserve">
-    <value>按 {0} 標準計算完成</value>
-  </data>
-  <data name="ChromaticityLuminanceFormat" xml:space="preserve">
-    <value>x={0}, y={1}, Y={2}  ({3})</value>
   </data>
   <data name="ChromaticityFormat" xml:space="preserve">
     <value>x={0}, y={1}</value>
@@ -1738,41 +918,11 @@
   <data name="Measured" xml:space="preserve">
     <value>實測 {0}</value>
   </data>
-  <data name="ContrastTestTitle" xml:space="preserve">
-    <value>對比度測試</value>
-  </data>
-  <data name="SlotRecorded" xml:space="preserve">
-    <value>已記錄 {0}: {1}</value>
-  </data>
-  <data name="WhiteBlackLuminanceFormat" xml:space="preserve">
-    <value>白亮度 / 黑亮度 = {0} / {1}</value>
-  </data>
-  <data name="WhiteImageNotSelected" xml:space="preserve">
-    <value>白圖: 未選擇</value>
-  </data>
-  <data name="BlackImageNotSelected" xml:space="preserve">
-    <value>黑圖: 未選擇</value>
-  </data>
-  <data name="WhiteImageFormat" xml:space="preserve">
-    <value>白圖: x={0}, y={1}</value>
-  </data>
-  <data name="BlackImageFormat" xml:space="preserve">
-    <value>黑圖: x={0}, y={1}</value>
-  </data>
-  <data name="LuminanceFileNameFormat" xml:space="preserve">
-    <value>Y={0}  ({1})</value>
-  </data>
   <data name="FocusPointCountAndAverageContrast" xml:space="preserve">
     <value>共 {0} 個關注點，平均對比度 {1}:1，最小 {2}:1，最大 {3}:1</value>
   </data>
   <data name="PleaseSelectCVCIEFile" xml:space="preserve">
     <value>請選擇 CVCIE XYZ 影像文件</value>
-  </data>
-  <data name="CVCIEChannelCountInsufficient" xml:space="preserve">
-    <value>CVCIE 文件通道數不足: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficient" xml:space="preserve">
-    <value>CVCIE 文件資料長度不足，無法拆分 XYZ 通道</value>
   </data>
   <data name="Invalid" xml:space="preserve">
     <value>無效</value>
@@ -1788,18 +938,6 @@
   </data>
   <data name="FocusPointMismatchError" xml:space="preserve">
     <value>多組關注點之間沒有可對應的編號，請在同一套關注點下記錄 R/G/B 或白/黑 資料。</value>
-  </data>
-  <data name="OnlyCVCIESupported" xml:space="preserve">
-    <value>當前視圖僅支持 CVCIE XYZ 影像文件</value>
-  </data>
-  <data name="ReadCVCIEFailed" xml:space="preserve">
-    <value>讀取 CVCIE 文件失敗</value>
-  </data>
-  <data name="CVCIEChannelInsufficientLoader" xml:space="preserve">
-    <value>CVCIE 文件通道數不足: {0}</value>
-  </data>
-  <data name="CVCIEDataLengthInsufficientLoader" xml:space="preserve">
-    <value>CVCIE 文件資料長度不足，無法拆分 XYZ 通道</value>
   </data>
   <data name="ColorDiffNeedsUVRef" xml:space="preserve">
     <value>色差通道需要指定 uv 基準</value>
@@ -1825,130 +963,257 @@
   <data name="FocusPointYUV" xml:space="preserve">
     <value>Y:{0}  u:{1}  v:{2}</value>
   </data>
-  <data name="PleaseSelectWhiteBlackImages" xml:space="preserve">
-    <value>請選擇白圖和黑圖後計算對比度</value>
+  <data name="GroupColorDifference" xml:space="preserve">
+    <value>色差</value>
   </data>
-  <data name="SelectWhiteImage" xml:space="preserve">
-    <value>選擇白圖</value>
+  <data name="ChannelContrast" xml:space="preserve">
+    <value>對比度</value>
   </data>
-  <data name="SelectBlackImage" xml:space="preserve">
-    <value>選擇黑圖</value>
+  <data name="BtnReapply" xml:space="preserve">
+    <value>重新套用</value>
   </data>
-  <data name="WhitePoint" xml:space="preserve">
-    <value>白點</value>
+  <data name="BtnBlackReference" xml:space="preserve">
+    <value>黑基準</value>
   </data>
-  <data name="BlackPoint" xml:space="preserve">
-    <value>黑點</value>
+  <data name="BtnWhiteReference" xml:space="preserve">
+    <value>白基準</value>
   </data>
-  <data name="PleaseSelectWhiteBlackFirst" xml:space="preserve">
-    <value>請先選擇白圖和黑圖</value>
+  <data name="BtnColorDifferenceReference" xml:space="preserve">
+    <value>色差基準</value>
   </data>
-  <data name="HelpTitleQuickStart" xml:space="preserve">
-    <value>快速開始：從開啟影像到取得結果</value>
+  <data name="TipOnlyShowCs200Devices" xml:space="preserve">
+    <value>啟用後，觀察相機清單只顯示型號中包含 CS200 的裝置。</value>
   </data>
-  <data name="HelpSummaryQuickStart" xml:space="preserve">
-    <value>第一次使用 Conoscope 時，建議依照 首頁 -&gt; 關注點 -&gt; 分析結果視窗 的順序操作。</value>
+  <data name="TipSelectedFocusPoint" xml:space="preserve">
+    <value>目前選取的關注點</value>
   </data>
-  <data name="HelpTitleCaptureWorkflow" xml:space="preserve">
-    <value>採集與視圖管理操作流程</value>
+  <data name="TipFocusPoiTemplate" xml:space="preserve">
+    <value>關注點 POI 模板</value>
   </data>
-  <data name="HelpSummaryCaptureWorkflow" xml:space="preserve">
-    <value>採集頁負責流程模板、測量相機與 ND / 校正的綁定，結果預設會回到目前的活動視圖。</value>
+  <data name="TipSaveFocusPoiTemplate" xml:space="preserve">
+    <value>將目前關注點儲存到 POI 模板</value>
   </data>
-  <data name="HelpTitlePreprocessWorkflow" xml:space="preserve">
-    <value>預處理與偽彩顯示操作流程</value>
+  <data name="TipManageFocusPoiTemplate" xml:space="preserve">
+    <value>管理 POI 模板</value>
   </data>
-  <data name="HelpSummaryPreprocessWorkflow" xml:space="preserve">
-    <value>預處理頁集中管理是否啟用、濾波類型、偽彩顯示、完整參數設定，以及套用到目前視圖。</value>
+  <data name="TbCircleFitTip" xml:space="preserve">
+    <value>依有效圓區適應</value>
   </data>
-  <data name="HelpTitleFocusReferenceWorkflow" xml:space="preserve">
-    <value>關注點圓、參考線與極角圓操作流程</value>
+  <data name="TipGlobalContrastReferenceSaved" xml:space="preserve">
+    <value>目前全域{0}基準: {1}，再次點擊可清除</value>
   </data>
-  <data name="HelpSummaryFocusReferenceWorkflow" xml:space="preserve">
-    <value>關注點圓可在影像上方工具列建立；參考模式既可在首頁調整，也能在視圖右側面板中精調。</value>
+  <data name="TipSaveGlobalContrastReference" xml:space="preserve">
+    <value>將目前視圖儲存為全域{0}基準</value>
   </data>
-  <data name="HelpTitleGamutWorkflow" xml:space="preserve">
-    <value>綜合色域計算操作流程</value>
+  <data name="TipGlobalColorDifferenceReferenceSaved" xml:space="preserve">
+    <value>目前全域色差基準圖: {0}，再次點擊可清除</value>
   </data>
-  <data name="HelpSummaryGamutWorkflow" xml:space="preserve">
-    <value>綜合色域目前由主 Ribbon 統一記錄 R/G/B 關注點批次，之後再彈出獨立結果視窗顯示。</value>
+  <data name="TipSaveGlobalColorDifferenceReference" xml:space="preserve">
+    <value>將目前視圖儲存為全域色差基準圖</value>
   </data>
-  <data name="HelpTitleContrastWorkflow" xml:space="preserve">
-    <value>黑白對比度計算操作流程</value>
+  <data name="ChkOnlyShowCs200Devices" xml:space="preserve">
+    <value>僅顯示 CS200 裝置</value>
   </data>
-  <data name="HelpSummaryContrastWorkflow" xml:space="preserve">
-    <value>黑白對比度與綜合色域相同，先記錄關注點批次，再於獨立結果視窗中查看各點的比值。</value>
+  <data name="ChkEnableFilter" xml:space="preserve">
+    <value>啟用濾波</value>
   </data>
-  <data name="HelpTitleVisualizationWorkflow" xml:space="preserve">
-    <value>CIE、3D、曲線與匯出操作流程</value>
+  <data name="StateSaved" xml:space="preserve">
+    <value>已儲存</value>
   </data>
-  <data name="HelpSummaryVisualizationWorkflow" xml:space="preserve">
-    <value>CIE 與 3D 是目前活動視圖的視覺化工具；曲線與匯出可將資料儲存為 CSV。</value>
+  <data name="LabelCurrentImage" xml:space="preserve">
+    <value>目前影像</value>
   </data>
-  <data name="HelpTitleFocusPrinciple" xml:space="preserve">
-    <value>關注點取樣原理</value>
+  <data name="ContrastImageBlack" xml:space="preserve">
+    <value>暗圖</value>
   </data>
-  <data name="HelpSummaryFocusPrinciple" xml:space="preserve">
-    <value>Conoscope 以圓形 ROI 在 XYZ 資料上取平均值，取得該點的色度座標。</value>
+  <data name="ContrastImageWhite" xml:space="preserve">
+    <value>亮圖</value>
   </data>
-  <data name="HelpTitleGamutPrinciple" xml:space="preserve">
-    <value>綜合色域計算原理</value>
+  <data name="ContrastReferenceBlackField" xml:space="preserve">
+    <value>黑場</value>
   </data>
-  <data name="HelpSummaryGamutPrinciple" xml:space="preserve">
-    <value>目前的實作會將每個關注點的 R/G/B 色度座標轉成三角形，再與標準色域求交並比較。</value>
+  <data name="ContrastReferenceWhiteField" xml:space="preserve">
+    <value>白場</value>
   </data>
-  <data name="HelpTitleContrastPrinciple" xml:space="preserve">
-    <value>黑白對比度計算原理</value>
+  <data name="MsgOriginalDataRestored" xml:space="preserve">
+    <value>已還原原始資料</value>
   </data>
-  <data name="HelpSummaryContrastPrinciple" xml:space="preserve">
-    <value>目前的實作直接使用白場 Y / 黑場 Y，且黑場亮度必須大於 0。</value>
+  <data name="MsgPreprocessFailedDetail" xml:space="preserve">
+    <value>套用前處理失敗: {0}</value>
   </data>
-  <data name="HelpTitleCurvePrinciple" xml:space="preserve">
-    <value>參考曲線與匯出原理</value>
+  <data name="MsgPreprocessConfigSaveFailedDetail" xml:space="preserve">
+    <value>儲存前處理設定失敗: {0}</value>
   </data>
-  <data name="HelpSummaryCurvePrinciple" xml:space="preserve">
-    <value>方位角模式沿直徑取樣，極角模式沿固定半徑圓周取樣，匯出通道由使用者勾選決定。</value>
+  <data name="MsgFocusPoiTemplateSaved" xml:space="preserve">
+    <value>已將關注點儲存到 POI 模板: {0}</value>
   </data>
-  <data name="HelpTitleVisualizationPrinciple" xml:space="preserve">
-    <value>CIE 與 3D 視覺化原理</value>
+  <data name="MsgFocusPoiTemplateSaveRequiresDatabase" xml:space="preserve">
+    <value>資料庫未連線，無法儲存 POI 模板。</value>
   </data>
-  <data name="HelpSummaryVisualizationPrinciple" xml:space="preserve">
-    <value>3D 會使用目前顯示通道產生高度圖；CIE 提供目前視圖查看與結果視窗彙整兩種模式。</value>
+  <data name="MsgFocusPoiTemplateCreateFailed" xml:space="preserve">
+    <value>建立 POI 模板失敗。</value>
   </data>
-  <data name="HelpTitleActiveViewTerm" xml:space="preserve">
-    <value>活動視圖</value>
+  <data name="MsgFocusPoiTemplateSaveFailedCheckLog" xml:space="preserve">
+    <value>儲存失敗，請查看日誌取得詳細資訊。</value>
   </data>
-  <data name="HelpSummaryActiveViewTerm" xml:space="preserve">
-    <value>目前活動視圖就是目前選取的影像分頁；首頁與分析頁籤的許多按鈕預設都會作用於它。</value>
+  <data name="MsgFocusPoiTemplateSaveFailedDetail" xml:space="preserve">
+    <value>儲存失敗: {0}</value>
   </data>
-  <data name="HelpTitleFocusBatchTerm" xml:space="preserve">
-    <value>關注點與關注點批次</value>
+  <data name="TitleFocusPointPolarEditor" xml:space="preserve">
+    <value>關注點極座標編輯</value>
   </data>
-  <data name="HelpSummaryFocusBatchTerm" xml:space="preserve">
-    <value>一個關注點是一個圓形取樣區；一個關注點批次則是目前視圖上所有關注點的一次快照記錄。</value>
+  <data name="MsgImageViewFilePathUnavailable" xml:space="preserve">
+    <value>目前的 ImageView 沒有關聯的檔案路徑</value>
   </data>
-  <data name="HelpTitleCoordinateTerm" xml:space="preserve">
-    <value>方位角、極角與半徑角</value>
+  <data name="StatusImageSize" xml:space="preserve">
+    <value>影像尺寸</value>
   </data>
-  <data name="HelpSummaryCoordinateTerm" xml:space="preserve">
-    <value>方位角決定方向，極角圓決定離中心的距離，半徑角則描述關注點圓本身的顯示大小。</value>
+  <data name="StatusFileType" xml:space="preserve">
+    <value>檔案類型</value>
   </data>
-  <data name="HelpTitleChannelTerm" xml:space="preserve">
-    <value>顯示通道與 CIE x/y/u/v</value>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>系統</value>
   </data>
-  <data name="HelpSummaryChannelTerm" xml:space="preserve">
-    <value>X/Y/Z 是基本三刺激值，x/y/u/v 是綜合色度座標；偽彩與匯出皆可依通道選擇。</value>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>淺色</value>
   </data>
-  <data name="HelpTitleGamutCoverageTerm" xml:space="preserve">
-    <value>樣本面積、標準面積與覆蓋率</value>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>深色</value>
   </data>
-  <data name="HelpSummaryGamutCoverageTerm" xml:space="preserve">
-    <value>目前的覆蓋率是面積比，不是與標準色域求交集後的面積比例。</value>
+  <data name="ThemePink" xml:space="preserve">
+    <value>粉色</value>
   </data>
-  <data name="HelpTitleContrastTerm" xml:space="preserve">
-    <value>白場、黑場與對比度</value>
+  <data name="ThemeCyan" xml:space="preserve">
+    <value>青色</value>
   </data>
-  <data name="HelpSummaryContrastTerm" xml:space="preserve">
-    <value>白場與黑場是同一位置在不同狀態下的亮度比較；對比度直接取白場 Y 除以黑場 Y。</value>
+  <data name="WindowTitleConoscope" xml:space="preserve">
+    <value>Conoscope</value>
+  </data>
+  <data name="WindowTitleConoscopeWithVersion" xml:space="preserve">
+    <value>Conoscope {0}</value>
+  </data>
+  <data name="TabSystem" xml:space="preserve">
+    <value>系統</value>
+  </data>
+  <data name="GroupAnalysisParameters" xml:space="preserve">
+    <value>分析參數</value>
+  </data>
+  <data name="GroupComputeActions" xml:space="preserve">
+    <value>計算動作</value>
+  </data>
+  <data name="GroupThemeAndLanguage" xml:space="preserve">
+    <value>主題與語言</value>
+  </data>
+  <data name="LabelTheme" xml:space="preserve">
+    <value>主題</value>
+  </data>
+  <data name="LabelLanguage" xml:space="preserve">
+    <value>語言</value>
+  </data>
+  <data name="LabelDecimalPlaces" xml:space="preserve">
+    <value>資料小數位數:</value>
+  </data>
+  <data name="TipRangeLimit" xml:space="preserve">
+    <value>啟用後只在有效圓域內做顯示映射；關閉後整圖顯示。</value>
+  </data>
+  <data name="ChkRangeLimit" xml:space="preserve">
+    <value>範圍限制</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4" xml:space="preserve">
+    <value>預設為 4，可調整</value>
+  </data>
+  <data name="HintDecimalPlacesDefault4Saved" xml:space="preserve">
+    <value>預設為 4，可調整並儲存</value>
+  </data>
+  <data name="MsgInvalidDecimalPlaces" xml:space="preserve">
+    <value>小數位數必須是 0-8 之間的整數。</value>
+  </data>
+  <data name="MsgColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>色差通道需要先設定色差基準</value>
+  </data>
+  <data name="MsgContrastReferenceRequired" xml:space="preserve">
+    <value>對比度通道需要先儲存白場或黑場基準</value>
+  </data>
+  <data name="MsgGlobalColorDifferenceReferenceRequired" xml:space="preserve">
+    <value>請先儲存全域色差基準圖</value>
+  </data>
+  <data name="MsgInvalidCustomUvReference" xml:space="preserve">
+    <value>請輸入有效的自訂 u/v 基準座標</value>
+  </data>
+  <data name="MsgNoMeasurementDataToAlign" xml:space="preserve">
+    <value>沒有可對齊的測量資料</value>
+  </data>
+  <data name="MsgEmptyMeasurementDataCannotAlignFocusPoints" xml:space="preserve">
+    <value>存在空的測量資料，無法對齊關注點</value>
+  </data>
+  <data name="StateNotSaved" xml:space="preserve">
+    <value>未儲存</value>
+  </data>
+  <data name="MsgContrastReferenceMissingStatus" xml:space="preserve">
+    <value>當前{0}缺少{1}基準。</value>
+  </data>
+  <data name="MsgContrastReferenceSizeMismatchStatus" xml:space="preserve">
+    <value>當前{0}對應的{1}基準尺寸與目前影像不一致。</value>
+  </data>
+  <data name="MsgContrastReferenceUsingStatus" xml:space="preserve">
+    <value>當前{0}將使用{1}基準。</value>
+  </data>
+  <data name="MsgContrastReferenceSummary" xml:space="preserve">
+    <value>{0}
+{1}: {2}
+{3}: {4}</value>
+  </data>
+  <data name="MsgSaveContrastReferenceRequired" xml:space="preserve">
+    <value>請先儲存{0}基準圖</value>
+  </data>
+  <data name="MsgContrastReferenceImageSizeMismatch" xml:space="preserve">
+    <value>{0}基準圖尺寸與目前影像不一致，請重新儲存基準圖</value>
+  </data>
+  <data name="MsgFocusPointDisplayInfoNotFound" xml:space="preserve">
+    <value>未找到關注點 {0} 的顯示資訊。</value>
+  </data>
+  <data name="MsgMeasurementCaptureMissingFocusPoint" xml:space="preserve">
+    <value>{0} 資料中缺少關注點 {1}。
+來源: {2}</value>
+  </data>
+<data name="Conoscope_AllFocusPoints" xml:space="preserve"><value>All Focus Points</value></data><data name="Conoscope_AngleDegrees" xml:space="preserve"><value>Angle (°)</value></data><data name="Conoscope_CalculateAllFocusPoints" xml:space="preserve"><value>Calculate All Focus Points</value></data><data name="Conoscope_CalculateFocusPoint" xml:space="preserve"><value>Calculate Focus Point: {0}</value></data><data name="Conoscope_CircleAngleDegrees" xml:space="preserve"><value>Circle Angle (°)</value></data><data name="Conoscope_CircleDistributionTitle" xml:space="preserve"><value>Polar {0}° {1} Circle Distribution</value></data><data name="Conoscope_ClearAllFocusPoints" xml:space="preserve"><value>Clear All Focus Points</value></data><data name="Conoscope_ClearFocusPoint" xml:space="preserve"><value>Clear Focus Point</value></data><data name="Conoscope_ContrastChannel" xml:space="preserve"><value>Contrast</value></data><data name="Conoscope_ContrastNeedsReference" xml:space="preserve"><value>Contrast channel requires saving white or black field reference first</value></data><data name="Conoscope_ContrastReferenceImage" xml:space="preserve"><value>Contrast Reference Image</value></data><data name="Conoscope_CustomUv" xml:space="preserve"><value>Custom: u={0:F4}, v={1:F4}</value></data><data name="Conoscope_CvcieFileFilter" xml:space="preserve"><value>CVCIE Files (*.cvcie)|*.cvcie</value></data><data name="Conoscope_EditByAngleLength" xml:space="preserve"><value>Edit by Angle/Length...</value></data><data name="Conoscope_FocusPointInfo" xml:space="preserve"><value>{0}  Azimuth {1:F2}°  Polar {2:F2}°  R {3:F1}px/{4:F2}°</value></data><data name="Conoscope_FocusPointTemplateName" xml:space="preserve"><value>ConoscopeFocusPoint_{0}</value></data><data name="Conoscope_GlobalReference" xml:space="preserve"><value>Global Reference: {0}</value></data><data name="Conoscope_NoGlobalReference" xml:space="preserve"><value>No Global Color Difference Reference Saved</value></data><data name="Conoscope_OverallAverage" xml:space="preserve"><value>Overall Average</value></data><data name="Conoscope_PolarDistributionTitle" xml:space="preserve"><value>Azimuth {0}° {1} Distribution</value></data><data name="Conoscope_SaveGlobalReference" xml:space="preserve"><value>Save Global Reference</value></data><data name="Conoscope_ScaleCoefficientNotConfigured" xml:space="preserve"><value>Observation camera scale coefficient not configured</value></data><data name="Conoscope_TestAreaNotDisplayed" xml:space="preserve"><value>Test area not displayed</value></data><data name="Conoscope_UpdateGlobalReference" xml:space="preserve"><value>Update Global Reference</value></data><data name="Conoscope_VReferenceImage" xml:space="preserve"><value>v Reference Image</value></data><data name="Conoscope_TestAreaSizeInvalid" xml:space="preserve"><value>Test area size is invalid</value></data><data name="Con_Category_FOV" xml:space="preserve"><value>視場</value></data><data name="Con_Category_FocusPoint" xml:space="preserve"><value>關注點</value></data><data name="Con_Category_Position" xml:space="preserve"><value>位置</value></data><data name="Con_Category_Size" xml:space="preserve"><value>大小</value></data><data name="Con_Category_CoordAxis" xml:space="preserve"><value>坐標軸</value></data><data name="Con_Category_RefLine" xml:space="preserve"><value>參考線</value></data><data name="Con_Category_Mask" xml:space="preserve"><value>遮罩</value></data><data name="Con_Category_Text" xml:space="preserve"><value>文字</value></data><data name="Con_Category_Display" xml:space="preserve"><value>顯示</value></data><data name="Con_Category_Export" xml:space="preserve"><value>導出</value></data><data name="Con_Category_Preprocess" xml:space="preserve"><value>預處理</value></data><data name="Con_Category_Filter" xml:space="preserve"><value>濾波</value></data><data name="Con_Category_Dust" xml:space="preserve"><value>灰塵濾除</value></data><data name="Con_Category_Model" xml:space="preserve"><value>型號</value></data><data name="Con_Category_ObserveCam" xml:space="preserve"><value>觀察相機</value></data><data name="Con_FOV_Angle" xml:space="preserve"><value>視場角(度)</value></data><data name="Con_FOV_Pixels" xml:space="preserve"><value>完整像素數(px)</value></data><data name="Con_FOV_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(度/像素)</value></data><data name="Con_FP_Name" xml:space="preserve"><value>名稱</value></data><data name="Con_FP_Azimuth" xml:space="preserve"><value>方位角(°)</value></data><data name="Con_FP_Polar" xml:space="preserve"><value>極角(°)</value></data><data name="Con_FP_Distance" xml:space="preserve"><value>距離(px)</value></data><data name="Con_FP_RadiusPx" xml:space="preserve"><value>半徑(px)</value></data><data name="Con_FP_RadiusDeg" xml:space="preserve"><value>半徑(°)</value></data><data name="Con_Axis_EnableInteract" xml:space="preserve"><value>啟用交互</value></data><data name="Con_Axis_MaxAngle" xml:space="preserve"><value>最大角度</value></data><data name="Con_Axis_CenterX" xml:space="preserve"><value>圓心X</value></data><data name="Con_Axis_CenterY" xml:space="preserve"><value>圓心Y</value></data><data name="Con_Axis_Radius" xml:space="preserve"><value>坐標半徑</value></data><data name="Con_Axis_AzimuthStep" xml:space="preserve"><value>方位角步進</value></data><data name="Con_Axis_PolarStep" xml:space="preserve"><value>極角步進</value></data><data name="Con_Axis_LineWidth" xml:space="preserve"><value>線寬</value></data><data name="Con_Axis_Color" xml:space="preserve"><value>坐標軸顏色</value></data><data name="Con_Axis_RefMode" xml:space="preserve"><value>參考模式</value></data><data name="Con_Axis_RefAzimuth" xml:space="preserve"><value>參考方位角</value></data><data name="Con_Axis_RefPolar" xml:space="preserve"><value>參考極角</value></data><data name="Con_Axis_RefLineWidth" xml:space="preserve"><value>參考線寬</value></data><data name="Con_Axis_RefColor" xml:space="preserve"><value>參考線顏色</value></data><data name="Con_Axis_ShowMask" xml:space="preserve"><value>顯示遮罩</value></data><data name="Con_Axis_MaskOpacity" xml:space="preserve"><value>遮罩不透明度(0-255)</value></data><data name="Con_Axis_MaskColor" xml:space="preserve"><value>遮罩顏色</value></data><data name="Con_Axis_ShowText" xml:space="preserve"><value>顯示文字</value></data><data name="Con_Axis_TextSize" xml:space="preserve"><value>文字大小</value></data><data name="Con_Axis_TextColor" xml:space="preserve"><value>文字顏色</value></data><data name="Con_Axis_AzimuthLine" xml:space="preserve"><value>方位角直線</value></data><data name="Con_Axis_PolarCircle" xml:space="preserve"><value>極角圓</value></data><data name="Con_Cfg_DisplayChannel" xml:space="preserve"><value>顯示通道</value></data><data name="Con_Cfg_PseudoColor" xml:space="preserve"><value>偽彩色映射</value></data><data name="Con_Cfg_UsePseudoColor" xml:space="preserve"><value>使用偽彩色</value></data><data name="Con_Cfg_SampleInterval" xml:space="preserve"><value>當前曲線採樣間隔(度)</value></data><data name="Con_Cfg_ExportMetadata" xml:space="preserve"><value>當前曲線導出元數據</value></data><data name="Con_Cfg_Decimals" xml:space="preserve"><value>導出數據小數位數</value></data><data name="Con_Cfg_FixNonPositiveXYZ" xml:space="preserve"><value>載入時修正非正 XYZ</value></data><data name="Con_Cfg_FilterType" xml:space="preserve"><value>濾波類型</value></data><data name="Con_Cfg_KernelSize" xml:space="preserve"><value>核大小</value></data><data name="Con_Cfg_GaussianSigma" xml:space="preserve"><value>高斯 Sigma</value></data><data name="Con_Cfg_BilateralD" xml:space="preserve"><value>雙邊 d</value></data><data name="Con_Cfg_BilateralSigmaColor" xml:space="preserve"><value>雙邊 SigmaColor</value></data><data name="Con_Cfg_BilateralSigmaSpace" xml:space="preserve"><value>雙邊 SigmaSpace</value></data><data name="Con_Cfg_EnableDust" xml:space="preserve"><value>啟用灰塵濾除</value></data><data name="Con_Cfg_DustType" xml:space="preserve"><value>灰塵類型</value></data><data name="Con_Cfg_DetectThreshold" xml:space="preserve"><value>檢測閾值(%)</value></data><data name="Con_Cfg_MinArea" xml:space="preserve"><value>最小面積(px)</value></data><data name="Con_Cfg_MaxArea" xml:space="preserve"><value>最大面積(px)</value></data><data name="Con_Cfg_RepairRadius" xml:space="preserve"><value>修復半徑(px)</value></data><data name="Con_Model_FOV" xml:space="preserve"><value>視場角(度)</value></data><data name="Con_Model_Pixels" xml:space="preserve"><value>完整像素數(px)</value></data><data name="Con_Model_Coefficient" xml:space="preserve"><value>ConoscopeCoefficient(度/像素)</value></data><data name="Con_Model_EnableObsCam" xml:space="preserve"><value>啟用觀察相機</value></data><data name="Con_Model_SizeCoeff" xml:space="preserve"><value>尺寸係數(mm/像素)</value></data><data name="Con_Model_CenterX" xml:space="preserve"><value>中心點X(像素)</value></data><data name="Con_Model_CenterY" xml:space="preserve"><value>中心點Y(像素)</value></data>
+  <data name="MsgPolarExportSuccess" xml:space="preserve">
+    <value>極角 {0}° 導出成功</value>
+  </data>
+  <data name="MsgNoFixedLightSource" xml:space="preserve">
+    <value>當前色差基準不是固定光源</value>
+  </data>
+  <data name="MsgInvalidCustomUV" xml:space="preserve">
+    <value>請輸入有效的自定義 u/v 基準座標</value>
+  </data>
+  <data name="MsgMeasuredBaseNeedsSave" xml:space="preserve">
+    <value>實測基準圖需要保存基準圖後逐點計算</value>
+  </data>
+  <data name="MsgNoPixelsInCenter" xml:space="preserve">
+    <value>圖像中心 50px 關注點內沒有可用像素</value>
+  </data>
+  <data name="MsgImageSizeMismatch" xml:space="preserve">
+    <value>當前圖像尺寸與色差基準圖不一致，無法逐點計算</value>
+  </data>
+  <data name="MsgFocusPointNotReady" xml:space="preserve">
+    <value>當前圖像尚未準備好關注點計算。</value>
+  </data>
+  <data name="MsgDrawFocusPointsFirst" xml:space="preserve">
+    <value>請先繪製關注點圓。</value>
+  </data>
+  <data name="MsgFocusPointNoPixels" xml:space="preserve">
+    <value>{0} 沒有可用像素。</value>
+  </data>
+  <data name="Msg3DViewNotReady" xml:space="preserve">
+    <value>當前圖像尚未準備好 3D 視圖</value>
+  </data>
+  <data name="Msg3DViewOpenFailed" xml:space="preserve">
+    <value>打開 3D 視圖失敗: {0}</value>
+  </data>
+  <data name="TbEditFocusPointTip" xml:space="preserve">
+    <value>開啓後進入關注點工具模式...</value>
+  </data>
+  <data name="TbCircleTip" xml:space="preserve">
+    <value>僅繪製新的關注點圓</value>
   </data>
 </root>

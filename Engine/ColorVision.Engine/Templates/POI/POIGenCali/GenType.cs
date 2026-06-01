@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Templates.POI.POIGenCali
 {
@@ -7,12 +8,12 @@ namespace ColorVision.Engine.Templates.POI.POIGenCali
         /// <summary>
         /// 差值
         /// </summary>
-        [Description("差值")]
+        [Display(Name = "Engine_PG_Difference", ResourceType = typeof(Properties.Resources))]
         Difference,
         /// <summary>
         /// 比例
         /// </summary>
-        [Description("比例")]
+        [Display(Name = "Engine_PG_Ratio", ResourceType = typeof(Properties.Resources))]
         Ratio
     }
 }

@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Media"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         Title="WindowCVCIE" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
@@ -37,8 +38,8 @@
                     Margin="0,1,5,0"
                     Padding="8,2"
                     Height="25"
-                    Content="显示到CIE图"
-                    ToolTip="在 CIE 色度图中显示当前结果点" />
+                    Content="{x:Static properties:Resources.ShowOnCieDiagram}"
+                    ToolTip="{x:Static properties:Resources.ShowOnCieDiagramToolTip}" />
         </StackPanel>
 
         <!-- Statistics Panel -->

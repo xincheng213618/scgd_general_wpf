@@ -178,6 +178,789 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 高级设置 的本地化字符串。
+        /// </summary>
+        public static string Sched_Advanced {
+            get {
+                return ResourceManager.GetString("Sched_Advanced", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全部 的本地化字符串。
+        /// </summary>
+        public static string Sched_All {
+            get {
+                return ResourceManager.GetString("Sched_All", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全部任务 的本地化字符串。
+        /// </summary>
+        public static string Sched_AllTasks {
+            get {
+                return ResourceManager.GetString("Sched_AllTasks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 平均耗时:  的本地化字符串。
+        /// </summary>
+        public static string Sched_AvgTime {
+            get {
+                return ResourceManager.GetString("Sched_AvgTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 日历 的本地化字符串。
+        /// </summary>
+        public static string Sched_Calendar {
+            get {
+                return ResourceManager.GetString("Sched_Calendar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清理90天前记录 的本地化字符串。
+        /// </summary>
+        public static string Sched_Clear90Days {
+            get {
+                return ResourceManager.GetString("Sched_Clear90Days", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清理完成 的本地化字符串。
+        /// </summary>
+        public static string Sched_ClearDone {
+            get {
+                return ResourceManager.GetString("Sched_ClearDone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已清理 {0} 条历史记录 的本地化字符串。
+        /// </summary>
+        public static string Sched_Cleared {
+            get {
+                return ResourceManager.GetString("Sched_Cleared", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定要清理90天前的历史记录吗？ 的本地化字符串。
+        /// </summary>
+        public static string Sched_ConfirmClear90 {
+            get {
+                return ResourceManager.GetString("Sched_ConfirmClear90", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认清理 的本地化字符串。
+        /// </summary>
+        public static string Sched_ConfirmClearTitle {
+            get {
+                return ResourceManager.GetString("Sched_ConfirmClearTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认删除 的本地化字符串。
+        /// </summary>
+        public static string Sched_ConfirmDelete {
+            get {
+                return ResourceManager.GetString("Sched_ConfirmDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建任务失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sched_CreateTaskFailed {
+            get {
+                return ResourceManager.GetString("Sched_CreateTaskFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建触发器失败 的本地化字符串。
+        /// </summary>
+        public static string Sched_CreateTriggerFailed {
+            get {
+                return ResourceManager.GetString("Sched_CreateTriggerFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Cron表达式不能为空 的本地化字符串。
+        /// </summary>
+        public static string Sched_CronEmpty {
+            get {
+                return ResourceManager.GetString("Sched_CronEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 在线Cron表达式生成器 的本地化字符串。
+        /// </summary>
+        public static string Sched_CronGenerator {
+            get {
+                return ResourceManager.GetString("Sched_CronGenerator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Cron表达式不合法 的本地化字符串。
+        /// </summary>
+        public static string Sched_CronInvalid {
+            get {
+                return ResourceManager.GetString("Sched_CronInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除任务 的本地化字符串。
+        /// </summary>
+        public static string Sched_DeleteTask {
+            get {
+                return ResourceManager.GetString("Sched_DeleteTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 详情 的本地化字符串。
+        /// </summary>
+        public static string Sched_Detail {
+            get {
+                return ResourceManager.GetString("Sched_Detail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑任务 的本地化字符串。
+        /// </summary>
+        public static string Sched_EditTask {
+            get {
+                return ResourceManager.GetString("Sched_EditTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 耗时(ms) 的本地化字符串。
+        /// </summary>
+        public static string Sched_ElapsedMs {
+            get {
+                return ResourceManager.GetString("Sched_ElapsedMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 错误 的本地化字符串。
+        /// </summary>
+        public static string Sched_Error {
+            get {
+                return ResourceManager.GetString("Sched_Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 失败 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExecFail {
+            get {
+                return ResourceManager.GetString("Sched_ExecFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行历史 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExecHistory {
+            get {
+                return ResourceManager.GetString("Sched_ExecHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行历史 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExecHistoryMenu {
+            get {
+                return ResourceManager.GetString("Sched_ExecHistoryMenu", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查看所有任务的执行历史记录 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExecHistoryTooltip {
+            get {
+                return ResourceManager.GetString("Sched_ExecHistoryTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 成功 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExecSuccess {
+            get {
+                return ResourceManager.GetString("Sched_ExecSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行时间(ms) 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExecTimeMs {
+            get {
+                return ResourceManager.GetString("Sched_ExecTimeMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出CSV 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExportCsv {
+            get {
+                return ResourceManager.GetString("Sched_ExportCsv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出任务列表到CSV文件 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExportCsvTooltip {
+            get {
+                return ResourceManager.GetString("Sched_ExportCsvTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出JSON 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExportJson {
+            get {
+                return ResourceManager.GetString("Sched_ExportJson", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出任务配置到JSON文件 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExportJsonTooltip {
+            get {
+                return ResourceManager.GetString("Sched_ExportJsonTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出报告 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExportReport {
+            get {
+                return ResourceManager.GetString("Sched_ExportReport", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出执行统计报告 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExportReportTooltip {
+            get {
+                return ResourceManager.GetString("Sched_ExportReportTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出成功 的本地化字符串。
+        /// </summary>
+        public static string Sched_ExportSuccess {
+            get {
+                return ResourceManager.GetString("Sched_ExportSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 失败:  的本地化字符串。
+        /// </summary>
+        public static string Sched_FailCount {
+            get {
+                return ResourceManager.GetString("Sched_FailCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 失败 的本地化字符串。
+        /// </summary>
+        public static string Sched_FailFilter {
+            get {
+                return ResourceManager.GetString("Sched_FailFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 筛选: 的本地化字符串。
+        /// </summary>
+        public static string Sched_Filter {
+            get {
+                return ResourceManager.GetString("Sched_Filter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 永远 的本地化字符串。
+        /// </summary>
+        public static string Sched_Forever {
+            get {
+                return ResourceManager.GetString("Sched_Forever", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分组 的本地化字符串。
+        /// </summary>
+        public static string Sched_Group {
+            get {
+                return ResourceManager.GetString("Sched_Group", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 执行历史记录 的本地化字符串。
+        /// </summary>
+        public static string Sched_HistoryTitle {
+            get {
+                return ResourceManager.GetString("Sched_HistoryTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 间隔时间 的本地化字符串。
+        /// </summary>
+        public static string Sched_Interval {
+            get {
+                return ResourceManager.GetString("Sched_Interval", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 间隔 的本地化字符串。
+        /// </summary>
+        public static string Sched_IntervalType {
+            get {
+                return ResourceManager.GetString("Sched_IntervalType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最后结果 的本地化字符串。
+        /// </summary>
+        public static string Sched_LastResult {
+            get {
+                return ResourceManager.GetString("Sched_LastResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载任务配置失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sched_LoadFailed {
+            get {
+                return ResourceManager.GetString("Sched_LoadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 多次 的本地化字符串。
+        /// </summary>
+        public static string Sched_Multiple {
+            get {
+                return ResourceManager.GetString("Sched_Multiple", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 任务名和分组名不能为空 的本地化字符串。
+        /// </summary>
+        public static string Sched_NameEmpty {
+            get {
+                return ResourceManager.GetString("Sched_NameEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下一页 的本地化字符串。
+        /// </summary>
+        public static string Sched_NextPage {
+            get {
+                return ResourceManager.GetString("Sched_NextPage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 0 = 无限制 的本地化字符串。
+        /// </summary>
+        public static string Sched_NoLimit {
+            get {
+                return ResourceManager.GetString("Sched_NoLimit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 调度器未初始化 的本地化字符串。
+        /// </summary>
+        public static string Sched_NotInit {
+            get {
+                return ResourceManager.GetString("Sched_NotInit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 一次 的本地化字符串。
+        /// </summary>
+        public static string Sched_Once {
+            get {
+                return ResourceManager.GetString("Sched_Once", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 第 1 页 的本地化字符串。
+        /// </summary>
+        public static string Sched_Page1 {
+            get {
+                return ResourceManager.GetString("Sched_Page1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 第 {0} 页 的本地化字符串。
+        /// </summary>
+        public static string Sched_PageInfo {
+            get {
+                return ResourceManager.GetString("Sched_PageInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参数错误 的本地化字符串。
+        /// </summary>
+        public static string Sched_ParamError {
+            get {
+                return ResourceManager.GetString("Sched_ParamError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 部分成功 的本地化字符串。
+        /// </summary>
+        public static string Sched_PartialSuccess {
+            get {
+                return ResourceManager.GetString("Sched_PartialSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 暂停任务 的本地化字符串。
+        /// </summary>
+        public static string Sched_PauseTask {
+            get {
+                return ResourceManager.GetString("Sched_PauseTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上一页 的本地化字符串。
+        /// </summary>
+        public static string Sched_PrevPage {
+            get {
+                return ResourceManager.GetString("Sched_PrevPage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 优先级 的本地化字符串。
+        /// </summary>
+        public static string Sched_Priority {
+            get {
+                return ResourceManager.GetString("Sched_Priority", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 优先级 (1-10) 的本地化字符串。
+        /// </summary>
+        public static string Sched_PriorityLabel {
+            get {
+                return ResourceManager.GetString("Sched_PriorityLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数值越大优先级越高 的本地化字符串。
+        /// </summary>
+        public static string Sched_PriorityTooltip {
+            get {
+                return ResourceManager.GetString("Sched_PriorityTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示 的本地化字符串。
+        /// </summary>
+        public static string Sched_Prompt {
+            get {
+                return ResourceManager.GetString("Sched_Prompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string Sched_Refresh {
+            get {
+                return ResourceManager.GetString("Sched_Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重复次数 的本地化字符串。
+        /// </summary>
+        public static string Sched_RepeatCount {
+            get {
+                return ResourceManager.GetString("Sched_RepeatCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重复次数必须大于0 的本地化字符串。
+        /// </summary>
+        public static string Sched_RepeatInvalid {
+            get {
+                return ResourceManager.GetString("Sched_RepeatInvalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 以下任务未能恢复: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sched_RestoreWarning {
+            get {
+                return ResourceManager.GetString("Sched_RestoreWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 任务恢复警告 的本地化字符串。
+        /// </summary>
+        public static string Sched_RestoreWarningTitle {
+            get {
+                return ResourceManager.GetString("Sched_RestoreWarningTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 结果 的本地化字符串。
+        /// </summary>
+        public static string Sched_Result {
+            get {
+                return ResourceManager.GetString("Sched_Result", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 继续任务 的本地化字符串。
+        /// </summary>
+        public static string Sched_ResumeTask {
+            get {
+                return ResourceManager.GetString("Sched_ResumeTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 立即执行 的本地化字符串。
+        /// </summary>
+        public static string Sched_RunNow {
+            get {
+                return ResourceManager.GetString("Sched_RunNow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 保存任务配置失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sched_SaveFailed {
+            get {
+                return ResourceManager.GetString("Sched_SaveFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 简单 的本地化字符串。
+        /// </summary>
+        public static string Sched_Simple {
+            get {
+                return ResourceManager.GetString("Sched_Simple", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 调度器启动失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sched_StartFailed {
+            get {
+                return ResourceManager.GetString("Sched_StartFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开始时间 的本地化字符串。
+        /// </summary>
+        public static string Sched_StartTime {
+            get {
+                return ResourceManager.GetString("Sched_StartTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 成功 的本地化字符串。
+        /// </summary>
+        public static string Sched_Success {
+            get {
+                return ResourceManager.GetString("Sched_Success", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 成功:  的本地化字符串。
+        /// </summary>
+        public static string Sched_SuccessCount {
+            get {
+                return ResourceManager.GetString("Sched_SuccessCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 成功/失败 的本地化字符串。
+        /// </summary>
+        public static string Sched_SuccessFail {
+            get {
+                return ResourceManager.GetString("Sched_SuccessFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 成功 的本地化字符串。
+        /// </summary>
+        public static string Sched_SuccessFilter {
+            get {
+                return ResourceManager.GetString("Sched_SuccessFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 任务 的本地化字符串。
+        /// </summary>
+        public static string Sched_Task {
+            get {
+                return ResourceManager.GetString("Sched_Task", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 任务: 的本地化字符串。
+        /// </summary>
+        public static string Sched_TaskLabel {
+            get {
+                return ResourceManager.GetString("Sched_TaskLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 任务名称 的本地化字符串。
+        /// </summary>
+        public static string Sched_TaskName {
+            get {
+                return ResourceManager.GetString("Sched_TaskName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 超时时间(秒) 的本地化字符串。
+        /// </summary>
+        public static string Sched_Timeout {
+            get {
+                return ResourceManager.GetString("Sched_Timeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 0表示无超时限制 的本地化字符串。
+        /// </summary>
+        public static string Sched_TimeoutTooltip {
+            get {
+                return ResourceManager.GetString("Sched_TimeoutTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总执行:  的本地化字符串。
+        /// </summary>
+        public static string Sched_TotalExec {
+            get {
+                return ResourceManager.GetString("Sched_TotalExec", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 延时 的本地化字符串。
+        /// </summary>
+        public static string Sched_TriggerDelay {
+            get {
+                return ResourceManager.GetString("Sched_TriggerDelay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 立即 的本地化字符串。
+        /// </summary>
+        public static string Sched_TriggerNow {
+            get {
+                return ResourceManager.GetString("Sched_TriggerNow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 任务类型不能为空 的本地化字符串。
+        /// </summary>
+        public static string Sched_TypeEmpty {
+            get {
+                return ResourceManager.GetString("Sched_TypeEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新任务失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string Sched_UpdateTaskFailed {
+            get {
+                return ResourceManager.GetString("Sched_UpdateTaskFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查看属性 的本地化字符串。
+        /// </summary>
+        public static string Sched_ViewProps {
+            get {
+                return ResourceManager.GetString("Sched_ViewProps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 关闭 的本地化字符串。
         /// </summary>
         public static string Shutdown {

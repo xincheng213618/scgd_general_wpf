@@ -1,0 +1,201 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+
+namespace ColorVision.Copilot
+{
+    public sealed class CopilotTextSearchMatch
+    {
+        public string RootPath { get; init; } = string.Empty;
+
+        public string FullPath { get; init; } = string.Empty;
+
+        public int LineNumber { get; init; }
+
+        public string LineText { get; init; } = string.Empty;
+
+        public string DisplayPath => CopilotWorkspaceSearchSupport.GetDisplayPath(RootPath, FullPath);
+
+        public string AgentLine => $"[命中] {DisplayPath}:{LineNumber} {CopilotWorkspaceSearchSupport.TruncateLine(LineText, 220)}";
+    }
+
+    public sealed class CopilotTextSearchResult
+    {
+        public bool Success { get; init; }
+
+        public string Summary { get; init; } = string.Empty;
+
+        public string ErrorMessage { get; init; } = string.Empty;
+
+        public string Content { get; init; } = string.Empty;
+
+        public IReadOnlyList<string> SearchRoots { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> Patterns { get; init; } = Array.Empty<string>();
+
+        public int ScannedTextFileCount { get; init; }
+
+        public IReadOnlyList<CopilotTextSearchMatch> Matches { get; init; } = Array.Empty<CopilotTextSearchMatch>();
+
+        public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public CopilotCapabilityResult ToCapabilityResult()
+        {
+            return new CopilotCapabilityResult
+            {
+                Success = Success,
+                Summary = Summary,
+                Content = Content,
+                ErrorMessage = ErrorMessage,
+                SuggestedReadableLocalFilePaths = SuggestedReadableLocalFilePaths,
+            };
+        }
+    }
+
+    public static class CopilotGrepTextCapability
+    {
+        private const int MaxFilesToScan = 5000;
+        private const int MaxMatches = 40;
+
+        private static readonly Regex QuotedPatternRegex = new("[`\"“](?<term>[^`\"”\r\n]{2,100})[`\"”]", RegexOptions.Compiled);
+        private static readonly Regex IdentifierRegex = new(@"(?<term>[A-Za-z_][A-Za-z0-9_\.]{2,80})", RegexOptions.Compiled);
+
+        public static CopilotTextSearchResult Search(
+            IEnumerable<string> searchRootPaths,
+            string? query,
+            string? fallbackText,
+            CancellationToken cancellationToken)
+        {
+            var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(searchRootPaths);
+            var patterns = ResolvePatterns(query, fallbackText);
+            if (searchRoots.Count == 0 || patterns.Count == 0)
+            {
+                return new CopilotTextSearchResult
+                {
+                    Success = false,
+                    SearchRoots = searchRoots,
+                    Patterns = patterns,
+                    Summary = "缺少可搜索的根目录或关键字。",
+                    ErrorMessage = "当前没有可用的搜索根，或未能从消息中提取文本搜索关键字。",
+                };
+            }
+
+            var scannedFiles = 0;
+            var matches = new List<CopilotTextSearchMatch>();
+            var matchedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entry in CopilotWorkspaceSearchSupport.EnumerateFiles(searchRoots, textFilesOnly: true, cancellationToken))
+            {
+                scannedFiles++;
+                if (scannedFiles > MaxFilesToScan || matches.Count >= MaxMatches)
+                    break;
+
+                try
+                {
+                    var lineNumber = 0;
+                    foreach (var line in File.ReadLines(entry.FullPath))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        lineNumber++;
+
+                        if (!patterns.Any(pattern => line.Contains(pattern, StringComparison.OrdinalIgnoreCase)))
+                            continue;
+
+                        matches.Add(new CopilotTextSearchMatch
+                        {
+                            RootPath = entry.RootPath,
+                            FullPath = entry.FullPath,
+                            LineNumber = lineNumber,
+                            LineText = line,
+                        });
+                        matchedFilePaths.Add(entry.FullPath);
+                        if (matches.Count >= MaxMatches)
+                            break;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            if (matches.Count == 0)
+            {
+                return new CopilotTextSearchResult
+                {
+                    Success = false,
+                    SearchRoots = searchRoots,
+                    Patterns = patterns,
+                    ScannedTextFileCount = scannedFiles,
+                    Matches = matches,
+                    Summary = $"扫描了 {scannedFiles} 个文本文件，但没有找到关键字命中。",
+                    ErrorMessage = $"搜索关键字：{string.Join(", ", patterns)}",
+                };
+            }
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"[搜索关键字] {string.Join(", ", patterns)}");
+            builder.AppendLine($"[搜索根] {string.Join("；", searchRoots)}");
+            builder.AppendLine($"[扫描文本文件数] {scannedFiles}");
+            builder.AppendLine();
+
+            foreach (var match in matches)
+                builder.AppendLine(match.AgentLine);
+
+            return new CopilotTextSearchResult
+            {
+                Success = true,
+                SearchRoots = searchRoots,
+                Patterns = patterns,
+                ScannedTextFileCount = scannedFiles,
+                Matches = matches,
+                Summary = $"扫描 {scannedFiles} 个文本文件，找到 {matches.Count} 条命中。",
+                Content = builder.ToString().TrimEnd(),
+                SuggestedReadableLocalFilePaths = matchedFilePaths
+                    .Take(3)
+                    .ToArray(),
+            };
+        }
+
+        public static IReadOnlyList<string> ResolvePatterns(string? query, string? fallbackText)
+        {
+            if (!string.IsNullOrWhiteSpace(query))
+                return ExtractPatterns(query);
+
+            return ExtractPatterns(fallbackText);
+        }
+
+        private static IReadOnlyList<string> ExtractPatterns(string? text)
+        {
+            var source = text ?? string.Empty;
+            var patterns = new List<string>();
+
+            AddPatterns(patterns, QuotedPatternRegex.Matches(source));
+            AddPatterns(patterns, IdentifierRegex.Matches(source));
+
+            return patterns
+                .OrderByDescending(pattern => pattern.Length)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(3)
+                .ToArray();
+        }
+
+        private static void AddPatterns(List<string> patterns, MatchCollection matches)
+        {
+            foreach (Match match in matches)
+            {
+                var term = (match.Groups["term"].Value ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(term) || term.Length < 3)
+                    continue;
+
+                if (term.Contains('\\') || term.Contains('/') || term.Contains(':'))
+                    continue;
+
+                patterns.Add(term);
+            }
+        }
+    }
+}

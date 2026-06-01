@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI.Menus;
-using System.Windows;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
 {
@@ -8,22 +7,13 @@ namespace ColorVision.UI.Desktop.MenuItemManager
     /// </summary>
     public class MenuItemManagerInitialized : MainWindowInitializedBase
     {
-        public override int Order { get; set; } = 0;
+        public override int Order { get; set; }
 
         public override Task Initialize()
         {
-            var service = MenuItemManagerService.GetInstance();
-            service.ApplySettings();
+            MenuItemManagerService.ApplySettings();
 
-            // Rebuild menu to apply the saved settings
             MenuManager.GetInstance().RebuildAllMenus();
-
-            // Apply hotkeys to main window
-            var mainWindow = Application.Current.MainWindow;
-            if (mainWindow != null)
-            {
-                service.ApplyHotkeys(mainWindow);
-            }
 
             return Task.CompletedTask;
         }

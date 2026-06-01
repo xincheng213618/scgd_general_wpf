@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace ColorVision.UI.Marketplace
 {
     /// <summary>
@@ -9,24 +11,24 @@ namespace ColorVision.UI.Marketplace
         /// <summary>
         /// Search for plugins in the marketplace with optional filtering and pagination.
         /// </summary>
-        Task<MarketplaceSearchResult> SearchPluginsAsync(MarketplaceSearchRequest request);
+        Task<MarketplaceSearchResult> SearchPluginsAsync(MarketplaceSearchRequest request, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get detailed information about a specific plugin.
         /// </summary>
-        Task<MarketplacePluginDetail?> GetPluginDetailAsync(string pluginId);
+        Task<MarketplacePluginDetail?> GetPluginDetailAsync(string pluginId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get the latest version string for a specific plugin.
         /// This is the marketplace equivalent of checking LATEST_RELEASE.
         /// </summary>
-        Task<string?> GetLatestVersionAsync(string pluginId);
+        Task<string?> GetLatestVersionAsync(string pluginId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Batch check versions for multiple plugins at once.
         /// Significantly reduces network overhead compared to checking one at a time.
         /// </summary>
-        Task<Dictionary<string, string?>> BatchVersionCheckAsync(IEnumerable<string> pluginIds);
+        Task<Dictionary<string, string?>> BatchVersionCheckAsync(IEnumerable<string> pluginIds, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get the download URL for a specific plugin version.
@@ -36,12 +38,12 @@ namespace ColorVision.UI.Marketplace
         /// <summary>
         /// Get available plugin categories.
         /// </summary>
-        Task<List<string>> GetCategoriesAsync();
+        Task<List<string>> GetCategoriesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Whether the marketplace service is available (backend is reachable).
         /// </summary>
-        Task<bool> IsAvailableAsync();
+        Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
     }
 
     /// <summary>

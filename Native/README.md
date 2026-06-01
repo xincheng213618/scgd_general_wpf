@@ -5,6 +5,7 @@ This directory contains the repository's native C++ and CUDA source tree.
 ## Current layout
 
 - `include/`: shared ABI headers consumed by the native projects
+- `ColorVisionIcons64/`: native icon and resource DLL project used by the desktop app
 - `opencv_helper/`: CPU and OpenCV-based native interop library
 - `opencv_cuda/`: CUDA-accelerated native interop library
 - `opencv_opengl/`: experimental OpenGL-related native module

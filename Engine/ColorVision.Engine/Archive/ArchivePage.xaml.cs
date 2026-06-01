@@ -148,7 +148,7 @@ namespace ColorVision.Engine.Archive.Dao
             ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
             if (configArchivedModel == null)
             {
-                MessageBox.Show("找不到归档配置信息");
+                MessageBox.Show(ColorVision.Engine.Properties.Resources.ArchiveConfigInfoNotFound);
             }
             else
             {

@@ -4,305 +4,331 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:ColorVision.Update"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        Width="960"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
+        Width="920"
         Height="580"
-        MinWidth="820"
-        MinHeight="480"
-        Background="{StaticResource GlobalBackground}"
+        MinWidth="860"
+        MinHeight="520"
+       Title="{x:Static properties:Resources.CheckForUpdates}"
+        ResizeMode="NoResize"
+        SizeToContent="Manual"
+        Background="{DynamicResource UpdateDialog.WindowBorder}"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
         mc:Ignorable="d">
     <Window.Resources>
-        <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-        </Style>
-
-        <SolidColorBrush x:Key="PreviewBorderBrush"
-                         Color="{DynamicResource defaultgreyColor}"
-                         Opacity="1" />
-
-        <SolidColorBrush x:Key="PreviewSubtleBorderBrush"
-                         Color="{DynamicResource defaultgreyColor}"
-                         Opacity="0.35" />
-
-        <SolidColorBrush x:Key="PreviewSelectedBorderBrush"
-                 Color="#3D6EF7" />
-
-        <SolidColorBrush x:Key="PreviewSelectedBackgroundBrush"
-                 Color="#153D6EF7" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="UpdateDialogTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Border  Background="{DynamicResource UpdateDialog.Background}" SnapsToDevicePixels="True">
+        <Grid Margin="30,30,30,22">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="1" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="1" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <StackPanel>
-            <TextBlock FontSize="22"
-                       FontWeight="Bold"
-                       Text="{Binding Heading}"
-                       TextWrapping="Wrap" />
-            <TextBlock Margin="0,10,0,0"
-                       Opacity="0.88"
-                       Text="{Binding Summary}"
-                       TextWrapping="Wrap" />
-        </StackPanel>
+            <Grid Grid.Row="0" Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-        <Grid Grid.Row="1" Margin="0,16,0,16">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="360" />
-                <ColumnDefinition Width="16" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock FontSize="30"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                               Text="{Binding Heading}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Margin="0,10,0,0"
+                               MaxWidth="640"
+                               FontSize="14"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               Opacity="0.74"
+                               Text="{Binding HeaderSummaryText}"
+                               TextWrapping="Wrap"  HorizontalAlignment="Left" />
+                </StackPanel>
 
-            <Border BorderBrush="{StaticResource PreviewBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
+                <TextBlock Grid.Column="1"
+                           Margin="24,6,0,0"
+                           VerticalAlignment="Top"
+                           FontSize="13"
+                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                           TextWrapping="Wrap"
+                           Visibility="{Binding HostVersionVisibility}">
+                    <Run Text="{x:Static properties:Resources.UpdatePreviewHostVersionLabel}" />
+                    <Run Text=" " />
+                    <Run Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                         FontWeight="SemiBold"
+                        Text="{Binding HostVersionValue, Mode=OneWay}" />
+                </TextBlock>
+            </Grid>
 
-                    <StackPanel Margin="14,12,14,8">
-                        <TextBlock FontSize="16"
-                                   FontWeight="Bold"
-                                   Text="{Binding ItemsTitle}" />
-                        <TextBlock Margin="0,4,0,0"
-                                   Opacity="0.76"
-                                   Text="{Binding ItemsSummary}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
+            <Border Grid.Row="1"
+                    Background="{DynamicResource UpdateDialog.WeakBorder}" />
 
-                    <Grid Grid.Row="1">
-                        <ListView ItemsSource="{Binding ItemsView}"
-                                  SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
-                                  Visibility="{Binding ItemsListVisibility}"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  Padding="8,0,8,8"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <ListView.GroupStyle>
-                                <GroupStyle>
-                                    <GroupStyle.HeaderTemplate>
-                                        <DataTemplate>
-                                            <Border Margin="0,8,0,6"
-                                                    Padding="8,0,8,6"
-                                                    BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
-                                                    BorderThickness="0,0,0,1">
-                                                <DockPanel LastChildFill="False">
-                                                    <TextBlock FontSize="13"
-                                                               FontWeight="Bold"
-                                                               Text="{Binding Name}" />
-                                                    <TextBlock DockPanel.Dock="Right"
-                                                               Opacity="0.68"
-                                                               Text="{Binding ItemCount, StringFormat=共 {0} 项}" />
-                                                </DockPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </GroupStyle.HeaderTemplate>
-                                </GroupStyle>
-                            </ListView.GroupStyle>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListViewItem}">
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                    <Setter Property="BorderThickness" Value="0" />
-                                    <Setter Property="Padding" Value="0" />
-                                    <Setter Property="Margin" Value="0" />
-                                    <Setter Property="Background" Value="Transparent" />
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate DataType="{x:Type local:UpdatePreviewItem}">
-                                    <Border Margin="0,0,0,8"
-                                            Padding="12"
-                                            CornerRadius="4">
-                                        <Border.Style>
-                                            <Style TargetType="{x:Type Border}">
-                                                <Setter Property="BorderBrush" Value="{StaticResource PreviewSubtleBorderBrush}" />
-                                                <Setter Property="BorderThickness" Value="1" />
-                                                <Setter Property="Background" Value="Transparent" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=IsSelected}" Value="True">
-                                                        <Setter Property="BorderBrush" Value="{StaticResource PreviewSelectedBorderBrush}" />
-                                                        <Setter Property="Background" Value="{StaticResource PreviewSelectedBackgroundBrush}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <StackPanel>
-                                            <TextBlock FontSize="12"
-                                                       FontWeight="SemiBold"
-                                                       Opacity="0.72"
-                                                       Text="{Binding Category}" />
-                                            <TextBlock Margin="0,4,0,0"
-                                                       FontSize="15"
-                                                       FontWeight="Bold"
-                                                       Text="{Binding Name}"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Margin="0,4,0,0"
-                                                       Opacity="0.76"
-                                                       Text="{Binding SecondaryLabel}"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Margin="0,6,0,0"
-                                                       Opacity="0.88"
-                                                       Text="{Binding VersionSummary}"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Margin="0,6,0,0"
-                                                       Opacity="0.78"
-                                                       Text="{Binding Summary}"
-                                                       TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
+            <Grid Grid.Row="2">
+                <Grid Margin="0,0,0,0"
+                      Visibility="{Binding CheckingVisibility}">
+                    <StackPanel Margin="0,58,0,0"
+                                MaxWidth="560"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
 
-                        <Border Margin="14"
-                                Padding="14"
-                                CornerRadius="4"
-                                BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
-                                BorderThickness="1"
-                                Visibility="{Binding ItemsEmptyVisibility}">
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock FontSize="15"
-                                           FontWeight="Bold"
-                                           Text="当前没有可展示的更新项" />
-                                <TextBlock Margin="0,6,0,0"
-                                           Opacity="0.76"
-                                           Text="如果这里为空，通常表示本轮检查没有拿到可应用的主体或插件更新。"
+                            <Border Width="40"
+                                    Height="40"
+                                    VerticalAlignment="Center"
+                                    Background="{DynamicResource UpdateDialog.SurfaceAlt}"
+                                    BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="18"
+                                           Foreground="{DynamicResource UpdateDialog.Accent}"
+                                           Text="{Binding StateGlyph}" />
+                            </Border>
+
+                            <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                                <TextBlock FontSize="24"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                           Text="{Binding CheckingTitle}" />
+                                <TextBlock Margin="0,8,0,0"
+                                           FontSize="14"
+                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                           Opacity="0.74"
+                                           Text="{Binding CheckingSummary}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
-                        </Border>
-                    </Grid>
-                </Grid>
-            </Border>
+                        </Grid>
 
-            <Border Grid.Column="2"
-                    BorderBrush="{StaticResource PreviewBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6"
-                    Padding="14">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Margin="0,0,0,12">
-                        <TextBlock FontSize="16"
-                                   FontWeight="Bold"
-                                   Text="选中项详情" />
-                        <TextBlock Margin="0,4,0,0"
-                                   Opacity="0.76"
-                                   Text="{Binding SelectedItemDetailIntro}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Margin="0,12,0,0"
-                                   FontSize="15"
-                                   FontWeight="Bold"
-                                   Text="{Binding SelectedItemTitle}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Margin="0,4,0,0"
-                                   Opacity="0.76"
-                                   Text="{Binding SelectedItemMetaText}"
-                                   TextWrapping="Wrap" />
+                        <ProgressBar Width="372"
+                                     Height="6"
+                                     Margin="54,22,0,0"
+                                     HorizontalAlignment="Left"
+                                     IsIndeterminate="True"
+                                     Background="{DynamicResource UpdateDialog.SurfaceAlt}"
+                                     Foreground="{DynamicResource UpdateDialog.Accent}" />
                     </StackPanel>
+                </Grid>
 
-                    <Border Grid.Row="1"
-                            Margin="0,0,0,12"
-                            Padding="12"
-                            CornerRadius="4"
-                            BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
-                            BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock FontSize="14"
-                                       FontWeight="Bold"
-                                       Text="更新概览" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Opacity="0.84"
-                                       Text="{Binding SelectedItemSummary}"
-                                       TextWrapping="Wrap" />
+                <Grid Margin="0,0,0,0"
+                      Visibility="{Binding EmptyStateCenteredVisibility}">
+                    <StackPanel Margin="0,58,0,0"
+                                MaxWidth="600"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
 
-                            <ItemsControl Margin="0,12,0,0"
-                                          ItemsSource="{Binding SelectedFacts}"
-                                          Visibility="{Binding SelectedFactsVisibility}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type local:UpdatePreviewFact}">
-                                        <Border Margin="0,0,8,8"
-                                                Padding="10,8"
-                                                MinWidth="120"
-                                                MaxWidth="220"
-                                                CornerRadius="4"
-                                                BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
-                                                BorderThickness="1">
-                                            <StackPanel>
+                            <Border Width="40"
+                                    Height="40"
+                                    VerticalAlignment="Top"
+                                    Background="{DynamicResource UpdateDialog.SurfaceAlt}"
+                                    BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="18"
+                                           Foreground="{DynamicResource UpdateDialog.Accent}"
+                                           Text="{Binding StateGlyph}" />
+                            </Border>
+
+                            <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                                <TextBlock FontSize="24"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                           Text="{Binding EmptyStateTitle}" />
+                                <TextBlock Margin="0,10,0,0"
+                                           FontSize="14"
+                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                           Opacity="0.76"
+                                           Text="{Binding EmptyStateMessage}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+
+                <ScrollViewer Margin="0,22,0,14"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              CanContentScroll="False"
+                              Visibility="{Binding ItemsListVisibility}">
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type local:UpdatePreviewItem}">
+                                <Border Style="{StaticResource UpdateDialogCardStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="56" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="208" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid Grid.Column="0">
+                                            <CheckBox Margin="10,4,0,0"
+                                                      VerticalAlignment="Top"
+                                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                      Visibility="{Binding SelectionVisibility}" />
+
+                                            <Border Margin="0,4,0,0"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Visibility="{Binding RequiredTagVisibility}"
+                                                    Style="{StaticResource UpdateDialogTagBorderStyle}">
                                                 <TextBlock FontSize="11"
                                                            FontWeight="SemiBold"
-                                                           Opacity="0.68"
-                                                           Text="{Binding Label}" />
-                                                <TextBlock Margin="0,4,0,0"
+                                                           Foreground="{DynamicResource UpdateDialog.TagForeground}"
+                                                           Text="{x:Static properties:Resources.UpdatePreviewRequiredBadge}" />
+                                            </Border>
+                                        </Grid>
+
+                                        <StackPanel Grid.Column="1" Margin="0,0,24,0">
+                                            <TextBlock FontSize="22"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                                       Text="{Binding Name}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       TextWrapping="NoWrap" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                                       Opacity="0.74"
+                                                       Text="{Binding SecondaryLabel}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       TextWrapping="NoWrap"
+                                                       Visibility="{Binding SecondaryLabelVisibility}" />
+                                            <TextBlock Margin="0,12,0,0"
+                                                       FontSize="16"
+                                                       Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                                       Text="{Binding VersionTransitionText}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       TextWrapping="NoWrap" />
+                                            <TextBlock Margin="0,10,0,0"
+                                                       MaxHeight="42"
+                                                       FontSize="14"
+                                                       LineHeight="20"
+                                                       Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                                       Opacity="0.88"
+                                                       Text="{Binding Summary}"
+                                                       TextWrapping="Wrap" />
+
+                                            <StackPanel Margin="0,12,0,0"
+                                                        Visibility="{Binding ProgressVisibility}">
+                                                <ProgressBar Height="6"
+                                                             Minimum="0"
+                                                             Maximum="100"
+                                                             Value="{Binding ProgressValue}"
+                                                             Background="{DynamicResource UpdateDialog.SurfaceAlt}"
+                                                             Foreground="{DynamicResource UpdateDialog.Accent}" />
+                                                <TextBlock Margin="0,8,0,0"
                                                            FontSize="13"
-                                                           FontWeight="Bold"
-                                                           Text="{Binding Value}"
+                                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                                           Opacity="0.74"
+                                                           Text="{Binding ProgressText}"
                                                            TextWrapping="Wrap" />
                                             </StackPanel>
+                                        </StackPanel>
+
+                                        <Border Grid.Column="2"
+                                                Padding="16,14,16,14"
+                                                Background="{DynamicResource UpdateDialog.SurfaceAlt}"
+                                                BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                                                BorderThickness="1"
+                                                CornerRadius="8">
+                                            <StackPanel>
+                                                <Border HorizontalAlignment="Left"
+                                                        Style="{StaticResource UpdateDialogTagBorderStyle}">
+                                                    <TextBlock FontSize="11"
+                                                               FontWeight="Normal"
+                                                               Foreground="{DynamicResource UpdateDialog.TagForeground}"
+                                                               Text="{Binding Category}" />
+                                                </Border>
+                                                <TextBlock Margin="0,14,0,0"
+                                                           FontSize="13"
+                                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                                           Opacity="0.78"
+                                                           Text="{Binding HostRequirementText}"
+                                                           TextWrapping="Wrap"
+                                                           Visibility="{Binding HostRequirementVisibility}" />
+                                            </StackPanel>
                                         </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
 
-                    <Border Grid.Row="2"
-                            Padding="12"
-                            CornerRadius="4"
-                            BorderBrush="{StaticResource PreviewSubtleBorderBrush}"
-                            BorderThickness="1">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
+            <Border Grid.Row="3"
+                    Background="{DynamicResource UpdateDialog.WeakBorder}" />
 
-                            <TextBlock FontSize="14"
-                                       FontWeight="Bold"
-                                       Text="详细说明" />
+            <Grid Grid.Row="4" Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                            <TextBox Grid.Row="1"
-                                     Margin="0,10,0,0"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     Foreground="{DynamicResource GlobalTextBrush}"
-                                     IsReadOnly="True"
-                                     AcceptsReturn="True"
-                                     Text="{Binding SelectedDetailText, Mode=OneWay}"
-                                     TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" />
-                        </Grid>
-                    </Border>
-                </Grid>
-            </Border>
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <TextBlock MaxWidth="560"
+                               VerticalAlignment="Center"
+                               FontSize="13"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               Opacity="0.74"
+                               Text="{Binding SelectionSummary}"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap"
+                               Visibility="{Binding FooterInfoVisibility}" />
+                    <Button Margin="12,0,0,0"
+                            VerticalAlignment="Center"
+                            Click="SecondaryButton_Click"
+                            Content="{Binding SecondaryButtonText}"
+                            Style="{StaticResource UpdateDialogTextButtonStyle}"
+                            Visibility="{Binding SecondaryButtonVisibility}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Margin="0,0,12,0"
+                            Click="CancelButton_Click"
+                            Content="{Binding CancelButtonText}"
+                            IsEnabled="{Binding CanCancel}"
+                            Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                    <Button Click="ConfirmButton_Click"
+                            Content="{Binding ConfirmButtonText}"
+                            IsEnabled="{Binding CanConfirm}"
+                            Visibility="{Binding ConfirmButtonVisibility}"
+                            Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+                </StackPanel>
+            </Grid>
         </Grid>
-
-        <StackPanel Grid.Row="2" HorizontalAlignment="Right" Orientation="Horizontal">
-            <Button Margin="0,0,8,0"
-                    Padding="14,6"
-                    Click="SecondaryButton_Click"
-                    Content="{Binding SecondaryButtonText}"
-                    Visibility="{Binding SecondaryButtonVisibility}" />
-            <Button Margin="0,0,8,0"
-                    Padding="14,6"
-                    Click="CancelButton_Click"
-                    Content="{Binding CancelButtonText}" />
-            <Button Padding="16,6"
-                    Click="ConfirmButton_Click"
-                    Content="{Binding ConfirmButtonText}" />
-        </StackPanel>
-    </Grid>
+    </Border>
 </Window>

@@ -63,6 +63,7 @@ class MarketplaceDataService:
         read_text_file: Callable[[Path], str | None],
         render_markdown_cached: Callable[..., Any],
         cache_settings: MarketplaceCacheSettings,
+        cache_manager: Any = None,
     ):
         self._storage_getter = storage_getter
         self._config_getter = config_getter
@@ -73,6 +74,7 @@ class MarketplaceDataService:
         self._read_text_file = read_text_file
         self._render_markdown_cached = render_markdown_cached
         self._cache = cache_settings
+        self._cache_manager = cache_manager
 
     def _storage(self) -> Path:
         return self._storage_getter()
@@ -95,6 +97,16 @@ class MarketplaceDataService:
         return getattr(g, cache_key)
 
     def scan_app_release_artifacts(self) -> list[dict[str, Any]]:
+        # Try release_index first (fast, no disk scan)
+        if self._cache_manager is not None:
+            try:
+                from services.artifact_index import get_releases_from_index
+                indexed = get_releases_from_index(self._cache_manager)
+                if indexed is not None:
+                    return indexed
+            except Exception as exc:
+                print(f"[release_index] scan fallback: {exc}")
+
         return scan_app_release_artifacts_impl(
             self._storage(),
             get_cache_entry=self._get_cache_entry,
@@ -145,10 +157,21 @@ class MarketplaceDataService:
         )
 
     def get_request_plugin_catalog(self) -> list[dict]:
-        return self.request_cached_value(
-            "plugin_catalog",
-            lambda: self.scan_plugins(download_counts=self.get_request_download_counts()),
-        )
+        def _load():
+            # Try plugin_index first (fast, no disk scan)
+            if self._cache_manager is not None:
+                try:
+                    from services.plugin_index import get_plugin_catalog_from_index
+                    download_counts = self.get_request_download_counts()
+                    indexed = get_plugin_catalog_from_index(self._cache_manager, download_counts)
+                    if indexed is not None:
+                        return indexed
+                except Exception as exc:
+                    print(f"[plugin_index] catalog read fallback: {exc}")
+            # Fallback to disk scan + cache
+            return self.scan_plugins(download_counts=self.get_request_download_counts())
+
+        return self.request_cached_value("plugin_catalog", _load)
 
     def get_plugin_info(
         self,
@@ -157,6 +180,20 @@ class MarketplaceDataService:
     ) -> dict[str, Any] | None:
         if download_counts is None:
             download_counts = self.get_download_counts()
+
+        # Try plugin_index first (fast, no disk scan)
+        if self._cache_manager is not None:
+            try:
+                from services.plugin_index import get_plugin_detail_from_index
+                detail = get_plugin_detail_from_index(
+                    self._cache_manager, plugin_id, download_counts,
+                    storage=self._storage(),
+                )
+                if detail is not None:
+                    return detail
+            except Exception as exc:
+                print(f"[plugin_index] detail fallback for {plugin_id}: {exc}")
+
         return get_plugin_detail_impl(
             self._storage(),
             plugin_id,
@@ -249,6 +286,20 @@ class MarketplaceDataService:
             context["archive_count_estimated"] = False
             context["archive_preview_note"] = ""
             return context
+
+        # Try release_index (fast, no disk scan)
+        if self._cache_manager is not None:
+            try:
+                from services.artifact_index import get_releases_from_index
+                indexed_releases = get_releases_from_index(self._cache_manager)
+                if indexed_releases is not None:
+                    context = build_app_release_context(indexed_releases)
+                    context["release_preview_fast"] = False
+                    context["archive_count_estimated"] = False
+                    context["archive_preview_note"] = ""
+                    return context
+            except Exception as exc:
+                print(f"[release_index] home snapshot fallback: {exc}")
 
         cached = self._get_cache_entry(self._cache.home_releases_snapshot_cache_key)
         if cached:
@@ -356,6 +407,45 @@ class MarketplaceDataService:
         cached = self._get_cache_entry(self._cache.home_tool_preview_cache_key)
         if cached:
             return cached["value"]
+
+        # Try tool_index first (fast, no disk scan)
+        if self._cache_manager is not None:
+            try:
+                from services.artifact_index import get_tools_from_index
+                indexed = get_tools_from_index(self._cache_manager)
+                if indexed is not None:
+                    items = []
+                    for item in indexed[:8]:
+                        items.append({
+                            "name": item["name"],
+                            "is_dir": bool(item.get("is_dir", 0)),
+                            "path": item["relative_path"],
+                            "relative_path": item["relative_path"],
+                            "modified": (item.get("modified_display") or item.get("modified", ""))[:19],
+                            "size": item.get("size", 0),
+                            "file_count": item.get("file_count", 0),
+                        })
+                    total_size = sum(i.get("size", 0) for i in items)
+                    dir_count = sum(1 for i in items if i.get("is_dir"))
+                    file_count = len(items) - dir_count
+                    preview = {
+                        "items": items,
+                        "summary": {
+                            "total_items": len(items),
+                            "dir_count": dir_count,
+                            "file_count": file_count,
+                            "total_size": total_size,
+                        },
+                    }
+                    self._set_cache_entry(
+                        self._cache.home_tool_preview_cache_key,
+                        preview,
+                        ttl_seconds=self._cache.home_tool_preview_ttl_seconds,
+                        signature="tool",
+                    )
+                    return preview
+            except Exception as exc:
+                print(f"[tool_index] home preview fallback: {exc}")
 
         preview = build_storage_preview_context(self._storage(), "Tool", limit=8)
         self._set_cache_entry(

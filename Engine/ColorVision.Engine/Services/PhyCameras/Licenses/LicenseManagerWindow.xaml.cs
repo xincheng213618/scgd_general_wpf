@@ -56,8 +56,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public LicenseNotificationConfig LicenseNotificationConfig { get; set; }
 
+        public string LicenseCountText => string.Format(Properties.Resources.LicenseCountFormat, Licenses.Count);
+
         public LicenseManagerViewModel()
         {
+            Licenses.CollectionChanged += (_, _) => OnPropertyChanged(nameof(LicenseCountText));
             RefreshCommand = new RelayCommand(a => LoadLicenses());
             ImportCommand = new RelayCommand(a => ImportLicense());
             ExportSelectedCommand = new RelayCommand(a => ExportSelected(), a => SelectedLicense != null);
@@ -93,7 +96,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             Microsoft.Win32.OpenFolderDialog dialog = new();
 
             dialog.Multiselect = false;
-            dialog.Title = "Select a folder";
+            dialog.Title = Properties.Resources.SelectSaveFolder;
             dialog.DefaultDirectory = AppDomain.CurrentDomain.BaseDirectory;
             dialog.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
             // Show open folder dialog box
@@ -173,22 +176,22 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                         {
                             var proc = Process.Start(psi);
                             proc?.WaitForExit();
-                            MessageBox.Show("License 文件已通过管理员权限导出完成！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show(Properties.Resources.LicenseExportedByAdmin, Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Information);
                             return; // 提权执行后直接返回，不由下方统一提示
                         }
                         catch (System.ComponentModel.Win32Exception)
                         {
-                            MessageBox.Show("用户取消了操作或提权失败。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(Properties.Resources.UserCancelledOrElevationFailed, Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
                     }
                 }
 
-                MessageBox.Show("License 文件已导出完成！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Properties.Resources.LicenseExportCompleted, Properties.Resources.Hint, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.ExportFailedMessage, ex.Message), Properties.Resources.Failure, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -233,11 +236,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                     if (ret == 1)
                     {
                         string cameraIdsMd5 = snBuilder.ToString();
-                        MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox1.Show(cameraIdsMd5, Properties.Resources.GetCameraLicense, MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else
                     {
-                        MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox1.Show(Properties.Resources.GetCameraIdMd5Failed, Properties.Resources.GetCameraLicense, MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 });
             }));
@@ -262,11 +265,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             string sn = stringBuilder.ToString();
             if (string.IsNullOrWhiteSpace(sn))
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "No Device", "Sprectrum");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoDeviceDetected, Properties.Resources.Spectrometer);
             }
             else
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), "Sprectrum");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), Properties.Resources.Spectrometer);
             }
         }
 
@@ -279,6 +282,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             {
                 Licenses.Add(new LicenseViewModel(license));
             }
+
+            OnPropertyChanged(nameof(LicenseCountText));
         }
 
         public void ImportLicense()
@@ -318,12 +323,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     File.WriteAllText(saveFileDialog.FileName, SelectedLicense.Model.LicenseValue, Encoding.UTF8);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, Properties.Resources.ExportLicense);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", Properties.Resources.ExportLicense);
             }
         }
 
@@ -334,7 +339,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(), 
                 Properties.Resources.ConfirmDelete, 
-                "ColorVision", 
+                Properties.Resources.LicenseManager, 
                 MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 PhyLicenseDao.Instance.DeleteById(SelectedLicense.Model.Id);
@@ -346,18 +351,18 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         {
             if (SelectedLicense == null || string.IsNullOrEmpty(SelectedLicense.Model.LicenseValue))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, Properties.Resources.CopyLicense);
                 return;
             }
 
             try
             {
                 Common.NativeMethods.Clipboard.SetText(SelectedLicense.Model.LicenseValue);
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, Properties.Resources.CopyLicense);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", Properties.Resources.CopyLicense);
             }
         }
     }
@@ -373,7 +378,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public int Id => Model.Id;
         public string? MacAddress => Model.MacAddress;
-        public string LiceTypeString => Model.LiceType == 0 ? "相机" : Model.LiceType == 1 ? "光谱仪" : "未知";
+        public string LiceTypeString => Model.LiceType == 0 ? Properties.Resources.LicenseTypeCamera : Model.LiceType == 1 ? Properties.Resources.LicenseTypeSpectrometer : Properties.Resources.LicenseTypeUnknown;
         public string? Model1 => this.Model.Model;
         public string? CusTomerName => this.Model.CusTomerName;
         public DateTime? ExpiryDate => this.Model.ExpiryDate;
@@ -396,10 +401,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             get
             {
                 if (ExpiryDate == null || ExpiryDate < DateTime.Now)
-                    return "已过期";
+                    return Properties.Resources.LicenseExpired;
                 if (ExpiryDate < DateTime.Now.AddDays(30))
-                    return "即将过期";
-                return "正常";
+                    return Properties.Resources.LicenseExpiringSoon;
+                return Properties.Resources.LicenseNormal;
             }
         }
     }

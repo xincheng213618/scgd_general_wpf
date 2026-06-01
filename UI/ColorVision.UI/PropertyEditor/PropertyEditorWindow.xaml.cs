@@ -13,6 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Resources;
 using System.Windows;
+using ColorVision.UI.Properties;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
@@ -91,11 +92,11 @@ namespace ColorVision.UI
             this.DataContext = this;
 
             // Initialize sort options
-            SortComboBox.Items.Add(new ComboBoxItem { Content = "默认排序", Tag = PropertySortMode.Default });
-            SortComboBox.Items.Add(new ComboBoxItem { Content = "按名称排序 (升序)", Tag = PropertySortMode.NameAscending });
-            SortComboBox.Items.Add(new ComboBoxItem { Content = "按名称排序 (降序)", Tag = PropertySortMode.NameDescending });
-            SortComboBox.Items.Add(new ComboBoxItem { Content = "按分类排序 (升序)", Tag = PropertySortMode.CategoryAscending });
-            SortComboBox.Items.Add(new ComboBoxItem { Content = "按分类排序 (降序)", Tag = PropertySortMode.CategoryDescending });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = Properties.Resources.PropEditor_SortDefault, Tag = PropertySortMode.Default });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = Properties.Resources.PropEditor_SortNameAsc, Tag = PropertySortMode.NameAscending });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = Properties.Resources.PropEditor_SortNameDesc, Tag = PropertySortMode.NameDescending });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = Properties.Resources.PropEditor_SortCategoryAsc, Tag = PropertySortMode.CategoryAscending });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = Properties.Resources.PropEditor_SortCategoryDesc, Tag = PropertySortMode.CategoryDescending });
             SortComboBox.SelectedIndex = 0;
 
 

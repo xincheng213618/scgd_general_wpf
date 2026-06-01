@@ -70,9 +70,6 @@ namespace Conoscope.ApplicationServices.Preprocess
 
             if (options.Filter.FilterType != ImageFilterType.None)
             {
-                ArgumentNullException.ThrowIfNull(xSource);
-                ArgumentNullException.ThrowIfNull(ySource);
-                ArgumentNullException.ThrowIfNull(zSource);
                 xSource = ReplaceWithFilteredMat(xSource, options.Filter);
                 ySource = ReplaceWithFilteredMat(ySource, options.Filter);
                 zSource = ReplaceWithFilteredMat(zSource, options.Filter);
@@ -82,6 +79,37 @@ namespace Conoscope.ApplicationServices.Preprocess
             xMat = xSource;
             yMat = ySource;
             zMat = zSource;
+        }
+
+        public static void ApplyToSingleChannel(ref Mat? channelMat, ConoscopePreprocessOptions options, ILog? log = null)
+        {
+            if (channelMat == null)
+            {
+                return;
+            }
+
+            Mat source = channelMat;
+            if (options.DustRemovalEnabled)
+            {
+                DustRemovalSummary summary = DustRemovalProcessor.ApplyToSingleChannel(ref source, source, options.DustRemoval);
+                if (!summary.HasCandidates)
+                {
+                    log?.Info($"灰尘滤除未检测到候选区域: mode={options.DustRemoval.Mode}, threshold={options.DustRemoval.ThresholdPercent:F1}%");
+                }
+                else
+                {
+                    log?.Info(
+                        $"灰尘滤除完成: mode={options.DustRemoval.Mode}, darkComponents={summary.DarkComponentCount}, brightComponents={summary.BrightComponentCount}, darkPixels={summary.DarkPixelCount}, brightPixels={summary.BrightPixelCount}, threshold={options.DustRemoval.ThresholdPercent:F1}%, area={options.DustRemoval.MinArea}-{options.DustRemoval.MaxArea}, radius={options.DustRemoval.RepairRadius}");
+                }
+            }
+
+            if (options.Filter.FilterType != ImageFilterType.None)
+            {
+                source = ReplaceWithFilteredMat(source, options.Filter);
+                log?.Info($"滤波应用到 Y 通道完成: {options.Filter.FilterType}, kernelSize={options.Filter.KernelSize}");
+            }
+
+            channelMat = source;
         }
 
         private static Mat ReplaceWithFilteredMat(Mat source, ImageFilterOptions options)

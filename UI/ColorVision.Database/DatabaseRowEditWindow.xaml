@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Database.Properties"
         mc:Ignorable="d"
-        Title="编辑行" Height="520" Width="520" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.DB_EditRow}" Height="520" Width="520" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -29,8 +30,8 @@
         <TextBlock x:Name="ErrorText" Grid.Row="2" Margin="0,8,0,0" Foreground="#E53935" TextWrapping="Wrap"/>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="确定" MinWidth="78" Padding="10,4" Click="Ok_Click" Background="{DynamicResource PrimaryBrush}" Foreground="White"/>
-            <Button Content="取消" MinWidth="78" Padding="10,4" Margin="8,0,0,0" Click="Cancel_Click"/>
+            <Button Content="{x:Static properties:Resources.OK}" MinWidth="78" Padding="10,4" Click="Ok_Click" Background="{DynamicResource PrimaryBrush}" Foreground="White"/>
+            <Button Content="{x:Static properties:Resources.Cancel}" MinWidth="78" Padding="10,4" Margin="8,0,0,0" Click="Cancel_Click"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -2,6 +2,7 @@ using ColorVision.Themes.Controls;
 using cvColorVision;
 using Newtonsoft.Json;
 using Spectrum.Data;
+using SpectrumResources = Spectrum.Properties.Resources;
 using System.Diagnostics;
 using System.Windows;
 
@@ -26,7 +27,7 @@ namespace Spectrum
         {
             if (IsRun)
             {
-                MessageBox1.Show("正在运行");
+                MessageBox1.Show(SpectrumResources.OperationInProgressPleaseWait);
                 return;
             }
             SetOperationButtonsEnabled(false);
@@ -93,7 +94,7 @@ namespace Spectrum
         {
             if (IsRun)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "正在运行");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), SpectrumResources.OperationInProgressPleaseWait);
                 return;
             }
             IsRun = true;
@@ -119,7 +120,7 @@ namespace Spectrum
                         log.Info("校零成功");
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "校零成功");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), SpectrumResources.ZeroCalibrationSuccess);
                         });
                     }
                     else
@@ -128,7 +129,7 @@ namespace Spectrum
                         log.Error($"校零失败: {errorMsg}");
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), $"校零失败: {errorMsg}");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(SpectrumResources.ZeroCalibrationFailed, errorMsg));
                         });
                     }
                     IsRun = false;
@@ -139,7 +140,7 @@ namespace Spectrum
                     log.Error("校零异常", ex);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "校零异常: " + ex.Message);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(SpectrumResources.ZeroCalibrationException, ex.Message));
                     });
                     IsRun = false;
                     SetOperationButtonsEnabled(true);
@@ -174,7 +175,7 @@ namespace Spectrum
                 {
                     if (!Manager.ShutterController.IsConnected)
                     {
-                        const string message = "未配备shutter，无法自动校零";
+                        string message = SpectrumResources.NoShutterAutoZero;
                         AddMeasurementStep(stepDetails, "AutoDarkPrerequisite", 0, false, null, new
                         {
                             Manager.EnableAutodark,
@@ -183,7 +184,7 @@ namespace Spectrum
                         profile.ErrorMessage = message;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), message, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(Application.Current.GetActiveWindow(), message, SpectrumResources.PromptTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                         });
                         return;
                     }
@@ -259,9 +260,9 @@ namespace Spectrum
 
                     profile.AdaptiveAutoDarkDurationMs = adaptiveAutoDarkStopwatch.ElapsedMilliseconds;
                     string adaptiveAutoDarkMessage = ret == 1
-                        ? "自适应校零数据获取成功"
+                        ? SpectrumResources.AdaptiveAutoDarkSuccess
                         : ret == 0
-                            ? "自适应校零未初始化，请先执行一次自适应校零"
+                            ? SpectrumResources.PleaseRunAdaptiveAutoDarkFirst
                             : Spectrometer.GetErrorMessage(ret);
 
                     AddMeasurementStep(stepDetails, "AdaptiveAutoDark", profile.AdaptiveAutoDarkDurationMs.Value, ret == 1, ret, new
@@ -283,7 +284,7 @@ namespace Spectrum
                         isstartAuto = false;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show("请先做一次自适应校零");
+                            MessageBox.Show(SpectrumResources.PleaseRunAdaptiveAutoDarkFirst);
                         });
                         return;
                     }
@@ -507,7 +508,7 @@ namespace Spectrum
         {
             if (IsRun)
             {
-                MessageBox.Show("正在执行任务请稍后");
+                MessageBox.Show(SpectrumResources.OperationInProgressPleaseWait);
                 return;
             }
             SetOperationButtonsEnabled(false);
@@ -543,7 +544,7 @@ namespace Spectrum
         {
            if (IsRun)
             {
-                MessageBox.Show("正在执行任务请稍后");
+                MessageBox.Show(SpectrumResources.OperationInProgressPleaseWait);
                 return;
             }
             log.Debug("开始自适应校零");
@@ -559,7 +560,7 @@ namespace Spectrum
                     log.Info("自适应校零成功");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show("自适应校零成功");
+                        MessageBox.Show(SpectrumResources.AdaptiveAutoDarkSuccess);
                     });
                 }
                 else
@@ -568,7 +569,7 @@ namespace Spectrum
                     log.Error($"自适应校零失败: {errorMsg}");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show($"自适应校零失败: {errorMsg}");
+                        MessageBox.Show(string.Format(SpectrumResources.AdaptiveAutoDarkFailed, errorMsg));
                     });
                 }
             });
@@ -597,7 +598,7 @@ namespace Spectrum
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "未配备shutter，无法自动校零", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), SpectrumResources.NoShutterAutoZero, SpectrumResources.PromptTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                         button6.Visibility = Visibility.Visible;
                         button7.Visibility = Visibility.Collapsed;
                         ContinuousProgressBar.Value = 100;
@@ -642,7 +643,7 @@ namespace Spectrum
                             button5.IsEnabled = true;
                             button6.IsEnabled = true;
                             ButtonAutoInt.IsEnabled = true;
-                            MessageBox.Show(Application.Current.MainWindow, $"连续测试执行完毕,执行失败{errornum}");
+                            MessageBox.Show(Application.Current.MainWindow, string.Format(SpectrumResources.ContinuousTestCompletedWithFailureCount, errornum));
                         });
                         break;
                     }

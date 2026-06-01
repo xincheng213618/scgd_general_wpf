@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA2211
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.UI.CUDA
 {

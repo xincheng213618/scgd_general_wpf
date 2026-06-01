@@ -53,8 +53,8 @@ namespace ColorVision.Engine.Services.Devices.PG
                     EditConfig.Port = 0x08;
                     RegisterAddressDockPanel.Visibility = Visibility.Visible;
 
-                    TextBlockPGIP.Text = "串口id";
-                    TextBlockPGPort.Text = "设备地址";
+                    TextBlockPGIP.Text = Properties.Resources.SzComName;
+                    TextBlockPGPort.Text = Properties.Resources.DeviceAddr;
 
                     CH341_Stream_SpeedDock.Visibility = Visibility.Visible;
 
@@ -79,8 +79,8 @@ namespace ColorVision.Engine.Services.Devices.PG
 
             if (EditConfig.Category == "CH431.I2C")
             {
-                TextBlockPGIP.Text = "串口id";
-                TextBlockPGPort.Text = "设备地址";
+                TextBlockPGIP.Text = Properties.Resources.SzComName;
+                TextBlockPGPort.Text = Properties.Resources.DeviceAddr;
             }
 
 

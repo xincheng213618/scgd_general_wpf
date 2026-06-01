@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Copilot;
+using ColorVision.Copilot.Mcp;
+using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Wizards;
@@ -23,7 +25,8 @@ namespace ColorVision
     public class APPConfig : ViewModelBase,IConfig
     {
         [ConfigSetting]
-        [DisplayName("允许程序多开")]
+        [DisplayName("AllowMultipleInstances")]
+        [Description("AllowMultipleInstancesDescription")]
         public bool IsMute { get => _IsMute; set { _IsMute = value; OnPropertyChanged(); } }
         private bool _IsMute = true;
     }
@@ -147,7 +150,7 @@ namespace ColorVision
                 }
                 else
                 {
-                    MessageBox.Show("不支持的文件格式");
+                    MessageBox.Show(ColorVision.Properties.Resources.UnsupportedFileFormat);
                     Environment.Exit(0);
                     return;
                 }
@@ -192,6 +195,8 @@ namespace ColorVision
                 //Environment.Exit(0);
             }
 
+            CopilotMcpServer.Instance.ApplyConfig();
+
             if (!Debugger.IsAttached)
             {
                 //杀死僵尸进程
@@ -208,7 +213,7 @@ namespace ColorVision
             }
             else
             {
-                var result = MessageBox.Show("检测到软件上次没有成功打开，是否禁用插件", "ColorVision", MessageBoxButton.YesNo);
+                var result = MessageBox.Show(ColorVision.Properties.Resources.PluginLoadFailedPrompt, "ColorVision", MessageBoxButton.YesNo);
                 if (result == MessageBoxResult.No)
                 {
                     shouldLoadPlugins = true;
@@ -250,6 +255,7 @@ namespace ColorVision
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
+            CopilotMcpServer.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
             //Environment.Exit(0);

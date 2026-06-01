@@ -76,19 +76,19 @@
                         <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Image  Source="{DynamicResource DrawingImageClear}"/>
                         </Button>
-                        <Button Command="{Binding NewFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="新建流程">
+                        <Button Command="{Binding NewFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="{x:Static properties:Resources.Flow_NewFlow}">
                             <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                         </Button>
-                        <Button Command="{Binding ExportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="导出流程">
+                        <Button Command="{Binding ExportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="{x:Static properties:Resources.Flow_ExportFlow}">
                             <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                         </Button>
-                        <Button Command="{Binding ImportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="导入流程">
+                        <Button Command="{Binding ImportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="{x:Static properties:Resources.Flow_ImportFlow}">
                             <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                         </Button>
-                        <Button Command="{Binding ImportModuleCommand}" Margin="0,0,5,0" Padding="2" Height="30" ToolTip="导入模板为模块">
+                        <Button Command="{Binding ImportModuleCommand}" Margin="0,0,5,0" Padding="2" Height="30" ToolTip="{x:Static properties:Resources.Flow_ImportTemplateAsModule}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
-                                <TextBlock Text=" 模块" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static properties:Resources.Flow_Module}" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -100,7 +100,7 @@
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                             <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
                             <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess"  Margin="0,0,5,0"/>
-                            <Button Content="节点时间分析" Click="Button_Click_NodeAnalysis"/>
+                            <Button Content="{x:Static properties:Resources.Flow_NodeTimeAnalysis}" Click="Button_Click_NodeAnalysis"/>
                         </StackPanel>
 
                     </StackPanel>

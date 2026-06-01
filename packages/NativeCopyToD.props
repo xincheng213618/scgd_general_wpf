@@ -2,14 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
-  <ItemDefinitionGroup>
-    <PostBuildEvent>
-      <Command>if not exist "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows" (mkdir "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows");
-	  if not exist "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows" (mkdir "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows");
-	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows";
-	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows";</Command>
-    </PostBuildEvent>
-  </ItemDefinitionGroup>
+  <PropertyGroup>
+    <ColorVisionNativePropsDir>$(MSBuildThisFileDirectory)</ColorVisionNativePropsDir>
+  </PropertyGroup>
+  <Import Project="$(ColorVisionNativePropsDir)NativeCopyToD.targets" Condition="Exists('$(ColorVisionNativePropsDir)NativeCopyToD.targets')" />
   <ItemGroup />
 </Project>

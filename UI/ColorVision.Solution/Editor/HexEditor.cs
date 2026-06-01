@@ -8,7 +8,7 @@ using System.Windows;
 namespace ColorVision.Solution
 {
     // 标记本类支持的扩展名，并设为默认
-    [GenericEditor("Hex文本编辑器")]
+    [GenericEditor("Hex文本编辑器", resourceKey: "Sol_Editor_Hex")]
     public class HexEditor : EditorBase
     {
         public override void Open(string filePath)

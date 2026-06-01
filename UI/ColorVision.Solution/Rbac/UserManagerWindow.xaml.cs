@@ -81,7 +81,7 @@ namespace ColorVision.Rbac
             }
             
             ApplyFilter();
-            TxtTotalCount.Text = _allUsers.Count.ToString();
+            TxtTotalCount.Text = string.Format(ColorVision.Solution.Properties.Resources.Sol_UserMgr_UserCount, _allUsers.Count);
         }
 
         private void ApplyFilter()

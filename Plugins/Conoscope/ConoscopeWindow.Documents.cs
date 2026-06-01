@@ -54,7 +54,7 @@ namespace Conoscope
 
             LayoutDocument layoutDocument = new LayoutDocument
             {
-                Title = string.IsNullOrWhiteSpace(filePath) ? "Conoscope" : Path.GetFileName(filePath),
+                Title = string.IsNullOrWhiteSpace(filePath) ? Properties.Resources.WindowTitleConoscope : Path.GetFileName(filePath),
                 ContentId = string.IsNullOrWhiteSpace(filePath) ? $"StandaloneConoscope:{Guid.NewGuid():N}" : GetContentId(filePath),
                 Content = view,
                 CanClose = true,

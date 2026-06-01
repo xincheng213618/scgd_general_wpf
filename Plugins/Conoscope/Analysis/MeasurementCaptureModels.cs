@@ -48,7 +48,7 @@ namespace Conoscope.Analysis
                 {
                     new MeasurementPoint(
                         "ManualAverage",
-                        "整体平均",
+                        Properties.Resources.Conoscope_OverallAverage,
                         measurement,
                         null,
                         null,
@@ -115,11 +115,6 @@ namespace Conoscope.Analysis
 
         public ColorGamutComputationResult Calculate(MeasurementCapture redCapture, MeasurementCapture greenCapture, MeasurementCapture blueCapture, ColorGamutStandard standard)
         {
-            ArgumentNullException.ThrowIfNull(redCapture);
-            ArgumentNullException.ThrowIfNull(greenCapture);
-            ArgumentNullException.ThrowIfNull(blueCapture);
-            ArgumentNullException.ThrowIfNull(standard);
-
             IReadOnlyList<AlignedPointSet> alignedPoints = MeasurementCaptureAlignment.Align(redCapture, greenCapture, blueCapture);
             List<ColorGamutPointResult> results = new(alignedPoints.Count);
 
@@ -156,9 +151,6 @@ namespace Conoscope.Analysis
 
         public ContrastComputationResult Calculate(MeasurementCapture whiteCapture, MeasurementCapture blackCapture)
         {
-            ArgumentNullException.ThrowIfNull(whiteCapture);
-            ArgumentNullException.ThrowIfNull(blackCapture);
-
             IReadOnlyList<AlignedPointSet> alignedPoints = MeasurementCaptureAlignment.Align(whiteCapture, blackCapture);
             List<ContrastPointResult> results = new(alignedPoints.Count);
 
@@ -192,12 +184,12 @@ namespace Conoscope.Analysis
         {
             if (captures == null || captures.Length == 0)
             {
-                throw new ArgumentException("没有可对齐的测量数据", nameof(captures));
+                throw new ArgumentException(Conoscope.Properties.Resources.MsgNoMeasurementDataToAlign, paramName: nameof(captures));
             }
 
             if (captures.Any(capture => capture.Points.Count == 0))
             {
-                throw new InvalidOperationException("存在空的测量数据，无法对齐关注点");
+                throw new InvalidOperationException(Conoscope.Properties.Resources.MsgEmptyMeasurementDataCannotAlignFocusPoints);
             }
 
             List<MeasurementCapture> multiPointCaptures = captures.Where(capture => capture.Points.Count > 1).ToList();
@@ -264,7 +256,7 @@ namespace Conoscope.Analysis
                 }
             }
 
-            throw new InvalidOperationException($"未找到关注点 {key} 的显示信息。");
+            throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Conoscope.Properties.Resources.MsgFocusPointDisplayInfoNotFound, key));
         }
 
         private static MeasurementPoint ResolvePoint(MeasurementCapture capture, string key)
@@ -280,7 +272,7 @@ namespace Conoscope.Analysis
                 return capture.Points[0];
             }
 
-            throw new InvalidOperationException($"{capture.SlotName} 数据中缺少关注点 {key}。\n来源: {capture.SourceDisplayName}");
+            throw new InvalidOperationException(Conoscope.Core.CompositeFormatCache.Format(Conoscope.Properties.Resources.MsgMeasurementCaptureMissingFocusPoint, capture.SlotName, key, capture.SourceDisplayName));
         }
     }
 }

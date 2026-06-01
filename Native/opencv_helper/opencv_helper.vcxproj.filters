@@ -54,9 +54,6 @@
     <ClInclude Include="..\include\custom_structs.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\opencv_export.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\opencv_media_export.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -75,15 +72,15 @@
     <ClInclude Include="include\cvcore\sfr.h">
       <Filter>接口</Filter>
     </ClInclude>
+    <ClInclude Include="native_log.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="opencv_export.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="common.cpp">
@@ -115,6 +112,9 @@
     </ClCompile>
     <ClCompile Include="exports\sfr_export.cpp">
       <Filter>导出</Filter>
+    </ClCompile>
+    <ClCompile Include="native_log.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

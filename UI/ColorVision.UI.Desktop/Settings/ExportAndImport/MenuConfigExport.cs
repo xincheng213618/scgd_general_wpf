@@ -16,7 +16,7 @@ namespace ColorVision.UI.Desktop.Settings.ExportAndImport
             {
                 Filter = "cvsettings files (*.cvsettings)|*.cvsettings|All files (*.*)|*.*",
                 DefaultExt = ".cvsettings",
-                Title = "选择导出文件位置",
+                Title = ColorVision.UI.Desktop.Properties.Resources.Config_ExportTitle,
                 FileName = defaultFileName // Set the default file name
             };
 

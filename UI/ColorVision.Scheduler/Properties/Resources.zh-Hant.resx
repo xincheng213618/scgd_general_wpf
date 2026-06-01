@@ -171,4 +171,265 @@
   <data name="Resume" xml:space="preserve">
     <value>恢復</value>
   </data>
+  <data name="Sched_ExecHistory" xml:space="preserve">
+    <value>Execution History</value>
+  </data>
+  <data name="Sched_ExecHistoryTooltip" xml:space="preserve">
+    <value>View execution history of all tasks</value>
+  </data>
+  <data name="Sched_ExportCsv" xml:space="preserve">
+    <value>Export CSV</value>
+  </data>
+  <data name="Sched_ExportCsvTooltip" xml:space="preserve">
+    <value>Export task list to CSV file</value>
+  </data>
+  <data name="Sched_ExportJson" xml:space="preserve">
+    <value>Export JSON</value>
+  </data>
+  <data name="Sched_ExportJsonTooltip" xml:space="preserve">
+    <value>Export task configuration to JSON file</value>
+  </data>
+  <data name="Sched_ExportReport" xml:space="preserve">
+    <value>Export Report</value>
+  </data>
+  <data name="Sched_ExportReportTooltip" xml:space="preserve">
+    <value>Export execution statistics report</value>
+  </data>
+  <data name="Sched_SuccessFail" xml:space="preserve">
+    <value>Success/Fail</value>
+  </data>
+  <data name="Sched_Priority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Sched_ExecTimeMs" xml:space="preserve">
+    <value>Execution Time(ms)</value>
+  </data>
+  <data name="Sched_LastResult" xml:space="preserve">
+    <value>Last Result</value>
+  </data>
+  <data name="Sched_EditTask" xml:space="preserve">
+    <value>Edit Task</value>
+  </data>
+  <data name="Sched_ViewProps" xml:space="preserve">
+    <value>View Properties</value>
+  </data>
+  <data name="Sched_PauseTask" xml:space="preserve">
+    <value>Pause Task</value>
+  </data>
+  <data name="Sched_ResumeTask" xml:space="preserve">
+    <value>Resume Task</value>
+  </data>
+  <data name="Sched_DeleteTask" xml:space="preserve">
+    <value>Delete Task</value>
+  </data>
+  <data name="Sched_RunNow" xml:space="preserve">
+    <value>Run Now</value>
+  </data>
+  <data name="Sched_ExecHistoryMenu" xml:space="preserve">
+    <value>Execution History</value>
+  </data>
+  <data name="Sched_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Sched_Prompt" xml:space="preserve">
+    <value>Prompt</value>
+  </data>
+  <data name="Sched_ConfirmDelete" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="Sched_Success" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="Sched_PartialSuccess" xml:space="preserve">
+    <value>Partial Success</value>
+  </data>
+  <data name="Sched_ExportSuccess" xml:space="preserve">
+    <value>Export successful</value>
+  </data>
+  <data name="Sched_HistoryTitle" xml:space="preserve">
+    <value>Execution History</value>
+  </data>
+  <data name="Sched_TaskLabel" xml:space="preserve">
+    <value>Task:</value>
+  </data>
+  <data name="Sched_AllTasks" xml:space="preserve">
+    <value>All Tasks</value>
+  </data>
+  <data name="Sched_Filter" xml:space="preserve">
+    <value>Filter:</value>
+  </data>
+  <data name="Sched_All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Sched_SuccessFilter" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="Sched_FailFilter" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Sched_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Sched_Clear90Days" xml:space="preserve">
+    <value>Clear records older than 90 days</value>
+  </data>
+  <data name="Sched_TotalExec" xml:space="preserve">
+    <value>Total: </value>
+  </data>
+  <data name="Sched_SuccessCount" xml:space="preserve">
+    <value>Success: </value>
+  </data>
+  <data name="Sched_FailCount" xml:space="preserve">
+    <value>Failed: </value>
+  </data>
+  <data name="Sched_AvgTime" xml:space="preserve">
+    <value>Avg Time: </value>
+  </data>
+  <data name="Sched_StartTime" xml:space="preserve">
+    <value>Start Time</value>
+  </data>
+  <data name="Sched_TaskName" xml:space="preserve">
+    <value>Task Name</value>
+  </data>
+  <data name="Sched_Group" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="Sched_ElapsedMs" xml:space="preserve">
+    <value>Elapsed(ms)</value>
+  </data>
+  <data name="Sched_Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Sched_Detail" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Sched_PrevPage" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Sched_PageInfo" xml:space="preserve">
+    <value>Page {0}</value>
+  </data>
+  <data name="Sched_Page1" xml:space="preserve">
+    <value>Page 1</value>
+  </data>
+  <data name="Sched_NextPage" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Sched_ConfirmClear90" xml:space="preserve">
+    <value>Clear history records older than 90 days?</value>
+  </data>
+  <data name="Sched_ConfirmClearTitle" xml:space="preserve">
+    <value>Confirm Clear</value>
+  </data>
+  <data name="Sched_Cleared" xml:space="preserve">
+    <value>Cleared {0} history records</value>
+  </data>
+  <data name="Sched_ClearDone" xml:space="preserve">
+    <value>Clear completed</value>
+  </data>
+  <data name="Sched_Task" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="Sched_RepeatCount" xml:space="preserve">
+    <value>Repeat Count</value>
+  </data>
+  <data name="Sched_Interval" xml:space="preserve">
+    <value>Interval</value>
+  </data>
+  <data name="Sched_CronGenerator" xml:space="preserve">
+    <value>Online Cron Expression Generator</value>
+  </data>
+  <data name="Sched_Advanced" xml:space="preserve">
+    <value>Advanced Settings</value>
+  </data>
+  <data name="Sched_PriorityLabel" xml:space="preserve">
+    <value>Priority (1-10)</value>
+  </data>
+  <data name="Sched_PriorityTooltip" xml:space="preserve">
+    <value>Higher value = higher priority</value>
+  </data>
+  <data name="Sched_Timeout" xml:space="preserve">
+    <value>Timeout(seconds)</value>
+  </data>
+  <data name="Sched_TimeoutTooltip" xml:space="preserve">
+    <value>0 means no timeout</value>
+  </data>
+  <data name="Sched_NoLimit" xml:space="preserve">
+    <value>0 = No limit</value>
+  </data>
+  <data name="Sched_SaveFailed" xml:space="preserve">
+    <value>Failed to save task config: {0}</value>
+  </data>
+  <data name="Sched_LoadFailed" xml:space="preserve">
+    <value>Failed to load task config: {0}</value>
+  </data>
+  <data name="Sched_RestoreWarning" xml:space="preserve">
+    <value>The following tasks failed to restore: {0}</value>
+  </data>
+  <data name="Sched_RestoreWarningTitle" xml:space="preserve">
+    <value>Task Restore Warning</value>
+  </data>
+  <data name="Sched_StartFailed" xml:space="preserve">
+    <value>Scheduler start failed: {0}</value>
+  </data>
+  <data name="Sched_ParamError" xml:space="preserve">
+    <value>Parameter error</value>
+  </data>
+  <data name="Sched_NotInit" xml:space="preserve">
+    <value>Scheduler not initialized</value>
+  </data>
+  <data name="Sched_CreateTriggerFailed" xml:space="preserve">
+    <value>Failed to create trigger</value>
+  </data>
+  <data name="Sched_CreateTaskFailed" xml:space="preserve">
+    <value>Failed to create task: {0}</value>
+  </data>
+  <data name="Sched_UpdateTaskFailed" xml:space="preserve">
+    <value>Failed to update task: {0}</value>
+  </data>
+  <data name="Sched_TypeEmpty" xml:space="preserve">
+    <value>Task type cannot be empty</value>
+  </data>
+  <data name="Sched_NameEmpty" xml:space="preserve">
+    <value>Task name and group name cannot be empty</value>
+  </data>
+  <data name="Sched_CronEmpty" xml:space="preserve">
+    <value>Cron expression cannot be empty</value>
+  </data>
+  <data name="Sched_CronInvalid" xml:space="preserve">
+    <value>Cron expression is invalid</value>
+  </data>
+  <data name="Sched_RepeatInvalid" xml:space="preserve">
+    <value>Repeat count must be greater than 0</value>
+  </data>
+  <data name="Sched_TriggerNow" xml:space="preserve">
+    <value>Now</value>
+  </data>
+  <data name="Sched_TriggerDelay" xml:space="preserve">
+    <value>Delay</value>
+  </data>
+  <data name="Sched_Simple" xml:space="preserve">
+    <value>Simple</value>
+  </data>
+  <data name="Sched_Calendar" xml:space="preserve">
+    <value>Calendar</value>
+  </data>
+  <data name="Sched_IntervalType" xml:space="preserve">
+    <value>Interval</value>
+  </data>
+  <data name="Sched_Once" xml:space="preserve">
+    <value>Once</value>
+  </data>
+  <data name="Sched_Multiple" xml:space="preserve">
+    <value>Multiple</value>
+  </data>
+  <data name="Sched_Forever" xml:space="preserve">
+    <value>Forever</value>
+  </data>
+  <data name="Sched_ExecSuccess" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="Sched_ExecFail" xml:space="preserve">
+    <value>Failed</value>
+  </data>
 </root>

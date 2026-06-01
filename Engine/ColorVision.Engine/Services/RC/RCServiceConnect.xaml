@@ -89,7 +89,7 @@
 
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="AppSecret" VerticalAlignment="Center" Width="120"/>
-                                <hc:PasswordBox x:Name="PasswordBox1" ToolTip="App密钥" ShowEyeButton="True" VerticalAlignment="Center" Password="" BorderThickness="0,0,0,1" />
+                                <hc:PasswordBox x:Name="PasswordBox1" ToolTip="{x:Static properties:Resources.AppSecretTooltip}" ShowEyeButton="True" VerticalAlignment="Center" Password="" BorderThickness="0,0,0,1" />
                             </DockPanel>
 
                         </StackPanel>

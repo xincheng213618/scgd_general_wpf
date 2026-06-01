@@ -28,11 +28,11 @@
         <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="任务" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Sched_Task}" Width="100" />
                     <ComboBox x:Name="TaskComboBox"  Style="{StaticResource ComboBox.Small}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding JobType}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="任务名称" MinWidth="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Sched_TaskName}" MinWidth="100" />
                     <TextBox  Text="{Binding JobName}" Style="{StaticResource TextBox.Small}" />
                 </DockPanel>
                 <DockPanel Margin="2" >
@@ -40,7 +40,7 @@
                     <TextBox  Text="{Binding GroupName}"  Style="{StaticResource TextBox.Small}" />
                 </DockPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="任务" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Sched_Task}" Width="100" />
                     <ComboBox x:Name="ComboBoxMode" Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Mode}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="2">
@@ -51,35 +51,35 @@
 
                 <StackPanel Visibility="{Binding IsJobInterval ,Converter={StaticResource bool2VisibilityConverter}}">
                     <DockPanel Margin="2" >
-                        <TextBlock Text="重复次数" Width="100" />
+                        <TextBlock Text="{x:Static properties:Resources.Sched_RepeatCount}" Width="100" />
                         <ComboBox Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
                         <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
                     </DockPanel>
                     <DockPanel Margin="2"  Visibility="{Binding IsRepeatOnce ,Converter={StaticResource bool2VisibilityConverter1}}">
-                        <TextBlock Text="间隔时间" Width="100" />
+                        <TextBlock Text="{x:Static properties:Resources.Sched_Interval}" Width="100" />
                         <TextBox Text="{Binding Interval}"  Style="{StaticResource TextBox.Small}" />
                     </DockPanel>
                 </StackPanel>
                 <StackPanel Visibility="{Binding IsSimple ,Converter={StaticResource bool2VisibilityConverter}}">
                     <DockPanel Margin="2" >
-                        <TextBlock Text="重复次数" Width="100" />
+                        <TextBlock Text="{x:Static properties:Resources.Sched_RepeatCount}" Width="100" />
                         <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
                         <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
                     </DockPanel>
                     <DockPanel Margin="2"  Visibility="{Binding IsRepeatOnce ,Converter={StaticResource bool2VisibilityConverter1}}">
-                        <TextBlock Text="间隔时间" Width="100" />
+                        <TextBlock Text="{x:Static properties:Resources.Sched_Interval}" Width="100" />
                         <TextBox Text="{Binding Interval}"  Style="{StaticResource TextBox.Small}" />
                     </DockPanel>
                 </StackPanel>
 
                 <StackPanel Visibility="{Binding IsCron ,Converter={StaticResource bool2VisibilityConverter}}">
                     <DockPanel Margin="2">
-                        <Button Content="在线Cron表达式生成器" DockPanel.Dock="Right"  Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="5,0,0,0"/>
+                        <Button Content="{x:Static properties:Resources.Sched_CronGenerator}" DockPanel.Dock="Right"  Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="5,0,0,0"/>
                         <TextBlock Text="{x:Static properties:Resources.CronExpression}" Width="100" />
                         <TextBox  Text="{Binding CronExpression}" Style="{StaticResource TextBox.Small}"/>
                     </DockPanel>
                     <DockPanel Margin="2" >
-                        <TextBlock Text="重复次数" Width="100" />
+                        <TextBlock Text="{x:Static properties:Resources.Sched_RepeatCount}" Width="100" />
                         <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
                         <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
                     </DockPanel>
@@ -90,19 +90,19 @@
 
                 <!-- 第三阶段新增：优先级和超时设置 -->
                 <Separator Margin="2,10,2,5"/>
-                <TextBlock Text="高级设置" FontWeight="Bold" Margin="2,5,2,2"/>
+                <TextBlock Text="{x:Static properties:Resources.Sched_Advanced}" FontWeight="Bold" Margin="2,5,2,2"/>
                 
                 <DockPanel Margin="2">
-                    <TextBlock Text="优先级 (1-10)" Width="100" ToolTip="数值越大优先级越高"/>
+                    <TextBlock Text="{x:Static properties:Resources.Sched_PriorityLabel}" Width="100" ToolTip="{x:Static properties:Resources.Sched_PriorityTooltip}"/>
                     <Slider x:Name="PrioritySlider" Minimum="1" Maximum="10" Value="{Binding Priority}" 
                             Width="150" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0"/>
                     <TextBlock Text="{Binding ElementName=PrioritySlider, Path=Value}" Width="30"/>
                 </DockPanel>
                 
                 <DockPanel Margin="2">
-                    <TextBlock Text="超时时间(秒)" Width="100" ToolTip="0表示无超时限制"/>
+                    <TextBlock Text="{x:Static properties:Resources.Sched_Timeout}" Width="100" ToolTip="{x:Static properties:Resources.Sched_TimeoutTooltip}"/>
                     <TextBox Text="{Binding TimeoutSeconds}" Style="{StaticResource TextBox.Small}" Width="100"/>
-                    <TextBlock Text="0 = 无限制" Margin="10,0,0,0" Foreground="Gray"/>
+                    <TextBlock Text="{x:Static properties:Resources.Sched_NoLimit}" Margin="10,0,0,0" Foreground="Gray"/>
                 </DockPanel>
 
             </StackPanel>

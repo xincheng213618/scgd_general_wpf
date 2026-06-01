@@ -2,116 +2,88 @@
 {% block title %}版本档案 — ColorVision{% endblock %}
 
 {% block content %}
-<section class="hero-panel mb-4">
-    <div class="row g-4 align-items-center position-relative">
-        <div class="col-lg-8">
-            <span class="eyebrow mb-3"><i class="bi bi-archive"></i> 应用版本档案</span>
-            <h1 class="display-5 fw-semibold mb-3">当前版本与历史制品，都应该是产品演进记录的一部分。</h1>
-            <p class="page-lead mb-4">
-                这里聚合根目录保留版本和 `History` 中的归档文件。除了当前安装包，也会把早期 ZIP、RAR 等历史制品按阶段归到时间线上，便于看清更新节奏和迭代轨迹。
-            </p>
-            <div class="hero-actions">
-                <a href="{{ '/download/' ~ app_info.latest_release.relative_path if app_info.latest_release else '#' }}" class="btn btn-light btn-lg {% if not app_info.latest_release %}disabled{% endif %}">
-                    <i class="bi bi-download me-2"></i>下载最新安装包
-                </a>
-                <a href="/browse/History" class="btn btn-outline-light btn-lg"><i class="bi bi-folder2-open me-2"></i>浏览完整 History</a>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="hero-aside">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="metric-card">
-                            <span class="metric-label">根目录版本</span>
-                            <div class="metric-value">{{ app_info.current_count }}</div>
-                            <div class="metric-note">保留在 H:\ColorVision 根目录</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="metric-card">
-                            <span class="metric-label">归档历史制品</span>
-                            <div class="metric-value">{{ app_info.archive_count }}</div>
-                            <div class="metric-note">History 中可回溯下载</div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="metric-card">
-                            <span class="metric-label">历史阶段</span>
-                            <div class="metric-value">{{ app_info.archive_timeline_count }}</div>
-                            <div class="metric-note">按主版本 / 分支整理可回溯记录</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<section class="panel-card p-4 mb-4">
-    <div class="section-header">
+<div class="page-header mb-3">
+    <div class="page-header-row">
         <div>
-            <h2 class="section-title"><i class="bi bi-funnel"></i>历史筛选</h2>
-            <div class="section-subtitle mt-2">按主线、阶段和制品类型筛选历史记录，快速定位 ZIP 时代、安装包时代或某个分支的演进。</div>
+            <h1 class="page-header-title"><i class="bi bi-archive"></i>版本档案</h1>
+            <p class="page-header-desc">根目录当前版本与 History 归档历史制品</p>
         </div>
-        <div class="summary-strip">
-            <div class="summary-chip"><i class="bi bi-boxes"></i> 当前显示 {{ archive_visible_item_count }} 条记录</div>
-            <div class="summary-chip"><i class="bi bi-diagram-3"></i> {{ archive_visible_group_count }} 个阶段</div>
+        <div class="page-header-stats">
+            <div class="page-header-stat">
+                <strong>{{ app_info.current_count }}</strong>
+                <span>根目录版本</span>
+            </div>
+            <div class="page-header-stat">
+                <strong>{{ app_info.archive_count }}</strong>
+                <span>归档制品</span>
+            </div>
+            <div class="page-header-stat">
+                <strong>{{ app_info.archive_timeline_count }}</strong>
+                <span>历史阶段</span>
+            </div>
+            {% if app_info.latest_release %}
+            <a href="{{ '/download/' ~ app_info.latest_release.relative_path }}" class="btn btn-sm btn-primary align-self-center"><i class="bi bi-download me-1"></i>最新安装包</a>
+            {% endif %}
         </div>
     </div>
+</div>
 
-    <form method="get" action="/releases" class="row g-3 align-items-end filter-panel">
-        <div class="col-md-4">
-            <label class="form-label text-soft small">主线</label>
-            <select name="major_minor" class="form-select form-select-lg">
+<section class="panel-card p-3 mb-3">
+    <div class="section-header mb-2">
+        <h2 class="section-title"><i class="bi bi-funnel"></i>历史筛选</h2>
+        <div class="summary-strip">
+            <div class="summary-chip"><i class="bi bi-boxes"></i>当前显示 {{ archive_visible_item_count }} 条记录</div>
+            <div class="summary-chip"><i class="bi bi-diagram-3"></i>{{ archive_visible_group_count }} 阶段</div>
+        </div>
+    </div>
+    <form method="get" action="/releases" class="row g-2 align-items-end filter-panel">
+        <div class="col-md-3">
+            <label class="form-label text-soft small mb-1">主线</label>
+            <select name="major_minor" class="form-select">
                 {% for option in archive_major_minor_options %}
                 <option value="{{ option.value }}" {{ 'selected' if option.selected else '' }}>{{ option.label }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4">
-            <label class="form-label text-soft small">阶段</label>
-            <select name="branch" class="form-select form-select-lg">
+        <div class="col-md-3">
+            <label class="form-label text-soft small mb-1">阶段</label>
+            <select name="branch" class="form-select">
                 {% for option in archive_branch_options %}
                 <option value="{{ option.value }}" {{ 'selected' if option.selected else '' }}>{{ option.label }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4 col-lg-2">
-            <label class="form-label text-soft small">类型</label>
-            <select name="kind" class="form-select form-select-lg">
+        <div class="col-md-2">
+            <label class="form-label text-soft small mb-1">类型</label>
+            <select name="kind" class="form-select">
                 {% for option in archive_kind_options %}
                 <option value="{{ option.value }}" {{ 'selected' if option.selected else '' }}>{{ option.label }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4 col-lg-2">
-            <label class="form-label text-soft small">时代</label>
-            <select name="era" class="form-select form-select-lg">
+        <div class="col-md-2">
+            <label class="form-label text-soft small mb-1">时代</label>
+            <select name="era" class="form-select">
                 {% for option in archive_era_options %}
                 <option value="{{ option.value }}" {{ 'selected' if option.selected else '' }}>{{ option.label }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="col-lg-4 d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-lg flex-grow-1"><i class="bi bi-search me-1"></i>筛选</button>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-search me-1"></i>筛选</button>
             {% if release_filters.has_filters %}
-            <a href="{{ release_filters.reset_href }}" class="btn btn-outline-secondary btn-lg">清除</a>
+            <a href="{{ release_filters.reset_href }}" class="btn btn-outline-secondary">清除</a>
             {% endif %}
         </div>
     </form>
 </section>
 
-<div class="row g-4">
+<div class="row g-3">
     <div class="col-xl-5">
-        <section class="panel-card p-4 h-100">
+        <section class="panel-card p-3 h-100">
             <div class="section-header">
-                <div>
-                    <h2 class="section-title"><i class="bi bi-lightning-charge"></i>根目录保留版本</h2>
-                    <div class="section-subtitle mt-2">建议只保留最近 {{ app_info.current_count }} 个用于快速下载，其余交给 History。</div>
-                </div>
+                <h2 class="section-title"><i class="bi bi-lightning-charge"></i>根目录保留版本</h2>
             </div>
-
             <div class="release-list">
                 {% for release in app_info.current_releases %}
                 <div class="release-row">
@@ -130,22 +102,18 @@
                 </div>
                 {% endfor %}
                 {% if not app_info.current_releases %}
-                <div class="text-center text-muted py-5">未检测到根目录版本文件。</div>
+                <div class="text-center text-muted py-3 small">未检测到根目录版本文件</div>
                 {% endif %}
             </div>
         </section>
     </div>
 
     <div class="col-xl-7">
-        <section class="panel-card p-4 h-100">
+        <section class="panel-card p-3 h-100">
             <div class="section-header">
-                <div>
-                    <h2 class="section-title"><i class="bi bi-clock-history"></i>归档历史时间线</h2>
-                    <div class="section-subtitle mt-2">每个阶段展示该分支的时间范围、制品类型和真实文件路径，完整内容仍可进入 `History/` 查看。</div>
-                </div>
+                <h2 class="section-title"><i class="bi bi-clock-history"></i>归档历史时间线</h2>
                 <a href="/browse/History" class="btn btn-sm btn-outline-primary">打开 History</a>
             </div>
-
             <div>
                 {% for group in archive_visible_groups %}
                 <details class="timeline-group timeline-disclosure" {% if group.is_expanded %}open{% endif %}>
@@ -157,24 +125,17 @@
                             </div>
                             <div class="summary-strip">
                                 <div class="summary-chip"><i class="bi bi-boxes"></i>{{ group.visible_count }} / {{ group.count }} 条记录</div>
-                                <div class="summary-chip"><i class="bi bi-diagram-3"></i>{{ group.major_minor }}</div>
-                                {% if group.contains_archive_only_formats %}
-                                <div class="summary-chip"><i class="bi bi-file-earmark-zip"></i>包含 ZIP / RAR 历史制品</div>
-                                {% endif %}
-                                {% if group.contains_installer_artifacts %}
-                                <div class="summary-chip"><i class="bi bi-pc-display"></i>包含安装包</div>
-                                {% endif %}
+                                {% if group.contains_archive_only_formats %}<div class="summary-chip"><i class="bi bi-file-earmark-zip"></i>包含 ZIP / RAR 历史制品</div>{% endif %}
                             </div>
                         </div>
                     </summary>
-                    <div class="timeline-track mt-3">
+                    <div class="timeline-track mt-2">
                         {% for release in group['visible_items'] %}
                         <div class="timeline-item">
                             <div class="timeline-item-head">
                                 <div>
                                     <div class="release-title">{{ release.display_title }}</div>
                                     <div class="timeline-meta">{{ release.era_label }} · {{ release.kind_label }} · {{ human_size(release.size) }} · {{ release.modified_display }}</div>
-                                    <div class="timeline-meta">{{ release.relative_path }}</div>
                                 </div>
                                 <a href="/download/{{ release.relative_path }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>下载</a>
                             </div>
@@ -184,19 +145,16 @@
                 </details>
                 {% endfor %}
                 {% if not archive_visible_groups %}
-                <div class="text-center text-muted py-5">当前还没有归档历史文件。</div>
+                <div class="text-center text-muted py-3 small">暂无归档历史文件</div>
                 {% endif %}
             </div>
-
             {% if release_filters.has_filters and not archive_visible_groups %}
-            <div class="mt-4 text-soft small text-center">当前筛选条件下没有匹配记录，可以清除筛选后查看完整时间线。</div>
+            <div class="mt-3 text-soft small text-center">当前筛选无匹配，可清除筛选查看完整时间线</div>
             {% endif %}
-
             {% if app_info.archive_more_count > 0 %}
-            <div class="mt-4 text-soft small text-center">还有 {{ app_info.archive_more_count }} 项未在此页展示，可通过文件浏览器进入 `History/` 查看完整内容。</div>
+            <div class="mt-3 text-soft small text-center">还有 {{ app_info.archive_more_count }} 项未展示，可进入 History/ 查看</div>
             {% endif %}
         </section>
     </div>
 </div>
 {% endblock %}
-

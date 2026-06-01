@@ -61,11 +61,1042 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
+        ///   查找类似 绝对光谱 的本地化字符串。
+        /// </summary>
+        public static string AbsoluteSpectrum {
+            get {
+                return ResourceManager.GetString("AbsoluteSpectrum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 绝对光谱曲线 的本地化字符串。
+        /// </summary>
+        public static string AbsoluteSpectrumCurve {
+            get {
+                return ResourceManager.GetString("AbsoluteSpectrumCurve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自适应校零失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string AdaptiveAutoDarkFailed {
+            get {
+                return ResourceManager.GetString("AdaptiveAutoDarkFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自适应校零成功 的本地化字符串。
+        /// </summary>
+        public static string AdaptiveAutoDarkSuccess {
+            get {
+                return ResourceManager.GetString("AdaptiveAutoDarkSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载当前选择分组的标定文件 的本地化字符串。
+        /// </summary>
+        public static string ApplyCalibrationGroupTooltip {
+            get {
+                return ResourceManager.GetString("ApplyCalibrationGroupTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自动校零 的本地化字符串。
+        /// </summary>
+        public static string AutoZeroCalibration {
+            get {
+                return ResourceManager.GetString("AutoZeroCalibration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 波特率 的本地化字符串。
+        /// </summary>
+        public static string BaudRate {
+            get {
+                return ResourceManager.GetString("BaudRate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 亮色度模式 的本地化字符串。
+        /// </summary>
+        public static string BrightnessChromaticityMode {
+            get {
+                return ResourceManager.GetString("BrightnessChromaticityMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 标定文件 的本地化字符串。
+        /// </summary>
+        public static string CalibrationFiles {
+            get {
+                return ResourceManager.GetString("CalibrationFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 通道A 的本地化字符串。
+        /// </summary>
+        public static string ChannelA {
+            get {
+                return ResourceManager.GetString("ChannelA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CIE色度图 的本地化字符串。
+        /// </summary>
+        public static string CieChromaticityDiagram {
+            get {
+                return ResourceManager.GetString("CieChromaticityDiagram", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清空记录 的本地化字符串。
+        /// </summary>
+        public static string ClearRecords {
+            get {
+                return ResourceManager.GetString("ClearRecords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭输出 的本地化字符串。
+        /// </summary>
+        public static string CloseOutput {
+            get {
+                return ResourceManager.GetString("CloseOutput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭输出失败 的本地化字符串。
+        /// </summary>
+        public static string CloseOutputFailedTitle {
+            get {
+                return ResourceManager.GetString("CloseOutputFailedTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭快门 的本地化字符串。
+        /// </summary>
+        public static string CloseShutter {
+            get {
+                return ResourceManager.GetString("CloseShutter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭源表输出 的本地化字符串。
+        /// </summary>
+        public static string CloseSourceMeterOutput {
+            get {
+                return ResourceManager.GetString("CloseSourceMeterOutput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接 的本地化字符串。
+        /// </summary>
+        public static string Connect {
+            get {
+                return ResourceManager.GetString("Connect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已连接 的本地化字符串。
+        /// </summary>
+        public static string ConnectedStatus {
+            get {
+                return ResourceManager.GetString("ConnectedStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在连接源表... 的本地化字符串。
+        /// </summary>
+        public static string ConnectingSourceMeter {
+            get {
+                return ResourceManager.GetString("ConnectingSourceMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接失败 - 许可证检查 的本地化字符串。
+        /// </summary>
+        public static string ConnectionFailedLicenseCheckTitle {
+            get {
+                return ResourceManager.GetString("ConnectionFailedLicenseCheckTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接失败 的本地化字符串。
+        /// </summary>
+        public static string ConnectionFailedTitle {
+            get {
+                return ResourceManager.GetString("ConnectionFailedTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接失败: {0}
+        ///
+        ///检测到设备: {1}
+        ///连接失败可能是许可证问题。
+        ///
+        ///是否打开许可证管理器? 的本地化字符串。
+        /// </summary>
+        public static string ConnectionFailedWithDeviceDetected {
+            get {
+                return ResourceManager.GetString("ConnectionFailedWithDeviceDetected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string ConnectionFailedWithError {
+            get {
+                return ResourceManager.GetString("ConnectionFailedWithError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接源表 的本地化字符串。
+        /// </summary>
+        public static string ConnectSourceMeter {
+            get {
+                return ResourceManager.GetString("ConnectSourceMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连续测试执行完毕，执行失败 {0} 次 的本地化字符串。
+        /// </summary>
+        public static string ContinuousTestCompletedWithFailureCount {
+            get {
+                return ResourceManager.GetString("ContinuousTestCompletedWithFailureCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 控制面板 的本地化字符串。
+        /// </summary>
+        public static string ControlPanel {
+            get {
+                return ResourceManager.GetString("ControlPanel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前分组: 的本地化字符串。
+        /// </summary>
+        public static string CurrentGroup {
+            get {
+                return ResourceManager.GetString("CurrentGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电流 (mA) 的本地化字符串。
+        /// </summary>
+        public static string CurrentMilliampLabel {
+            get {
+                return ResourceManager.GetString("CurrentMilliampLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前位置: 的本地化字符串。
+        /// </summary>
+        public static string CurrentPosition {
+            get {
+                return ResourceManager.GetString("CurrentPosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电流源模式: 测量值单位为 mA，限制值单位为 V 的本地化字符串。
+        /// </summary>
+        public static string CurrentSourceModeHint {
+            get {
+                return ResourceManager.GetString("CurrentSourceModeHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据来源 的本地化字符串。
+        /// </summary>
+        public static string DataSource {
+            get {
+                return ResourceManager.GetString("DataSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除数据库中所有记录 的本地化字符串。
+        /// </summary>
+        public static string DeleteAllRecordsTooltip {
+            get {
+                return ResourceManager.GetString("DeleteAllRecordsTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设备名称不能为空 的本地化字符串。
+        /// </summary>
+        public static string DeviceNameRequired {
+            get {
+                return ResourceManager.GetString("DeviceNameRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 断开 的本地化字符串。
+        /// </summary>
+        public static string Disconnect {
+            get {
+                return ResourceManager.GetString("Disconnect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在断开源表... 的本地化字符串。
+        /// </summary>
+        public static string DisconnectingSourceMeter {
+            get {
+                return ResourceManager.GetString("DisconnectingSourceMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 断开失败 的本地化字符串。
+        /// </summary>
+        public static string DisconnectionFailedTitle {
+            get {
+                return ResourceManager.GetString("DisconnectionFailedTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 断开源表 的本地化字符串。
+        /// </summary>
+        public static string DisconnectSourceMeter {
+            get {
+                return ResourceManager.GetString("DisconnectSourceMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已用: 的本地化字符串。
+        /// </summary>
+        public static string Elapsed {
+            get {
+                return ResourceManager.GetString("Elapsed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光通量参数配置 的本地化字符串。
+        /// </summary>
+        public static string EqeParameterConfig {
+            get {
+                return ResourceManager.GetString("EqeParameterConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 兴奋纯度(%) 的本地化字符串。
+        /// </summary>
+        public static string ExcitationPurity {
+            get {
+                return ResourceManager.GetString("ExcitationPurity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 退出 的本地化字符串。
         /// </summary>
         public static string Exit {
             get {
                 return ResourceManager.GetString("Exit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 滤色轮 的本地化字符串。
+        /// </summary>
+        public static string FilterWheel {
+            get {
+                return ResourceManager.GetString("FilterWheel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 通用查询 的本地化字符串。
+        /// </summary>
+        public static string GenericQuery {
+            get {
+                return ResourceManager.GetString("GenericQuery", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 获取设备列表 的本地化字符串。
+        /// </summary>
+        public static string GetDeviceList {
+            get {
+                return ResourceManager.GetString("GetDeviceList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 半波宽 的本地化字符串。
+        /// </summary>
+        public static string HalfWidth {
+            get {
+                return ResourceManager.GetString("HalfWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 积分时间 (ms) 的本地化字符串。
+        /// </summary>
+        public static string IntegrationTimeMs {
+            get {
+                return ResourceManager.GetString("IntegrationTimeMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 间隔 (ms) 的本地化字符串。
+        /// </summary>
+        public static string IntervalMs {
+            get {
+                return ResourceManager.GetString("IntervalMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 限制 (mA) 的本地化字符串。
+        /// </summary>
+        public static string LimitMilliamp {
+            get {
+                return ResourceManager.GetString("LimitMilliamp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 限制 (V) 的本地化字符串。
+        /// </summary>
+        public static string LimitVoltage {
+            get {
+                return ResourceManager.GetString("LimitVoltage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载 的本地化字符串。
+        /// </summary>
+        public static string Load {
+            get {
+                return ResourceManager.GetString("Load", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载条数: 的本地化字符串。
+        /// </summary>
+        public static string LoadCount {
+            get {
+                return ResourceManager.GetString("LoadCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 默认加载数据条数 (-1为全部) 的本地化字符串。
+        /// </summary>
+        public static string LoadCountTooltip {
+            get {
+                return ResourceManager.GetString("LoadCountTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载分组 的本地化字符串。
+        /// </summary>
+        public static string LoadGroup {
+            get {
+                return ResourceManager.GetString("LoadGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 日志 的本地化字符串。
+        /// </summary>
+        public static string Log {
+            get {
+                return ResourceManager.GetString("Log", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光效(lm/W) 的本地化字符串。
+        /// </summary>
+        public static string LuminousEfficacy {
+            get {
+                return ResourceManager.GetString("LuminousEfficacy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光通量(lm) 的本地化字符串。
+        /// </summary>
+        public static string LuminousFlux {
+            get {
+                return ResourceManager.GetString("LuminousFlux", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光通量模式 的本地化字符串。
+        /// </summary>
+        public static string LuminousFluxMode {
+            get {
+                return ResourceManager.GetString("LuminousFluxMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 幅值标定 的本地化字符串。
+        /// </summary>
+        public static string MagnitudeCalibration {
+            get {
+                return ResourceManager.GetString("MagnitudeCalibration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 管理... 的本地化字符串。
+        /// </summary>
+        public static string Manage {
+            get {
+                return ResourceManager.GetString("Manage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 点亮并读取源表 的本地化字符串。
+        /// </summary>
+        public static string MeasureAndReadSourceMeter {
+            get {
+                return ResourceManager.GetString("MeasureAndReadSourceMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测试次数 的本地化字符串。
+        /// </summary>
+        public static string MeasurementCount {
+            get {
+                return ResourceManager.GetString("MeasurementCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测量参数 的本地化字符串。
+        /// </summary>
+        public static string MeasurementParameters {
+            get {
+                return ResourceManager.GetString("MeasurementParameters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在点亮并读取... 的本地化字符串。
+        /// </summary>
+        public static string MeasuringAndReading {
+            get {
+                return ResourceManager.GetString("MeasuringAndReading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光谱仪原生日志文件尚未生成。连接光谱仪后日志将自动显示。 的本地化字符串。
+        /// </summary>
+        public static string NativeLogPlaceholder {
+            get {
+                return ResourceManager.GetString("NativeLogPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光谱仪原生日志 的本地化字符串。
+        /// </summary>
+        public static string NativeSpectrumLog {
+            get {
+                return ResourceManager.GetString("NativeSpectrumLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未配备shutter，无法自动校零 的本地化字符串。
+        /// </summary>
+        public static string NoShutterAutoZero {
+            get {
+                return ResourceManager.GetString("NoShutterAutoZero", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开标定分组管理窗口 的本地化字符串。
+        /// </summary>
+        public static string OpenCalibrationGroupTooltip {
+            get {
+                return ResourceManager.GetString("OpenCalibrationGroupTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开快门 的本地化字符串。
+        /// </summary>
+        public static string OpenShutter {
+            get {
+                return ResourceManager.GetString("OpenShutter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在执行任务，请稍后 的本地化字符串。
+        /// </summary>
+        public static string OperationInProgressPleaseWait {
+            get {
+                return ResourceManager.GetString("OperationInProgressPleaseWait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输出已关闭 的本地化字符串。
+        /// </summary>
+        public static string OutputClosed {
+            get {
+                return ResourceManager.GetString("OutputClosed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请先做一次自适应校零 的本地化字符串。
+        /// </summary>
+        public static string PleaseRunAdaptiveAutoDarkFirst {
+            get {
+                return ResourceManager.GetString("PleaseRunAdaptiveAutoDarkFirst", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 进度 的本地化字符串。
+        /// </summary>
+        public static string Progress {
+            get {
+                return ResourceManager.GetString("Progress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提示 的本地化字符串。
+        /// </summary>
+        public static string PromptTitle {
+            get {
+                return ResourceManager.GetString("PromptTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询 的本地化字符串。
+        /// </summary>
+        public static string Query {
+            get {
+                return ResourceManager.GetString("Query", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询数据 的本地化字符串。
+        /// </summary>
+        public static string QueryDataTooltip {
+            get {
+                return ResourceManager.GetString("QueryDataTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 辐射通量(W) 的本地化字符串。
+        /// </summary>
+        public static string RadiantFlux {
+            get {
+                return ResourceManager.GetString("RadiantFlux", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已读取 {0} 的本地化字符串。
+        /// </summary>
+        public static string ReadCompletedAt {
+            get {
+                return ResourceManager.GetString("ReadCompletedAt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 读取失败 的本地化字符串。
+        /// </summary>
+        public static string ReadFailedTitle {
+            get {
+                return ResourceManager.GetString("ReadFailedTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 EQE重新计算 的本地化字符串。
+        /// </summary>
+        public static string RecalculateEqe {
+            get {
+                return ResourceManager.GetString("RecalculateEqe", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string Reload {
+            get {
+                return ResourceManager.GetString("Reload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 从数据库重新加载数据 的本地化字符串。
+        /// </summary>
+        public static string ReloadDataTooltip {
+            get {
+                return ResourceManager.GetString("ReloadDataTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 预计剩余: 的本地化字符串。
+        /// </summary>
+        public static string Remaining {
+            get {
+                return ResourceManager.GetString("Remaining", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重置数据库 的本地化字符串。
+        /// </summary>
+        public static string ResetDatabase {
+            get {
+                return ResourceManager.GetString("ResetDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除数据库文件并重新创建 的本地化字符串。
+        /// </summary>
+        public static string ResetDatabaseTooltip {
+            get {
+                return ResourceManager.GetString("ResetDatabaseTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 样品 的本地化字符串。
+        /// </summary>
+        public static string SampleLabel {
+            get {
+                return ResourceManager.GetString("SampleLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请先选择要重新计算的数据 的本地化字符串。
+        /// </summary>
+        public static string SelectDataToRecalculate {
+            get {
+                return ResourceManager.GetString("SelectDataToRecalculate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 串口 的本地化字符串。
+        /// </summary>
+        public static string SerialPort {
+            get {
+                return ResourceManager.GetString("SerialPort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 串口连接 的本地化字符串。
+        /// </summary>
+        public static string SerialPortConnection {
+            get {
+                return ResourceManager.GetString("SerialPortConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 快门 的本地化字符串。
+        /// </summary>
+        public static string Shutter {
+            get {
+                return ResourceManager.GetString("Shutter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接参数需先断开后再修改 的本地化字符串。
+        /// </summary>
+        public static string SmuConnectionSettingsHint {
+            get {
+                return ResourceManager.GetString("SmuConnectionSettingsHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 点亮/设置 的本地化字符串。
+        /// </summary>
+        public static string SmuMeasureOrSet {
+            get {
+                return ResourceManager.GetString("SmuMeasureOrSet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源表(SMU) 的本地化字符串。
+        /// </summary>
+        public static string SmuSourceMeter {
+            get {
+                return ResourceManager.GetString("SmuSourceMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭源表输出失败 的本地化字符串。
+        /// </summary>
+        public static string SourceMeterCloseOutputFailed {
+            get {
+                return ResourceManager.GetString("SourceMeterCloseOutputFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源表连接失败，请检查设备名称和连接方式 的本地化字符串。
+        /// </summary>
+        public static string SourceMeterConnectFailedCheckSettings {
+            get {
+                return ResourceManager.GetString("SourceMeterConnectFailedCheckSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源表读取失败 的本地化字符串。
+        /// </summary>
+        public static string SourceMeterReadFailed {
+            get {
+                return ResourceManager.GetString("SourceMeterReadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源值 (mA) 的本地化字符串。
+        /// </summary>
+        public static string SourceValueCurrentMilliamp {
+            get {
+                return ResourceManager.GetString("SourceValueCurrentMilliamp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源值 (V) 的本地化字符串。
+        /// </summary>
+        public static string SourceValueVoltage {
+            get {
+                return ResourceManager.GetString("SourceValueVoltage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 SP100 设置失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string SP100SetFailed {
+            get {
+                return ResourceManager.GetString("SP100SetFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 SP100 设置成功 的本地化字符串。
+        /// </summary>
+        public static string SP100SetSuccess {
+            get {
+                return ResourceManager.GetString("SP100SetSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光谱仪连接 的本地化字符串。
+        /// </summary>
+        public static string SpectrometerConnection {
+            get {
+                return ResourceManager.GetString("SpectrometerConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光谱图表 的本地化字符串。
+        /// </summary>
+        public static string SpectrumChart {
+            get {
+                return ResourceManager.GetString("SpectrumChart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光谱仪软件 的本地化字符串。
+        /// </summary>
+        public static string SpectrumWindowTitle {
+            get {
+                return ResourceManager.GetString("SpectrumWindowTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 切换位置: 的本地化字符串。
+        /// </summary>
+        public static string SwitchPosition {
+            get {
+                return ResourceManager.GetString("SwitchPosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测试 的本地化字符串。
+        /// </summary>
+        public static string TestSection {
+            get {
+                return ResourceManager.GetString("TestSection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 切换相对/绝对光谱 的本地化字符串。
+        /// </summary>
+        public static string ToggleSpectrumTypeTooltip {
+            get {
+                return ResourceManager.GetString("ToggleSpectrumTypeTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总耗时(ms) 的本地化字符串。
+        /// </summary>
+        public static string TotalDurationMs {
+            get {
+                return ResourceManager.GetString("TotalDurationMs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电压 (V) 的本地化字符串。
+        /// </summary>
+        public static string VoltageLabel {
+            get {
+                return ResourceManager.GetString("VoltageLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电压源 的本地化字符串。
+        /// </summary>
+        public static string VoltageSource {
+            get {
+                return ResourceManager.GetString("VoltageSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电压源模式: 测量值单位为 V，限制值单位为 mA 的本地化字符串。
+        /// </summary>
+        public static string VoltageSourceModeHint {
+            get {
+                return ResourceManager.GetString("VoltageSourceModeHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 波长 的本地化字符串。
+        /// </summary>
+        public static string Wavelength {
+            get {
+                return ResourceManager.GetString("Wavelength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 波长标定 的本地化字符串。
+        /// </summary>
+        public static string WavelengthCalibration {
+            get {
+                return ResourceManager.GetString("WavelengthCalibration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 校零 的本地化字符串。
+        /// </summary>
+        public static string ZeroCalibration {
+            get {
+                return ResourceManager.GetString("ZeroCalibration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 校零异常: {0} 的本地化字符串。
+        /// </summary>
+        public static string ZeroCalibrationException {
+            get {
+                return ResourceManager.GetString("ZeroCalibrationException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 校零失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string ZeroCalibrationFailed {
+            get {
+                return ResourceManager.GetString("ZeroCalibrationFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 校零成功 的本地化字符串。
+        /// </summary>
+        public static string ZeroCalibrationSuccess {
+            get {
+                return ResourceManager.GetString("ZeroCalibrationSuccess", resourceCulture);
             }
         }
         

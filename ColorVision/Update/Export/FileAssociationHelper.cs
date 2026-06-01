@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
@@ -15,11 +16,11 @@ namespace ColorVision.Update.Export
     {
         public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 1000;
-        public override string Header => "FileAssociation";
+        public override string Header => Resources.MenuFileAssociation;
         public override void Execute()
         {
             FileAssociationHelper.RegisterAssociations();
-            MessageBox.Show(Application.Current.GetActiveWindow(),"注册表应用成功","ColorVision");
+            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resources.RegistryAppliedSuccess,"ColorVision");
         }
     }
     public class RegConfig : ViewModelBase, IConfig
@@ -70,8 +71,8 @@ namespace ColorVision.Update.Export
             try
             {
                 // 1. 获取当前程序所在目录和exe路径
-                string appPath = Process.GetCurrentProcess().MainModule.FileName;
-                string appDir = Path.GetDirectoryName(appPath);
+                string appPath = Environment.ProcessPath ?? throw new InvalidOperationException("Unable to resolve executable path.");
+                string appDir = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
                 string iconPath = Path.Combine(appDir, "ColorVisionIcons64.dll");
 
                 // 2. 为了写入 .reg 文件，路径中的反斜杠需要转义 (例如 C:\Program 变成 C:\\Program)

@@ -48,13 +48,13 @@ namespace ColorVision.Engine.Services.Terminal
             var deviceS = ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);
             if (deviceS != null)
             {
-                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加","ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.DeviceIdentifierAlreadyExists,"ColorVision");
                 return;
             }
 
             if (!DeviceServiceFactoryRegistry.TryGetFactory(TerminalService.ServiceType, out IDeviceServiceFactory? deviceServiceFactory) || deviceServiceFactory == null)
             {
-                MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"暂不支持创建 {TerminalService.ServiceType} 类型设备", "ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), string.Format(Properties.Resources.UnsupportedDeviceTypeCreation, TerminalService.ServiceType), "ColorVision");
                 return;
             }
 

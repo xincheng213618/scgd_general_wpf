@@ -1,5 +1,6 @@
 ﻿using ColorVision.UI;
 using System.Windows;
+using ColorVision.Database.Properties;
 
 namespace ColorVision.Database
 {
@@ -7,9 +8,9 @@ namespace ColorVision.Database
     {
         public override int Order => 9;
 
-        public override string Header => "Mysql配置";
+        public override string Header => Properties.Resources.DB_MysqlConfig;
 
-        public override string Description => "用户可以在这里配置数据库的连接";
+        public override string Description => Properties.Resources.DB_MysqlConfigDesc;
 
         public override void Execute()
         {

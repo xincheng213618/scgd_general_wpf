@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.CompoundImg;
@@ -20,7 +21,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
+            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.SubPixelLedCheck, new TemplateLedCheck2());
             context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, "PoiOutPut", new TemplatePoiOutputParam());
         }
     }
@@ -37,7 +38,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.Node.OLED.OLEDImageCroppingNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, "参数模板", new TemplateImageCropping());
+            context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ParamTemplate, new TemplateImageCropping());
         }
     }
 
@@ -48,7 +49,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.Node.OLED.AlgorithmCompoundImgNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "参数模板", new TemplateCompoundImg());
+            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.ParamTemplate, new TemplateCompoundImg());
         }
     }
 
@@ -60,7 +61,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmOLEDNode)context.Node;
             context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "亚像素", new TemplateLedCheck2());
+            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.SubPixel, new TemplateLedCheck2());
         }
     }
 
@@ -73,9 +74,9 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "AOI", new TemplateOLEDAOI());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "缺陷检测V2", new TemplateFPForRePicGradingV2());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "亮点检测", new TemplateFPForQuardImg());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "黑画面检测", new TemplateFPForBlackScreen());
+            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.DefectCheckV2, new TemplateFPForRePicGradingV2());
+            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.BrightSpotCheck, new TemplateFPForQuardImg());
+            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.BlackScreenCheck, new TemplateFPForBlackScreen());
         }
     }
 
@@ -101,7 +102,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                         context.AddTemplatePanel(name => node.TempName = name, node.TempName, "SFR", new SFR.TemplateSFR());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.图像裁剪:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "图像裁剪", new TemplateImageCropping());
+                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ImageCrop, new TemplateImageCropping());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.JND:
                         context.AddTemplatePanel(name => node.TempName = name, node.TempName, "JND", new JND.TemplateJND());
@@ -110,7 +111,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                         context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "SFR_FindROI", new Jsons.SFRFindROI.TemplateSFRFindROI());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.十字计算:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "十字计算", new Jsons.FindCross.TemplateFindCross());
+                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.CrossCalc, new Jsons.FindCross.TemplateFindCross());
                         break;
                     default:
                         break;

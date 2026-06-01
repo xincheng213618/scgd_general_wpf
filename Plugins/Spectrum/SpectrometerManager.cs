@@ -4,6 +4,7 @@ using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
+using SpectrumResources = Spectrum.Properties.Resources;
 using Spectrum.Calibration;
 using Spectrum.Configs;
 using Spectrum.Data;
@@ -190,7 +191,7 @@ namespace Spectrum
         /// </summary>
         [JsonIgnore]
         public string MeasurementMode { get => _MeasurementMode; set { _MeasurementMode = value; OnPropertyChanged(); } }
-        private string _MeasurementMode = "亮色度模式";
+        private string _MeasurementMode = SpectrumResources.BrightnessChromaticityMode;
 
         /// <summary>
         /// The serial number of the currently connected spectrometer.
@@ -207,7 +208,7 @@ namespace Spectrum
         {
             get
             {
-                if (!IsConnected) return "未连接";
+                if (!IsConnected) return SpectrumResources.未连接;
                 return Config.IsComPort ? $"COM: {Config.SzComName}" : "USB";
             }
         }

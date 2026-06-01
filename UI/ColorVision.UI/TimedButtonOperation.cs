@@ -1,3 +1,5 @@
+#pragma warning disable CA1513,CA1716
+using ColorVision.UI.Properties;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -320,7 +322,7 @@ namespace ColorVision.UI
 
             MenuItem menuItem = new MenuItem
             {
-                Header = "查看耗时统计",
+                Header = Resources.TimedOp_ViewStats,
                 Tag = StatsContextMenuTag
             };
             menuItem.Click += (_, _) => launcher.OpenWindow(_options.OperationKey);
@@ -608,37 +610,37 @@ namespace ColorVision.UI
         {
             if (stats == null || (stats.SuccessCount == 0 && stats.WarmupCount == 0))
             {
-                return $"{label}\n暂无历史耗时。";
+                return $"{label}\n{Resources.TimedOp_NoHistory}";
             }
 
             List<string> lines = new List<string> { label };
 
             if (stats.WarmupCount > 0)
             {
-                lines.Add($"预热: {FormatDuration(stats.WarmupElapsedMs)}");
+                lines.Add($"{Resources.TimedOp_Warmup} {FormatDuration(stats.WarmupElapsedMs)}");
             }
 
             if (stats.SuccessCount == 0)
             {
-                lines.Add("稳定样本暂无记录。");
-                lines.Add("本次软件启动的首轮样本按预热处理，不参与平均。");
+                lines.Add(Resources.TimedOp_NoStableSamples);
+                lines.Add(Resources.TimedOp_WarmupNote);
                 return string.Join("\n", lines);
             }
 
-            lines.Add($"上次: {FormatDuration(stats.LastElapsedMs)}");
-            lines.Add($"平均: {FormatDuration(stats.AverageElapsedMs)}");
-            lines.Add($"最快: {FormatDuration(stats.BestElapsedMs)}");
-            lines.Add($"最慢: {FormatDuration(stats.WorstElapsedMs)}");
-            lines.Add($"稳定样本: {stats.SuccessCount}");
+            lines.Add($"{Resources.TimedOp_Last} {FormatDuration(stats.LastElapsedMs)}");
+            lines.Add($"{Resources.TimedOp_Average} {FormatDuration(stats.AverageElapsedMs)}");
+            lines.Add($"{Resources.TimedOp_Fastest} {FormatDuration(stats.BestElapsedMs)}");
+            lines.Add($"{Resources.TimedOp_Slowest} {FormatDuration(stats.WorstElapsedMs)}");
+            lines.Add($"{Resources.TimedOp_StableSamples} {stats.SuccessCount}");
 
             if (stats.WarmupCount > 0)
             {
-                lines.Add("本次软件启动的首轮样本按预热处理，不参与平均。");
+                lines.Add(Resources.TimedOp_WarmupNote);
             }
 
             if (TimedButtonOperationStatsWindowLauncherProvider.GetLauncher()?.CanOpen == true)
             {
-                lines.Add("右键按钮可打开统计窗口。");
+                lines.Add(Resources.TimedOp_RightClickHint);
             }
 
             lines.Add(BuildTrendText(stats));
@@ -659,23 +661,23 @@ namespace ColorVision.UI
         {
             if (stats.SuccessCount <= 1)
             {
-                return "稳定样本仍然较少，继续执行后会更准确。";
+                return Resources.TimedOp_FewSamples;
             }
 
             if (stats.AverageElapsedMs <= 0)
             {
-                return "耗时统计已记录。";
+                return Resources.TimedOp_StatsRecorded;
             }
 
             double deltaRatio = (stats.LastElapsedMs - stats.AverageElapsedMs) / stats.AverageElapsedMs;
             if (Math.Abs(deltaRatio) < 0.05)
             {
-                return "本次与历史平均接近。";
+                return Resources.TimedOp_CloseToAverage;
             }
 
             return deltaRatio < 0
-                ? $"本次比历史平均快 {Math.Abs(deltaRatio):P0}。"
-                : $"本次比历史平均慢 {Math.Abs(deltaRatio):P0}。";
+                ? string.Format(Resources.TimedOp_FasterThanAverage, $"{Math.Abs(deltaRatio):P0}")
+                : string.Format(Resources.TimedOp_SlowerThanAverage, $"{Math.Abs(deltaRatio):P0}");
         }
     }
 

@@ -10,6 +10,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_\-]+$")
+_PACKAGE_HASH_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
+_PLUGIN_CATALOG_CACHE_KEY = "plugin_catalog:v1"
+_PLUGIN_CATALOG_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60
 
 
 def is_safe_plugin_id(value: str) -> bool:
@@ -42,6 +45,39 @@ def _compute_file_hash(file_path: Path) -> str | None:
     return file_hash.hexdigest()
 
 
+def _package_hash_cache_key(relative_path: str) -> str:
+    return f"plugin_package_hash:v1:{relative_path}"
+
+
+def _get_cached_file_hash(
+    file_path: Path,
+    relative_path: str,
+    stat,
+    *,
+    get_cache_entry: Callable[..., dict[str, Any] | None] | None,
+    set_cache_entry: Callable[..., None] | None,
+) -> str | None:
+    if get_cache_entry is None or set_cache_entry is None:
+        return _compute_file_hash(file_path)
+
+    signature = f"{stat.st_mtime_ns}:{stat.st_size}"
+    cached = get_cache_entry(_package_hash_cache_key(relative_path), signature=signature)
+    if cached:
+        cached_value = cached.get("value")
+        if isinstance(cached_value, str) and cached_value:
+            return cached_value
+
+    file_hash = _compute_file_hash(file_path)
+    if file_hash:
+        set_cache_entry(
+            _package_hash_cache_key(relative_path),
+            file_hash,
+            ttl_seconds=_PACKAGE_HASH_CACHE_TTL_SECONDS,
+            signature=signature,
+        )
+    return file_hash
+
+
 def plugin_package_from_file(
     storage: Path,
     file_path: Path,
@@ -49,6 +85,8 @@ def plugin_package_from_file(
     source: str,
     *,
     include_hash: bool = False,
+    get_cache_entry: Callable[..., dict[str, Any] | None] | None = None,
+    set_cache_entry: Callable[..., None] | None = None,
 ) -> dict[str, Any] | None:
     if file_path.suffix.lower() != ".cvxp":
         return None
@@ -74,10 +112,24 @@ def plugin_package_from_file(
         "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
     }
     if include_hash:
-        file_hash = _compute_file_hash(file_path)
+        file_hash = _get_cached_file_hash(
+            file_path,
+            relative_path,
+            stat,
+            get_cache_entry=get_cache_entry,
+            set_cache_entry=set_cache_entry,
+        )
         if file_hash:
             package["fileHash"] = file_hash
     return package
+
+
+def _package_sort_key(package: dict[str, Any]) -> tuple[tuple[int, ...], str, str]:
+    return (
+        version_tuple(str(package.get("version") or "")),
+        str(package.get("modified") or ""),
+        str(package.get("filename") or "").lower(),
+    )
 
 
 def scan_plugin_package_sets(
@@ -85,6 +137,8 @@ def scan_plugin_package_sets(
     plugin_id: str,
     *,
     include_hash: bool = False,
+    get_cache_entry: Callable[..., dict[str, Any] | None] | None = None,
+    set_cache_entry: Callable[..., None] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     plugin_dir = storage / "Plugins" / plugin_id
     history_dir = plugin_history_dir(storage, plugin_id)
@@ -100,6 +154,8 @@ def scan_plugin_package_sets(
                 plugin_id,
                 "current",
                 include_hash=include_hash,
+                get_cache_entry=get_cache_entry,
+                set_cache_entry=set_cache_entry,
             )
             if package:
                 if latest_release and package["version"] != latest_release:
@@ -116,12 +172,14 @@ def scan_plugin_package_sets(
                 plugin_id,
                 "archive",
                 include_hash=include_hash,
+                get_cache_entry=get_cache_entry,
+                set_cache_entry=set_cache_entry,
             )
             if package:
                 historical_packages.append(package)
 
-    current_packages.sort(key=lambda item: item["modified"], reverse=True)
-    historical_packages.sort(key=lambda item: item["modified"], reverse=True)
+    current_packages.sort(key=_package_sort_key, reverse=True)
+    historical_packages.sort(key=_package_sort_key, reverse=True)
     return current_packages, historical_packages
 
 
@@ -210,6 +268,70 @@ def plugin_catalog_signature(storage: Path) -> str:
             continue
         parts.append(f"{entry.name}:{plugin_summary_signature(storage, entry.name)}")
     return "|".join(parts)
+
+
+def _apply_download_counts(
+    items: list[dict[str, Any]],
+    download_counts: dict[str, int],
+) -> list[dict[str, Any]]:
+    counted_items: list[dict[str, Any]] = []
+    for item in items:
+        counted_item = dict(item)
+        plugin_id = str(counted_item.get("id") or "")
+        counted_item["total_downloads"] = download_counts.get(plugin_id, 0)
+        counted_items.append(counted_item)
+    return counted_items
+
+
+def _cached_catalog_items(cached: dict[str, Any] | None) -> list[dict[str, Any]] | None:
+    if not cached:
+        return None
+    raw_items = cached.get("value")
+    if not isinstance(raw_items, list):
+        return None
+    return [dict(item) for item in raw_items if isinstance(item, dict)]
+
+
+def _set_plugin_catalog_cache(
+    items: list[dict[str, Any]],
+    *,
+    set_cache_entry: Callable[..., None],
+) -> None:
+    set_cache_entry(
+        _PLUGIN_CATALOG_CACHE_KEY,
+        items,
+        ttl_seconds=_PLUGIN_CATALOG_CACHE_TTL_SECONDS,
+    )
+
+
+def _upsert_cached_plugin_catalog_summary(
+    plugin_id: str,
+    summary: dict[str, Any] | None,
+    *,
+    get_cache_entry: Callable[..., dict[str, Any] | None],
+    set_cache_entry: Callable[..., None],
+) -> None:
+    if not summary:
+        return
+
+    items = _cached_catalog_items(get_cache_entry(_PLUGIN_CATALOG_CACHE_KEY))
+    if items is None:
+        return
+
+    summary_item = dict(summary)
+    summary_id = str(summary_item.get("id") or plugin_id)
+    replaced = False
+    for index, item in enumerate(items):
+        item_id = str(item.get("id") or "")
+        if item_id in {plugin_id, summary_id}:
+            items[index] = summary_item
+            replaced = True
+            break
+
+    if not replaced:
+        items.append(summary_item)
+
+    _set_plugin_catalog_cache(items, set_cache_entry=set_cache_entry)
 
 
 def _iter_package_files(directory: Path) -> list[Path]:
@@ -318,11 +440,57 @@ def _select_preferred_package_path(storage: Path, plugin_id: str, latest_version
     if preferred_name and (plugin_dir / preferred_name).is_file():
         return plugin_dir / preferred_name
 
-    current_latest = _latest_package_path(plugin_dir)
+    current_latest = None
+    current_key = None
+    for file_path in _iter_package_files(plugin_dir):
+        package = plugin_package_from_file(storage, file_path, plugin_id, "current", include_hash=False)
+        if not package:
+            continue
+        candidate_key = _package_sort_key(package)
+        if current_key is None or candidate_key > current_key:
+            current_key = candidate_key
+            current_latest = file_path
     if current_latest:
         return current_latest
 
-    return _latest_package_path(history_dir)
+    history_latest = None
+    history_key = None
+    for file_path in _iter_package_files(history_dir):
+        package = plugin_package_from_file(storage, file_path, plugin_id, "archive", include_hash=False)
+        if not package:
+            continue
+        candidate_key = _package_sort_key(package)
+        if history_key is None or candidate_key > history_key:
+            history_key = candidate_key
+            history_latest = file_path
+    return history_latest
+
+
+def load_plugin_icon_payload(storage: Path, plugin_id: str) -> tuple[bytes | None, str | None]:
+    if not is_safe_plugin_id(plugin_id):
+        return None, None
+
+    plugin_dir = storage / "Plugins" / plugin_id
+    icon_path = plugin_dir / "PackageIcon.png"
+    if icon_path.is_file():
+        try:
+            return icon_path.read_bytes(), "image/png"
+        except OSError:
+            return None, None
+
+    latest_version = read_text_file(plugin_dir / "LATEST_RELEASE") or ""
+    package_path = _select_preferred_package_path(storage, plugin_id, latest_version)
+    if not package_path:
+        return None, None
+
+    try:
+        with zipfile.ZipFile(package_path) as archive:
+            icon_name = _archive_member_map(archive).get("packageicon.png")
+            if not icon_name:
+                return None, None
+            return archive.read(icon_name), "image/png"
+    except (OSError, KeyError, zipfile.BadZipFile):
+        return None, None
 
 
 def _read_archive_metadata(
@@ -471,14 +639,9 @@ def scan_plugin_summaries(
     set_cache_entry: Callable[..., None],
     ttl_seconds: int,
 ) -> list[dict[str, Any]]:
-    signature = plugin_catalog_signature(storage)
-    cache_key = "plugin_catalog:v1"
-    cached = get_cache_entry(cache_key, signature=signature)
-    if cached:
-        items = list(cached["value"])
-        for item in items:
-            item["total_downloads"] = download_counts.get(item["id"], 0)
-        return items
+    cached_items = _cached_catalog_items(get_cache_entry(_PLUGIN_CATALOG_CACHE_KEY))
+    if cached_items is not None:
+        return _apply_download_counts(cached_items, download_counts)
 
     plugins_dir = storage / "Plugins"
     if not plugins_dir.is_dir():
@@ -498,7 +661,7 @@ def scan_plugin_summaries(
         )
         if summary:
             items.append(summary)
-    set_cache_entry(cache_key, items, ttl_seconds=ttl_seconds, signature=signature)
+    _set_plugin_catalog_cache(items, set_cache_entry=set_cache_entry)
     return items
 
 
@@ -541,6 +704,8 @@ def get_plugin_detail(
         storage,
         plugin_id,
         include_hash=True,
+        get_cache_entry=get_cache_entry,
+        set_cache_entry=set_cache_entry,
     )
     archive_metadata = _get_archive_metadata_for_plugin(
         storage,
@@ -572,7 +737,7 @@ def prewarm_plugin_metadata(
     set_cache_entry: Callable[..., None],
     ttl_seconds: int,
 ) -> None:
-    get_plugin_summary(
+    summary = get_plugin_summary(
         storage,
         plugin_id,
         download_counts=download_counts,
@@ -587,6 +752,12 @@ def prewarm_plugin_metadata(
         get_cache_entry=get_cache_entry,
         set_cache_entry=set_cache_entry,
         ttl_seconds=ttl_seconds,
+    )
+    _upsert_cached_plugin_catalog_summary(
+        plugin_id,
+        summary,
+        get_cache_entry=get_cache_entry,
+        set_cache_entry=set_cache_entry,
     )
 
 

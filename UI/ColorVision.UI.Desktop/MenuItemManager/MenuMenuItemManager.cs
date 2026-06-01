@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Desktop.Properties;
+using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
@@ -6,7 +7,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
     public class MenuMenuItemManager : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "MenuManager";
+        public override string Header => Resources.MenuMenuItemManager;
         public override int Order => 10000;
 
         public override void Execute()

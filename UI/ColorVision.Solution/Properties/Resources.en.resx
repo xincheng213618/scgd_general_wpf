@@ -1,110 +1,52 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -341,5 +283,590 @@
   </data>
   <data name="UserName" xml:space="preserve">
     <value>Username:</value>
+  </data>
+  <data name="MenuSaveLayout" xml:space="preserve">
+    <value>Save Window Layout</value>
+  </data>
+  <data name="MenuApplyLayout" xml:space="preserve">
+    <value>Apply Window Layout</value>
+  </data>
+  <data name="MenuResetLayout" xml:space="preserve">
+    <value>Reset Window Layout</value>
+  </data>
+  <data name="LayoutNotFoundMessage" xml:space="preserve">
+    <value>Saved window layout was not found.</value>
+  </data>
+  <data name="LayoutNotFoundTitle" xml:space="preserve">
+    <value>Apply Window Layout</value>
+  </data>
+  <data name="MenuFusion" xml:space="preserve">
+    <value>Depth Fusion(_F)</value>
+  </data>
+<data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data>
+  <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>Show File List</value></data>
+  <data name="Sol_MivCfg_View" xml:space="preserve"><value>View</value></data>
+  <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>List Height</value></data>
+  <data name="Sol_MivCfg_ThumbSize" xml:space="preserve"><value>Thumbnail Size</value></data>
+  <data name="Sol_MivCfg_Thumbnail" xml:space="preserve"><value>Thumbnail</value></data>
+  <data name="Sol_MivCfg_MaxDisplay" xml:space="preserve"><value>Max Display Count</value></data>
+  <data name="Sol_MivCfg_EnableCache" xml:space="preserve"><value>Enable Thumbnail Cache</value></data>
+  <data name="Sol_MivCfg_ShowThumb" xml:space="preserve"><value>Show Thumbnails</value></data>
+  <data name="Sol_MivCfg_ReadDelay" xml:space="preserve"><value>Image Read Delay(ms)</value></data>
+  <data name="Sol_MivCfg_CacheSize" xml:space="preserve"><value>Cache Size</value></data>
+  <data name="Sol_MivCfg_Cache" xml:space="preserve"><value>Cache</value></data>
+  <data name="Sol_MivCfg_CacheCount" xml:space="preserve"><value>Cache Count</value></data>
+  <data name="Sol_FileInfo_Path" xml:space="preserve"><value>File Path</value></data>
+  <data name="Sol_FileInfo_Name" xml:space="preserve"><value>File Name</value></data>
+  <data name="Sol_FileInfo_Dir" xml:space="preserve"><value>Directory</value></data>
+  <data name="Sol_FileInfo_Ext" xml:space="preserve"><value>Extension</value></data>
+  <data name="Sol_FileInfo_FileSize" xml:space="preserve"><value>File Size</value></data>
+  <data name="Sol_FileInfo_Size" xml:space="preserve"><value>Size</value></data>
+  <data name="Sol_FileInfo_Modified" xml:space="preserve"><value>Modified Time</value></data>
+  <data name="Sol_FileInfo_Width" xml:space="preserve"><value>Width</value></data>
+  <data name="Sol_FileInfo_Height" xml:space="preserve"><value>Height</value></data>
+  <data name="Sol_FileInfo_Resolution" xml:space="preserve"><value>Resolution</value></data>
+  <data name="Sol_FileInfo_Exists" xml:space="preserve"><value>Exists</value></data>
+  <data name="Sol_FileInfo_FileNameLabel" xml:space="preserve"><value>File Name:</value></data>
+  <data name="Sol_FileInfo_PathLabel" xml:space="preserve"><value>Path:</value></data>
+  <data name="Sol_FileInfo_SizeLabel" xml:space="preserve"><value>Size:</value></data>
+  <data name="Sol_FileInfo_ResLabel" xml:space="preserve"><value>Resolution:</value></data>
+  <data name="Sol_FileInfo_ModLabel" xml:space="preserve"><value>Modified:</value></data>
+  <data name="Sol_FileInfo_Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Sol_Editor_WebView2" xml:space="preserve"><value>WebView2 Editor</value></data>
+  <data name="Sol_Editor_Image" xml:space="preserve"><value>Image Editor</value></data>
+  <data name="Sol_Editor_Text" xml:space="preserve"><value>Text Editor</value></data>
+  <data name="Sol_Editor_Hex" xml:space="preserve"><value>Hex Text Editor</value></data>
+  <data name="Sol_Editor_Project" xml:space="preserve"><value>Image Editor</value></data>
+  <data name="Sol_Editor_System" xml:space="preserve"><value>System Default</value></data>
+  <data name="Sol_Fusion_CudaAvail" xml:space="preserve"><value>CUDA: Available</value></data>
+  <data name="Sol_Fusion_CudaUnavail" xml:space="preserve"><value>CUDA: Not Available</value></data>
+  <data name="Sol_Fusion_Executing" xml:space="preserve"><value>Executing fusion...</value></data>
+  <data name="Sol_Fusion_Failed" xml:space="preserve"><value>Fusion failed: {0}</value></data>
+  <data name="Sol_Fusion_Converting" xml:space="preserve"><value>Fusion complete, converting results...</value></data>
+  <data name="Sol_Fusion_Done" xml:space="preserve"><value>Done  Fusion: {0}</value></data>
+  <data name="Sol_Fusion_MissingLib" xml:space="preserve"><value>Missing runtime library</value></data>
+  <data name="Sol_Fusion_Error" xml:space="preserve"><value>Fusion error</value></data>
+  <data name="Sol_Fusion_Result" xml:space="preserve"><value>Fusion result - {0}</value></data>
+  <data name="Sol_Fusion_SelectMin2" xml:space="preserve"><value>Please select at least 2 image files.</value></data>
+  <data name="Sol_Fusion_Hint" xml:space="preserve"><value>Hint</value></data>
+  <data name="Sol_Fusion_FileNotExist" xml:space="preserve"><value>File does not exist: {0}</value></data>
+  <data name="Sol_Fusion_CalcFailed" xml:space="preserve"><value>Fusion calculation failed: {0}</value></data>
+  <data name="Sol_Fusion_MissingRuntime" xml:space="preserve"><value>Missing required runtime: {0}</value></data>
+  <data name="Sol_Fusion_ProcessError" xml:space="preserve"><value>Error during fusion: {0}</value></data>
+  <data name="Sol_Fusion_ImageFiles" xml:space="preserve"><value>Image Files</value></data>
+  <data name="Sol_Fusion_AllFiles" xml:space="preserve"><value>All Files</value></data>
+  <data name="Sol_Workspace_Home" xml:space="preserve"><value>  Home</value></data>
+  <data name="Sol_Hex_LoadFailed" xml:space="preserve"><value>Failed to load file: {0}</value></data>  <data name="Sol_Fusion_Title" xml:space="preserve">
+    <value>Depth of Field Fusion (Fusion)</value>
+  </data>
+  <data name="Sol_Fusion_Label" xml:space="preserve">
+    <value>Depth of Field Fusion</value>
+  </data>
+  <data name="Sol_Fusion_FileList" xml:space="preserve">
+    <value>Image File List (in order)</value>
+  </data>
+  <data name="Sol_Fusion_AddFile" xml:space="preserve">
+    <value>Add File</value>
+  </data>
+  <data name="Sol_Fusion_Remove" xml:space="preserve">
+    <value>Remove Selected</value>
+  </data>
+  <data name="Sol_Fusion_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Sol_Fusion_MoveUp" xml:space="preserve">
+    <value>Move Up ↑</value>
+  </data>
+  <data name="Sol_Fusion_MoveDown" xml:space="preserve">
+    <value>Move Down ↓</value>
+  </data>
+  <data name="Sol_Fusion_Config" xml:space="preserve">
+    <value>Fusion Configuration</value>
+  </data>
+  <data name="Sol_Fusion_Mode" xml:space="preserve">
+    <value>Compute Mode:</value>
+  </data>
+  <data name="Sol_Fusion_Auto" xml:space="preserve">
+    <value>Auto (Use GPU when CUDA available)</value>
+  </data>
+  <data name="Sol_Fusion_Async" xml:space="preserve">
+    <value>GPU Async (CUDA Async)</value>
+  </data>
+  <data name="Sol_Fusion_Perf" xml:space="preserve">
+    <value>Performance Statistics</value>
+  </data>
+  <data name="Sol_Fusion_ModeCol" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Sol_Fusion_LoadMs" xml:space="preserve">
+    <value>Load(ms)</value>
+  </data>
+  <data name="Sol_Fusion_FusionMs" xml:space="preserve">
+    <value>Fusion(ms)</value>
+  </data>
+  <data name="Sol_Fusion_ConvertMs" xml:space="preserve">
+    <value>Convert(ms)</value>
+  </data>
+  <data name="Sol_Fusion_TotalMs" xml:space="preserve">
+    <value>Total(ms)</value>
+  </data>
+  <data name="Sol_Fusion_ImageCount" xml:space="preserve">
+    <value>Image Count</value>
+  </data>
+  <data name="Sol_Fusion_ClearBtn" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Sol_Fusion_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Sol_Fusion_Execute" xml:space="preserve">
+    <value>Execute Fusion</value>
+  </data>
+  <data name="Sol_Miv_Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="Sol_Miv_FileNotExist" xml:space="preserve">
+    <value>File does not exist</value>
+  </data>
+  <data name="Sol_Miv_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Sol_Miv_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Sol_Miv_OpenInExplorer" xml:space="preserve">
+    <value>Open in Explorer</value>
+  </data>
+  <data name="Sol_Miv_CopyPath" xml:space="preserve">
+    <value>Copy File Path</value>
+  </data>
+  <data name="Sol_Miv_SelectImage" xml:space="preserve">
+    <value>Please select an image from the left list</value>
+  </data>
+  <data name="Sol_Miv_FileCount" xml:space="preserve">
+    <value>{0} files total</value>
+  </data>
+  <data name="Sol_Miv_FolderNotExist" xml:space="preserve">
+    <value>Folder does not exist: {0}</value>
+  </data>
+  <data name="Sol_Miv_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Sol_AddProject_Title" xml:space="preserve">
+    <value>Add New Project</value>
+  </data>
+  <data name="Sol_AddProject_Category" xml:space="preserve">
+    <value>Category:</value>
+  </data>
+  <data name="Sol_AddProject_Search" xml:space="preserve">
+    <value>Search project templates...</value>
+  </data>
+  <data name="Sol_AddProject_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Sol_AddProject_CategoryCol" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="Sol_AddProject_Desc" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Sol_AddProject_ProjectName" xml:space="preserve">
+    <value>Project Name:</value>
+  </data>
+  <data name="Sol_AddProject_Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Sol_AddProject_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Sol_AddItem_Title" xml:space="preserve">
+    <value>Add New Item</value>
+  </data>
+  <data name="Sol_AddItem_Category" xml:space="preserve">
+    <value>Category:</value>
+  </data>
+  <data name="Sol_AddItem_Search" xml:space="preserve">
+    <value>Search templates...</value>
+  </data>
+  <data name="Sol_AddItem_Extension" xml:space="preserve">
+    <value>Extension</value>
+  </data>
+  <data name="Sol_AddItem_Name" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="Sol_AddItem_Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Sol_AddItem_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Sol_TreeView_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Sol_OpenAs" xml:space="preserve">
+    <value>Open With</value>
+  </data>
+  <data name="Sol_OpenFileHint" xml:space="preserve">
+    <value>Select a program to open this file</value>
+  </data>
+  <data name="Sol_OpenFolderHint" xml:space="preserve">
+    <value>Select a program to open this folder</value>
+  </data>
+  <data name="Sol_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Sol_OpenFolder" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="Sol_OpenFolderDesc" xml:space="preserve">
+    <value>Open a local directory as workspace directly</value>
+  </data>
+  <data name="Sol_NewTerminal" xml:space="preserve">
+    <value>+ New Terminal</value>
+  </data>
+  <data name="Sol_NewTerminalTooltip" xml:space="preserve">
+    <value>Start a new terminal session</value>
+  </data>
+  <data name="Terminal_NewPowerShell" xml:space="preserve">
+    <value>New PowerShell</value>
+  </data>
+  <data name="Terminal_NewCmd" xml:space="preserve">
+    <value>New CMD</value>
+  </data>
+  <data name="Sol_ClearScreen" xml:space="preserve">
+    <value>Clear Screen</value>
+  </data>
+  <data name="Sol_Terminate" xml:space="preserve">
+    <value>Terminate</value>
+  </data>
+  <data name="Sol_TerminateTooltip" xml:space="preserve">
+    <value>Terminate current terminal process</value>
+  </data>
+  <data name="Sol_Login_Welcome" xml:space="preserve">
+    <value>Welcome to ColorVision System</value>
+  </data>
+  <data name="Sol_Login_AutoLogin" xml:space="preserve">
+    <value>Auto-login on next startup when checked</value>
+  </data>
+  <data name="Sol_Login_Register" xml:space="preserve">
+    <value>Register new account</value>
+  </data>
+  <data name="Sol_Register_Title" xml:space="preserve">
+    <value>Register New User</value>
+  </data>
+  <data name="Sol_Register_Create" xml:space="preserve">
+    <value>Create New Account</value>
+  </data>
+  <data name="Sol_Register_Join" xml:space="preserve">
+    <value>Join ColorVision System</value>
+  </data>
+  <data name="Sol_Register_Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="Sol_Register_ConfirmPassword" xml:space="preserve">
+    <value>Confirm Password</value>
+  </data>
+  <data name="Sol_Register_EnterUsername" xml:space="preserve">
+    <value>Please enter username</value>
+  </data>
+  <data name="Sol_Register_EnterPassword" xml:space="preserve">
+    <value>Please enter password (at least 6 characters)</value>
+  </data>
+  <data name="Sol_Register_ReenterPassword" xml:space="preserve">
+    <value>Enter password again</value>
+  </data>
+  <data name="Sol_Register_Register" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="Sol_Register_Terms" xml:space="preserve">
+    <value>By registering you agree to ColorVision Terms of Use</value>
+  </data>
+  <data name="Sol_ChangePwd_Title" xml:space="preserve">
+    <value>Change Password</value>
+  </data>
+  <data name="Sol_ChangePwd_Label" xml:space="preserve">
+    <value>Change Password</value>
+  </data>
+  <data name="Sol_ChangePwd_Current" xml:space="preserve">
+    <value>Current Password</value>
+  </data>
+  <data name="Sol_ChangePwd_CurrentPlaceholder" xml:space="preserve">
+    <value>Please enter current password</value>
+  </data>
+  <data name="Sol_ChangePwd_New" xml:space="preserve">
+    <value>New Password</value>
+  </data>
+  <data name="Sol_ChangePwd_NewPlaceholder" xml:space="preserve">
+    <value>At least 6 characters</value>
+  </data>
+  <data name="Sol_ChangePwd_Confirm" xml:space="preserve">
+    <value>Confirm New Password</value>
+  </data>
+  <data name="Sol_ChangePwd_ConfirmPlaceholder" xml:space="preserve">
+    <value>Enter new password again</value>
+  </data>
+  <data name="Sol_ChangePwd_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Sol_ChangePwd_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Sol_CreateUser_Title" xml:space="preserve">
+    <value>Create New User</value>
+  </data>
+  <data name="Sol_CreateUser_Subtitle" xml:space="preserve">
+    <value>Fill in user info and assign roles</value>
+  </data>
+  <data name="Sol_CreateUser_Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="Sol_CreateUser_UsernameDesc" xml:space="preserve">
+    <value>Login name, must be unique</value>
+  </data>
+  <data name="Sol_CreateUser_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Sol_CreateUser_PasswordDesc" xml:space="preserve">
+    <value>At least 6 characters</value>
+  </data>
+  <data name="Sol_CreateUser_Role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Sol_CreateUser_RoleDesc" xml:space="preserve">
+    <value>Select user&apos;s initial role</value>
+  </data>
+  <data name="Sol_CreateUser_Remark" xml:space="preserve">
+    <value>Remark</value>
+  </data>
+  <data name="Sol_CreateUser_RemarkDesc" xml:space="preserve">
+    <value>User description (optional)</value>
+  </data>
+  <data name="Sol_CreateUser_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Sol_CreateUser_Create" xml:space="preserve">
+    <value>Create User</value>
+  </data>
+  <data name="Sol_UserMgr_Title" xml:space="preserve">
+    <value>User Management - RBAC</value>
+  </data>
+  <data name="Sol_UserMgr_Label" xml:space="preserve">
+    <value>User and Role Management</value>
+  </data>
+  <data name="Sol_UserMgr_Admin" xml:space="preserve">
+    <value>System Admin Mode</value>
+  </data>
+  <data name="Sol_UserMgr_Refresh" xml:space="preserve">
+    <value>Refresh Data</value>
+  </data>
+  <data name="Sol_UserMgr_Ops" xml:space="preserve">
+    <value>User Management Operations</value>
+  </data>
+  <data name="Sol_UserMgr_CreateUser" xml:space="preserve">
+    <value>Create User</value>
+  </data>
+  <data name="Sol_UserMgr_CreateUserTooltip" xml:space="preserve">
+    <value>Open create user window</value>
+  </data>
+  <data name="Sol_UserMgr_RoleMgmt" xml:space="preserve">
+    <value>Role Management</value>
+  </data>
+  <data name="Sol_UserMgr_RoleName" xml:space="preserve">
+    <value>Role Name:</value>
+  </data>
+  <data name="Sol_UserMgr_RoleNameTooltip" xml:space="preserve">
+    <value>Enter role display name</value>
+  </data>
+  <data name="Sol_UserMgr_RoleCode" xml:space="preserve">
+    <value>Role Code:</value>
+  </data>
+  <data name="Sol_UserMgr_RoleCodeTooltip" xml:space="preserve">
+    <value>Enter role&apos;s unique identifier code</value>
+  </data>
+  <data name="Sol_UserMgr_Remark" xml:space="preserve">
+    <value>Remark:</value>
+  </data>
+  <data name="Sol_UserMgr_RemarkTooltip" xml:space="preserve">
+    <value>Role description</value>
+  </data>
+  <data name="Sol_UserMgr_CreateRole" xml:space="preserve">
+    <value>Create Role</value>
+  </data>
+  <data name="Sol_UserMgr_PermMgmt" xml:space="preserve">
+    <value>Permission Management</value>
+  </data>
+  <data name="Sol_UserMgr_Col_RoleName" xml:space="preserve">
+    <value>Role Name</value>
+  </data>
+  <data name="Sol_UserMgr_Col_RoleCode" xml:space="preserve">
+    <value>Role Code</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Remark" xml:space="preserve">
+    <value>Remark</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Sol_UserMgr_Col_CreateTime" xml:space="preserve">
+    <value>Create Time</value>
+  </data>
+  <data name="Sol_UserMgr_SearchTooltip" xml:space="preserve">
+    <value>Search username...</value>
+  </data>
+  <data name="Sol_UserMgr_UserCount" xml:space="preserve">
+    <value>{0} users total</value>
+  </data>
+  <data name="Sol_UserMgr_UserList" xml:space="preserve">
+    <value>User List</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Sol_UserMgr_Col_Action" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Sol_UserMgr_EditRoleTooltip" xml:space="preserve">
+    <value>Edit Role</value>
+  </data>
+  <data name="Sol_UserMgr_DeleteUserTooltip" xml:space="preserve">
+    <value>Delete User</value>
+  </data>
+  <data name="Sol_UserMgr_ResetPwdTooltip" xml:space="preserve">
+    <value>Reset Password</value>
+  </data>
+  <data name="Sol_UserMgr_PermStats" xml:space="preserve">
+    <value>Permission cache stats: Loading...</value>
+  </data>
+  <data name="Sol_UserMgr_DoubleClickHint" xml:space="preserve">
+    <value>Tip: Double-click user to view details</value>
+  </data>
+  <data name="Sol_EditRoles_Title" xml:space="preserve">
+    <value>Edit User Roles - RBAC</value>
+  </data>
+  <data name="Sol_EditRoles_Label" xml:space="preserve">
+    <value>Edit User Roles</value>
+  </data>
+  <data name="Sol_EditRoles_Subtitle" xml:space="preserve">
+    <value>Select role assignments for user</value>
+  </data>
+  <data name="Sol_EditRoles_Search" xml:space="preserve">
+    <value>Search role name</value>
+  </data>
+  <data name="Sol_EditRoles_Selected" xml:space="preserve">
+    <value>{0} roles selected</value>
+  </data>
+  <data name="Sol_EditRoles_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Sol_EditRoles_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Sol_EditUser_Title" xml:space="preserve">
+    <value>Edit User Info</value>
+  </data>
+  <data name="Sol_EditUser_Label" xml:space="preserve">
+    <value>Edit User Info</value>
+  </data>
+  <data name="Sol_EditUser_Subtitle" xml:space="preserve">
+    <value>Edit personal profile</value>
+  </data>
+  <data name="Sol_EditUser_Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Sol_EditUser_Phone" xml:space="preserve">
+    <value>Phone</value>
+  </data>
+  <data name="Sol_EditUser_PhonePlaceholder" xml:space="preserve">
+    <value>Contact phone</value>
+  </data>
+  <data name="Sol_EditUser_Company" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="Sol_EditUser_CompanyPlaceholder" xml:space="preserve">
+    <value>Company name</value>
+  </data>
+  <data name="Sol_EditUser_Dept" xml:space="preserve">
+    <value>Department</value>
+  </data>
+  <data name="Sol_EditUser_DeptPlaceholder" xml:space="preserve">
+    <value>Department</value>
+  </data>
+  <data name="Sol_EditUser_Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="Sol_EditUser_PositionPlaceholder" xml:space="preserve">
+    <value>Position title</value>
+  </data>
+  <data name="Sol_EditUser_Address" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Sol_EditUser_AddressPlaceholder" xml:space="preserve">
+    <value>Contact address</value>
+  </data>
+  <data name="Sol_EditUser_Remark" xml:space="preserve">
+    <value>Remark</value>
+  </data>
+  <data name="Sol_EditUser_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Sol_EditUser_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Sol_PermMgr_Label" xml:space="preserve">
+    <value>Role Permission Management</value>
+  </data>
+  <data name="Sol_PermMgr_Subtitle" xml:space="preserve">
+    <value>Assign and manage system permissions for roles</value>
+  </data>
+  <data name="Sol_PermMgr_Refresh" xml:space="preserve">
+    <value>Refresh Roles</value>
+  </data>
+  <data name="Sol_PermMgr_Available" xml:space="preserve">
+    <value>Available Permissions</value>
+  </data>
+  <data name="Sol_PermMgr_SelectAll" xml:space="preserve">
+    <value>✓ Select All</value>
+  </data>
+  <data name="Sol_PermMgr_DeselectAll" xml:space="preserve">
+    <value>✗ Deselect All</value>
+  </data>
+  <data name="Sol_PermMgr_CurrentRole" xml:space="preserve">
+    <value>Current Role:</value>
+  </data>
+  <data name="Sol_PermMgr_NotSelected" xml:space="preserve">
+    <value>Not Selected</value>
+  </data>
+  <data name="Sol_PermMgr_Save" xml:space="preserve">
+    <value>Save Permission Assignment</value>
+  </data>
+  <data name="Sol_PermMgr_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Sol_RbacMgr_LoginTooltip" xml:space="preserve">
+    <value>Click to login or switch account</value>
+  </data>
+  <data name="Sol_RbacMgr_EditUserTooltip" xml:space="preserve">
+    <value>Edit current user details</value>
+  </data>
+  <data name="Sol_RbacMgr_ChangePwdTooltip" xml:space="preserve">
+    <value>Change current account password</value>
+  </data>
+  <data name="Sol_RbacMgr_ChangePwdLabel" xml:space="preserve">
+    <value>Change Password</value>
+  </data>
+  <data name="Sol_RbacMgr_UserMgmtTooltip" xml:space="preserve">
+    <value>Manage system users and roles (admin only)</value>
+  </data>
+  <data name="Sol_RbacMgr_LogoutTooltip" xml:space="preserve">
+    <value>Logout</value>
+  </data>
+  <data name="Sol_Rbac_Close" xml:space="preserve">
+    <value>Close</value>
   </data>
 </root>
