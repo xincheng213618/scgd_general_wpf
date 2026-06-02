@@ -78,13 +78,6 @@ namespace ColorVision.UI.LogImp
             // Listen for config changes
             Config.PropertyChanged += Config_PropertyChanged;
 
-            if (Config.AutoRefresh)
-            {
-                _refreshTimer.Start();
-                EnableFileWatcher(true);
-            }
-
-            _refreshTimer?.Stop();
             EnableFileWatcher(false);
         }
 
