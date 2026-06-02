@@ -391,6 +391,11 @@
                                                         Content="Copy ID" />
                                                 <Button Margin="0,0,6,0"
                                                         Padding="10,4"
+                                                        Command="{Binding DataContext.CopyPendingActionPayloadCommand, Source={x:Reference Root}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Copy Payload" />
+                                                <Button Margin="0,0,6,0"
+                                                        Padding="10,4"
                                                         Command="{Binding DataContext.ApprovePendingActionCommand, Source={x:Reference Root}}"
                                                         CommandParameter="{Binding}"
                                                         Content="Approve" />

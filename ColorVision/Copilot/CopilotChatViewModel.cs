@@ -103,6 +103,7 @@ namespace ColorVision.Copilot
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
             CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
+            CopyPendingActionPayloadCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionPayload, action => action != null);
             ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(ApprovePendingAction, action => action?.IsPending == true);
             RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
 
@@ -183,6 +184,8 @@ namespace ColorVision.Copilot
         public ICommand TogglePinConversationCommand { get; }
 
         public ICommand CopyPendingActionIdCommand { get; }
+
+        public ICommand CopyPendingActionPayloadCommand { get; }
 
         public ICommand ApprovePendingActionCommand { get; }
 
@@ -570,6 +573,22 @@ namespace ColorVision.Copilot
             {
                 Clipboard.SetText(action.ActionId);
                 SetPendingActionFeedback($"Copied action_id {action.ActionId}.");
+            }
+            catch (Exception ex)
+            {
+                SetPendingActionFeedback($"Copy failed: {ex.Message}");
+            }
+        }
+
+        private void CopyPendingActionPayload(ConfirmableAction? action)
+        {
+            if (action == null)
+                return;
+
+            try
+            {
+                Clipboard.SetText(action.ConfirmActionPayloadJson);
+                SetPendingActionFeedback($"Copied confirm_action payload for {action.ActionId}.");
             }
             catch (Exception ex)
             {

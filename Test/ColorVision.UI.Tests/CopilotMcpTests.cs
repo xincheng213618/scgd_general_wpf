@@ -983,6 +983,25 @@ public sealed class CopilotMcpTests : IDisposable
     }
 
     [Fact]
+    public void ConfirmableActionPayload_ContainsConfirmActionArguments()
+    {
+        var action = CopilotMcpConfirmationStore.Instance.Create(
+            "Confirm menu command",
+            "Execute ColorVision menu command: Tools > Update",
+            "confirmation-required",
+            "execute_menu",
+            "query=Tools > Update, dry_run=False",
+            _ => Task.FromResult(CopilotMcpToolCallResult.Ok("ok")));
+
+        using var document = JsonDocument.Parse(action.ConfirmActionPayloadJson);
+        var root = document.RootElement;
+
+        Assert.Equal(action.ActionId, root.GetProperty("action_id").GetString());
+        Assert.Equal("execute_menu", root.GetProperty("tool_name").GetString());
+        Assert.Equal("query=Tools > Update, dry_run=False", root.GetProperty("arguments_summary").GetString());
+    }
+
+    [Fact]
     public async Task ConfirmAction_BeforeUserApproval_ReturnsPending()
     {
         var fixture = await CreatePendingMenuActionAsync();

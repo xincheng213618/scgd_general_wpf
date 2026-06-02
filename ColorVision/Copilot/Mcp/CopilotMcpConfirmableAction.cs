@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -60,6 +61,13 @@ namespace ColorVision.Copilot.Mcp
         public string CreatedAtLabel => CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
 
         public string ExpiresAtLabel => ExpiresAt.ToLocalTime().ToString("HH:mm:ss");
+
+        public string ConfirmActionPayloadJson => JsonSerializer.Serialize(new
+        {
+            action_id = ActionId,
+            tool_name = ToolName,
+            arguments_summary = ArgumentsSummary,
+        }, new JsonSerializerOptions { WriteIndented = true });
 
         internal Func<CancellationToken, Task<CopilotMcpToolCallResult>> Executor { get; init; } = _ => Task.FromResult(CopilotMcpToolCallResult.Fail("action_executor_missing", "No executor is attached to this action."));
 
