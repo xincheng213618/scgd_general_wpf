@@ -1,10 +1,10 @@
-﻿<Window x:Class="ColorVision.Projects.ProjectHeyuan.ProjectHeyuanWindow"
+<Window x:Class="ColorVision.Projects.ProjectHeyuan.ProjectHeyuanWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Projects.ProjectHeyuan"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:themes="https://schemas.colorvision.cn/wpf/themes"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:HYMesManager}"
         Title="ProjectHeiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -295,8 +295,8 @@
                         </DockPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="0,2" VerticalAlignment="Top">
-                        <ui:ToggleSwitch Content="启动时尝试连接MES" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
-                        <ui:ToggleSwitch Content="产品编号改变时自动上传MES" IsChecked="{Binding Config.IsAutoUploadSn}" Margin="0,2"/>
+                        <themes:ToggleSwitch Content="启动时尝试连接MES" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
+                        <themes:ToggleSwitch Content="产品编号改变时自动上传MES" IsChecked="{Binding Config.IsAutoUploadSn}" Margin="0,2"/>
                     </StackPanel>
 
                 </Grid>

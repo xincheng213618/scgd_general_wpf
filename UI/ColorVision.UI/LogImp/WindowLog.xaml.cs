@@ -1,4 +1,3 @@
-﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.LogImp;
 using log4net;
@@ -6,147 +5,13 @@ using log4net.Appender;
 using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
-using Newtonsoft.Json;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.UI
 {
-    public class TextAppender : AppenderSkeleton
-    {
-        private LogStatusBarProvider LogStatusBarProvider;
-        private readonly object _syncLock = new object();
-        private string _latestMessage = string.Empty;
-        private bool _updateQueued;
-
-        public TextAppender(LogStatusBarProvider logStatusBarProvider)
-        {
-            LogStatusBarProvider = logStatusBarProvider;
-        }
-
-        protected override void Append(LoggingEvent loggingEvent)
-        {
-            var renderedMessage = RenderLoggingEvent(loggingEvent);
-            string messageToShow = renderedMessage.Length > 10 ? string.Concat(renderedMessage.AsSpan(0, 10), "...") : renderedMessage;
-
-            bool shouldQueueUpdate = false;
-            lock (_syncLock)
-            {
-                _latestMessage = messageToShow;
-                if (!_updateQueued)
-                {
-                    _updateQueued = true;
-                    shouldQueueUpdate = true;
-                }
-            }
-
-            if (shouldQueueUpdate)
-            {
-                QueueStatusUpdate();
-            }
-        }
-
-        private void QueueStatusUpdate()
-        {
-            Application.Current?.Dispatcher.BeginInvoke(new Action(ProcessPendingStatusUpdate));
-        }
-
-        private void ProcessPendingStatusUpdate()
-        {
-            string messageToShow;
-            bool shouldQueueUpdate = false;
-
-            lock (_syncLock)
-            {
-                messageToShow = _latestMessage;
-                _updateQueued = false;
-            }
-
-            LogStatusBarProvider.Log = messageToShow;
-
-            lock (_syncLock)
-            {
-                if (!_updateQueued && !string.Equals(messageToShow, _latestMessage, StringComparison.Ordinal))
-                {
-                    _updateQueued = true;
-                    shouldQueueUpdate = true;
-                }
-            }
-
-            if (shouldQueueUpdate)
-            {
-                QueueStatusUpdate();
-            }
-        }
-    }
-
-    public class LogStatusBarProvider : ViewModelBase, IConfig
-    {
-        public static LogStatusBarProvider Instance => ConfigService.Instance.GetRequiredService<LogStatusBarProvider>();
-        private TextAppender _textAppender;
-        private Hierarchy _hierarchy;
-
-        public LogStatusBarProvider()
-        {
-            _hierarchy = (Hierarchy)LogManager.GetRepository();
-            _textAppender = new TextAppender(this);
-            _textAppender.Layout = new PatternLayout("%message");
-            if (IsShowLog)
-            {
-                _hierarchy.Root.AddAppender(_textAppender);
-                log4net.Config.BasicConfigurator.Configure(_hierarchy);
-            }
-        }
-        [JsonIgnore]
-        public string Log { get => _Log; set { _Log = value; OnPropertyChanged(); } }
-        private string _Log;
-
-        public bool IsShowLog
-        {
-            get => _IsShowLog;
-            set
-            {
-                if (_IsShowLog != value)
-                {
-                    _IsShowLog = value;
-                    OnPropertyChanged();
-
-                    if (_hierarchy == null)
-                        _hierarchy = (Hierarchy)LogManager.GetRepository();
-
-                    if (_textAppender == null)
-                    {
-                        _textAppender = new TextAppender(this);
-                        _textAppender.Layout = new PatternLayout("%message");
-                    }
-
-                    if (_IsShowLog)
-                    {
-                        if (!_hierarchy.Root.Appenders.Cast<IAppender>().Contains(_textAppender))
-                        {
-                            _hierarchy.Root.AddAppender(_textAppender);
-                        }
-                        log4net.Config.BasicConfigurator.Configure(_hierarchy);
-                    }
-                    else
-                    {
-                        _hierarchy.Root.RemoveAppender(_textAppender);
-                    }
-                }
-            }
-        }
-        private bool _IsShowLog;
-    }
-
-
-
-
-
     /// <summary>
     /// WindowLog.xaml 的交互逻辑
     /// </summary>
@@ -158,37 +23,36 @@ namespace ColorVision.UI
         {
             InitializeComponent();
             this.ApplyCaption();
-            this.SizeChanged += (s, e) =>
-            {
-                LogViewUiHelper.UpdateToolbarVisibility(ActualWidth, ButtonAutoScrollToEnd, ButtonAutoRefresh, SearchBar1, cmlog);
-            };
         }
-        TextBoxAppender TextBoxAppender { get; set; }
+        LogViewerAppender LogViewerAppender { get; set; }
         Hierarchy Hierarchy { get; set; }
+        private LogTextViewController? _logTextView;
         private void Window_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
-            TextBoxAppender = new TextBoxAppender(logTextBox, logTextBoxSerch);
-            TextBoxAppender.Layout = new PatternLayout(LogConstants.DefaultLogPattern);
-            Hierarchy.Root.AddAppender(TextBoxAppender);
+            LogViewerAppender = new LogViewerAppender(LogViewer);
+            LogViewerAppender.Layout = new PatternLayout(LogConstants.DefaultLogPattern);
+            Hierarchy.Root.AddAppender(LogViewerAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
             this.Closed += (s, e) =>
             {
-                Hierarchy.Root.RemoveAppender(TextBoxAppender);
-                TextBoxAppender.Dispose();
+                Hierarchy.Root.RemoveAppender(LogViewerAppender);
+                LogViewerAppender.Dispose();
+                _logTextView?.Detach();
                 log4net.Config.BasicConfigurator.Configure(Hierarchy);
             };
 
             this.DataContext = LogConfig.Instance;
 
-            cmlog.ItemsSource = LogConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
-            SearchBar1Brush = SearchBar1.BorderBrush;
+            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
+            _logTextView.ConfigureContextMenus(contextMenu =>
+                LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel));
 
             LoadLogHistory();
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                logTextBox.ScrollToEnd();
+                LogViewer.ScrollToLatest(LogConfig.Instance.LogReserve);
             });
 
         }
@@ -203,7 +67,8 @@ namespace ColorVision.UI
         private void LoadLogHistory()
         {
             if (LogConfig.Instance.LogLoadState == LogLoadState.None) return;
-            logTextBox.Text = string.Empty;
+            LogViewer.Clear();
+            LogViewer.MaxEntries = LogConfig.Instance.MaxEntries;
             var logFilePath = GetLogFilePath();
             if (logFilePath != null && File.Exists(logFilePath))
             {
@@ -212,7 +77,24 @@ namespace ColorVision.UI
                     using (FileStream fileStream = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (StreamReader reader = new StreamReader(fileStream, Encoding.Default))
                     {
-                        LoadLogs(reader);
+                        if (LogViewer.UsesVirtualizedRendering)
+                        {
+                            var entries = LogHistoryReader.ReadEntries(
+                                reader,
+                                LogConfig.Instance.LogLoadState,
+                                reverse: false,
+                                LogConfig.Instance.MaxChars);
+                            LogViewer.SetEntries(entries, LogConfig.Instance.LogReserve);
+                        }
+                        else
+                        {
+                            var displayText = LogHistoryReader.ReadDisplayText(
+                                reader,
+                                LogConfig.Instance.LogLoadState,
+                                LogConfig.Instance.LogReserve,
+                                LogConfig.Instance.MaxChars);
+                            LogViewer.SetText(displayText, LogConfig.Instance.LogReserve);
+                        }
                     }
                 }
                 catch (IOException ex)
@@ -226,109 +108,25 @@ namespace ColorVision.UI
             }
         }
 
-        private void LoadLogs(StreamReader reader)
+        private void SetLogLevel(Level selectedLevel)
         {
-            var logLoadState = LogConfig.Instance.LogLoadState;
-            var logReserve = LogConfig.Instance.LogReserve;
-            DateTime today = DateTime.Today;
-            DateTime startupTime = Process.GetCurrentProcess().StartTime;
-            List<string> matchingEntries = new List<string>();
-            StringBuilder? currentEntry = null;
-            bool currentEntryIncluded = false;
-
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                if (TryParseLogTimestamp(line, out DateTime logTime))
-                {
-                    if (currentEntryIncluded && currentEntry != null)
-                    {
-                        matchingEntries.Add(currentEntry.ToString());
-                    }
-
-                    currentEntryIncluded = ShouldIncludeLogEntry(logLoadState, today, startupTime, logTime);
-                    currentEntry = currentEntryIncluded ? new StringBuilder(line) : null;
-                    continue;
-                }
-
-                if (currentEntryIncluded && currentEntry != null)
-                {
-                    currentEntry.AppendLine();
-                    currentEntry.Append(line);
-                }
-            }
-
-            if (currentEntryIncluded && currentEntry != null)
-            {
-                matchingEntries.Add(currentEntry.ToString());
-            }
-
-            if (logReserve)
-            {
-                matchingEntries.Reverse();
-            }
-
-            logTextBox.Text = string.Join(Environment.NewLine, matchingEntries);
-        }
-
-        private static bool TryParseLogTimestamp(string line, out DateTime logTime)
-        {
-            logTime = default;
-            if (string.IsNullOrWhiteSpace(line) || line.Length < LogConstants.LogTimestampLength)
-            {
-                return false;
-            }
-
-            return DateTime.TryParseExact(
-                line.Substring(0, LogConstants.LogTimestampLength),
-                LogConstants.LogTimestampFormat,
-                null,
-                DateTimeStyles.None,
-                out logTime);
-        }
-
-        private static bool ShouldIncludeLogEntry(LogLoadState logLoadState, DateTime today, DateTime startupTime, DateTime logTime)
-        {
-            if (logLoadState == LogLoadState.AllToday)
-            {
-                return logTime.Date == today;
-            }
-
-            if (logLoadState == LogLoadState.SinceStartup)
-            {
-                return logTime >= startupTime;
-            }
-
-            return true;
-        }
-
-        private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var selectedLevel = (KeyValuePair<Level, string>)cmlog.SelectedItem;
             var hierarchy = (Hierarchy)LogManager.GetRepository();
-            if (selectedLevel.Key != hierarchy.Root.Level)
+            if (!string.Equals(selectedLevel.Name, hierarchy.Root.Level?.Name, StringComparison.Ordinal))
             {
-                hierarchy.Root.Level = selectedLevel.Key;
-                log4net.Config.BasicConfigurator.Configure(hierarchy);
-                log.Info(Properties.Resources.UpdateLog4NetLevel + selectedLevel.Value);
+                LogConfig.Instance.LogLevel = selectedLevel;
+                log.Info(Properties.Resources.UpdateLog4NetLevel + selectedLevel.Name);
             }
         }
 
-        private void Clear_Click(object sender, RoutedEventArgs e)
+        private void ClearLog()
         {
-            logTextBox.Text = string.Empty;
-            logTextBoxSerch.Text = string.Empty;
+            LogViewer.Clear();
         }
 
-
-        private Brush SearchBar1Brush;
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
-            TextBoxAppender.SearchText = searchText;
-            LogViewUiHelper.ApplySearchFilter(searchText, logTextBox, logTextBoxSerch, SearchBar1, SearchBar1Brush);
+            _logTextView?.QueueSearchFilter(searchText);
         }
-
-
     }
 }

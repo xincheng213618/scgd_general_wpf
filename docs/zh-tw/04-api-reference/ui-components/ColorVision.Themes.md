@@ -80,7 +80,7 @@ ThemeManagerExtensions 提供了兩個實際很常用的入口：
 1. 上層 UI 選擇主題。
 2. Application.ApplyTheme 調到 ThemeManager.Current.ApplyTheme。
 3. 如果當前選擇是 UseSystem，則先解析成 AppsTheme。
-4. ThemeManager 按主題把 Wpf.Ui 和本模組的資源字典加入 Application.Resources.MergedDictionaries。
+4. ThemeManager 按主題把本模組的資源字典加入 Application.Resources.MergedDictionaries。
 5. CurrentTheme 和 CurrentUITheme 更新，並觸發變更事件。
 6. 已呼叫 ApplyCaption 的視窗跟隨更新標題欄顏色和圖示。
 

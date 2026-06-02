@@ -55,6 +55,7 @@ namespace ColorVision.Engine.ToolPlugins
             {
                 log.Error("OpenCvSharp fix: Failed to start download", ex);
                 MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
                     string.Format(Properties.Resources.OpenCvSharpFixFailed, ex.Message),
                     Properties.Resources.FixOpenCvSharpExportCrash,
                     MessageBoxButton.OK,
@@ -69,6 +70,7 @@ namespace ColorVision.Engine.ToolPlugins
                 log.Warn($"OpenCvSharp fix: Download failed, status={task.Status}, error={task.ErrorMessage}");
                 Application.Current?.Dispatcher.Invoke(() =>
                     MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
                         string.Format(Properties.Resources.OpenCvSharpFixFailed, task.ErrorMessage ?? task.Status.ToString()),
                         Properties.Resources.FixOpenCvSharpExportCrash,
                         MessageBoxButton.OK,
@@ -82,6 +84,7 @@ namespace ColorVision.Engine.ToolPlugins
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 var result = MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
                     Properties.Resources.OpenCvSharpFixConfirmClose,
                     Properties.Resources.FixOpenCvSharpExportCrash,
                     MessageBoxButton.YesNo,
@@ -98,6 +101,7 @@ namespace ColorVision.Engine.ToolPlugins
                 {
                     log.Error("OpenCvSharp fix: Failed to launch patch script", ex);
                     MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
                         string.Format(Properties.Resources.OpenCvSharpFixFailed, ex.Message),
                         Properties.Resources.FixOpenCvSharpExportCrash,
                         MessageBoxButton.OK,
@@ -112,6 +116,7 @@ namespace ColorVision.Engine.ToolPlugins
             string targetDll = Path.Combine(programDir, DllFileName);
             string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
             string backupDll = $"{targetDll}.bak-{timestamp}";
+            int currentProcessId = Process.GetCurrentProcess().Id;
 
             string cmdScript = Path.Combine(
                 Path.GetTempPath(), $"OpenCvSharpPatch_{timestamp}.cmd");
@@ -127,19 +132,16 @@ namespace ColorVision.Engine.ToolPlugins
             sb.AppendLine($"set \"BACKUP_DLL={backupDll}\"");
             sb.AppendLine($"set \"DOWNLOADED_DLL={downloadedDll}\"");
             sb.AppendLine($"set \"EXE_PATH={exePath}\"");
+            sb.AppendLine($"set \"COLORVISION_PID={currentProcessId}\"");
             sb.AppendLine();
-            sb.AppendLine(":: Wait for ColorVision process to exit");
-            sb.AppendLine(":wait_loop");
-            sb.AppendLine($"tasklist /fi \"imagename eq {Path.GetFileName(exePath)}\" | find /i \"{Path.GetFileName(exePath)}\" >nul 2>nul");
-            sb.AppendLine("if %errorlevel%==0 (");
-            sb.AppendLine("    timeout /t 2 /nobreak >nul");
-            sb.AppendLine("    goto wait_loop");
-            sb.AppendLine(")");
+            sb.AppendLine("echo Closing ColorVision...");
+            sb.AppendLine("taskkill /f /pid %COLORVISION_PID% >nul 2>nul");
+            sb.AppendLine("timeout /t 2 /nobreak >nul");
             sb.AppendLine();
             sb.AppendLine(":: Backup existing DLL");
             sb.AppendLine("if exist \"%TARGET_DLL%\" (");
             sb.AppendLine("    copy /y \"%TARGET_DLL%\" \"%BACKUP_DLL%\" >nul 2>nul");
-            sb.AppendLine("    if %errorlevel% neq 0 (");
+            sb.AppendLine("    if errorlevel 1 (");
             sb.AppendLine("        echo WARNING: Failed to backup existing DLL.");
             sb.AppendLine("    ) else (");
             sb.AppendLine("        echo Backed up to %BACKUP_DLL%");
@@ -147,23 +149,26 @@ namespace ColorVision.Engine.ToolPlugins
             sb.AppendLine(")");
             sb.AppendLine();
             sb.AppendLine(":: Replace DLL");
-            sb.AppendLine("copy /y \"%DOWNLOADED_DLL%\" \"%TARGET_DLL%\" >nul 2>nul");
-            sb.AppendLine("if %errorlevel% neq 0 (");
-            sb.AppendLine("    echo ERROR: Failed to replace DLL. You may need to run as administrator.");
-            sb.AppendLine("    echo Script and downloaded file preserved at:");
-            sb.AppendLine("    echo   Script: %~f0");
-            sb.AppendLine("    echo   Source: %DOWNLOADED_DLL%");
-            sb.AppendLine("    pause");
-            sb.AppendLine("    exit /b 1");
+            sb.AppendLine("for /l %%i in (1,1,10) do (");
+            sb.AppendLine("    copy /y \"%DOWNLOADED_DLL%\" \"%TARGET_DLL%\" >nul 2>nul && goto replaced");
+            sb.AppendLine("    timeout /t 1 /nobreak >nul");
             sb.AppendLine(")");
             sb.AppendLine();
+            sb.AppendLine("echo ERROR: Failed to replace DLL. You may need to run as administrator.");
+            sb.AppendLine("echo Script and downloaded file preserved at:");
+            sb.AppendLine("echo   Script: %~f0");
+            sb.AppendLine("echo   Source: %DOWNLOADED_DLL%");
+            sb.AppendLine("pause");
+            sb.AppendLine("exit /b 1");
+            sb.AppendLine();
+            sb.AppendLine(":replaced");
             sb.AppendLine("echo Patch applied successfully.");
             sb.AppendLine();
             sb.AppendLine(":: Restart ColorVision");
             sb.AppendLine("start \"\" \"%EXE_PATH%\"");
             sb.AppendLine();
             sb.AppendLine(":: Self-cleanup");
-            sb.AppendLine("start \"\" cmd /c \"ping -n 3 127.0.0.1 >nul & del \"%~f0\" 2>nul\"");
+            sb.AppendLine("start \"\" cmd /c \"ping -n 3 127.0.0.1 >nul & del \\\"%~f0\\\" 2>nul\"");
             sb.AppendLine("exit /b 0");
 
             File.WriteAllText(cmdScript, sb.ToString(), Encoding.Default);
@@ -173,13 +178,12 @@ namespace ColorVision.Engine.ToolPlugins
             {
                 FileName = cmdScript,
                 UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden
+                WindowStyle = ProcessWindowStyle.Normal
             };
 
             if (!Tool.HasWritePermission(programDir))
             {
                 startInfo.Verb = "runas";
-                startInfo.WindowStyle = ProcessWindowStyle.Normal;
                 log.Info("OpenCvSharp fix: Requesting admin elevation for DLL replacement");
             }
 

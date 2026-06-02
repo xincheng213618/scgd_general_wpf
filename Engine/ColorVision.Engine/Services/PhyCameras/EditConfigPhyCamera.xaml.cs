@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             ComboxCameraModel.ItemsSource = Enum.GetValues<CameraModel>()
                 .Select(item => new KeyValuePair<CameraModel, string>(item, item.ToDescription()));
 
-            var cameraModes = new[] { CameraMode.BV_MODE, CameraMode.LV_MODE, CameraMode.CV_MODE };
+            var cameraModes = Enum.GetValues<CameraMode>();
             if (!cameraModes.Contains(EditConfig.CameraMode))
             {
                 EditConfig.CameraMode = CameraMode.BV_MODE;

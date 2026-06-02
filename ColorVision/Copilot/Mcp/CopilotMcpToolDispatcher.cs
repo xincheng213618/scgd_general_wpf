@@ -119,6 +119,13 @@ namespace ColorVision.Copilot.Mcp
                 }), "file", "read-only", "Call list_allowed_directory with { \"path\": \"Engine\" }."),
                 Tool("get_active_template_context", "Return the active template editor context snapshot, if a template editor has published one.", EmptySchema(), "context", "read-only", "Call get_active_template_context before editing template JSON."),
                 Tool("get_flow_summary", "Return a read-only summary of the active ColorVision flow, nodes, and recent run state. This never starts or stops a flow.", EmptySchema(), "context", "read-only", "Call get_flow_summary to inspect the current flow."),
+                Tool("diagnose_flow_failure", "Build a read-only failure diagnosis from the active flow, matched node, template context, and recent logs. This never runs a flow.", Schema(new Dictionary<string, object>
+                {
+                    ["node_id"] = StringProperty("Optional flow node id to focus the diagnosis."),
+                    ["node_name"] = StringProperty("Optional flow node name or title to focus the diagnosis."),
+                    ["query"] = StringProperty("Optional log query. Defaults to error."),
+                    ["max_log_lines"] = IntegerProperty("Maximum recent log lines to inspect.", 1, 300),
+                }), "context", "read-only", "Call diagnose_flow_failure with { \"node_name\": \"Camera\", \"query\": \"timeout\" } before suggesting template edits."),
                 Tool("open_panel", "Open a low-risk ColorVision panel. Optional argument: panel. Defaults to copilot.", Schema(new Dictionary<string, object>
                 {
                     ["panel"] = StringProperty("Panel id or alias. Supported aliases: copilot, log, config, solution, template, flow, device."),
@@ -143,6 +150,18 @@ namespace ColorVision.Copilot.Mcp
                     },
                     ["current_json"] = StringProperty("Optional current template JSON. If omitted, the active template editor context is used."),
                 }, "template_identifier", "proposed_changes"), "context", "read-only", "Call preview_template_patch with { \"template_identifier\": \"Default\", \"proposed_changes\": { \"Exposure\": 12 } }."),
+                Tool("suggest_template_patch", "Prepare a read-only template patch suggestion from the active template, diagnosis, and optional proposed changes. This never applies or saves.", Schema(new Dictionary<string, object>
+                {
+                    ["template_identifier"] = StringProperty("Template name, id, key, or editor identifier. Defaults to active template context when possible."),
+                    ["intent"] = StringProperty("Requested adjustment intent or failure diagnosis summary."),
+                    ["node_id"] = StringProperty("Optional related flow node id."),
+                    ["node_name"] = StringProperty("Optional related flow node name or title."),
+                    ["proposed_changes"] = new Dictionary<string, object>
+                    {
+                        ["description"] = "Optional object containing proposed top-level JSON changes, or a JSON object string.",
+                    },
+                    ["current_json"] = StringProperty("Optional current template JSON. If omitted, the active template editor context is used."),
+                }), "context", "read-only", "Call suggest_template_patch with { \"intent\": \"Camera timeout\", \"node_name\": \"Camera\" }, then preview_template_patch."),
                 Tool("apply_template_patch", "Create a user-confirmed action that applies a prior preview_template_patch result to the active template JSON editor. Required argument: preview_id.", Schema(new Dictionary<string, object>
                 {
                     ["preview_id"] = StringProperty("Preview id returned by preview_template_patch."),
@@ -218,10 +237,12 @@ namespace ColorVision.Copilot.Mcp
                     "list_allowed_directory" => ListAllowedDirectory(arguments, cancellationToken),
                     "get_active_template_context" => GetActiveTemplateContext(),
                     "get_flow_summary" => await GetFlowSummaryAsync(cancellationToken),
+                    "diagnose_flow_failure" => await DiagnoseFlowFailureAsync(arguments, cancellationToken),
                     "open_panel" => await OpenPanelAsync(arguments, cancellationToken),
                     "execute_menu" => await ExecuteMenuAsync(arguments, cancellationToken),
                     "confirm_action" => await ConfirmActionAsync(arguments, cancellationToken),
                     "preview_template_patch" => PreviewTemplatePatch(arguments),
+                    "suggest_template_patch" => await SuggestTemplatePatchAsync(arguments, cancellationToken),
                     "apply_template_patch" => await ApplyTemplatePatchAsync(arguments, cancellationToken),
                     "preview_flow_action" => await PreviewFlowActionAsync(arguments, cancellationToken),
                     "set_theme" => await SetThemeAsync(arguments, cancellationToken),
@@ -553,6 +574,104 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.Ok(FormatFlowSnapshot(snapshot));
         }
 
+        private async Task<CopilotMcpToolCallResult> DiagnoseFlowFailureAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            var snapshot = await _environment.FlowSnapshotProvider(cancellationToken);
+            var nodeQuery = FirstNonEmpty(GetString(arguments, "node_id"), GetString(arguments, "node_name"), GetString(arguments, "node"));
+            var logQuery = FirstNonEmpty(GetString(arguments, "query"), GetString(arguments, "log_query"), "error");
+            var maxLogLines = Math.Clamp(GetInt(arguments, "max_log_lines") ?? 120, 1, 300);
+            var logResult = _environment.RecentLogProvider(logQuery, CopilotRecentLogMode.RecentLines, maxLogLines, 12000);
+            var liveContext = _environment.LiveContextProvider();
+            var templateJson = ExtractCurrentTemplateJson();
+            var matchedNode = snapshot == null ? null : FindFlowNode(snapshot, nodeQuery);
+            var evidence = BuildFailureEvidenceText(snapshot, matchedNode, logResult, liveContext, templateJson);
+
+            var builder = new StringBuilder();
+            builder.AppendLine("ColorVision flow failure diagnosis");
+            builder.AppendLine("Mode: read-only diagnosis");
+            builder.AppendLine("Would execute: False");
+            builder.AppendLine("Flow execution allowed: False");
+            builder.AppendLine($"Requested node: {EmptyLabel(nodeQuery)}");
+            builder.AppendLine($"Log query: {EmptyLabel(logQuery)}");
+            builder.AppendLine($"Inspected log lines: {maxLogLines}");
+
+            builder.AppendLine();
+            builder.AppendLine("## Observed Symptoms");
+            if (snapshot == null)
+            {
+                builder.AppendLine("- No active flow snapshot is available.");
+            }
+            else
+            {
+                builder.AppendLine($"- Flow: {EmptyLabel(snapshot.FlowName)}");
+                builder.AppendLine($"- Status: {EmptyLabel(snapshot.Status)}");
+                builder.AppendLine($"- Running: {snapshot.IsRunning}");
+                builder.AppendLine($"- Batch status: {EmptyLabel(snapshot.BatchStatus)}");
+                builder.AppendLine($"- Batch result: {EmptyLabel(snapshot.BatchResult)}");
+                builder.AppendLine($"- Last node: {EmptyLabel(snapshot.LastNodeSummary)}");
+                builder.AppendLine($"- Recent failure: {EmptyLabel(snapshot.RecentFailureSummary)}");
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("## Related Node");
+            if (matchedNode == null)
+            {
+                builder.AppendLine(string.IsNullOrWhiteSpace(nodeQuery)
+                    ? "- No node was selected or requested."
+                    : "- No node matched the requested node id/name.");
+            }
+            else
+            {
+                builder.AppendLine($"- Title: {EmptyLabel(FirstNonEmpty(matchedNode.Title, matchedNode.NodeName, matchedNode.NodeId))}");
+                builder.AppendLine($"- Id: {EmptyLabel(matchedNode.NodeId)}");
+                builder.AppendLine($"- Type: {EmptyLabel(matchedNode.NodeType)}");
+                builder.AppendLine($"- Active: {matchedNode.IsActive}");
+                builder.AppendLine($"- Selected: {matchedNode.IsSelected}");
+                builder.AppendLine($"- Mark: {EmptyLabel(matchedNode.Mark)}");
+                if (matchedNode.Parameters.Count > 0)
+                    builder.AppendLine($"- Parameters: {RedactForDisplay(string.Join(", ", matchedNode.Parameters.Select(item => $"{item.Name}={item.Value}")))}");
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("## Template Context");
+            if (string.IsNullOrWhiteSpace(templateJson))
+            {
+                builder.AppendLine("- No active template JSON editor context is available.");
+            }
+            else
+            {
+                builder.AppendLine($"- Active template source: {EmptyLabel(liveContext?.SourceId)}");
+                AppendTemplateFieldHints(builder, templateJson, evidence);
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("## Recent Log Clues");
+            if (logResult.Success)
+            {
+                builder.AppendLine(RedactForDisplay(TrimLong(string.Join(Environment.NewLine, new[] { logResult.Summary, logResult.Content }.Where(value => !string.IsNullOrWhiteSpace(value))), 5000)));
+            }
+            else
+            {
+                builder.AppendLine($"- Recent log unavailable: {EmptyLabel(logResult.ErrorMessage ?? logResult.Summary)}");
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("## Likely Causes");
+            foreach (var cause in BuildLikelyFailureCauses(evidence))
+                builder.AppendLine("- " + cause);
+
+            builder.AppendLine();
+            builder.AppendLine("## Suggested Next MCP Calls");
+            if (matchedNode != null)
+                builder.AppendLine($"- preview_flow_action {{ \"action\": \"trace_recent_failure\", \"node_id\": \"{EscapeForInlineJson(matchedNode.NodeId)}\" }}");
+            builder.AppendLine("- get_diagnostic_bundle { \"max_chars\": 12000 }");
+            builder.AppendLine("- suggest_template_patch { \"intent\": \"summarize the suspected parameter adjustment\", \"node_name\": \"" + EscapeForInlineJson(FirstNonEmpty(matchedNode?.Title ?? string.Empty, nodeQuery)) + "\" }");
+            builder.AppendLine("- preview_template_patch only after choosing explicit proposed_changes.");
+            builder.AppendLine("No flow was started, stopped, run, rerun, or modified.");
+
+            return CopilotMcpToolCallResult.Ok(RedactForDiagnostics(builder.ToString().TrimEnd()));
+        }
+
         private async Task<CopilotMcpToolCallResult> OpenPanelAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             var panel = GetString(arguments, "panel");
@@ -696,6 +815,122 @@ namespace ColorVision.Copilot.Mcp
             }
 
             return CopilotMcpToolCallResult.Ok(BuildTemplatePatchPreviewText(computation, storedPreview));
+        }
+
+        private async Task<CopilotMcpToolCallResult> SuggestTemplatePatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            var intent = FirstNonEmpty(
+                GetString(arguments, "intent"),
+                GetString(arguments, "diagnosis"),
+                GetString(arguments, "goal"),
+                GetString(arguments, "target"));
+            var nodeQuery = FirstNonEmpty(GetString(arguments, "node_id"), GetString(arguments, "node_name"), GetString(arguments, "node"));
+            var templateIdentifier = FirstNonEmpty(GetString(arguments, "template_identifier"), GetString(arguments, "template"), GetString(arguments, "identifier"), "active-template");
+            var currentJson = GetString(arguments, "current_json");
+            var sourceId = string.Empty;
+            if (string.IsNullOrWhiteSpace(currentJson))
+                TryGetActiveTemplateSourceAndJson(out sourceId, out currentJson);
+
+            if (string.IsNullOrWhiteSpace(currentJson))
+                return CopilotMcpToolCallResult.Fail("template_context_unavailable", "No active template JSON is available. Open a template JSON editor or provide current_json before suggesting a template patch.");
+
+            try
+            {
+                using var currentDocument = JsonDocument.Parse(currentJson);
+                if (currentDocument.RootElement.ValueKind != JsonValueKind.Object)
+                    return CopilotMcpToolCallResult.Fail("invalid_template_json", $"The current template JSON root must be an object, but was {currentDocument.RootElement.ValueKind}.");
+
+                var hasProposedChanges = arguments != null && arguments.ContainsKey("proposed_changes");
+                JsonDocument? proposedDocument = null;
+                try
+                {
+                    if (hasProposedChanges)
+                    {
+                        if (!TryGetJsonArgument(arguments, "proposed_changes", out var proposedChangesJson, out var proposedChangesError))
+                            return CopilotMcpToolCallResult.Fail("missing_proposed_changes", proposedChangesError);
+
+                        proposedDocument = JsonDocument.Parse(proposedChangesJson);
+                        if (proposedDocument.RootElement.ValueKind != JsonValueKind.Object)
+                            return CopilotMcpToolCallResult.Fail("invalid_proposed_changes", $"The proposed_changes root must be an object, but was {proposedDocument.RootElement.ValueKind}.");
+
+                        if (TryFindSensitiveJsonProperty(proposedDocument.RootElement, out var sensitivePath))
+                            return CopilotMcpToolCallResult.Fail("sensitive_template_field_not_allowed", $"suggest_template_patch refuses to suggest sensitive fields: {sensitivePath}.");
+                    }
+
+                    var snapshot = await _environment.FlowSnapshotProvider(cancellationToken);
+                    var matchedNode = snapshot == null ? null : FindFlowNode(snapshot, nodeQuery);
+                    var builder = new StringBuilder();
+                    builder.AppendLine("ColorVision template patch suggestion");
+                    builder.AppendLine("Mode: read-only suggestion");
+                    builder.AppendLine("Would apply: False");
+                    builder.AppendLine("Would save: False");
+                    builder.AppendLine($"Template identifier: {templateIdentifier.Trim()}");
+                    builder.AppendLine($"Template source: {EmptyLabel(sourceId)}");
+                    builder.AppendLine($"Intent: {EmptyLabel(intent)}");
+                    builder.AppendLine($"Related node: {EmptyLabel(FirstNonEmpty(matchedNode?.Title ?? string.Empty, matchedNode?.NodeName ?? string.Empty, nodeQuery))}");
+
+                    builder.AppendLine();
+                    builder.AppendLine("## Candidate Fields");
+                    foreach (var field in BuildTemplatePatchCandidateFields(currentDocument.RootElement, intent, matchedNode).Take(20))
+                        builder.AppendLine("- " + field);
+
+                    if (proposedDocument != null)
+                    {
+                        var changes = BuildTemplatePatchChangeLines(currentDocument.RootElement, proposedDocument.RootElement);
+                        var warnings = BuildTemplatePatchWarningLines(currentDocument.RootElement, proposedDocument.RootElement);
+
+                        builder.AppendLine();
+                        builder.AppendLine("## Proposed Changes");
+                        builder.AppendLine(proposedDocument.RootElement.ToString());
+                        builder.AppendLine();
+                        builder.AppendLine("## Change Summary");
+                        if (changes.Count == 0)
+                            builder.AppendLine("- No top-level changes detected.");
+                        foreach (var change in changes.Take(80))
+                            builder.AppendLine(change);
+
+                        builder.AppendLine();
+                        builder.AppendLine("## Safety Warnings");
+                        if (warnings.Count == 0)
+                            builder.AppendLine("- No type-change, null, or unknown-key warnings were detected.");
+                        foreach (var warning in warnings.Take(80))
+                            builder.AppendLine(warning);
+
+                        builder.AppendLine();
+                        builder.AppendLine("## Next MCP Call");
+                        builder.AppendLine("Call preview_template_patch with this payload, then review the returned diff and preview_id:");
+                        builder.AppendLine("```json");
+                        builder.AppendLine(BuildPreviewTemplatePatchPayload(templateIdentifier, proposedDocument.RootElement));
+                        builder.AppendLine("```");
+                    }
+                    else
+                    {
+                        builder.AppendLine();
+                        builder.AppendLine("## Suggested Patch Shape");
+                        builder.AppendLine("No proposed_changes were supplied. Choose explicit top-level fields from Candidate Fields, then call suggest_template_patch again with proposed_changes or call preview_template_patch directly.");
+                        builder.AppendLine("```json");
+                        builder.AppendLine("{");
+                        builder.AppendLine("  \"template_identifier\": \"" + EscapeForInlineJson(templateIdentifier) + "\",");
+                        builder.AppendLine("  \"proposed_changes\": {");
+                        builder.AppendLine("    \"FieldName\": \"new value\"");
+                        builder.AppendLine("  }");
+                        builder.AppendLine("}");
+                        builder.AppendLine("```");
+                    }
+
+                    builder.AppendLine();
+                    builder.AppendLine("No template JSON was applied, saved, or mutated.");
+                    return CopilotMcpToolCallResult.Ok(RedactForDiagnostics(builder.ToString().TrimEnd()));
+                }
+                finally
+                {
+                    proposedDocument?.Dispose();
+                }
+            }
+            catch (JsonException ex)
+            {
+                return CopilotMcpToolCallResult.Fail("invalid_template_patch_json", $"Template patch suggestion failed JSON validation: {ex.Message}");
+            }
         }
 
         private async Task<CopilotMcpToolCallResult> ApplyTemplatePatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
@@ -1119,6 +1354,27 @@ namespace ColorVision.Copilot.Mcp
             return changes;
         }
 
+        private static IReadOnlyList<string> BuildTemplatePatchWarningLines(JsonElement currentRoot, JsonElement proposedRoot)
+        {
+            var warnings = new List<string>();
+            foreach (var proposedProperty in proposedRoot.EnumerateObject())
+            {
+                if (!currentRoot.TryGetProperty(proposedProperty.Name, out var currentValue))
+                {
+                    warnings.Add($"- Warning: {proposedProperty.Name} is a new top-level key. Confirm the template schema supports it.");
+                    continue;
+                }
+
+                if (proposedProperty.Value.ValueKind == JsonValueKind.Null)
+                    warnings.Add($"- Warning: {proposedProperty.Name} is set to null. Confirm this does not disable or remove required behavior.");
+
+                if (!JsonKindsCompatible(currentValue.ValueKind, proposedProperty.Value.ValueKind))
+                    warnings.Add($"- Warning: {proposedProperty.Name} changes type from {currentValue.ValueKind} to {proposedProperty.Value.ValueKind}.");
+            }
+
+            return warnings;
+        }
+
         private static string CreatePatchedTemplateJson(string currentJson, string proposedChangesJson)
         {
             var currentObject = JsonNode.Parse(currentJson)?.AsObject()
@@ -1157,8 +1413,24 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Changed key fields: {computation.Changes.Count}");
             foreach (var change in computation.Changes.Take(80))
                 builder.AppendLine(change);
+            foreach (var warning in BuildTemplatePatchWarnings(computation).Take(80))
+                builder.AppendLine(warning);
             builder.AppendLine("No template file was saved or mutated.");
             return builder.ToString().TrimEnd();
+        }
+
+        private static IReadOnlyList<string> BuildTemplatePatchWarnings(TemplatePatchComputation computation)
+        {
+            try
+            {
+                using var currentDocument = JsonDocument.Parse(computation.CurrentJson);
+                using var proposedDocument = JsonDocument.Parse(computation.ProposedChangesJson);
+                return BuildTemplatePatchWarningLines(currentDocument.RootElement, proposedDocument.RootElement);
+            }
+            catch (JsonException)
+            {
+                return Array.Empty<string>();
+            }
         }
 
         private static string BuildTemplatePatchConfirmationPreview(CopilotMcpTemplatePatchPreview preview)
@@ -1634,6 +1906,234 @@ namespace ColorVision.Copilot.Mcp
                     : new[] { "Inspect the matched or last node before editing parameters.", "Use get_diagnostic_bundle for a compact shareable diagnostic snapshot." },
                 _ => new[] { "Use get_flow_summary for read-only flow context." },
             };
+        }
+
+        private static string BuildFailureEvidenceText(
+            CopilotFlowContextSnapshot? snapshot,
+            CopilotFlowNodeContextSnapshot? matchedNode,
+            CopilotCapabilityResult logResult,
+            CopilotLiveContext? liveContext,
+            string templateJson)
+        {
+            var builder = new StringBuilder();
+            if (snapshot != null)
+            {
+                builder.AppendLine(snapshot.FlowName);
+                builder.AppendLine(snapshot.Status);
+                builder.AppendLine(snapshot.BatchStatus);
+                builder.AppendLine(snapshot.BatchResult);
+                builder.AppendLine(snapshot.LastNodeSummary);
+                builder.AppendLine(snapshot.RecentFailureSummary);
+                builder.AppendLine(snapshot.RecentRunMessage);
+            }
+
+            if (matchedNode != null)
+            {
+                builder.AppendLine(matchedNode.Title);
+                builder.AppendLine(matchedNode.NodeName);
+                builder.AppendLine(matchedNode.NodeType);
+                builder.AppendLine(matchedNode.DeviceCode);
+                builder.AppendLine(matchedNode.Mark);
+                foreach (var parameter in matchedNode.Parameters)
+                    builder.AppendLine(parameter.Name + "=" + parameter.Value);
+            }
+
+            builder.AppendLine(liveContext?.Title);
+            builder.AppendLine(liveContext?.Summary);
+            builder.AppendLine(logResult.Summary);
+            builder.AppendLine(logResult.Content);
+            builder.AppendLine(templateJson);
+            return RedactForDiagnostics(builder.ToString());
+        }
+
+        private static IReadOnlyList<string> BuildLikelyFailureCauses(string evidence)
+        {
+            var lower = (evidence ?? string.Empty).ToLowerInvariant();
+            var causes = new List<string>();
+
+            if (lower.Contains("timeout"))
+                causes.Add("Timeout evidence is present. Check acquisition latency, trigger timing, exposure duration, retry/delay settings, and device connectivity.");
+
+            if (lower.Contains("camera") || lower.Contains("image") || lower.Contains("acquire"))
+                causes.Add("Camera/acquisition evidence is present. Compare the related node parameters with template fields such as Exposure, Gain, Timeout, ROI, Width, and Height.");
+
+            if (lower.Contains("exposure") || lower.Contains("gain") || lower.Contains("brightness"))
+                causes.Add("Image brightness or acquisition-parameter evidence is present. Treat exposure/gain changes as a template patch candidate, then preview the JSON diff first.");
+
+            if (lower.Contains("threshold") || lower.Contains("limit") || lower.Contains("min") || lower.Contains("max") || lower.Contains("ng"))
+                causes.Add("Threshold/limit evidence is present. Review min/max/threshold fields before proposing any template patch.");
+
+            if (lower.Contains("template") || lower.Contains("json") || lower.Contains("parameter"))
+                causes.Add("Template/parameter evidence is present. Use suggest_template_patch to turn the diagnosis into explicit proposed_changes, then preview_template_patch.");
+
+            if (lower.Contains("mqtt") || lower.Contains("connect") || lower.Contains("socket") || lower.Contains("network"))
+                causes.Add("Communication evidence is present. Prefer log and device-panel inspection before changing template parameters.");
+
+            if (causes.Count == 0)
+                causes.Add("No strong keyword pattern was detected. Inspect the matched node, recent log, and active template fields before changing parameters.");
+
+            return causes;
+        }
+
+        private static void AppendTemplateFieldHints(StringBuilder builder, string templateJson, string evidence)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(templateJson);
+                if (document.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    builder.AppendLine($"- Template JSON root: {document.RootElement.ValueKind}");
+                    return;
+                }
+
+                var topLevelKeys = document.RootElement.EnumerateObject()
+                    .Where(property => !IsSensitiveDisplayKey(property.Name))
+                    .Take(40)
+                    .Select(property => property.Name)
+                    .ToArray();
+                builder.AppendLine($"- Top-level keys: {string.Join(", ", topLevelKeys)}");
+
+                var candidates = BuildTemplatePatchCandidateFields(document.RootElement, evidence, null).Take(12).ToArray();
+                if (candidates.Length == 0)
+                    builder.AppendLine("- Related adjustable fields: none detected from current evidence.");
+                else
+                {
+                    builder.AppendLine("- Related adjustable fields:");
+                    foreach (var candidate in candidates)
+                        builder.AppendLine("  - " + candidate);
+                }
+            }
+            catch (JsonException ex)
+            {
+                builder.AppendLine($"- Template JSON parse failed: {ex.Message}");
+            }
+        }
+
+        private static IReadOnlyList<string> BuildTemplatePatchCandidateFields(JsonElement currentRoot, string intent, CopilotFlowNodeContextSnapshot? matchedNode)
+        {
+            var terms = BuildPatchIntentTerms(intent, matchedNode);
+            var lines = new List<string>();
+            foreach (var property in currentRoot.EnumerateObject())
+            {
+                if (IsSensitiveDisplayKey(property.Name) || !IsScalarJsonKind(property.Value.ValueKind))
+                    continue;
+
+                var isCommonField = IsCommonTemplateAdjustmentField(property.Name);
+                var matchesIntent = terms.Any(term => property.Name.Contains(term, StringComparison.OrdinalIgnoreCase));
+                if (!isCommonField && !matchesIntent)
+                    continue;
+
+                var reason = matchesIntent ? "matches diagnosis/node wording" : "common adjustable template field";
+                lines.Add($"{property.Name} ({property.Value.ValueKind}, current={DescribeJsonValue(property.Value)}) - {reason}");
+            }
+
+            if (matchedNode?.Parameters.Count > 0)
+            {
+                foreach (var parameter in matchedNode.Parameters)
+                {
+                    if (IsSensitiveDisplayKey(parameter.Name))
+                        continue;
+
+                    var matchingTemplateField = currentRoot.EnumerateObject()
+                        .FirstOrDefault(property => string.Equals(property.Name, parameter.Name, StringComparison.OrdinalIgnoreCase));
+                    var relation = matchingTemplateField.Value.ValueKind == JsonValueKind.Undefined
+                        ? "node parameter; no same-name top-level template field detected"
+                        : "node parameter; same-name top-level template field exists";
+                    lines.Add($"{parameter.Name} (node parameter, value={TrimLong(RedactForDisplay(parameter.Value), 120)}) - {relation}");
+                }
+            }
+
+            if (lines.Count == 0)
+            {
+                foreach (var property in currentRoot.EnumerateObject().Where(property => !IsSensitiveDisplayKey(property.Name) && IsScalarJsonKind(property.Value.ValueKind)).Take(12))
+                    lines.Add($"{property.Name} ({property.Value.ValueKind}, current={DescribeJsonValue(property.Value)}) - available scalar template field");
+            }
+
+            return lines.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+
+        private static IReadOnlyList<string> BuildPatchIntentTerms(string intent, CopilotFlowNodeContextSnapshot? matchedNode)
+        {
+            var text = string.Join(" ", new[]
+            {
+                intent,
+                matchedNode?.Title,
+                matchedNode?.NodeName,
+                matchedNode?.NodeType,
+                matchedNode?.Mark,
+                matchedNode == null ? string.Empty : string.Join(" ", matchedNode.Parameters.Select(parameter => parameter.Name)),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+            var terms = text
+                .Split(new[] { ' ', ',', ';', ':', '.', '/', '\\', '-', '_', '[', ']', '(', ')', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(term => term.Length >= 3)
+                .Select(term => term.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (text.Contains("timeout", StringComparison.OrdinalIgnoreCase))
+                terms.AddRange(new[] { "timeout", "delay", "retry", "exposure" });
+            if (text.Contains("camera", StringComparison.OrdinalIgnoreCase))
+                terms.AddRange(new[] { "camera", "exposure", "gain", "roi", "width", "height" });
+            if (text.Contains("threshold", StringComparison.OrdinalIgnoreCase) || text.Contains("ng", StringComparison.OrdinalIgnoreCase))
+                terms.AddRange(new[] { "threshold", "limit", "min", "max" });
+
+            return terms.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+
+        private static bool IsCommonTemplateAdjustmentField(string name)
+        {
+            return new[]
+            {
+                "exposure",
+                "gain",
+                "timeout",
+                "delay",
+                "retry",
+                "threshold",
+                "limit",
+                "min",
+                "max",
+                "roi",
+                "width",
+                "height",
+                "offset",
+                "scale",
+            }.Any(term => name.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsScalarJsonKind(JsonValueKind kind)
+        {
+            return kind is JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False;
+        }
+
+        private static bool JsonKindsCompatible(JsonValueKind currentKind, JsonValueKind proposedKind)
+        {
+            if (currentKind == proposedKind)
+                return true;
+
+            return IsBooleanKind(currentKind) && IsBooleanKind(proposedKind);
+        }
+
+        private static bool IsBooleanKind(JsonValueKind kind)
+        {
+            return kind is JsonValueKind.True or JsonValueKind.False;
+        }
+
+        private static string BuildPreviewTemplatePatchPayload(string templateIdentifier, JsonElement proposedChanges)
+        {
+            var payload = new JsonObject
+            {
+                ["template_identifier"] = templateIdentifier.Trim(),
+                ["proposed_changes"] = JsonNode.Parse(proposedChanges.GetRawText()),
+            };
+
+            return payload.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+
+        private static string EscapeForInlineJson(string? value)
+        {
+            return (value ?? string.Empty).Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
 
         private static void AppendDiagnosticSection(StringBuilder builder, string title, string content)

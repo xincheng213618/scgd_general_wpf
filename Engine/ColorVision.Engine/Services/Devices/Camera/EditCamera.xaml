@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.Engine.Services.Devices.Camera.EditCamera"
+<Window x:Class="ColorVision.Engine.Services.Devices.Camera.EditCamera"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -7,7 +7,7 @@
              xmlns:config="clr-namespace:ColorVision.Engine.Services.Devices.Camera.Configs"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:themes="https://schemas.colorvision.cn/wpf/themes"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              mc:Ignorable="d" 
              Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="600" Initialized="UserControl_Initialized">
@@ -51,11 +51,11 @@
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="{x:Static properties:Resources.FileCache}" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding UsingFileCaching}"/>
+                                <themes:ToggleSwitch IsChecked="{Binding UsingFileCaching}"/>
                             </DockPanel>
                             <DockPanel Visibility="{Binding UsingFileCaching,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,2">
                                 <TextBlock Text="{x:Static properties:Resources.CVCIEFileSave}" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding IsCVCIEFileSave}"/>
+                                <themes:ToggleSwitch IsChecked="{Binding IsCVCIEFileSave}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>

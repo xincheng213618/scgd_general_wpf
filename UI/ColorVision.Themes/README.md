@@ -49,7 +49,7 @@
 
 ## 依赖关系
 
-- **引用**: HandyControl 3.5.1, WPF-UI 4.2.0
+- **引用**: HandyControl 3.5.1
 - **被引用**: ColorVision.UI, ColorVision.Scheduler, ColorVision.ImageEditor
 
 ## 构建

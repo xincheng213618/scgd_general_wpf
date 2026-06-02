@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.4.6.7</VersionPrefix>
+		<VersionPrefix>1.4.6.8</VersionPrefix>
 		<UseWindowsForms>True</UseWindowsForms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>

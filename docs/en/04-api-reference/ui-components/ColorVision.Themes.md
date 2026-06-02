@@ -80,7 +80,7 @@ The existing theme chain is closer to the following:
 1. Upper-layer UI selects a theme.
 2. Application.ApplyTheme calls ThemeManager.Current.ApplyTheme.
 3. If the current selection is UseSystem, it is first resolved to AppsTheme.
-4. ThemeManager adds Wpf.Ui and this module's resource dictionaries to Application.Resources.MergedDictionaries based on theme.
+4. ThemeManager adds this module's resource dictionaries to Application.Resources.MergedDictionaries based on theme.
 5. CurrentTheme and CurrentUITheme are updated, and change events are triggered.
 6. Windows that have called ApplyCaption follow to update title bar colors and icons.
 

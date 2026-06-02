@@ -10,7 +10,6 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:search="clr-namespace:ColorVision.UI.Serach;assembly=ColorVision.UI"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         xmlns:xcadctrl="clr-namespace:AvalonDock.Controls;assembly=AvalonDock"
         mc:Ignorable="d"

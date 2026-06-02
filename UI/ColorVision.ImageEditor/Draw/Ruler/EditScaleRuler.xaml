@@ -1,9 +1,9 @@
-﻿<Window x:Class="ColorVision.ImageEditor.Draw.Ruler.EditScaleRuler"
+<Window x:Class="ColorVision.ImageEditor.Draw.Ruler.EditScaleRuler"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.ImageEditor.Draw.Ruler" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
+        xmlns:local="clr-namespace:ColorVision.ImageEditor.Draw.Ruler" xmlns:themes="https://schemas.colorvision.cn/wpf/themes" xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:DrawingVisualScaleHost}"
         Title="EditScaleRuler" Background="{DynamicResource GlobalBackground}"  Height="170" Width="400" Initialized="Window_Initialized">
@@ -18,7 +18,7 @@
     <Border>
         <StackPanel Margin="5">
             <DockPanel Margin="0,0,0,5">
-                <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding IsUsePhysicalUnit}"/>
+                <themes:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding IsUsePhysicalUnit}"/>
                 <TextBlock Text="{x:Static properties:Resources.Ruler_MeasureWithRealUnits}"/>
             </DockPanel>
             <DockPanel Margin="0,2">

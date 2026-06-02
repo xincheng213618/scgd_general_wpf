@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import backend_client
 
@@ -184,6 +185,38 @@ class BackendClientTests(unittest.TestCase):
         result = backend_client.preflight_remote_upload(settings, session=Session())
 
         self.assertTrue(result)
+
+    def test_preflight_retries_transient_health_disconnect(self):
+        requests = backend_client.get_requests_module()
+        if requests is None:
+            self.skipTest("requests package is not installed")
+
+        class Session:
+            def __init__(self):
+                self.calls = 0
+
+            def get(self, url, timeout=None):
+                self.calls += 1
+                if self.calls == 1:
+                    raise requests.ConnectionError("temporary disconnect")
+                if url.endswith("/api/health"):
+                    return SimpleNamespace(status_code=200, text='{"status":"ok"}', json=lambda: {"status": "ok"})
+                return SimpleNamespace(status_code=200, text='{"ready":true}', json=lambda: {"ready": True})
+
+        settings = backend_client.RemoteUploadSettings(
+            base_url="http://example.com:9998",
+            folder_name="ColorVision",
+            username="tester",
+            password="secret",
+            max_retries=2,
+        )
+        session = Session()
+
+        with patch("backend_client.time.sleep"):
+            result = backend_client.preflight_remote_upload(settings, session=session)
+
+        self.assertTrue(result)
+        self.assertEqual(session.calls, 3)
 
     def test_post_multipart_with_auth_forwards_timeout_and_credentials(self):
         class Session:

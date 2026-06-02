@@ -40,7 +40,7 @@ namespace ColorVision.UI
         {
             "System.", "Microsoft.", "netstandard", "WindowsBase",
             "PresentationCore", "PresentationFramework", "mscorlib",
-            "Newtonsoft", "EntityFramework", "log4net", "Wpf.Ui", "HandyControl"
+            "Newtonsoft", "EntityFramework", "log4net", "HandyControl"
         };
 
         private Assembly[]? _assemblies;

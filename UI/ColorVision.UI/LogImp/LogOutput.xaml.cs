@@ -4,7 +4,6 @@ using log4net.Layout;
 using log4net.Repository.Hierarchy;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.UI.LogImp
 {
@@ -16,6 +15,7 @@ namespace ColorVision.UI.LogImp
         private string? Pattern;
         private bool _isAppenderAttached;
         private bool _isDisposed;
+        private LogTextViewController? _logTextView;
 
         public LogOutput(string? pattern = null)
         {
@@ -23,12 +23,8 @@ namespace ColorVision.UI.LogImp
             InitializeComponent();
             Loaded += LogOutput_Loaded;
             Unloaded += LogOutput_Unloaded;
-            this.SizeChanged += (s, e) =>
-            {
-                LogViewUiHelper.UpdateToolbarVisibility(ActualWidth, ButtonAutoScrollToEnd, ButtonAutoRefresh, SearchBar1, cmlog);
-            };
         }
-        TextBoxAppender? TextBoxAppender { get; set; }
+        LogViewerAppender? LogViewerAppender { get; set; }
         Hierarchy? Hierarchy { get; set; }
 
         public void Dispose()
@@ -40,6 +36,7 @@ namespace ColorVision.UI.LogImp
 
             _isDisposed = true;
             DetachAppender();
+            _logTextView?.Detach();
             Loaded -= LogOutput_Loaded;
             Unloaded -= LogOutput_Unloaded;
             GC.SuppressFinalize(this);
@@ -49,8 +46,9 @@ namespace ColorVision.UI.LogImp
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
             this.DataContext = LogConfig.Instance;
-            cmlog.ItemsSource = LogConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
-            SearchBar1Brush = SearchBar1.BorderBrush;
+            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
+            _logTextView.ConfigureContextMenus(contextMenu =>
+                LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel));
 
             AttachAppender();
         }
@@ -72,57 +70,47 @@ namespace ColorVision.UI.LogImp
                 return;
             }
 
-            TextBoxAppender = new TextBoxAppender(logTextBox, logTextBoxSerch)
+            LogViewerAppender = new LogViewerAppender(LogViewer)
             {
                 Layout = new PatternLayout(Pattern)
             };
-            Hierarchy.Root.AddAppender(TextBoxAppender);
+            Hierarchy.Root.AddAppender(LogViewerAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
             _isAppenderAttached = true;
         }
 
         private void DetachAppender()
         {
-            if (!_isAppenderAttached || Hierarchy == null || TextBoxAppender == null)
+            if (!_isAppenderAttached || Hierarchy == null || LogViewerAppender == null)
             {
                 return;
             }
 
-            Hierarchy.Root.RemoveAppender(TextBoxAppender);
-            TextBoxAppender.Dispose();
-            TextBoxAppender = null;
+            Hierarchy.Root.RemoveAppender(LogViewerAppender);
+            LogViewerAppender.Dispose();
+            LogViewerAppender = null;
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
             _isAppenderAttached = false;
         }
 
-        private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void SetLogLevel(Level selectedLevel)
         {
-            var selectedLevel = (KeyValuePair<Level, string>)cmlog.SelectedItem;
             var hierarchy = (Hierarchy)LogManager.GetRepository();
-            if (selectedLevel.Key != hierarchy.Root.Level)
+            if (!string.Equals(selectedLevel.Name, hierarchy.Root.Level?.Name, StringComparison.Ordinal))
             {
-                hierarchy.Root.Level = selectedLevel.Key;
-                log4net.Config.BasicConfigurator.Configure(hierarchy);
+                LogConfig.Instance.LogLevel = selectedLevel;
             }
         }
 
-        private void Clear_Click(object sender, RoutedEventArgs e)
+        private void ClearLog()
         {
-            logTextBox.Text = string.Empty;
-            logTextBoxSerch.Text = string.Empty;
+            LogViewer.Clear();
         }
 
-
-        private Brush SearchBar1Brush;
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
-            if (TextBoxAppender != null)
-            {
-                TextBoxAppender.SearchText = searchText;
-            }
-
-            LogViewUiHelper.ApplySearchFilter(searchText, logTextBox, logTextBoxSerch, SearchBar1, SearchBar1Brush);
+            _logTextView?.QueueSearchFilter(searchText);
         }
     }
 }

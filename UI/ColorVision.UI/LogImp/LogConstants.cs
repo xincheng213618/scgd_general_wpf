@@ -36,6 +36,11 @@ namespace ColorVision.UI.LogImp
         public const int DefaultMaxChars = 100000;
 
         /// <summary>
+        /// 默认最大日志条目数限制
+        /// </summary>
+        public const int DefaultMaxEntries = 100000;
+
+        /// <summary>
         /// 启用字符数截断的最小阈值
         /// </summary>
         public const int MinMaxCharsForTrimming = 1000;

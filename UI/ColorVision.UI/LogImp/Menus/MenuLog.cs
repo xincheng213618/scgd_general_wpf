@@ -1,10 +1,5 @@
-﻿using ColorVision.Common.Utilities;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using log4net;
-using log4net.Appender;
-using System.Diagnostics;
-using System.IO;
 using System.Windows;
 using System.Windows.Input;
 
@@ -21,5 +16,4 @@ namespace ColorVision.UI.LogImp
         public HotKeys HotKeys => new HotKeys(Properties.Resources.Log, Hotkey, Execute);
         public override void Execute() => new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
     }
-
 }

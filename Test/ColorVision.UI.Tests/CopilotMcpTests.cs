@@ -95,6 +95,8 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.Contains("apply_template_patch", response.Body, StringComparison.Ordinal);
         Assert.Contains("preview_flow_action", response.Body, StringComparison.Ordinal);
         Assert.Contains("get_diagnostic_bundle", response.Body, StringComparison.Ordinal);
+        Assert.Contains("diagnose_flow_failure", response.Body, StringComparison.Ordinal);
+        Assert.Contains("suggest_template_patch", response.Body, StringComparison.Ordinal);
         Assert.Contains("riskLevel", response.Body, StringComparison.Ordinal);
         Assert.Contains("category", response.Body, StringComparison.Ordinal);
         Assert.Contains("annotations", response.Body, StringComparison.Ordinal);
@@ -712,6 +714,121 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.DoesNotContain("secret-value", result.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("password-value", result.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("secret-token-value", result.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task DiagnoseFlowFailure_ReturnsReadOnlyDiagnosisAndRedactsSecrets()
+    {
+        var flowSnapshot = new CopilotFlowContextSnapshot
+        {
+            FlowName = "InspectionFlow",
+            Status = "Failed",
+            LastNodeSummary = "Camera Node",
+            RecentRunMessage = "last run failed at Camera Node with timeout",
+            RecentFailureSummary = "Camera Node timeout",
+            Nodes = new[]
+            {
+                new CopilotFlowNodeContextSnapshot
+                {
+                    Title = "Camera Node",
+                    NodeName = "Camera1",
+                    NodeType = "Camera",
+                    NodeId = "node-1",
+                    Mark = "last error: timeout",
+                    Parameters = new[] { new CopilotContextProperty { Name = "Exposure", Value = "12" } },
+                },
+            },
+        };
+        var currentJson = "{\n  \"TemplateType\": \"CameraRun\",\n  \"Name\": \"CameraTemplate\",\n  \"Exposure\": 10,\n  \"TimeoutMs\": 1000,\n  \"ApiKey\": \"secret-value\"\n}";
+        var handler = CreateHandler(
+            flowSnapshotProvider: _ => Task.FromResult<CopilotFlowContextSnapshot?>(flowSnapshot),
+            liveContextProvider: () => CreateTemplateLiveContext(currentJson),
+            recentLogProvider: (_, _, _, _) => new CopilotCapabilityResult
+            {
+                Success = true,
+                Summary = "Recent log",
+                Content = "Camera timeout token=secret-token-value",
+            });
+
+        var result = ReadToolResult(await CallToolAsync(handler, "diagnose_flow_failure", new { node_name = "Camera", query = "timeout" }));
+
+        Assert.False(result.IsError);
+        Assert.Contains("ColorVision flow failure diagnosis", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Mode: read-only diagnosis", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Camera/acquisition evidence", result.Text, StringComparison.Ordinal);
+        Assert.Contains("suggest_template_patch", result.Text, StringComparison.Ordinal);
+        Assert.Contains("No flow was started", result.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-value", result.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-token-value", result.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SuggestTemplatePatch_ReturnsPreviewPayloadAndWarnings()
+    {
+        var flowSnapshot = new CopilotFlowContextSnapshot
+        {
+            FlowName = "InspectionFlow",
+            Nodes = new[]
+            {
+                new CopilotFlowNodeContextSnapshot
+                {
+                    Title = "Camera Node",
+                    NodeName = "Camera1",
+                    NodeType = "Camera",
+                    NodeId = "node-1",
+                    Mark = "timeout",
+                    Parameters = new[] { new CopilotContextProperty { Name = "Exposure", Value = "12" } },
+                },
+            },
+        };
+        var currentJson = "{\n  \"TemplateType\": \"CameraRun\",\n  \"Name\": \"CameraTemplate\",\n  \"Exposure\": 10,\n  \"TimeoutMs\": 1000,\n  \"Offset\": 5\n}";
+        var handler = CreateHandler(
+            flowSnapshotProvider: _ => Task.FromResult<CopilotFlowContextSnapshot?>(flowSnapshot),
+            liveContextProvider: () => CreateTemplateLiveContext(currentJson));
+
+        var result = ReadToolResult(await CallToolAsync(handler, "suggest_template_patch", new
+        {
+            template_identifier = "CameraTemplate",
+            intent = "Camera timeout",
+            node_name = "Camera",
+            proposed_changes = new
+            {
+                TimeoutMs = "2000",
+                Offset = (string?)null,
+                NewField = 1,
+            },
+        }));
+
+        Assert.False(result.IsError);
+        Assert.Contains("ColorVision template patch suggestion", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Would apply: False", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Candidate Fields", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Call preview_template_patch", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Warning: TimeoutMs changes type", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Warning: Offset is set to null", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Warning: NewField is a new top-level key", result.Text, StringComparison.Ordinal);
+        Assert.Contains("\"template_identifier\": \"CameraTemplate\"", result.Text, StringComparison.Ordinal);
+        Assert.Contains("\"TimeoutMs\": \"2000\"", result.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SuggestTemplatePatch_RejectsSensitiveProposedChanges()
+    {
+        var handler = CreateHandler(liveContextProvider: () => CreateTemplateLiveContext("{ \"Name\": \"CameraTemplate\" }"));
+
+        var result = ReadToolResult(await CallToolAsync(handler, "suggest_template_patch", new
+        {
+            template_identifier = "CameraTemplate",
+            intent = "update API key",
+            proposed_changes = new
+            {
+                ApiKey = "secret-value",
+            },
+        }));
+
+        Assert.True(result.IsError);
+        Assert.Contains("sensitive", result.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("secret-value", result.Text, StringComparison.Ordinal);
     }
 
     [Fact]
