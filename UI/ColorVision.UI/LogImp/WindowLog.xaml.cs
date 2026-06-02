@@ -5,8 +5,6 @@ using log4net.Appender;
 using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -78,7 +76,11 @@ namespace ColorVision.UI
                     using (FileStream fileStream = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (StreamReader reader = new StreamReader(fileStream, Encoding.Default))
                     {
-                        LoadLogs(reader);
+                        logTextBox.Text = LogHistoryReader.ReadDisplayText(
+                            reader,
+                            LogConfig.Instance.LogLoadState,
+                            LogConfig.Instance.LogReserve,
+                            LogConfig.Instance.MaxChars);
                     }
                 }
                 catch (IOException ex)
@@ -90,82 +92,6 @@ namespace ColorVision.UI
                     MessageBox.Show($"An unexpected error occurred: {ex.Message}");
                 }
             }
-        }
-
-        private void LoadLogs(StreamReader reader)
-        {
-            var logLoadState = LogConfig.Instance.LogLoadState;
-            var logReserve = LogConfig.Instance.LogReserve;
-            DateTime today = DateTime.Today;
-            DateTime startupTime = Process.GetCurrentProcess().StartTime;
-            List<string> matchingEntries = new List<string>();
-            StringBuilder? currentEntry = null;
-            bool currentEntryIncluded = false;
-
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                if (TryParseLogTimestamp(line, out DateTime logTime))
-                {
-                    if (currentEntryIncluded && currentEntry != null)
-                    {
-                        matchingEntries.Add(currentEntry.ToString());
-                    }
-
-                    currentEntryIncluded = ShouldIncludeLogEntry(logLoadState, today, startupTime, logTime);
-                    currentEntry = currentEntryIncluded ? new StringBuilder(line) : null;
-                    continue;
-                }
-
-                if (currentEntryIncluded && currentEntry != null)
-                {
-                    currentEntry.AppendLine();
-                    currentEntry.Append(line);
-                }
-            }
-
-            if (currentEntryIncluded && currentEntry != null)
-            {
-                matchingEntries.Add(currentEntry.ToString());
-            }
-
-            if (logReserve)
-            {
-                matchingEntries.Reverse();
-            }
-
-            logTextBox.Text = string.Join(Environment.NewLine, matchingEntries);
-        }
-
-        private static bool TryParseLogTimestamp(string line, out DateTime logTime)
-        {
-            logTime = default;
-            if (string.IsNullOrWhiteSpace(line) || line.Length < LogConstants.LogTimestampLength)
-            {
-                return false;
-            }
-
-            return DateTime.TryParseExact(
-                line.Substring(0, LogConstants.LogTimestampLength),
-                LogConstants.LogTimestampFormat,
-                null,
-                DateTimeStyles.None,
-                out logTime);
-        }
-
-        private static bool ShouldIncludeLogEntry(LogLoadState logLoadState, DateTime today, DateTime startupTime, DateTime logTime)
-        {
-            if (logLoadState == LogLoadState.AllToday)
-            {
-                return logTime.Date == today;
-            }
-
-            if (logLoadState == LogLoadState.SinceStartup)
-            {
-                return logTime >= startupTime;
-            }
-
-            return true;
         }
 
         private void SetLogLevel(Level selectedLevel)
