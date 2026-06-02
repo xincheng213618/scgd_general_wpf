@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Media;
 
 namespace ColorVision.UI
 {
@@ -180,6 +181,42 @@ namespace ColorVision.UI
         private TextWrapping _TextWrapping = TextWrapping.NoWrap;
 
         /// <summary>
+        /// 是否按日志级别染色
+        /// </summary>
+        public bool UseLevelColors { get => _UseLevelColors; set { _UseLevelColors = value; OnPropertyChanged(); } }
+        private bool _UseLevelColors = true;
+
+        /// <summary>
+        /// WARN 日志前景色
+        /// </summary>
+        public Brush WarningForeground { get => _WarningForeground; set { _WarningForeground = value; OnPropertyChanged(); } }
+        private Brush _WarningForeground = CreateBrush(0xB2, 0x6A, 0x00);
+
+        /// <summary>
+        /// ERROR 日志前景色
+        /// </summary>
+        public Brush ErrorForeground { get => _ErrorForeground; set { _ErrorForeground = value; OnPropertyChanged(); } }
+        private Brush _ErrorForeground = CreateBrush(0xD3, 0x2F, 0x2F);
+
+        /// <summary>
+        /// FATAL 日志前景色
+        /// </summary>
+        public Brush FatalForeground { get => _FatalForeground; set { _FatalForeground = value; OnPropertyChanged(); } }
+        private Brush _FatalForeground = CreateBrush(0xB0, 0x00, 0x20);
+
+        /// <summary>
+        /// DEBUG 日志前景色
+        /// </summary>
+        public Brush DebugForeground { get => _DebugForeground; set { _DebugForeground = value; OnPropertyChanged(); } }
+        private Brush _DebugForeground = CreateBrush(0x6E, 0x77, 0x81);
+
+        /// <summary>
+        /// TRACE 日志前景色
+        /// </summary>
+        public Brush TraceForeground { get => _TraceForeground; set { _TraceForeground = value; OnPropertyChanged(); } }
+        private Brush _TraceForeground = CreateBrush(0x6E, 0x77, 0x81);
+
+        /// <summary>
         /// 最大字符数限制，-1 表示无限制
         /// </summary>
         public int MaxChars { get => _MaxChars; set { _MaxChars = value; OnPropertyChanged(); } }
@@ -190,6 +227,13 @@ namespace ColorVision.UI
         /// </summary>
         public int MaxEntries { get => _MaxEntries; set { _MaxEntries = value; OnPropertyChanged(); } }
         private int _MaxEntries = LogConstants.DefaultMaxEntries;
+
+        private static SolidColorBrush CreateBrush(byte red, byte green, byte blue)
+        {
+            var brush = new SolidColorBrush(Color.FromRgb(red, green, blue));
+            brush.Freeze();
+            return brush;
+        }
 
     }
 

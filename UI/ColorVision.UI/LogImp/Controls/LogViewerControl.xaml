@@ -8,35 +8,21 @@
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800"
+             Foreground="{DynamicResource GlobalTextBrush}"
              Focusable="True"
              UseLayoutRounding="True"
              SnapsToDevicePixels="True">
     <UserControl.Resources>
+        <local:LogEntryForegroundConverter x:Key="LogEntryForegroundConverter"/>
         <Style x:Key="LogEntryTextBlockStyle" TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Microsoft YaHei UI"/>
-            <Setter Property="FontSize" Value="12.5"/>
-            <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
-            <Setter Property="LineHeight" Value="18"/>
-            <Setter Property="Padding" Value="4,1"/>
+            <Setter Property="Padding" Value="2,0"/>
             <Setter Property="TextWrapping" Value="{Binding TextWrapping, RelativeSource={RelativeSource AncestorType={x:Type local:LogViewerControl}}}"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Fatal}">
-                    <Setter Property="Foreground" Value="#B00020"/>
                     <Setter Property="FontWeight" Value="Bold"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Error}">
-                    <Setter Property="Foreground" Value="#D32F2F"/>
                     <Setter Property="FontWeight" Value="SemiBold"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Warning}">
-                    <Setter Property="Foreground" Value="#B26A00"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Debug}">
-                    <Setter Property="Foreground" Value="#6E7781"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Trace}">
-                    <Setter Property="Foreground" Value="#6E7781"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -71,7 +57,20 @@
             </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
                 <DataTemplate DataType="{x:Type models:LogEntry}">
-                    <TextBlock Text="{Binding Text}" Style="{StaticResource LogEntryTextBlockStyle}"/>
+                    <TextBlock Text="{Binding Text}" Style="{StaticResource LogEntryTextBlockStyle}">
+                        <TextBlock.Foreground>
+                            <MultiBinding Converter="{StaticResource LogEntryForegroundConverter}">
+                                <Binding Path="Level"/>
+                                <Binding Path="UseLevelColors" RelativeSource="{RelativeSource AncestorType={x:Type local:LogViewerControl}}"/>
+                                <Binding Path="Foreground" RelativeSource="{RelativeSource AncestorType={x:Type local:LogViewerControl}}"/>
+                                <Binding Path="WarningForeground" RelativeSource="{RelativeSource AncestorType={x:Type local:LogViewerControl}}"/>
+                                <Binding Path="ErrorForeground" RelativeSource="{RelativeSource AncestorType={x:Type local:LogViewerControl}}"/>
+                                <Binding Path="FatalForeground" RelativeSource="{RelativeSource AncestorType={x:Type local:LogViewerControl}}"/>
+                                <Binding Path="DebugForeground" RelativeSource="{RelativeSource AncestorType={x:Type local:LogViewerControl}}"/>
+                                <Binding Path="TraceForeground" RelativeSource="{RelativeSource AncestorType={x:Type local:LogViewerControl}}"/>
+                            </MultiBinding>
+                        </TextBlock.Foreground>
+                    </TextBlock>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

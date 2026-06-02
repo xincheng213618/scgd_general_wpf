@@ -3,6 +3,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.LogImp.Controls
@@ -20,6 +21,42 @@ namespace ColorVision.UI.LogImp.Controls
             typeof(int),
             typeof(LogViewerControl),
             new FrameworkPropertyMetadata(LogConstants.DefaultMaxEntries, OnMaxEntriesChanged));
+
+        public static readonly DependencyProperty UseLevelColorsProperty = DependencyProperty.Register(
+            nameof(UseLevelColors),
+            typeof(bool),
+            typeof(LogViewerControl),
+            new FrameworkPropertyMetadata(true));
+
+        public static readonly DependencyProperty WarningForegroundProperty = DependencyProperty.Register(
+            nameof(WarningForeground),
+            typeof(Brush),
+            typeof(LogViewerControl),
+            new FrameworkPropertyMetadata(CreateFrozenBrush(0xB2, 0x6A, 0x00)));
+
+        public static readonly DependencyProperty ErrorForegroundProperty = DependencyProperty.Register(
+            nameof(ErrorForeground),
+            typeof(Brush),
+            typeof(LogViewerControl),
+            new FrameworkPropertyMetadata(CreateFrozenBrush(0xD3, 0x2F, 0x2F)));
+
+        public static readonly DependencyProperty FatalForegroundProperty = DependencyProperty.Register(
+            nameof(FatalForeground),
+            typeof(Brush),
+            typeof(LogViewerControl),
+            new FrameworkPropertyMetadata(CreateFrozenBrush(0xB0, 0x00, 0x20)));
+
+        public static readonly DependencyProperty DebugForegroundProperty = DependencyProperty.Register(
+            nameof(DebugForeground),
+            typeof(Brush),
+            typeof(LogViewerControl),
+            new FrameworkPropertyMetadata(CreateFrozenBrush(0x6E, 0x77, 0x81)));
+
+        public static readonly DependencyProperty TraceForegroundProperty = DependencyProperty.Register(
+            nameof(TraceForeground),
+            typeof(Brush),
+            typeof(LogViewerControl),
+            new FrameworkPropertyMetadata(CreateFrozenBrush(0x6E, 0x77, 0x81)));
 
         private readonly List<LogEntry> _entries = new();
         private readonly BulkObservableCollection<LogEntry> _visibleEntries = new();
@@ -63,6 +100,42 @@ namespace ColorVision.UI.LogImp.Controls
         {
             get => (int)GetValue(MaxEntriesProperty);
             set => SetValue(MaxEntriesProperty, value);
+        }
+
+        public bool UseLevelColors
+        {
+            get => (bool)GetValue(UseLevelColorsProperty);
+            set => SetValue(UseLevelColorsProperty, value);
+        }
+
+        public Brush WarningForeground
+        {
+            get => (Brush)GetValue(WarningForegroundProperty);
+            set => SetValue(WarningForegroundProperty, value);
+        }
+
+        public Brush ErrorForeground
+        {
+            get => (Brush)GetValue(ErrorForegroundProperty);
+            set => SetValue(ErrorForegroundProperty, value);
+        }
+
+        public Brush FatalForeground
+        {
+            get => (Brush)GetValue(FatalForegroundProperty);
+            set => SetValue(FatalForegroundProperty, value);
+        }
+
+        public Brush DebugForeground
+        {
+            get => (Brush)GetValue(DebugForegroundProperty);
+            set => SetValue(DebugForegroundProperty, value);
+        }
+
+        public Brush TraceForeground
+        {
+            get => (Brush)GetValue(TraceForegroundProperty);
+            set => SetValue(TraceForegroundProperty, value);
         }
 
         public bool IsSearchActive => !string.IsNullOrEmpty(_searchText);
@@ -394,6 +467,13 @@ namespace ColorVision.UI.LogImp.Controls
                 : ScrollBarVisibility.Disabled;
             ScrollViewer.SetHorizontalScrollBarVisibility(EntriesListBox, horizontalScrollBarVisibility);
             EntriesListBox.InvalidateMeasure();
+        }
+
+        private static SolidColorBrush CreateFrozenBrush(byte red, byte green, byte blue)
+        {
+            var brush = new SolidColorBrush(Color.FromRgb(red, green, blue));
+            brush.Freeze();
+            return brush;
         }
     }
 }

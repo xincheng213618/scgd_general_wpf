@@ -18,6 +18,7 @@ namespace ColorVision.UI.Json
                 {
                     // 当前线程拥有该对象，直接读取
                     colorStr = brush.Color.ToString();
+                    writer.WriteValue(colorStr);
                 }
                 else
                 {

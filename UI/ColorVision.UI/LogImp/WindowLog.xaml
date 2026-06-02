@@ -35,6 +35,14 @@
             </Grid>
         </Border>
 
-        <logControls:LogViewerControl x:Name="LogViewer" Grid.Row="1" TextWrapping="{Binding TextWrapping}"/>
+        <logControls:LogViewerControl x:Name="LogViewer"
+                                      Grid.Row="1"
+                                      TextWrapping="{Binding TextWrapping}"
+                                      UseLevelColors="{Binding UseLevelColors}"
+                                      WarningForeground="{Binding WarningForeground}"
+                                      ErrorForeground="{Binding ErrorForeground}"
+                                      FatalForeground="{Binding FatalForeground}"
+                                      DebugForeground="{Binding DebugForeground}"
+                                      TraceForeground="{Binding TraceForeground}"/>
     </Grid>
 </Window>
