@@ -13,7 +13,6 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.UI
 {
@@ -158,13 +157,10 @@ namespace ColorVision.UI
         {
             InitializeComponent();
             this.ApplyCaption();
-            this.SizeChanged += (s, e) =>
-            {
-                LogViewUiHelper.UpdateToolbarVisibility(ActualWidth, ButtonAutoScrollToEnd, ButtonAutoRefresh, SearchBar1, cmlog);
-            };
         }
         TextBoxAppender TextBoxAppender { get; set; }
         Hierarchy Hierarchy { get; set; }
+        private LogTextViewController? _logTextView;
         private void Window_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
@@ -177,13 +173,15 @@ namespace ColorVision.UI
             {
                 Hierarchy.Root.RemoveAppender(TextBoxAppender);
                 TextBoxAppender.Dispose();
+                _logTextView?.Detach();
                 log4net.Config.BasicConfigurator.Configure(Hierarchy);
             };
 
             this.DataContext = LogConfig.Instance;
 
-            cmlog.ItemsSource = LogConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
-            SearchBar1Brush = SearchBar1.BorderBrush;
+            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, logTextBox, logTextBoxSerch, CloseSearchButton);
+            _logTextView.ConfigureContextMenus((contextMenu, _) =>
+                LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel));
 
             LoadLogHistory();
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -302,33 +300,27 @@ namespace ColorVision.UI
             return true;
         }
 
-        private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void SetLogLevel(Level selectedLevel)
         {
-            var selectedLevel = (KeyValuePair<Level, string>)cmlog.SelectedItem;
             var hierarchy = (Hierarchy)LogManager.GetRepository();
-            if (selectedLevel.Key != hierarchy.Root.Level)
+            if (!string.Equals(selectedLevel.Name, hierarchy.Root.Level?.Name, StringComparison.Ordinal))
             {
-                hierarchy.Root.Level = selectedLevel.Key;
-                log4net.Config.BasicConfigurator.Configure(hierarchy);
-                log.Info(Properties.Resources.UpdateLog4NetLevel + selectedLevel.Value);
+                LogConfig.Instance.LogLevel = selectedLevel;
+                log.Info(Properties.Resources.UpdateLog4NetLevel + selectedLevel.Name);
             }
         }
 
-        private void Clear_Click(object sender, RoutedEventArgs e)
+        private void ClearLog()
         {
             logTextBox.Text = string.Empty;
             logTextBoxSerch.Text = string.Empty;
         }
 
-
-        private Brush SearchBar1Brush;
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             TextBoxAppender.SearchText = searchText;
-            LogViewUiHelper.ApplySearchFilter(searchText, logTextBox, logTextBoxSerch, SearchBar1, SearchBar1Brush);
+            _logTextView?.ApplySearchFilter(searchText);
         }
-
-
     }
 }

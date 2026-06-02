@@ -3,7 +3,6 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.LogImp
@@ -31,6 +30,7 @@ namespace ColorVision.UI.LogImp
         private FileSystemWatcher? _fileWatcher;
         private bool _fileChangePending;
         private bool _isDisposed;
+        private LogTextViewController? _logTextView;
 
         /// <summary>
         /// File encoding (defaults to system default; use GB2312 for C++ logs on Chinese Windows).
@@ -50,17 +50,15 @@ namespace ColorVision.UI.LogImp
                 Encoding = encoding;
             }
             InitializeComponent();
-            this.SizeChanged += (s, e) =>
-            {
-                LogViewUiHelper.UpdateToolbarVisibility(ActualWidth, ButtonAutoScrollToEnd, ButtonAutoRefresh, SearchBar1);
-            };
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
 
-            SearchBar1Brush = SearchBar1.BorderBrush;
+            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, logTextBox, logTextBoxSerch, CloseSearchButton);
+            _logTextView.ConfigureContextMenus((contextMenu, _) =>
+                LogTextViewMenuFactory.AppendLocalLogMenuItems(contextMenu, Config, RefreshLog, OpenLogFolder, ClearLog));
 
             this.Loaded += UserControl_Loaded;
             this.Unloaded += UserControl_Unloaded;
@@ -397,7 +395,7 @@ namespace ColorVision.UI.LogImp
             ReadNewLogContent();
         }
 
-        private void Refresh_Click(object sender, RoutedEventArgs e)
+        private void RefreshLog()
         {
             _lastReadPosition = 0;
             LoadLogFile();
@@ -408,13 +406,11 @@ namespace ColorVision.UI.LogImp
             }
         }
 
-        private void Clear_Click(object sender, RoutedEventArgs e)
+        private void ClearLog()
         {
             logTextBox.Text = string.Empty;
             logTextBoxSerch.Text = string.Empty;
         }
-
-        private Brush? SearchBar1Brush;
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -424,10 +420,10 @@ namespace ColorVision.UI.LogImp
         private void ApplySearchFilter()
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
-            LogViewUiHelper.ApplySearchFilter(searchText, logTextBox, logTextBoxSerch, SearchBar1, SearchBar1Brush);
+            _logTextView?.ApplySearchFilter(searchText);
         }
 
-        private void Open_Click(object sender, RoutedEventArgs e)
+        private void OpenLogFolder()
         {
             Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(LogFilePath);
         }
@@ -441,6 +437,7 @@ namespace ColorVision.UI.LogImp
 
             _isDisposed = true;
 
+            _logTextView?.Detach();
             Loaded -= UserControl_Loaded;
             Unloaded -= UserControl_Unloaded;
             Config.PropertyChanged -= Config_PropertyChanged;
