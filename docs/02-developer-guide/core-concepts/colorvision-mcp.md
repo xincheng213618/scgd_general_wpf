@@ -4,7 +4,7 @@ ColorVision MCP exposes a local Model Context Protocol endpoint so Codex can ins
 
 The endpoint is local-only, disabled by default, bound to loopback, and protected by a bearer token. It deliberately reuses `ColorVision/Copilot/Capabilities/` so the in-app Agent and external MCP clients share search, grep, file read, docs search, recent log, menu, theme, and language behavior.
 
-MCP v4 adds confirmable template patch application and one-shot diagnostic bundles on top of user-confirmed actions and preview business operations. Every exposed MCP tool is categorized, has a risk level, and is audited when called. The operation model remains conservative: inspect first, dry-run or preview actions when possible, execute low-risk UI operations directly, and require the user to approve confirmation-required actions inside ColorVision before `confirm_action` can execute them. Device control, flow execution, shell execution, file deletion, and arbitrary file reads remain outside the MCP surface.
+MCP v5 adds a read-only diagnosis-to-template-suggestion path on top of confirmable template patch application and one-shot diagnostic bundles. Every exposed MCP tool is categorized, has a risk level, and is audited when called. The operation model remains conservative: inspect first, diagnose and suggest without mutation, dry-run or preview actions when possible, execute low-risk UI operations directly, and require the user to approve confirmation-required actions inside ColorVision before `confirm_action` can execute them. Device control, flow execution, shell execution, file deletion, and arbitrary file reads remain outside the MCP surface.
 
 ## Current Status
 
@@ -13,7 +13,7 @@ Implemented:
 - Local HTTP JSON-RPC MCP endpoint at `http://127.0.0.1:38473/mcp` by default.
 - Bearer token authentication, generated and stored through Copilot settings.
 - Tool listing, tool calls, resource listing, and resource reads.
-- Health and diagnostic tools for server status, enabled tools, audit logs, last tool error, runtime environment summaries, and redacted size-limited diagnostic bundles.
+- Health and diagnostic tools for server status, enabled tools, audit logs, last tool error, runtime environment summaries, redacted size-limited diagnostic bundles, and read-only flow failure diagnosis.
 - `tools/list` metadata with category, risk level, usage example, and MCP annotations.
 - `get_enabled_tools` grouped by `status`, `context`, `search`, `file`, `app-control`, and `audit`.
 - Audit filtering by tool name, action id, and failed-only mode.
@@ -24,6 +24,8 @@ Implemented:
 - Pending Actions UI in the Copilot panel with action id/tool name/expiry/argument summary, Copy action_id, Approve, Reject, short feedback, and automatic expiry refresh.
 - `confirm_action` for executing only a previously approved, non-expired, argument-matched confirmation-required action.
 - `preview_template_patch` returns a `preview_id` for the active template JSON editor; `apply_template_patch` creates a pending action and applies only after user approval plus `confirm_action`.
+- `diagnose_flow_failure` aggregates active flow, matched node, template context, and logs into a read-only diagnosis.
+- `suggest_template_patch` converts a diagnosis or explicit proposed changes into a safe preview payload with warnings for type changes, null fields, and unknown top-level keys.
 - `preview_flow_action` previews select/open/inspect/explain/trace actions and returns suggested next steps without running flows.
 - Audit logging for MCP tool calls with timestamp, tool name, redacted argument summary, success/failure, duration, error message, and caller/source when available.
 - Audit logging for `action_created`, `action_approved`, `action_rejected`, `action_expired`, and `action_executed`.
@@ -106,8 +108,9 @@ Codex should use this conservative order:
 8. Use `execute_menu` with `dry_run: true` before asking for execution.
 9. Execute directly only when the returned risk is `low-risk-action`.
 10. For `confirmation-required`, expect an `action_id`, ask the user to approve it in ColorVision's Copilot Pending Actions area, then call `confirm_action` with the same `tool_name` and `arguments_summary` returned by the creation response.
-11. For template edits, call `preview_template_patch` first while the target template JSON editor is active. Use the returned `preview_id` with `apply_template_patch`; the user must approve the pending action before `confirm_action` applies the JSON patch to the active editor.
-12. Refuse any action that would control devices, execute flows, mutate config without confirmation, delete files, read arbitrary files, or run shell commands.
+11. For flow failures, call `diagnose_flow_failure` before proposing changes.
+12. For template edits, call `suggest_template_patch` to prepare or review explicit `proposed_changes`, then call `preview_template_patch` while the target template JSON editor is active. Use the returned `preview_id` with `apply_template_patch`; the user must approve the pending action before `confirm_action` applies the JSON patch to the active editor.
+13. Refuse any action that would control devices, execute flows, mutate config without confirmation, delete files, read arbitrary files, or run shell commands.
 
 Recommended menu flow:
 
@@ -136,6 +139,26 @@ If the response says `confirmation_required`, it returns an `action_id` and reda
 Recommended template patch flow:
 
 ```json
+{ "node_name": "Camera", "query": "timeout" }
+```
+
+`diagnose_flow_failure` returns observed symptoms, related node information, template field hints, log clues, likely causes, and safe next MCP calls. It never starts, stops, reruns, or edits a flow.
+
+Then ask for a suggestion:
+
+```json
+{ "template_identifier": "CameraTemplate", "intent": "Camera timeout", "node_name": "Camera" }
+```
+
+If explicit values are known, include `proposed_changes`:
+
+```json
+{ "template_identifier": "CameraTemplate", "intent": "Camera timeout", "proposed_changes": { "TimeoutMs": 2000 } }
+```
+
+`suggest_template_patch` never applies or saves. It reports candidate fields, change summaries, and safety warnings, then emits the next `preview_template_patch` payload.
+
+```json
 { "template_identifier": "CameraTemplate", "proposed_changes": { "Exposure": 12 } }
 ```
 
@@ -161,7 +184,9 @@ Recommended template patch flow:
 | `get_workspace_context` | `context` | `read-only` | `{}` | Solution directory, active document, and allowed roots. |
 | `get_active_template_context` | `context` | `read-only` | `{}` | Template editor metadata, template type/name, and key JSON parameters when available. |
 | `get_flow_summary` | `context` | `read-only` | `{}` | Active flow summary, selected nodes, recent run/error clues; never executes flows. |
+| `diagnose_flow_failure` | `context` | `read-only` | `{ "node_name": "Camera", "query": "timeout" }` | Aggregates active flow, matched node, active template, and recent logs into a diagnosis with safe next calls. It never executes flows. |
 | `preview_template_patch` | `context` | `read-only` | `{ "template_identifier": "Default", "proposed_changes": { "Exposure": 12 } }` | Validates current/proposed JSON, reports changed fields, and returns `preview_id` for active-editor previews. It does not apply or save and refuses secret/token/password/api key fields. |
+| `suggest_template_patch` | `context` | `read-only` | `{ "intent": "Camera timeout", "proposed_changes": { "TimeoutMs": 2000 } }` | Prepares a read-only patch suggestion, candidate fields, warnings, and the next `preview_template_patch` payload. |
 | `apply_template_patch` | `app-control` | `confirmation-required` | `{ "preview_id": "a1b2c3d4e5f6" }` | Requires a prior preview, creates a pending action, and applies only after user approval plus matching `confirm_action`. |
 | `preview_flow_action` | `context` | `read-only` | `{ "action": "trace_recent_failure", "node_name": "Camera" }` | Previews select/open/inspect/explain/trace flow actions and suggests next steps. It refuses start/stop/run flow requests. |
 | `get_recent_log` | `search` | `read-only` | `{ "max_lines": 80, "filter": "error" }` | Recent app log lines with optional literal filter. |
@@ -182,6 +207,7 @@ Health and diagnostics:
 - `get_enabled_tools` (`status`, `read-only`): lists exposed MCP tools grouped by category with risk and usage examples.
 - `get_runtime_environment_summary` (`status`, `read-only`): summarizes version, process/start time, config/log directories, language, theme, MCP listener status, workspace, live context, flow availability, recent log availability, and audit count. It must not include bearer tokens or API keys.
 - `get_diagnostic_bundle` (`status`, `read-only`): aggregates server status, runtime summary, last tool error, recent log, live context, and flow summary into a redacted size-limited bundle controlled by `max_chars`.
+- `diagnose_flow_failure` (`context`, `read-only`): aggregates active flow, matched node, active template context, and recent logs into a structured diagnosis. It never starts, stops, reruns, or edits a flow.
 - `get_audit_log` (`audit`, `read-only`): returns recent MCP tool call and action lifecycle audit entries. Optional arguments: `max_entries`, `tool`, `action_id`, `failed_only`.
 - `get_last_tool_error` (`audit`, `read-only`): returns the latest failed MCP tool call.
 
@@ -191,7 +217,9 @@ Context and search:
 - `get_workspace_context` (`context`, `read-only`): solution directory, active document, and allowed search roots.
 - `get_active_template_context` (`context`, `read-only`): active template editor context when available, including template editor metadata, template type/name, and parsed top-level JSON keys/key parameters when possible.
 - `get_flow_summary` (`context`, `read-only`): read-only active flow summary, selected nodes, and recent run/error clues. It never starts, stops, reruns, or edits a flow.
+- `diagnose_flow_failure` (`context`, `read-only`): read-only diagnosis from flow, node, template, and logs. It returns likely causes and next MCP calls.
 - `preview_template_patch` (`context`, `read-only`): validates proposed top-level template JSON changes and reports a diff summary. It never applies or saves and refuses secret/token/password/API key fields. Active-editor previews return `preview_id` for confirmable apply.
+- `suggest_template_patch` (`context`, `read-only`): prepares a template patch suggestion from intent, diagnosis, node context, active template JSON, and optional `proposed_changes`. It warns on type changes, null fields, and unknown top-level keys, then points to `preview_template_patch`.
 - `apply_template_patch` (`app-control`, `confirmation-required`): requires `preview_id` from `preview_template_patch`, creates a pending action, and applies the patch to the same active template editor only after user approval and `confirm_action`. It revalidates JSON and rejects conflicts.
 - `preview_flow_action` (`context`, `read-only`): previews select node, open node property, inspect node errors, explain node, and trace recent failure. It refuses start/stop/run flow requests and never executes a flow.
 - `get_recent_log` (`search`, `read-only`): recent application log lines, optionally filtered.

@@ -11,7 +11,7 @@ namespace cvColorVision
         CV_MODE,
         BV_MODE,
         LV_MODE,
-        LVTOBV_MODE,
+        LVTOBV_MODE
     };
 
     public enum CameraModel : int
