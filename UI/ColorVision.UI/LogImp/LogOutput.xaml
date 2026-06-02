@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.UI.LogImp"
+             xmlns:logControls="clr-namespace:ColorVision.UI.LogImp.Controls"
              xmlns:properties ="clr-namespace:ColorVision.UI.Properties"
              xmlns:hc ="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d"         
@@ -35,12 +36,6 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="logTextBox" TextWrapping="{Binding TextWrapping}" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
-            <TextBox x:Name="logTextBoxSerch" TextWrapping="{Binding TextWrapping}" Visibility="Collapsed"  ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"  BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
-        </Grid>
+        <logControls:LogViewerControl x:Name="LogViewer" Grid.Row="1" TextWrapping="{Binding TextWrapping}"/>
     </Grid>
 </UserControl>

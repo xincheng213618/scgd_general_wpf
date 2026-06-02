@@ -24,7 +24,7 @@ namespace ColorVision.UI.LogImp
             Loaded += LogOutput_Loaded;
             Unloaded += LogOutput_Unloaded;
         }
-        TextBoxAppender? TextBoxAppender { get; set; }
+        LogViewerAppender? LogViewerAppender { get; set; }
         Hierarchy? Hierarchy { get; set; }
 
         public void Dispose()
@@ -46,8 +46,8 @@ namespace ColorVision.UI.LogImp
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
             this.DataContext = LogConfig.Instance;
-            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, logTextBox, logTextBoxSerch, CloseSearchButton);
-            _logTextView.ConfigureContextMenus((contextMenu, _) =>
+            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
+            _logTextView.ConfigureContextMenus(contextMenu =>
                 LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel));
 
             AttachAppender();
@@ -70,25 +70,25 @@ namespace ColorVision.UI.LogImp
                 return;
             }
 
-            TextBoxAppender = new TextBoxAppender(logTextBox, logTextBoxSerch)
+            LogViewerAppender = new LogViewerAppender(LogViewer)
             {
                 Layout = new PatternLayout(Pattern)
             };
-            Hierarchy.Root.AddAppender(TextBoxAppender);
+            Hierarchy.Root.AddAppender(LogViewerAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
             _isAppenderAttached = true;
         }
 
         private void DetachAppender()
         {
-            if (!_isAppenderAttached || Hierarchy == null || TextBoxAppender == null)
+            if (!_isAppenderAttached || Hierarchy == null || LogViewerAppender == null)
             {
                 return;
             }
 
-            Hierarchy.Root.RemoveAppender(TextBoxAppender);
-            TextBoxAppender.Dispose();
-            TextBoxAppender = null;
+            Hierarchy.Root.RemoveAppender(LogViewerAppender);
+            LogViewerAppender.Dispose();
+            LogViewerAppender = null;
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
             _isAppenderAttached = false;
         }
@@ -104,18 +104,12 @@ namespace ColorVision.UI.LogImp
 
         private void ClearLog()
         {
-            logTextBox.Text = string.Empty;
-            logTextBoxSerch.Text = string.Empty;
+            LogViewer.Clear();
         }
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
-            if (TextBoxAppender != null)
-            {
-                TextBoxAppender.SearchText = searchText;
-            }
-
             _logTextView?.QueueSearchFilter(searchText);
         }
     }

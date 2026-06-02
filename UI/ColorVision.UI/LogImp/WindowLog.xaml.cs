@@ -24,35 +24,35 @@ namespace ColorVision.UI
             InitializeComponent();
             this.ApplyCaption();
         }
-        TextBoxAppender TextBoxAppender { get; set; }
+        LogViewerAppender LogViewerAppender { get; set; }
         Hierarchy Hierarchy { get; set; }
         private LogTextViewController? _logTextView;
         private void Window_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
-            TextBoxAppender = new TextBoxAppender(logTextBox, logTextBoxSerch);
-            TextBoxAppender.Layout = new PatternLayout(LogConstants.DefaultLogPattern);
-            Hierarchy.Root.AddAppender(TextBoxAppender);
+            LogViewerAppender = new LogViewerAppender(LogViewer);
+            LogViewerAppender.Layout = new PatternLayout(LogConstants.DefaultLogPattern);
+            Hierarchy.Root.AddAppender(LogViewerAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
             this.Closed += (s, e) =>
             {
-                Hierarchy.Root.RemoveAppender(TextBoxAppender);
-                TextBoxAppender.Dispose();
+                Hierarchy.Root.RemoveAppender(LogViewerAppender);
+                LogViewerAppender.Dispose();
                 _logTextView?.Detach();
                 log4net.Config.BasicConfigurator.Configure(Hierarchy);
             };
 
             this.DataContext = LogConfig.Instance;
 
-            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, logTextBox, logTextBoxSerch, CloseSearchButton);
-            _logTextView.ConfigureContextMenus((contextMenu, _) =>
+            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
+            _logTextView.ConfigureContextMenus(contextMenu =>
                 LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel));
 
             LoadLogHistory();
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                logTextBox.ScrollToEnd();
+                LogViewer.ScrollToLatest(LogConfig.Instance.LogReserve);
             });
 
         }
@@ -67,7 +67,8 @@ namespace ColorVision.UI
         private void LoadLogHistory()
         {
             if (LogConfig.Instance.LogLoadState == LogLoadState.None) return;
-            logTextBox.Text = string.Empty;
+            LogViewer.Clear();
+            LogViewer.MaxEntries = LogConfig.Instance.MaxEntries;
             var logFilePath = GetLogFilePath();
             if (logFilePath != null && File.Exists(logFilePath))
             {
@@ -76,11 +77,12 @@ namespace ColorVision.UI
                     using (FileStream fileStream = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (StreamReader reader = new StreamReader(fileStream, Encoding.Default))
                     {
-                        logTextBox.Text = LogHistoryReader.ReadDisplayText(
+                        var entries = LogHistoryReader.ReadEntries(
                             reader,
                             LogConfig.Instance.LogLoadState,
-                            LogConfig.Instance.LogReserve,
+                            reverse: false,
                             LogConfig.Instance.MaxChars);
+                        LogViewer.SetEntries(entries, LogConfig.Instance.LogReserve);
                     }
                 }
                 catch (IOException ex)
@@ -106,14 +108,12 @@ namespace ColorVision.UI
 
         private void ClearLog()
         {
-            logTextBox.Text = string.Empty;
-            logTextBoxSerch.Text = string.Empty;
+            LogViewer.Clear();
         }
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
-            TextBoxAppender.SearchText = searchText;
             _logTextView?.QueueSearchFilter(searchText);
         }
     }

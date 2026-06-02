@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
+using ColorVision.UI.LogImp.Models;
 
 namespace ColorVision.UI.LogImp
 {
@@ -26,14 +26,42 @@ namespace ColorVision.UI.LogImp
             DateTime today,
             DateTime startupTime)
         {
-            ArgumentNullException.ThrowIfNull(reader);
-
-            if (logLoadState == LogLoadState.None)
+            var entries = ReadEntries(reader, logLoadState, reverse, maxChars, today, startupTime);
+            if (entries.Count == 0)
             {
                 return string.Empty;
             }
 
-            var matchingEntries = new Queue<string>();
+            return TrimDisplayText(string.Join(Environment.NewLine, entries.Select(entry => entry.Text)), reverse, maxChars);
+        }
+
+        public static IReadOnlyList<LogEntry> ReadEntries(TextReader reader, LogLoadState logLoadState, bool reverse, int maxChars)
+        {
+            return ReadEntries(
+                reader,
+                logLoadState,
+                reverse,
+                maxChars,
+                DateTime.Today,
+                Process.GetCurrentProcess().StartTime);
+        }
+
+        public static IReadOnlyList<LogEntry> ReadEntries(
+            TextReader reader,
+            LogLoadState logLoadState,
+            bool reverse,
+            int maxChars,
+            DateTime today,
+            DateTime startupTime)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+
+            if (logLoadState == LogLoadState.None)
+            {
+                return Array.Empty<LogEntry>();
+            }
+
+            var matchingEntries = new Queue<LogEntry>();
             var totalChars = 0;
             StringBuilder? currentEntry = null;
             bool currentEntryIncluded = false;
@@ -41,7 +69,7 @@ namespace ColorVision.UI.LogImp
             string? line;
             while ((line = reader.ReadLine()) != null)
             {
-                if (TryParseLogTimestamp(line, out DateTime logTime))
+                if (LogEntryParser.TryParseLogTimestamp(line, out DateTime logTime))
                 {
                     if (currentEntryIncluded && currentEntry != null)
                     {
@@ -67,7 +95,7 @@ namespace ColorVision.UI.LogImp
 
             if (matchingEntries.Count == 0)
             {
-                return string.Empty;
+                return Array.Empty<LogEntry>();
             }
 
             var entries = matchingEntries.ToArray();
@@ -76,17 +104,18 @@ namespace ColorVision.UI.LogImp
                 Array.Reverse(entries);
             }
 
-            return TrimDisplayText(string.Join(Environment.NewLine, entries), reverse, maxChars);
+            return entries;
         }
 
-        private static void AddEntry(Queue<string> entries, ref int totalChars, string entry, int maxChars)
+        private static void AddEntry(Queue<LogEntry> entries, ref int totalChars, string entryText, int maxChars)
         {
+            var entry = LogEntryParser.FromText(entryText);
             entries.Enqueue(entry);
-            totalChars += entry.Length;
+            totalChars += entry.Text.Length;
             TrimOldEntries(entries, ref totalChars, maxChars);
         }
 
-        private static void TrimOldEntries(Queue<string> entries, ref int totalChars, int maxChars)
+        private static void TrimOldEntries(Queue<LogEntry> entries, ref int totalChars, int maxChars)
         {
             if (!HasMaxCharLimit(maxChars))
             {
@@ -95,7 +124,7 @@ namespace ColorVision.UI.LogImp
 
             while (entries.Count > 1 && GetJoinedLength(totalChars, entries.Count) > maxChars)
             {
-                totalChars -= entries.Dequeue().Length;
+                totalChars -= entries.Dequeue().Text.Length;
             }
         }
 
@@ -122,22 +151,6 @@ namespace ColorVision.UI.LogImp
         private static bool HasMaxCharLimit(int maxChars)
         {
             return maxChars > LogConstants.MinMaxCharsForTrimming;
-        }
-
-        private static bool TryParseLogTimestamp(string line, out DateTime logTime)
-        {
-            logTime = default;
-            if (string.IsNullOrWhiteSpace(line) || line.Length < LogConstants.LogTimestampLength)
-            {
-                return false;
-            }
-
-            return DateTime.TryParseExact(
-                line.AsSpan(0, LogConstants.LogTimestampLength),
-                LogConstants.LogTimestampFormat,
-                null,
-                DateTimeStyles.None,
-                out logTime);
         }
 
         private static bool ShouldIncludeLogEntry(LogLoadState logLoadState, DateTime today, DateTime startupTime, DateTime logTime)

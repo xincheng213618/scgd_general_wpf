@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using log4net.Core;
+using ColorVision.UI.LogImp.Controls;
 
 namespace ColorVision.UI.LogImp
 {
@@ -64,28 +65,14 @@ namespace ColorVision.UI.LogImp
             return searchText?.ToLower(CultureInfo.CurrentCulture) ?? string.Empty;
         }
 
-        public static void ApplySearchFilter(string searchText, TextBox sourceTextBox, TextBox searchResultTextBox, Control searchInput, Brush? defaultBrush)
+        public static void ApplySearchFilter(string searchText, LogViewerControl logViewer, Control searchInput, Brush? defaultBrush)
         {
-            if (!string.IsNullOrEmpty(searchText))
+            if (!logViewer.ApplySearchFilter(searchText))
             {
-                sourceTextBox.Visibility = Visibility.Collapsed;
-                searchResultTextBox.Visibility = Visibility.Visible;
-                if (!LogSearchHelper.FilterText(searchText, sourceTextBox.Text, out var filteredText))
-                {
-                    searchInput.BorderBrush = Brushes.Red;
-                    return;
-                }
-
-                searchResultTextBox.Text = filteredText;
-                if (defaultBrush != null)
-                {
-                    searchInput.BorderBrush = defaultBrush;
-                }
+                searchInput.BorderBrush = Brushes.Red;
                 return;
             }
 
-            searchResultTextBox.Visibility = Visibility.Collapsed;
-            sourceTextBox.Visibility = Visibility.Visible;
             if (defaultBrush != null)
             {
                 searchInput.BorderBrush = defaultBrush;

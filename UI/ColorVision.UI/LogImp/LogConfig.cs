@@ -185,6 +185,12 @@ namespace ColorVision.UI
         public int MaxChars { get => _MaxChars; set { _MaxChars = value; OnPropertyChanged(); } }
         private int _MaxChars = -1;
 
+        /// <summary>
+        /// 最大日志条目数限制，-1 表示无限制
+        /// </summary>
+        public int MaxEntries { get => _MaxEntries; set { _MaxEntries = value; OnPropertyChanged(); } }
+        private int _MaxEntries = LogConstants.DefaultMaxEntries;
+
     }
 
 

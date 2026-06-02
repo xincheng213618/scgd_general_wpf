@@ -1,4 +1,4 @@
-﻿using log4net.Core;
+using log4net.Core;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
@@ -12,6 +12,7 @@ namespace ColorVision.UI.LogImp
         {
             PropertyEditorHelper.RegisterEditor<LevelPropertiesEditor>(t => typeof(Level).IsAssignableFrom(t));
         }
+
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);

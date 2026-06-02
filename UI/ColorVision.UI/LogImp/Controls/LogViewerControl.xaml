@@ -1,0 +1,80 @@
+<UserControl x:Class="ColorVision.UI.LogImp.Controls.LogViewerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:ColorVision.UI.LogImp.Controls"
+             xmlns:models="clr-namespace:ColorVision.UI.LogImp.Models"
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="800"
+             Focusable="True"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True">
+    <UserControl.Resources>
+        <Style x:Key="LogEntryTextBlockStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
+            <Setter Property="LineHeight" Value="16"/>
+            <Setter Property="Padding" Value="2,1"/>
+            <Setter Property="TextWrapping" Value="{Binding TextWrapping, RelativeSource={RelativeSource AncestorType={x:Type local:LogViewerControl}}}"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Fatal}">
+                    <Setter Property="Foreground" Value="#B00020"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Error}">
+                    <Setter Property="Foreground" Value="#D32F2F"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Warning}">
+                    <Setter Property="Foreground" Value="#B26A00"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Debug}">
+                    <Setter Property="Foreground" Value="#6E7781"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Trace}">
+                    <Setter Property="Foreground" Value="#6E7781"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource GlobalBackground}">
+        <ListBox x:Name="EntriesListBox"
+                 ItemsSource="{Binding VisibleEntries, RelativeSource={RelativeSource AncestorType={x:Type local:LogViewerControl}}}"
+                 Background="{DynamicResource GlobalBackground}"
+                 BorderThickness="0"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.CanContentScroll="True"
+                 VirtualizingPanel.IsVirtualizing="True"
+                 VirtualizingPanel.VirtualizationMode="Recycling"
+                 VirtualizingPanel.ScrollUnit="Item"
+                 SelectionMode="Extended"
+                 HorizontalContentAlignment="Stretch">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="VerticalContentAlignment" Value="Top"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type models:LogEntry}">
+                    <TextBlock Text="{Binding Text}" Style="{StaticResource LogEntryTextBlockStyle}"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>

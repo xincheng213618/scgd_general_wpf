@@ -1,4 +1,5 @@
 using ColorVision.UI.LogImp;
+using ColorVision.UI.LogImp.Models;
 using System.IO;
 
 namespace ColorVision.UI.Tests;
@@ -29,6 +30,24 @@ public class LogHistoryReaderTests
         Assert.DoesNotContain("old continuation", result);
         Assert.Contains("new entry", result);
         Assert.Contains("new continuation", result);
+    }
+
+    [Fact]
+    public void ReadEntries_KeepsContinuationLinesAndParsedLevel()
+    {
+        var logText = string.Join(Environment.NewLine, ContinuationLogLines);
+
+        var result = LogHistoryReader.ReadEntries(
+            new StringReader(logText),
+            LogLoadState.SinceStartup,
+            reverse: false,
+            maxChars: -1,
+            today: new DateTime(2026, 6, 3),
+            startupTime: new DateTime(2026, 6, 3, 9, 0, 0));
+
+        var entry = Assert.Single(result);
+        Assert.Equal(LogEntryLevel.Info, entry.Level);
+        Assert.Contains("new continuation", entry.Text);
     }
 
     [Fact]

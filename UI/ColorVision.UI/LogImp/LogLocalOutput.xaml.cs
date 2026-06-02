@@ -1,4 +1,5 @@
 #pragma warning disable CA1822
+using ColorVision.UI.LogImp.Models;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -26,12 +27,11 @@ namespace ColorVision.UI.LogImp
 
         private DispatcherTimer? _refreshTimer;
         private long _lastReadPosition;
-        private readonly object _fileLock = new object();
+        private readonly object _fileLock = new();
         private FileSystemWatcher? _fileWatcher;
         private int _fileChangePending;
         private bool _isDisposed;
         private LogTextViewController? _logTextView;
-        private readonly List<string> _displayLines = new();
 
         /// <summary>
         /// File encoding (defaults to system default; use GB2312 for C++ logs on Chinese Windows).
@@ -56,15 +56,15 @@ namespace ColorVision.UI.LogImp
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
+            LogViewer.MaxEntries = Config.MaxLines;
 
-            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, logTextBox, logTextBoxSerch, CloseSearchButton);
-            _logTextView.ConfigureContextMenus((contextMenu, _) =>
+            _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
+            _logTextView.ConfigureContextMenus(contextMenu =>
                 LogTextViewMenuFactory.AppendLocalLogMenuItems(contextMenu, Config, RefreshLog, OpenLogFolder, ClearLog));
 
             this.Loaded += UserControl_Loaded;
             this.Unloaded += UserControl_Unloaded;
 
-            // Initial load
             LoadLogFile();
             _refreshTimer = new DispatcherTimer
             {
@@ -72,10 +72,7 @@ namespace ColorVision.UI.LogImp
             };
             _refreshTimer.Tick += RefreshTimer_Tick;
 
-            // Setup FileSystemWatcher for immediate file change detection
             SetupFileWatcher();
-
-            // Listen for config changes
             Config.PropertyChanged += Config_PropertyChanged;
 
             EnableFileWatcher(false);
@@ -90,7 +87,6 @@ namespace ColorVision.UI.LogImp
             {
                 _refreshTimer?.Start();
                 EnableFileWatcher(true);
-                // Catch up on any changes missed while unloaded
                 ReadNewLogContent();
             }
         }
@@ -120,7 +116,7 @@ namespace ColorVision.UI.LogImp
             }
             catch
             {
-                // FileSystemWatcher may fail on network paths; fall back to timer-only
+                // FileSystemWatcher may fail on network paths; fall back to timer-only.
             }
         }
 
@@ -173,6 +169,7 @@ namespace ColorVision.UI.LogImp
             }
             else if (e.PropertyName == nameof(WindowLogLocalConfig.MaxLines))
             {
+                LogViewer.MaxEntries = Config.MaxLines;
                 ReloadLogFile(refreshSearch: true);
             }
         }
@@ -194,8 +191,8 @@ namespace ColorVision.UI.LogImp
         {
             if (!File.Exists(LogFilePath))
             {
-                _displayLines.Clear();
-                logTextBox.Text = $"File not found: {LogFilePath}";
+                LogViewer.SetMessage($"File not found: {LogFilePath}", LogEntryLevel.Warning);
+                _lastReadPosition = 0;
                 return;
             }
 
@@ -206,50 +203,31 @@ namespace ColorVision.UI.LogImp
                     using var fileStream = new FileStream(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     using var reader = new StreamReader(fileStream, Encoding);
 
-                    var lines = ReadDisplayLines(reader);
-                    if (Config.LogReverse)
-                    {
-                        lines.Reverse();
-                    }
-
-                    SetDisplayLines(lines);
-                    logTextBox.Text = RenderDisplayLines();
+                    LogViewer.MaxEntries = Config.MaxLines;
+                    LogViewer.SetEntries(ReadDisplayEntries(reader), Config.LogReverse);
                     _lastReadPosition = fileStream.Length;
                 }
 
-                if (Config.AutoScrollToEnd && !Config.LogReverse)
+                if (Config.AutoScrollToEnd || Config.LogReverse)
                 {
-                    logTextBox.ScrollToEnd();
-                }
-                else if (Config.LogReverse)
-                {
-                    logTextBox.ScrollToHome();
+                    LogViewer.ScrollToLatest(Config.LogReverse);
                 }
             }
             catch (IOException ex)
             {
-                _displayLines.Clear();
-                logTextBox.Text = $"Error reading log file: {ex.Message}";
+                LogViewer.SetMessage($"Error reading log file: {ex.Message}", LogEntryLevel.Error);
             }
             catch (Exception ex)
             {
-                _displayLines.Clear();
-                logTextBox.Text = $"An unexpected error occurred: {ex.Message}";
+                LogViewer.SetMessage($"An unexpected error occurred: {ex.Message}", LogEntryLevel.Error);
             }
         }
 
-        private List<string> ReadDisplayLines(StreamReader reader)
+        private List<LogEntry> ReadDisplayEntries(StreamReader reader)
         {
             if (Config.MaxLines <= 0)
             {
-                var allLines = new List<string>();
-                string? line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    allLines.Add(line);
-                }
-
-                return allLines;
+                return LogEntryParser.FromLines(ReadAllLines(reader));
             }
 
             var tailLines = new Queue<string>(Config.MaxLines);
@@ -264,7 +242,16 @@ namespace ColorVision.UI.LogImp
                 tailLines.Enqueue(tailLine);
             }
 
-            return tailLines.ToList();
+            return LogEntryParser.FromLines(tailLines);
+        }
+
+        private static IEnumerable<string> ReadAllLines(TextReader reader)
+        {
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                yield return line;
+            }
         }
 
         /// <summary>
@@ -275,6 +262,9 @@ namespace ColorVision.UI.LogImp
             if (!File.Exists(LogFilePath))
                 return;
 
+            List<LogEntry>? newEntries = null;
+            var shouldReload = false;
+
             try
             {
                 lock (_fileLock)
@@ -284,66 +274,28 @@ namespace ColorVision.UI.LogImp
                     if (fileStream.Length < _lastReadPosition)
                     {
                         _lastReadPosition = 0;
-                        LoadLogFile();
-                        return;
+                        shouldReload = true;
                     }
-
-                    if (fileStream.Length == _lastReadPosition)
+                    else if (fileStream.Length > _lastReadPosition)
                     {
-                        return;
+                        fileStream.Seek(_lastReadPosition, SeekOrigin.Begin);
+                        using var reader = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: false);
+
+                        newEntries = LogEntryParser.FromLines(ReadAllLines(reader));
+                        _lastReadPosition = fileStream.Length;
                     }
+                }
 
-                    fileStream.Seek(_lastReadPosition, SeekOrigin.Begin);
-                    using var reader = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: false);
+                if (shouldReload)
+                {
+                    LoadLogFile();
+                    return;
+                }
 
-                    var newLines = new List<string>();
-                    string? line;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        newLines.Add(line);
-                    }
-
-                    if (newLines.Count > 0)
-                    {
-                        var displayTrimmed = false;
-                        if (Config.LogReverse)
-                        {
-                            newLines.Reverse();
-                            displayTrimmed = PrependDisplayLines(newLines);
-                            logTextBox.ScrollToHome();
-                            if (logTextBoxSerch.Visibility == Visibility.Visible)
-                            {
-                                logTextBoxSerch.ScrollToHome();
-                            }
-                        }
-                        else
-                        {
-                            displayTrimmed = AppendDisplayLines(newLines);
-
-                            if (Config.AutoScrollToEnd)
-                            {
-                                logTextBox.ScrollToEnd();
-                                if (logTextBoxSerch.Visibility == Visibility.Visible)
-                                {
-                                    logTextBoxSerch.ScrollToEnd();
-                                }
-                            }
-                        }
-
-                        if (!string.IsNullOrEmpty(SearchBar1.Text))
-                        {
-                            if (displayTrimmed)
-                            {
-                                ApplySearchFilter();
-                            }
-                            else
-                            {
-                                UpdateSearchResults(newLines);
-                            }
-                        }
-                    }
-
-                    _lastReadPosition = fileStream.Length;
+                if (newEntries is { Count: > 0 })
+                {
+                    LogViewer.MaxEntries = Config.MaxLines;
+                    LogViewer.AppendEntries(newEntries, Config.LogReverse, Config.AutoScrollToEnd);
                 }
             }
             catch (IOException)
@@ -351,105 +303,6 @@ namespace ColorVision.UI.LogImp
             }
             catch (Exception)
             {
-            }
-        }
-
-        private void SetDisplayLines(IEnumerable<string> lines)
-        {
-            _displayLines.Clear();
-            _displayLines.AddRange(lines);
-        }
-
-        private bool AppendDisplayLines(IReadOnlyList<string> newLines)
-        {
-            var hadContent = _displayLines.Count > 0;
-            _displayLines.AddRange(newLines);
-
-            if (TrimDisplayLines(keepHead: false))
-            {
-                logTextBox.Text = RenderDisplayLines();
-                return true;
-            }
-
-            var newContent = string.Join(Environment.NewLine, newLines);
-            if (hadContent)
-            {
-                logTextBox.AppendText(Environment.NewLine + newContent);
-            }
-            else
-            {
-                logTextBox.Text = newContent;
-            }
-
-            return false;
-        }
-
-        private bool PrependDisplayLines(IReadOnlyList<string> newLines)
-        {
-            _displayLines.InsertRange(0, newLines);
-            var trimmed = TrimDisplayLines(keepHead: true);
-            logTextBox.Text = RenderDisplayLines();
-            return trimmed;
-        }
-
-        private bool TrimDisplayLines(bool keepHead)
-        {
-            if (Config.MaxLines <= 0 || _displayLines.Count <= Config.MaxLines)
-            {
-                return false;
-            }
-
-            var removeCount = _displayLines.Count - Config.MaxLines;
-            if (keepHead)
-            {
-                _displayLines.RemoveRange(Config.MaxLines, removeCount);
-            }
-            else
-            {
-                _displayLines.RemoveRange(0, removeCount);
-            }
-
-            return true;
-        }
-
-        private string RenderDisplayLines()
-        {
-            return string.Join(Environment.NewLine, _displayLines);
-        }
-
-        private void UpdateSearchResults(IReadOnlyList<string> newLines)
-        {
-            var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
-            if (string.IsNullOrEmpty(searchText)) return;
-
-            if (!LogSearchHelper.FilterText(searchText, newLines, out var filteredContent))
-                return;
-
-            if (!string.IsNullOrEmpty(filteredContent))
-            {
-                if (Config.LogReverse)
-                {
-                    logTextBoxSerch.Text = string.IsNullOrEmpty(logTextBoxSerch.Text)
-                        ? filteredContent
-                        : filteredContent + Environment.NewLine + logTextBoxSerch.Text;
-                    logTextBoxSerch.ScrollToHome();
-                }
-                else if (!string.IsNullOrEmpty(logTextBoxSerch.Text))
-                {
-                    logTextBoxSerch.AppendText(Environment.NewLine + filteredContent);
-                    if (Config.AutoScrollToEnd)
-                    {
-                        logTextBoxSerch.ScrollToEnd();
-                    }
-                }
-                else
-                {
-                    logTextBoxSerch.Text = filteredContent;
-                    if (Config.AutoScrollToEnd)
-                    {
-                        logTextBoxSerch.ScrollToEnd();
-                    }
-                }
             }
         }
 
@@ -472,9 +325,7 @@ namespace ColorVision.UI.LogImp
 
         private void ClearLog()
         {
-            _displayLines.Clear();
-            logTextBox.Text = string.Empty;
-            logTextBoxSerch.Text = string.Empty;
+            LogViewer.Clear();
         }
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)

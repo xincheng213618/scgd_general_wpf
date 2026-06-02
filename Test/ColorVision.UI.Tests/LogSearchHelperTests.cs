@@ -72,4 +72,22 @@ public class LogSearchHelperTests
         Assert.True(success);
         Assert.Equal("INFO Camera online" + Environment.NewLine + "INFO Algorithm ready", filteredText);
     }
+
+    [Fact]
+    public void FilterItems_ReturnsOriginalItemsForMatchingText()
+    {
+        var items = new[]
+        {
+            new SearchItem(1, "INFO Camera online"),
+            new SearchItem(2, "WARN Camera offline"),
+            new SearchItem(3, "INFO Algorithm ready")
+        };
+
+        var success = LogSearchHelper.FilterItems("camera offline", items, item => item.Text, out var filteredItems);
+
+        Assert.True(success);
+        Assert.Equal(2, filteredItems.Single().Id);
+    }
+
+    private sealed record SearchItem(int Id, string Text);
 }

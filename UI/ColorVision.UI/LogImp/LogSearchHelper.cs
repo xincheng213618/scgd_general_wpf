@@ -26,50 +26,47 @@ namespace ColorVision.UI.LogImp
         public static bool FilterLines(string searchText, IEnumerable<string> logLines, out string[] filteredLines)
         {
             filteredLines = Array.Empty<string>();
+            if (!FilterItems(searchText, logLines, line => line, out var matches))
+            {
+                return false;
+            }
+
+            filteredLines = matches.ToArray();
+            return true;
+        }
+
+        public static bool FilterItems<T>(
+            string searchText,
+            IEnumerable<T> items,
+            Func<T, string> textSelector,
+            out List<T> filteredItems)
+        {
+            ArgumentNullException.ThrowIfNull(items);
+            ArgumentNullException.ThrowIfNull(textSelector);
+
+            filteredItems = new List<T>();
             if (string.IsNullOrEmpty(searchText)) return true;
 
-            var containsRegex = searchText.IndexOfAny(RegexSpecialChars) >= 0;
-
-            if (containsRegex)
+            if (!TryCreateMatcher(searchText, out var matcher))
             {
-                if (!TryGetRegex(searchText, out var regex))
-                {
-                    return false;
-                }
-
-                try
-                {
-                    var matches = new List<string>();
-                    foreach (var line in logLines)
-                    {
-                        if (regex.IsMatch(line))
-                        {
-                            matches.Add(line);
-                        }
-                    }
-
-                    filteredLines = matches.ToArray();
-                }
-                catch (RegexMatchTimeoutException)
-                {
-                    return false;
-                }
+                return false;
             }
-            else
+
+            try
             {
-                // 以空格作为关键词分隔符（多个关键词之间为 AND 关系）
-                var keywords = searchText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                var matches = new List<string>();
-                foreach (var line in logLines)
+                foreach (var item in items)
                 {
-                    if (ContainsAllKeywords(line, keywords))
+                    if (matcher(textSelector(item)))
                     {
-                        matches.Add(line);
+                        filteredItems.Add(item);
                     }
                 }
-
-                filteredLines = matches.ToArray();
             }
+            catch (RegexMatchTimeoutException)
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -101,6 +98,26 @@ namespace ColorVision.UI.LogImp
                 }
             }
 
+            return true;
+        }
+
+        private static bool TryCreateMatcher(string searchText, out Func<string, bool> matcher)
+        {
+            var containsRegex = searchText.IndexOfAny(RegexSpecialChars) >= 0;
+            if (containsRegex)
+            {
+                if (!TryGetRegex(searchText, out var regex))
+                {
+                    matcher = null!;
+                    return false;
+                }
+
+                matcher = regex.IsMatch;
+                return true;
+            }
+
+            var keywords = searchText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            matcher = line => ContainsAllKeywords(line, keywords);
             return true;
         }
 

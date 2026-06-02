@@ -1,3 +1,4 @@
+using ColorVision.UI.LogImp.Controls;
 using log4net.Core;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,8 +15,7 @@ namespace ColorVision.UI.LogImp
         private readonly FrameworkElement _contextMenuRoot;
         private readonly FrameworkElement _searchPanel;
         private readonly Control _searchInput;
-        private readonly TextBox _sourceTextBox;
-        private readonly TextBox _searchResultTextBox;
+        private readonly LogViewerControl _logViewer;
         private readonly ButtonBase? _closeSearchButton;
         private readonly Brush? _defaultSearchBorderBrush;
         private readonly DispatcherTimer _searchDebounceTimer;
@@ -29,16 +29,14 @@ namespace ColorVision.UI.LogImp
             FrameworkElement contextMenuRoot,
             FrameworkElement searchPanel,
             Control searchInput,
-            TextBox sourceTextBox,
-            TextBox searchResultTextBox,
+            LogViewerControl logViewer,
             ButtonBase? closeSearchButton = null)
         {
             _keyboardTarget = keyboardTarget;
             _contextMenuRoot = contextMenuRoot;
             _searchPanel = searchPanel;
             _searchInput = searchInput;
-            _sourceTextBox = sourceTextBox;
-            _searchResultTextBox = searchResultTextBox;
+            _logViewer = logViewer;
             _closeSearchButton = closeSearchButton;
             _defaultSearchBorderBrush = searchInput.BorderBrush;
             _searchDebounceTimer = new DispatcherTimer
@@ -57,7 +55,7 @@ namespace ColorVision.UI.LogImp
         public void ApplySearchFilter(string searchText)
         {
             _searchDebounceTimer.Stop();
-            LogViewUiHelper.ApplySearchFilter(searchText, _sourceTextBox, _searchResultTextBox, _searchInput, _defaultSearchBorderBrush);
+            LogViewUiHelper.ApplySearchFilter(searchText, _logViewer, _searchInput, _defaultSearchBorderBrush);
         }
 
         public void QueueSearchFilter(string searchText)
@@ -74,11 +72,10 @@ namespace ColorVision.UI.LogImp
             _searchDebounceTimer.Start();
         }
 
-        public void ConfigureContextMenus(Action<ContextMenu, TextBox> appendLogItems)
+        public void ConfigureContextMenus(Action<ContextMenu> appendLogItems)
         {
-            _sourceTextBox.ContextMenu = CreateContextMenu(_sourceTextBox, appendLogItems);
-            _searchResultTextBox.ContextMenu = CreateContextMenu(_searchResultTextBox, appendLogItems);
-            _contextMenuRoot.ContextMenu = CreateContextMenu(_sourceTextBox, appendLogItems);
+            _logViewer.SetViewerContextMenu(CreateContextMenu(appendLogItems));
+            _contextMenuRoot.ContextMenu = CreateContextMenu(appendLogItems);
         }
 
         public void ShowSearchPanel()
@@ -95,10 +92,10 @@ namespace ColorVision.UI.LogImp
             }
 
             _searchPanel.Visibility = Visibility.Collapsed;
-            _sourceTextBox.Focus();
+            _logViewer.Focus();
         }
 
-        private ContextMenu CreateContextMenu(TextBox commandTarget, Action<ContextMenu, TextBox> appendLogItems)
+        private ContextMenu CreateContextMenu(Action<ContextMenu> appendLogItems)
         {
             var contextMenu = new ContextMenu();
 
@@ -114,19 +111,19 @@ namespace ColorVision.UI.LogImp
             {
                 Header = Properties.Resources.MenuCopy,
                 Command = ApplicationCommands.Copy,
-                CommandTarget = commandTarget,
+                CommandTarget = _logViewer,
                 InputGestureText = "Ctrl+C"
             });
             contextMenu.Items.Add(new MenuItem
             {
                 Header = Properties.Resources.MenuSelectAll,
                 Command = ApplicationCommands.SelectAll,
-                CommandTarget = commandTarget,
+                CommandTarget = _logViewer,
                 InputGestureText = "Ctrl+A"
             });
             contextMenu.Items.Add(new Separator());
 
-            appendLogItems(contextMenu, commandTarget);
+            appendLogItems(contextMenu);
 
             return contextMenu;
         }
