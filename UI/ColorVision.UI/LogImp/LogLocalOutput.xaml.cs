@@ -31,6 +31,7 @@ namespace ColorVision.UI.LogImp
         private bool _fileChangePending;
         private bool _isDisposed;
         private LogTextViewController? _logTextView;
+        private readonly List<string> _displayLines = new();
 
         /// <summary>
         /// File encoding (defaults to system default; use GB2312 for C++ logs on Chinese Windows).
@@ -176,8 +177,21 @@ namespace ColorVision.UI.LogImp
             }
             else if (e.PropertyName == nameof(WindowLogLocalConfig.LogReverse))
             {
-                _lastReadPosition = 0;
-                LoadLogFile();
+                ReloadLogFile(refreshSearch: true);
+            }
+            else if (e.PropertyName == nameof(WindowLogLocalConfig.MaxLines))
+            {
+                ReloadLogFile(refreshSearch: true);
+            }
+        }
+
+        private void ReloadLogFile(bool refreshSearch)
+        {
+            _lastReadPosition = 0;
+            LoadLogFile();
+            if (refreshSearch && !string.IsNullOrEmpty(SearchBar1.Text))
+            {
+                ApplySearchFilter();
             }
         }
 
@@ -188,6 +202,7 @@ namespace ColorVision.UI.LogImp
         {
             if (!File.Exists(LogFilePath))
             {
+                _displayLines.Clear();
                 logTextBox.Text = $"File not found: {LogFilePath}";
                 return;
             }
@@ -205,7 +220,8 @@ namespace ColorVision.UI.LogImp
                         lines.Reverse();
                     }
 
-                    logTextBox.Text = string.Join(Environment.NewLine, lines);
+                    SetDisplayLines(lines);
+                    logTextBox.Text = RenderDisplayLines();
                     _lastReadPosition = fileStream.Length;
                 }
 
@@ -220,10 +236,12 @@ namespace ColorVision.UI.LogImp
             }
             catch (IOException ex)
             {
+                _displayLines.Clear();
                 logTextBox.Text = $"Error reading log file: {ex.Message}";
             }
             catch (Exception ex)
             {
+                _displayLines.Clear();
                 logTextBox.Text = $"An unexpected error occurred: {ex.Message}";
             }
         }
@@ -298,18 +316,7 @@ namespace ColorVision.UI.LogImp
                         if (Config.LogReverse)
                         {
                             newLines.Reverse();
-                            var newContent = string.Join(Environment.NewLine, newLines);
-
-                            if (!string.IsNullOrEmpty(logTextBox.Text))
-                            {
-                                logTextBox.Text = newContent + Environment.NewLine + logTextBox.Text;
-                            }
-                            else
-                            {
-                                logTextBox.Text = newContent;
-                            }
-
-                            EnforceMaxLinesReverse();
+                            PrependDisplayLines(newLines);
                             logTextBox.ScrollToHome();
                             if (logTextBoxSerch.Visibility == Visibility.Visible)
                             {
@@ -318,18 +325,7 @@ namespace ColorVision.UI.LogImp
                         }
                         else
                         {
-                            var newContent = string.Join(Environment.NewLine, newLines);
-
-                            if (!string.IsNullOrEmpty(logTextBox.Text))
-                            {
-                                logTextBox.AppendText(Environment.NewLine + newContent);
-                            }
-                            else
-                            {
-                                logTextBox.Text = newContent;
-                            }
-
-                            EnforceMaxLines();
+                            AppendDisplayLines(newLines);
 
                             if (Config.AutoScrollToEnd)
                             {
@@ -358,28 +354,64 @@ namespace ColorVision.UI.LogImp
             }
         }
 
-        private void EnforceMaxLines()
+        private void SetDisplayLines(IEnumerable<string> lines)
         {
-            if (Config.MaxLines <= 0) return;
+            _displayLines.Clear();
+            _displayLines.AddRange(lines);
+        }
 
-            var lines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            if (lines.Length > Config.MaxLines)
+        private void AppendDisplayLines(IReadOnlyList<string> newLines)
+        {
+            var hadContent = _displayLines.Count > 0;
+            _displayLines.AddRange(newLines);
+
+            if (TrimDisplayLines(keepHead: false))
             {
-                var trimmedLines = lines.Skip(lines.Length - Config.MaxLines);
-                logTextBox.Text = string.Join(Environment.NewLine, trimmedLines);
+                logTextBox.Text = RenderDisplayLines();
+                return;
+            }
+
+            var newContent = string.Join(Environment.NewLine, newLines);
+            if (hadContent)
+            {
+                logTextBox.AppendText(Environment.NewLine + newContent);
+            }
+            else
+            {
+                logTextBox.Text = newContent;
             }
         }
 
-        private void EnforceMaxLinesReverse()
+        private void PrependDisplayLines(IReadOnlyList<string> newLines)
         {
-            if (Config.MaxLines <= 0) return;
+            _displayLines.InsertRange(0, newLines);
+            TrimDisplayLines(keepHead: true);
+            logTextBox.Text = RenderDisplayLines();
+        }
 
-            var lines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            if (lines.Length > Config.MaxLines)
+        private bool TrimDisplayLines(bool keepHead)
+        {
+            if (Config.MaxLines <= 0 || _displayLines.Count <= Config.MaxLines)
             {
-                var trimmedLines = lines.Take(Config.MaxLines);
-                logTextBox.Text = string.Join(Environment.NewLine, trimmedLines);
+                return false;
             }
+
+            var removeCount = _displayLines.Count - Config.MaxLines;
+            if (keepHead)
+            {
+                _displayLines.RemoveRange(Config.MaxLines, removeCount);
+            }
+            else
+            {
+                _displayLines.RemoveRange(0, removeCount);
+            }
+
+            return true;
+        }
+
+        private string RenderDisplayLines()
+        {
+            return string.Join(Environment.NewLine, _displayLines);
         }
 
         private void UpdateSearchResults(IReadOnlyList<string> newLines)
@@ -423,6 +455,7 @@ namespace ColorVision.UI.LogImp
 
         private void ClearLog()
         {
+            _displayLines.Clear();
             logTextBox.Text = string.Empty;
             logTextBoxSerch.Text = string.Empty;
         }

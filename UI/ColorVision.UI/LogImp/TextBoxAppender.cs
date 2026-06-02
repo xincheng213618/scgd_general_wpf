@@ -22,7 +22,7 @@ namespace ColorVision.UI
     public class TextBoxAppender : AppenderSkeleton, IDisposable
     {
         private readonly TextBox _textBox;
-        private readonly StringBuilder _buffer = new StringBuilder();
+        private readonly List<string> _buffer = new();
         private readonly object _lock = new object();
         private readonly System.Timers.Timer _flushTimer;
         private readonly PropertyChangedEventHandler _configChangedHandler;
@@ -98,14 +98,13 @@ namespace ColorVision.UI
 
             lock (_lock)
             {
+                _buffer.Add(renderedMessage);
                 if (LogConfig.Instance.LogReserve)
                 {
-                    _buffer.Insert(0, renderedMessage);
                     _reverseLastState = true;
                 }
                 else
                 {
-                    _buffer.Append(renderedMessage);
                     _reverseLastState = false;
                 }
             }
@@ -118,16 +117,51 @@ namespace ColorVision.UI
         {
             string logs;
             bool reverse;
+            List<string> pendingLogs;
             lock (_lock)
             {
-                if (_buffer.Length == 0) return; // 无新内容无需处理
-                logs = _buffer.ToString();
+                if (_buffer.Count == 0) return; // 无新内容无需处理
+                pendingLogs = new List<string>(_buffer);
                 _buffer.Clear();
                 reverse = _reverseLastState;
             }
 
+            logs = BuildBufferedLogs(pendingLogs, reverse);
+
             // 始终通过 Dispatcher.BeginInvoke 回到 UI 线程更新（无论调用方线程如何）
             _textBox.Dispatcher.BeginInvoke(new Action(() => UpdateTextBox(logs, reverse)), DispatcherPriority.Normal);
+        }
+
+        private static string BuildBufferedLogs(List<string> pendingLogs, bool reverse)
+        {
+            if (pendingLogs.Count == 1)
+            {
+                return pendingLogs[0];
+            }
+
+            var totalLength = 0;
+            for (var i = 0; i < pendingLogs.Count; i++)
+            {
+                totalLength += pendingLogs[i].Length;
+            }
+
+            var builder = new StringBuilder(totalLength);
+            if (reverse)
+            {
+                for (var i = pendingLogs.Count - 1; i >= 0; i--)
+                {
+                    builder.Append(pendingLogs[i]);
+                }
+            }
+            else
+            {
+                for (var i = 0; i < pendingLogs.Count; i++)
+                {
+                    builder.Append(pendingLogs[i]);
+                }
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>
