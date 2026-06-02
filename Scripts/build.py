@@ -354,6 +354,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--upload-folder", default=os.environ.get("COLORVISION_UPLOAD_FOLDER", DEFAULT_UPLOAD_FOLDER), help="Remote folder path used by the backend upload endpoint")
     parser.add_argument("--upload-user", default=None, help="Backend upload username (prefer env var or shared default)")
     parser.add_argument("--upload-password", default=None, help="Backend upload password (prefer env var or shared default)")
+    parser.add_argument("--upload-use-system-proxy", action="store_true", help="Use the system proxy for backend upload checks and uploads")
     parser.add_argument("--connect-timeout", type=int, default=DEFAULT_CONNECT_TIMEOUT, help="HTTP connect timeout in seconds")
     parser.add_argument("--read-timeout", type=int, default=DEFAULT_READ_TIMEOUT, help="HTTP read timeout in seconds")
     parser.add_argument("--upload-retries", type=int, default=DEFAULT_UPLOAD_RETRIES, help="Number of remote upload attempts")
@@ -375,6 +376,9 @@ def main() -> int:
 
     project = projects[args.project]
     setup_files_dir = Path(args.setup_files_dir) if args.setup_files_dir else project.setup_files_dir
+    if getattr(args, "upload_use_system_proxy", False):
+        os.environ["COLORVISION_UPLOAD_USE_SYSTEM_PROXY"] = "1"
+
     remote_upload_enabled = env_flag("COLORVISION_REMOTE_UPLOAD", True) and not args.skip_remote_upload
     upload_url = resolve_upload_base_url(args.upload_url)
     upload_username, upload_password = resolve_upload_credentials(

@@ -26,7 +26,7 @@
 		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
 		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.74.1" />
-		<PackageReference Include="WPFHexaEditor" Version="3.3.2" />
+		<PackageReference Include="WPFHexaEditor" Version="3.4.0" />
 	</ItemGroup>
 
 	<ItemGroup>

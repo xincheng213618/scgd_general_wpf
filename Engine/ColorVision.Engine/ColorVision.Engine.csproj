@@ -29,7 +29,7 @@
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.8" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.8" />
-		<PackageReference Include="YamlDotNet" Version="17.1.0" />
+		<PackageReference Include="YamlDotNet" Version="18.0.0" />
 	</ItemGroup>
 
 

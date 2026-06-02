@@ -109,6 +109,33 @@ def _is_unsupported_preflight_response(status_code: int) -> bool:
     return status_code == 404
 
 
+def _preflight_get_with_retries(
+    http_client,
+    requests_module,
+    url: str,
+    *,
+    timeout,
+    max_retries: int,
+    description: str,
+):
+    last_error = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            return http_client.get(url, timeout=timeout)
+        except requests_module.RequestException as exc:
+            last_error = exc
+            if attempt < max_retries:
+                wait_seconds = min(2 ** (attempt - 1), 5)
+                print(
+                    f"Backend {description} check attempt {attempt} failed: {exc}; "
+                    f"retrying in {wait_seconds} second(s)..."
+                )
+                time.sleep(wait_seconds)
+
+    print(f"Backend {description} check failed: {last_error}")
+    return None
+
+
 def preflight_remote_upload(
     settings: RemoteUploadSettings,
     *,
@@ -126,11 +153,17 @@ def preflight_remote_upload(
     timeout = (settings.connect_timeout, min(settings.read_timeout, 15))
     health_url = f"{settings.base_url.rstrip('/')}/api/health"
     ready_url = f"{settings.base_url.rstrip('/')}/api/ready"
+    max_retries = max(settings.max_retries, 1)
 
-    try:
-        health_response = http_client.get(health_url, timeout=timeout)
-    except requests.RequestException as exc:
-        print(f"Backend health check failed: {exc}")
+    health_response = _preflight_get_with_retries(
+        http_client,
+        requests,
+        health_url,
+        timeout=timeout,
+        max_retries=max_retries,
+        description="health",
+    )
+    if health_response is None:
         return False
 
     if _is_unsupported_preflight_response(health_response.status_code):
@@ -148,10 +181,15 @@ def preflight_remote_upload(
         print("Backend health check failed: invalid health response payload.")
         return False
 
-    try:
-        ready_response = http_client.get(ready_url, timeout=timeout)
-    except requests.RequestException as exc:
-        print(f"Backend readiness check failed: {exc}")
+    ready_response = _preflight_get_with_retries(
+        http_client,
+        requests,
+        ready_url,
+        timeout=timeout,
+        max_retries=max_retries,
+        description="readiness",
+    )
+    if ready_response is None:
         return False
 
     if _is_unsupported_preflight_response(ready_response.status_code):
