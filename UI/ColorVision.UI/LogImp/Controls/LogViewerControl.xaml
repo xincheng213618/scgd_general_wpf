@@ -14,13 +14,12 @@
     <UserControl.Resources>
         <Style x:Key="LogEntryTextBlockStyle" TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="FontFamily" Value="Consolas"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Microsoft YaHei UI"/>
+            <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
-            <Setter Property="LineHeight" Value="16"/>
-            <Setter Property="Padding" Value="2,1"/>
+            <Setter Property="LineHeight" Value="18"/>
+            <Setter Property="Padding" Value="4,1"/>
             <Setter Property="TextWrapping" Value="{Binding TextWrapping, RelativeSource={RelativeSource AncestorType={x:Type local:LogViewerControl}}}"/>
-            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Level}" Value="{x:Static models:LogEntryLevel.Fatal}">
                     <Setter Property="Foreground" Value="#B00020"/>

@@ -13,7 +13,7 @@ namespace ColorVision.UI.LogImp.Controls
             nameof(TextWrapping),
             typeof(TextWrapping),
             typeof(LogViewerControl),
-            new FrameworkPropertyMetadata(TextWrapping.NoWrap));
+            new FrameworkPropertyMetadata(TextWrapping.NoWrap, OnTextWrappingChanged));
 
         public static readonly DependencyProperty MaxEntriesProperty = DependencyProperty.Register(
             nameof(MaxEntries),
@@ -47,6 +47,8 @@ namespace ColorVision.UI.LogImp.Controls
             EntriesListBox.PreviewMouseUp += EntriesListBox_PreviewMouseUp;
             EntriesListBox.PreviewMouseWheel += EntriesListBox_PreviewMouseWheel;
             Unloaded += LogViewerControl_Unloaded;
+
+            UpdateWrappingScrollMode();
         }
 
         public IEnumerable<LogEntry> VisibleEntries => _visibleEntries;
@@ -370,6 +372,28 @@ namespace ColorVision.UI.LogImp.Controls
             {
                 logViewer.RefreshVisibleEntries();
             }
+        }
+
+        private static void OnTextWrappingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is LogViewerControl logViewer)
+            {
+                logViewer.UpdateWrappingScrollMode();
+            }
+        }
+
+        private void UpdateWrappingScrollMode()
+        {
+            if (EntriesListBox == null)
+            {
+                return;
+            }
+
+            var horizontalScrollBarVisibility = TextWrapping == TextWrapping.NoWrap
+                ? ScrollBarVisibility.Auto
+                : ScrollBarVisibility.Disabled;
+            ScrollViewer.SetHorizontalScrollBarVisibility(EntriesListBox, horizontalScrollBarVisibility);
+            EntriesListBox.InvalidateMeasure();
         }
     }
 }
