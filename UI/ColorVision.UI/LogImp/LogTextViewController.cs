@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.LogImp
 {
@@ -17,8 +18,11 @@ namespace ColorVision.UI.LogImp
         private readonly TextBox _searchResultTextBox;
         private readonly ButtonBase? _closeSearchButton;
         private readonly Brush? _defaultSearchBorderBrush;
+        private readonly DispatcherTimer _searchDebounceTimer;
 
+        private string _pendingSearchText = string.Empty;
         private bool _isDetached;
+        private const int SearchDebounceMilliseconds = 200;
 
         public LogTextViewController(
             UIElement keyboardTarget,
@@ -37,6 +41,11 @@ namespace ColorVision.UI.LogImp
             _searchResultTextBox = searchResultTextBox;
             _closeSearchButton = closeSearchButton;
             _defaultSearchBorderBrush = searchInput.BorderBrush;
+            _searchDebounceTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(SearchDebounceMilliseconds)
+            };
+            _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
 
             _keyboardTarget.PreviewKeyDown += KeyboardTarget_PreviewKeyDown;
             if (_closeSearchButton != null)
@@ -47,7 +56,22 @@ namespace ColorVision.UI.LogImp
 
         public void ApplySearchFilter(string searchText)
         {
+            _searchDebounceTimer.Stop();
             LogViewUiHelper.ApplySearchFilter(searchText, _sourceTextBox, _searchResultTextBox, _searchInput, _defaultSearchBorderBrush);
+        }
+
+        public void QueueSearchFilter(string searchText)
+        {
+            _pendingSearchText = searchText;
+
+            if (string.IsNullOrEmpty(searchText))
+            {
+                ApplySearchFilter(searchText);
+                return;
+            }
+
+            _searchDebounceTimer.Stop();
+            _searchDebounceTimer.Start();
         }
 
         public void ConfigureContextMenus(Action<ContextMenu, TextBox> appendLogItems)
@@ -128,6 +152,12 @@ namespace ColorVision.UI.LogImp
             HideSearchPanel(clearSearch: true);
         }
 
+        private void SearchDebounceTimer_Tick(object? sender, EventArgs e)
+        {
+            _searchDebounceTimer.Stop();
+            ApplySearchFilter(_pendingSearchText);
+        }
+
         public void Detach()
         {
             if (_isDetached)
@@ -136,6 +166,8 @@ namespace ColorVision.UI.LogImp
             }
 
             _isDetached = true;
+            _searchDebounceTimer.Stop();
+            _searchDebounceTimer.Tick -= SearchDebounceTimer_Tick;
             _keyboardTarget.PreviewKeyDown -= KeyboardTarget_PreviewKeyDown;
             if (_closeSearchButton != null)
             {

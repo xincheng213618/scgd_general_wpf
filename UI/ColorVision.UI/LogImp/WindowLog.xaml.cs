@@ -320,7 +320,7 @@ namespace ColorVision.UI
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             TextBoxAppender.SearchText = searchText;
-            _logTextView?.ApplySearchFilter(searchText);
+            _logTextView?.QueueSearchFilter(searchText);
         }
     }
 }

@@ -199,18 +199,7 @@ namespace ColorVision.UI.LogImp
                     using var fileStream = new FileStream(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     using var reader = new StreamReader(fileStream, Encoding);
 
-                    var lines = new List<string>();
-                    string? line;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        lines.Add(line);
-                    }
-
-                    if (Config.MaxLines > 0 && lines.Count > Config.MaxLines)
-                    {
-                        lines = lines.Skip(lines.Count - Config.MaxLines).ToList();
-                    }
-
+                    var lines = ReadDisplayLines(reader);
                     if (Config.LogReverse)
                     {
                         lines.Reverse();
@@ -237,6 +226,35 @@ namespace ColorVision.UI.LogImp
             {
                 logTextBox.Text = $"An unexpected error occurred: {ex.Message}";
             }
+        }
+
+        private List<string> ReadDisplayLines(StreamReader reader)
+        {
+            if (Config.MaxLines <= 0)
+            {
+                var allLines = new List<string>();
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    allLines.Add(line);
+                }
+
+                return allLines;
+            }
+
+            var tailLines = new Queue<string>(Config.MaxLines);
+            string? tailLine;
+            while ((tailLine = reader.ReadLine()) != null)
+            {
+                if (tailLines.Count == Config.MaxLines)
+                {
+                    tailLines.Dequeue();
+                }
+
+                tailLines.Enqueue(tailLine);
+            }
+
+            return tailLines.ToList();
         }
 
         /// <summary>
@@ -325,8 +343,7 @@ namespace ColorVision.UI.LogImp
 
                         if (!string.IsNullOrEmpty(SearchBar1.Text))
                         {
-                            var newContent = string.Join(Environment.NewLine, newLines);
-                            UpdateSearchResults(newContent);
+                            UpdateSearchResults(newLines);
                         }
                     }
 
@@ -365,12 +382,10 @@ namespace ColorVision.UI.LogImp
             }
         }
 
-        private void UpdateSearchResults(string newContent)
+        private void UpdateSearchResults(IReadOnlyList<string> newLines)
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             if (string.IsNullOrEmpty(searchText)) return;
-
-            var newLines = newContent.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
 
             if (!LogSearchHelper.FilterLines(searchText, newLines, out var filteredLines))
                 return;
@@ -414,13 +429,19 @@ namespace ColorVision.UI.LogImp
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
-            ApplySearchFilter();
+            QueueSearchFilter();
         }
 
         private void ApplySearchFilter()
         {
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             _logTextView?.ApplySearchFilter(searchText);
+        }
+
+        private void QueueSearchFilter()
+        {
+            var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
+            _logTextView?.QueueSearchFilter(searchText);
         }
 
         private void OpenLogFolder()

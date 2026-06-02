@@ -116,7 +116,7 @@ namespace ColorVision.UI.LogImp
                 TextBoxAppender.SearchText = searchText;
             }
 
-            _logTextView?.ApplySearchFilter(searchText);
+            _logTextView?.QueueSearchFilter(searchText);
         }
     }
 }
