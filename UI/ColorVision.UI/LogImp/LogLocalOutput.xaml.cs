@@ -28,7 +28,7 @@ namespace ColorVision.UI.LogImp
         private long _lastReadPosition;
         private readonly object _fileLock = new object();
         private FileSystemWatcher? _fileWatcher;
-        private bool _fileChangePending;
+        private int _fileChangePending;
         private bool _isDisposed;
         private LogTextViewController? _logTextView;
         private readonly List<string> _displayLines = new();
@@ -142,12 +142,11 @@ namespace ColorVision.UI.LogImp
 
         private void OnFileChanged(object sender, FileSystemEventArgs e)
         {
-            if (_fileChangePending) return;
-            _fileChangePending = true;
+            if (Interlocked.Exchange(ref _fileChangePending, 1) == 1) return;
 
             Dispatcher.BeginInvoke(() =>
             {
-                _fileChangePending = false;
+                Interlocked.Exchange(ref _fileChangePending, 0);
                 if (Config.AutoRefresh)
                 {
                     ReadNewLogContent();
@@ -313,10 +312,11 @@ namespace ColorVision.UI.LogImp
 
                     if (newLines.Count > 0)
                     {
+                        var displayTrimmed = false;
                         if (Config.LogReverse)
                         {
                             newLines.Reverse();
-                            PrependDisplayLines(newLines);
+                            displayTrimmed = PrependDisplayLines(newLines);
                             logTextBox.ScrollToHome();
                             if (logTextBoxSerch.Visibility == Visibility.Visible)
                             {
@@ -325,7 +325,7 @@ namespace ColorVision.UI.LogImp
                         }
                         else
                         {
-                            AppendDisplayLines(newLines);
+                            displayTrimmed = AppendDisplayLines(newLines);
 
                             if (Config.AutoScrollToEnd)
                             {
@@ -339,7 +339,14 @@ namespace ColorVision.UI.LogImp
 
                         if (!string.IsNullOrEmpty(SearchBar1.Text))
                         {
-                            UpdateSearchResults(newLines);
+                            if (displayTrimmed)
+                            {
+                                ApplySearchFilter();
+                            }
+                            else
+                            {
+                                UpdateSearchResults(newLines);
+                            }
                         }
                     }
 
@@ -360,7 +367,7 @@ namespace ColorVision.UI.LogImp
             _displayLines.AddRange(lines);
         }
 
-        private void AppendDisplayLines(IReadOnlyList<string> newLines)
+        private bool AppendDisplayLines(IReadOnlyList<string> newLines)
         {
             var hadContent = _displayLines.Count > 0;
             _displayLines.AddRange(newLines);
@@ -368,7 +375,7 @@ namespace ColorVision.UI.LogImp
             if (TrimDisplayLines(keepHead: false))
             {
                 logTextBox.Text = RenderDisplayLines();
-                return;
+                return true;
             }
 
             var newContent = string.Join(Environment.NewLine, newLines);
@@ -380,13 +387,16 @@ namespace ColorVision.UI.LogImp
             {
                 logTextBox.Text = newContent;
             }
+
+            return false;
         }
 
-        private void PrependDisplayLines(IReadOnlyList<string> newLines)
+        private bool PrependDisplayLines(IReadOnlyList<string> newLines)
         {
             _displayLines.InsertRange(0, newLines);
-            TrimDisplayLines(keepHead: true);
+            var trimmed = TrimDisplayLines(keepHead: true);
             logTextBox.Text = RenderDisplayLines();
+            return trimmed;
         }
 
         private bool TrimDisplayLines(bool keepHead)
@@ -425,13 +435,28 @@ namespace ColorVision.UI.LogImp
             if (filteredLines.Length > 0)
             {
                 var filteredContent = string.Join(Environment.NewLine, filteredLines);
-                if (!string.IsNullOrEmpty(logTextBoxSerch.Text))
+                if (Config.LogReverse)
+                {
+                    logTextBoxSerch.Text = string.IsNullOrEmpty(logTextBoxSerch.Text)
+                        ? filteredContent
+                        : filteredContent + Environment.NewLine + logTextBoxSerch.Text;
+                    logTextBoxSerch.ScrollToHome();
+                }
+                else if (!string.IsNullOrEmpty(logTextBoxSerch.Text))
                 {
                     logTextBoxSerch.AppendText(Environment.NewLine + filteredContent);
+                    if (Config.AutoScrollToEnd)
+                    {
+                        logTextBoxSerch.ScrollToEnd();
+                    }
                 }
                 else
                 {
                     logTextBoxSerch.Text = filteredContent;
+                    if (Config.AutoScrollToEnd)
+                    {
+                        logTextBoxSerch.ScrollToEnd();
+                    }
                 }
             }
         }

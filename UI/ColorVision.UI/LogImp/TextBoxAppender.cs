@@ -29,6 +29,7 @@ namespace ColorVision.UI
         private readonly RoutedEventHandler _textBoxLoadedHandler;
         private ScrollViewer? _attachedScrollViewer;
         private bool _isClosed;
+        private bool _flushQueued;
         private bool _scrollHandlersAttached;
 
         /// <summary>
@@ -116,21 +117,56 @@ namespace ColorVision.UI
         /// </summary>
         private void FlushBuffer()
         {
+            QueueFlush(force: false);
+        }
+
+        private void QueueFlush(bool force)
+        {
+            lock (_lock)
+            {
+                if (_buffer.Count == 0 || _flushQueued || (!force && _isClosed))
+                {
+                    return;
+                }
+
+                _flushQueued = true;
+            }
+
+            _textBox.Dispatcher.BeginInvoke(ProcessPendingFlush, DispatcherPriority.Background);
+        }
+
+        private void ProcessPendingFlush()
+        {
             string logs;
             bool reverse;
             List<string> pendingLogs;
             lock (_lock)
             {
-                if (_buffer.Count == 0) return; // 无新内容无需处理
+                if (_buffer.Count == 0)
+                {
+                    _flushQueued = false;
+                    return;
+                }
+
                 pendingLogs = new List<string>(_buffer);
                 _buffer.Clear();
                 reverse = _reverseLastState;
             }
 
             logs = BuildBufferedLogs(pendingLogs, reverse);
+            UpdateTextBox(logs, reverse);
 
-            // 始终通过 Dispatcher.BeginInvoke 回到 UI 线程更新（无论调用方线程如何）
-            _textBox.Dispatcher.BeginInvoke(new Action(() => UpdateTextBox(logs, reverse)), DispatcherPriority.Normal);
+            var queueAgain = false;
+            lock (_lock)
+            {
+                _flushQueued = false;
+                queueAgain = _buffer.Count > 0 && !_isClosed;
+            }
+
+            if (queueAgain)
+            {
+                QueueFlush(force: false);
+            }
         }
 
         private static string BuildBufferedLogs(List<string> pendingLogs, bool reverse)
@@ -383,7 +419,7 @@ namespace ColorVision.UI
             }
             catch { }
             // 在关闭前最后刷新一次（在 UI线程）
-            _textBox.Dispatcher.BeginInvoke(new Action(() => FlushBuffer()));
+            QueueFlush(force: true);
         }
 
         public void Dispose()
