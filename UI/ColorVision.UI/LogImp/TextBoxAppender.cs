@@ -26,7 +26,10 @@ namespace ColorVision.UI
         private readonly object _lock = new object();
         private readonly System.Timers.Timer _flushTimer;
         private readonly PropertyChangedEventHandler _configChangedHandler;
+        private readonly RoutedEventHandler _textBoxLoadedHandler;
+        private ScrollViewer? _attachedScrollViewer;
         private bool _isClosed;
+        private bool _scrollHandlersAttached;
 
         /// <summary>
         /// 批量刷新间隔，单位：毫秒
@@ -74,10 +77,8 @@ namespace ColorVision.UI
             LogConfig.Instance.PropertyChanged += _configChangedHandler;
 
             //仍在 Loaded 时附加滚动事件到视觉树中的 ScrollViewer
-            textBox.Loaded += (s, e) =>
-            {
-                AttachScrollEventHandlers();
-            };
+            _textBoxLoadedHandler = (_, _) => AttachScrollEventHandlers();
+            textBox.Loaded += _textBoxLoadedHandler;
         }
 
         private static int GetFlushIntervalMs()
@@ -266,13 +267,36 @@ namespace ColorVision.UI
         /// </summary>
         public void AttachScrollEventHandlers()
         {
+            if (_scrollHandlersAttached)
+            {
+                return;
+            }
+
             var scrollViewer = GetScrollViewer(_textBox);
             if (scrollViewer != null)
             {
                 scrollViewer.PreviewMouseDown += ScrollViewer_PreviewMouseDown;
                 scrollViewer.PreviewMouseUp += ScrollViewer_PreviewMouseUp;
                 scrollViewer.PreviewMouseWheel += ScrollViewer_PreviewMouseWheel;
+                _attachedScrollViewer = scrollViewer;
+                _scrollHandlersAttached = true;
             }
+        }
+
+        private void DetachScrollEventHandlers()
+        {
+            _textBox.Loaded -= _textBoxLoadedHandler;
+
+            if (!_scrollHandlersAttached || _attachedScrollViewer == null)
+            {
+                return;
+            }
+
+            _attachedScrollViewer.PreviewMouseDown -= ScrollViewer_PreviewMouseDown;
+            _attachedScrollViewer.PreviewMouseUp -= ScrollViewer_PreviewMouseUp;
+            _attachedScrollViewer.PreviewMouseWheel -= ScrollViewer_PreviewMouseWheel;
+            _attachedScrollViewer = null;
+            _scrollHandlersAttached = false;
         }
 
         private void ScrollViewer_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -352,6 +376,7 @@ namespace ColorVision.UI
             try
             {
                 LogConfig.Instance.PropertyChanged -= _configChangedHandler;
+                DetachScrollEventHandlers();
                 _flushTimer?.Stop();
                 _flushTimer?.Dispose();
                 resumeScrollTimer?.Stop();
