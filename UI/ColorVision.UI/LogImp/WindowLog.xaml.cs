@@ -77,12 +77,24 @@ namespace ColorVision.UI
                     using (FileStream fileStream = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (StreamReader reader = new StreamReader(fileStream, Encoding.Default))
                     {
-                        var entries = LogHistoryReader.ReadEntries(
-                            reader,
-                            LogConfig.Instance.LogLoadState,
-                            reverse: false,
-                            LogConfig.Instance.MaxChars);
-                        LogViewer.SetEntries(entries, LogConfig.Instance.LogReserve);
+                        if (LogViewer.UsesVirtualizedRendering)
+                        {
+                            var entries = LogHistoryReader.ReadEntries(
+                                reader,
+                                LogConfig.Instance.LogLoadState,
+                                reverse: false,
+                                LogConfig.Instance.MaxChars);
+                            LogViewer.SetEntries(entries, LogConfig.Instance.LogReserve);
+                        }
+                        else
+                        {
+                            var displayText = LogHistoryReader.ReadDisplayText(
+                                reader,
+                                LogConfig.Instance.LogLoadState,
+                                LogConfig.Instance.LogReserve,
+                                LogConfig.Instance.MaxChars);
+                            LogViewer.SetText(displayText, LogConfig.Instance.LogReserve);
+                        }
                     }
                 }
                 catch (IOException ex)

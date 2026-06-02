@@ -1,4 +1,5 @@
 using ColorVision.UI.LogImp.Models;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,11 +19,23 @@ namespace ColorVision.UI.LogImp.Controls
             typeof(LogViewerControl),
             new FrameworkPropertyMetadata(TextWrapping.NoWrap, OnTextWrappingChanged));
 
+        public static readonly DependencyProperty ViewerModeProperty = DependencyProperty.Register(
+            nameof(ViewerMode),
+            typeof(LogViewerMode),
+            typeof(LogViewerControl),
+            new FrameworkPropertyMetadata(LogViewerMode.TextBox, OnViewerModeChanged));
+
         public static readonly DependencyProperty MaxEntriesProperty = DependencyProperty.Register(
             nameof(MaxEntries),
             typeof(int),
             typeof(LogViewerControl),
             new FrameworkPropertyMetadata(LogConstants.DefaultMaxEntries, OnMaxEntriesChanged));
+
+        public static readonly DependencyProperty MaxCharsProperty = DependencyProperty.Register(
+            nameof(MaxChars),
+            typeof(int),
+            typeof(LogViewerControl),
+            new FrameworkPropertyMetadata(-1, OnMaxCharsChanged));
 
         public static readonly DependencyProperty UseLevelColorsProperty = DependencyProperty.Register(
             nameof(UseLevelColors),
@@ -65,11 +78,14 @@ namespace ColorVision.UI.LogImp.Controls
         private readonly DispatcherTimer _resumeScrollTimer;
         private readonly DispatcherTimer _rangeSelectionScrollTimer;
         private ScrollViewer? _entriesScrollViewer;
+        private LogViewerMode _activeViewerMode = LogViewerMode.TextBox;
+        private string _plainText = string.Empty;
         private string _searchText = string.Empty;
         private int _selectionAnchorIndex = -1;
         private Point _rangeSelectionPoint;
         private bool _latestAtTop;
         private bool _isRangeSelecting;
+        private bool _viewerModeLocked;
         private bool _suspendAutoScroll;
 
         public LogViewerControl()
@@ -93,12 +109,17 @@ namespace ColorVision.UI.LogImp.Controls
 
             PreviewKeyDown += LogViewerControl_PreviewKeyDown;
             PreviewMouseDown += LogViewerControl_PreviewMouseDown;
+            PlainTextBox.PreviewMouseDown += PlainTextBox_PreviewMouseDown;
+            PlainTextBox.PreviewMouseUp += PlainTextBox_PreviewMouseUp;
+            PlainTextBox.PreviewMouseWheel += PlainTextBox_PreviewMouseWheel;
             EntriesListBox.PreviewMouseDown += EntriesListBox_PreviewMouseDown;
             EntriesListBox.PreviewMouseMove += EntriesListBox_PreviewMouseMove;
             EntriesListBox.PreviewMouseUp += EntriesListBox_PreviewMouseUp;
             EntriesListBox.PreviewMouseWheel += EntriesListBox_PreviewMouseWheel;
+            Loaded += LogViewerControl_Loaded;
             Unloaded += LogViewerControl_Unloaded;
 
+            ApplyViewerMode(LogViewerMode.TextBox);
             UpdateWrappingScrollMode();
         }
 
@@ -110,10 +131,22 @@ namespace ColorVision.UI.LogImp.Controls
             set => SetValue(TextWrappingProperty, value);
         }
 
+        public LogViewerMode ViewerMode
+        {
+            get => (LogViewerMode)GetValue(ViewerModeProperty);
+            set => SetValue(ViewerModeProperty, value);
+        }
+
         public int MaxEntries
         {
             get => (int)GetValue(MaxEntriesProperty);
             set => SetValue(MaxEntriesProperty, value);
+        }
+
+        public int MaxChars
+        {
+            get => (int)GetValue(MaxCharsProperty);
+            set => SetValue(MaxCharsProperty, value);
         }
 
         public bool UseLevelColors
@@ -154,6 +187,8 @@ namespace ColorVision.UI.LogImp.Controls
 
         public bool IsSearchActive => !string.IsNullOrEmpty(_searchText);
 
+        public bool UsesVirtualizedRendering => _activeViewerMode == LogViewerMode.Virtualized;
+
         public void SetEntries(IEnumerable<LogEntry> entries, bool latestAtTop)
         {
             ArgumentNullException.ThrowIfNull(entries);
@@ -168,8 +203,28 @@ namespace ColorVision.UI.LogImp.Controls
             }
 
             TrimEntries(keepHead: latestAtTop);
+            _plainText = BuildText(_entries);
+            TrimPlainText(keepHead: latestAtTop);
             ResetSelectionState(clearSelection: true);
-            RefreshVisibleEntries();
+            RefreshActiveView();
+            ScrollToLatest(latestAtTop);
+        }
+
+        public void SetText(string text, bool latestAtTop)
+        {
+            _latestAtTop = latestAtTop;
+            _plainText = text ?? string.Empty;
+            TrimPlainText(keepHead: latestAtTop);
+            _entries.Clear();
+
+            if (UsesVirtualizedRendering && !string.IsNullOrEmpty(_plainText))
+            {
+                _entries.AddRange(LogEntryParser.FromLines(ReadTextLines(_plainText)));
+                TrimEntries(keepHead: latestAtTop);
+            }
+
+            ResetSelectionState(clearSelection: true);
+            RefreshActiveView();
             ScrollToLatest(latestAtTop);
         }
 
@@ -192,18 +247,36 @@ namespace ColorVision.UI.LogImp.Controls
             var displayEntries = latestAtTop
                 ? incomingEntries.AsEnumerable().Reverse().ToList()
                 : incomingEntries;
+            var wasPlainTextEmpty = string.IsNullOrEmpty(_plainText);
+            var appendedText = BuildText(displayEntries);
 
             if (latestAtTop)
             {
                 _entries.InsertRange(0, displayEntries);
+                _plainText = CombineText(appendedText, _plainText);
             }
             else
             {
                 _entries.AddRange(displayEntries);
+                _plainText = CombineText(_plainText, appendedText);
             }
 
             var removedCount = TrimEntries(keepHead: latestAtTop);
-            UpdateVisibleEntriesAfterAppend(displayEntries, latestAtTop, removedCount);
+            if (removedCount > 0)
+            {
+                _plainText = BuildText(_entries);
+            }
+
+            var textTrimmed = TrimPlainText(keepHead: latestAtTop);
+
+            if (UsesVirtualizedRendering)
+            {
+                UpdateVisibleEntriesAfterAppend(displayEntries, latestAtTop, removedCount);
+            }
+            else
+            {
+                UpdatePlainTextAfterAppend(appendedText, latestAtTop, wasPlainTextEmpty, removedCount > 0 || textTrimmed);
+            }
 
             if (autoScroll && !_suspendAutoScroll)
             {
@@ -214,6 +287,8 @@ namespace ColorVision.UI.LogImp.Controls
         public void Clear()
         {
             _entries.Clear();
+            _plainText = string.Empty;
+            PlainTextBox.Clear();
             ResetSelectionState(clearSelection: true);
             _visibleEntries.Clear();
         }
@@ -221,6 +296,11 @@ namespace ColorVision.UI.LogImp.Controls
         public bool ApplySearchFilter(string searchText)
         {
             _searchText = searchText;
+            if (!UsesVirtualizedRendering)
+            {
+                return RefreshPlainTextBox();
+            }
+
             if (string.IsNullOrEmpty(searchText))
             {
                 ResetSelectionState(clearSelection: true);
@@ -240,6 +320,22 @@ namespace ColorVision.UI.LogImp.Controls
 
         public void ScrollToLatest(bool latestAtTop)
         {
+            if (!UsesVirtualizedRendering)
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (latestAtTop)
+                    {
+                        PlainTextBox.ScrollToHome();
+                    }
+                    else
+                    {
+                        PlainTextBox.ScrollToEnd();
+                    }
+                }, DispatcherPriority.Background);
+                return;
+            }
+
             if (_visibleEntries.Count == 0)
             {
                 return;
@@ -259,11 +355,22 @@ namespace ColorVision.UI.LogImp.Controls
 
         public void SetViewerContextMenu(ContextMenu contextMenu)
         {
+            PlainTextBox.ContextMenu = contextMenu;
             EntriesListBox.ContextMenu = contextMenu;
         }
 
         public void CopySelection()
         {
+            if (!UsesVirtualizedRendering)
+            {
+                if (PlainTextBox.SelectionLength > 0)
+                {
+                    Clipboard.SetText(PlainTextBox.SelectedText);
+                }
+
+                return;
+            }
+
             if (EntriesListBox.SelectedItems.Count == 0)
             {
                 return;
@@ -294,6 +401,13 @@ namespace ColorVision.UI.LogImp.Controls
 
         public void SelectAllEntries()
         {
+            if (!UsesVirtualizedRendering)
+            {
+                PlainTextBox.Focus();
+                PlainTextBox.SelectAll();
+                return;
+            }
+
             EntriesListBox.SelectAll();
         }
 
@@ -346,6 +460,61 @@ namespace ColorVision.UI.LogImp.Controls
             _visibleEntries.ResetWith(_entries);
         }
 
+        private void RefreshActiveView()
+        {
+            if (UsesVirtualizedRendering)
+            {
+                RefreshVisibleEntries();
+                return;
+            }
+
+            RefreshPlainTextBox();
+        }
+
+        private bool RefreshPlainTextBox()
+        {
+            ResetSelectionState(clearSelection: false);
+            if (string.IsNullOrEmpty(_searchText))
+            {
+                PlainTextBox.Text = _plainText;
+                return true;
+            }
+
+            if (!LogSearchHelper.FilterText(_searchText, _plainText, out var filteredText))
+            {
+                return false;
+            }
+
+            PlainTextBox.Text = filteredText;
+            return true;
+        }
+
+        private void UpdatePlainTextAfterAppend(string appendedText, bool latestAtTop, bool wasPlainTextEmpty, bool forceRefresh)
+        {
+            if (forceRefresh || IsSearchActive)
+            {
+                RefreshPlainTextBox();
+                return;
+            }
+
+            if (latestAtTop)
+            {
+                PlainTextBox.Text = _plainText;
+                return;
+            }
+
+            if (wasPlainTextEmpty)
+            {
+                PlainTextBox.Text = appendedText;
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(appendedText))
+            {
+                PlainTextBox.AppendText(Environment.NewLine + appendedText);
+            }
+        }
+
         private void ResetSelectionState(bool clearSelection)
         {
             _selectionAnchorIndex = -1;
@@ -354,6 +523,26 @@ namespace ColorVision.UI.LogImp.Controls
             {
                 EntriesListBox.SelectedItems.Clear();
             }
+        }
+
+        private static string BuildText(IEnumerable<LogEntry> entries)
+        {
+            return string.Join(Environment.NewLine, entries.Select(entry => entry.Text));
+        }
+
+        private static string CombineText(string first, string second)
+        {
+            if (string.IsNullOrEmpty(first))
+            {
+                return second;
+            }
+
+            if (string.IsNullOrEmpty(second))
+            {
+                return first;
+            }
+
+            return first + Environment.NewLine + second;
         }
 
         private int TrimEntries(bool keepHead)
@@ -376,6 +565,29 @@ namespace ColorVision.UI.LogImp.Controls
             return removeCount;
         }
 
+        private bool TrimPlainText(bool keepHead)
+        {
+            if (MaxChars <= LogConstants.MinMaxCharsForTrimming || _plainText.Length <= MaxChars)
+            {
+                return false;
+            }
+
+            _plainText = keepHead
+                ? _plainText[..MaxChars]
+                : _plainText[^MaxChars..];
+            return true;
+        }
+
+        private static IEnumerable<string> ReadTextLines(string text)
+        {
+            using var reader = new StringReader(text);
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                yield return line;
+            }
+        }
+
         private void PauseAutoScroll()
         {
             _suspendAutoScroll = true;
@@ -390,7 +602,9 @@ namespace ColorVision.UI.LogImp.Controls
 
         private void Copy_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = EntriesListBox.SelectedItems.Count > 0;
+            e.CanExecute = UsesVirtualizedRendering
+                ? EntriesListBox.SelectedItems.Count > 0
+                : PlainTextBox.SelectionLength > 0;
         }
 
         private void Copy_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -401,7 +615,9 @@ namespace ColorVision.UI.LogImp.Controls
 
         private void SelectAll_CanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _visibleEntries.Count > 0;
+            e.CanExecute = UsesVirtualizedRendering
+                ? _visibleEntries.Count > 0
+                : PlainTextBox.Text.Length > 0;
         }
 
         private void SelectAll_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -431,7 +647,26 @@ namespace ColorVision.UI.LogImp.Controls
 
         private void LogViewerControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            Focus();
+            if (UsesVirtualizedRendering)
+            {
+                Focus();
+            }
+        }
+
+        private void PlainTextBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            PauseAutoScroll();
+        }
+
+        private void PlainTextBox_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            ResumeAutoScrollWithDelay();
+        }
+
+        private void PlainTextBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            PauseAutoScroll();
+            ResumeAutoScrollWithDelay();
         }
 
         private void EntriesListBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -552,10 +787,25 @@ namespace ColorVision.UI.LogImp.Controls
             }
         }
 
+        private void LogViewerControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            _viewerModeLocked = true;
+        }
+
         private void LogViewerControl_Unloaded(object sender, RoutedEventArgs e)
         {
             _resumeScrollTimer.Stop();
             _rangeSelectionScrollTimer.Stop();
+        }
+
+        private static void OnViewerModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not LogViewerControl logViewer || logViewer._viewerModeLocked)
+            {
+                return;
+            }
+
+            logViewer.ApplyViewerMode((LogViewerMode)e.NewValue);
         }
 
         private static void OnMaxEntriesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -568,7 +818,22 @@ namespace ColorVision.UI.LogImp.Controls
             var removedCount = logViewer.TrimEntries(keepHead: logViewer._latestAtTop);
             if (removedCount > 0)
             {
-                logViewer.RefreshVisibleEntries();
+                logViewer._plainText = BuildText(logViewer._entries);
+                logViewer.TrimPlainText(keepHead: logViewer._latestAtTop);
+                logViewer.RefreshActiveView();
+            }
+        }
+
+        private static void OnMaxCharsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not LogViewerControl logViewer)
+            {
+                return;
+            }
+
+            if (logViewer.TrimPlainText(keepHead: logViewer._latestAtTop) && !logViewer.UsesVirtualizedRendering)
+            {
+                logViewer.RefreshPlainTextBox();
             }
         }
 
@@ -580,9 +845,30 @@ namespace ColorVision.UI.LogImp.Controls
             }
         }
 
+        private void ApplyViewerMode(LogViewerMode viewerMode)
+        {
+            _activeViewerMode = viewerMode;
+            var useVirtualized = viewerMode == LogViewerMode.Virtualized;
+            if (useVirtualized && _entries.Count == 0 && !string.IsNullOrEmpty(_plainText))
+            {
+                _entries.AddRange(LogEntryParser.FromLines(ReadTextLines(_plainText)));
+                TrimEntries(keepHead: _latestAtTop);
+            }
+            else if (!useVirtualized && string.IsNullOrEmpty(_plainText) && _entries.Count > 0)
+            {
+                _plainText = BuildText(_entries);
+                TrimPlainText(keepHead: _latestAtTop);
+            }
+
+            PlainTextBox.Visibility = useVirtualized ? Visibility.Collapsed : Visibility.Visible;
+            EntriesListBox.Visibility = useVirtualized ? Visibility.Visible : Visibility.Collapsed;
+            UpdateWrappingScrollMode();
+            RefreshActiveView();
+        }
+
         private void UpdateWrappingScrollMode()
         {
-            if (EntriesListBox == null)
+            if (EntriesListBox == null || PlainTextBox == null)
             {
                 return;
             }
@@ -591,7 +877,9 @@ namespace ColorVision.UI.LogImp.Controls
                 ? ScrollBarVisibility.Auto
                 : ScrollBarVisibility.Disabled;
             ScrollViewer.SetHorizontalScrollBarVisibility(EntriesListBox, horizontalScrollBarVisibility);
+            ScrollViewer.SetHorizontalScrollBarVisibility(PlainTextBox, horizontalScrollBarVisibility);
             EntriesListBox.InvalidateMeasure();
+            PlainTextBox.InvalidateMeasure();
         }
 
         private bool TryGetEntryAtPoint(Point point, out LogEntry entry, out int entryIndex)

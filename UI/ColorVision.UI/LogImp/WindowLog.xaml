@@ -37,7 +37,9 @@
 
         <logControls:LogViewerControl x:Name="LogViewer"
                                       Grid.Row="1"
+                                      ViewerMode="{Binding LogViewerMode}"
                                       TextWrapping="{Binding TextWrapping}"
+                                      MaxChars="{Binding MaxChars}"
                                       UseLevelColors="{Binding UseLevelColors}"
                                       WarningForeground="{Binding WarningForeground}"
                                       ErrorForeground="{Binding ErrorForeground}"

@@ -181,6 +181,14 @@ namespace ColorVision.UI
         private TextWrapping _TextWrapping = TextWrapping.NoWrap;
 
         /// <summary>
+        /// 日志查看器实现模式，打开窗口时生效
+        /// </summary>
+        [DisplayName("日志查看器模式")]
+        [Description("TextBox 为默认文本视图；Virtualized 为高级彩色虚拟化视图，打开日志窗口时生效。")]
+        public LogViewerMode LogViewerMode { get => _LogViewerMode; set { _LogViewerMode = value; OnPropertyChanged(); } }
+        private LogViewerMode _LogViewerMode = LogViewerMode.TextBox;
+
+        /// <summary>
         /// 是否按日志级别染色
         /// </summary>
         public bool UseLevelColors { get => _UseLevelColors; set { _UseLevelColors = value; OnPropertyChanged(); } }

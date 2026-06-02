@@ -29,10 +29,23 @@
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource GlobalBackground}">
+        <TextBox x:Name="PlainTextBox"
+                 TextWrapping="{Binding TextWrapping, RelativeSource={RelativeSource AncestorType={x:Type local:LogViewerControl}}}"
+                 Background="{DynamicResource GlobalBackground}"
+                 Foreground="{DynamicResource GlobalTextBrush}"
+                 BorderThickness="0"
+                 Padding="2,0"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 VerticalContentAlignment="Top"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+
         <ListBox x:Name="EntriesListBox"
                  ItemsSource="{Binding VisibleEntries, RelativeSource={RelativeSource AncestorType={x:Type local:LogViewerControl}}}"
                  Background="{DynamicResource GlobalBackground}"
                  BorderThickness="0"
+                 Visibility="Collapsed"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                  ScrollViewer.CanContentScroll="True"
