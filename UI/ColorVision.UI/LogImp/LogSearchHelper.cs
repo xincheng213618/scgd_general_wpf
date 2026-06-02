@@ -7,8 +7,9 @@ namespace ColorVision.UI.LogImp
     /// </summary>
     public static class LogSearchHelper
     {
-        private static readonly string[] RegexSpecialChars =
-            { ".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\" };
+        private static readonly char[] RegexSpecialChars =
+            { '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\' };
+        private static readonly string[] NewLineSeparators = { Environment.NewLine };
         private static readonly object RegexCacheLock = new();
         private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromMilliseconds(250);
         private static string? _cachedRegexPattern;
@@ -27,7 +28,7 @@ namespace ColorVision.UI.LogImp
             filteredLines = Array.Empty<string>();
             if (string.IsNullOrEmpty(searchText)) return true;
 
-            var containsRegex = RegexSpecialChars.Any(searchText.Contains);
+            var containsRegex = searchText.IndexOfAny(RegexSpecialChars) >= 0;
 
             if (containsRegex)
             {
@@ -38,7 +39,16 @@ namespace ColorVision.UI.LogImp
 
                 try
                 {
-                    filteredLines = logLines.Where(line => regex.IsMatch(line)).ToArray();
+                    var matches = new List<string>();
+                    foreach (var line in logLines)
+                    {
+                        if (regex.IsMatch(line))
+                        {
+                            matches.Add(line);
+                        }
+                    }
+
+                    filteredLines = matches.ToArray();
                 }
                 catch (RegexMatchTimeoutException)
                 {
@@ -49,10 +59,48 @@ namespace ColorVision.UI.LogImp
             {
                 // 以空格作为关键词分隔符（多个关键词之间为 AND 关系）
                 var keywords = searchText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                filteredLines = logLines
-                    .Where(line => keywords.All(kw => line.Contains(kw, StringComparison.OrdinalIgnoreCase)))
-                    .ToArray();
+                var matches = new List<string>();
+                foreach (var line in logLines)
+                {
+                    if (ContainsAllKeywords(line, keywords))
+                    {
+                        matches.Add(line);
+                    }
+                }
+
+                filteredLines = matches.ToArray();
             }
+            return true;
+        }
+
+        public static bool FilterText(string searchText, string logText, out string filteredText)
+        {
+            var logLines = logText.Split(NewLineSeparators, StringSplitOptions.None);
+            return FilterText(searchText, logLines, out filteredText);
+        }
+
+        public static bool FilterText(string searchText, IEnumerable<string> logLines, out string filteredText)
+        {
+            filteredText = string.Empty;
+            if (!FilterLines(searchText, logLines, out var filteredLines))
+            {
+                return false;
+            }
+
+            filteredText = string.Join(Environment.NewLine, filteredLines);
+            return true;
+        }
+
+        private static bool ContainsAllKeywords(string line, string[] keywords)
+        {
+            for (var i = 0; i < keywords.Length; i++)
+            {
+                if (!line.Contains(keywords[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 

@@ -246,14 +246,7 @@ namespace ColorVision.UI
 
         private void UpdateSearchTextBox(string logs, bool reverse)
         {
-            var logLines = logs.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            if (!LogSearchHelper.FilterLines(SearchText, logLines, out var filteredLines) || filteredLines.Length == 0)
-            {
-                return;
-            }
-
-            var filteredLogs = string.Join(Environment.NewLine, filteredLines);
-            if (string.IsNullOrEmpty(filteredLogs))
+            if (!LogSearchHelper.FilterText(SearchText, logs, out var filteredLogs) || string.IsNullOrEmpty(filteredLogs))
             {
                 return;
             }

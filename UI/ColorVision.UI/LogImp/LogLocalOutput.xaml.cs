@@ -422,12 +422,11 @@ namespace ColorVision.UI.LogImp
             var searchText = LogViewUiHelper.NormalizeSearchText(SearchBar1.Text);
             if (string.IsNullOrEmpty(searchText)) return;
 
-            if (!LogSearchHelper.FilterLines(searchText, newLines, out var filteredLines))
+            if (!LogSearchHelper.FilterText(searchText, newLines, out var filteredContent))
                 return;
 
-            if (filteredLines.Length > 0)
+            if (!string.IsNullOrEmpty(filteredContent))
             {
-                var filteredContent = string.Join(Environment.NewLine, filteredLines);
                 if (Config.LogReverse)
                 {
                     logTextBoxSerch.Text = string.IsNullOrEmpty(logTextBoxSerch.Text)

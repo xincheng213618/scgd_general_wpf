@@ -70,15 +70,13 @@ namespace ColorVision.UI.LogImp
             {
                 sourceTextBox.Visibility = Visibility.Collapsed;
                 searchResultTextBox.Visibility = Visibility.Visible;
-                var logLines = sourceTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                if (!LogSearchHelper.FilterLines(searchText, logLines, out var filteredLines))
+                if (!LogSearchHelper.FilterText(searchText, sourceTextBox.Text, out var filteredText))
                 {
                     searchInput.BorderBrush = Brushes.Red;
                     return;
                 }
 
-                searchResultTextBox.Text = string.Join(Environment.NewLine, filteredLines);
+                searchResultTextBox.Text = filteredText;
                 if (defaultBrush != null)
                 {
                     searchInput.BorderBrush = defaultBrush;

@@ -5,6 +5,12 @@ namespace ColorVision.UI.Tests;
 public class LogSearchHelperTests
 {
     private static readonly string[] EmptySearchLines = { "info one" };
+    private static readonly string[] FilterTextLines =
+    {
+        "INFO Camera online",
+        "WARN Camera offline",
+        "INFO Algorithm ready"
+    };
 
     [Fact]
     public void FilterLines_ReturnsEmptyResultForEmptySearch()
@@ -54,5 +60,16 @@ public class LogSearchHelperTests
 
         Assert.False(success);
         Assert.Empty(filteredLines);
+    }
+
+    [Fact]
+    public void FilterText_ReturnsJoinedMatchingLines()
+    {
+        var logText = string.Join(Environment.NewLine, FilterTextLines);
+
+        var success = LogSearchHelper.FilterText("info", logText, out var filteredText);
+
+        Assert.True(success);
+        Assert.Equal("INFO Camera online" + Environment.NewLine + "INFO Algorithm ready", filteredText);
     }
 }
