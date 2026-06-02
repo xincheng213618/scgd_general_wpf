@@ -50,7 +50,7 @@ Codex may have its own local command-line tools depending on how the user runs C
 2. Open Copilot settings.
 3. Enable `Local MCP`.
 4. Confirm or edit the local port.
-5. Copy the endpoint and bearer token.
+5. Copy the Codex config snippet and token environment command if the endpoint will be used from Codex.
 6. Save settings. The local server applies the setting immediately.
 
 Default endpoint:
@@ -62,6 +62,8 @@ http://127.0.0.1:38473/mcp
 Use `Regenerate token` if the token may have been copied outside the local machine.
 
 ## Codex Config
+
+Copilot settings provides `Copy Codex Config` and `Copy Token Command` buttons. Use them to copy the current endpoint into a `config.toml` MCP server entry and to copy the PowerShell command that stores the bearer token in `COLORVISION_MCP_TOKEN`.
 
 For Codex builds that support streamable HTTP MCP servers, add a server entry like this to `config.toml`:
 

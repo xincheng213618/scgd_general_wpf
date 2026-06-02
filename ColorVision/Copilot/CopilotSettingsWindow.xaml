@@ -187,8 +187,14 @@
 
                     <TextBlock Grid.Row="15" Grid.Column="1" Margin="0,0,0,10" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding McpConnectionTestText}" TextWrapping="Wrap" />
 
-                    <TextBlock Grid.Row="16" Margin="0,8,12,0" VerticalAlignment="Top" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotSystemPrompt}" />
-                    <TextBox Grid.Row="16"
+                    <TextBlock Grid.Row="16" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Codex" />
+                    <WrapPanel Grid.Row="16" Grid.Column="1" Margin="0,0,0,10">
+                        <Button Margin="0,0,8,0" Padding="10,4" Command="{Binding CopyCodexMcpConfigCommand}" Content="Copy Codex Config" />
+                        <Button Padding="10,4" Command="{Binding CopyMcpTokenEnvironmentCommand}" Content="Copy Token Command" />
+                    </WrapPanel>
+
+                    <TextBlock Grid.Row="17" Margin="0,8,12,0" VerticalAlignment="Top" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotSystemPrompt}" />
+                    <TextBox Grid.Row="17"
                              Grid.Column="1"
                              AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto"

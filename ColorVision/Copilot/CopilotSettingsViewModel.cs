@@ -62,6 +62,8 @@ namespace ColorVision.Copilot
             DeleteProfileCommand = new RelayCommand(_ => DeleteSelectedProfile());
             RegenerateMcpTokenCommand = new RelayCommand(_ => RegenerateMcpToken());
             CopyMcpTokenCommand = new RelayCommand(_ => CopyMcpBearerToken());
+            CopyCodexMcpConfigCommand = new RelayCommand(_ => CopyCodexMcpConfig());
+            CopyMcpTokenEnvironmentCommand = new RelayCommand(_ => CopyMcpTokenEnvironmentCommandToClipboard());
             TestMcpConnectionCommand = new RelayCommand(_ => _ = TestMcpConnectionAsync());
 
             McpEnabled = config.McpEnabled;
@@ -87,6 +89,10 @@ namespace ColorVision.Copilot
 
         public RelayCommand CopyMcpTokenCommand { get; }
 
+        public RelayCommand CopyCodexMcpConfigCommand { get; }
+
+        public RelayCommand CopyMcpTokenEnvironmentCommand { get; }
+
         public RelayCommand TestMcpConnectionCommand { get; }
 
         public bool McpEnabled
@@ -103,7 +109,11 @@ namespace ColorVision.Copilot
         public string McpEndpoint
         {
             get => _mcpEndpoint;
-            private set => SetProperty(ref _mcpEndpoint, value ?? string.Empty);
+            private set
+            {
+                if (SetProperty(ref _mcpEndpoint, value ?? string.Empty))
+                    OnPropertyChanged(nameof(CodexMcpConfigSnippet));
+            }
         }
         private string _mcpEndpoint = string.Empty;
 
@@ -127,10 +137,17 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _mcpBearerToken, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(McpTokenEnvironmentCommandText));
                     MarkMcpSettingsPending();
+                }
             }
         }
         private string _mcpBearerToken = string.Empty;
+
+        public string CodexMcpConfigSnippet => BuildCodexMcpConfigSnippet();
+
+        public string McpTokenEnvironmentCommandText => BuildMcpTokenEnvironmentCommand();
 
         public string McpStatusText
         {
@@ -309,6 +326,38 @@ namespace ColorVision.Copilot
             }
         }
 
+        private void CopyCodexMcpConfig()
+        {
+            try
+            {
+                Clipboard.SetText(CodexMcpConfigSnippet);
+                McpConnectionTestText = "Codex MCP config snippet copied.";
+            }
+            catch (Exception ex)
+            {
+                McpConnectionTestText = "Copy failed: " + SanitizeError(ex.Message);
+            }
+        }
+
+        private void CopyMcpTokenEnvironmentCommandToClipboard()
+        {
+            if (string.IsNullOrWhiteSpace(McpBearerToken))
+            {
+                McpConnectionTestText = "Token missing. Regenerate a token before copying the environment command.";
+                return;
+            }
+
+            try
+            {
+                Clipboard.SetText(McpTokenEnvironmentCommandText);
+                McpConnectionTestText = "PowerShell token command copied.";
+            }
+            catch (Exception ex)
+            {
+                McpConnectionTestText = "Copy failed: " + SanitizeError(ex.Message);
+            }
+        }
+
         public async Task TestMcpConnectionAsync()
         {
             if (IsTestingMcpConnection)
@@ -388,6 +437,21 @@ namespace ColorVision.Copilot
         private string BuildMcpEndpoint()
         {
             return $"http://127.0.0.1:{McpPort}/mcp";
+        }
+
+        private string BuildCodexMcpConfigSnippet()
+        {
+            return string.Join(Environment.NewLine, new[]
+            {
+                "[mcp_servers.colorvision]",
+                $"url = \"{EscapeTomlString(McpEndpoint)}\"",
+                "bearer_token_env_var = \"COLORVISION_MCP_TOKEN\"",
+            });
+        }
+
+        private string BuildMcpTokenEnvironmentCommand()
+        {
+            return $"[Environment]::SetEnvironmentVariable(\"COLORVISION_MCP_TOKEN\", \"{EscapePowerShellDoubleQuotedString(McpBearerToken)}\", \"User\")";
         }
 
         private CopilotProfileConfig CreateProfileForVendor(CopilotVendorType vendorType)
@@ -511,6 +575,19 @@ namespace ColorVision.Copilot
                 ? "Bearer <redacted>"
                 : match.Groups["name"].Value + "=<redacted>");
             return text.Length <= 220 ? text : text[..220] + "...";
+        }
+
+        private static string EscapeTomlString(string? value)
+        {
+            return (value ?? string.Empty).Replace("\\", "\\\\").Replace("\"", "\\\"");
+        }
+
+        private static string EscapePowerShellDoubleQuotedString(string? value)
+        {
+            return (value ?? string.Empty)
+                .Replace("`", "``")
+                .Replace("$", "`$")
+                .Replace("\"", "`\"");
         }
     }
 }

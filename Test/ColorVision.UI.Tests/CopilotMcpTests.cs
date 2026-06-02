@@ -233,6 +233,23 @@ public sealed class CopilotMcpTests : IDisposable
     }
 
     [Fact]
+    public void SettingsViewModel_BuildsCodexMcpSetupSnippets()
+    {
+        var viewModel = new CopilotSettingsViewModel
+        {
+            McpPort = 38475,
+            McpBearerToken = "settings-token",
+        };
+
+        Assert.Contains("[mcp_servers.colorvision]", viewModel.CodexMcpConfigSnippet, StringComparison.Ordinal);
+        Assert.Contains("url = \"http://127.0.0.1:38475/mcp\"", viewModel.CodexMcpConfigSnippet, StringComparison.Ordinal);
+        Assert.Contains("bearer_token_env_var = \"COLORVISION_MCP_TOKEN\"", viewModel.CodexMcpConfigSnippet, StringComparison.Ordinal);
+        Assert.Equal(
+            "[Environment]::SetEnvironmentVariable(\"COLORVISION_MCP_TOKEN\", \"settings-token\", \"User\")",
+            viewModel.McpTokenEnvironmentCommandText);
+    }
+
+    [Fact]
     public async Task SearchFiles_UsesAllowedWorkspaceRoot()
     {
         var filePath = Path.Combine(_tempRoot, "DeviceCamera.cs");
