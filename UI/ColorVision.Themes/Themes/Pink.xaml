@@ -59,6 +59,9 @@
     <!-- Text colors -->
     <SolidColorBrush x:Key="GlobalTextBrush" Color="{StaticResource GlobalTextColor}" />
     <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#E91E63"/>
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource UpdateDialogAccentColor}"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="{StaticResource GlobalTextColor}"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#7A3A50"/>
     <!-- 深粉色 -->
     <SolidColorBrush x:Key="MeasureBackground" Color="{StaticResource GlobalBackgroundColor}"/>
     <SolidColorBrush x:Key="MeasureBarBackgroundBrush" Color="#FADCE4"/>

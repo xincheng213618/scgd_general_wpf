@@ -2,8 +2,11 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:converter ="clr-namespace:ColorVision.Themes.Converter"
                     x:Class="ColorVision.Themes.BaseEvent"
-                    xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
                     >
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/ColorVision.Themes;component/Themes/ToggleSwitch.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
 
     <SolidColorBrush x:Key="DarkDefaultBrush"  Color="#55326CF3" />
     <converter:MemorySizeConverter x:Key="MemorySizeConverter"/>
@@ -16,12 +19,88 @@
     <converter:EnumToVisibilityConverter x:Key="enum2VisibilityConverter"/>
     <converter:EnumToVisibilityReConverter x:Key="enum2VisibilityConverter1"/>
     <converter:IntToVisibilityConverter x:Key="int2VisibilityConverter"/>
+
+    <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
+
+    <Style x:Key="TextBoxBaseBaseStyle" TargetType="{x:Type TextBox}">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="MinHeight" Value="24"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
+    <Style x:Key="TextBoxBaseStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseBaseStyle}"/>
+
+    <Style x:Key="ComboBoxBaseStyle" TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBox.Small}">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,1"/>
+        <Setter Property="MinHeight" Value="24"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
+    <Style x:Key="ButtonDefault" TargetType="{x:Type Button}">
+        <Style.Triggers>
+            <Trigger Property="UIElement.IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+            </Trigger>
+            <Trigger Property="UIElement.IsMouseOver" Value="True">
+                <Setter Property="UIElement.Opacity" Value=".8" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="UIElement.Opacity" Value=".6" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="UIElement.Opacity" Value="0.4" />
+            </Trigger>
+        </Style.Triggers>
+        <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="8,2"/>
+        <Setter Property="MinHeight" Value="24"/>
+        <Setter Property="Template" >
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="4" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" >
+                        <ContentPresenter Margin="{TemplateBinding Padding}" Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ButtonDefault.Small" TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonDefault}">
+        <Setter Property="Padding" Value="6,1"/>
+        <Setter Property="MinHeight" Value="22"/>
+    </Style>
+
+    <Style x:Key="ToggleButtonDefault" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="MinHeight" Value="24"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
     <Style TargetType="{x:Type AccessText}">
+        <Setter Property="FontSize" Value="{DynamicResource {x:Static SystemFonts.MessageFontSizeKey}}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="OverridesDefaultStyle" Value="True" />
     </Style>
     <Style TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="{DynamicResource {x:Static SystemFonts.MessageFontSizeKey}}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         <Setter Property="Background" Value="Transparent"/>
@@ -50,11 +129,6 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
-    </Style>
-
-    <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBoxBaseStyle}">
-      
-        
     </Style>
 
     <Style x:Key="GridViewColumnHeaderBase" TargetType="{x:Type GridViewColumnHeader}">

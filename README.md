@@ -99,7 +99,7 @@ ColorVision/
 |------|------|
 | **主框架** | .NET 8.0 / .NET 10.0, WPF |
 | **平台** | Windows x64 / ARM64 |
-| **UI库** | HandyControl 3.5.1, WPF-UI 4.2.0 |
+| **UI库** | HandyControl 3.5.1 |
 | **数据库** | MySQL, SQLite (SqlSugar ORM) |
 | **通信** | MQTT (MQTTnet 5.x), TCP/IP, 串口 |
 | **图像处理** | OpenCvSharp4, OpenCV 4.x (C++) |
@@ -143,7 +143,6 @@ py Scripts/publish_plugin.py -p PluginId -v 1.0.0.1
 
 感谢以下开源项目：
 - [HandyControl](https://github.com/HandyOrg/HandyControl) - 现代化WPF控件库
-- [WPF-UI](https://github.com/lepoco/wpfui) - WPF现代化UI框架
 - [OpenCvSharp](https://github.com/shimat/opencvsharp) - OpenCV .NET封装
 - [MQTTnet](https://github.com/dotnet/MQTTnet) - MQTT通信协议
 - [Quartz.NET](https://www.quartz-scheduler.net/) - 企业级任务调度

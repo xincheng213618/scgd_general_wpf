@@ -20,7 +20,7 @@ namespace System.ComponentModel
             var dockPanel = new DockPanel();
 
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
-            var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
+            var toggleSwitch = new ColorVision.Themes.Controls.ToggleSwitch
             {
                 Margin = new Thickness(5, 0, 0, 0),
                 Background = Brushes.DodgerBlue,

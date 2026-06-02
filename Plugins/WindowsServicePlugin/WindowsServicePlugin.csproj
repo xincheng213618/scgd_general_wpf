@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>    
-		<VersionPrefix>1.4.3.16</VersionPrefix>    
+		<VersionPrefix>1.4.3.17</VersionPrefix>
 		<OutputType>WinExe</OutputType>
 	</PropertyGroup>
 

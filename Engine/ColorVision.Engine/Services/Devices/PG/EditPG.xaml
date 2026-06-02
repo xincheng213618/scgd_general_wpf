@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.Engine.Services.Devices.PG.EditPG"
+<Window x:Class="ColorVision.Engine.Services.Devices.PG.EditPG"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.PG"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:themes="https://schemas.colorvision.cn/wpf/themes"
              d:DataContext="{d:DesignInstance local:DevicePG}"
              mc:Ignorable="d" 
              Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="500" Initialized="UserControl_Initialized">
@@ -32,7 +32,7 @@
                             </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="IsNet" Width="140"/>
-                                <ui:ToggleSwitch x:Name="IsNet"  IsChecked="{Binding  IsNet}"/>
+                                <themes:ToggleSwitch x:Name="IsNet"  IsChecked="{Binding  IsNet}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock  x:Name="TextBlockPGIP"  Text="{x:Static properties:Resources.IPAddress}" Width="140"/>

@@ -166,8 +166,6 @@
     "System.Runtime.Caching.dll",
     "System.ServiceProcess.ServiceController.dll",
     "USB_Driver.dll",
-    "Wpf.Ui.Abstractions.dll",
-    "Wpf.Ui.dll",
     "WpfHexEditor.ColorPicker.dll",
     "WpfHexEditor.Core.BinaryAnalysis.dll",
     "WpfHexEditor.Core.Definitions.dll",

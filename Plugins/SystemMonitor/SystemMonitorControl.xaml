@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="SystemMonitor.SystemMonitorControl"
+<UserControl x:Class="SystemMonitor.SystemMonitorControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:SystemMonitor"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:SystemMonitor.Properties"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:themes="https://schemas.colorvision.cn/wpf/themes"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:SystemMonitors}"
              d:DesignHeight="700" d:DesignWidth="850" Initialized="UserControl_Initialized">
@@ -377,23 +377,23 @@
 
                     <DockPanel Margin="0,4">
                         <TextBlock Width="120" VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.ShowTime}" />
-                        <ui:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowTime}" />
+                        <themes:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowTime}" />
                     </DockPanel>
                     <DockPanel Margin="0,4">
                         <TextBlock Width="120" VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.ShowUptime}" />
-                        <ui:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowUptime}" />
+                        <themes:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowUptime}" />
                     </DockPanel>
                     <DockPanel Margin="0,4">
                         <TextBlock Width="120" VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.ShowCPU}" />
-                        <ui:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowCPU}" />
+                        <themes:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowCPU}" />
                     </DockPanel>
                     <DockPanel Margin="0,4">
                         <TextBlock Width="120" VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.ShowRAM}" />
-                        <ui:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowRAM}" />
+                        <themes:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowRAM}" />
                     </DockPanel>
                     <DockPanel Margin="0,4">
                         <TextBlock Width="120" VerticalAlignment="Center" Style="{StaticResource InfoLabel}" Text="{x:Static properties:Resources.ShowDisk}" />
-                        <ui:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowDisk}" />
+                        <themes:ToggleSwitch HorizontalAlignment="Left" IsChecked="{Binding Config.IsShowDisk}" />
                     </DockPanel>
 
                     <Separator Margin="0,8" />

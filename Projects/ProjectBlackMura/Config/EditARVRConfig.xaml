@@ -1,10 +1,10 @@
-﻿<Window x:Class="ProjectBlackMura.EditBlackMuraConfig"
+<Window x:Class="ProjectBlackMura.EditBlackMuraConfig"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ProjectBlackMura"
-        xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:themes="https://schemas.colorvision.cn/wpf/themes"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectBlackMuraConfig}"
         Title="ARVR编辑窗口" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
@@ -33,11 +33,11 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="恢复窗口"  MinWidth="120"  />
-                            <ui:ToggleSwitch IsChecked="{Binding ProjectKBWindowConfig.IsRestoreWindow}" Margin="0,0,5,0"/>
+                            <themes:ToggleSwitch IsChecked="{Binding ProjectKBWindowConfig.IsRestoreWindow}" Margin="0,0,5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="显示概述信息"  MinWidth="120" />
-                            <ui:ToggleSwitch IsChecked="{Binding SummaryInfo.IsShowSummary}" Margin="0,0,5,0"/>
+                            <themes:ToggleSwitch IsChecked="{Binding SummaryInfo.IsShowSummary}" Margin="0,0,5,0"/>
                             <TextBox Text="{Binding SummaryInfo.Width }" Width="50"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">

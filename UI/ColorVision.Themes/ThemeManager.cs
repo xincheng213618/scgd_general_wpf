@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
-using Wpf.Ui.Appearance;
 
 namespace ColorVision.Themes
 {
@@ -107,11 +106,6 @@ namespace ColorVision.Themes
             switch (theme)
             {
                 case Theme.Light:
-                    var light = new Wpf.Ui.Markup.ThemesDictionary();
-                    light.Theme = ApplicationTheme.Light;
-                    app.Resources.MergedDictionaries.Add(light);
-                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
-
                     foreach (var item in ResourceDictionaryWhite)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
@@ -124,11 +118,6 @@ namespace ColorVision.Themes
                     }
                     break;
                 case Theme.Dark:
-                    var dark = new Wpf.Ui.Markup.ThemesDictionary();
-                    dark.Theme = ApplicationTheme.Dark;
-                    app.Resources.MergedDictionaries.Add(dark);
-                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
-
                     foreach (var item in ResourceDictionaryDark)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
@@ -141,11 +130,6 @@ namespace ColorVision.Themes
                     }
                     break;
                 case Theme.Pink:
-                    var pink1 = new Wpf.Ui.Markup.ThemesDictionary();
-                    pink1.Theme = ApplicationTheme.Light;
-                    app.Resources.MergedDictionaries.Add(pink1);
-                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
-
                     foreach (var item in ResourceDictionaryPink)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
@@ -158,10 +142,6 @@ namespace ColorVision.Themes
                     }
                     break;
                 case Theme.Cyan:
-                    var Cyan1 = new Wpf.Ui.Markup.ThemesDictionary();
-                    Cyan1.Theme = ApplicationTheme.Light;
-                    app.Resources.MergedDictionaries.Add(Cyan1);
-
                     foreach (var item in ResourceDictionaryCyan)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;

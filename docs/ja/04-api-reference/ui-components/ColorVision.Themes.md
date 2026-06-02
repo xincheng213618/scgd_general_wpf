@@ -80,7 +80,7 @@ ThemeManagerExtensions には、実際に非常によく使用される 2 つの
 1. 上部の UI でテーマを選択します。
 2. Application.ApplyTheme が ThemeManager.Current.ApplyTheme に転送されます。
 3. 現在の選択が UseSystem の場合、最初に AppsTheme に解析されます。
-4. ThemeManager は、Wpf.Ui とこのモジュールのリソース ディクショナリをテーマごとに Application.Resources.MergedDictionaries に追加します。
+4. ThemeManager は、このモジュールのリソース ディクショナリをテーマごとに Application.Resources.MergedDictionaries に追加します。
 5. CurrentTheme と CurrentUITheme が更新され、変更イベントがトリガーされます。
 6.ApplyCaption が呼び出されたウィンドウでは、それに応じてタイトル バーの色とアイコンが更新されます。
 

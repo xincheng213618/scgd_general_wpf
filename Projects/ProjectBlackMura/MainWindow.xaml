@@ -1,11 +1,11 @@
-﻿<Window x:Class="ProjectBlackMura.MainWindow"
+<Window x:Class="ProjectBlackMura.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectBlackMura"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:themes="https://schemas.colorvision.cn/wpf/themes" xmlns:hc="https://handyorg.github.io/handycontrol"
         d:DataContext="{d:DesignInstance local:ProjectBlackMuraConfig}"
         mc:Ignorable="d"
         Title="ProjectBlackMura" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -194,8 +194,8 @@
 
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="0,2" Orientation="Horizontal" VerticalAlignment="Top">
-                                    <ui:ToggleSwitch Content="启动时连接" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
-                                    <ui:ToggleSwitch Content="SingleMes" IsChecked="{Binding Config.IsSingleMes}" Margin="0,2"/>
+                                    <themes:ToggleSwitch Content="启动时连接" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
+                                    <themes:ToggleSwitch Content="SingleMes" IsChecked="{Binding Config.IsSingleMes}" Margin="0,2"/>
                                 </StackPanel>
 
                             </Grid>

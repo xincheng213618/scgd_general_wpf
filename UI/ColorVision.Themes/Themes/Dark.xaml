@@ -45,6 +45,9 @@
     <SolidColorBrush x:Key="BorderBackGroud2" Color="#F2F2F2"/>
 
     <SolidColorBrush x:Key="StatusBarBackgroundBrush"  Color="#CA5100"/>
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource UpdateDialogAccentColor}"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="{StaticResource GlobalTextColor}"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#C0C0C0"/>
     <SolidColorBrush x:Key="MeasureBackground" Color="{StaticResource GlobalBackgroundColor}"/>
 
     <SolidColorBrush x:Key="MeasureBarBackgroundBrush" Color="#3F3F46"/>

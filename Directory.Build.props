@@ -13,7 +13,7 @@
 		<TargetFrameworks>net10.0-windows</TargetFrameworks>
 		<NoWarn>CS8002</NoWarn>
 		<AcceptNPOIOSMFLicense>true</AcceptNPOIOSMFLicense>
-		<VersionPrefix>1.4.8.41</VersionPrefix>
+		<VersionPrefix>1.4.8.42</VersionPrefix>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 		<CETCompat>false</CETCompat>
 	</PropertyGroup>

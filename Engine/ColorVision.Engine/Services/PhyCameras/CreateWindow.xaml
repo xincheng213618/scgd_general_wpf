@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:themes="https://schemas.colorvision.cn/wpf/themes"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CreateWindow}"
         Title="{x:Static properties:Resources.CreateDevice}"
@@ -183,7 +183,7 @@
                 <Border Style="{StaticResource PanelBorderStyle}" Padding="14" Margin="0,0,0,12">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,12">
-                            <ui:ToggleSwitch DockPanel.Dock="Right"
+                            <themes:ToggleSwitch DockPanel.Dock="Right"
                                              IsChecked="{Binding CreateConfig.CFW.IsUseCFW}"/>
                             <StackPanel>
                                 <TextBlock Text="{x:Static properties:Resources.FilterWheel}" Style="{StaticResource SectionTitleStyle}"/>
@@ -203,7 +203,7 @@
                                 <Border Style="{StaticResource FieldBoxStyle}">
                                     <StackPanel>
                                         <TextBlock Text="{x:Static properties:Resources.EnableSerialPort}" Style="{StaticResource FieldLabelStyle}"/>
-                                        <ui:ToggleSwitch IsChecked="{Binding CreateConfig.CFW.IsCOM}"/>
+                                        <themes:ToggleSwitch IsChecked="{Binding CreateConfig.CFW.IsCOM}"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Style="{StaticResource FieldBoxStyle}">
