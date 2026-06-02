@@ -22,9 +22,9 @@
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
 		<PackageReference Include="MQTTnet" Version="5.1.0.1559" />
 		<PackageReference Include="NPOI" Version="2.8.0" />
-		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260427" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260302" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260427" />
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260602" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260602" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.8.0" />
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.8" />
