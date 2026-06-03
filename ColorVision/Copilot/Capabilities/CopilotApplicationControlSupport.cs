@@ -150,8 +150,15 @@ namespace ColorVision.Copilot
 
         public static string GetThemeDisplayName(Theme theme)
         {
-            return ColorVision.Themes.Properties.Resources.ResourceManager.GetString(theme.ToDescription(), CultureInfo.CurrentUICulture)
-                ?? theme.ToString();
+            return theme switch
+            {
+                Theme.UseSystem => "System",
+                Theme.Light => "Light",
+                Theme.Dark => "Dark",
+                Theme.Pink => "Pink",
+                Theme.Cyan => "Cyan",
+                _ => theme.ToString(),
+            };
         }
 
         public static IReadOnlyList<string> GetThemeAliases(Theme theme)
@@ -175,7 +182,7 @@ namespace ColorVision.Copilot
 
         public static string GetThemeOptionsText()
         {
-            return string.Join("，", Enum.GetValues<Theme>().Select(theme => $"{GetThemeDisplayName(theme)}({theme})"));
+            return string.Join(", ", Enum.GetValues<Theme>().Select(theme => $"{GetThemeDisplayName(theme)}({theme})"));
         }
 
         public static IReadOnlyList<string> GetAvailableLanguages()
@@ -190,11 +197,12 @@ namespace ColorVision.Copilot
             var value = cultureName ?? string.Empty;
             _ = GetAvailableLanguages();
 
-            if (LanguageManager.keyValuePairs != null
-                && LanguageManager.keyValuePairs.TryGetValue(value, out var displayName)
-                && !string.IsNullOrWhiteSpace(displayName))
+            try
             {
-                return displayName;
+                return new CultureInfo(value).EnglishName;
+            }
+            catch (CultureNotFoundException)
+            {
             }
 
             return value;
@@ -202,7 +210,7 @@ namespace ColorVision.Copilot
 
         public static string GetLanguageOptionsText()
         {
-            return string.Join("，", GetAvailableLanguages().Select(language => $"{GetLanguageDisplayName(language)}({language})"));
+            return string.Join(", ", GetAvailableLanguages().Select(language => $"{GetLanguageDisplayName(language)}({language})"));
         }
 
         public static IReadOnlyList<string> GetLanguageAliases(string? cultureName)

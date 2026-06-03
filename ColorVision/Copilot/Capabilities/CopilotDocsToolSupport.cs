@@ -218,11 +218,11 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(result);
 
             var builder = new StringBuilder();
-            builder.AppendLine("[在线文档检索]");
-            builder.AppendLine($"查询：{result.Query}");
-            builder.AppendLine($"索引地址：{result.SearchIndexUrl}");
-            builder.AppendLine($"命中页面：{result.DistinctPageCount}");
-            builder.AppendLine($"候选片段：{result.Hits.Count}");
+            builder.AppendLine("[Online Documentation Search]");
+            builder.AppendLine($"Query: {result.Query}");
+            builder.AppendLine($"Index URL: {result.SearchIndexUrl}");
+            builder.AppendLine($"Matched Pages: {result.DistinctPageCount}");
+            builder.AppendLine($"Candidate Snippets: {result.Hits.Count}");
             builder.AppendLine();
 
             var groupedHits = result.Hits
@@ -234,22 +234,22 @@ namespace ColorVision.Copilot
                 var group = groupedHits[pageIndex];
                 var firstHit = group.First();
                 builder.Append(pageIndex + 1)
-                    .Append(". 页面：")
+                    .Append(". Page: ")
                     .AppendLine(firstHit.PageTitle);
-                builder.Append("   文档域：")
+                builder.Append("   Section: ")
                     .AppendLine(firstHit.SectionTitle);
-                builder.Append("   页面链接：")
+                builder.Append("   Page URL: ")
                     .AppendLine(firstHit.PageUrl);
-                builder.Append("   源路径：")
+                builder.Append("   Source Path: ")
                     .AppendLine(firstHit.RelativePath);
 
                 foreach (var hit in group)
                 {
-                    builder.Append("   - 标题链：")
+                    builder.Append("   - Title Path: ")
                         .AppendLine(hit.TitlePath);
-                    builder.Append("     片段链接：")
+                    builder.Append("     Snippet URL: ")
                         .AppendLine(hit.FullUrl);
-                    builder.Append("     摘录：")
+                    builder.Append("     Excerpt: ")
                         .AppendLine(hit.Excerpt);
                 }
 
@@ -273,7 +273,7 @@ namespace ColorVision.Copilot
 
                 using var response = await HttpClient.GetAsync(DocsSearchIndexUrl, cancellationToken);
                 if (response.StatusCode == HttpStatusCode.NotFound)
-                    throw new InvalidOperationException("在线文档索引尚未发布，请确认 GitHub Pages 已完成最新部署。");
+                    throw new InvalidOperationException("The online documentation index has not been published yet. Confirm that the latest GitHub Pages deployment has completed.");
 
                 response.EnsureSuccessStatusCode();
                 var json = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -284,11 +284,11 @@ namespace ColorVision.Copilot
                 }
                 catch (JsonException ex)
                 {
-                    throw new InvalidOperationException($"在线文档索引格式无法识别：{ex.Message}", ex);
+                    throw new InvalidOperationException($"The online documentation index format could not be recognized: {ex.Message}", ex);
                 }
 
                 if (searchIndex?.Entries == null || searchIndex.Entries.Count == 0)
-                    throw new InvalidOperationException("在线文档索引为空，当前无法回答软件文档问题。");
+                    throw new InvalidOperationException("The online documentation index is empty, so documentation questions cannot be answered right now.");
 
                 _cachedSearchIndex = searchIndex;
                 _cachedSearchIndexUtc = DateTimeOffset.UtcNow;
@@ -296,11 +296,11 @@ namespace ColorVision.Copilot
             }
             catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                throw new InvalidOperationException("在线文档索引尚未发布，请确认 GitHub Pages 已完成最新部署。", ex);
+                throw new InvalidOperationException("The online documentation index has not been published yet. Confirm that the latest GitHub Pages deployment has completed.", ex);
             }
             catch (HttpRequestException ex)
             {
-                throw new InvalidOperationException($"无法访问在线文档索引：{ex.Message}", ex);
+                throw new InvalidOperationException($"Could not access the online documentation index: {ex.Message}", ex);
             }
             finally
             {
