@@ -76,11 +76,11 @@ namespace ColorVision.Copilot
             try
             {
                 Clipboard.SetText(_viewModel.BuildClipboardText());
-                _viewModel.DispatchStatus = "异常详情已复制到剪贴板。";
+                _viewModel.DispatchStatus = "Exception details copied to the clipboard.";
             }
             catch (Exception ex)
             {
-                _viewModel.DispatchStatus = $"复制失败：{ex.Message}";
+                _viewModel.DispatchStatus = $"Copy failed: {ex.Message}";
             }
         }
 
@@ -93,7 +93,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                _viewModel.DispatchStatus = $"发送到 AI 失败：{ex.Message}";
+                _viewModel.DispatchStatus = $"Send to AI failed: {ex.Message}";
             }
         }
 
@@ -101,12 +101,12 @@ namespace ColorVision.Copilot
         {
             if (string.IsNullOrWhiteSpace(_viewModel.GoogleSearchUrl))
             {
-                _viewModel.DispatchStatus = "当前异常没有可搜索的关键词。";
+                _viewModel.DispatchStatus = "This exception has no searchable keywords.";
                 return;
             }
 
             PlatformHelper.Open(_viewModel.GoogleSearchUrl);
-            _viewModel.DispatchStatus = "已在默认浏览器中打开 Google 搜索结果。";
+            _viewModel.DispatchStatus = "Google search results opened in the default browser.";
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -189,8 +189,8 @@ namespace ColorVision.Copilot
             UpdateOccurredSummary();
             RefreshLogSnapshot();
             DispatchStatus = CanAskAi
-                ? "可以把当前异常与最近日志直接发送到主界面的 AI 视图。"
-                : "当前 AI 未配置或主界面尚未就绪，暂时不能直接询问。";
+                ? "You can send the current exception and recent logs to the main AI view."
+                : "AI is not configured, or the main view is not ready yet.";
         }
 
         public string ExceptionFingerprint
@@ -295,7 +295,7 @@ namespace ColorVision.Copilot
             RefreshLogSnapshot();
 
             if (showValidationMessage)
-                DispatchStatus = $"最近行数输入无效，已恢复为 {RecentLineCount} 行。";
+                DispatchStatus = $"Invalid recent line count. Restored to {RecentLineCount} lines.";
         }
 
         public void RegisterDuplicateOccurrence(Exception exception, string source)
@@ -303,47 +303,47 @@ namespace ColorVision.Copilot
             _repeatCount++;
             UpdateOccurredSummary();
             RefreshLogSnapshot();
-            DispatchStatus = $"检测到同类异常重复 {_repeatCount} 次，已合并到当前窗口。";
+            DispatchStatus = $"Detected {_repeatCount} duplicate occurrences. They were merged into this window.";
         }
 
         public void RegisterAdditionalException(Exception exception, string source)
         {
             _additionalExceptionCount++;
-            _exceptionSections.Add(BuildExceptionDetails(exception, $"{source} [附加异常 {_additionalExceptionCount}]", DateTime.Now));
+            _exceptionSections.Add(BuildExceptionDetails(exception, $"{source} [Additional Exception {_additionalExceptionCount}]", DateTime.Now));
             ExceptionDetails = string.Join(Environment.NewLine + Environment.NewLine + "----------------" + Environment.NewLine + Environment.NewLine, _exceptionSections);
             UpdateOccurredSummary();
             RefreshLogSnapshot();
-            DispatchStatus = $"短时间内又捕获到 {_additionalExceptionCount} 个额外异常，已合并到当前窗口。";
+            DispatchStatus = $"Captured {_additionalExceptionCount} additional exceptions in a short time. They were merged into this window.";
         }
 
         public string BuildClipboardText()
         {
             var builder = new StringBuilder();
-            builder.AppendLine("[异常详情]");
+            builder.AppendLine("[Exception Details]");
             builder.AppendLine(ExceptionDetails.Trim());
 
             builder.AppendLine();
-            builder.AppendLine("[最近日志]");
+            builder.AppendLine("[Recent Logs]");
             builder.AppendLine(RecentLogHeader.Trim());
             builder.AppendLine(RecentLogContent.Trim());
 
             builder.AppendLine();
-            builder.AppendLine("[AI 请求]");
+            builder.AppendLine("[AI Request]");
             builder.Append(AiPromptPreview.Trim());
             return builder.ToString().TrimEnd();
         }
 
         private static string BuildExceptionTitle(Exception exception)
         {
-            var message = string.IsNullOrWhiteSpace(exception.Message) ? "未提供异常消息" : exception.Message.Trim();
+            var message = string.IsNullOrWhiteSpace(exception.Message) ? "No exception message was provided." : exception.Message.Trim();
             return $"{exception.GetType().Name}: {message}";
         }
 
         private static string BuildExceptionDetails(Exception exception, string source, DateTime occurredAt)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"捕获来源：{source}");
-            builder.AppendLine($"发生时间：{occurredAt:yyyy-MM-dd HH:mm:ss}");
+            builder.AppendLine($"Captured Source: {source}");
+            builder.AppendLine($"Occurred At: {occurredAt:yyyy-MM-dd HH:mm:ss}");
             builder.AppendLine();
 
             AppendException(builder, exception, 0);
@@ -363,7 +363,7 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(query))
                 return string.Empty;
 
-            return $"https://www.google.com/search?hl=zh-CN&q={Uri.EscapeDataString(query)}";
+            return $"https://www.google.com/search?hl=en&q={Uri.EscapeDataString(query)}";
         }
 
         private static void AddSearchTerm(List<string> searchTerms, string? value, int maxLength)
@@ -381,13 +381,13 @@ namespace ColorVision.Copilot
         private void UpdateOccurredSummary()
         {
             var builder = new StringBuilder();
-            builder.Append($"首次来源：{_initialSource}    时间：{_firstOccurredAt:yyyy-MM-dd HH:mm:ss}");
+            builder.Append($"First source: {_initialSource}    Time: {_firstOccurredAt:yyyy-MM-dd HH:mm:ss}");
 
             if (_repeatCount > 1)
-                builder.Append($"    重复：{_repeatCount} 次");
+                builder.Append($"    Duplicates: {_repeatCount}");
 
             if (_additionalExceptionCount > 0)
-                builder.Append($"    附加异常：{_additionalExceptionCount} 个");
+                builder.Append($"    Additional exceptions: {_additionalExceptionCount}");
 
             OccurredSummary = builder.ToString();
         }
@@ -409,7 +409,7 @@ namespace ColorVision.Copilot
 
             RecentLogContent = snapshot.Success
                 ? snapshot.Content
-                : string.IsNullOrWhiteSpace(snapshot.ErrorMessage) ? "未找到最近日志。" : snapshot.ErrorMessage;
+                : string.IsNullOrWhiteSpace(snapshot.ErrorMessage) ? "No recent logs were found." : snapshot.ErrorMessage;
 
             AiPromptPreview = BuildAiPrompt(OccurredSummary, ExceptionDetails, snapshot);
         }
@@ -423,11 +423,11 @@ namespace ColorVision.Copilot
         {
             var indent = new string(' ', depth * 2);
 
-            builder.Append(indent).Append("类型：").AppendLine(exception.GetType().FullName ?? exception.GetType().Name);
-            builder.Append(indent).Append("消息：").AppendLine(exception.Message ?? string.Empty);
+            builder.Append(indent).Append("Type: ").AppendLine(exception.GetType().FullName ?? exception.GetType().Name);
+            builder.Append(indent).Append("Message: ").AppendLine(exception.Message ?? string.Empty);
 
             if (!string.IsNullOrWhiteSpace(exception.Source))
-                builder.Append(indent).Append("Source：").AppendLine(exception.Source);
+                builder.Append(indent).Append("Source: ").AppendLine(exception.Source);
 
             if (exception.TargetSite != null)
             {
@@ -435,12 +435,12 @@ namespace ColorVision.Copilot
                 var targetName = string.IsNullOrWhiteSpace(targetType)
                     ? exception.TargetSite.Name
                     : $"{targetType}.{exception.TargetSite.Name}";
-                builder.Append(indent).Append("Target：").AppendLine(targetName);
+                builder.Append(indent).Append("Target: ").AppendLine(targetName);
             }
 
             if (!string.IsNullOrWhiteSpace(exception.StackTrace))
             {
-                builder.Append(indent).AppendLine("堆栈：");
+                builder.Append(indent).AppendLine("Stack:");
                 builder.AppendLine(exception.StackTrace.Trim());
             }
 
@@ -448,31 +448,31 @@ namespace ColorVision.Copilot
                 return;
 
             builder.AppendLine();
-            builder.Append(indent).AppendLine("InnerException：");
+            builder.Append(indent).AppendLine("Inner Exception:");
             AppendException(builder, exception.InnerException, depth + 1);
         }
 
         private static string BuildAiPrompt(string occurrenceSummary, string exceptionDetails, CopilotRecentLogSnapshot snapshot)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("请帮我分析 ColorVision WPF 客户端中的未处理异常。请基于异常内容和最近日志，给出最可能原因、优先排查点，以及最小可行修复方向；如果信息不足，请明确指出还缺什么。");
+            builder.AppendLine("Analyze this unhandled exception from the ColorVision WPF client. Use only the exception details and recent logs below. Provide the most likely cause, priority checks, and the smallest practical fix direction. If the evidence is insufficient, say exactly what is missing.");
             builder.AppendLine();
-            builder.AppendLine("[异常]");
+            builder.AppendLine("[Exception]");
             builder.AppendLine(exceptionDetails.Trim());
             builder.AppendLine();
-            builder.AppendLine("[最近日志]");
+            builder.AppendLine("[Recent Logs]");
             if (snapshot.Success)
             {
-                builder.AppendLine($"日志文件：{snapshot.FilePath}");
+                builder.AppendLine($"Log file: {snapshot.FilePath}");
                 builder.AppendLine(snapshot.Content.Trim());
             }
             else
             {
-                builder.AppendLine(string.IsNullOrWhiteSpace(snapshot.ErrorMessage) ? "未找到最近日志。" : snapshot.ErrorMessage.Trim());
+                builder.AppendLine(string.IsNullOrWhiteSpace(snapshot.ErrorMessage) ? "No recent logs were found." : snapshot.ErrorMessage.Trim());
             }
 
             builder.AppendLine();
-            builder.AppendLine($"[补充说明] {occurrenceSummary}");
+            builder.AppendLine($"[Additional Notes] {occurrenceSummary}");
             return builder.ToString().TrimEnd();
         }
 
