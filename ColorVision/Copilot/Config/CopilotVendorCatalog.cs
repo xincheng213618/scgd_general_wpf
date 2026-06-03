@@ -88,7 +88,7 @@ namespace ColorVision.Copilot
             new CopilotVendorPreset
             {
                 VendorType = CopilotVendorType.GLM,
-                Label = "GLM / 智谱",
+                Label = "Zhipu GLM",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://open.bigmodel.cn/api/paas/v4",
                 ModelPresets = new[] { "glm-4.5", "glm-4.5-air", "glm-4-flash" },
@@ -104,7 +104,7 @@ namespace ColorVision.Copilot
             new CopilotVendorPreset
             {
                 VendorType = CopilotVendorType.Xiaomi,
-                Label = "小米 Mimo",
+                Label = "Xiaomi Mimo",
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 AnthropicCompatibleBaseUrl = "https://api.xiaomimimo.com/anthropic",
                 ModelPresets = new[] { "mimo-v2.5-pro", "mimo-v2.5" },
@@ -112,7 +112,7 @@ namespace ColorVision.Copilot
             new CopilotVendorPreset
             {
                 VendorType = CopilotVendorType.Custom,
-                Label = "自定义",
+                Label = "Custom",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 ModelPresets = Array.Empty<string>(),
             },

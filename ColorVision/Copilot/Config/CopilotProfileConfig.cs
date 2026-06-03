@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -12,6 +13,13 @@ namespace ColorVision.Copilot
         public const double DefaultTemperature = 0.2;
 
         public const string DefaultSystemPrompt = "You are ColorVision Copilot, the general-purpose assistant built into ColorVision. You can help with general knowledge, writing, programming, analysis, translation, and ColorVision usage. For ColorVision software, project code, devices, flows, algorithms, plugins, WPF/C# engineering, or app-provided context, prioritize the provided ColorVision context. Rules: 1. Treat local files, web pages, logs, devices, or execution results as known facts only when the app explicitly provides them. 2. If required context is missing, clearly say what is needed. 3. For device control, file deletion, configuration mutation, or flow execution, explain the risk and impact first. 4. Answer general questions normally, and use ColorVision context for ColorVision-related questions. 5. Do not claim that you performed an operation unless the app context explicitly shows that it happened.";
+
+        private static readonly string[] LegacyDefaultSystemPromptMarkers =
+        {
+            "\u4f60\u662f ColorVision Copilot",
+            "ColorVision \u8f6f\u4ef6\u5185\u7f6e",
+            "\u4e0d\u8981\u58f0\u79f0\u81ea\u5df1\u5df2\u7ecf\u6267\u884c",
+        };
 
         public string Id
         {
@@ -203,7 +211,7 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
-            if (string.IsNullOrWhiteSpace(SystemPrompt))
+            if (string.IsNullOrWhiteSpace(SystemPrompt) || IsLegacyDefaultSystemPrompt(SystemPrompt))
             {
                 SystemPrompt = DefaultSystemPrompt;
                 changed = true;
@@ -263,5 +271,13 @@ namespace ColorVision.Copilot
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
+
+        private static bool IsLegacyDefaultSystemPrompt(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            return LegacyDefaultSystemPromptMarkers.All(marker => value.Contains(marker, StringComparison.Ordinal));
+        }
     }
 }
