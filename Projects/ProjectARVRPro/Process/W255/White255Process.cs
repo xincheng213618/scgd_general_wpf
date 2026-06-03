@@ -48,12 +48,12 @@ namespace ProjectARVRPro.Process.W255
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            poi.CCT *= recipeConfig.CenterCorrelatedColorTemperature.Fix;
-                            poi.Y *= recipeConfig.CenterLunimance.Fix;
-                            poi.x *= recipeConfig.CenterCIE1931ChromaticCoordinatesx.Fix;
-                            poi.y *= recipeConfig.CenterCIE1931ChromaticCoordinatesy.Fix;
-                            poi.u *= recipeConfig.CenterCIE1976ChromaticCoordinatesu.Fix;
-                            poi.v *= recipeConfig.CenterCIE1976ChromaticCoordinatesv.Fix;
+                            poi.CCT = recipeConfig.CenterCorrelatedColorTemperature.Apply(poi.CCT);
+                            poi.Y = recipeConfig.CenterLunimance.Apply(poi.Y);
+                            poi.x = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Apply(poi.x);
+                            poi.y = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Apply(poi.y);
+                            poi.u = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Apply(poi.u);
+                            poi.v = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Apply(poi.v);
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id =poi.Id,Name =poi.Name,X =poi.X,Y=poi.Y,Z=poi.Z,x =poi.x,y =poi.y,u =poi.u,v =poi.v,CCT =poi.CCT,Wave =poi.Wave});
                             
@@ -99,7 +99,7 @@ namespace ProjectARVRPro.Process.W255
                                     Value = poi.v,
                                     TestValue = poi.v.ToString("F4")
                                 };
-                                testResult.CenterCorrelatedColorTemperature.Value = poi.CCT * recipeConfig.CenterCorrelatedColorTemperature.Fix;
+                                testResult.CenterCorrelatedColorTemperature.Value = poi.CCT;
                                 testResult.CenterCorrelatedColorTemperature.LowLimit = recipeConfig.CenterCorrelatedColorTemperature.Min;
                                 testResult.CenterCorrelatedColorTemperature.UpLimit = recipeConfig.CenterCorrelatedColorTemperature.Max;
 
@@ -122,7 +122,7 @@ namespace ProjectARVRPro.Process.W255
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
 
-                                view.PoiAnalysisResult.result.Value *= recipeConfig.LuminanceUniformity.Fix;
+                                view.PoiAnalysisResult.result.Value = recipeConfig.LuminanceUniformity.Apply(view.PoiAnalysisResult.result.Value);
 
                                 testResult.LuminanceUniformity.LowLimit = recipeConfig.LuminanceUniformity.Min;
                                 testResult.LuminanceUniformity.UpLimit = recipeConfig.LuminanceUniformity.Max;
@@ -140,7 +140,7 @@ namespace ProjectARVRPro.Process.W255
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
 
-                                view.PoiAnalysisResult.result.Value *= recipeConfig.ColorUniformity.Fix;
+                                view.PoiAnalysisResult.result.Value = recipeConfig.ColorUniformity.Apply(view.PoiAnalysisResult.result.Value);
 
                                 testResult.ColorUniformity.LowLimit = recipeConfig.ColorUniformity.Min;
                                 testResult.ColorUniformity.UpLimit = recipeConfig.ColorUniformity.Max;
@@ -160,9 +160,9 @@ namespace ProjectARVRPro.Process.W255
                             DFovView view1 = new DFovView(algResultModels[0]);
 
 
-                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * recipeConfig.DiagonalFieldOfViewAngle.Fix;
-                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * recipeConfig.HorizontalFieldOfViewAngle.Fix;
-                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * recipeConfig.VerticalFieldOfViewAngle.Fix;
+                            view1.Result.result.D_Fov = recipeConfig.DiagonalFieldOfViewAngle.Apply(view1.Result.result.D_Fov);
+                            view1.Result.result.ClolorVisionH_Fov = recipeConfig.HorizontalFieldOfViewAngle.Apply(view1.Result.result.ClolorVisionH_Fov);
+                            view1.Result.result.ClolorVisionV_Fov = recipeConfig.VerticalFieldOfViewAngle.Apply(view1.Result.result.ClolorVisionV_Fov);
 
 
                             testResult.DiagonalFieldOfViewAngle.LowLimit = recipeConfig.DiagonalFieldOfViewAngle.Min;

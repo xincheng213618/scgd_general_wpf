@@ -59,7 +59,7 @@ namespace ProjectARVRPro.Process.Chessboard
                             if (view.PoiAnalysisResult?.result == null)
                                 continue;
 
-                            view.PoiAnalysisResult.result.Value *= recipeConfig.ChessboardContrast.Fix;
+                            view.PoiAnalysisResult.result.Value = recipeConfig.ChessboardContrast.Apply(view.PoiAnalysisResult.result.Value);
                             chessboardResult.ChessboardContrast = Build(
                                 "Chessboard_Contrast",
                                 view.PoiAnalysisResult.result.Value,

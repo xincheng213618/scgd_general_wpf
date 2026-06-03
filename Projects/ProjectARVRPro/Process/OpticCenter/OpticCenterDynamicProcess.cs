@@ -42,9 +42,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                         if (algResultModels.Count >= 1)
                         {
                             BinocularFusionModel binocularFusionModel = algResultModels[0];
-                            opticCenterResult.OptCenterXTilt = Build("OptCenterXTilt", binocularFusionModel.XDegree * recipeConfig.OptCenterXTilt.Fix, recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max);
-                            opticCenterResult.OptCenterYTilt = Build("OptCenterYTilt", binocularFusionModel.YDegree * recipeConfig.OptCenterYTilt.Fix, recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max);
-                            opticCenterResult.OptCenterRotation = Build("OptCenterRotation", binocularFusionModel.ZDegree * recipeConfig.OptCenterRotation.Fix, recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max);
+                            opticCenterResult.OptCenterXTilt = Build("OptCenterXTilt", recipeConfig.OptCenterXTilt.Apply(binocularFusionModel.XDegree), recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max);
+                            opticCenterResult.OptCenterYTilt = Build("OptCenterYTilt", recipeConfig.OptCenterYTilt.Apply(binocularFusionModel.YDegree), recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max);
+                            opticCenterResult.OptCenterRotation = Build("OptCenterRotation", recipeConfig.OptCenterRotation.Apply(binocularFusionModel.ZDegree), recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max);
                             UpdateResult(ctx, opticCenterResult.OptCenterXTilt, opticCenterResult.OptCenterYTilt, opticCenterResult.OptCenterRotation);
                         }
                     }
@@ -62,9 +62,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                             var crossResult = crossResults[0];
                             if (master.TName == "optCenter")
                             {
-                                crossResult.tilt.tilt_x *= recipeConfig.OptCenterXTilt.Fix;
-                                crossResult.tilt.tilt_y *= recipeConfig.OptCenterYTilt.Fix;
-                                crossResult.rotationAngle *= recipeConfig.OptCenterRotation.Fix;
+                                crossResult.tilt.tilt_x = recipeConfig.OptCenterXTilt.Apply(crossResult.tilt.tilt_x);
+                                crossResult.tilt.tilt_y = recipeConfig.OptCenterYTilt.Apply(crossResult.tilt.tilt_y);
+                                crossResult.rotationAngle = recipeConfig.OptCenterRotation.Apply(crossResult.rotationAngle);
                                 opticCenterResult.OptCenterXTilt = Build("OptCenterXTilt", crossResult.tilt.tilt_x, recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max);
                                 opticCenterResult.OptCenterYTilt = Build("OptCenterYTilt", crossResult.tilt.tilt_y, recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max);
                                 opticCenterResult.OptCenterRotation = Build("OptCenterRotation", crossResult.rotationAngle, recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max);
@@ -72,9 +72,9 @@ namespace ProjectARVRPro.Process.OpticCenter
                             }
                             else if (master.TName == "ImageCenter")
                             {
-                                crossResult.tilt.tilt_x *= recipeConfig.ImageCenterXTilt.Fix;
-                                crossResult.tilt.tilt_y *= recipeConfig.ImageCenterYTilt.Fix;
-                                crossResult.rotationAngle *= recipeConfig.ImageCenterRotation.Fix;
+                                crossResult.tilt.tilt_x = recipeConfig.ImageCenterXTilt.Apply(crossResult.tilt.tilt_x);
+                                crossResult.tilt.tilt_y = recipeConfig.ImageCenterYTilt.Apply(crossResult.tilt.tilt_y);
+                                crossResult.rotationAngle = recipeConfig.ImageCenterRotation.Apply(crossResult.rotationAngle);
                                 opticCenterResult.ImageCenterXTilt = Build("ImageCenterXTilt", crossResult.tilt.tilt_x, recipeConfig.ImageCenterXTilt.Min, recipeConfig.ImageCenterXTilt.Max);
                                 opticCenterResult.ImageCenterYTilt = Build("ImageCenterYTilt", crossResult.tilt.tilt_y, recipeConfig.ImageCenterYTilt.Min, recipeConfig.ImageCenterYTilt.Max);
                                 opticCenterResult.ImageCenterRotation = Build("ImageCenterRotation", crossResult.rotationAngle, recipeConfig.ImageCenterRotation.Min, recipeConfig.ImageCenterRotation.Max);

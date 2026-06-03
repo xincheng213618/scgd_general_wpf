@@ -50,7 +50,7 @@ namespace ProjectARVRPro.Process.Chessboard
                         if (details.Count == 1)
                         {
                             var view = new PoiAnalysisDetailViewReslut(details[0]);
-                            view.PoiAnalysisResult.result.Value *= recipeConfig.ChessboardContrast.Fix;
+                            view.PoiAnalysisResult.result.Value = recipeConfig.ChessboardContrast.Apply(view.PoiAnalysisResult.result.Value);
                             var contrast = new ObjectiveTestItem
                             {
                                 Name = "Chessboard_Contrast",
