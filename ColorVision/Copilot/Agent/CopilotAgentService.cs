@@ -33,7 +33,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(onEvent);
 
-            onEvent(CopilotAgentEvent.Status("正在分析任务..."));
+            onEvent(CopilotAgentEvent.Status("Analyzing task..."));
 
             var toolResults = new List<CopilotToolResult>();
             var stepRecords = new List<CopilotAgentStepRecord>();
@@ -59,12 +59,12 @@ namespace ColorVision.Copilot
                 if (tools.Length == 0)
                 {
                     onEvent(CopilotAgentEvent.Status(executedAnyTool
-                        ? "工具阶段已收敛，开始生成回答。"
-                        : "当前任务无需额外工具，直接生成回答。"));
+                        ? "Tool phase converged; generating answer."
+                        : "No extra tools are needed for this task; generating answer."));
                     break;
                 }
 
-                onEvent(CopilotAgentEvent.Status($"第 {round} 轮：正在规划下一步。"));
+                onEvent(CopilotAgentEvent.Status($"Round {round}: planning next step."));
                 var planResult = await _planner.PlanNextAsync(
                     roundRequest,
                     tools,
@@ -76,7 +76,7 @@ namespace ColorVision.Copilot
 
                 if (plan.Action == CopilotAgentPlanAction.Finish)
                 {
-                    onEvent(CopilotAgentEvent.Status($"第 {round} 轮：结束工具阶段。{plan.Reason}"));
+                    onEvent(CopilotAgentEvent.Status($"Round {round}: finishing tool phase. {plan.Reason}"));
                     break;
                 }
 
@@ -89,14 +89,14 @@ namespace ColorVision.Copilot
                 var stepSignature = BuildToolExecutionSignature(selectedTool.Name, executionRequest, executionInput);
                 if (!executedStepSignatures.Add(stepSignature))
                 {
-                    onEvent(CopilotAgentEvent.Status($"第 {round} 轮：规划重复调用同一工具和参数，结束工具阶段。"));
+                    onEvent(CopilotAgentEvent.Status($"Round {round}: repeated the same tool call and arguments; finishing tool phase."));
                     break;
                 }
 
                 executedAnyTool = true;
                 onEvent(CopilotAgentEvent.Status(plan.IsFallback
-                    ? $"第 {round} 轮：规划器回退执行 {selectedTool.Name}。{plan.Reason}{BuildPlanDetail(plan)}"
-                    : $"第 {round} 轮：计划器选择 {selectedTool.Name}。{plan.Reason}{BuildPlanDetail(plan)}"));
+                    ? $"Round {round}: planner fallback selected {selectedTool.Name}. {plan.Reason}{BuildPlanDetail(plan)}"
+                    : $"Round {round}: planner selected {selectedTool.Name}. {plan.Reason}{BuildPlanDetail(plan)}"));
 
                 CopilotToolResult result;
                 try
@@ -113,7 +113,7 @@ namespace ColorVision.Copilot
                     {
                         ToolName = selectedTool.Name,
                         Success = false,
-                        Summary = $"{selectedTool.Name} 执行失败。",
+                        Summary = $"{selectedTool.Name} execution failed.",
                         ErrorMessage = ex.Message,
                     };
                 }
@@ -124,12 +124,12 @@ namespace ColorVision.Copilot
 
                 var discoveredNewReadableFiles = TryMergeReadableLocalFilePaths(readableLocalFilePaths, result.SuggestedReadableLocalFilePaths);
                 if (discoveredNewReadableFiles)
-                    onEvent(CopilotAgentEvent.Status($"第 {round} 轮：已加入新的候选文件，准备继续规划。"));
+                    onEvent(CopilotAgentEvent.Status($"Round {round}: added newly discovered candidate files; continuing planning."));
             }
 
-                    var finalRequest = CreateRoundRequest(request, readableLocalFilePaths);
-                    var preparedPrompt = _contextBuilder.BuildAnswerMessages(finalRequest, stepRecords);
-            onEvent(CopilotAgentEvent.Status("正在生成回答..."));
+            var finalRequest = CreateRoundRequest(request, readableLocalFilePaths);
+            var preparedPrompt = _contextBuilder.BuildAnswerMessages(finalRequest, stepRecords);
+            onEvent(CopilotAgentEvent.Status("Generating answer..."));
 
             var finalUsage = await _chatService.StreamReplyAsync(
                 request.Profile,
@@ -195,8 +195,8 @@ namespace ColorVision.Copilot
                 ToolName = plan.ToolName,
                 ToolInput = CopilotAgentToolInput.Empty,
                 Reason = string.IsNullOrWhiteSpace(plan.Reason)
-                    ? "当前目录下存在多个候选文件，改为本轮批量读取。"
-                    : plan.Reason + " 当前目录下存在多个候选文件，改为本轮批量读取。",
+                    ? "Multiple candidate files are available; switching this round to batch read."
+                    : plan.Reason + " Multiple candidate files are available; switching this round to batch read.",
                 IsFallback = plan.IsFallback,
             };
         }
@@ -243,11 +243,11 @@ namespace ColorVision.Copilot
                 && !string.IsNullOrWhiteSpace(plan.LocalFilePath))
             {
                 var builder = new System.Text.StringBuilder();
-                builder.Append(" 目标文件：").Append(Path.GetFileName(plan.LocalFilePath));
+                builder.Append(" target file: ").Append(Path.GetFileName(plan.LocalFilePath));
 
                 if (plan.StartLine.HasValue)
                 {
-                    builder.Append(" 行号：").Append(plan.StartLine.Value);
+                    builder.Append(" lines: ").Append(plan.StartLine.Value);
                     if (plan.EndLine.HasValue)
                         builder.Append('-').Append(plan.EndLine.Value);
                 }
@@ -262,7 +262,7 @@ namespace ColorVision.Copilot
                 if (string.IsNullOrWhiteSpace(directoryName))
                     directoryName = plan.LocalFilePath;
 
-                return $" 目标目录：{directoryName}";
+                return $" target directory: {directoryName}";
             }
 
             if ((string.Equals(plan.ToolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
@@ -274,10 +274,10 @@ namespace ColorVision.Copilot
                 if (string.Equals(plan.ToolName, "FetchUrl", StringComparison.OrdinalIgnoreCase))
                 {
                     var url = CopilotWebPageToolSupport.ExtractHttpUrls(plan.ToolQuery).FirstOrDefault() ?? plan.ToolQuery;
-                    return $" 目标网页：{url}";
+                    return $" target page: {url}";
                 }
 
-                return $" 查询词：{plan.ToolQuery}";
+                return $" query: {plan.ToolQuery}";
             }
 
             return string.Empty;

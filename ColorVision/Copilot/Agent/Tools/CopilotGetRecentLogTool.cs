@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 
         public string Name => "GetRecentLog";
 
-        public string Description => "读取应用最近日志，用于诊断失败或异常问题。";
+        public string Description => "Read recent application logs for failure or exception diagnosis.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {

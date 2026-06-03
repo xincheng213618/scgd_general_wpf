@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,8 +43,6 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAgentPlanner
     {
-        private const int MaxObservedTools = 6;
-        private const int MaxObservationContentChars = 1200;
         private const int MaxReasonLength = 200;
         private const string PlannerSystemPrompt = "You are the internal tool planner for ColorVision Copilot. Your only task is to decide, from the current question, existing tool observations, and available tools, whether to call one next tool or finish the tool phase. Do not answer the user. Do not output Markdown. Do not add extra explanation. Output only one JSON object.";
 
@@ -107,102 +104,11 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static string BuildPlannerPrompt(
-            CopilotAgentRequest request,
-            IReadOnlyList<ICopilotTool> availableTools,
-            IReadOnlyList<CopilotToolResult> toolResults,
-            IReadOnlyCollection<string> readableLocalFilePaths)
-        {
-            var builder = new StringBuilder();
-            builder.AppendLine("Choose the next Agent action. Return JSON only. Do not answer the user.");
-            builder.AppendLine();
-            builder.AppendLine("JSON format:");
-            builder.AppendLine("{\"action\":\"tool|finish\",\"toolName\":\"tool name or empty string\",\"reason\":\"one short English reason\",\"input\":{\"query\":\"use for SearchFiles/GrepText/GetRecentLog/FetchUrl and similar tools\",\"path\":\"use for ReadLocalFile/ListDirectory\",\"startLine\":0,\"endLine\":0}}");
-            builder.AppendLine();
-            builder.AppendLine("Decision rules:");
-            builder.AppendLine("1. If key facts are still missing and one available tool is likely to provide them, return action=tool.");
-            builder.AppendLine("2. If the context is sufficient to answer, or remaining tools will not add meaningful value, return action=finish.");
-            builder.AppendLine("3. toolName must be selected from the currently available tools.");
-            builder.AppendLine("4. For SearchFiles, GrepText, GetRecentLog, or FetchUrl, fill input.query with short focused terms. For FetchUrl, prefer a complete URL and avoid repeating the whole user question.\n5. For ListDirectory, fill input.path when possible; the path must come from the allowed local directory list.\n6. For ReadLocalFile, leave input.path empty when analyzing a directory or candidate set; fill input.path/startLine/endLine only for close reading of one file or line range.\n7. Keep reason to one short English sentence.");
-            builder.AppendLine();
-            builder.AppendLine("# User question");
-            builder.AppendLine((request.UserText ?? string.Empty).Trim());
-            builder.AppendLine();
-            builder.AppendLine("# Available tools");
-            foreach (var tool in availableTools)
-            {
-                builder.Append("- ")
-                    .Append(tool.Name)
-                    .Append(": ")
-                    .AppendLine(tool.Description);
-            }
-
-            builder.AppendLine();
-            builder.AppendLine("# 当前可直接读取的本地文件");
-            if (readableLocalFilePaths == null || readableLocalFilePaths.Count == 0)
-            {
-                builder.AppendLine("- 无");
-            }
-            else
-            {
-                foreach (var path in readableLocalFilePaths.Take(5))
-                    builder.Append("- ").AppendLine(path);
-            }
-
-            builder.AppendLine();
-            builder.AppendLine("# 当前可直接列出的本地文件夹");
-            if (request.ReadableLocalDirectoryPaths == null || request.ReadableLocalDirectoryPaths.Count == 0)
-            {
-                builder.AppendLine("- 无");
-            }
-            else
-            {
-                foreach (var path in request.ReadableLocalDirectoryPaths.Take(5))
-                    builder.Append("- ").AppendLine(path);
-            }
-
-            builder.AppendLine();
-            builder.AppendLine("# 已执行工具观察");
-            if (toolResults == null || toolResults.Count == 0)
-            {
-                builder.AppendLine("- 暂无");
-            }
-            else
-            {
-                foreach (var result in toolResults.TakeLast(MaxObservedTools))
-                {
-                    builder.Append("- ")
-                        .Append(result.ToolName)
-                        .Append(": ")
-                        .Append(result.Summary);
-
-                    if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
-                        builder.Append("；错误：").Append(result.ErrorMessage);
-
-                    if (result.SuggestedReadableLocalFilePaths.Count > 0)
-                    {
-                        builder.Append("；候选文件：")
-                            .Append(string.Join("，", result.SuggestedReadableLocalFilePaths.Take(3)));
-                    }
-
-                    builder.AppendLine();
-
-                    if (!string.IsNullOrWhiteSpace(result.Content))
-                    {
-                        builder.AppendLine("  内容摘录：");
-                        builder.AppendLine(IndentObservation(TruncateObservation(result.Content, MaxObservationContentChars)));
-                    }
-                }
-            }
-
-            return builder.ToString().TrimEnd();
-        }
-
         private static CopilotAgentPlan ParsePlannerResponse(CopilotAgentRequest request, string text, IReadOnlyList<ICopilotTool> availableTools)
         {
             var json = ExtractJsonObject(text);
             if (string.IsNullOrWhiteSpace(json))
-            return BuildFallbackPlan(request, availableTools, "规划器没有返回可解析 JSON，回退到默认工具选择。", preferTool: true);
+                return BuildFallbackPlan(request, availableTools, "Planner returned no parseable JSON; falling back to the default tool selection.", preferTool: true);
 
             try
             {
@@ -237,7 +143,7 @@ namespace ColorVision.Copilot
                     return new CopilotAgentPlan
                     {
                         Action = CopilotAgentPlanAction.Finish,
-                        Reason = string.IsNullOrWhiteSpace(reason) ? "规划器判断当前上下文已足够。" : reason,
+                        Reason = string.IsNullOrWhiteSpace(reason) ? "The planner judged the current context sufficient." : reason,
                     };
                 }
 
@@ -251,18 +157,18 @@ namespace ColorVision.Copilot
                             Action = CopilotAgentPlanAction.Tool,
                             ToolName = selectedTool.Name,
                             ToolInput = BuildToolInput(selectedTool.Name, toolQuery, localFilePath, startLine, endLine),
-                            Reason = string.IsNullOrWhiteSpace(reason) ? $"优先执行 {selectedTool.Name} 获取缺失信息。" : reason,
+                            Reason = string.IsNullOrWhiteSpace(reason) ? $"Run {selectedTool.Name} first to collect missing information." : reason,
                         };
                     }
 
-                    return BuildFallbackPlan(request, availableTools, $"规划器选择了未知工具 {toolName}，回退到默认工具选择。", preferTool: true);
+                    return BuildFallbackPlan(request, availableTools, $"Planner selected unknown tool {toolName}; falling back to the default tool selection.", preferTool: true);
                 }
             }
             catch (JsonException)
             {
             }
 
-            return BuildFallbackPlan(request, availableTools, "规划器输出无法识别，回退到默认工具选择。", preferTool: true);
+            return BuildFallbackPlan(request, availableTools, "Planner output was not recognized; falling back to the default tool selection.", preferTool: true);
         }
 
         private static CopilotAgentPlan BuildFallbackPlan(
@@ -455,16 +361,16 @@ namespace ColorVision.Copilot
             return action.Equals("finish", StringComparison.OrdinalIgnoreCase)
                 || action.Equals("final", StringComparison.OrdinalIgnoreCase)
                 || action.Equals("done", StringComparison.OrdinalIgnoreCase)
-                || action.Contains("结束", StringComparison.OrdinalIgnoreCase)
-                || action.Contains("完成", StringComparison.OrdinalIgnoreCase);
+                || action.Contains("\u7ed3\u675f", StringComparison.OrdinalIgnoreCase)
+                || action.Contains("\u5b8c\u6210", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsToolAction(string action)
         {
             return action.Equals("tool", StringComparison.OrdinalIgnoreCase)
                 || action.Equals("call_tool", StringComparison.OrdinalIgnoreCase)
-                || action.Contains("调用", StringComparison.OrdinalIgnoreCase)
-                || action.Contains("工具", StringComparison.OrdinalIgnoreCase);
+                || action.Contains("\u8c03\u7528", StringComparison.OrdinalIgnoreCase)
+                || action.Contains("\u5de5\u5177", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string NormalizeReason(string reason)
@@ -537,20 +443,5 @@ namespace ColorVision.Copilot
                 || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string TruncateObservation(string text, int maxCharacters)
-        {
-            var value = (text ?? string.Empty).Trim();
-            if (value.Length <= maxCharacters)
-                return value;
-
-            return value[..maxCharacters] + Environment.NewLine + "...<观察内容已截断>";
-        }
-
-        private static string IndentObservation(string text)
-        {
-            return string.Join(Environment.NewLine, (text ?? string.Empty)
-                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
-                .Select(line => "  " + line));
-        }
     }
 }

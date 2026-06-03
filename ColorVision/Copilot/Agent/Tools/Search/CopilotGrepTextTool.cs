@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "GrepText";
 
-        public string Description => "按关键字或标识符在当前解决方案文本文件中查找命中行。";
+        public string Description => "Search text files in the current solution for keyword or identifier matches.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {

@@ -14,7 +14,7 @@ namespace ColorVision.Copilot
 
         public string Name => "ReadAttachedFile";
 
-        public string Description => "读取当前会话已附加的文本文件内容。";
+        public string Description => "Read text file attachments from the current session.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -41,8 +41,8 @@ namespace ColorVision.Copilot
                 {
                     ToolName = Name,
                     Success = false,
-                    Summary = "当前会话没有可读取的文件附件。",
-                    ErrorMessage = "未找到文件类型的会话附件。",
+                    Summary = "The current session has no readable file attachments.",
+                    ErrorMessage = "No file attachments were found.",
                 };
             }
 
@@ -58,8 +58,8 @@ namespace ColorVision.Copilot
                 {
                     if (!File.Exists(attachment.Value))
                     {
-                        var missingMessage = $"文件不存在：{attachment.Value}";
-                        builder.AppendLine($"[文件] {attachment.Value}");
+                        var missingMessage = $"File does not exist: {attachment.Value}";
+                        builder.AppendLine($"[File] {attachment.Value}");
                         builder.AppendLine(missingMessage);
                         builder.AppendLine();
                         errors.Add(missingMessage);
@@ -71,9 +71,9 @@ namespace ColorVision.Copilot
                     var content = await reader.ReadToEndAsync(cancellationToken);
 
                     if (content.Length > MaxFileContentChars)
-                        content = content[..MaxFileContentChars] + Environment.NewLine + $"...<内容已截断，仅保留前 {MaxFileContentChars} 字符。>";
+                        content = content[..MaxFileContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxFileContentChars} characters.>";
 
-                    builder.AppendLine($"[文件] {attachment.Value}");
+                    builder.AppendLine($"[File] {attachment.Value}");
                     builder.AppendLine(content.TrimEnd());
                     builder.AppendLine();
                     successCount++;
@@ -84,8 +84,8 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception ex)
                 {
-                    builder.AppendLine($"[文件] {attachment.Value}");
-                    builder.AppendLine($"读取失败：{ex.Message}");
+                    builder.AppendLine($"[File] {attachment.Value}");
+                    builder.AppendLine($"Read failed: {ex.Message}");
                     builder.AppendLine();
                     errors.Add($"{attachment.Value}: {ex.Message}");
                 }
@@ -96,10 +96,10 @@ namespace ColorVision.Copilot
                 ToolName = Name,
                 Success = successCount > 0,
                 Summary = successCount > 0
-                    ? $"已读取 {successCount}/{attachments.Length} 个附件文件。"
-                    : $"未能读取附件文件，共 {attachments.Length} 个。",
+                    ? $"Read {successCount}/{attachments.Length} attached files."
+                    : $"Failed to read any attached files from {attachments.Length} attachments.",
                 Content = builder.ToString().TrimEnd(),
-                ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("；", errors),
+                ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
             };
         }
     }

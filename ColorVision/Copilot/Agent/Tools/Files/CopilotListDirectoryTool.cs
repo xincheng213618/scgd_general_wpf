@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "ListDirectory";
 
-        public string Description => "列出当前轮允许访问的本地文件夹内容，返回子文件和子目录。";
+        public string Description => "List the contents of local directories allowed for the current round, including files and subdirectories.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {

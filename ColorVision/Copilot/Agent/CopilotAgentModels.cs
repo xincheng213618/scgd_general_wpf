@@ -30,13 +30,13 @@ namespace ColorVision.Copilot
                 {
                     Mode = CopilotAgentMode.Chat,
                     Label = "Ask",
-                    Description = "普通对话，不主动调用工具。",
+                    Description = "Regular chat without proactive tool calls.",
                 },
                 new CopilotAgentModeOption
                 {
                     Mode = CopilotAgentMode.Auto,
                     Label = "Agent",
-                    Description = "自动分析任务并按需调用工具。",
+                    Description = "Analyze the task and call tools as needed.",
                 },
             };
         }

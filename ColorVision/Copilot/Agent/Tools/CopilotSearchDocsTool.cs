@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "SearchDocs";
 
-        public string Description => "查询 ColorVision 在线文档索引，按章节、页面和页面内标题返回最相关的文档片段。适合回答软件使用、菜单、设备、插件、开发指南和架构说明问题。";
+        public string Description => "Search the ColorVision online documentation index and return the most relevant snippets by section, page, and heading. Useful for software usage, menus, devices, plugins, developer guides, and architecture questions.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {

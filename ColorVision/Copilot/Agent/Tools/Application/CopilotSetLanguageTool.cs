@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "SetLanguage";
 
-        public string Description => "按用户要求切换界面语言；input.query 可填写语言或文化名，例如 英文、中文、en-US、zh-Hans。切换时可能提示确认并重启应用。";
+        public string Description => "Switch the UI language requested by the user. input.query can contain a language or culture name such as English, Chinese, en-US, or zh-Hans. The change may ask for confirmation and restart the application.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {

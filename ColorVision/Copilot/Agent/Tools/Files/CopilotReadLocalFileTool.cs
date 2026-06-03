@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "ReadLocalFile";
 
-        public string Description => "读取当前轮允许访问的本地文本文件，支持按路径和行范围精读。";
+        public string Description => "Read local text files allowed for the current round, with optional path and line-range focus.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {
