@@ -15,21 +15,75 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <Border Background="{DynamicResource SecondaryRegionBrush}" 
-                BorderBrush="{DynamicResource BorderBrush}" 
-                BorderThickness="1" 
-                CornerRadius="5">
-            <ScrollViewer Margin="5" VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="PropertyPanel">
-                    <!-- PropertyEditor controls will be generated here -->
-                </StackPanel>
-            </ScrollViewer>
+        <Border Background="{DynamicResource SecondaryRegionBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="5"
+                Padding="6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Margin="0,0,0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0" Margin="0,0,5,0">
+                        <TextBox x:Name="SearchTextBox"
+                                 MinWidth="140"
+                                 Height="24"
+                                 Padding="6,0,28,0"
+                                 VerticalContentAlignment="Center"
+                                 ToolTip="搜索参数、路径或值"
+                                 Style="{DynamicResource TextBox.Small}"
+                                 TextChanged="SearchTextBox_TextChanged"/>
+                        <TextBlock x:Name="SearchPlaceholder"
+                                   Text="搜索参数、路径或值"
+                                   Margin="8,0,28,0"
+                                   Opacity="0.45"
+                                   IsHitTestVisible="False"/>
+                        <Button x:Name="ClearSearchButton"
+                                Content="清"
+                                Width="24"
+                                Height="22"
+                                Padding="0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                ToolTip="清除搜索"
+                                Visibility="Collapsed"
+                                Click="ClearSearchButton_Click"/>
+                    </Grid>
+                    <Button x:Name="ExpandAllButton"
+                            Grid.Column="1"
+                            Content="展开"
+                            MinWidth="48"
+                            Padding="8,1"
+                            Margin="0,0,4,0"
+                            Click="ExpandAllButton_Click"/>
+                    <Button x:Name="CollapseAllButton"
+                            Grid.Column="2"
+                            Content="收起"
+                            MinWidth="48"
+                            Padding="8,1"
+                            Click="CollapseAllButton_Click"/>
+                </Grid>
+
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="PropertyPanel"/>
+                </ScrollViewer>
+            </Grid>
         </Border>
-        
-        <!-- Error message display -->
-        <Border x:Name="ErrorBorder" 
-                Background="{DynamicResource DangerBrush}" 
-                Padding="10" 
+
+        <Border x:Name="ErrorBorder"
+                Background="{DynamicResource DangerBrush}"
+                Padding="10"
                 Margin="10"
                 CornerRadius="5"
                 Visibility="Collapsed"

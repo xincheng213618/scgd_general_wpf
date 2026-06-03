@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public double Width { get => _Width; set { _Width = value; } }
         private double _Width = double.NaN;
 
-        public bool UsePropertyEditor { get; set; } = false; // Default to text editor mode
+        public bool UsePropertyEditor { get; set; } = true; // Default to property editor mode
     }
 
     public sealed class CopilotTemplateJsonPatchApplyResult
