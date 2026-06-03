@@ -131,7 +131,7 @@ public class CopilotBusinessContextTests
             new CopilotAgentToolInput { Path = outsidePath },
             CancellationToken.None);
         Assert.False(rejectedRead.Success);
-        Assert.Contains("不在当前允许读取列表", rejectedRead.ErrorMessage);
+        Assert.Contains("not in the current allowed read list", rejectedRead.ErrorMessage);
 
         var listResult = await new CopilotListDirectoryTool().ExecuteAsync(
             request,
@@ -146,7 +146,7 @@ public class CopilotBusinessContextTests
             new CopilotAgentToolInput { Path = Path.GetTempPath() },
             CancellationToken.None);
         Assert.False(rejectedList.Success);
-        Assert.Contains("不在当前允许访问列表", rejectedList.ErrorMessage);
+        Assert.Contains("not in the current allowed access list", rejectedList.ErrorMessage);
     }
 
     [Fact]

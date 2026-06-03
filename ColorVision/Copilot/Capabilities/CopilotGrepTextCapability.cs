@@ -20,7 +20,7 @@ namespace ColorVision.Copilot
 
         public string DisplayPath => CopilotWorkspaceSearchSupport.GetDisplayPath(RootPath, FullPath);
 
-        public string AgentLine => $"[命中] {DisplayPath}:{LineNumber} {CopilotWorkspaceSearchSupport.TruncateLine(LineText, 220)}";
+        public string AgentLine => $"[Match] {DisplayPath}:{LineNumber} {CopilotWorkspaceSearchSupport.TruncateLine(LineText, 220)}";
     }
 
     public sealed class CopilotTextSearchResult
@@ -61,7 +61,7 @@ namespace ColorVision.Copilot
         private const int MaxFilesToScan = 5000;
         private const int MaxMatches = 40;
 
-        private static readonly Regex QuotedPatternRegex = new("[`\"“](?<term>[^`\"”\r\n]{2,100})[`\"”]", RegexOptions.Compiled);
+        private static readonly Regex QuotedPatternRegex = new("[`\"\\u201C](?<term>[^`\"\\u201D\r\n]{2,100})[`\"\\u201D]", RegexOptions.Compiled);
         private static readonly Regex IdentifierRegex = new(@"(?<term>[A-Za-z_][A-Za-z0-9_\.]{2,80})", RegexOptions.Compiled);
 
         public static CopilotTextSearchResult Search(
@@ -79,8 +79,8 @@ namespace ColorVision.Copilot
                     Success = false,
                     SearchRoots = searchRoots,
                     Patterns = patterns,
-                    Summary = "缺少可搜索的根目录或关键字。",
-                    ErrorMessage = "当前没有可用的搜索根，或未能从消息中提取文本搜索关键字。",
+                    Summary = "Missing searchable roots or keywords.",
+                    ErrorMessage = "No search root is available, or no text-search keyword could be extracted from the message.",
                 };
             }
 
@@ -131,15 +131,15 @@ namespace ColorVision.Copilot
                     Patterns = patterns,
                     ScannedTextFileCount = scannedFiles,
                     Matches = matches,
-                    Summary = $"扫描了 {scannedFiles} 个文本文件，但没有找到关键字命中。",
-                    ErrorMessage = $"搜索关键字：{string.Join(", ", patterns)}",
+                    Summary = $"Scanned {scannedFiles} text files, but no keyword matches were found.",
+                    ErrorMessage = $"Search keywords: {string.Join(", ", patterns)}",
                 };
             }
 
             var builder = new StringBuilder();
-            builder.AppendLine($"[搜索关键字] {string.Join(", ", patterns)}");
-            builder.AppendLine($"[搜索根] {string.Join("；", searchRoots)}");
-            builder.AppendLine($"[扫描文本文件数] {scannedFiles}");
+            builder.AppendLine($"[Search Keywords] {string.Join(", ", patterns)}");
+            builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
+            builder.AppendLine($"[Scanned Text Files] {scannedFiles}");
             builder.AppendLine();
 
             foreach (var match in matches)
@@ -152,7 +152,7 @@ namespace ColorVision.Copilot
                 Patterns = patterns,
                 ScannedTextFileCount = scannedFiles,
                 Matches = matches,
-                Summary = $"扫描 {scannedFiles} 个文本文件，找到 {matches.Count} 条命中。",
+                Summary = $"Scanned {scannedFiles} text files and found {matches.Count} matches.",
                 Content = builder.ToString().TrimEnd(),
                 SuggestedReadableLocalFilePaths = matchedFilePaths
                     .Take(3)

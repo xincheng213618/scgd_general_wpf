@@ -38,8 +38,8 @@ namespace ColorVision.Copilot
                     return new CopilotCapabilityResult
                     {
                         Success = false,
-                        Summary = "规划器选择了不在允许列表中的本地文件。",
-                        ErrorMessage = $"规划器选择的路径不在当前允许读取列表中：{normalizedSelectedPath}",
+                        Summary = "The planner selected a local file outside the allowed list.",
+                        ErrorMessage = $"The planner-selected path is not in the current allowed read list: {normalizedSelectedPath}",
                     };
                 }
 
@@ -57,8 +57,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "当前轮没有可读取的本地文件路径。",
-                    ErrorMessage = "未检测到当前轮允许访问的本地文件路径。",
+                    Summary = "No readable local file paths are available for the current round.",
+                    ErrorMessage = "No local file paths allowed for the current round were detected.",
                 };
             }
 
@@ -78,15 +78,15 @@ namespace ColorVision.Copilot
                     useSelectedRange ? startLine : null,
                     useSelectedRange ? endLine : null,
                     cancellationToken);
-                builder.AppendLine($"[文件] {result.FullPath}");
+                builder.AppendLine($"[File] {result.FullPath}");
 
                 if (result.Success)
                 {
                     if (result.StartLine > 0)
-                        builder.AppendLine($"[行] {result.StartLine}-{result.EndLine}");
+                        builder.AppendLine($"[Lines] {result.StartLine}-{result.EndLine}");
 
                     if (result.WasTruncated)
-                        builder.AppendLine("说明：文件内容较长，已截断后发送给模型。");
+                        builder.AppendLine("Note: The file content was long and was truncated before sending to the model.");
 
                     builder.AppendLine(result.Content);
                     successCount++;
@@ -106,9 +106,9 @@ namespace ColorVision.Copilot
                 Success = successCount > 0,
                 Summary = successCount > 0
                     ? BuildSuccessSummary(successCount, paths.Length, normalizedSelectedPath, lastSuccess)
-                    : $"未能读取本地文件，共 {paths.Length} 个路径。",
+                    : $"Failed to read any local files from {paths.Length} paths.",
                 Content = builder.ToString().TrimEnd(),
-                ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("；", errors),
+                ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
             };
         }
 
@@ -118,12 +118,12 @@ namespace ColorVision.Copilot
             {
                 var result = lastSuccess.Value;
                 if (result.StartLine > 0)
-                    return $"已读取 {Path.GetFileName(result.FullPath)} 第 {result.StartLine}-{result.EndLine} 行。";
+                    return $"Read {Path.GetFileName(result.FullPath)} lines {result.StartLine}-{result.EndLine}.";
 
-                return $"已读取 {Path.GetFileName(result.FullPath)}。";
+                return $"Read {Path.GetFileName(result.FullPath)}.";
             }
 
-            return $"已读取 {successCount}/{pathCount} 个本地文件。";
+            return $"Read {successCount}/{pathCount} local files.";
         }
 
         private static string NormalizePath(string? path)
@@ -163,8 +163,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "当前轮没有可列出的本地文件夹。",
-                    ErrorMessage = "未检测到当前轮允许访问的本地文件夹路径。",
+                    Summary = "No listable local directories are available for the current round.",
+                    ErrorMessage = "No local directory paths allowed for the current round were detected.",
                 };
             }
 
@@ -175,8 +175,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "规划器选择了不在允许列表中的本地文件夹。",
-                    ErrorMessage = $"规划器选择的文件夹不在当前允许访问列表中：{selectedDirectory}",
+                    Summary = "The planner selected a local directory outside the allowed list.",
+                    ErrorMessage = $"The planner-selected directory is not in the current allowed access list: {selectedDirectory}",
                 };
             }
 
@@ -189,8 +189,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "目标文件夹不存在。",
-                    ErrorMessage = $"目标文件夹不存在：{directoryPath}",
+                    Summary = "The target directory does not exist.",
+                    ErrorMessage = $"The target directory does not exist: {directoryPath}",
                 };
             }
 
@@ -210,7 +210,7 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "列出目录失败。",
+                    Summary = "Failed to list directory.",
                     ErrorMessage = ex.Message,
                 };
             }
@@ -218,9 +218,9 @@ namespace ColorVision.Copilot
             cancellationToken.ThrowIfCancellationRequested();
 
             var builder = new StringBuilder();
-            builder.AppendLine($"[文件夹] {directoryPath}");
-            builder.AppendLine($"[子目录数] {subDirectories.Length}");
-            builder.AppendLine($"[文件数] {files.Length}");
+            builder.AppendLine($"[Directory] {directoryPath}");
+            builder.AppendLine($"[Subdirectories] {subDirectories.Length}");
+            builder.AppendLine($"[Files] {files.Length}");
             builder.AppendLine();
 
             var listedCount = 0;
@@ -229,7 +229,7 @@ namespace ColorVision.Copilot
                 if (listedCount >= MaxListedEntries)
                     break;
 
-                builder.Append("[目录] ")
+                builder.Append("[Directory] ")
                     .AppendLine(Path.GetFileName(subDirectory));
                 listedCount++;
             }
@@ -239,7 +239,7 @@ namespace ColorVision.Copilot
                 if (listedCount >= MaxListedEntries)
                     break;
 
-                builder.Append("[文件] ")
+                builder.Append("[File] ")
                     .AppendLine(Path.GetFileName(file));
                 listedCount++;
             }
@@ -247,13 +247,13 @@ namespace ColorVision.Copilot
             if (subDirectories.Length + files.Length > listedCount)
             {
                 builder.AppendLine();
-                builder.AppendLine($"...<目录内容较多，仅展示前 {listedCount} 项。>");
+                builder.AppendLine($"...<directory content truncated; showing the first {listedCount} entries.>");
             }
 
             return new CopilotCapabilityResult
             {
                 Success = true,
-                Summary = $"已列出 {GetDirectoryLabel(directoryPath)}，包含 {subDirectories.Length} 个子目录、{files.Length} 个文件。",
+                Summary = $"Listed {GetDirectoryLabel(directoryPath)} with {subDirectories.Length} subdirectories and {files.Length} files.",
                 Content = builder.ToString().TrimEnd(),
                 SuggestedReadableLocalFilePaths = files
                     .Where(CopilotWorkspaceSearchSupport.IsTextLikeFile)

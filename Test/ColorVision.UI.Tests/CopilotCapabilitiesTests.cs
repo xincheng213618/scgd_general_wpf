@@ -93,7 +93,7 @@ public sealed class CopilotCapabilitiesTests : IDisposable
             CancellationToken.None);
 
         Assert.True(result.Success);
-        Assert.Contains("第 2-3 行", result.Summary, StringComparison.Ordinal);
+        Assert.Contains("lines 2-3", result.Summary, StringComparison.Ordinal);
         Assert.Contains("theme", result.Content, StringComparison.Ordinal);
         Assert.DoesNotContain("{", result.Content, StringComparison.Ordinal);
     }
@@ -115,7 +115,7 @@ public sealed class CopilotCapabilitiesTests : IDisposable
             CancellationToken.None);
 
         Assert.False(result.Success);
-        Assert.Contains("不在当前允许读取列表", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("not in the current allowed read list", result.ErrorMessage, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -131,8 +131,8 @@ public sealed class CopilotCapabilitiesTests : IDisposable
         var result = CopilotListDirectoryCapability.List(new[] { _tempRoot }, _tempRoot, CancellationToken.None);
 
         Assert.True(result.Success);
-        Assert.Contains("[目录] Templates", result.Content, StringComparison.Ordinal);
-        Assert.Contains("[文件] README.md", result.Content, StringComparison.Ordinal);
+        Assert.Contains("[Directory] Templates", result.Content, StringComparison.Ordinal);
+        Assert.Contains("[File] README.md", result.Content, StringComparison.Ordinal);
         Assert.Contains(textFilePath, result.SuggestedReadableLocalFilePaths, StringComparer.OrdinalIgnoreCase);
         Assert.DoesNotContain(binaryFilePath, result.SuggestedReadableLocalFilePaths, StringComparer.OrdinalIgnoreCase);
     }
