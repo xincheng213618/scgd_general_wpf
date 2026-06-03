@@ -94,24 +94,24 @@ namespace ColorVision.Copilot
         public CopilotPromptDispatchResult DispatchExceptionPrompt(string prompt)
         {
             if (string.IsNullOrWhiteSpace(prompt))
-                return new CopilotPromptDispatchResult(false, false, "没有可发送的异常内容。");
+                return new CopilotPromptDispatchResult(false, false, "No exception content is available to send.");
 
             if (!CanShowPanel)
-                return new CopilotPromptDispatchResult(false, false, "主界面的 AI 视图尚未就绪。");
+                return new CopilotPromptDispatchResult(false, false, "The main AI panel is not ready yet.");
 
             if (!IsConfigured)
-                return new CopilotPromptDispatchResult(false, false, "当前 AI 未配置，无法直接发送异常诊断请求。");
+                return new CopilotPromptDispatchResult(false, false, "AI is not configured, so the exception diagnosis request cannot be sent.");
 
             var viewModel = GetOrCreateViewModel();
             ShowPanel();
 
             var queueResult = viewModel.QueueExternalPrompt(prompt, startNewConversation: true, sendNow: true, mode: CopilotAgentMode.Diagnose);
             if (queueResult.WasSent)
-                return new CopilotPromptDispatchResult(true, true, "已发送到主界面的 AI 视图。");
+                return new CopilotPromptDispatchResult(true, true, "Sent to the main AI panel.");
 
             return new CopilotPromptDispatchResult(queueResult.Accepted, false, viewModel.IsBusy
-                ? "AI 正在生成，已把异常上下文放到输入框。"
-                : "已把异常上下文放到 AI 输入框。");
+                ? "AI is busy. The exception context was placed in the input box."
+                : "The exception context was placed in the AI input box.");
         }
 
         private static CopilotAgentMode MapPromptMode(CopilotPromptMode mode)
@@ -146,12 +146,12 @@ namespace ColorVision.Copilot
             if (builder.Length > 0)
                 builder.AppendLine().AppendLine();
 
-            builder.AppendLine("# 调用方附加上下文");
+            builder.AppendLine("# Caller-provided context");
             foreach (var item in contextItems)
             {
-                builder.Append("## ").AppendLine(string.IsNullOrWhiteSpace(item.Title) ? "上下文" : item.Title.Trim());
+                builder.Append("## ").AppendLine(string.IsNullOrWhiteSpace(item.Title) ? "Context" : item.Title.Trim());
                 if (!string.IsNullOrWhiteSpace(item.Summary))
-                    builder.Append("摘要：").AppendLine(item.Summary.Trim());
+                    builder.Append("Summary: ").AppendLine(item.Summary.Trim());
 
                 if (!string.IsNullOrWhiteSpace(item.Content))
                     builder.AppendLine(item.Content.Trim());
@@ -176,7 +176,7 @@ namespace ColorVision.Copilot
             layoutManager.RegisterPanel(
                 CopilotPanelService.PanelId,
                 CopilotPanelService.GetInstance().GetOrCreatePanel(),
-                "对话助手",
+                CopilotUiText.CopilotPanelTitle,
                 PanelPosition.Right);
         }
     }

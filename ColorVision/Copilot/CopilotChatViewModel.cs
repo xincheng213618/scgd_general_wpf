@@ -250,14 +250,14 @@ namespace ColorVision.Copilot
             get => _composerTokenSummary;
             private set => SetProperty(ref _composerTokenSummary, value ?? string.Empty);
         }
-        private string _composerTokenSummary = "发送后显示真实 token usage";
+        private string _composerTokenSummary = "Token usage appears after sending";
 
         public string ComposerTokenDetails
         {
             get => _composerTokenDetails;
             private set => SetProperty(ref _composerTokenDetails, value ?? string.Empty);
         }
-        private string _composerTokenDetails = "当前不再做本地预估，只显示接口真实返回的 token usage。";
+        private string _composerTokenDetails = "Local estimates are disabled. This panel shows only token usage returned by the API.";
 
         public string TokenUsageBadgeText
         {
@@ -375,7 +375,7 @@ namespace ColorVision.Copilot
                 assistantMessage.IsReasoningInProgress = false;
 
                 if (string.IsNullOrWhiteSpace(assistantMessage.Content))
-                    assistantMessage.Content = "已取消当前回复。";
+                    assistantMessage.Content = "The current reply was cancelled.";
 
                 UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
 
@@ -387,7 +387,7 @@ namespace ColorVision.Copilot
                 assistantMessage.IsExecutionInProgress = false;
                 assistantMessage.IsReasoningInProgress = false;
                 assistantMessage.Content = string.IsNullOrWhiteSpace(assistantMessage.Content)
-                    ? $"请求失败：{ex.Message}"
+                    ? $"Request failed: {ex.Message}"
                     : assistantMessage.Content;
 
                 UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
@@ -425,7 +425,7 @@ namespace ColorVision.Copilot
             bool refreshExternalContext)
         {
             if (_currentRequestCts == null)
-                throw new InvalidOperationException("请求上下文尚未初始化。");
+                throw new InvalidOperationException("Request context has not been initialized.");
 
             if (userMessage.RequestMode == CopilotAgentMode.Chat)
             {
@@ -464,7 +464,7 @@ namespace ColorVision.Copilot
         {
             if (!refreshExternalContext && !string.IsNullOrWhiteSpace(userMessage.RequestContent))
             {
-                AppendAssistantExecutionTrace(assistantMessage, "复用上次执行得到的上下文，未重新调用工具。");
+                AppendAssistantExecutionTrace(assistantMessage, "Reused the context from the previous run without calling tools again.");
                 assistantMessage.IsExecutionInProgress = true;
                 assistantMessage.IsExecutionExpanded = true;
 
@@ -826,19 +826,19 @@ namespace ColorVision.Copilot
 
             var builder = new StringBuilder();
             builder.Append('[').Append(result.ToolName).Append(']').AppendLine();
-            builder.Append("状态：").AppendLine(result.Success ? "成功" : "失败");
+            builder.Append("Status: ").AppendLine(result.Success ? "Success" : "Failed");
 
             if (!string.IsNullOrWhiteSpace(result.Summary))
-                builder.Append("摘要：").AppendLine(result.Summary);
+                builder.Append("Summary: ").AppendLine(result.Summary);
 
             if (!string.IsNullOrWhiteSpace(result.Content))
             {
-                builder.AppendLine("结果：");
+                builder.AppendLine("Result:");
                 builder.AppendLine(result.Content.Trim());
             }
 
             if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
-                builder.Append("错误：").Append(result.ErrorMessage);
+                builder.Append("Error: ").Append(result.ErrorMessage);
 
             return builder.ToString().TrimEnd();
         }
@@ -852,8 +852,8 @@ namespace ColorVision.Copilot
                 return;
 
             assistantMessage.Content = assistantMessage.HasReasoning || assistantMessage.HasExecutionTrace
-                ? "未收到最终回答，只拿到了执行过程或推理内容。"
-                : "接口返回成功，但没有可显示的文本。";
+                ? "No final answer was received; only execution trace or reasoning content is available."
+                : "The API returned successfully, but no displayable text was found.";
         }
 
         private void ApplyAssistantDelta(CopilotChatMessage assistantMessage, CopilotStreamDelta delta)
@@ -1255,7 +1255,7 @@ namespace ColorVision.Copilot
             if (conversation == null)
                 return;
 
-            var window = new CopilotTextInputWindow("重命名会话", "输入新的会话名称", conversation.Title)
+            var window = new CopilotTextInputWindow("Rename Chat", "Enter a new chat name", conversation.Title)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -1275,7 +1275,7 @@ namespace ColorVision.Copilot
 
             if (MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                $"确定要删除会话“{conversation.Title}”吗？",
+                $"Delete chat \"{conversation.Title}\"?",
                 "ColorVision",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question) != MessageBoxResult.Yes)
@@ -1319,7 +1319,7 @@ namespace ColorVision.Copilot
             {
                 Multiselect = true,
                 CheckFileExists = true,
-                Filter = "所有文件|*.*",
+                Filter = "All files|*.*",
             };
 
             if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
@@ -1339,7 +1339,7 @@ namespace ColorVision.Copilot
         private void AddContextAttachment()
         {
             var conversation = EnsureConversation();
-            var window = new CopilotTextInputWindow("挂载上下文", "输入要附加到当前会话的上下文说明", string.Empty, isMultiline: true)
+            var window = new CopilotTextInputWindow("Attach Context", "Enter the context to attach to this chat", string.Empty, isMultiline: true)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -1369,7 +1369,7 @@ namespace ColorVision.Copilot
         private async Task AddWebPageAttachmentAsync()
         {
             var conversation = EnsureConversation();
-            var window = new CopilotTextInputWindow("挂载网页", "输入要抓取并附加到当前会话的网页地址", "https://")
+            var window = new CopilotTextInputWindow("Attach Web Page", "Enter the web page URL to fetch and attach", "https://")
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -1383,7 +1383,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "网页地址格式不正确。",
+                    "The web page URL is invalid.",
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -1415,7 +1415,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"抓取网页失败：{ex.Message}",
+                    $"Failed to fetch web page: {ex.Message}",
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -1433,7 +1433,7 @@ namespace ColorVision.Copilot
 
             MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                "剪贴板里没有可挂载的图片。",
+                "The clipboard does not contain an image that can be attached.",
                 "ColorVision",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -1455,7 +1455,7 @@ namespace ColorVision.Copilot
 
                 var conversation = EnsureConversation();
                 var imagePath = SaveClipboardImage(image);
-                var title = $"粘贴图片 {DateTime.Now:HH:mm:ss}";
+                var title = $"Pasted Image {DateTime.Now:HH:mm:ss}";
                 conversation.Attachments.Add(CopilotAttachmentItem.CreateImage(imagePath, title));
                 UpdateAttachmentsState(conversation);
                 return true;
@@ -1464,7 +1464,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"粘贴图片失败：{ex.Message}",
+                    $"Failed to paste image: {ex.Message}",
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -1489,7 +1489,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"复制消息失败：{ex.Message}",
+                    $"Failed to copy message: {ex.Message}",
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -1555,7 +1555,7 @@ namespace ColorVision.Copilot
                 replacementAssistantMessage.IsReasoningInProgress = false;
 
                 if (string.IsNullOrWhiteSpace(replacementAssistantMessage.Content))
-                    replacementAssistantMessage.Content = "已取消当前回复。";
+                    replacementAssistantMessage.Content = "The current reply was cancelled.";
 
                 UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
 
@@ -1566,7 +1566,7 @@ namespace ColorVision.Copilot
             {
                 if (replacementAssistantMessage == null)
                 {
-                    replacementAssistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, $"请求失败：{ex.Message}")
+                    replacementAssistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, $"Request failed: {ex.Message}")
                     {
                         AssistantName = ResolveAssistantHeader(requestProfile),
                     };
@@ -1576,7 +1576,7 @@ namespace ColorVision.Copilot
                 replacementAssistantMessage.IsExecutionInProgress = false;
                 replacementAssistantMessage.IsReasoningInProgress = false;
                 replacementAssistantMessage.Content = string.IsNullOrWhiteSpace(replacementAssistantMessage.Content)
-                    ? $"请求失败：{ex.Message}"
+                    ? $"Request failed: {ex.Message}"
                     : replacementAssistantMessage.Content;
 
                 UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
@@ -1649,7 +1649,7 @@ namespace ColorVision.Copilot
 
             if (!string.IsNullOrWhiteSpace(execution))
             {
-                sections.Add("执行过程：");
+                sections.Add("Execution:");
                 sections.Add(execution);
             }
 
@@ -1658,7 +1658,7 @@ namespace ColorVision.Copilot
                 if (sections.Count > 0)
                     sections.Add(string.Empty);
 
-                sections.Add("推理：");
+                sections.Add("Reasoning:");
                 sections.Add(reasoning);
             }
 
@@ -1667,7 +1667,7 @@ namespace ColorVision.Copilot
                 if (sections.Count > 0)
                     sections.Add(string.Empty);
 
-                sections.Add("回答：");
+                sections.Add("Answer:");
                 sections.Add(content);
             }
 
@@ -1747,7 +1747,7 @@ namespace ColorVision.Copilot
 
             if (IsBusy)
             {
-                summary = "正在等待接口返回真实 token usage...";
+                summary = "Waiting for token usage from the API...";
                 details = BuildPendingComposerTokenDetails();
             }
             else if (SelectedConversation?.LastUsage.HasAny == true)
@@ -1757,17 +1757,17 @@ namespace ColorVision.Copilot
             }
             else if (SelectedProfile == null)
             {
-                summary = "未选择模型";
-                details = "请选择或配置模型后再发送。当前面板只显示接口真实返回的 token usage。";
+                summary = "No model selected";
+                details = "Select or configure a model before sending. This panel shows only token usage returned by the API.";
             }
             else if (SelectedConversation?.Messages.Count > 0)
             {
-                summary = "最近一次请求未返回 token usage";
+                summary = "The last request did not return token usage";
                 details = BuildUnavailableUsageDetails(SelectedConversation);
             }
             else
             {
-                summary = "发送后显示真实 token usage";
+                summary = "Token usage appears after sending";
                 details = BuildIdleComposerTokenDetails();
             }
 
@@ -1791,23 +1791,23 @@ namespace ColorVision.Copilot
 
         private string BuildActualUsageSummary(CopilotTokenUsage usage)
         {
-            return $"最近一次：输入 {CopilotTokenUsage.FormatCount(usage.InputTokens)} · 输出 {CopilotTokenUsage.FormatCount(usage.OutputTokens)} · 总计 {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}";
+            return $"Last request: input {CopilotTokenUsage.FormatCount(usage.InputTokens)} · output {CopilotTokenUsage.FormatCount(usage.OutputTokens)} · total {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}";
         }
 
         private string BuildActualUsageDetails(CopilotConversationRecord conversation, CopilotTokenUsage usage)
         {
             var mode = ResolveLastRequestMode(conversation);
             var builder = new StringBuilder();
-            builder.AppendLine($"模型：{ResolveUsageModelLabel(conversation)}");
-            builder.AppendLine($"模式：{ResolveModeLabel(mode)}");
-            builder.AppendLine($"输入 tokens：{CopilotTokenUsage.FormatCount(usage.InputTokens)}");
-            builder.AppendLine($"输出 tokens：{CopilotTokenUsage.FormatCount(usage.OutputTokens)}");
-            builder.AppendLine($"总计 tokens：{CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}");
+            builder.AppendLine($"Model: {ResolveUsageModelLabel(conversation)}");
+            builder.AppendLine($"Mode: {ResolveModeLabel(mode)}");
+            builder.AppendLine($"Input tokens: {CopilotTokenUsage.FormatCount(usage.InputTokens)}");
+            builder.AppendLine($"Output tokens: {CopilotTokenUsage.FormatCount(usage.OutputTokens)}");
+            builder.AppendLine($"Total tokens: {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}");
             builder.AppendLine();
-            builder.Append("说明：这里显示的是接口真实返回的最近一次请求 usage。");
+            builder.Append("Note: this shows the most recent usage returned by the API.");
 
             if (mode != CopilotAgentMode.Chat)
-                builder.Append(" Agent 模式已累计 planner 和最终回答的多次模型调用。");
+                builder.Append(" Agent mode includes multiple model calls from planning and the final answer.");
 
             return builder.ToString().TrimEnd();
         }
@@ -1815,30 +1815,30 @@ namespace ColorVision.Copilot
         private string BuildPendingComposerTokenDetails()
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"模型：{SelectedProfile?.DisplayLabel}");
-            builder.AppendLine($"模式：{ResolveModeLabel(SelectedAgentMode)}");
+            builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel}");
+            builder.AppendLine($"Mode: {ResolveModeLabel(SelectedAgentMode)}");
             builder.AppendLine();
-            builder.Append("说明：当前只显示接口真实返回的 usage，统计会在本次请求完成后刷新。");
+            builder.Append("Note: only API-returned usage is shown. It will refresh when this request completes.");
             return builder.ToString();
         }
 
         private string BuildUnavailableUsageDetails(CopilotConversationRecord conversation)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"模型：{ResolveUsageModelLabel(conversation)}");
-            builder.AppendLine($"模式：{ResolveModeLabel(ResolveLastRequestMode(conversation))}");
+            builder.AppendLine($"Model: {ResolveUsageModelLabel(conversation)}");
+            builder.AppendLine($"Mode: {ResolveModeLabel(ResolveLastRequestMode(conversation))}");
             builder.AppendLine();
-            builder.Append("说明：当前面板不再做本地预估，只显示接口真实返回的 usage。最近一次请求没有返回 usage 字段，所以这里没有可显示的输入/输出 token。");
+            builder.Append("Note: local estimates are disabled. The last request did not return a usage field, so input and output token counts are unavailable.");
             return builder.ToString();
         }
 
         private string BuildIdleComposerTokenDetails()
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"模型：{SelectedProfile?.DisplayLabel}");
-            builder.AppendLine($"模式：{ResolveModeLabel(SelectedAgentMode)}");
+            builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel}");
+            builder.AppendLine($"Mode: {ResolveModeLabel(SelectedAgentMode)}");
             builder.AppendLine();
-            builder.Append("说明：发送后如果接口返回 usage 字段，这里会显示真实的输入、输出和总计 tokens。");
+            builder.Append("Note: if the API returns usage after sending, this panel will show real input, output, and total token counts.");
             return builder.ToString();
         }
 
@@ -1884,7 +1884,7 @@ namespace ColorVision.Copilot
             var title = (rawTitle ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
             title = title.Trim('"', '\'', '“', '”', '‘', '’', '《', '》', '【', '】', '「', '」');
 
-            if (title.StartsWith("标题", StringComparison.Ordinal))
+            if (title.StartsWith("\u6807\u9898", StringComparison.Ordinal))
             {
                 var separatorIndex = title.IndexOfAny(new[] { ':', '：', '-', ' ' });
                 if (separatorIndex >= 0 && separatorIndex < title.Length - 1)
@@ -1955,7 +1955,7 @@ namespace ColorVision.Copilot
                 return;
 
             var normalizedTitle = string.IsNullOrWhiteSpace(attachmentTitle)
-                ? contextItems.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Title))?.Title ?? "附加上下文"
+                ? contextItems.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Title))?.Title ?? "Attached Context"
                 : attachmentTitle.Trim();
 
             CopilotAttachmentItem? existingAttachment;
@@ -2022,7 +2022,7 @@ namespace ColorVision.Copilot
                 return string.Empty;
 
             var builder = new StringBuilder();
-            builder.AppendLine("以下是当前会话挂载的附加上下文。它们是用户明确提供的参考信息，回答时请按需使用：");
+            builder.AppendLine("The following context is attached to the current chat. It was explicitly provided by the user; use it when relevant.");
 
             foreach (var attachment in SelectedConversation.Attachments)
             {
@@ -2044,7 +2044,7 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
-                builder.AppendLine($"[上下文] {attachment.DisplayLabel}");
+                builder.AppendLine($"[{CopilotUiText.ContextBadge}] {attachment.DisplayLabel}");
                 builder.AppendLine(attachment.Value);
                 builder.AppendLine();
             }
@@ -2058,7 +2058,7 @@ namespace ColorVision.Copilot
                 return string.Empty;
 
             var builder = new StringBuilder();
-            builder.AppendLine("以下是用户显式附加的业务快照。它是在点击“问 Copilot”或手动附加时抓取的固定内容；回答时应优先基于这些快照分析。")
+            builder.AppendLine("The following business snapshots were explicitly attached by the user. They are fixed snapshots captured by the app or attached manually; prioritize them when answering.")
                 .AppendLine();
 
             foreach (var item in contextItems)
@@ -2066,11 +2066,11 @@ namespace ColorVision.Copilot
                 if (item == null)
                     continue;
 
-                var title = string.IsNullOrWhiteSpace(item.Title) ? "上下文" : item.Title.Trim();
+                var title = string.IsNullOrWhiteSpace(item.Title) ? CopilotUiText.ContextBadge : item.Title.Trim();
                 builder.Append("## ").AppendLine(title);
 
                 if (!string.IsNullOrWhiteSpace(item.Summary))
-                    builder.Append("摘要：").AppendLine(item.Summary.Trim());
+                    builder.Append("Summary: ").AppendLine(item.Summary.Trim());
 
                 if (!string.IsNullOrWhiteSpace(item.Content))
                     builder.AppendLine(item.Content.Trim());
@@ -2086,31 +2086,31 @@ namespace ColorVision.Copilot
             try
             {
                 if (!File.Exists(attachment.Value))
-                    return $"[文件] {attachment.Value}\n文件当前不存在，无法读取。\n";
+                    return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nThe file does not exist and cannot be read.\n";
 
                 var content = File.ReadAllText(attachment.Value);
                 if (content.Length > AttachmentContentLimit)
-                    content = content[..AttachmentContentLimit] + "\n...<已截断>";
+                    content = content[..AttachmentContentLimit] + "\n...<truncated>";
 
                 var fence = ResolveCodeFence(attachment.Value);
-                return $"[文件] {attachment.Value}\n~~~{fence}\n{content}\n~~~\n";
+                return $"[{CopilotUiText.FileBadge}] {attachment.Value}\n~~~{fence}\n{content}\n~~~\n";
             }
             catch (Exception ex)
             {
-                return $"[文件] {attachment.Value}\n读取失败：{ex.Message}\n";
+                return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nRead failed: {ex.Message}\n";
             }
         }
 
         private static string BuildImageAttachmentBlock(CopilotAttachmentItem attachment)
         {
             if (!File.Exists(attachment.Value))
-                return $"[图片] {attachment.DisplayLabel}\n本地图片附件不存在：{attachment.Value}\n";
+                return $"[{CopilotUiText.ImageBadge}] {attachment.DisplayLabel}\nThe local image attachment does not exist: {attachment.Value}\n";
 
             return string.Join(Environment.NewLine, new[]
             {
-                $"[图片] {attachment.DisplayLabel}",
-                $"本地图片路径：{attachment.Value}",
-                "当前版本会在界面显示图片预览，但不会自动把像素内容上传给模型。",
+                $"[{CopilotUiText.ImageBadge}] {attachment.DisplayLabel}",
+                $"Local image path: {attachment.Value}",
+                "The current version shows image previews in the UI but does not automatically upload pixel content to the model.",
                 string.Empty,
             });
         }
@@ -2119,12 +2119,12 @@ namespace ColorVision.Copilot
         {
             var content = attachment.Value ?? string.Empty;
             if (content.Length > AttachmentContentLimit)
-                content = content[..AttachmentContentLimit] + "\n...<已截断>";
+                content = content[..AttachmentContentLimit] + "\n...<truncated>";
 
             return string.Join(Environment.NewLine, new[]
             {
-                $"[网页] {attachment.DisplayLabel}",
-                $"来源：{attachment.Source}",
+                $"[{CopilotUiText.WebPageBadge}] {attachment.DisplayLabel}",
+                $"Source: {attachment.Source}",
                 content,
                 string.Empty,
             });
@@ -2146,8 +2146,8 @@ namespace ColorVision.Copilot
 
             builder.AppendLine();
             builder.AppendLine();
-            builder.AppendLine("[本地网页上下文注入]");
-            builder.AppendLine("以下网页内容由本地程序在发送前实际抓取。你必须只基于这些抓取结果回答网页问题，不要再说无法浏览互联网；如果抓取失败，或抓取内容里没有相关信息，必须明确说明无法基于真实网页内容完成分析，不能假设网页包含未抓取到的信息。");
+            builder.AppendLine("[Local Web Context Injection]");
+            builder.AppendLine("The following web page content was fetched locally before sending. Answer web-page questions only from these fetched results. If fetching failed or the fetched content lacks relevant information, say so explicitly and do not assume unseen page content.");
 
             var remainingCharacters = MaxWebPageInjectionChars;
             foreach (var url in urls)
@@ -2160,7 +2160,7 @@ namespace ColorVision.Copilot
                     builder.AppendLine();
                     builder.Append(contextBlock[..remainingCharacters]);
                     builder.AppendLine();
-                    builder.AppendLine("...<网页上下文已截断>");
+                    builder.AppendLine("...<web context truncated>");
                     break;
                 }
 
@@ -2171,7 +2171,7 @@ namespace ColorVision.Copilot
                 if (remainingCharacters <= 0)
                 {
                     builder.AppendLine();
-                    builder.AppendLine("...<网页上下文已截断>");
+                    builder.AppendLine("...<web context truncated>");
                     break;
                 }
             }
@@ -2188,15 +2188,15 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(liveContext.Title) && string.IsNullOrWhiteSpace(liveContext.Summary))
                 return;
 
-            builder.AppendLine("[当前窗口上下文]");
+            builder.AppendLine("[Current Window Context]");
 
             if (!string.IsNullOrWhiteSpace(liveContext.Title))
-                builder.Append("位置：").AppendLine(liveContext.Title.Trim());
+                builder.Append("Location: ").AppendLine(liveContext.Title.Trim());
 
             if (!string.IsNullOrWhiteSpace(liveContext.Summary))
-                builder.Append("摘要：").AppendLine(liveContext.Summary.Trim());
+                builder.Append("Summary: ").AppendLine(liveContext.Summary.Trim());
 
-            builder.AppendLine("以上仅是当前业务窗口的轻量摘要；若当前会话同时挂载了显式快照，请优先结合该快照回答。");
+            builder.AppendLine("This is a lightweight summary of the current business window. If explicit snapshots are also attached, prioritize those snapshots when answering.");
         }
 
         private async Task<string> BuildWebPageContextBlockAsync(string url, CancellationToken cancellationToken)

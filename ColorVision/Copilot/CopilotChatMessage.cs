@@ -121,7 +121,7 @@ namespace ColorVision.Copilot
         public bool IsUser => Role == CopilotChatRole.User;
 
         [JsonIgnore]
-        public string Header => IsUser ? "你" : string.IsNullOrWhiteSpace(AssistantName) ? "AI" : AssistantName;
+        public string Header => IsUser ? CopilotUiText.UserHeader : string.IsNullOrWhiteSpace(AssistantName) ? "AI" : AssistantName;
 
         public string AssistantName
         {
@@ -205,7 +205,7 @@ namespace ColorVision.Copilot
         private bool _isExecutionInProgress;
 
         [JsonIgnore]
-        public string ExecutionHeader => IsExecutionInProgress ? "执行中" : "执行过程";
+        public string ExecutionHeader => IsExecutionInProgress ? CopilotUiText.ExecutionInProgressHeader : CopilotUiText.ExecutionHeader;
 
         public string ReasoningContent
         {
@@ -240,7 +240,7 @@ namespace ColorVision.Copilot
         private bool _isReasoningInProgress;
 
         [JsonIgnore]
-        public string ReasoningHeader => IsReasoningInProgress ? "推理中" : "推理详情";
+        public string ReasoningHeader => IsReasoningInProgress ? CopilotUiText.ReasoningInProgressHeader : CopilotUiText.ReasoningHeader;
 
         public bool EnsureValid()
         {
@@ -306,7 +306,7 @@ namespace ColorVision.Copilot
             get => _title;
             set => SetProperty(ref _title, NormalizeText(value));
         }
-        private string _title = "新会话";
+        private string _title = CopilotUiText.NewConversationTitle;
 
         public bool HasCustomTitle
         {
@@ -334,7 +334,7 @@ namespace ColorVision.Copilot
             get => _previewText;
             set => SetProperty(ref _previewText, value ?? string.Empty);
         }
-        private string _previewText = "点击 + 新建或直接输入问题";
+        private string _previewText = CopilotUiText.EmptyConversationPreview;
 
         public string ProfileId
         {
@@ -397,10 +397,10 @@ namespace ColorVision.Copilot
         public string UpdatedLabel => UpdatedAt.Date == DateTime.Today ? UpdatedAt.ToString("HH:mm") : UpdatedAt.ToString("M/d");
 
         [JsonIgnore]
-        public string PinLabel => IsPinned ? "置顶" : string.Empty;
+        public string PinLabel => IsPinned ? CopilotUiText.PinnedLabel : string.Empty;
 
         [JsonIgnore]
-        public string PinMenuText => IsPinned ? "取消置顶" : "置顶";
+        public string PinMenuText => IsPinned ? CopilotUiText.UnpinMenuText : CopilotUiText.PinMenuText;
 
         [JsonIgnore]
         public CopilotTokenUsage LastUsage => new(LastUsageInputTokens, LastUsageOutputTokens, LastUsageTotalTokens);
@@ -465,7 +465,7 @@ namespace ColorVision.Copilot
         public void RefreshSummary()
         {
             var firstUserMessage = Messages.FirstOrDefault(message => message.Role == CopilotChatRole.User && !string.IsNullOrWhiteSpace(message.Content));
-            var generatedTitle = firstUserMessage == null ? "新会话" : BuildPreview(firstUserMessage.Content, 24);
+            var generatedTitle = firstUserMessage == null ? CopilotUiText.NewConversationTitle : BuildPreview(firstUserMessage.Content, 24);
             if (!HasCustomTitle || string.IsNullOrWhiteSpace(Title))
                 Title = generatedTitle;
 
@@ -477,8 +477,8 @@ namespace ColorVision.Copilot
             }
 
             PreviewText = Attachments.Count > 0
-                ? $"已挂载 {Attachments.Count} 个文件/上下文"
-                : "点击 + 新建或直接输入问题";
+                ? CopilotUiText.FormatAttachmentMountedCount(Attachments.Count)
+                : CopilotUiText.EmptyConversationPreview;
         }
 
         public void SetCustomTitle(string title)
@@ -500,8 +500,8 @@ namespace ColorVision.Copilot
                 HasCustomTitle = false,
                 ProfileId = profileId,
                 ProfileDisplayName = profileDisplayName,
-                Title = "新会话",
-                PreviewText = "点击 + 新建或直接输入问题",
+                Title = CopilotUiText.NewConversationTitle,
+                PreviewText = CopilotUiText.EmptyConversationPreview,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
             };
@@ -590,10 +590,10 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public string BadgeText => Type switch
         {
-            CopilotAttachmentType.File => "文件",
-            CopilotAttachmentType.Image => "图片",
-            CopilotAttachmentType.WebPage => "网页",
-            _ => "上下文",
+            CopilotAttachmentType.File => CopilotUiText.FileBadge,
+            CopilotAttachmentType.Image => CopilotUiText.ImageBadge,
+            CopilotAttachmentType.WebPage => CopilotUiText.WebPageBadge,
+            _ => CopilotUiText.ContextBadge,
         };
 
         [JsonIgnore]
@@ -662,7 +662,7 @@ namespace ColorVision.Copilot
         public bool IsStoredImageFile => Type == CopilotAttachmentType.Image && !string.IsNullOrWhiteSpace(Value);
 
         [JsonIgnore]
-        public string ImageFallbackText => HasPreviewImage ? string.Empty : "图片预览不可用";
+        public string ImageFallbackText => HasPreviewImage ? string.Empty : CopilotUiText.ImagePreviewUnavailable;
 
         [JsonIgnore]
         public string ImageMetaText => CreatedAt.ToString("M/d HH:mm");

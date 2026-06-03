@@ -43,4 +43,27 @@ public sealed class CopilotProfileConfigTests
         Assert.DoesNotContain("GLM / \u667a\u8c31", labels, StringComparer.Ordinal);
         Assert.DoesNotContain("\u5c0f\u7c73 Mimo", labels, StringComparer.Ordinal);
     }
+
+    [Fact]
+    public void EnsureInitialized_RemovesExpiredTemporaryProfilesAndKeepsDefaultProfile()
+    {
+        var config = new CopilotConfig
+        {
+            McpBearerToken = "test-token",
+            McpPort = CopilotConfig.DefaultMcpPort,
+        };
+        config.Profiles.Add(new CopilotProfileConfig
+        {
+            Id = "builtin-minimax-trial-20260527",
+            Name = "MiniMax 2 Trial",
+            BaseUrl = "https://example.invalid",
+            Model = "expired-trial-model",
+            ApiKey = "expired-trial-key",
+        });
+
+        Assert.True(config.EnsureInitialized());
+        Assert.DoesNotContain(config.Profiles, profile => string.Equals(profile.Id, "builtin-minimax-trial-20260527", StringComparison.Ordinal));
+        Assert.NotEmpty(config.Profiles);
+        Assert.Contains(config.Profiles, profile => string.Equals(profile.Name, "DeepSeek Default", StringComparison.Ordinal));
+    }
 }
