@@ -363,18 +363,27 @@ public abstract class BaseStartNode : CVCommonNode
 		if (flowStatus == StatusTypeEnum.Failed || flowStatus == StatusTypeEnum.OverTime)
 		{
 			string text2 = string.Empty;
+			string msg = string.Empty;
 			if (startAction.Data.ContainsKey("ErrorNodeName"))
 			{
 				text2 = startAction.Data["ErrorNodeName"].ToString();
+			}
+			if (startAction.Data.ContainsKey("Msg"))
+			{
+				msg = startAction.Data["Msg"].ToString();
 			}
 			if (startAction.Data.ContainsKey(text2))
 			{
 				string text3 = startAction.Data[text2].ToString();
 				text = text2 + ":" + text3;
+				if (!string.IsNullOrWhiteSpace(msg))
+				{
+					text += "," + msg;
+				}
 			}
-			if (string.IsNullOrEmpty(text) && startAction.Data.ContainsKey("Msg"))
+			if (string.IsNullOrEmpty(text) && !string.IsNullOrWhiteSpace(msg))
 			{
-				text = startAction.Data["Msg"].ToString();
+				text = string.IsNullOrWhiteSpace(text2) ? msg : text2 + ":" + msg;
 			}
 		}
 		logger.InfoFormat("Fire Flow Finished Before");

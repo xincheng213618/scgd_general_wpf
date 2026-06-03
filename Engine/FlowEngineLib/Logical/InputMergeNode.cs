@@ -63,16 +63,18 @@ public class InputMergeNode : STNodeInHub
 	{
 		if (e.Status == ConnectionStatus.Connected && e.TargetOption.Data != null)
 		{
-			bool flag = true;
+			bool allInputsRunning = true;
 			if (e.TargetOption.DataType == typeof(CVStartCFC))
 			{
 				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
+				cVStartCFC.NormalizeStopStatus();
 				if (cVStartCFC.IsPaused)
 				{
 					DoResultOutTransferData(e.TargetOption.Data);
 				}
 				else if (ShouldEndFlowImmediately(cVStartCFC))
 				{
+					FinishFlow(cVStartCFC);
 					clearData();
 					DoResultOutTransferData(cVStartCFC);
 				}
@@ -89,14 +91,11 @@ public class InputMergeNode : STNodeInHub
 						if (sTNodeOption.DataType == typeof(CVStartCFC) && sTNodeOption.Data != null)
 						{
 							CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
-							if (cVStartCFC2.IsRunning)
-							{
-								flag = flag;
-							}
-							else
+							cVStartCFC2.NormalizeStopStatus();
+							if (!cVStartCFC2.IsRunning)
 							{
 								statusType = cVStartCFC2.FlowStatus;
-								flag = !flag && false;
+								allInputsRunning = false;
 							}
 							MergeAlgorithmPreStepParam mergeAlgorithmPreStepParam = new MergeAlgorithmPreStepParam(i);
 							getPreStepParam(cVStartCFC2, mergeAlgorithmPreStepParam);
@@ -108,13 +107,14 @@ public class InputMergeNode : STNodeInHub
 					if (num == base.InputOptionsCount - 1)
 					{
 						clearData();
-						if (flag)
+						if (allInputsRunning)
 						{
 							setNextStepParam(cVStartCFC, list);
 						}
 						else
 						{
 							cVStartCFC.SetStatusType(statusType);
+							FinishFlow(cVStartCFC);
 						}
 						DoResultOutTransferData(cVStartCFC);
 					}
@@ -130,9 +130,15 @@ public class InputMergeNode : STNodeInHub
 
 	private static bool ShouldEndFlowImmediately(CVStartCFC start)
 	{
-		return start.FlowStatus == StatusTypeEnum.Failed
-			|| start.FlowStatus == StatusTypeEnum.Canceled
-			|| start.FlowStatus == StatusTypeEnum.OverTime;
+		return start.TryGetStopStatus(out _);
+	}
+
+	private static void FinishFlow(CVStartCFC start)
+	{
+		if (start.TryDoFinishing())
+		{
+			start.FireFinished();
+		}
 	}
 
 	private void setNextStepParam(CVStartCFC start, List<MergeAlgorithmPreStepParam> master)

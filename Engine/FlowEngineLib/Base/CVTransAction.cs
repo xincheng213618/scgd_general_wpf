@@ -33,6 +33,7 @@ public class CVTransAction
 	public void NodeOverTime(string nodeName)
 	{
 		trans_action.OverTime(nodeName, startTime);
+		FinishFlow();
 	}
 
 	public void NodeFinished(string masterValue, int masterId, int masterResultType)
@@ -53,6 +54,15 @@ public class CVTransAction
 	public void NodeFailed(string msg, string nodeName)
 	{
 		trans_action.Failed(msg, nodeName, startTime);
+		FinishFlow();
+	}
+
+	private void FinishFlow()
+	{
+		if (trans_action.TryDoFinishing())
+		{
+			trans_action.FireFinished();
+		}
 	}
 
 	public void Cancel()

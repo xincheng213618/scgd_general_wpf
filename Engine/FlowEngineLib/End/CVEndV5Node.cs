@@ -59,13 +59,12 @@ public class CVEndV5Node : CVCommonNode
 
 	protected virtual void DoNodeEnded(CVStartCFC startAction)
 	{
-		if (!startAction.IsDel)
+		if (startAction.TryDoFinishing())
 		{
 			if (logger.IsDebugEnabled)
 			{
 				logger.DebugFormat("===============Flow Do Finishing => {0}/{1}", startAction.SerialNumber, startAction.FlowStatus.ToString());
 			}
-			startAction.DoFinishing();
 			if (logger.IsInfoEnabled)
 			{
 				logger.InfoFormat("===============Flow Finished[{0}/{1}/{2}]============", startAction.SerialNumber, startAction.FlowStatus.ToString(), startAction.GetTotalTime().ToString());

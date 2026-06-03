@@ -31,16 +31,19 @@ public class LogicalANDNode : STNodeInHub
 	{
 		if (e.Status == ConnectionStatus.Connected && e.TargetOption.Data != null)
 		{
-			bool flag = true;
+			bool allInputsRunning = true;
 			if (e.TargetOption.DataType == typeof(CVStartCFC))
 			{
 				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
+				cVStartCFC.NormalizeStopStatus();
 				if (cVStartCFC.IsPaused)
 				{
 					DoResultOutTransferData(cVStartCFC);
 				}
 				else if (ShouldEndFlowImmediately(cVStartCFC))
 				{
+					EnsureStopData(cVStartCFC);
+					FinishFlow(cVStartCFC);
 					clearData();
 					DoResultOutTransferData(cVStartCFC);
 				}
@@ -50,20 +53,19 @@ public class LogicalANDNode : STNodeInHub
 					sender.Data = data;
 					int num = 0;
 					StatusTypeEnum statusType = StatusTypeEnum.Runing;
+					CVStartCFC stoppedInput = null;
 					for (int i = 0; i < base.InputOptionsCount; i++)
 					{
 						STNodeOption sTNodeOption = base.InputOptions[i];
 						if (sTNodeOption.DataType == typeof(CVStartCFC) && sTNodeOption.Data != null)
 						{
 							CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
-							if (cVStartCFC2.IsRunning)
-							{
-								flag = flag;
-							}
-							else
+							cVStartCFC2.NormalizeStopStatus();
+							if (!cVStartCFC2.IsRunning)
 							{
 								statusType = cVStartCFC2.FlowStatus;
-								flag = !flag && false;
+								allInputsRunning = false;
+								stoppedInput ??= cVStartCFC2;
 							}
 							num++;
 							if (cVStartCFC.IsRunning && i == 0 && cVStartCFC2.Data.ContainsKey("MasterId"))
@@ -76,9 +78,12 @@ public class LogicalANDNode : STNodeInHub
 					if (num == base.InputOptionsCount - 1)
 					{
 						clearData();
-						if (!flag)
+						if (!allInputsRunning)
 						{
+							CopyStopData(stoppedInput, cVStartCFC);
 							cVStartCFC.SetStatusType(statusType);
+							EnsureStopData(cVStartCFC);
+							FinishFlow(cVStartCFC);
 						}
 						DoResultOutTransferData(cVStartCFC);
 					}
@@ -94,9 +99,56 @@ public class LogicalANDNode : STNodeInHub
 
 	private static bool ShouldEndFlowImmediately(CVStartCFC start)
 	{
-		return start.FlowStatus == StatusTypeEnum.Failed
-			|| start.FlowStatus == StatusTypeEnum.Canceled
-			|| start.FlowStatus == StatusTypeEnum.OverTime;
+		return start.TryGetStopStatus(out _);
+	}
+
+	private void EnsureStopData(CVStartCFC start)
+	{
+		if (start == null || !ShouldEndFlowImmediately(start))
+		{
+			return;
+		}
+		string nodeName = base.Title;
+		if (start.Data.TryGetValue("ErrorNodeName", out object errorNodeNameObj))
+		{
+			string errorNodeName = Convert.ToString(errorNodeNameObj);
+			if (!string.IsNullOrWhiteSpace(errorNodeName))
+			{
+				nodeName = errorNodeName;
+			}
+			else
+			{
+				start.Data["ErrorNodeName"] = nodeName;
+			}
+		}
+		else
+		{
+			start.Data["ErrorNodeName"] = nodeName;
+		}
+		if (!start.Data.ContainsKey(nodeName))
+		{
+			start.Data[nodeName] = start.FlowStatus.ToString();
+		}
+	}
+
+	private static void CopyStopData(CVStartCFC source, CVStartCFC target)
+	{
+		if (source == null || target == null)
+		{
+			return;
+		}
+		foreach (var item in source.Data)
+		{
+			target.Data[item.Key] = item.Value;
+		}
+	}
+
+	private static void FinishFlow(CVStartCFC start)
+	{
+		if (start.TryDoFinishing())
+		{
+			start.FireFinished();
+		}
 	}
 
 	private void DoResultOutTransferData(CVStartCFC data)
