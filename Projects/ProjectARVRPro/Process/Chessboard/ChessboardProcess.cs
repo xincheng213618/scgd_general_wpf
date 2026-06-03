@@ -67,6 +67,10 @@ namespace ProjectARVRPro.Process.Chessboard
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.ChessboardTestResult = JsonConvert.DeserializeObject<ChessboardTestResult>(ctx.Result.ViewResultJson) ?? new ChessboardTestResult();
+                if (Config.SaveCsv)
+                {
+                    ChessboardCsvExporter.SavePoixyuvDatas(testResult.PoixyuvDatas, ctx, "Chessboard");
+                }
                 return true;
             }
             catch (Exception ex)

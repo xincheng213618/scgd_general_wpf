@@ -73,6 +73,10 @@ namespace ProjectARVRPro.Process.Chessboard
                 testResult.Items = CollectItems(chessboardResult);
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.DynamicTestResults[GetOutputName()] = testResult.Items;
+                if (Config.SaveCsv)
+                {
+                    ChessboardCsvExporter.SavePoixyuvDatas(chessboardResult.PoixyuvDatas, ctx, GetOutputName());
+                }
                 return true;
             }
             catch (Exception ex)
