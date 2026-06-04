@@ -1,6 +1,6 @@
 ﻿using ColorVision.Database;
 
-namespace ColorVision.Engine.Templates.Jsons.HDR
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.HDR
 {
     public class MysqlHDR : IMysqlCommand
     {

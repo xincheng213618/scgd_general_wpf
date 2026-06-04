@@ -3,12 +3,12 @@ using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Camera.Templates.HDR;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.Jsons.HDR;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
@@ -644,12 +644,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             ServicesHelper.SendCommand(sender, msgRecord);
 
-        }
-
-
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)

@@ -1,9 +1,7 @@
-﻿
-
-using ColorVision.Engine.Services.Devices.Camera.Templates;
+﻿using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Menus;
 
-namespace ColorVision.Engine.Templates.Jsons.HDR
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.HDR
 {
     public class MenuHDR : MenuItemTemplateBase
     {

@@ -1,8 +1,10 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Jsons;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.Jsons.HDR
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.HDR
 {
 
     public class TemplateHDR : ITemplateJson<TemplateJsonParam>, IITemplateLoad

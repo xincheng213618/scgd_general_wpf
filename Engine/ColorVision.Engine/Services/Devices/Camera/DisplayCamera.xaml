@@ -22,10 +22,10 @@
         </Style>
     </UserControl.Resources>
     <StackPanel>
-        <DockPanel Margin="0,0,5,0">
+        <DockPanel>
             <Grid DockPanel.Dock="Right" >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}" Command="{Binding PropertyCommand}" Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
-                <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
+                <Image Source="{DynamicResource DrawingImageProperty}" Height="18"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}"/>
             </Grid>
 
@@ -45,55 +45,7 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
-            <Button DockPanel.Dock="Right"  Command="{Binding PhyCamera.EditCommand}" Background="Transparent" BorderThickness="0" Padding="2" Height="20" Width="20" >
-                <Button.Triggers>
-                    <EventTrigger RoutedEvent="Button.Click">
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger>
-                </Button.Triggers>
-                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource GlobalTextBrush}">
-                    <TextBlock.RenderTransform>
-                        <RotateTransform x:Name="rotateTransform21" CenterX="7" CenterY="7"/>
-                    </TextBlock.RenderTransform>
-                </TextBlock>
-            </Button>
-            <Grid  DockPanel.Dock="Right"  ToolTip="{x:Static properties:Resources.CheckCameraTemperature}">
-                <Image Source="{DynamicResource DITemperature}" Stretch="Uniform" Height="18"/>
-                <Button   Background="Transparent" BorderThickness="0" Command="{Binding FetchLatestTemperatureCommand}"/>
-            </Grid>
-
-            <Grid  DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.SaveCurrentExposureAndOtherParameters}">
-                <Image Source="{DynamicResource DrawingImageSave}" Stretch="Uniform" Height="18">
-                    <Image.RenderTransform>
-                        <ScaleTransform x:Name="ScaleTransform"/>
-                    </Image.RenderTransform>
-                </Image>
-
-
-                <Button Background="Transparent" BorderThickness="0" Command="{Binding DisPlaySaveCommand}">
-                    <Button.Triggers>
-                        <EventTrigger RoutedEvent="Button.Click">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" From="1" To="0.8" Duration="0:0:0.1" FillBehavior="Stop"/>
-                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" From="1" To="0.8" Duration="0:0:0.1" FillBehavior="Stop"/>
-                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" From="0.8" To="1" BeginTime="0:0:0.1" Duration="0:0:0.1" FillBehavior="Stop"/>
-                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" From="0.8" To="1" BeginTime="0:0:0.1" Duration="0:0:0.1" FillBehavior="Stop"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </Button.Triggers>
-                </Button>
-            </Grid>
-            <Grid ToolTip="{Binding DService.DeviceStatus}">
-                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
-                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
-            </Grid>
-
+            <ToggleButton  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}"   ToolTip="{Binding DService.DeviceStatus}"/>
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
