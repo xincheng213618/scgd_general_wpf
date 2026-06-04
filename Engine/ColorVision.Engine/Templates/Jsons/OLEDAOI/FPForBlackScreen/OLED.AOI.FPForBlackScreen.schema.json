@@ -2,319 +2,81 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://colorvision.local/schemas/templates/jsons/OLED.AOI.FPForBlackScreen.schema.json",
   "title": "黑画面检测",
-  "description": "Auto-generated from t_scgd_sys_dictionary_mod_master.cfg_json. Providers may maintain titles, descriptions, ranges, units, groups, and UI hints without changing the C++ JSON interface.",
+  "description": "OLED 黑画面亮点检测参数。默认值来自开发者维护的 aoi_m2_black.cfg，对应 provider 文档中的 AOIBlackParam。",
   "type": "object",
   "additionalProperties": true,
   "default": {
-    "width": 12,
-    "height": 12,
-    "radius": 6,
-    "dark_lvs": [
-      1,
-      2,
-      3,
-      4,
-      6
-    ],
-    "lowRatio": 10,
-    "topRatio": 10,
-    "scan_type": 1,
-    "bright_lvs": [
-      1,
-      2,
-      3,
-      4,
-      6
-    ],
-    "edge_area_h": 120,
-    "edge_area_w": 160,
-    "edge_area_x": 239,
-    "edge_area_y": 179,
-    "faultPixelRatio": 4,
-    "badPixelNumThreshold": 102,
-    "brightPixelNumThreshold": 70,
-    "darkPixelLvRatioThreshold": 0.4,
-    "brightPixelLvRatioThreshold": 1.2,
-    "connectedBadPixelNumThreshold": 10
+    "brightPixelLvRatioThreshold": 1.1,
+    "avgTh": 10000,
+    "brightPixelNumThreshold": 10
   },
   "properties": {
-    "width": {
-      "type": "integer",
-      "title": "Width",
+    "brightPixelLvRatioThreshold": {
+      "type": "number",
+      "title": "亮点倍率阈值",
+      "description": "黑画面亮点倍率阈值。像素亮度超过该倍率条件时判定为亮点。",
+      "minimum": 0,
       "x-ui": {
         "order": 10
       },
-      "default": 12,
-      "$comment": "Provider/AI note: keep JSON path '$.width' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "default": 1.1,
       "x-provider": {
-        "jsonPath": "$.width",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+        "jsonPath": "$.brightPixelLvRatioThreshold",
+        "aiHint": "AOIBlackParam field from provider docs."
       }
     },
-    "height": {
-      "type": "integer",
-      "title": "Height",
+    "avgTh": {
+      "type": "number",
+      "title": "平均阈值",
+      "description": "黑画面平均阈值，provider 文档标注为可选字段。",
+      "minimum": 0,
       "x-ui": {
         "order": 20
       },
-      "default": 12,
-      "$comment": "Provider/AI note: keep JSON path '$.height' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "default": 10000,
       "x-provider": {
-        "jsonPath": "$.height",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "radius": {
-      "type": "integer",
-      "title": "Radius",
-      "x-ui": {
-        "order": 30
-      },
-      "default": 6,
-      "$comment": "Provider/AI note: keep JSON path '$.radius' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.radius",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "dark_lvs": {
-      "type": "array",
-      "title": "Dark lvs",
-      "x-ui": {
-        "order": 40
-      },
-      "default": [
-        1,
-        2,
-        3,
-        4,
-        6
-      ],
-      "items": {
-        "type": "integer",
-        "$comment": "Provider/AI note: keep JSON path '$.dark_lvs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-        "x-provider": {
-          "jsonPath": "$.dark_lvs[]",
-          "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-        }
-      },
-      "$comment": "Provider/AI note: keep JSON path '$.dark_lvs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.dark_lvs",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "lowRatio": {
-      "type": "integer",
-      "title": "Low Ratio",
-      "x-ui": {
-        "order": 50
-      },
-      "default": 10,
-      "$comment": "Provider/AI note: keep JSON path '$.lowRatio' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.lowRatio",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "topRatio": {
-      "type": "integer",
-      "title": "Top Ratio",
-      "x-ui": {
-        "order": 60
-      },
-      "default": 10,
-      "$comment": "Provider/AI note: keep JSON path '$.topRatio' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.topRatio",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "scan_type": {
-      "type": "integer",
-      "title": "Scan type",
-      "x-ui": {
-        "order": 70
-      },
-      "default": 1,
-      "$comment": "Provider/AI note: keep JSON path '$.scan_type' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.scan_type",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "bright_lvs": {
-      "type": "array",
-      "title": "Bright lvs",
-      "x-ui": {
-        "order": 80
-      },
-      "default": [
-        1,
-        2,
-        3,
-        4,
-        6
-      ],
-      "items": {
-        "type": "integer",
-        "$comment": "Provider/AI note: keep JSON path '$.bright_lvs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-        "x-provider": {
-          "jsonPath": "$.bright_lvs[]",
-          "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-        }
-      },
-      "$comment": "Provider/AI note: keep JSON path '$.bright_lvs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.bright_lvs",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "edge_area_h": {
-      "type": "integer",
-      "title": "Edge area h",
-      "x-ui": {
-        "order": 90
-      },
-      "default": 120,
-      "$comment": "Provider/AI note: keep JSON path '$.edge_area_h' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.edge_area_h",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "edge_area_w": {
-      "type": "integer",
-      "title": "Edge area w",
-      "x-ui": {
-        "order": 100
-      },
-      "default": 160,
-      "$comment": "Provider/AI note: keep JSON path '$.edge_area_w' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.edge_area_w",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "edge_area_x": {
-      "type": "integer",
-      "title": "Edge area x",
-      "x-ui": {
-        "order": 110
-      },
-      "default": 239,
-      "$comment": "Provider/AI note: keep JSON path '$.edge_area_x' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.edge_area_x",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "edge_area_y": {
-      "type": "integer",
-      "title": "Edge area y",
-      "x-ui": {
-        "order": 120
-      },
-      "default": 179,
-      "$comment": "Provider/AI note: keep JSON path '$.edge_area_y' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.edge_area_y",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "faultPixelRatio": {
-      "type": "integer",
-      "title": "Fault Pixel Ratio",
-      "x-ui": {
-        "order": 130
-      },
-      "default": 4,
-      "$comment": "Provider/AI note: keep JSON path '$.faultPixelRatio' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.faultPixelRatio",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "badPixelNumThreshold": {
-      "type": "integer",
-      "title": "Bad Pixel Num Threshold",
-      "x-ui": {
-        "order": 140
-      },
-      "default": 102,
-      "$comment": "Provider/AI note: keep JSON path '$.badPixelNumThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.badPixelNumThreshold",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+        "jsonPath": "$.avgTh",
+        "aiHint": "AOIBlackParam optional field from provider docs."
       }
     },
     "brightPixelNumThreshold": {
       "type": "integer",
-      "title": "Bright Pixel Num Threshold",
+      "title": "亮点数量阈值",
+      "description": "黑画面亮点数量阈值。",
+      "minimum": 0,
       "x-ui": {
-        "order": 150
-      },
-      "default": 70,
-      "$comment": "Provider/AI note: keep JSON path '$.brightPixelNumThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.brightPixelNumThreshold",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "darkPixelLvRatioThreshold": {
-      "type": "number",
-      "title": "Dark Pixel Lv Ratio Threshold",
-      "x-ui": {
-        "order": 160
-      },
-      "default": 0.4,
-      "$comment": "Provider/AI note: keep JSON path '$.darkPixelLvRatioThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.darkPixelLvRatioThreshold",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "brightPixelLvRatioThreshold": {
-      "type": "number",
-      "title": "Bright Pixel Lv Ratio Threshold",
-      "x-ui": {
-        "order": 170
-      },
-      "default": 1.2,
-      "$comment": "Provider/AI note: keep JSON path '$.brightPixelLvRatioThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
-      "x-provider": {
-        "jsonPath": "$.brightPixelLvRatioThreshold",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
-      }
-    },
-    "connectedBadPixelNumThreshold": {
-      "type": "integer",
-      "title": "Connected Bad Pixel Num Threshold",
-      "x-ui": {
-        "order": 180
+        "order": 30
       },
       "default": 10,
-      "$comment": "Provider/AI note: keep JSON path '$.connectedBadPixelNumThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
       "x-provider": {
-        "jsonPath": "$.connectedBadPixelNumThreshold",
-        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+        "jsonPath": "$.brightPixelNumThreshold",
+        "aiHint": "AOIBlackParam optional field from provider docs."
       }
     }
   },
   "x-colorvision": {
     "schemaVersion": "1.0",
-    "providerMaintained": false,
-    "generatedAt": "2026-06-04T07:32:58+08:00",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T09:36:19+08:00",
     "source": {
       "table": "t_scgd_sys_dictionary_mod_master",
       "field": "cfg_json",
       "id": 57,
       "code": "OLED.AOI.FPForBlackScreen",
       "name": "黑画面检测",
-      "version": null
+      "version": null,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "AOI检测文档和参数例子",
+        "defaultParamFile": "aoi_m2_black.cfg",
+        "docFiles": [
+          "cv_oled_JSON_CONFIG_REFERENCE.pdf",
+          "CvOledInterface.h"
+        ]
+      }
     },
     "notes": [
-      "The default value mirrors the current database cfg_json at generation time.",
+      "Defaults are sourced from provider-maintained AOI test-case config files because the database cfg_json may lag behind provider development.",
       "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
       "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
     ],
@@ -322,8 +84,8 @@
       "owner": "algorithm-provider",
       "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
       "aiInstructions": [
-        "Keep JSON property keys unchanged; C++ receives the JSON string by key.",
-        "Do not remove existing fields from default unless the database default and algorithm contract are updated together.",
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "Default/type may follow provider-maintained config files when database cfg_json is stale.",
         "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
         "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
         "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
@@ -342,10 +104,21 @@
       ],
       "doNotChangeWithoutContractUpdate": [
         "JSON property names",
-        "type",
-        "default",
         "additionalProperties"
       ]
-    }
-  }
+    },
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "AOI检测文档和参数例子",
+      "defaultParamFile": "aoi_m2_black.cfg",
+      "docFiles": [
+        "cv_oled_JSON_CONFIG_REFERENCE.pdf",
+        "CvOledInterface.h"
+      ]
+    },
+    "defaultSource": "provider-maintained-config"
+  },
+  "required": [
+    "brightPixelLvRatioThreshold"
+  ]
 }
