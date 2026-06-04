@@ -143,11 +143,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             }
         }
 
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
-        }
-
         private void CameraOffline_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)

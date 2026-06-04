@@ -115,15 +115,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
 
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
-        }
-
-
-
-
-
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
             string type = string.Empty;

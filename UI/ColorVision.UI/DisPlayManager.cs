@@ -281,9 +281,14 @@ namespace ColorVision.UI
             }
             else
             {
-                foreach (var group in GetGroupsInOrder())
+                var groupSections = GetGroupsInOrder()
+                    .Select(group => (Group: group, Controls: GetControlsInGroup(group.Id).ToList()))
+                    .Where(section => !IsDefaultGroup(section.Group.Id) || section.Controls.Count > 0)
+                    .ToList();
+
+                foreach (var sectionData in groupSections)
                 {
-                    var section = CreateGroupSection(group, GetControlsInGroup(group.Id).ToList());
+                    var section = CreateGroupSection(sectionData.Group, sectionData.Controls);
                     StackPanel.Children.Add(section);
                 }
             }
@@ -306,7 +311,7 @@ namespace ColorVision.UI
         {
             var section = new StackPanel
             {
-                Margin = new Thickness(0, 0, 0, 4),
+                Margin = new Thickness(0, 0, 3, 2),
                 Tag = group.Id,
                 AllowDrop = true
             };
@@ -314,8 +319,9 @@ namespace ColorVision.UI
 
             var header = new Border
             {
-                Padding = new Thickness(6, 3, 5, 3),
-                Margin = new Thickness(0, 0, 3, 2),
+                MinHeight = 22,
+                Padding = new Thickness(4, 1, 2, 1),
+                Margin = new Thickness(0),
                 BorderThickness = new Thickness(0, 0, 0, 1),
                 Cursor = Cursors.Hand,
                 Tag = group.Id,
@@ -323,6 +329,7 @@ namespace ColorVision.UI
             };
             header.SetResourceReference(Border.BackgroundProperty, "GlobalBackground");
             header.SetResourceReference(Border.BorderBrushProperty, "GlobalBorderBrush");
+            AttachGroupDropFeedback(header);
             header.MouseLeftButtonUp += (s, e) =>
             {
                 group.IsExpanded = !group.IsExpanded;
@@ -336,13 +343,14 @@ namespace ColorVision.UI
 
             var menuButton = new Button
             {
-                Content = "...",
+                Content = "⋯",
                 Padding = new Thickness(4, 0, 4, 0),
                 Margin = new Thickness(4, 0, 0, 0),
-                MinWidth = 22,
+                MinWidth = 18,
                 Height = 18,
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0),
+                Opacity = 0.6,
                 Tag = group
             };
             menuButton.ContextMenu = CreateGroupContextMenu(group);
@@ -360,8 +368,8 @@ namespace ColorVision.UI
 
             var arrow = new TextBlock
             {
-                Text = group.IsExpanded ? "▼" : "▶",
-                Width = 18,
+                Text = group.IsExpanded ? "▾" : "▸",
+                Width = 14,
                 FontSize = 11,
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -374,7 +382,8 @@ namespace ColorVision.UI
                 Text = controls.Count.ToString(),
                 Margin = new Thickness(6, 0, 0, 0),
                 VerticalAlignment = VerticalAlignment.Center,
-                Opacity = 0.65
+                FontSize = 12,
+                Opacity = 0.55
             };
             count.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
             DockPanel.SetDock(count, Dock.Right);
@@ -382,7 +391,8 @@ namespace ColorVision.UI
 
             var title = new TextBlock
             {
-                Text = group.Name,
+                Text = GetGroupDisplayName(group),
+                FontSize = 13,
                 FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis
@@ -404,6 +414,59 @@ namespace ColorVision.UI
 
             section.Children.Add(content);
             return section;
+        }
+
+        private static string GetGroupDisplayName(DisPlayGroupConfig group)
+        {
+            if (IsDefaultGroup(group.Id))
+                return "默认";
+
+            return string.IsNullOrWhiteSpace(group.Name) ? "未命名分组" : group.Name.Trim();
+        }
+
+        private static void AttachGroupDropFeedback(Border border)
+        {
+            border.MouseEnter += (s, e) => SetGroupHeaderHighlight(border, true);
+            border.MouseLeave += (s, e) => SetGroupHeaderHighlight(border, false);
+            border.DragEnter += GroupDropTarget_DragEnter;
+            border.DragOver += GroupDropTarget_DragOver;
+            border.DragLeave += GroupDropTarget_DragLeave;
+            border.Drop += GroupDropTarget_Drop;
+        }
+
+        private static void GroupDropTarget_DragEnter(object sender, DragEventArgs e)
+        {
+            if (sender is Border border && e.Data.GetDataPresent(DragDataFormat))
+            {
+                SetGroupHeaderHighlight(border, true);
+                e.Effects = DragDropEffects.Move;
+            }
+        }
+
+        private static void GroupDropTarget_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DragDataFormat))
+            {
+                e.Effects = DragDropEffects.Move;
+                e.Handled = true;
+            }
+        }
+
+        private static void GroupDropTarget_DragLeave(object sender, DragEventArgs e)
+        {
+            if (sender is Border border)
+                SetGroupHeaderHighlight(border, false);
+        }
+
+        private static void GroupDropTarget_Drop(object sender, DragEventArgs e)
+        {
+            if (sender is Border border)
+                SetGroupHeaderHighlight(border, false);
+        }
+
+        private static void SetGroupHeaderHighlight(Border border, bool isHighlighted)
+        {
+            border.SetResourceReference(Border.BackgroundProperty, isHighlighted ? "GlobalBorderBrush1" : "GlobalBackground");
         }
 
         private ContextMenu CreateGroupContextMenu(DisPlayGroupConfig group)
@@ -428,8 +491,8 @@ namespace ColorVision.UI
         {
             var border = new Border
             {
-                Margin = new Thickness(0, 4, 3, 4),
-                Padding = new Thickness(5, 4, 5, 4),
+                Margin = new Thickness(0, 2, 3, 2),
+                Padding = new Thickness(4, 3, 2, 3),
                 BorderThickness = new Thickness(0, 1, 0, 0)
             };
             border.SetResourceReference(Border.BorderBrushProperty, "GlobalBorderBrush");
@@ -439,20 +502,23 @@ namespace ColorVision.UI
 
             var button = new Button
             {
-                Content = "+ 新建分组",
-                Padding = new Thickness(8, 2, 8, 2),
-                MinHeight = 22,
+                Content = "+ 分组",
+                MinWidth = 56,
+                Height = 22,
                 HorizontalAlignment = HorizontalAlignment.Right
             };
+            button.SetResourceReference(FrameworkElement.StyleProperty, "ButtonDefault.Small");
             button.Click += (s, e) => CreateGroup();
             DockPanel.SetDock(button, Dock.Right);
             dockPanel.Children.Add(button);
 
+            int groupCount = DisPlayManagerConfig.Instance.Groups.Count(a => !IsDefaultGroup(a.Id));
             var textBlock = new TextBlock
             {
-                Text = "分组管理",
+                Text = groupCount > 0 ? $"{groupCount} 个分组" : "分组",
+                FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center,
-                Opacity = 0.65
+                Opacity = 0.55
             };
             textBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
             dockPanel.Children.Add(textBlock);
@@ -477,7 +543,8 @@ namespace ColorVision.UI
 
         private void DisplayControl_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is IDisPlayControl disPlayControl)
+            _dragSourceControl = null;
+            if (sender is IDisPlayControl disPlayControl && sender is DependencyObject owner && CanStartDisplayDrag(e.OriginalSource as DependencyObject, owner))
             {
                 _dragSourceControl = disPlayControl;
                 _dragStartPoint = e.GetPosition(null);
@@ -487,9 +554,6 @@ namespace ColorVision.UI
         private void DisplayControl_PreviewMouseMove(object sender, MouseEventArgs e)
         {
             if (_dragSourceControl == null || e.LeftButton != MouseButtonState.Pressed)
-                return;
-
-            if (IsDragBlockedSource(e.OriginalSource as DependencyObject))
                 return;
 
             Point position = e.GetPosition(null);
@@ -507,16 +571,31 @@ namespace ColorVision.UI
             _dragSourceControl = null;
         }
 
-        private static bool IsDragBlockedSource(DependencyObject? source)
+        private static bool CanStartDisplayDrag(DependencyObject? source, DependencyObject owner)
         {
+            ToggleButton? headerToggle = null;
             while (source != null)
             {
                 if (source is TextBoxBase || source is Slider || source is ComboBox || source is ScrollBar || source is Thumb)
-                    return true;
+                    return false;
+
+                if (source is FrameworkElement { Name: "DisPlayBorder" })
+                    return false;
+
+                if (headerToggle == null && source is ToggleButton toggleButton && IsDisplayHeaderToggle(toggleButton))
+                    headerToggle = toggleButton;
+
+                if (ReferenceEquals(source, owner))
+                    return headerToggle != null;
 
                 source = VisualTreeHelper.GetParent(source);
             }
-            return false;
+            return headerToggle != null;
+        }
+
+        private static bool IsDisplayHeaderToggle(ToggleButton toggleButton)
+        {
+            return toggleButton.Style != null && ReferenceEquals(toggleButton.Style, toggleButton.TryFindResource("ButtonPageControl1"));
         }
 
         private void DisplayControl_Drop(object sender, DragEventArgs e)

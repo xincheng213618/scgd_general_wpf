@@ -262,11 +262,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
         private bool _IsSelected;
 
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
-        }
-
         private void ButtonVisibilitySettings_Click(object sender, RoutedEventArgs e)
         {
             new DisplayAlgorithmVisibilityWindow() { Owner = Window.GetWindow(this), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

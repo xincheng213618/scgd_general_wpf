@@ -261,11 +261,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
 
 
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
-        }
-
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (sender is Control control)

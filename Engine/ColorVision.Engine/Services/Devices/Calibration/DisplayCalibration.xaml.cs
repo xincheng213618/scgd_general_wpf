@@ -271,12 +271,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             return true;
         }
 
-        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
-        }
-
-
         private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
         {
             if (!File.Exists(ImageFile.Text))
