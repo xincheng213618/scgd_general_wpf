@@ -2,6 +2,7 @@
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
+using ProjectARVRPro.PluginConfig;
 using System.Reflection;
 using System.Windows;
 
@@ -51,8 +52,9 @@ namespace ProjectARVRPro
             {
                 await item.InitializeAsync();
             }
-            ARVRWindow window = new ARVRWindow();
-            window.Show();
+            ProjectWindowInstance.WindowInstance = new ARVRWindow();
+            ProjectWindowInstance.WindowInstance.Closed += (s, e) => ProjectWindowInstance.WindowInstance = null;
+            ProjectWindowInstance.WindowInstance.Show();
         }
     }
 

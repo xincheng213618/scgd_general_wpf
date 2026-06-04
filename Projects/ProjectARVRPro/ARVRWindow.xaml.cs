@@ -86,7 +86,7 @@ namespace ProjectARVRPro
         public static ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = ViewResultManager.ViewResluts;
 
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
-        public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;
+        public ObservableCollection<ProcessMeta> ProcessMetas => ProcessManager.ProcessMetas;
 
         // 雷鸟切图控制器
         private ThunderbirdSerialController _thunderbirdController = ThunderbirdSerialController.GetInstance();
