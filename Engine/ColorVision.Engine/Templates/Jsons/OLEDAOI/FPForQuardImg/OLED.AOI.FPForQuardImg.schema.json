@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/OLED.AOI.FPForQuardImg.schema.json",
+  "title": "亮点检测",
+  "description": "Auto-generated from t_scgd_sys_dictionary_mod_master.cfg_json. Providers may maintain titles, descriptions, ranges, units, groups, and UI hints without changing the C++ JSON interface.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "th": 0.1,
+    "index": 1,
+    "num_th": 10
+  },
+  "properties": {
+    "th": {
+      "type": "number",
+      "title": "Th",
+      "x-ui": {
+        "order": 10
+      },
+      "default": 0.1,
+      "$comment": "Provider/AI note: keep JSON path '$.th' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.th",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "index": {
+      "type": "integer",
+      "title": "Index",
+      "x-ui": {
+        "order": 20
+      },
+      "default": 1,
+      "$comment": "Provider/AI note: keep JSON path '$.index' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.index",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "num_th": {
+      "type": "integer",
+      "title": "Num th",
+      "x-ui": {
+        "order": 30
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.num_th' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.num_th",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": false,
+    "generatedAt": "2026-06-04T07:32:58+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 55,
+      "code": "OLED.AOI.FPForQuardImg",
+      "name": "亮点检测",
+      "version": null
+    },
+    "notes": [
+      "The default value mirrors the current database cfg_json at generation time.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys unchanged; C++ receives the JSON string by key.",
+        "Do not remove existing fields from default unless the database default and algorithm contract are updated together.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "type",
+        "default",
+        "additionalProperties"
+      ]
+    }
+  }
+}

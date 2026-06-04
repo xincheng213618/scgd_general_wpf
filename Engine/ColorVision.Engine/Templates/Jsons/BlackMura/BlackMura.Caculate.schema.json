@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/BlackMura.Caculate.schema.json",
+  "title": "BlackMura",
+  "description": "Auto-generated from t_scgd_sys_dictionary_mod_master.cfg_json. Providers may maintain titles, descriptions, ranges, units, groups, and UI hints without changing the C++ JSON interface.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "m_de": 13,
+    "n_de": 13,
+    "color": 1,
+    "aa_cut": 10,
+    "rotate": false,
+    "poi_type": 0,
+    "aa_size_h": 150,
+    "aa_size_w": 300,
+    "display_h": 480,
+    "display_w": 1280,
+    "poi_num_x": 19,
+    "poi_num_y": 10,
+    "erode_size": 3,
+    "min_aa_area": 1000,
+    "aa_threshold": 0.04,
+    "distortion_correct": true
+  },
+  "properties": {
+    "m_de": {
+      "type": "integer",
+      "title": "M de",
+      "x-ui": {
+        "order": 10
+      },
+      "default": 13,
+      "$comment": "Provider/AI note: keep JSON path '$.m_de' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.m_de",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "n_de": {
+      "type": "integer",
+      "title": "N de",
+      "x-ui": {
+        "order": 20
+      },
+      "default": 13,
+      "$comment": "Provider/AI note: keep JSON path '$.n_de' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.n_de",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "color": {
+      "type": "integer",
+      "title": "Color",
+      "x-ui": {
+        "order": 30
+      },
+      "default": 1,
+      "$comment": "Provider/AI note: keep JSON path '$.color' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.color",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "aa_cut": {
+      "type": "integer",
+      "title": "Aa cut",
+      "x-ui": {
+        "order": 40
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.aa_cut' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.aa_cut",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "rotate": {
+      "type": "boolean",
+      "title": "Rotate",
+      "x-ui": {
+        "order": 50
+      },
+      "default": false,
+      "$comment": "Provider/AI note: keep JSON path '$.rotate' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.rotate",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "poi_type": {
+      "type": "integer",
+      "title": "Poi type",
+      "x-ui": {
+        "order": 60
+      },
+      "default": 0,
+      "$comment": "Provider/AI note: keep JSON path '$.poi_type' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.poi_type",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "aa_size_h": {
+      "type": "integer",
+      "title": "Aa size h",
+      "x-ui": {
+        "order": 70
+      },
+      "default": 150,
+      "$comment": "Provider/AI note: keep JSON path '$.aa_size_h' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.aa_size_h",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "aa_size_w": {
+      "type": "integer",
+      "title": "Aa size w",
+      "x-ui": {
+        "order": 80
+      },
+      "default": 300,
+      "$comment": "Provider/AI note: keep JSON path '$.aa_size_w' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.aa_size_w",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "display_h": {
+      "type": "integer",
+      "title": "Display h",
+      "x-ui": {
+        "order": 90
+      },
+      "default": 480,
+      "$comment": "Provider/AI note: keep JSON path '$.display_h' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.display_h",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "display_w": {
+      "type": "integer",
+      "title": "Display w",
+      "x-ui": {
+        "order": 100
+      },
+      "default": 1280,
+      "$comment": "Provider/AI note: keep JSON path '$.display_w' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.display_w",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "poi_num_x": {
+      "type": "integer",
+      "title": "Poi num x",
+      "x-ui": {
+        "order": 110
+      },
+      "default": 19,
+      "$comment": "Provider/AI note: keep JSON path '$.poi_num_x' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.poi_num_x",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "poi_num_y": {
+      "type": "integer",
+      "title": "Poi num y",
+      "x-ui": {
+        "order": 120
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.poi_num_y' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.poi_num_y",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "erode_size": {
+      "type": "integer",
+      "title": "Erode size",
+      "x-ui": {
+        "order": 130
+      },
+      "default": 3,
+      "$comment": "Provider/AI note: keep JSON path '$.erode_size' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.erode_size",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "min_aa_area": {
+      "type": "integer",
+      "title": "Min aa area",
+      "x-ui": {
+        "order": 140
+      },
+      "default": 1000,
+      "$comment": "Provider/AI note: keep JSON path '$.min_aa_area' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.min_aa_area",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "aa_threshold": {
+      "type": "number",
+      "title": "Aa threshold",
+      "x-ui": {
+        "order": 150
+      },
+      "default": 0.04,
+      "$comment": "Provider/AI note: keep JSON path '$.aa_threshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.aa_threshold",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "distortion_correct": {
+      "type": "boolean",
+      "title": "Distortion correct",
+      "x-ui": {
+        "order": 160
+      },
+      "default": true,
+      "$comment": "Provider/AI note: keep JSON path '$.distortion_correct' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.distortion_correct",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": false,
+    "generatedAt": "2026-06-04T07:32:58+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 37,
+      "code": "BlackMura.Caculate",
+      "name": "BlackMura",
+      "version": null
+    },
+    "notes": [
+      "The default value mirrors the current database cfg_json at generation time.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys unchanged; C++ receives the JSON string by key.",
+        "Do not remove existing fields from default unless the database default and algorithm contract are updated together.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "type",
+        "default",
+        "additionalProperties"
+      ]
+    }
+  }
+}

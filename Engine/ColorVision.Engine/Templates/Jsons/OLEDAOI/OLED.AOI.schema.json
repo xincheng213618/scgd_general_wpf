@@ -1,0 +1,574 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/OLED.AOI.schema.json",
+  "title": "OLED AOI",
+  "description": "Auto-generated from t_scgd_sys_dictionary_mod_master.cfg_json. Providers may maintain titles, descriptions, ranges, units, groups, and UI hints without changing the C++ JSON interface.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "rebuiltImgPixelDefects": {
+      "dark_lvs": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "bright_lvs": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "edge_area_h": 380,
+      "edge_area_w": 520,
+      "edge_area_x": 80,
+      "edge_area_y": 50,
+      "gradingCfgs": [
+        {
+          "grade_name": "GOOD",
+          "dark_max_nums": [
+            2,
+            1,
+            0,
+            0,
+            0
+          ],
+          "bright_max_nums": [
+            2,
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "grade_name": "WELL",
+          "dark_max_nums": [
+            2000,
+            100,
+            50,
+            10,
+            1
+          ],
+          "bright_max_nums": [
+            2000,
+            100,
+            50,
+            10,
+            1
+          ]
+        },
+        {
+          "grade_name": "SOSO",
+          "dark_max_nums": [
+            3000,
+            100,
+            50,
+            10,
+            1
+          ],
+          "bright_max_nums": [
+            3000,
+            100,
+            50,
+            10,
+            1
+          ]
+        }
+      ],
+      "enable_grading": true,
+      "darkThreshold_edge_area": 0.15,
+      "brightThreshold_edge_area": 1,
+      "darkPixelLvRatioThreshold": 0.4,
+      "brightPixelLvRatioThreshold": 1,
+      "averageMaskLvRatioThresholdDark": 0.4,
+      "averageMaskLvRatioThresholdBright": 2
+    }
+  },
+  "properties": {
+    "rebuiltImgPixelDefects": {
+      "type": "object",
+      "title": "Rebuilt Img Pixel Defects",
+      "x-ui": {
+        "order": 10
+      },
+      "default": {
+        "dark_lvs": [
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "bright_lvs": [
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "edge_area_h": 380,
+        "edge_area_w": 520,
+        "edge_area_x": 80,
+        "edge_area_y": 50,
+        "gradingCfgs": [
+          {
+            "grade_name": "GOOD",
+            "dark_max_nums": [
+              2,
+              1,
+              0,
+              0,
+              0
+            ],
+            "bright_max_nums": [
+              2,
+              1,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "grade_name": "WELL",
+            "dark_max_nums": [
+              2000,
+              100,
+              50,
+              10,
+              1
+            ],
+            "bright_max_nums": [
+              2000,
+              100,
+              50,
+              10,
+              1
+            ]
+          },
+          {
+            "grade_name": "SOSO",
+            "dark_max_nums": [
+              3000,
+              100,
+              50,
+              10,
+              1
+            ],
+            "bright_max_nums": [
+              3000,
+              100,
+              50,
+              10,
+              1
+            ]
+          }
+        ],
+        "enable_grading": true,
+        "darkThreshold_edge_area": 0.15,
+        "brightThreshold_edge_area": 1,
+        "darkPixelLvRatioThreshold": 0.4,
+        "brightPixelLvRatioThreshold": 1,
+        "averageMaskLvRatioThresholdDark": 0.4,
+        "averageMaskLvRatioThresholdBright": 2
+      },
+      "additionalProperties": true,
+      "properties": {
+        "dark_lvs": {
+          "type": "array",
+          "title": "Dark lvs",
+          "x-ui": {
+            "order": 10
+          },
+          "default": [
+            1,
+            2,
+            3,
+            4,
+            6
+          ],
+          "items": {
+            "type": "integer",
+            "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.dark_lvs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+            "x-provider": {
+              "jsonPath": "$.rebuiltImgPixelDefects.dark_lvs[]",
+              "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+            }
+          },
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.dark_lvs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.dark_lvs",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "bright_lvs": {
+          "type": "array",
+          "title": "Bright lvs",
+          "x-ui": {
+            "order": 20
+          },
+          "default": [
+            1,
+            2,
+            3,
+            4,
+            6
+          ],
+          "items": {
+            "type": "integer",
+            "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.bright_lvs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+            "x-provider": {
+              "jsonPath": "$.rebuiltImgPixelDefects.bright_lvs[]",
+              "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+            }
+          },
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.bright_lvs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.bright_lvs",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "edge_area_h": {
+          "type": "integer",
+          "title": "Edge area h",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 380,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.edge_area_h' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.edge_area_h",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "edge_area_w": {
+          "type": "integer",
+          "title": "Edge area w",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 520,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.edge_area_w' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.edge_area_w",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "edge_area_x": {
+          "type": "integer",
+          "title": "Edge area x",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 80,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.edge_area_x' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.edge_area_x",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "edge_area_y": {
+          "type": "integer",
+          "title": "Edge area y",
+          "x-ui": {
+            "order": 60
+          },
+          "default": 50,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.edge_area_y' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.edge_area_y",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "gradingCfgs": {
+          "type": "array",
+          "title": "Grading Cfgs",
+          "x-ui": {
+            "order": 70
+          },
+          "default": [
+            {
+              "grade_name": "GOOD",
+              "dark_max_nums": [
+                2,
+                1,
+                0,
+                0,
+                0
+              ],
+              "bright_max_nums": [
+                2,
+                1,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "grade_name": "WELL",
+              "dark_max_nums": [
+                2000,
+                100,
+                50,
+                10,
+                1
+              ],
+              "bright_max_nums": [
+                2000,
+                100,
+                50,
+                10,
+                1
+              ]
+            },
+            {
+              "grade_name": "SOSO",
+              "dark_max_nums": [
+                3000,
+                100,
+                50,
+                10,
+                1
+              ],
+              "bright_max_nums": [
+                3000,
+                100,
+                50,
+                10,
+                1
+              ]
+            }
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "grade_name": {
+                "type": "string",
+                "title": "Grade name",
+                "x-ui": {
+                  "order": 10
+                },
+                "default": "GOOD",
+                "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].grade_name' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].grade_name",
+                  "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                }
+              },
+              "dark_max_nums": {
+                "type": "array",
+                "title": "Dark max nums",
+                "x-ui": {
+                  "order": 20
+                },
+                "default": [
+                  2,
+                  1,
+                  0,
+                  0,
+                  0
+                ],
+                "items": {
+                  "type": "integer",
+                  "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                  "x-provider": {
+                    "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums[]",
+                    "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                  }
+                },
+                "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums",
+                  "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                }
+              },
+              "bright_max_nums": {
+                "type": "array",
+                "title": "Bright max nums",
+                "x-ui": {
+                  "order": 30
+                },
+                "default": [
+                  2,
+                  1,
+                  0,
+                  0,
+                  0
+                ],
+                "items": {
+                  "type": "integer",
+                  "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                  "x-provider": {
+                    "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums[]",
+                    "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                  }
+                },
+                "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums",
+                  "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                }
+              }
+            },
+            "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+            "x-provider": {
+              "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[]",
+              "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+            }
+          },
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "enable_grading": {
+          "type": "boolean",
+          "title": "Enable grading",
+          "x-ui": {
+            "order": 80
+          },
+          "default": true,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.enable_grading' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.enable_grading",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "darkThreshold_edge_area": {
+          "type": "number",
+          "title": "Dark Threshold edge area",
+          "x-ui": {
+            "order": 90
+          },
+          "default": 0.15,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.darkThreshold_edge_area' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.darkThreshold_edge_area",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "brightThreshold_edge_area": {
+          "type": "integer",
+          "title": "Bright Threshold edge area",
+          "x-ui": {
+            "order": 100
+          },
+          "default": 1,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.brightThreshold_edge_area' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.brightThreshold_edge_area",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "darkPixelLvRatioThreshold": {
+          "type": "number",
+          "title": "Dark Pixel Lv Ratio Threshold",
+          "x-ui": {
+            "order": 110
+          },
+          "default": 0.4,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.darkPixelLvRatioThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.darkPixelLvRatioThreshold",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "brightPixelLvRatioThreshold": {
+          "type": "integer",
+          "title": "Bright Pixel Lv Ratio Threshold",
+          "x-ui": {
+            "order": 120
+          },
+          "default": 1,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.brightPixelLvRatioThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.brightPixelLvRatioThreshold",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "averageMaskLvRatioThresholdDark": {
+          "type": "number",
+          "title": "Average Mask Lv Ratio Threshold Dark",
+          "x-ui": {
+            "order": 130
+          },
+          "default": 0.4,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.averageMaskLvRatioThresholdDark' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.averageMaskLvRatioThresholdDark",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "averageMaskLvRatioThresholdBright": {
+          "type": "integer",
+          "title": "Average Mask Lv Ratio Threshold Bright",
+          "x-ui": {
+            "order": 140
+          },
+          "default": 2,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.averageMaskLvRatioThresholdBright' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.averageMaskLvRatioThresholdBright",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.rebuiltImgPixelDefects",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": false,
+    "generatedAt": "2026-06-04T07:32:58+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 28,
+      "code": "OLED.AOI",
+      "name": "OLED AOI",
+      "version": null
+    },
+    "notes": [
+      "The default value mirrors the current database cfg_json at generation time.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys unchanged; C++ receives the JSON string by key.",
+        "Do not remove existing fields from default unless the database default and algorithm contract are updated together.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "type",
+        "default",
+        "additionalProperties"
+      ]
+    }
+  }
+}

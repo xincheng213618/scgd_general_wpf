@@ -1,0 +1,853 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/ghost.schema.json",
+  "title": "鬼影V2",
+  "description": "Provider-maintained JSON parameter schema. Defaults are sourced from the provider test-case default parameter file; the C++ JSON string interface remains unchanged.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "Ring": {
+      "range": 5,
+      "erodeTime": 1,
+      "erodeKernel": 3,
+      "peakDistance": [
+        60,
+        40
+      ],
+      "outRectSizeMin": 400,
+      "thresholdValue": 20000,
+      "outRectSizeRate": 10
+    },
+    "Ghost": {
+      "minGary": -1,
+      "garyRate": 1,
+      "erodeTime": 5,
+      "dilateTime": 0,
+      "erodeKernel": 3,
+      "dilateKernel": 3,
+      "thresholdMax": 500,
+      "thresholdMin": 50,
+      "thresholdStep": 10,
+      "outRectSizeMin": 100,
+      "outRectSizeRate": 7.3,
+      "distanceToBright": 100,
+      "ingoreCheckMixBright": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    "Bright": {
+      "brightNumX": 3,
+      "brightNumY": 3,
+      "erodeKernel": 3,
+      "patternType": 0,
+      "thresholdMax": 40000,
+      "thresholdMin": 30000,
+      "thresholdStep": 1000,
+      "outRectSizeMin": 60,
+      "outRectSizeRate": 5
+    },
+    "vOther": {
+      "Debug": false,
+      "debugPath": "Result\\",
+      "showMaxGain": 0.8,
+      "showMinGain": 60,
+      "debugImgResize": 2
+    },
+    "MaskRect": {
+      "h": 0,
+      "w": 0,
+      "x": 0,
+      "y": 0,
+      "enable": false
+    }
+  },
+  "properties": {
+    "Ring": {
+      "type": "object",
+      "title": "Ring",
+      "x-ui": {
+        "order": 10
+      },
+      "default": {
+        "range": 5,
+        "erodeTime": 1,
+        "erodeKernel": 3,
+        "peakDistance": [
+          60,
+          40
+        ],
+        "outRectSizeMin": 400,
+        "thresholdValue": 20000,
+        "outRectSizeRate": 10
+      },
+      "description": "圆环图案参数。",
+      "additionalProperties": true,
+      "properties": {
+        "range": {
+          "type": "integer",
+          "title": "Range",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 5,
+          "description": "取极值的宽度。",
+          "$comment": "Provider note: keep JSON path '$.Ring.range' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ring.range",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeTime": {
+          "type": "integer",
+          "title": "Erode Time",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 1,
+          "description": "底噪腐蚀次数。",
+          "$comment": "Provider note: keep JSON path '$.Ring.erodeTime' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ring.erodeTime",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeKernel": {
+          "type": "integer",
+          "title": "Erode Kernel",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 3,
+          "description": "底噪腐蚀核大小。",
+          "$comment": "Provider note: keep JSON path '$.Ring.erodeKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ring.erodeKernel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "peakDistance": {
+          "type": "array",
+          "title": "Peak Distance",
+          "x-ui": {
+            "order": 40
+          },
+          "default": [
+            60,
+            40
+          ],
+          "description": "鬼影到光圈的距离像素配置；第一项为一阶鬼影距离。",
+          "items": {
+            "type": "integer"
+          },
+          "$comment": "Provider note: keep JSON path '$.Ring.peakDistance' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ring.peakDistance",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "outRectSizeMin": {
+          "type": "integer",
+          "title": "Out Rect Size Min",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 400,
+          "description": "亮光圈最小外接矩形尺寸。",
+          "$comment": "Provider note: keep JSON path '$.Ring.outRectSizeMin' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ring.outRectSizeMin",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "thresholdValue": {
+          "type": "integer",
+          "title": "Threshold Value",
+          "x-ui": {
+            "order": 60
+          },
+          "default": 20000,
+          "description": "亮光圈二值化阈值。",
+          "$comment": "Provider note: keep JSON path '$.Ring.thresholdValue' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ring.thresholdValue",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "outRectSizeRate": {
+          "type": "integer",
+          "title": "Out Rect Size Rate",
+          "x-ui": {
+            "order": 70
+          },
+          "default": 10,
+          "description": "亮光圈最小外接矩形尺寸浮动系数。",
+          "$comment": "Provider note: keep JSON path '$.Ring.outRectSizeRate' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ring.outRectSizeRate",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.Ring' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.Ring",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "Ghost": {
+      "type": "object",
+      "title": "Ghost",
+      "x-ui": {
+        "order": 20
+      },
+      "default": {
+        "minGary": -1,
+        "garyRate": 1,
+        "erodeTime": 5,
+        "dilateTime": 0,
+        "erodeKernel": 3,
+        "dilateKernel": 3,
+        "thresholdMax": 500,
+        "thresholdMin": 50,
+        "thresholdStep": 10,
+        "outRectSizeMin": 100,
+        "outRectSizeRate": 7.3,
+        "distanceToBright": 100,
+        "ingoreCheckMixBright": [
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      "description": "鬼影检测参数。",
+      "additionalProperties": true,
+      "properties": {
+        "minGary": {
+          "type": "integer",
+          "title": "Min Gary",
+          "x-ui": {
+            "order": 10
+          },
+          "default": -1,
+          "description": "暂不生效。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.minGary' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.minGary",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "garyRate": {
+          "type": "integer",
+          "title": "Gary Rate",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 1,
+          "description": "暂不生效。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.garyRate' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.garyRate",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeTime": {
+          "type": "integer",
+          "title": "Erode Time",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 5,
+          "description": "腐蚀次数。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.erodeTime' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.erodeTime",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "dilateTime": {
+          "type": "integer",
+          "title": "Dilate Time",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "description": "膨胀次数。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.dilateTime' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.dilateTime",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeKernel": {
+          "type": "integer",
+          "title": "Erode Kernel",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 3,
+          "description": "腐蚀核大小，通常取 2-5。",
+          "minimum": 2,
+          "maximum": 5,
+          "$comment": "Provider note: keep JSON path '$.Ghost.erodeKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.erodeKernel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "dilateKernel": {
+          "type": "integer",
+          "title": "Dilate Kernel",
+          "x-ui": {
+            "order": 60
+          },
+          "default": 3,
+          "description": "膨胀核大小，通常取 2-5。",
+          "minimum": 2,
+          "maximum": 5,
+          "$comment": "Provider note: keep JSON path '$.Ghost.dilateKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.dilateKernel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "thresholdMax": {
+          "type": "integer",
+          "title": "Threshold Max",
+          "x-ui": {
+            "order": 70
+          },
+          "default": 500,
+          "description": "鬼影二值化终止阈值。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.thresholdMax' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.thresholdMax",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "thresholdMin": {
+          "type": "integer",
+          "title": "Threshold Min",
+          "x-ui": {
+            "order": 80
+          },
+          "default": 50,
+          "description": "鬼影二值化起始阈值。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.thresholdMin' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.thresholdMin",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "thresholdStep": {
+          "type": "integer",
+          "title": "Threshold Step",
+          "x-ui": {
+            "order": 90
+          },
+          "default": 10,
+          "description": "鬼影二值化阈值步进。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.thresholdStep' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.thresholdStep",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "outRectSizeMin": {
+          "type": "integer",
+          "title": "Out Rect Size Min",
+          "x-ui": {
+            "order": 100
+          },
+          "default": 100,
+          "description": "鬼影最小外接矩形尺寸，以最短边为准。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.outRectSizeMin' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.outRectSizeMin",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "outRectSizeRate": {
+          "type": "number",
+          "title": "Out Rect Size Rate",
+          "x-ui": {
+            "order": 110
+          },
+          "default": 7.3,
+          "description": "鬼影最小外接矩形尺寸浮动系数。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.outRectSizeRate' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.outRectSizeRate",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "distanceToBright": {
+          "type": "integer",
+          "title": "Distance To Bright",
+          "x-ui": {
+            "order": 120
+          },
+          "default": 100,
+          "description": "鬼影与光点的距离下限；若 ingoreCheckMixBright 对应位置为 true，则该项不生效。",
+          "$comment": "Provider note: keep JSON path '$.Ghost.distanceToBright' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.distanceToBright",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "ingoreCheckMixBright": {
+          "type": "array",
+          "title": "Ingore Check Mix Bright",
+          "x-ui": {
+            "order": 130
+          },
+          "default": [
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false
+          ],
+          "description": "若某个鬼影与光点重合，对应位置设置为 true；排序从左到右、自上而下。",
+          "items": {
+            "type": "boolean"
+          },
+          "$comment": "Provider note: keep JSON path '$.Ghost.ingoreCheckMixBright' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Ghost.ingoreCheckMixBright",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.Ghost' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.Ghost",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "Bright": {
+      "type": "object",
+      "title": "Bright",
+      "x-ui": {
+        "order": 30
+      },
+      "default": {
+        "brightNumX": 3,
+        "brightNumY": 3,
+        "erodeKernel": 3,
+        "patternType": 0,
+        "thresholdMax": 40000,
+        "thresholdMin": 30000,
+        "thresholdStep": 1000,
+        "outRectSizeMin": 60,
+        "outRectSizeRate": 5
+      },
+      "description": "光点检测参数。",
+      "additionalProperties": true,
+      "properties": {
+        "brightNumX": {
+          "type": "integer",
+          "title": "Bright Num X",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 3,
+          "description": "光点横向数量。",
+          "$comment": "Provider note: keep JSON path '$.Bright.brightNumX' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.brightNumX",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "brightNumY": {
+          "type": "integer",
+          "title": "Bright Num Y",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 3,
+          "description": "光点纵向数量。",
+          "$comment": "Provider note: keep JSON path '$.Bright.brightNumY' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.brightNumY",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeKernel": {
+          "type": "integer",
+          "title": "Erode Kernel",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 3,
+          "description": "腐蚀核大小，通常取 2-5，用于去除底噪。",
+          "minimum": 2,
+          "maximum": 5,
+          "$comment": "Provider note: keep JSON path '$.Bright.erodeKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.erodeKernel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "patternType": {
+          "type": "integer",
+          "title": "Pattern Type",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "$comment": "Provider note: keep JSON path '$.Bright.patternType' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.patternType",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "thresholdMax": {
+          "type": "integer",
+          "title": "Threshold Max",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 40000,
+          "description": "光点二值化终止阈值。",
+          "$comment": "Provider note: keep JSON path '$.Bright.thresholdMax' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.thresholdMax",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "thresholdMin": {
+          "type": "integer",
+          "title": "Threshold Min",
+          "x-ui": {
+            "order": 60
+          },
+          "default": 30000,
+          "description": "光点二值化起始阈值。",
+          "$comment": "Provider note: keep JSON path '$.Bright.thresholdMin' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.thresholdMin",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "thresholdStep": {
+          "type": "integer",
+          "title": "Threshold Step",
+          "x-ui": {
+            "order": 70
+          },
+          "default": 1000,
+          "description": "光点二值化阈值步进。",
+          "$comment": "Provider note: keep JSON path '$.Bright.thresholdStep' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.thresholdStep",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "outRectSizeMin": {
+          "type": "integer",
+          "title": "Out Rect Size Min",
+          "x-ui": {
+            "order": 80
+          },
+          "default": 60,
+          "description": "光点最小外接矩形尺寸，以最短边为准。",
+          "$comment": "Provider note: keep JSON path '$.Bright.outRectSizeMin' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.outRectSizeMin",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "outRectSizeRate": {
+          "type": "integer",
+          "title": "Out Rect Size Rate",
+          "x-ui": {
+            "order": 90
+          },
+          "default": 5,
+          "description": "光点最小外接矩形尺寸浮动系数。",
+          "$comment": "Provider note: keep JSON path '$.Bright.outRectSizeRate' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Bright.outRectSizeRate",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.Bright' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.Bright",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "vOther": {
+      "type": "object",
+      "title": "V Other",
+      "x-ui": {
+        "order": 40
+      },
+      "default": {
+        "Debug": false,
+        "debugPath": "Result\\",
+        "showMaxGain": 0.8,
+        "showMinGain": 60,
+        "debugImgResize": 2
+      },
+      "description": "鬼影显示与 debug 配置。",
+      "additionalProperties": true,
+      "properties": {
+        "Debug": {
+          "type": "boolean",
+          "title": "Debug",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否开启 debug 输出。",
+          "$comment": "Provider note: keep JSON path '$.vOther.Debug' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.vOther.Debug",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugPath": {
+          "type": "string",
+          "title": "Debug Path",
+          "x-ui": {
+            "order": 20
+          },
+          "default": "Result\\",
+          "description": "debug 文件输出路径。",
+          "$comment": "Provider note: keep JSON path '$.vOther.debugPath' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.vOther.debugPath",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "showMaxGain": {
+          "type": "number",
+          "title": "Show Max Gain",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 0.8,
+          "description": "亮区增益。",
+          "$comment": "Provider note: keep JSON path '$.vOther.showMaxGain' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.vOther.showMaxGain",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "showMinGain": {
+          "type": "integer",
+          "title": "Show Min Gain",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 60,
+          "description": "暗区增益，用于显示鬼影。",
+          "$comment": "Provider note: keep JSON path '$.vOther.showMinGain' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.vOther.showMinGain",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugImgResize": {
+          "type": "integer",
+          "title": "Debug Img Resize",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 2,
+          "description": "debug 图片压缩倍率，2、3、4 生效，其他值表示不压缩。",
+          "examples": [
+            2,
+            3,
+            4
+          ],
+          "$comment": "Provider note: keep JSON path '$.vOther.debugImgResize' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.vOther.debugImgResize",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.vOther' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.vOther",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "MaskRect": {
+      "type": "object",
+      "title": "Mask Rect",
+      "x-ui": {
+        "order": 50
+      },
+      "default": {
+        "h": 0,
+        "w": 0,
+        "x": 0,
+        "y": 0,
+        "enable": false
+      },
+      "description": "ROI/Mask 区域配置；启用后以左上角 (x, y) 和尺寸 (w, h) 限定计算范围。",
+      "additionalProperties": true,
+      "properties": {
+        "h": {
+          "type": "integer",
+          "title": "H",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 0,
+          "description": "ROI 高度。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.h' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.h",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "w": {
+          "type": "integer",
+          "title": "W",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "description": "ROI 宽度。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.w' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.w",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "x": {
+          "type": "integer",
+          "title": "X",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 0,
+          "description": "ROI 左上角 X 坐标。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.x' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.x",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "y": {
+          "type": "integer",
+          "title": "Y",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "description": "ROI 左上角 Y 坐标。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.y' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.y",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "enable": {
+          "type": "boolean",
+          "title": "Enable",
+          "x-ui": {
+            "order": 50
+          },
+          "default": false,
+          "description": "是否启用 ROI/Mask 区域。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.enable' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.enable",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.MaskRect' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.MaskRect",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T07:57:54+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 38,
+      "code": "ghost",
+      "name": "鬼影V2",
+      "version": "2.0",
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "ghost_2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "鬼影参数说明.docx"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from the provider-maintained test-case default parameter file.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "This schema may update default/type when the provider-maintained defaultparam.txt changes.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "defaultSource": "provider-test-case-defaultparam",
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "ghost_2.0",
+      "defaultParamFile": "defaultparam.txt",
+      "docFiles": [
+        "鬼影参数说明.docx"
+      ]
+    }
+  }
+}

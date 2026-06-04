@@ -19,6 +19,7 @@ namespace ColorVision.UI.PropertyEditor.Json
 
         private JObject? _jObject;
         private string? _originalJson;
+        private JsonEditorSchemaDocument? _schemaDocument;
 
         public JsonPropertyEditorControl()
         {
@@ -35,10 +36,20 @@ namespace ColorVision.UI.PropertyEditor.Json
         /// </summary>
         public void SetJson(string json)
         {
+            SetJson(json, null, null);
+        }
+
+        /// <summary>
+        /// Sets the JSON string and optional JSON Schema metadata to be edited
+        /// </summary>
+        public void SetJson(string json, string? schemaJson, string? schemaTitle = null)
+        {
             try
             {
                 _originalJson = json;
+                _schemaDocument = JsonEditorSchemaDocument.TryParse(schemaJson, schemaTitle);
                 ErrorBorder.Visibility = Visibility.Collapsed;
+                UpdateSchemaInfo();
 
                 // Parse JSON to JObject
                 _jObject = JObject.Parse(json);
@@ -50,12 +61,44 @@ namespace ColorVision.UI.PropertyEditor.Json
             }
             catch (JsonException ex)
             {
+                _schemaDocument = null;
+                UpdateSchemaInfo();
                 ShowError($"{Properties.Resources.PropEditor_JsonParseError} {ex.Message}");
             }
             catch (Exception ex)
             {
+                _schemaDocument = null;
+                UpdateSchemaInfo();
                 ShowError($"{Properties.Resources.PropEditor_LoadError} {ex.Message}");
             }
+        }
+
+        private void UpdateSchemaInfo()
+        {
+            if (_schemaDocument == null)
+            {
+                SchemaInfoBorder.Visibility = Visibility.Collapsed;
+                SchemaTitleText.Text = string.Empty;
+                SchemaDetailText.Text = string.Empty;
+                SchemaBadgeText.Text = string.Empty;
+                return;
+            }
+
+            SchemaInfoBorder.Visibility = Visibility.Visible;
+            SchemaTitleText.Text = _schemaDocument.Title;
+
+            var detailParts = new List<string>();
+            if (_schemaDocument.DescribedFieldCount > 0)
+                detailParts.Add($"{_schemaDocument.DescribedFieldCount}/{_schemaDocument.FieldCount} 项有说明");
+            if (!string.IsNullOrWhiteSpace(_schemaDocument.SourceSummary))
+                detailParts.Add(_schemaDocument.SourceSummary);
+
+            SchemaDetailText.Text = string.Join("  ·  ", detailParts);
+            SchemaDetailText.ToolTip = string.IsNullOrWhiteSpace(_schemaDocument.Description)
+                ? SchemaDetailText.Text
+                : SchemaDetailText.Text + Environment.NewLine + _schemaDocument.Description;
+            SchemaBadgeText.Text = _schemaDocument.ProviderMaintained ? "提供者" : "Schema";
+            SchemaBadgeText.ToolTip = _schemaDocument.ProviderMaintained ? "提供者维护的参数 schema" : "JSON Schema";
         }
 
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -172,32 +215,38 @@ namespace ColorVision.UI.PropertyEditor.Json
         private FrameworkElement? GenerateControlForProperty(string propertyPath, JToken value, int depth, string filterText, bool ancestorMatched)
         {
             // Extract just the property name (last part after dot) for display
-            var displayName = FormatPropertyName(GetDisplayNameFromPath(propertyPath));
-            var selfMatched = MatchesFilter(filterText, propertyPath, displayName);
+            var schemaNode = _schemaDocument?.FindNode(propertyPath);
+            var displayName = schemaNode?.GetTitleOrFallback(FormatPropertyName(GetDisplayNameFromPath(propertyPath)))
+                ?? FormatPropertyName(GetDisplayNameFromPath(propertyPath));
+            var selfMatched = MatchesFilter(filterText, propertyPath, displayName) || schemaNode?.Matches(filterText) == true;
 
             // Create editor based on type
             FrameworkElement? editor = null;
-            
-            switch (value.Type)
+
+            if (schemaNode?.HasEnum == true)
+            {
+                editor = CreateEnumEditor(propertyPath, value, schemaNode);
+            }
+            else switch (value.Type)
             {
                 case JTokenType.Boolean:
-                    editor = CreateBoolEditor(propertyPath, value);
+                    editor = CreateBoolEditor(propertyPath, value, schemaNode);
                     break;
                     
                 case JTokenType.Integer:
                 case JTokenType.Float:
-                    editor = CreateNumericEditor(propertyPath, value);
+                    editor = CreateNumericEditor(propertyPath, value, schemaNode);
                     break;
                     
                 case JTokenType.String:
-                    editor = CreateStringEditor(propertyPath, value);
+                    editor = CreateStringEditor(propertyPath, value, schemaNode);
                     break;
                     
                 case JTokenType.Array:
-                    return CreateArrayEditor(propertyPath, displayName, value as JArray, depth, filterText, ancestorMatched || selfMatched);
+                    return CreateArrayEditor(propertyPath, displayName, value as JArray, depth, filterText, ancestorMatched || selfMatched, schemaNode);
                     
                 case JTokenType.Object:
-                    return CreateObjectEditor(propertyPath, displayName, value as JObject, depth, filterText, ancestorMatched || selfMatched);
+                    return CreateObjectEditor(propertyPath, displayName, value as JObject, depth, filterText, ancestorMatched || selfMatched, schemaNode);
                     
                 default:
                     editor = CreateDefaultEditor(propertyPath, value);
@@ -210,7 +259,7 @@ namespace ColorVision.UI.PropertyEditor.Json
                 if (!ancestorMatched && !selfMatched && !valueMatched)
                     return null;
 
-                return CreatePropertyRow(displayName, editor);
+                return CreatePropertyRow(displayName, propertyPath, editor, schemaNode);
             }
 
             return null;
@@ -274,29 +323,51 @@ namespace ColorVision.UI.PropertyEditor.Json
             return divider;
         }
 
-        private static Grid CreatePropertyRow(string labelText, FrameworkElement editor)
+        private static Grid CreatePropertyRow(string labelText, string propertyPath, FrameworkElement editor, JsonEditorSchemaNode? schemaNode)
         {
             ApplyEditorLayout(editor);
+            if (schemaNode != null)
+                editor.ToolTip ??= schemaNode.BuildHint(propertyPath);
 
             var grid = new Grid
             {
-                Margin = new Thickness(0, 1, 0, 1),
-                MinHeight = 28,
+                Margin = new Thickness(0, 2, 0, 3),
+                MinHeight = string.IsNullOrWhiteSpace(schemaNode?.Description) ? 28 : 42,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LabelColumnWidth) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var label = new TextBlock
+            var labelPanel = new StackPanel
             {
-                Text = labelText,
                 Margin = new Thickness(0, 0, 8, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
 
-            Grid.SetColumn(label, 0);
+            var label = new TextBlock
+            {
+                Text = labelText,
+                FontWeight = schemaNode == null ? FontWeights.Normal : FontWeights.SemiBold,
+                ToolTip = schemaNode?.BuildHint(propertyPath) ?? propertyPath
+            };
+            labelPanel.Children.Add(label);
+
+            if (!string.IsNullOrWhiteSpace(schemaNode?.Description))
+            {
+                var description = new TextBlock
+                {
+                    Text = schemaNode.Description,
+                    FontSize = 11,
+                    Opacity = 0.68,
+                    Margin = new Thickness(0, 1, 0, 0),
+                    ToolTip = schemaNode.BuildHint(propertyPath)
+                };
+                labelPanel.Children.Add(description);
+            }
+
+            Grid.SetColumn(labelPanel, 0);
             Grid.SetColumn(editor, 1);
-            grid.Children.Add(label);
+            grid.Children.Add(labelPanel);
             grid.Children.Add(editor);
 
             return grid;
@@ -339,12 +410,13 @@ namespace ColorVision.UI.PropertyEditor.Json
         /// <summary>
         /// Creates a boolean editor (CheckBox/ToggleSwitch)
         /// </summary>
-        private FrameworkElement CreateBoolEditor(string propertyName, JToken value)
+        private FrameworkElement CreateBoolEditor(string propertyName, JToken value, JsonEditorSchemaNode? schemaNode)
         {
             var checkBox = new CheckBox
             {
                 IsChecked = value.Value<bool>(),
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = schemaNode?.BuildHint(propertyName)
             };
 
             checkBox.Checked += (s, e) => UpdateJsonValue(propertyName, true);
@@ -356,13 +428,14 @@ namespace ColorVision.UI.PropertyEditor.Json
         /// <summary>
         /// Creates a numeric editor (TextBox with validation)
         /// </summary>
-        private FrameworkElement CreateNumericEditor(string propertyName, JToken value)
+        private FrameworkElement CreateNumericEditor(string propertyName, JToken value, JsonEditorSchemaNode? schemaNode)
         {
             var textBox = new TextBox
             {
                 Text = value.ToString(),
                 MinWidth = 100,
-                Tag = "Numeric"
+                Tag = "Numeric",
+                ToolTip = schemaNode?.BuildHint(propertyName)
             };
             textBox.SetResourceReference(TextBox.StyleProperty, "TextBox.Small");
 
@@ -372,6 +445,9 @@ namespace ColorVision.UI.PropertyEditor.Json
                 {
                     if (int.TryParse(textBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int intValue))
                     {
+                        if (!ValidateSchemaRange(textBox, schemaNode, intValue))
+                            return;
+
                         ClearFieldError(textBox);
                         UpdateJsonValue(propertyName, intValue);
                     }
@@ -384,6 +460,9 @@ namespace ColorVision.UI.PropertyEditor.Json
                 {
                     if (TryParseDouble(textBox.Text, out double doubleValue))
                     {
+                        if (!ValidateSchemaRange(textBox, schemaNode, doubleValue))
+                            return;
+
                         ClearFieldError(textBox);
                         UpdateJsonValue(propertyName, doubleValue);
                     }
@@ -408,12 +487,13 @@ namespace ColorVision.UI.PropertyEditor.Json
         /// <summary>
         /// Creates a string editor (TextBox)
         /// </summary>
-        private FrameworkElement CreateStringEditor(string propertyName, JToken value)
+        private FrameworkElement CreateStringEditor(string propertyName, JToken value, JsonEditorSchemaNode? schemaNode)
         {
             var textBox = new TextBox
             {
                 Text = value.Value<string>() ?? string.Empty,
-                MinWidth = EditorMinWidth
+                MinWidth = EditorMinWidth,
+                ToolTip = schemaNode?.BuildHint(propertyName)
             };
             textBox.SetResourceReference(TextBox.StyleProperty, "TextBox.Small");
 
@@ -422,10 +502,55 @@ namespace ColorVision.UI.PropertyEditor.Json
             return textBox;
         }
 
+        private FrameworkElement CreateEnumEditor(string propertyName, JToken value, JsonEditorSchemaNode schemaNode)
+        {
+            var comboBox = new ComboBox
+            {
+                MinWidth = EditorMinWidth,
+                ToolTip = schemaNode.BuildHint(propertyName)
+            };
+            comboBox.SetResourceReference(ComboBox.StyleProperty, "ComboBox.Small");
+
+            var selectedIndex = -1;
+            for (var i = 0; i < schemaNode.EnumItems.Count; i++)
+            {
+                var item = schemaNode.EnumItems[i];
+                comboBox.Items.Add(new ComboBoxItem
+                {
+                    Content = item.DisplayText,
+                    Tag = item
+                });
+
+                if (item.Matches(value))
+                    selectedIndex = i;
+            }
+
+            if (selectedIndex >= 0)
+                comboBox.SelectedIndex = selectedIndex;
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                if (comboBox.SelectedItem is ComboBoxItem { Tag: JsonEditorSchemaEnumItem enumItem })
+                    UpdateJsonValue(propertyName, enumItem.ToObject());
+            };
+
+            return comboBox;
+        }
+
         private static bool TryParseDouble(string text, out double value)
         {
             return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value) ||
                    double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
+        }
+
+        private static bool ValidateSchemaRange(TextBox textBox, JsonEditorSchemaNode? schemaNode, double value)
+        {
+            if (schemaNode == null || !schemaNode.HasRange || schemaNode.IsInRange(value))
+                return true;
+
+            var rangeText = schemaNode.BuildRangeText();
+            ShowFieldError(textBox, string.IsNullOrWhiteSpace(rangeText) ? "数值超出范围" : rangeText);
+            return false;
         }
 
         private static void ShowFieldError(TextBox textBox, string message)
@@ -445,11 +570,11 @@ namespace ColorVision.UI.PropertyEditor.Json
         /// <summary>
         /// Creates an array editor - displays primitives inline, expands complex types
         /// </summary>
-        private FrameworkElement? CreateArrayEditor(string propertyPath, string displayName, JArray? array, int depth, string filterText, bool groupMatched)
+        private FrameworkElement? CreateArrayEditor(string propertyPath, string displayName, JArray? array, int depth, string filterText, bool groupMatched, JsonEditorSchemaNode? schemaNode)
         {
             if (array == null || array.Count == 0)
             {
-                if (!groupMatched && !MatchesFilter(filterText, "[]"))
+                if (!groupMatched && !MatchesFilter(filterText, "[]") && schemaNode?.Matches(filterText) != true)
                     return null;
 
                 var emptyText = new TextBlock
@@ -457,7 +582,7 @@ namespace ColorVision.UI.PropertyEditor.Json
                     Text = "[]",
                     VerticalAlignment = VerticalAlignment.Center
                 };
-                return CreatePropertyRow(displayName, emptyText);
+                return CreatePropertyRow(displayName, propertyPath, emptyText, schemaNode);
             }
 
             // Check if all elements are primitive types (not objects or arrays)
@@ -468,28 +593,29 @@ namespace ColorVision.UI.PropertyEditor.Json
             if (allPrimitives)
             {
                 var arrayText = string.Join(", ", array.Select(item => item.ToString()));
-                if (!groupMatched && !MatchesFilter(filterText, arrayText))
+                if (!groupMatched && !MatchesFilter(filterText, arrayText) && schemaNode?.Matches(filterText) != true)
                     return null;
 
                 // For primitive arrays, display as comma-separated inline text
-                return CreatePropertyRow(displayName, CreatePrimitiveArrayEditor(propertyPath, array));
+                return CreatePropertyRow(displayName, propertyPath, CreatePrimitiveArrayEditor(propertyPath, array, schemaNode), schemaNode);
             }
             else
             {
                 // For complex arrays, use expander with recursive expansion
-                return CreateComplexArrayEditor(propertyPath, displayName, array, depth, filterText, groupMatched);
+                return CreateComplexArrayEditor(propertyPath, displayName, array, depth, filterText, groupMatched, schemaNode);
             }
         }
 
         /// <summary>
         /// Creates an inline editor for arrays of primitive values
         /// </summary>
-        private FrameworkElement CreatePrimitiveArrayEditor(string propertyPath, JArray array)
+        private FrameworkElement CreatePrimitiveArrayEditor(string propertyPath, JArray array, JsonEditorSchemaNode? schemaNode)
         {
             var textBox = new TextBox
             {
                 Text = string.Join(", ", array.Select(item => item.ToString())),
-                MinWidth = EditorMinWidth
+                MinWidth = EditorMinWidth,
+                ToolTip = schemaNode?.BuildHint(propertyPath)
             };
             textBox.SetResourceReference(TextBox.StyleProperty, "TextBox.Small");
 
@@ -548,7 +674,7 @@ namespace ColorVision.UI.PropertyEditor.Json
         /// <summary>
         /// Creates an expander for arrays of complex types (objects/arrays)
         /// </summary>
-        private FrameworkElement? CreateComplexArrayEditor(string propertyPath, string displayName, JArray array, int depth, string filterText, bool groupMatched)
+        private FrameworkElement? CreateComplexArrayEditor(string propertyPath, string displayName, JArray array, int depth, string filterText, bool groupMatched, JsonEditorSchemaNode? schemaNode)
         {
             var elements = new List<FrameworkElement>();
             for (int i = 0; i < array.Count; i++)
@@ -580,7 +706,7 @@ namespace ColorVision.UI.PropertyEditor.Json
             // Create an expander to show/hide array elements
             var expander = new System.Windows.Controls.Expander
             {
-                Header = CreateGroupHeader(displayName, detail),
+                Header = CreateGroupHeader(displayName, detail, propertyPath, schemaNode),
                 IsExpanded = ShouldExpandGroup(depth, array.Count, isFiltering),
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 Margin = new Thickness(0, depth == 0 ? 4 : 2, 0, 2)
@@ -602,11 +728,11 @@ namespace ColorVision.UI.PropertyEditor.Json
         /// <summary>
         /// Creates an object editor - recursively expands nested properties
         /// </summary>
-        private FrameworkElement? CreateObjectEditor(string propertyName, string displayName, JObject? obj, int depth, string filterText, bool groupMatched)
+        private FrameworkElement? CreateObjectEditor(string propertyName, string displayName, JObject? obj, int depth, string filterText, bool groupMatched, JsonEditorSchemaNode? schemaNode)
         {
             if (obj == null || obj.Count == 0)
             {
-                if (!groupMatched && !MatchesFilter(filterText, "{}"))
+                if (!groupMatched && !MatchesFilter(filterText, "{}") && schemaNode?.Matches(filterText) != true)
                     return null;
 
                 var emptyText = new TextBlock
@@ -614,7 +740,7 @@ namespace ColorVision.UI.PropertyEditor.Json
                     Text = "{}",
                     VerticalAlignment = VerticalAlignment.Center
                 };
-                return CreatePropertyRow(displayName, emptyText);
+                return CreatePropertyRow(displayName, propertyName, emptyText, schemaNode);
             }
 
             var nestedControls = new List<FrameworkElement>();
@@ -647,7 +773,7 @@ namespace ColorVision.UI.PropertyEditor.Json
             // Create an expander to show/hide nested properties
             var expander = new System.Windows.Controls.Expander
             {
-                Header = CreateGroupHeader(displayName, detail),
+                Header = CreateGroupHeader(displayName, detail, propertyName, schemaNode),
                 IsExpanded = ShouldExpandGroup(depth, obj.Count, isFiltering),
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 Margin = new Thickness(0, depth == 0 ? 4 : 2, 0, 2)
@@ -666,7 +792,7 @@ namespace ColorVision.UI.PropertyEditor.Json
             return expander;
         }
 
-        private FrameworkElement CreateGroupHeader(string title, string detail)
+        private FrameworkElement CreateGroupHeader(string title, string detail, string propertyPath, JsonEditorSchemaNode? schemaNode)
         {
             var grid = new Grid
             {
@@ -679,16 +805,18 @@ namespace ColorVision.UI.PropertyEditor.Json
             {
                 Text = title,
                 FontWeight = FontWeights.SemiBold,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = schemaNode?.BuildHint(propertyPath) ?? propertyPath
             };
             titleText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
 
             var detailText = new TextBlock
             {
-                Text = detail,
+                Text = string.IsNullOrWhiteSpace(schemaNode?.Description) ? detail : $"{detail} · {schemaNode.Description}",
                 Margin = new Thickness(8, 0, 0, 0),
                 Opacity = 0.7,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = schemaNode?.BuildHint(propertyPath) ?? detail
             };
             detailText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
 

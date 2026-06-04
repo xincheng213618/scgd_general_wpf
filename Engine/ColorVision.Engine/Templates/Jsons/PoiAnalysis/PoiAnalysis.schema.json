@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/PoiAnalysis.schema.json",
+  "title": "POI分析",
+  "description": "Provider-maintained JSON parameter schema. Defaults are sourced from the provider test-case default parameter file; the C++ JSON string interface remains unchanged.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "analysisType": 0,
+    "CheckerboardContrast": {
+      "numX": 4,
+      "numY": 4,
+      "firstIsBlack": true
+    }
+  },
+  "properties": {
+    "analysisType": {
+      "type": "integer",
+      "title": "Analysis Type",
+      "x-ui": {
+        "order": 10
+      },
+      "default": 0,
+      "description": "数据分析类型。0 棋盘格对比度；1 亮度均匀性 min/max；2 亮度均匀性 1-(max-min)/average；3 亮度均匀性 (max-min)/average；4 亮度均匀性 1-(max-average)/average；7 uv 方差最大值；8 cie_x/cie_y 极差；16 色差；26 亮色度平均值。",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        7,
+        8,
+        16,
+        26
+      ],
+      "x-enumDescriptions": [
+        "棋盘格对比度",
+        "亮度均匀性 min/max",
+        "亮度均匀性 1-(max-min)/average",
+        "亮度均匀性 (max-min)/average",
+        "亮度均匀性 1-(max-average)/average",
+        "uv 方差最大值",
+        "cie_x/cie_y 极差",
+        "色差",
+        "亮色度平均值"
+      ],
+      "$comment": "Provider note: keep JSON path '$.analysisType' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.analysisType",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "CheckerboardContrast": {
+      "type": "object",
+      "title": "Checkerboard Contrast",
+      "x-ui": {
+        "order": 20
+      },
+      "default": {
+        "numX": 4,
+        "numY": 4,
+        "firstIsBlack": true
+      },
+      "description": "棋盘格对比度参数，当 analysisType 为 0 时使用。",
+      "additionalProperties": true,
+      "properties": {
+        "numX": {
+          "type": "integer",
+          "title": "Num X",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 4,
+          "description": "棋盘格横向数量。",
+          "$comment": "Provider note: keep JSON path '$.CheckerboardContrast.numX' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CheckerboardContrast.numX",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "numY": {
+          "type": "integer",
+          "title": "Num Y",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 4,
+          "description": "棋盘格纵向数量。",
+          "$comment": "Provider note: keep JSON path '$.CheckerboardContrast.numY' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CheckerboardContrast.numY",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "firstIsBlack": {
+          "type": "boolean",
+          "title": "First Is Black",
+          "x-ui": {
+            "order": 30
+          },
+          "default": true,
+          "description": "棋盘格首个方格是否为黑。",
+          "$comment": "Provider note: keep JSON path '$.CheckerboardContrast.firstIsBlack' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CheckerboardContrast.firstIsBlack",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.CheckerboardContrast' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.CheckerboardContrast",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T07:57:54+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 44,
+      "code": "PoiAnalysis",
+      "name": "POI分析",
+      "version": "1.0",
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "PoiAnalysis_1.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "数据分析参数及结果说明.docx"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from the provider-maintained test-case default parameter file.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "This schema may update default/type when the provider-maintained defaultparam.txt changes.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "defaultSource": "provider-test-case-defaultparam",
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "PoiAnalysis_1.0",
+      "defaultParamFile": "defaultparam.txt",
+      "docFiles": [
+        "数据分析参数及结果说明.docx"
+      ]
+    }
+  }
+}
