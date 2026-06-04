@@ -248,6 +248,29 @@ def create_full_zip(version_dir, output_zip):
         for file in all_files:
             zipf.write(str(file), str(os.path.relpath(file, version_dir)))
 
+def remove_directory_best_effort(directory, retries=5, delay_seconds=0.5):
+    """清理临时目录；短暂文件占用不应阻断增量包上传。"""
+    if not os.path.exists(directory):
+        return True
+
+    last_error = None
+    for attempt in range(retries):
+        try:
+            for root, dirs, files in os.walk(directory, topdown=False):
+                for name in files:
+                    os.remove(os.path.join(root, name))
+                for name in dirs:
+                    os.rmdir(os.path.join(root, name))
+            os.rmdir(directory)
+            return True
+        except OSError as exc:
+            last_error = exc
+            if attempt < retries - 1:
+                time.sleep(delay_seconds)
+
+    print(f"Warning: could not remove temporary directory {directory}: {last_error}")
+    return False
+
 def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
     """制作增量更新包"""
     if not os.path.exists(old_zip):
@@ -256,7 +279,7 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
         return
 
     # 解压旧版本 ZIP 文件
-    old_version_dir = 'temp_old_version'
+    old_version_dir = f'temp_old_version_{os.getpid()}_{int(time.time())}'
     with zipfile.ZipFile(old_zip, 'r') as zipf:
         zipf.extractall(old_version_dir)
 
@@ -281,13 +304,7 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
         for file in files_to_zip:
             zipf.write(str(file), str(os.path.relpath(file, new_version_dir)))
 
-    # 清理临时目录
-    for root, dirs, files in os.walk(old_version_dir, topdown=False):
-        for name in files:
-            os.remove(os.path.join(root, name))
-        for name in dirs:
-            os.rmdir(os.path.join(root, name))
-    os.rmdir(old_version_dir)
+    remove_directory_best_effort(old_version_dir)
 
 def find_latest_zip(directory, version):
     """在目录中找到指定版本的最新 ZIP 文件"""
