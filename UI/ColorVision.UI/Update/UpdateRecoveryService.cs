@@ -1,4 +1,5 @@
 #pragma warning disable CA1822
+using ColorVision.UI;
 using ColorVision.UI.Properties;
 using log4net;
 using Newtonsoft.Json;
@@ -37,9 +38,8 @@ namespace ColorVision.Update
 
         private UpdateRecoveryService()
         {
-            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
-            BackupRoot = Path.Combine(appData, "UpdateBackup");
-            StateDirectory = Path.Combine(appData, "UpdateState");
+            BackupRoot = Environments.DirUpdateBackup;
+            StateDirectory = Environments.DirUpdateState;
             StateFilePath = Path.Combine(StateDirectory, "update-state.json");
         }
 
@@ -49,7 +49,8 @@ namespace ColorVision.Update
             Version? versionBefore,
             Version? versionTarget,
             IEnumerable<string> packagePaths,
-            IEnumerable<string>? pluginPackagePaths)
+            IEnumerable<string>? pluginPackagePaths,
+            string? snapshotPath = null)
         {
             try
             {
@@ -85,6 +86,7 @@ namespace ColorVision.Update
                 {
                     State = UpdateApplyState.Prepared,
                     BackupPath = backupPath,
+                    SnapshotPath = NormalizePathOrEmpty(snapshotPath),
                     StagePath = normalizedStageDirectory,
                     TargetPath = normalizedTargetDirectory,
                     ExecutablePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty,
@@ -110,6 +112,7 @@ namespace ColorVision.Update
                 return new UpdateBackupPrepareResult
                 {
                     BackupPath = backupPath,
+                    SnapshotPath = preparedState.SnapshotPath,
                     ManifestPath = manifestPath,
                     StateFilePath = StateFilePath,
                     ApplyingStatePath = applyingStatePath,
@@ -279,7 +282,8 @@ namespace ColorVision.Update
             }
 
             string backupPath = string.IsNullOrWhiteSpace(state.BackupPath) ? BackupRoot : state.BackupPath;
-            MessageBox.Show(owner, $"{Resources.UpdateRecovery_Failed}\n\n{backupPath}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            string restorePath = !string.IsNullOrWhiteSpace(state.SnapshotPath) ? state.SnapshotPath : backupPath;
+            MessageBox.Show(owner, $"{Resources.UpdateRecovery_Failed}\n\n{restorePath}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private string CreateBackupDirectory()
@@ -380,6 +384,7 @@ namespace ColorVision.Update
             {
                 State = applyState,
                 BackupPath = state.BackupPath,
+                SnapshotPath = state.SnapshotPath,
                 StagePath = state.StagePath,
                 TargetPath = state.TargetPath,
                 ExecutablePath = state.ExecutablePath,
@@ -410,6 +415,21 @@ namespace ColorVision.Update
                 })
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList() ?? new List<string>();
+        }
+
+        private static string NormalizePathOrEmpty(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+
+            try
+            {
+                return Path.GetFullPath(path);
+            }
+            catch
+            {
+                return path;
+            }
         }
 
         private void UpdateExistingState(UpdateApplyState nextState, string? errorMessage, bool completed)

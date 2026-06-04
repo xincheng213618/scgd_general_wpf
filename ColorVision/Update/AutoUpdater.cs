@@ -107,7 +107,7 @@ namespace ColorVision.Update
             {
                 if (task.Status == DownloadStatus.Completed)
                 {
-                    UpdateApplication(task.SavePath, IsIncrement);
+                    UpdateApplication(task.SavePath, IsIncrement, Version);
                 }
                 else
                 {
@@ -639,7 +639,7 @@ namespace ColorVision.Update
             }
         }
 
-        private static void UpdateApplication(string downloadPath, bool isIncrement)
+        private static void UpdateApplication(string downloadPath, bool isIncrement, Version? targetVersion = null)
         {
             ConfigHandler.GetInstance().SaveConfigs();
 
@@ -649,7 +649,7 @@ namespace ColorVision.Update
             }
             else
             {
-                RestartApplication(downloadPath);
+                RestartApplication(downloadPath, targetVersion);
             }
         }
 
@@ -713,13 +713,16 @@ namespace ColorVision.Update
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
                 Version? targetVersion = TryGetTargetVersionFromPackagePaths(applicationPackagePaths);
+                ApplicationSnapshotInfo updateSnapshot = ApplicationSnapshotService.Instance.CreateUpdateSnapshot(CurrentVersion, targetVersion);
+                log.Info($"Created update snapshot before incremental update: {updateSnapshot.FilePath}");
                 backupPrepareResult = UpdateRecoveryService.Instance.PrepareBackup(
                     tempDirectory,
                     programDirectory,
                     CurrentVersion,
                     targetVersion,
                     applicationPackagePaths,
-                    pluginPackagePaths);
+                    pluginPackagePaths,
+                    updateSnapshot.FilePath);
 
                 string batchContent = CreateIncrementalUpdateBatch(tempDirectory, programDirectory, executableName, backupPrepareResult);
 
@@ -889,6 +892,11 @@ namespace ColorVision.Update
 
         public static void RestartApplication(string downloadPath)
         {
+            RestartApplication(downloadPath, null);
+        }
+
+        public static void RestartApplication(string downloadPath, Version? targetVersion)
+        {
             ProcessStartInfo startInfo = new();
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
@@ -901,6 +909,8 @@ namespace ColorVision.Update
             }
             try
             {
+                ApplicationSnapshotInfo updateSnapshot = ApplicationSnapshotService.Instance.CreateUpdateSnapshot(CurrentVersion, targetVersion);
+                log.Info($"Created update snapshot before full installer: {updateSnapshot.FilePath}");
                 Process p = Process.Start(startInfo);
                 Environment.Exit(0);
             }

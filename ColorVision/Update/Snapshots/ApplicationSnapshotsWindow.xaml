@@ -102,8 +102,8 @@
                 <DataGridTextColumn Width="155"
                                     Binding="{Binding CreatedAtText}"
                                     Header="时间" />
-                <DataGridTextColumn Width="110"
-                                    Binding="{Binding Version}"
+                <DataGridTextColumn Width="180"
+                                    Binding="{Binding VersionText}"
                                     Header="版本" />
                 <DataGridTextColumn Width="90"
                                     Binding="{Binding SizeText}"

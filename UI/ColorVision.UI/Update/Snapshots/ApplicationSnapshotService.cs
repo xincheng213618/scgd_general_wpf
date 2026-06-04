@@ -25,13 +25,19 @@ namespace ColorVision.Update
 
         public required string Version { get; init; }
 
+        public required string VersionTarget { get; init; }
+
         public required DateTime CreatedAt { get; init; }
 
         public required long SizeBytes { get; init; }
 
         public required bool IsDefault { get; init; }
 
-        public string SnapshotTypeText => IsDefault ? "默认快照" : "用户快照";
+        public required bool IsUpdate { get; init; }
+
+        public string SnapshotTypeText => IsDefault ? "默认快照" : IsUpdate ? "更新快照" : "用户快照";
+
+        public string VersionText => string.IsNullOrWhiteSpace(VersionTarget) ? Version : $"{Version} -> {VersionTarget}";
 
         public string CreatedAtText => CreatedAt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture);
 
@@ -59,6 +65,8 @@ namespace ColorVision.Update
         public DateTime CreatedAt { get; set; }
 
         public string Version { get; set; } = string.Empty;
+
+        public string VersionTarget { get; set; } = string.Empty;
 
         public string ProgramDirectory { get; set; } = string.Empty;
 
@@ -92,7 +100,7 @@ namespace ColorVision.Update
 
         public Task<ApplicationSnapshotInfo> CreateDefaultSnapshotAsync(bool force, CancellationToken cancellationToken = default)
         {
-            return Task.Run(() => CreateSnapshotCore(DefaultSnapshotPath, isDefault: true, overwrite: force, cancellationToken), cancellationToken);
+            return Task.Run(() => CreateSnapshotCore(DefaultSnapshotPath, SnapshotKind.Default, versionTarget: string.Empty, overwrite: force, cancellationToken), cancellationToken);
         }
 
         public Task<ApplicationSnapshotInfo> CreateUserSnapshotAsync(CancellationToken cancellationToken = default)
@@ -103,8 +111,31 @@ namespace ColorVision.Update
                 string version = GetCurrentVersionText();
                 string fileName = $"ColorVision-{SanitizeFilePart(version)}-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
                 string snapshotPath = Path.Combine(SnapshotDirectory, fileName);
-                return CreateSnapshotCore(snapshotPath, isDefault: false, overwrite: false, cancellationToken);
+                return CreateSnapshotCore(snapshotPath, SnapshotKind.User, versionTarget: string.Empty, overwrite: false, cancellationToken);
             }, cancellationToken);
+        }
+
+        public Task<ApplicationSnapshotInfo> CreateUpdateSnapshotAsync(Version? versionBefore, Version? versionTarget, CancellationToken cancellationToken = default)
+        {
+            return Task.Run(() => CreateUpdateSnapshot(versionBefore, versionTarget, cancellationToken), cancellationToken);
+        }
+
+        public ApplicationSnapshotInfo CreateUpdateSnapshot(Version? versionBefore, Version? versionTarget, CancellationToken cancellationToken = default)
+        {
+            Directory.CreateDirectory(SnapshotDirectory);
+            string fromVersion = versionBefore?.ToString() ?? GetCurrentVersionText();
+            string toVersion = versionTarget?.ToString() ?? "unknown";
+            string fileName = $"ColorVision-update-{SanitizeFilePart(fromVersion)}-to-{SanitizeFilePart(toVersion)}-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+            string snapshotPath = Path.Combine(SnapshotDirectory, fileName);
+            return CreateSnapshotCore(snapshotPath, SnapshotKind.Update, versionTarget: toVersion, overwrite: false, cancellationToken);
+        }
+
+        public ApplicationSnapshotInfo GetSnapshotInfo(string snapshotPath)
+        {
+            if (string.IsNullOrWhiteSpace(snapshotPath) || !File.Exists(snapshotPath))
+                throw new FileNotFoundException("Snapshot file does not exist.", snapshotPath);
+
+            return ReadSnapshotInfo(snapshotPath);
         }
 
         public IReadOnlyList<ApplicationSnapshotInfo> ListSnapshots()
@@ -137,7 +168,7 @@ namespace ColorVision.Update
             return Task.Run(() => RestoreSnapshotCore(snapshot, cancellationToken), cancellationToken);
         }
 
-        private static ApplicationSnapshotInfo CreateSnapshotCore(string snapshotPath, bool isDefault, bool overwrite, CancellationToken cancellationToken)
+        private static ApplicationSnapshotInfo CreateSnapshotCore(string snapshotPath, SnapshotKind kind, string versionTarget, bool overwrite, CancellationToken cancellationToken)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(snapshotPath)!);
 
@@ -157,9 +188,11 @@ namespace ColorVision.Update
             ApplicationSnapshotManifest manifest = new()
             {
                 CreatedAt = DateTime.Now,
+                SnapshotKind = kind.ToString(),
                 Version = GetCurrentVersionText(),
+                VersionTarget = versionTarget,
                 ProgramDirectory = programDirectory,
-                IsDefault = isDefault,
+                IsDefault = kind == SnapshotKind.Default,
             };
 
             using (FileStream zipStream = new(tempPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
@@ -198,15 +231,19 @@ namespace ColorVision.Update
             ApplicationSnapshotManifest? manifest = TryReadManifest(snapshotPath);
             bool isDefault = string.Equals(fileInfo.Name, DefaultSnapshotFileName, StringComparison.OrdinalIgnoreCase)
                 || manifest?.IsDefault == true;
+            bool isUpdate = string.Equals(manifest?.SnapshotKind, SnapshotKind.Update.ToString(), StringComparison.OrdinalIgnoreCase)
+                || fileInfo.Name.StartsWith("ColorVision-update-", StringComparison.OrdinalIgnoreCase);
 
             return new ApplicationSnapshotInfo
             {
                 FilePath = snapshotPath,
                 FileName = fileInfo.Name,
                 Version = string.IsNullOrWhiteSpace(manifest?.Version) ? "未知" : manifest.Version,
+                VersionTarget = manifest?.VersionTarget ?? string.Empty,
                 CreatedAt = manifest?.CreatedAt ?? fileInfo.CreationTime,
                 SizeBytes = fileInfo.Exists ? fileInfo.Length : 0,
                 IsDefault = isDefault,
+                IsUpdate = isUpdate,
             };
         }
 
@@ -330,6 +367,13 @@ namespace ColorVision.Update
                 .Replace("|", "^|")
                 .Replace("<", "^<")
                 .Replace(">", "^>");
+        }
+
+        private enum SnapshotKind
+        {
+            Default,
+            User,
+            Update
         }
     }
 }
