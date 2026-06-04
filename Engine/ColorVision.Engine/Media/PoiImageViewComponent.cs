@@ -5,6 +5,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,6 +17,7 @@ namespace ColorVision.Engine.Media
     public class PoiImageViewComponent : IImageComponent
     {
         public const string SelectedTemplateRuntimeKey = "POI.SelectedTemplate";
+        public const string IsTemplateSupportedRuntimeKey = "POI.IsTemplateSupported";
 
         public static bool TryGetSelectedTemplate(ImageView imageView, out PoiParam poiParam)
         {
@@ -29,14 +31,19 @@ namespace ColorVision.Engine.Media
         {
             ComboBox? poiTemplateComboBox = null;
             SelectionChangedEventHandler? selectionChangedHandler = null;
+            List<Visual> poiTemplateVisuals = new();
             int loadVersion = 0;
 
             imageView.ImageShow.ImageInitialized += (_, _) => RefreshPoiTemplateUi();
-            imageView.Config.Cleared += (_, _) => RemovePoiTemplateUi(clearSelection: false);
+            imageView.Config.Cleared += (_, _) =>
+            {
+                ClearPoiTemplateVisuals();
+                RemovePoiTemplateUi(clearSelection: false);
+            };
 
             void RefreshPoiTemplateUi()
             {
-                if (!IsPoiTemplateSupported(imageView.Config.FilePath))
+                if (!IsPoiTemplateSupported(imageView))
                 {
                     RemovePoiTemplateUi(clearSelection: true);
                     return;
@@ -62,7 +69,7 @@ namespace ColorVision.Engine.Media
                     Style = Application.Current.TryFindResource("ComboBox.Small") as Style
                 };
 
-                selectionChangedHandler = (_, _) => ApplySelectedTemplate(imageView, poiTemplateComboBox);
+                selectionChangedHandler = (_, _) => ApplySelectedTemplate(imageView, poiTemplateComboBox, ClearPoiTemplateVisuals, poiTemplateVisuals);
                 poiTemplateComboBox.SelectionChanged += selectionChangedHandler;
                 imageView.ToolBarAl.Items.Add(poiTemplateComboBox);
             }
@@ -70,6 +77,7 @@ namespace ColorVision.Engine.Media
             void RemovePoiTemplateUi(bool clearSelection)
             {
                 loadVersion++;
+                ClearPoiTemplateVisuals();
                 if (clearSelection)
                 {
                     imageView.Config.SetViewState(SelectedTemplateRuntimeKey, null, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
@@ -95,6 +103,16 @@ namespace ColorVision.Engine.Media
                 selectionChangedHandler = null;
             }
 
+            void ClearPoiTemplateVisuals()
+            {
+                foreach (Visual visual in poiTemplateVisuals)
+                {
+                    imageView.ImageShow.RemoveVisual(visual);
+                }
+
+                poiTemplateVisuals.Clear();
+            }
+
             void LoadTemplatesAsync(int version)
             {
                 if (MySqlControl.GetInstance().IsConnect)
@@ -113,7 +131,7 @@ namespace ColorVision.Engine.Media
 
             void PopulateTemplates(int version)
             {
-                if (version != loadVersion || poiTemplateComboBox == null || !IsPoiTemplateSupported(imageView.Config.FilePath))
+                if (version != loadVersion || poiTemplateComboBox == null || !IsPoiTemplateSupported(imageView))
                 {
                     return;
                 }
@@ -138,13 +156,20 @@ namespace ColorVision.Engine.Media
                    extension.Equals(".cvcie", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static void ApplySelectedTemplate(ImageView imageView, ComboBox comboBox)
+        private static bool IsPoiTemplateSupported(ImageView imageView)
+        {
+            return imageView.Config.GetProperties<bool>(IsTemplateSupportedRuntimeKey)
+                || IsPoiTemplateSupported(imageView.Config.FilePath);
+        }
+
+        private static void ApplySelectedTemplate(ImageView imageView, ComboBox comboBox, Action clearPoiTemplateVisuals, List<Visual> poiTemplateVisuals)
         {
             if (comboBox.SelectedValue is not PoiParam poiParams)
             {
                 return;
             }
 
+            clearPoiTemplateVisuals();
             imageView.Config.SetViewState(SelectedTemplateRuntimeKey, poiParams, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
             if (poiParams.Id == -1)
             {
@@ -165,7 +190,8 @@ namespace ColorVision.Engine.Media
                         circle.Attribute.Id = item.Id;
                         circle.Attribute.Text = item.Name;
                         circle.Render();
-                        imageView.ImageShow.AddVisualCommand(circle);
+                        imageView.ImageShow.AddVisual(circle);
+                        poiTemplateVisuals.Add(circle);
                         break;
                     case GraphicTypes.Rect:
                         DVRectangleText rectangle = new();
@@ -175,7 +201,8 @@ namespace ColorVision.Engine.Media
                         rectangle.Attribute.Id = item.Id;
                         rectangle.Attribute.Text = item.Name;
                         rectangle.Render();
-                        imageView.ImageShow.AddVisualCommand(rectangle);
+                        imageView.ImageShow.AddVisual(rectangle);
+                        poiTemplateVisuals.Add(rectangle);
                         break;
                     case GraphicTypes.Quadrilateral:
                         break;

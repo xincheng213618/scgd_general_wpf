@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
@@ -960,6 +961,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 try
                 {
                     Device.DisplayConfig.IsLocalVideoOpen = false;
+                    SetLocalVideoPoiTemplateSupported(false);
                     _localRealtimePipeline.Stop(resetRealtime: true);
 
                     (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync();
@@ -1002,6 +1004,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 button.Content = "Close Video";
                 _localRealtimePipeline.Start(Device.View.ImageView, flipModeProvider: () => Device.DisplayConfig.FlipMode);
+                SetLocalVideoPoiTemplateSupported(true);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
                 localVideoOpened = true;
                 logger.Info("视频模式初始化结束");
@@ -1057,6 +1060,30 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
 
             return (true, string.Empty);
+        }
+
+        private void SetLocalVideoPoiTemplateSupported(bool isSupported)
+        {
+            var imageView = Device.View.ImageView;
+
+            void Apply()
+            {
+                imageView.Config.SetViewState(
+                    PoiImageViewComponent.IsTemplateSupportedRuntimeKey,
+                    isSupported,
+                    nameof(DisplayCamera),
+                    "本地视频模式是否允许选择 POI 模板");
+                imageView.ImageShow.RaiseImageInitialized();
+            }
+
+            if (imageView.Dispatcher.CheckAccess())
+            {
+                Apply();
+            }
+            else
+            {
+                imageView.Dispatcher.BeginInvoke(new Action(Apply));
+            }
         }
 
         private string ResolveLocalCameraId()
