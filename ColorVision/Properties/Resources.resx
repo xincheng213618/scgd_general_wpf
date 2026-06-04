@@ -375,6 +375,15 @@
   <data name="UpdatePreviewApplicationFullPackageLabel" xml:space="preserve">
     <value>完整主程序安装包</value>
   </data>
+  <data name="UpdatePreviewApplicationUpdateModeLabel" xml:space="preserve">
+    <value>更新方式</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateModeIncremental" xml:space="preserve">
+    <value>增量更新</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateModeFull" xml:space="preserve">
+    <value>完整安装包</value>
+  </data>
   <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
     <value>主程序</value>
   </data>
@@ -389,6 +398,9 @@
   </data>
   <data name="UpdatePreviewPluginDownloadFailed" xml:space="preserve">
     <value>插件下载未成功完成，请稍后重试。</value>
+  </data>
+  <data name="UpdatePreviewPluginDeferredByFullApplicationUpdate" xml:space="preserve">
+    <value>完整安装包更新时，本轮不合并插件更新。</value>
   </data>
   <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
     <value>没有可更新的插件。</value>
@@ -407,6 +419,9 @@
   </data>
   <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
     <value>包含主程序更新</value>
+  </data>
+  <data name="UpdatePreviewSelectionDefersPluginUpdates" xml:space="preserve">
+    <value>本轮不合并插件更新</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>包含必选更新</value>

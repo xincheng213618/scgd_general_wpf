@@ -3157,6 +3157,33 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 完整安装包 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationUpdateModeFull {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationUpdateModeFull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 增量更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationUpdateModeIncremental {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationUpdateModeIncremental", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新方式 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationUpdateModeLabel {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationUpdateModeLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewCancelButtonText {
@@ -3364,6 +3391,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 完整安装包更新时，本轮不合并插件更新。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewPluginDeferredByFullApplicationUpdate {
+            get {
+                return ResourceManager.GetString("UpdatePreviewPluginDeferredByFullApplicationUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 插件下载未成功完成，请稍后重试。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewPluginDownloadFailed {
@@ -3405,6 +3441,15 @@ namespace ColorVision.Properties {
         public static string UpdatePreviewSelectionBackupAndRestart {
             get {
                 return ResourceManager.GetString("UpdatePreviewSelectionBackupAndRestart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本轮不合并插件更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSelectionDefersPluginUpdates {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSelectionDefersPluginUpdates", resourceCulture);
             }
         }
         

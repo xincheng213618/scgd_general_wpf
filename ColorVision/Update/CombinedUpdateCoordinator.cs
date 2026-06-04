@@ -25,6 +25,19 @@ namespace ColorVision.Update
 
         private static CombinedUpdateWorkflowConfig WorkflowConfig => CombinedUpdateWorkflowConfig.Instance;
 
+        private readonly struct UpdatePreviewResult
+        {
+            public UpdatePreviewResult(UpdatePreviewAction action, ApplicationUpdateMode applicationUpdateMode)
+            {
+                Action = action;
+                ApplicationUpdateMode = applicationUpdateMode;
+            }
+
+            public UpdatePreviewAction Action { get; }
+
+            public ApplicationUpdateMode ApplicationUpdateMode { get; }
+        }
+
         public static async Task StartInteractiveAsync(CancellationToken cancellationToken = default)
         {
             await _locker.WaitAsync(cancellationToken);
@@ -97,6 +110,7 @@ namespace ColorVision.Update
                     return;
                 }
 
+                ApplySelectedApplicationUpdateMode(ref applicationPlan, GetSelectedApplicationUpdateMode(context));
                 ApplySelectedPluginUpdates(pluginPlan, context);
                 await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
             }
@@ -146,7 +160,8 @@ namespace ColorVision.Update
                 if (!HasUpdates(applicationPlan, pluginPlan))
                     return;
 
-                UpdatePreviewAction action = await ShowUpdatePreviewAsync(applicationPlan, pluginPlan, allowSkipVersion: applicationPlan != null, isStartupCheck: true);
+                UpdatePreviewResult previewResult = await ShowUpdatePreviewAsync(applicationPlan, pluginPlan, allowSkipVersion: applicationPlan != null, isStartupCheck: true);
+                UpdatePreviewAction action = previewResult.Action;
 
                 if (applicationPlan != null)
                 {
@@ -165,6 +180,7 @@ namespace ColorVision.Update
                     return;
                 }
 
+                ApplySelectedApplicationUpdateMode(ref applicationPlan, previewResult.ApplicationUpdateMode);
                 await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
             }
             catch (OperationCanceledException)
@@ -491,7 +507,7 @@ namespace ColorVision.Update
             return true;
         }
 
-        private static async Task<UpdatePreviewAction> ShowUpdatePreviewAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
+        private static async Task<UpdatePreviewResult> ShowUpdatePreviewAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
         {
             UpdatePreviewDialogContext context = BuildUpdatePreviewContext(applicationPlan, pluginPlan, allowSkipVersion, isStartupCheck);
 
@@ -508,7 +524,7 @@ namespace ColorVision.Update
                 ApplySelectedPluginUpdates(pluginPlan, context);
             }
 
-            return window.ResultAction;
+            return new UpdatePreviewResult(window.ResultAction, GetSelectedApplicationUpdateMode(context));
         }
 
         private static UpdatePreviewDialogContext CreateCheckingContext()
@@ -565,6 +581,26 @@ namespace ColorVision.Update
             pluginPlan.Updates.RemoveAll(item => !selectedPluginIds.Contains(GetPluginItemId(item)));
         }
 
+        private static void ApplySelectedApplicationUpdateMode(ref AutoUpdatePlan? applicationPlan, ApplicationUpdateMode selectedMode)
+        {
+            if (applicationPlan == null || !applicationPlan.IsIncremental || selectedMode != ApplicationUpdateMode.Full)
+                return;
+
+            applicationPlan = new AutoUpdatePlan
+            {
+                CurrentVersion = applicationPlan.CurrentVersion,
+                LatestVersion = applicationPlan.LatestVersion,
+                VersionsToApply = new[] { applicationPlan.LatestVersion },
+                IsIncremental = false,
+            };
+        }
+
+        private static ApplicationUpdateMode GetSelectedApplicationUpdateMode(UpdatePreviewDialogContext context)
+        {
+            return context.Items.FirstOrDefault(item => string.Equals(item.ItemId, "application", StringComparison.OrdinalIgnoreCase))?.ApplicationUpdateMode
+                ?? ApplicationUpdateMode.Incremental;
+        }
+
         private static UpdatePreviewDialogContext BuildUpdatePreviewContext(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
         {
             UpdatePreviewDialogContext context = new()
@@ -579,6 +615,8 @@ namespace ColorVision.Update
 
             if (applicationPlan != null)
             {
+                string incrementalSummary = string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationCardSummaryIncrementalFormat, applicationPlan.VersionsToApply.Count);
+                string fullSummary = Resources.UpdatePreviewApplicationCardSummaryFull;
                 UpdatePreviewItem previewItem = new()
                 {
                     ItemId = "application",
@@ -590,10 +628,13 @@ namespace ColorVision.Update
                         : Resources.UpdatePreviewApplicationFullPackageLabel,
                     CurrentVersion = applicationPlan.CurrentVersion.ToString(),
                     TargetVersion = applicationPlan.LatestVersion.ToString(),
-                    Summary = BuildApplicationCardSummary(applicationPlan),
+                    Summary = applicationPlan.IsIncremental ? incrementalSummary : fullSummary,
                     IsSelectable = false,
+                    CanChooseApplicationUpdateMode = applicationPlan.IsIncremental,
+                    ApplicationUpdateMode = applicationPlan.IsIncremental ? ApplicationUpdateMode.Incremental : ApplicationUpdateMode.Full,
                 };
 
+                previewItem.ConfigureApplicationUpdateModePresentation(applicationPlan.VersionsToApply.Count, incrementalSummary, fullSummary);
                 context.Items.Add(previewItem);
             }
 
@@ -648,14 +689,6 @@ namespace ColorVision.Update
                 builder.Append($" {string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummarySkippedCount, pluginPlan.SkippedIncompatiblePlugins.Count)}");
 
             return builder.ToString();
-        }
-
-        private static string BuildApplicationCardSummary(AutoUpdatePlan applicationPlan)
-        {
-            if (applicationPlan.IsIncremental)
-                return string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationCardSummaryIncrementalFormat, applicationPlan.VersionsToApply.Count);
-
-            return Resources.UpdatePreviewApplicationCardSummaryFull;
         }
 
         private static string BuildPluginCardSummary(CombinedPluginUpdateItem item)
