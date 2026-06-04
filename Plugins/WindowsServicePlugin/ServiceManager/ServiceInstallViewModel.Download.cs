@@ -183,7 +183,7 @@ namespace WindowsServicePlugin.ServiceManager
             string downloadPath = Config.DownloadLocation;
             if (string.IsNullOrWhiteSpace(downloadPath))
             {
-                downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision", "Downloads");
+                downloadPath = Environments.DirDownloads;
                 Config.DownloadLocation = downloadPath;
             }
 

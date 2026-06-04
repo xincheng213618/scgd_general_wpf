@@ -73,7 +73,7 @@ namespace WindowsServicePlugin.CVWinSMS
                     {
                         if (MessageBox.Show(Application.Current.GetActiveWindow(), "服务管理工具:找到新版本，是否更新", "CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
-                            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+                            string downloadDir = Environments.DirToolPackageCache;
                             string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[{version}].zip";
 
                             var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
@@ -157,7 +157,7 @@ namespace WindowsServicePlugin.CVWinSMS
         {
             var downloadFile = new DownloadFile();
             Version version = await downloadFile.GetLatestVersionNumber(LatestReleaseUrl);
-            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+            string downloadDir = Environments.DirToolPackageCache;
             string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[{version}].zip";
 
             var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();

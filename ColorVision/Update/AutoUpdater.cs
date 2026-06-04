@@ -88,6 +88,13 @@ namespace ColorVision.Update
 
         public static string GetIncrementalPackageDownloadUrl(Version version) => BuildAppApiUrl($"updates/{Uri.EscapeDataString(version.ToString())}/download");
 
+        public static string GetApplicationPackageCacheDirectory(bool isIncremental)
+        {
+            return isIncremental
+                ? Environments.DirApplicationIncrementalPackageCache
+                : Environments.DirApplicationFullPackageCache;
+        }
+
         public static void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
 
         public static void Update(Version Version, string DownloadPath,bool IsIncrement = false, Action? downloadFailedAction = null)
@@ -118,7 +125,7 @@ namespace ColorVision.Update
             if (LatestVersion == new Version()) return;
             await InvokeOnUiThreadAsync(() =>
             {
-                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
+                Update(LatestVersion, GetApplicationPackageCacheDirectory(isIncremental: false));
             });
         }
 
@@ -225,7 +232,7 @@ namespace ColorVision.Update
                         MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), msg, $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
                         if (result == MessageBoxResult.Yes)
                         {
-                            Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
+                            Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
                         }
                         else if (result == MessageBoxResult.No)
                         {
@@ -288,7 +295,7 @@ namespace ColorVision.Update
                         {
                             if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
+                                Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
                             }
                         });
                     }
@@ -298,7 +305,7 @@ namespace ColorVision.Update
                         {
                             if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
+                                Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
                             }
                         });
                     }
@@ -441,7 +448,7 @@ namespace ColorVision.Update
 
         public static void StartUpdatePlan(AutoUpdatePlan plan, Action? downloadFailedAction = null)
         {
-            string downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+            string downloadPath = GetApplicationPackageCacheDirectory(plan.IsIncremental);
 
             if (plan.IsIncremental)
             {

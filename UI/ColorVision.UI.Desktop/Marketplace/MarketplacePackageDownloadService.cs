@@ -3,6 +3,7 @@ using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Concurrent;
@@ -110,7 +111,7 @@ namespace ColorVision.UI.Desktop.Marketplace
     {
         private static readonly ILog AdapterLog = LogManager.GetLogger(typeof(MarketplacePackageUiAdapter));
 
-        public string DownloadDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+        public string DownloadDirectory => Environments.DirPluginPackageCache;
 
         public string? Authorization => DownloadFileConfig.Instance.Authorization;
 

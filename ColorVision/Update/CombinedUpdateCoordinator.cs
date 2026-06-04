@@ -350,7 +350,8 @@ namespace ColorVision.Update
 
         private static bool StartIncrementalCombinedUpdate(AutoUpdatePlan applicationPlan, CombinedPluginUpdatePlan pluginPlan)
         {
-            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+            string applicationDownloadDir = Environments.DirApplicationIncrementalPackageCache;
+            string pluginDownloadDir = Environments.DirPluginPackageCache;
             var manager = Aria2cDownloadManager.GetInstance();
             var client = MarketplaceClient.GetInstance();
             List<Version> applicationVersions = applicationPlan.VersionsToApply.Distinct().ToList();
@@ -370,7 +371,7 @@ namespace ColorVision.Update
             foreach (Version version in applicationVersions)
             {
                 string packageFileName = AutoUpdater.GetIncrementalPackageFileName(version);
-                string cachedPath = Path.Combine(downloadDir, packageFileName);
+                string cachedPath = Path.Combine(applicationDownloadDir, packageFileName);
                 if (AutoUpdater.IsIncrementalPackageFileReady(cachedPath))
                 {
                     applicationPackagePaths[version.ToString()] = cachedPath;
@@ -386,7 +387,7 @@ namespace ColorVision.Update
             {
                 string version = item.VersionInfo.Version;
                 string? expectedHash = item.VersionInfo.FileHash;
-                string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, item.Plugin.PackageName!, version, expectedHash);
+                string? existingFile = MarketplaceClient.GetExistingFileIfValid(pluginDownloadDir, item.Plugin.PackageName!, version, expectedHash);
                 if (existingFile != null)
                 {
                     pluginPackagePaths.Add(existingFile);
@@ -447,7 +448,7 @@ namespace ColorVision.Update
                 string packageFileName = AutoUpdater.GetIncrementalPackageFileName(version);
                 string downloadUrl = AutoUpdater.GetIncrementalPackageDownloadUrl(version);
 
-                manager.AddDownload(downloadUrl, downloadDir, "1:1", task =>
+                manager.AddDownload(downloadUrl, applicationDownloadDir, "1:1", task =>
                 {
                     lock (lockObj)
                     {
@@ -475,7 +476,7 @@ namespace ColorVision.Update
                 string url = client.GetDownloadUrl(item.Plugin.PackageName!, version);
                 string expectedFileName = $"{item.Plugin.PackageName}-{version}.cvxp";
 
-                manager.AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
+                manager.AddDownload(url, pluginDownloadDir, DownloadFileConfig.Instance.Authorization, task =>
                 {
                     lock (lockObj)
                     {

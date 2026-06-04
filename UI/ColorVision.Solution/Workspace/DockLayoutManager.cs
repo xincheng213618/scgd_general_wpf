@@ -18,13 +18,13 @@ namespace ColorVision.Solution.Workspace
         private static readonly ILog log = LogManager.GetLogger(typeof(DockLayoutManager));
 
         private const int DefaultBottomPaneHeight = 200;
-    private const int DefaultSidePaneWidth = 303;
+        private const int DefaultSidePaneWidth = 303;
 
         /// <summary>
         /// 布局文件存储在用户 AppData 目录，避免 Program Files 等受保护目录的权限问题。
         /// </summary>
         private static string LayoutFilePath => Path.Combine(
-            Environments.DirAppData, "MainWindowDockLayout.xml");
+            Environments.DirStateLayout, "MainWindowDockLayout.xml");
 
         private readonly DockingManager _dockingManager;
 

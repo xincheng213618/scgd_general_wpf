@@ -40,7 +40,7 @@ namespace ColorVision.Scheduler
         private static QuartzSchedulerManager _instance;
         private static readonly object _locker = new();
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
-        private static readonly string ConfigFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"ColorVision", "scheduler_tasks.json");
+        private static readonly string ConfigFile = Path.Combine(Environments.DirStateScheduler, "scheduler_tasks.json");
        
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
@@ -64,6 +64,7 @@ namespace ColorVision.Scheduler
             try
             {
                 _logger.Debug($"Saving {TaskInfos.Count} tasks to {ConfigFile}");
+                Directory.CreateDirectory(Path.GetDirectoryName(ConfigFile)!);
                 var json = JsonConvert.SerializeObject(TaskInfos, Formatting.Indented, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
                 File.WriteAllText(ConfigFile, json);
                 _logger.Info("Tasks saved successfully");

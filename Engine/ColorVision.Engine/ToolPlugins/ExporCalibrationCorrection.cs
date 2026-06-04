@@ -25,7 +25,7 @@ namespace ColorVision.Engine.ToolPlugins
     public class ExporCalibrationCorrectionAppProvider : IThirdPartyAppProvider
     {
         private const string Url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CalibTool/generateCaliFileTool240906.zip";
-        private static readonly string DownloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+        private static readonly string DownloadDir = Environments.DirToolPackageCache;
 
         public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
