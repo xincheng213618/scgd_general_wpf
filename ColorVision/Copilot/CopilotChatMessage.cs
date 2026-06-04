@@ -4,6 +4,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -92,6 +93,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotChatMessage : ViewModelBase
     {
+        private static readonly char[] ExecutionLineSeparators = { '\r', '\n' };
+
         public CopilotChatMessage()
         {
         }
@@ -177,14 +180,22 @@ namespace ColorVision.Copilot
             get => _executionContent;
             set
             {
-                SetProperty(ref _executionContent, value ?? string.Empty);
-                OnPropertyChanged(nameof(HasExecutionTrace));
+                if (SetProperty(ref _executionContent, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(HasExecutionTrace));
+                    OnPropertyChanged(nameof(HasExecutionFailures));
+                    OnPropertyChanged(nameof(ExecutionSummary));
+                    OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+                }
             }
         }
         private string _executionContent = string.Empty;
 
         [JsonIgnore]
         public bool HasExecutionTrace => !string.IsNullOrWhiteSpace(ExecutionContent);
+
+        [JsonIgnore]
+        public bool HasExecutionFailures => AnalyzeExecutionTrace(ExecutionContent).FailedCount > 0;
 
         public bool IsExecutionExpanded
         {
@@ -198,14 +209,33 @@ namespace ColorVision.Copilot
             get => _isExecutionInProgress;
             set
             {
-                SetProperty(ref _isExecutionInProgress, value);
-                OnPropertyChanged(nameof(ExecutionHeader));
+                if (SetProperty(ref _isExecutionInProgress, value))
+                {
+                    OnPropertyChanged(nameof(ExecutionHeader));
+                    OnPropertyChanged(nameof(ExecutionSummary));
+                    OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+                }
             }
         }
         private bool _isExecutionInProgress;
 
         [JsonIgnore]
         public string ExecutionHeader => IsExecutionInProgress ? CopilotUiText.ExecutionInProgressHeader : CopilotUiText.ExecutionHeader;
+
+        [JsonIgnore]
+        public string ExecutionSummary => BuildExecutionSummary(ExecutionContent, IsExecutionInProgress);
+
+        [JsonIgnore]
+        public string ExecutionSummaryToolTip
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(ExecutionContent))
+                    return ExecutionSummary;
+
+                return $"{ExecutionHeader}: {ExecutionSummary}{Environment.NewLine}{Environment.NewLine}{TrimForTooltip(ExecutionContent)}";
+            }
+        }
 
         public string ReasoningContent
         {
@@ -289,6 +319,78 @@ namespace ColorVision.Copilot
             }
 
             return changed;
+        }
+
+        private static string BuildExecutionSummary(string? content, bool isInProgress)
+        {
+            var text = content ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(text))
+                return isInProgress ? "Starting" : string.Empty;
+
+            var (toolCount, failedCount, latestTool) = AnalyzeExecutionTrace(text);
+
+            if (toolCount == 0)
+            {
+                var firstLine = text
+                    .Split(ExecutionLineSeparators, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line => line.Trim())
+                    .FirstOrDefault(line => !string.IsNullOrWhiteSpace(line));
+                return isInProgress
+                    ? TrimForInline(string.IsNullOrWhiteSpace(firstLine) ? "Running" : firstLine)
+                    : "Trace available";
+            }
+
+            var builder = new StringBuilder(isInProgress ? "Running" : "Completed");
+            builder.Append(" - ").Append(toolCount).Append(toolCount == 1 ? " tool" : " tools");
+
+            if (failedCount > 0)
+                builder.Append(" - ").Append(failedCount).Append(" failed");
+
+            if (!string.IsNullOrWhiteSpace(latestTool))
+                builder.Append(" - latest ").Append(TrimForInline(latestTool));
+
+            return builder.ToString();
+        }
+
+        private static (int ToolCount, int FailedCount, string LatestTool) AnalyzeExecutionTrace(string? content)
+        {
+            var toolCount = 0;
+            var failedCount = 0;
+            var latestTool = string.Empty;
+
+            foreach (var rawLine in (content ?? string.Empty).Split(ExecutionLineSeparators, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var line = rawLine.Trim();
+                if (line.Length > 2 && line[0] == '[')
+                {
+                    var closeIndex = line.IndexOf(']');
+                    if (closeIndex > 1)
+                    {
+                        latestTool = line[1..closeIndex].Trim();
+                        toolCount++;
+                    }
+                }
+
+                if (line.StartsWith("Status:", StringComparison.OrdinalIgnoreCase)
+                    && line.Contains("Failed", StringComparison.OrdinalIgnoreCase))
+                {
+                    failedCount++;
+                }
+            }
+
+            return (toolCount, failedCount, latestTool);
+        }
+
+        private static string TrimForInline(string value)
+        {
+            var text = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
+            return text.Length <= 48 ? text : text[..48] + "...";
+        }
+
+        private static string TrimForTooltip(string value)
+        {
+            var text = (value ?? string.Empty).Trim();
+            return text.Length <= 1600 ? text : text[..1600] + Environment.NewLine + "...";
         }
     }
 

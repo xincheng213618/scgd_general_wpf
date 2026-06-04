@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
@@ -82,7 +83,10 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _apiKey, NormalizeText(value)))
+                {
                     OnPropertyChanged(nameof(IsConfigured));
+                    OnConfigurationStateChanged();
+                }
             }
         }
         private string _apiKey = string.Empty;
@@ -95,7 +99,10 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _baseUrl, NormalizeText(value)))
+                {
                     OnPropertyChanged(nameof(IsConfigured));
+                    OnConfigurationStateChanged();
+                }
             }
         }
         private string _baseUrl = "https://api.deepseek.com/anthropic";
@@ -112,6 +119,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(DisplayLabel));
                     OnPropertyChanged(nameof(IsConfigured));
                     OnPropertyChanged(nameof(SecondaryLabel));
+                    OnConfigurationStateChanged();
                 }
             }
         }
@@ -158,6 +166,21 @@ namespace ColorVision.Copilot
             !string.IsNullOrWhiteSpace(ApiKey) &&
             !string.IsNullOrWhiteSpace(BaseUrl) &&
             !string.IsNullOrWhiteSpace(Model);
+
+        [JsonIgnore]
+        public string ConfigurationStatusText => IsConfigured ? "Ready" : "Incomplete";
+
+        [JsonIgnore]
+        public string ConfigurationStatusToolTip
+        {
+            get
+            {
+                var missing = BuildMissingConfigurationParts();
+                return missing.Length == 0
+                    ? "This profile has API key, endpoint, and model."
+                    : "Missing " + string.Join(", ", missing) + ".";
+            }
+        }
 
         [JsonIgnore]
         public string VendorLabel => CopilotVendorCatalog.GetLabel(VendorType);
@@ -278,6 +301,27 @@ namespace ColorVision.Copilot
                 return false;
 
             return LegacyDefaultSystemPromptMarkers.All(marker => value.Contains(marker, StringComparison.Ordinal));
+        }
+
+        private void OnConfigurationStateChanged()
+        {
+            OnPropertyChanged(nameof(ConfigurationStatusText));
+            OnPropertyChanged(nameof(ConfigurationStatusToolTip));
+        }
+
+        private string[] BuildMissingConfigurationParts()
+        {
+            var missing = new List<string>(3);
+            if (string.IsNullOrWhiteSpace(ApiKey))
+                missing.Add("API key");
+
+            if (string.IsNullOrWhiteSpace(BaseUrl))
+                missing.Add("endpoint");
+
+            if (string.IsNullOrWhiteSpace(Model))
+                missing.Add("model");
+
+            return missing.ToArray();
         }
     }
 }

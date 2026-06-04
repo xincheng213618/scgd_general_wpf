@@ -31,6 +31,7 @@ namespace ColorVision.Copilot.Mcp
         private const string LogsResourceUri = "colorvision://logs/recent";
         private const string TemplateResourceUri = "colorvision://template/current";
         private const string FlowResourceUri = "colorvision://flow/current";
+        private const string AuditSummaryResourceUri = "colorvision://mcp/audit-summary";
         private const string AuditLogResourceUri = "colorvision://mcp/audit-log";
         private static readonly string[] SupportedPanelAliases =
         {
@@ -82,6 +83,10 @@ namespace ColorVision.Copilot.Mcp
                     ["action_id"] = StringProperty("Optional confirmable action id filter."),
                     ["failed_only"] = BooleanProperty("When true, return only failed entries."),
                 }), "audit", "read-only", "Call get_audit_log with { \"max_entries\": 20, \"failed_only\": true }."),
+                Tool("get_audit_summary", "Return a compact MCP audit summary with recent counts, last failure, callers, and pending approvals. Optional argument: max_entries.", Schema(new Dictionary<string, object>
+                {
+                    ["max_entries"] = IntegerProperty("Maximum recent audit entries to summarize. Defaults to 50.", 1, 200),
+                }), "audit", "read-only", "Call get_audit_summary with { \"max_entries\": 50 }."),
                 Tool("get_last_tool_error", "Return the most recent failed MCP tool call, if one is recorded.", EmptySchema(), "audit", "read-only", "Call get_last_tool_error with no arguments."),
                 Tool("get_runtime_environment_summary", "Return a safe summary of the MCP runtime environment, workspace roots, live context, logs, and flow availability.", EmptySchema(), "status", "read-only", "Call get_runtime_environment_summary before diagnostics."),
                 Tool("get_diagnostic_bundle", "Return a size-limited redacted diagnostic bundle with server status, runtime, last error, recent log, live context, and flow summary.", Schema(new Dictionary<string, object>
@@ -192,6 +197,7 @@ namespace ColorVision.Copilot.Mcp
                 Resource(LogsResourceUri, "Recent logs", "Recent ColorVision application log lines."),
                 Resource(TemplateResourceUri, "Current template", "Current active template JSON editor context, when available."),
                 Resource(FlowResourceUri, "Current flow", "Current active flow snapshot and selected node summary, when available."),
+                Resource(AuditSummaryResourceUri, "MCP audit summary", "Compact ColorVision MCP audit and pending approval summary."),
                 Resource(AuditLogResourceUri, "MCP audit log", "Recent ColorVision MCP tool-call audit entries."),
             };
         }
@@ -206,6 +212,7 @@ namespace ColorVision.Copilot.Mcp
                 LogsResourceUri => GetRecentLog(null),
                 TemplateResourceUri => GetActiveTemplateContext(),
                 FlowResourceUri => await GetFlowSummaryAsync(cancellationToken),
+                AuditSummaryResourceUri => GetAuditSummary(null),
                 AuditLogResourceUri => GetAuditLog(null),
                 _ => CopilotMcpToolCallResult.Fail("resource_not_found", $"Unknown ColorVision MCP resource: {uri}"),
             };
@@ -224,6 +231,7 @@ namespace ColorVision.Copilot.Mcp
                     "get_server_status" => GetServerStatus(callerSource),
                     "get_enabled_tools" => GetEnabledTools(),
                     "get_audit_log" => GetAuditLog(arguments),
+                    "get_audit_summary" => GetAuditSummary(arguments),
                     "get_last_tool_error" => GetLastToolError(),
                     "get_runtime_environment_summary" => await GetRuntimeEnvironmentSummaryAsync(cancellationToken),
                     "get_diagnostic_bundle" => await GetDiagnosticBundleAsync(arguments, callerSource, cancellationToken),
@@ -326,9 +334,97 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.Ok(FormatAuditEntries(entries, "ColorVision MCP audit log"));
         }
 
+        private CopilotMcpToolCallResult GetAuditSummary(IReadOnlyDictionary<string, JsonElement>? arguments)
+        {
+            var maxEntries = Math.Clamp(GetInt(arguments, "max_entries") ?? 50, 1, 200);
+            var entries = CopilotMcpAuditLogger.GetRecentEntries(maxEntries);
+            var pendingActions = CopilotMcpConfirmationStore.Instance.GetPendingActions();
+            var unsuccessfulEntries = entries.Where(entry => !entry.Success).ToArray();
+            var approvalFlowEntries = unsuccessfulEntries.Where(IsApprovalFlowAuditEntry).ToArray();
+            var failedEntries = unsuccessfulEntries.Where(IsRealFailureAuditEntry).ToArray();
+            var lastEntry = entries.LastOrDefault();
+            var lastFailure = failedEntries.LastOrDefault();
+            var lastApprovalFlowEntry = approvalFlowEntries.LastOrDefault();
+            var topFailures = failedEntries
+                .GroupBy(entry => string.IsNullOrWhiteSpace(entry.ToolName) ? "(unknown)" : entry.ToolName, StringComparer.OrdinalIgnoreCase)
+                .Select(group => new
+                {
+                    ToolName = group.Key,
+                    Count = group.Count(),
+                    LastFailure = group.Last(),
+                })
+                .OrderByDescending(item => item.Count)
+                .ThenByDescending(item => item.LastFailure.TimestampUtc)
+                .Take(5)
+                .ToArray();
+            var callers = entries
+                .Select(entry => EmptyLabel(entry.CallerSource))
+                .Where(caller => !string.Equals(caller, "(none)", StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(8)
+                .ToArray();
+
+            var builder = new StringBuilder();
+            builder.AppendLine("ColorVision MCP audit summary");
+            builder.AppendLine($"Entries summarized: {entries.Count}");
+            builder.AppendLine($"Successful entries: {entries.Count(entry => entry.Success)}");
+            builder.AppendLine($"Raw unsuccessful entries: {unsuccessfulEntries.Length}");
+            builder.AppendLine($"Real failure entries: {failedEntries.Length}");
+            builder.AppendLine($"Approval-flow entries: {approvalFlowEntries.Length}");
+            builder.AppendLine($"Pending approvals: {pendingActions.Count}");
+            builder.AppendLine($"Last entry: {FormatAuditEntryOneLine(lastEntry)}");
+            builder.AppendLine($"Last real failure: {FormatAuditEntryOneLine(lastFailure)}");
+            builder.AppendLine($"Last approval-flow event: {FormatAuditEntryOneLine(lastApprovalFlowEntry)}");
+            builder.AppendLine($"Recent callers: {(callers.Length == 0 ? "(none)" : string.Join(", ", callers))}");
+
+            builder.AppendLine();
+            builder.AppendLine("Top failures");
+            if (topFailures.Length == 0)
+            {
+                builder.AppendLine("- None");
+            }
+            else
+            {
+                foreach (var failure in topFailures)
+                {
+                    builder.AppendLine($"- {failure.ToolName}: {failure.Count} failure(s); latest {failure.LastFailure.TimestampUtc:O}; error={EmptyLabel(failure.LastFailure.ErrorMessage)}");
+                }
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("Pending approvals");
+            if (pendingActions.Count == 0)
+            {
+                builder.AppendLine("- None");
+            }
+            else
+            {
+                foreach (var action in pendingActions.Take(8))
+                {
+                    builder.AppendLine($"- action_id={action.ActionId}; tool={action.ToolName}; risk={action.RiskLevel}; status={action.StatusLabel}; expires_at={action.ExpiresAt:O}; title={action.Title}");
+                }
+
+                if (pendingActions.Count > 8)
+                    builder.AppendLine($"- ... {pendingActions.Count - 8} more pending approval(s)");
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("Next step hints");
+            if (pendingActions.Count > 0)
+                builder.AppendLine("- Ask the ColorVision user to approve or reject pending actions before calling confirm_action.");
+            if (approvalFlowEntries.Length > 0 && pendingActions.Count == 0)
+                builder.AppendLine("- Approval-flow entries are not counted as real failures; inspect pending approvals or get_audit_log when reviewing user decisions.");
+            if (lastFailure != null)
+                builder.AppendLine("- Call get_last_tool_error or get_audit_log with failed_only=true for failure details.");
+            if (entries.Count == 0)
+                builder.AppendLine("- No MCP activity has been recorded yet.");
+
+            return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
+        }
+
         private CopilotMcpToolCallResult GetLastToolError()
         {
-            var entry = CopilotMcpAuditLogger.GetLastError();
+            var entry = CopilotMcpAuditLogger.GetRecentEntries(200).LastOrDefault(IsRealFailureAuditEntry);
             if (entry == null)
                 return CopilotMcpToolCallResult.Ok("No failed MCP tool call is recorded.");
 
@@ -2255,6 +2351,49 @@ namespace ColorVision.Copilot.Mcp
             }
 
             return builder.ToString().TrimEnd();
+        }
+
+        private static string FormatAuditEntryOneLine(CopilotMcpAuditEntry? entry)
+        {
+            if (entry == null)
+                return "(none)";
+
+            var result = entry.Success ? "success" : "failed";
+            var error = entry.Success || string.IsNullOrWhiteSpace(entry.ErrorMessage)
+                ? string.Empty
+                : $"; error={entry.ErrorMessage}";
+            var actionId = string.IsNullOrWhiteSpace(entry.ActionId)
+                ? string.Empty
+                : $"; action_id={entry.ActionId}";
+            return $"{entry.TimestampUtc:O}; tool={EmptyLabel(entry.ToolName)}; result={result}; duration_ms={entry.DurationMs}; caller={EmptyLabel(entry.CallerSource)}{actionId}{error}";
+        }
+
+        private static bool IsRealFailureAuditEntry(CopilotMcpAuditEntry entry)
+        {
+            return !entry.Success && !IsApprovalFlowAuditEntry(entry);
+        }
+
+        private static bool IsApprovalFlowAuditEntry(CopilotMcpAuditEntry entry)
+        {
+            if (entry.Success)
+                return false;
+
+            var toolName = entry.ToolName ?? string.Empty;
+            if (string.Equals(toolName, "action_rejected", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "action_expired", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var error = entry.ErrorMessage ?? string.Empty;
+            return error.Contains("confirmation_required", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("pending_user_confirmation", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("risk_level: confirmation-required", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("risk_level=confirmation-required", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_pending", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_not_approved", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_rejected", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_expired", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string BuildArgumentSummary(IReadOnlyDictionary<string, JsonElement>? arguments)

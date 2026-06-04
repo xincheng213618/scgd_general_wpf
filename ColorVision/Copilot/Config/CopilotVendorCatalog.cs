@@ -16,6 +16,7 @@ namespace ColorVision.Copilot
         GLM,
         MiniMax,
         Xiaomi,
+        SenseNova,
     }
 
     public sealed class CopilotVendorOption
@@ -111,6 +112,14 @@ namespace ColorVision.Copilot
             },
             new CopilotVendorPreset
             {
+                VendorType = CopilotVendorType.SenseNova,
+                Label = "SenseNova",
+                DefaultProviderType = CopilotProviderType.OpenAICompatible,
+                OpenAICompatibleBaseUrl = "https://token.sensenova.cn/v1",
+                ModelPresets = new[] { "sensenova-6.7-flash-lite" },
+            },
+            new CopilotVendorPreset
+            {
                 VendorType = CopilotVendorType.Custom,
                 Label = "Custom",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
@@ -156,6 +165,9 @@ namespace ColorVision.Copilot
 
             if (ContainsAny(normalizedBaseUrl, "minimaxi", "minimax") || ContainsAny(normalizedModel, "minimax"))
                 return CopilotVendorType.MiniMax;
+
+            if (ContainsAny(normalizedBaseUrl, "sensenova") || ContainsAny(normalizedModel, "sensenova"))
+                return CopilotVendorType.SenseNova;
 
             if (ContainsAny(normalizedBaseUrl, "bigmodel", "zhipu") || ContainsAny(normalizedModel, "glm"))
                 return CopilotVendorType.GLM;

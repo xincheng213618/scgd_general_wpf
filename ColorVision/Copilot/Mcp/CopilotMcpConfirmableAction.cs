@@ -21,6 +21,8 @@ namespace ColorVision.Copilot.Mcp
 
     public sealed class ConfirmableAction : INotifyPropertyChanged
     {
+        private static readonly JsonSerializerOptions ConfirmActionPayloadJsonOptions = new() { WriteIndented = true };
+        private static readonly TimeSpan ExpiringSoonThreshold = TimeSpan.FromSeconds(60);
         private ConfirmableActionStatus _status = ConfirmableActionStatus.Pending;
 
         public string ActionId { get; init; } = string.Empty;
@@ -51,6 +53,9 @@ namespace ColorVision.Copilot.Mcp
                 OnPropertyChanged(nameof(Status));
                 OnPropertyChanged(nameof(StatusLabel));
                 OnPropertyChanged(nameof(IsPending));
+                OnPropertyChanged(nameof(IsExpiringSoon));
+                OnPropertyChanged(nameof(RemainingLifetimeLabel));
+                OnPropertyChanged(nameof(ReviewDeadlineLabel));
             }
         }
 
@@ -62,12 +67,41 @@ namespace ColorVision.Copilot.Mcp
 
         public string ExpiresAtLabel => ExpiresAt.ToLocalTime().ToString("HH:mm:ss");
 
+        public bool IsExpiringSoon
+        {
+            get
+            {
+                var remaining = ExpiresAt - DateTimeOffset.UtcNow;
+                return IsPending && remaining > TimeSpan.Zero && remaining <= ExpiringSoonThreshold;
+            }
+        }
+
+        public string RemainingLifetimeLabel
+        {
+            get
+            {
+                var remaining = ExpiresAt - DateTimeOffset.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                    return "expired";
+
+                if (remaining.TotalSeconds < 60)
+                    return $"{Math.Max(1, (int)Math.Ceiling(remaining.TotalSeconds))}s left";
+
+                if (remaining.TotalMinutes < 60)
+                    return $"{Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes))}m left";
+
+                return $"{Math.Max(1, (int)Math.Ceiling(remaining.TotalHours))}h left";
+            }
+        }
+
+        public string ReviewDeadlineLabel => $"{RemainingLifetimeLabel} · expires {ExpiresAtLabel}";
+
         public string ConfirmActionPayloadJson => JsonSerializer.Serialize(new
         {
             action_id = ActionId,
             tool_name = ToolName,
             arguments_summary = ArgumentsSummary,
-        }, new JsonSerializerOptions { WriteIndented = true });
+        }, ConfirmActionPayloadJsonOptions);
 
         internal Func<CancellationToken, Task<CopilotMcpToolCallResult>> Executor { get; init; } = _ => Task.FromResult(CopilotMcpToolCallResult.Fail("action_executor_missing", "No executor is attached to this action."));
 

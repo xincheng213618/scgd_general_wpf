@@ -5,8 +5,8 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,13 +31,12 @@ namespace ColorVision.Engine.Media
         {
             ComboBox? poiTemplateComboBox = null;
             SelectionChangedEventHandler? selectionChangedHandler = null;
-            List<Visual> poiTemplateVisuals = new();
             int loadVersion = 0;
 
             imageView.ImageShow.ImageInitialized += (_, _) => RefreshPoiTemplateUi();
             imageView.Config.Cleared += (_, _) =>
             {
-                ClearPoiTemplateVisuals();
+                ClearDrawingVisuals();
                 RemovePoiTemplateUi(clearSelection: false);
             };
 
@@ -69,7 +68,7 @@ namespace ColorVision.Engine.Media
                     Style = Application.Current.TryFindResource("ComboBox.Small") as Style
                 };
 
-                selectionChangedHandler = (_, _) => ApplySelectedTemplate(imageView, poiTemplateComboBox, ClearPoiTemplateVisuals, poiTemplateVisuals);
+                selectionChangedHandler = (_, _) => ApplySelectedTemplate(imageView, poiTemplateComboBox, ClearDrawingVisuals);
                 poiTemplateComboBox.SelectionChanged += selectionChangedHandler;
                 imageView.ToolBarAl.Items.Add(poiTemplateComboBox);
             }
@@ -77,7 +76,7 @@ namespace ColorVision.Engine.Media
             void RemovePoiTemplateUi(bool clearSelection)
             {
                 loadVersion++;
-                ClearPoiTemplateVisuals();
+                ClearDrawingVisuals();
                 if (clearSelection)
                 {
                     imageView.Config.SetViewState(SelectedTemplateRuntimeKey, null, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
@@ -103,14 +102,13 @@ namespace ColorVision.Engine.Media
                 selectionChangedHandler = null;
             }
 
-            void ClearPoiTemplateVisuals()
+            void ClearDrawingVisuals()
             {
-                foreach (Visual visual in poiTemplateVisuals)
+                imageView.ImageShow.ClearActionCommand();
+                foreach (Visual visual in imageView.EditorContext.DrawingVisualLists.OfType<Visual>().ToList())
                 {
                     imageView.ImageShow.RemoveVisual(visual);
                 }
-
-                poiTemplateVisuals.Clear();
             }
 
             void LoadTemplatesAsync(int version)
@@ -162,14 +160,14 @@ namespace ColorVision.Engine.Media
                 || IsPoiTemplateSupported(imageView.Config.FilePath);
         }
 
-        private static void ApplySelectedTemplate(ImageView imageView, ComboBox comboBox, Action clearPoiTemplateVisuals, List<Visual> poiTemplateVisuals)
+        private static void ApplySelectedTemplate(ImageView imageView, ComboBox comboBox, Action clearDrawingVisuals)
         {
             if (comboBox.SelectedValue is not PoiParam poiParams)
             {
                 return;
             }
 
-            clearPoiTemplateVisuals();
+            clearDrawingVisuals();
             imageView.Config.SetViewState(SelectedTemplateRuntimeKey, poiParams, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
             if (poiParams.Id == -1)
             {
@@ -191,7 +189,6 @@ namespace ColorVision.Engine.Media
                         circle.Attribute.Text = item.Name;
                         circle.Render();
                         imageView.ImageShow.AddVisual(circle);
-                        poiTemplateVisuals.Add(circle);
                         break;
                     case GraphicTypes.Rect:
                         DVRectangleText rectangle = new();
@@ -202,7 +199,6 @@ namespace ColorVision.Engine.Media
                         rectangle.Attribute.Text = item.Name;
                         rectangle.Render();
                         imageView.ImageShow.AddVisual(rectangle);
-                        poiTemplateVisuals.Add(rectangle);
                         break;
                     case GraphicTypes.Quadrilateral:
                         break;

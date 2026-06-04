@@ -10,6 +10,7 @@ namespace ColorVision.Copilot
     public partial class CopilotChatPanel : UserControl
     {
         private const double CompactSidebarThreshold = 960;
+        private const double CompactComposerThreshold = 560;
         private const double ExpandedSidebarWidth = 220;
         private const double CollapsedSidebarWidth = 48;
 
@@ -151,6 +152,16 @@ namespace ColorVision.Copilot
             element.ContextMenu.IsOpen = true;
         }
 
+        private void SettingsMenuButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement element || element.ContextMenu == null)
+                return;
+
+            element.ContextMenu.PlacementTarget = element;
+            element.ContextMenu.Placement = PlacementMode.Bottom;
+            element.ContextMenu.IsOpen = true;
+        }
+
         private void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
@@ -221,6 +232,27 @@ namespace ColorVision.Copilot
             ConversationSidebarBorder.Visibility = showCollapsedStrip ? Visibility.Collapsed : Visibility.Visible;
             TitleBarConversationButton.Visibility = showCollapsedStrip ? Visibility.Visible : Visibility.Collapsed;
             CompactSidebarToggleButton.Visibility = _isCompactSidebar && !showCollapsedStrip ? Visibility.Visible : Visibility.Collapsed;
+
+            var isCompactComposer = ActualWidth > 0 && ActualWidth < CompactComposerThreshold;
+            ComposerFooterSecondRowDefinition.Height = isCompactComposer ? GridLength.Auto : new GridLength(0);
+
+            Grid.SetRow(ComposerSelectorGrid, 0);
+            Grid.SetColumn(ComposerSelectorGrid, isCompactComposer ? 0 : 1);
+            Grid.SetColumnSpan(ComposerSelectorGrid, isCompactComposer ? 3 : 1);
+            ComposerSelectorGrid.Margin = isCompactComposer ? new Thickness(0, 0, 0, 8) : new Thickness(8, 0, 8, 0);
+
+            Grid.SetRow(AttachMenuButton, isCompactComposer ? 1 : 0);
+            Grid.SetColumn(AttachMenuButton, 0);
+
+            Grid.SetRow(ComposerActionStack, isCompactComposer ? 1 : 0);
+            Grid.SetColumn(ComposerActionStack, 2);
+
+            AgentModeComboBox.Width = isCompactComposer ? 76 : 84;
+            ProfileComboBox.MaxWidth = isCompactComposer ? double.PositiveInfinity : 132;
+
+            CurrentLiveContextSummaryText.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
+            CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(10, 7, 10, 7) : new Thickness(12, 9, 12, 9);
+            CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(10, 4, 10, 4) : new Thickness(12, 5, 12, 5);
         }
     }
 }

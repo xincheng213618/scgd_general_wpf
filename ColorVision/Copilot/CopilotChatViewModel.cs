@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
         private const int AgentHistoryMessageLimit = 8;
         private const int AttachmentContentLimit = 12000;
         private const int MaxWebPageInjectionChars = 8000;
+        private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
 
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentContextBuilder _agentContextBuilder;
@@ -46,6 +47,8 @@ namespace ColorVision.Copilot
         private CopilotAgentMode _selectedAgentMode = CopilotAgentMode.Auto;
         private string _activeDocumentPath = string.Empty;
         private string _pendingActionFeedbackText = string.Empty;
+        private bool _hasPendingMcpActions;
+        private bool _hasRecentMcpFailures;
 
         public CopilotChatViewModel()
             : this(new CopilotChatService())
@@ -90,6 +93,7 @@ namespace ColorVision.Copilot
             CancelCommand = new RelayCommand(_ => CancelCurrentReply());
             PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction());
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
+            OpenMcpSettingsCommand = new RelayCommand(_ => OpenMcpSettings());
             AddFileAttachmentCommand = new RelayCommand(_ => AddFileAttachment(), _ => !IsBusy);
             AddContextAttachmentCommand = new RelayCommand(_ => AddContextAttachment(), _ => !IsBusy);
             AddWebPageAttachmentCommand = new RelayCommand(_ => _ = AddWebPageAttachmentAsync(), _ => !IsBusy);
@@ -134,6 +138,49 @@ namespace ColorVision.Copilot
 
         public bool HasPendingActionPanel => HasPendingActions || HasPendingActionFeedback;
 
+        public string PendingActionPanelTitle
+        {
+            get
+            {
+                var count = _pendingActions.Count;
+                if (count == 0)
+                    return "MCP action review";
+
+                return count == 1
+                    ? "Review 1 MCP action"
+                    : $"Review {count} MCP actions";
+            }
+        }
+
+        public string PendingActionPanelSummary
+        {
+            get
+            {
+                if (_pendingActions.Count == 0)
+                    return "No MCP actions are waiting for approval.";
+
+                var nextDeadline = _pendingActions
+                    .OrderBy(action => action.ExpiresAt)
+                    .FirstOrDefault()?.ReviewDeadlineLabel ?? string.Empty;
+
+                return string.IsNullOrWhiteSpace(nextDeadline)
+                    ? "Approve or reject in ColorVision before MCP can execute."
+                    : $"Approve or reject in ColorVision before MCP can execute. Next {nextDeadline}.";
+            }
+        }
+
+        public string PendingActionPanelToolTip
+        {
+            get
+            {
+                if (_pendingActions.Count == 0)
+                    return PendingActionPanelSummary;
+
+                return string.Join(Environment.NewLine, _pendingActions.Select(action =>
+                    $"{action.Title} | tool={action.ToolName} | risk={action.RiskLevel} | deadline={action.ReviewDeadlineLabel}"));
+            }
+        }
+
         public string PendingActionFeedbackText
         {
             get => _pendingActionFeedbackText;
@@ -143,6 +190,9 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(HasPendingActionFeedback));
                     OnPropertyChanged(nameof(HasPendingActionPanel));
+                    OnPropertyChanged(nameof(PendingActionPanelTitle));
+                    OnPropertyChanged(nameof(PendingActionPanelSummary));
+                    OnPropertyChanged(nameof(PendingActionPanelToolTip));
                 }
             }
         }
@@ -159,6 +209,8 @@ namespace ColorVision.Copilot
 
         public ICommand OpenSettingsCommand { get; }
 
+        public ICommand OpenMcpSettingsCommand { get; }
+
         public ICommand AddFileAttachmentCommand { get; }
 
         public ICommand AddContextAttachmentCommand { get; }
@@ -168,6 +220,10 @@ namespace ColorVision.Copilot
         public ICommand PasteImageAttachmentCommand { get; }
 
         public ICommand AttachCurrentLiveContextCommand { get; }
+
+        public string AttachmentMenuToolTip => IsBusy
+            ? "Attachments are locked while the assistant is responding."
+            : "Attach input: paste an image, add a web page, add a file, or add context text.";
 
         public ICommand CopyMessageCommand { get; }
 
@@ -207,6 +263,33 @@ namespace ColorVision.Copilot
             && SelectedConversation?.Attachments.Any(item => item.Type == CopilotAttachmentType.Context
                 && string.Equals(item.Source, _currentLiveContext.SourceId, StringComparison.Ordinal)) == true;
 
+        public string CurrentLiveContextStatusText => IsCurrentLiveContextAttached ? "Attached" : "Available";
+
+        public string CurrentLiveContextToolTip
+        {
+            get
+            {
+                if (_currentLiveContext == null)
+                    return string.Empty;
+
+                var builder = new StringBuilder();
+                builder.AppendLine(Properties.Resources.CopilotCurrentWindowContext);
+
+                if (!string.IsNullOrWhiteSpace(_currentLiveContext.Title))
+                    builder.AppendLine(_currentLiveContext.Title.Trim());
+
+                if (!string.IsNullOrWhiteSpace(_currentLiveContext.Summary))
+                {
+                    builder.AppendLine();
+                    builder.AppendLine(_currentLiveContext.Summary.Trim());
+                }
+
+                builder.AppendLine();
+                builder.Append(IsCurrentLiveContextAttached ? "Already attached to this conversation." : "Ready to attach to this question.");
+                return builder.ToString();
+            }
+        }
+
         public string CurrentLiveContextActionText => IsCurrentLiveContextAttached ? Properties.Resources.CopilotUpdateSnapshot : Properties.Resources.CopilotAttachToQuestion;
 
         public string EmptyStateText => _config.IsConfigured
@@ -215,7 +298,22 @@ namespace ColorVision.Copilot
 
         public string PrimaryActionGlyph => IsBusy ? "■" : "↑";
 
-        public string PrimaryActionToolTip => IsBusy ? Properties.Resources.CopilotStopGeneration : SelectedAgentMode == CopilotAgentMode.Chat ? Properties.Resources.CopilotSend : Properties.Resources.CopilotExecuteAgent;
+        public string PrimaryActionToolTip
+        {
+            get
+            {
+                if (IsBusy)
+                    return Properties.Resources.CopilotStopGeneration;
+
+                var action = SelectedAgentMode == CopilotAgentMode.Chat
+                    ? Properties.Resources.CopilotSend
+                    : Properties.Resources.CopilotExecuteAgent;
+                var preview = BuildComposerRequestPreview();
+                return string.IsNullOrWhiteSpace(preview)
+                    ? action
+                    : $"{action}{Environment.NewLine}{Environment.NewLine}{preview}";
+            }
+        }
 
         public CopilotConversationRecord? SelectedConversation
         {
@@ -227,6 +325,25 @@ namespace ColorVision.Copilot
         {
             get => _selectedProfile;
             set => SelectProfile(value, syncConversation: true, persist: true);
+        }
+
+        public string SelectedProfileToolTip
+        {
+            get
+            {
+                var profile = SelectedProfile;
+                if (profile == null)
+                    return "No model profile is selected.";
+
+                var builder = new StringBuilder();
+                builder.AppendLine(profile.DisplayLabel);
+                builder.AppendLine(profile.SecondaryLabel);
+
+                if (!string.IsNullOrWhiteSpace(profile.BaseUrl))
+                    builder.AppendLine(profile.BaseUrl.Trim());
+
+                return builder.ToString().TrimEnd();
+            }
         }
 
         public CopilotAgentMode SelectedAgentMode
@@ -310,6 +427,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(CanSelectAgentMode));
                 OnPropertyChanged(nameof(PrimaryActionGlyph));
                 OnPropertyChanged(nameof(PrimaryActionToolTip));
+                OnPropertyChanged(nameof(AttachmentMenuToolTip));
                 RefreshComposerTokenEstimate();
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -321,6 +439,65 @@ namespace ColorVision.Copilot
         public bool CanSelectProfile => !IsBusy && Profiles.Count > 0;
 
         public bool CanSelectAgentMode => !IsBusy;
+
+        public bool IsMcpEnabled => _config.McpEnabled;
+
+        public bool IsMcpRunning => _config.McpEnabled && CopilotMcpServer.Instance.IsRunning;
+
+        public bool HasPendingMcpActions => _hasPendingMcpActions;
+
+        public bool HasRecentMcpFailures => _hasRecentMcpFailures;
+
+        public bool IsMcpStatusVisible => _config.McpEnabled || HasPendingMcpActions || HasRecentMcpFailures;
+
+        public string McpStatusLabel
+        {
+            get
+            {
+                var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
+                if (pendingCount > 0)
+                    return $"MCP review {pendingCount}";
+
+                if (HasRecentMcpFailures)
+                    return "MCP failed";
+
+                if (!_config.McpEnabled)
+                    return "MCP off";
+
+                return CopilotMcpServer.Instance.IsRunning ? "MCP on" : "MCP stopped";
+            }
+        }
+
+        public string McpStatusToolTip
+        {
+            get
+            {
+                var server = CopilotMcpServer.Instance;
+                var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
+                var status = string.IsNullOrWhiteSpace(server.LastStatusMessage)
+                    ? "No MCP status message is available."
+                    : CopilotMcpAuditLogger.RedactText(server.LastStatusMessage);
+
+                var entries = CopilotMcpAuditLogger.GetRecentEntries(8);
+                var failureCount = entries.Count(entry => !entry.Success);
+                var builder = new StringBuilder();
+                builder.AppendLine($"Endpoint: {_config.McpEndpoint}");
+                builder.AppendLine($"Service: {BuildMcpStatusSummary()}");
+                builder.AppendLine($"Pending actions: {pendingCount}");
+                builder.AppendLine($"Recent calls: {entries.Count}; failures: {failureCount}");
+
+                var lastEntry = entries.Count > 0 ? entries[^1] : null;
+                if (lastEntry != null)
+                    builder.AppendLine($"Last call: {FormatMcpAuditEntryForTooltip(lastEntry)}");
+
+                var lastError = CopilotMcpAuditLogger.GetLastError();
+                if (lastError != null)
+                    builder.AppendLine($"Last error: {FormatMcpAuditEntryForTooltip(lastError)}");
+
+                builder.Append(status);
+                return builder.ToString();
+            }
+        }
 
         private async Task SendAsync()
         {
@@ -553,6 +730,46 @@ namespace ColorVision.Copilot
             RefreshPendingActions();
         }
 
+        private void RefreshMcpStatus()
+        {
+            _hasPendingMcpActions = CopilotMcpConfirmationStore.Instance.PendingCount > 0;
+            _hasRecentMcpFailures = CopilotMcpAuditLogger.GetRecentEntries(20)
+                .Any(entry => !entry.Success && DateTimeOffset.UtcNow - entry.TimestampUtc <= RecentMcpFailureWindow);
+
+            OnPropertyChanged(nameof(IsMcpEnabled));
+            OnPropertyChanged(nameof(IsMcpRunning));
+            OnPropertyChanged(nameof(HasPendingMcpActions));
+            OnPropertyChanged(nameof(HasRecentMcpFailures));
+            OnPropertyChanged(nameof(IsMcpStatusVisible));
+            OnPropertyChanged(nameof(McpStatusLabel));
+            OnPropertyChanged(nameof(McpStatusToolTip));
+            OnPropertyChanged(nameof(PrimaryActionToolTip));
+        }
+
+        private string BuildMcpStatusSummary()
+        {
+            if (!_config.McpEnabled)
+                return "Disabled";
+
+            if (CopilotMcpServer.Instance.IsRunning)
+                return "Running";
+
+            return "Stopped";
+        }
+
+        private static string FormatMcpAuditEntryForTooltip(CopilotMcpAuditEntry entry)
+        {
+            var result = entry.Success ? "OK" : "failed";
+            var message = string.IsNullOrWhiteSpace(entry.ErrorMessage)
+                ? string.Empty
+                : " - " + CopilotMcpAuditLogger.RedactText(entry.ErrorMessage);
+            var caller = string.IsNullOrWhiteSpace(entry.CallerSource)
+                ? string.Empty
+                : $" caller={entry.CallerSource}";
+
+            return $"{entry.TimestampUtc.ToLocalTime():HH:mm:ss} {entry.ToolName} {result} {entry.DurationMs}ms{caller}{message}";
+        }
+
         private void RefreshPendingActions()
         {
             _pendingActions.Clear();
@@ -561,6 +778,10 @@ namespace ColorVision.Copilot
 
             OnPropertyChanged(nameof(HasPendingActions));
             OnPropertyChanged(nameof(HasPendingActionPanel));
+            OnPropertyChanged(nameof(PendingActionPanelTitle));
+            OnPropertyChanged(nameof(PendingActionPanelSummary));
+            OnPropertyChanged(nameof(PendingActionPanelToolTip));
+            RefreshMcpStatus();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -601,9 +822,40 @@ namespace ColorVision.Copilot
             if (action == null)
                 return;
 
+            var result = MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                BuildPendingActionApprovalPrompt(action),
+                "Approve MCP action",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+            if (result != MessageBoxResult.Yes)
+            {
+                SetPendingActionFeedback($"Approval cancelled for {action.ActionId}.");
+                return;
+            }
+
             CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
             SetPendingActionFeedback($"{action.ActionId}: {message}");
             RefreshPendingActions();
+        }
+
+        private static string BuildPendingActionApprovalPrompt(ConfirmableAction action)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Approve this MCP action?");
+            builder.AppendLine();
+            builder.AppendLine(action.Title);
+            builder.AppendLine($"Tool: {action.ToolName}");
+            builder.AppendLine($"Risk: {action.RiskLevel}");
+            builder.AppendLine($"Expires: {action.ExpiresAtLabel}");
+
+            if (!string.IsNullOrWhiteSpace(action.ArgumentsSummary))
+                builder.AppendLine($"Params: {action.ArgumentsSummary}");
+
+            builder.AppendLine();
+            builder.Append("Only approve if the requested operation matches your intent.");
+            return builder.ToString();
         }
 
         private void RejectPendingAction(ConfirmableAction? action)
@@ -663,7 +915,10 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(CurrentLiveContextSummary));
             OnPropertyChanged(nameof(CanAttachCurrentLiveContext));
             OnPropertyChanged(nameof(IsCurrentLiveContextAttached));
+            OnPropertyChanged(nameof(CurrentLiveContextStatusText));
+            OnPropertyChanged(nameof(CurrentLiveContextToolTip));
             OnPropertyChanged(nameof(CurrentLiveContextActionText));
+            RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -975,7 +1230,23 @@ namespace ColorVision.Copilot
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
 
-            if (window.ShowDialog() != true)
+            var result = window.ShowDialog();
+            if (result != true && !window.HasAppliedChanges)
+                return;
+
+            ReloadStateFromConfig();
+        }
+
+        private void OpenMcpSettings()
+        {
+            var window = new CopilotMcpSettingsWindow(new CopilotSettingsViewModel())
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+
+            var result = window.ShowDialog();
+            if (result != true && !window.HasAppliedChanges)
                 return;
 
             ReloadStateFromConfig();
@@ -997,6 +1268,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Conversations));
             OnPropertyChanged(nameof(EmptyStateText));
             OnPropertyChanged(nameof(CanSelectProfile));
+            RefreshMcpStatus();
 
             var conversation = Conversations.FirstOrDefault(item => item.Id == preferredConversationId)
                 ?? Conversations.FirstOrDefault();
@@ -1127,6 +1399,7 @@ namespace ColorVision.Copilot
 
             _selectedProfile = profile;
             OnPropertyChanged(nameof(SelectedProfile));
+            OnPropertyChanged(nameof(SelectedProfileToolTip));
 
             _state.ActiveProfileId = profile?.Id ?? string.Empty;
 
@@ -1773,6 +2046,7 @@ namespace ColorVision.Copilot
 
             ComposerTokenSummary = summary;
             ComposerTokenDetails = details;
+            OnPropertyChanged(nameof(PrimaryActionToolTip));
             NotifyTokenUsageBadgeChanged();
         }
 
@@ -1815,8 +2089,7 @@ namespace ColorVision.Copilot
         private string BuildPendingComposerTokenDetails()
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel}");
-            builder.AppendLine($"Mode: {ResolveModeLabel(SelectedAgentMode)}");
+            AppendComposerRequestPreview(builder);
             builder.AppendLine();
             builder.Append("Note: only API-returned usage is shown. It will refresh when this request completes.");
             return builder.ToString();
@@ -1835,11 +2108,78 @@ namespace ColorVision.Copilot
         private string BuildIdleComposerTokenDetails()
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel}");
-            builder.AppendLine($"Mode: {ResolveModeLabel(SelectedAgentMode)}");
+            AppendComposerRequestPreview(builder);
             builder.AppendLine();
             builder.Append("Note: if the API returns usage after sending, this panel will show real input, output, and total token counts.");
             return builder.ToString();
+        }
+
+        private string BuildComposerRequestPreview()
+        {
+            var builder = new StringBuilder();
+            AppendComposerRequestPreview(builder);
+            return builder.ToString().TrimEnd();
+        }
+
+        private void AppendComposerRequestPreview(StringBuilder builder)
+        {
+            builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel ?? "No model selected"}");
+            builder.AppendLine($"Mode: {ResolveModeLabel(SelectedAgentMode)}");
+
+            if (!string.IsNullOrWhiteSpace(SelectedAgentModeDescription))
+                builder.AppendLine($"Mode detail: {SelectedAgentModeDescription}");
+
+            builder.AppendLine($"Prompt: {BuildPromptSummary()}");
+            builder.AppendLine($"Attachments: {BuildAttachmentSummary()}");
+            builder.AppendLine($"Window context: {BuildWindowContextSummary()}");
+
+            if (IsMcpStatusVisible)
+                builder.AppendLine($"MCP: {McpStatusLabel}");
+        }
+
+        private string BuildPromptSummary()
+        {
+            var text = (InputText ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(text)
+                ? "Empty"
+                : $"{text.Length} characters";
+        }
+
+        private string BuildAttachmentSummary()
+        {
+            if (Attachments.Count == 0)
+                return "None";
+
+            var fileCount = Attachments.Count(item => item.Type == CopilotAttachmentType.File);
+            var imageCount = Attachments.Count(item => item.Type == CopilotAttachmentType.Image);
+            var webCount = Attachments.Count(item => item.Type == CopilotAttachmentType.WebPage);
+            var contextCount = Attachments.Count(item => item.Type == CopilotAttachmentType.Context);
+            var parts = new List<string>();
+
+            AddAttachmentCount(parts, fileCount, "file");
+            AddAttachmentCount(parts, imageCount, "image");
+            AddAttachmentCount(parts, webCount, "web");
+            AddAttachmentCount(parts, contextCount, "context");
+
+            return $"{Attachments.Count} total ({string.Join(", ", parts)})";
+        }
+
+        private string BuildWindowContextSummary()
+        {
+            if (_currentLiveContext == null)
+                return "None available";
+
+            return IsCurrentLiveContextAttached
+                ? "Attached snapshot plus live summary"
+                : "Live summary available for this request";
+        }
+
+        private static void AddAttachmentCount(List<string> parts, int count, string label)
+        {
+            if (count <= 0)
+                return;
+
+            parts.Add(count == 1 ? $"1 {label}" : $"{count} {label}s");
         }
 
         private string ResolveUsageModelLabel(CopilotConversationRecord conversation)
