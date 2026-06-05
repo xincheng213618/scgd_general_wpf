@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.POI.BuildPoi;
@@ -52,6 +53,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             PoiParam = poiParam;
             InitializeComponent();
+            PoiImageViewComponent.SetIsTemplateSelectorEnabled(ImageView, false);
             this.ApplyCaption();
 
             this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>

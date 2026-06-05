@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras;
@@ -176,6 +177,7 @@ namespace ColorVision.Engine.Templates.POI
             TemplateJsonKBParam = poiParam;
             KBJson = TemplateJsonKBParam.KBJson;
             InitializeComponent();
+            PoiImageViewComponent.SetIsTemplateSelectorEnabled(ImageView, false);
             this.ApplyCaption();
             this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
             {

@@ -43,19 +43,6 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DVCircleText : DrawingVisualBase<CircleTextProperties>, IDrawingVisual,ICircle, ILayoutScaleDrawingVisual, ICompactInspectorProvider
     {
-        private static readonly Vector[] TextOutlineDirections =
-        {
-            new Vector(-1, 0),
-            new Vector(1, 0),
-            new Vector(0, -1),
-            new Vector(0, 1),
-            new Vector(-1, -1),
-            new Vector(-1, 1),
-            new Vector(1, -1),
-            new Vector(1, 1)
-        };
-        private static readonly Brush TextOutlineBrush = CreateFrozenBrush(Color.FromArgb(224, 0, 0, 0));
-
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
@@ -93,32 +80,24 @@ namespace ColorVision.ImageEditor.Draw
             {
                 FormattedText formattedText = CreateFormattedText(TextAttribute.Text, TextAttribute.Brush);
                 size = formattedText.Width / 2;
-                DrawOutlinedText(dc, TextAttribute.Text, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2), TextAttribute.Brush);
+                DrawText(dc, TextAttribute.Text, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2), TextAttribute.Brush);
             }
 
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
                 FormattedText formattedText = CreateFormattedText(Attribute.Msg, TextAttribute.Brush);
-                DrawOutlinedText(dc, Attribute.Msg, new Point(Attribute.Center.X + size + Radius / 2, Attribute.Center.Y - formattedText.Height / 2), TextAttribute.Brush);
+                DrawText(dc, Attribute.Msg, new Point(Attribute.Center.X + size + Radius / 2, Attribute.Center.Y - formattedText.Height / 2), TextAttribute.Brush);
             }
         }
 
-        private void DrawOutlinedText(DrawingContext dc, string text, Point origin, Brush foreground)
+        private void DrawText(DrawingContext dc, string text, Point origin, Brush foreground)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 return;
             }
 
-            FormattedText outlineText = CreateFormattedText(text, TextOutlineBrush);
-            double offset = Math.Max(1.0, TextAttribute.FontSize / 18.0);
-            foreach (Vector direction in TextOutlineDirections)
-            {
-                dc.DrawText(outlineText, origin + direction * offset);
-            }
-
-            FormattedText mainText = CreateFormattedText(text, foreground);
-            dc.DrawText(mainText, origin);
+            dc.DrawText(CreateFormattedText(text, foreground), origin);
         }
 
         private FormattedText CreateFormattedText(string text, Brush brush)
@@ -148,12 +127,6 @@ namespace ColorVision.ImageEditor.Draw
             };
         }
 
-        private static Brush CreateFrozenBrush(Color color)
-        {
-            SolidColorBrush brush = new(color);
-            brush.Freeze();
-            return brush;
-        }
     }
 
 

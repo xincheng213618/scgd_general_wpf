@@ -18,6 +18,21 @@ namespace ColorVision.Engine.Media
     {
         public const string SelectedTemplateRuntimeKey = "POI.SelectedTemplate";
         public const string IsTemplateSupportedRuntimeKey = "POI.IsTemplateSupported";
+        public static readonly DependencyProperty IsTemplateSelectorEnabledProperty = DependencyProperty.RegisterAttached(
+            "IsTemplateSelectorEnabled",
+            typeof(bool),
+            typeof(PoiImageViewComponent),
+            new PropertyMetadata(true));
+
+        public static bool GetIsTemplateSelectorEnabled(DependencyObject element)
+        {
+            return (bool)element.GetValue(IsTemplateSelectorEnabledProperty);
+        }
+
+        public static void SetIsTemplateSelectorEnabled(DependencyObject element, bool value)
+        {
+            element.SetValue(IsTemplateSelectorEnabledProperty, value);
+        }
 
         public static bool TryGetSelectedTemplate(ImageView imageView, out PoiParam poiParam)
         {
@@ -36,12 +51,22 @@ namespace ColorVision.Engine.Media
             imageView.ImageShow.ImageInitialized += (_, _) => RefreshPoiTemplateUi();
             imageView.Config.Cleared += (_, _) =>
             {
+                if (!GetIsTemplateSelectorEnabled(imageView))
+                {
+                    return;
+                }
+
                 ClearDrawingVisuals();
                 RemovePoiTemplateUi(clearSelection: false);
             };
 
             void RefreshPoiTemplateUi()
             {
+                if (!GetIsTemplateSelectorEnabled(imageView))
+                {
+                    return;
+                }
+
                 if (!IsPoiTemplateSupported(imageView))
                 {
                     RemovePoiTemplateUi(clearSelection: true);
