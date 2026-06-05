@@ -20,19 +20,11 @@ namespace ColorVision.Engine.Services
 
         public virtual DeviceStatusType DeviceStatus { get; set; }
 
-        private Timer _heartbeatTimer;
 
         public MQTTServiceBase()
         {
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
-             _heartbeatTimer = new Timer
-            {
-                Interval = TimeSpan.FromMilliseconds(1000).TotalMilliseconds,
-                AutoReset = true,
-            };
-            _heartbeatTimer.Elapsed += Timer_Elapsed;
-            _heartbeatTimer.Start();
         }
 
         public void SubscribeCache() => MQTTControl.SubscribeCache(SubscribeTopic);
@@ -48,13 +40,6 @@ namespace ColorVision.Engine.Services
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
-
-                    if (json.EventName == "Heartbeat")
-                    {
-                        LastAliveTime = DateTime.Now;
-                        IsAlive = true;
-                        return Task.CompletedTask;
-                    }
 
                     lock (_locker)
                     {
@@ -84,38 +69,12 @@ namespace ColorVision.Engine.Services
             return Task.CompletedTask;
         }
 
-        private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
-        {
-            TimeSpan sp = DateTime.Now - LastAliveTime;
-
-            //这里其实有问题,但是返回信号并不标准，只能按照这种写法
-            long overTime = 2* HeartbeatTime;
-            if (sp > TimeSpan.FromMilliseconds(overTime))
-            {
-                IsAlive = false;
-            }
-            else
-            {
-                IsAlive = true;
-            }
-        }
         public MsgReturnHandler MsgReturnReceived { get; set; }
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
         public virtual string DeviceCode { get; set; }
         public string ServiceName { get; set; }
         public virtual string ServiceToken { get; set; }
-
-        public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; OnPropertyChanged(); } }
-        private int _HeartbeatTime = 2000;
-
-        public virtual DateTime LastAliveTime { get; set; }
-
-        /// <summary>
-        /// 默认是绿色，刷新后在变颜色
-        /// </summary>
-        public  bool IsAlive { get => _IsAlive; set { if(_IsAlive == value) return; _IsAlive = value; OnPropertyChanged(); } }
-        private bool _IsAlive = true;
 
         private  Dictionary<string, Timer> _msgTimers = new();
 
@@ -175,9 +134,6 @@ namespace ColorVision.Engine.Services
         public virtual void Dispose()
         {
             MQTTControl.ApplicationMessageReceivedAsync -= Processing;
-            _heartbeatTimer?.Stop();
-            _heartbeatTimer?.Dispose();
-
             lock (_locker)
             {
                 foreach (var timer in _msgTimers.Values)

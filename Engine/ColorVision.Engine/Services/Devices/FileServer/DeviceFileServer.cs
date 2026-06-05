@@ -30,9 +30,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
         public override UserControl GetDeviceInfo() => new InfoFileServer(this);
 
-        public override UserControl GetDisplayControl() =>new FileServerDisplayControl(this);
-
-
         public override MQTTServiceBase? GetMQTTService()
         {
             return DService;

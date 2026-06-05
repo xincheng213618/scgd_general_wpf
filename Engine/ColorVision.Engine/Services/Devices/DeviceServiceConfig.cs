@@ -22,10 +22,6 @@ namespace ColorVision.Engine.Services.Devices
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
         private string _Code;
 
-        [Browsable(false)]
-        public int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; OnPropertyChanged(); } }
-        private int _HeartbeatTime = 5000;
-
 
         [Browsable(false)]
         public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; OnPropertyChanged(); } }
