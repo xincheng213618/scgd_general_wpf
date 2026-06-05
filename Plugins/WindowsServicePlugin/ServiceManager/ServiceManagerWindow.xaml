@@ -39,6 +39,8 @@
                             Style="{StaticResource ButtonPrimary}"/>
                     <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
+                    <Button Content="直接安装服务" Command="{Binding RegisterPackagedServicesCommand}" Margin="0,0,8,0" Padding="12,6"
+                            ToolTip="从上次保存的安装目录直接安装并启动基础 Windows 服务"/>
 
                     <Border Margin="0,0,8,0" Padding="10,6" CornerRadius="4" BorderThickness="1">
                         <Border.Style>
@@ -75,6 +77,8 @@
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
                     <Button Content="更新配置" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                    <Button Content="注销归档" Command="{Binding UnregisterArchiveCommand}" Margin="0,0,8,0" Padding="12,6"
+                            ToolTip="停止并注销 CVArchService，同时从注册中心 Monitor.Services 中移除"/>
                     <Button Content="检查数据库配置" Command="{Binding CheckDatabaseConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
                     <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
                             Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
@@ -199,6 +203,8 @@
                     <!-- MySQL 操作按钮 -->
                     <WrapPanel Grid.Row="1" Margin="0,0,0,8">
                         <Button Content="Zip全安装" Command="{Binding MySqlInstallZipCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="直接安装" Command="{Binding MySqlRegisterExistingCommand}" Margin="0,0,8,0" Padding="12,6"
+                                ToolTip="使用上次保存的 MySQL 路径直接安装服务，不重新初始化数据"/>
                         <Button Content="启动" Command="{Binding MySqlStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="停止" Command="{Binding MySqlStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="卸载" Command="{Binding MySqlUninstallCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
@@ -208,6 +214,8 @@
                         <Button Content="数据库备份" Command="{Binding MySqlBackupCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="数据库还原" Command="{Binding MySqlRestoreCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="脚本执行" Command="{Binding MySqlRunScriptCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="重置数据库" Command="{Binding MySqlResetDatabaseCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"
+                                ToolTip="使用 root 执行服务安装目录 SQL\color_vision_all.sql"/>
                         <Button Content="设置root密码" Command="{Binding MySqlSetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="重置root密码" Command="{Binding MySqlForceResetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
                         <Button Content="创建/更新用户" Command="{Binding MySqlCreateOrUpdateUserCommand}" Margin="0,0,8,0" Padding="12,6"/>

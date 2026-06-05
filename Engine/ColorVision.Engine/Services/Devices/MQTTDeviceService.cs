@@ -44,8 +44,6 @@ namespace ColorVision.Engine.Services.Devices
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; } }
 
-        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; OnPropertyChanged(); } }
-
         public override string ServiceToken { get => Config.ServiceToken; set => Config.ServiceToken = value; }
 
         public MQTTDeviceService(T config) : base()

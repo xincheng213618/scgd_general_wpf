@@ -13,7 +13,7 @@ namespace ColorVision.Engine
         [SugarColumn(ColumnName = "z_index", IsNullable = true)]
         public int? ZIndex { get; set; }
 
-        [SugarColumn(ColumnName = "nd_port", IsNullable = true)]
+        [SugarColumn(ColumnName = "nd_port", ColumnDataType = "tinyint", Length = 2, IsNullable = true, ColumnDescription = "ND滤轮")]
         public int? NDPort { get; set; }
 
         [SugarColumn(ColumnName = "params" ,ColumnDataType ="json")]

@@ -74,6 +74,53 @@ namespace WindowsServicePlugin.ServiceManager
         public bool IsInstalled => WinServiceHelper.IsServiceExisted(ServiceName);
         public bool IsRunning => WinServiceHelper.IsServiceRunning(ServiceName);
 
+        public bool RegisterExistingService(Action<string> logCallback)
+        {
+            if (!File.Exists(MysqldExePath))
+            {
+                logCallback($"mysqld.exe 不存在: {MysqldExePath}");
+                return false;
+            }
+
+            try
+            {
+                bool exists = WinServiceHelper.IsServiceExisted(ServiceName);
+                string? registeredPath = WinServiceHelper.GetServiceInstallPath(ServiceName);
+                bool shouldInstall = !exists || !IsSamePath(registeredPath, MysqldExePath);
+
+                if (exists && shouldInstall)
+                {
+                    logCallback($"MySQL 服务路径变化，重新安装: {ServiceName}");
+                    WinServiceHelper.StopService(ServiceName, 30);
+                    RunProcessAdmin(MysqldExePath, $"--remove {ServiceName}", Path.GetDirectoryName(MysqldExePath)!);
+                    WinServiceHelper.UninstallService(ServiceName);
+                }
+
+                if (shouldInstall)
+                {
+                    logCallback($"正在直接安装 MySQL 服务 ({ServiceName})...");
+                    if (!RunProcessAdmin(MysqldExePath, $"--install {ServiceName}", Path.GetDirectoryName(MysqldExePath)!))
+                    {
+                        logCallback("MySQL 服务安装失败");
+                        return false;
+                    }
+                    logCallback("MySQL 服务安装成功");
+                }
+                else
+                {
+                    logCallback($"MySQL 服务已安装: {ServiceName}");
+                }
+
+                return Start(logCallback);
+            }
+            catch (Exception ex)
+            {
+                logCallback($"直接安装 MySQL 服务失败: {ex.Message}");
+                log.Error("直接安装 MySQL 服务失败", ex);
+                return false;
+            }
+        }
+
         /// <summary>
         /// ZIP全安装: 停止/删除旧服务 → 解压 → 初始化 → 安装服务 → 启动 → 设置随机 root 密码 → 创建业务用户
         /// </summary>
@@ -845,6 +892,21 @@ namespace WindowsServicePlugin.ServiceManager
         private static string EscapeSqlIdentifier(string value)
         {
             return value.Replace("`", "``");
+        }
+
+        private static bool IsSamePath(string? left, string right)
+        {
+            if (string.IsNullOrWhiteSpace(left))
+                return false;
+
+            try
+            {
+                return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return string.Equals(left.Trim('"'), right.Trim('"'), StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         private static bool RunProcess(string fileName, string arguments, string workingDir, int timeoutMilliseconds = 60000)

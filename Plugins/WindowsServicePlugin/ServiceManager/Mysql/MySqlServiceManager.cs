@@ -132,6 +132,28 @@ namespace WindowsServicePlugin.ServiceManager
             return Helper.Start(logCallback);
         }
 
+        public bool RegisterExistingService(Action<string> logCallback)
+        {
+            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            if (!ResolveExistingMySqlBasePath(logCallback))
+            {
+                return false;
+            }
+
+            bool ok = Helper.RegisterExistingService(logCallback);
+            if (ok)
+            {
+                Config.ServiceName = Helper.ServiceName;
+                Config.InstallBasePath = Helper.BasePath;
+                Config.ExePath = Helper.MysqldExePath;
+                Config.IsInstalled = Helper.IsInstalled;
+                Config.IsRunning = Helper.IsRunning;
+                Config.Status = Config.IsRunning ? "运行中" : (Config.IsInstalled ? "已停止" : "未安装");
+                SaveConfig();
+            }
+            return ok;
+        }
+
         public bool Stop(Action<string> logCallback)
         {
             return Helper.Stop(logCallback);
@@ -168,6 +190,23 @@ namespace WindowsServicePlugin.ServiceManager
         public bool ExecuteSqlFile(string filePath, Action<string> logCallback)
         {
             return Helper.ExecuteSqlFile(Config.AppUser, Config.AppPassword, Config.Database, filePath, logCallback);
+        }
+
+        public string? ResolveResetDatabaseSqlPath()
+        {
+            return ResolveColorVisionAllSqlPath(ServiceManagerConfig.Instance.BaseLocation);
+        }
+
+        public bool ResetDatabaseFromServiceSql(Action<string> logCallback)
+        {
+            string? sqlFilePath = ResolveResetDatabaseSqlPath();
+            if (string.IsNullOrWhiteSpace(sqlFilePath))
+            {
+                logCallback("未找到 color_vision_all.sql，无法重置数据库");
+                return false;
+            }
+
+            return ExecuteRootSqlFile(sqlFilePath, logCallback);
         }
 
         public bool TestConnection(string host, int port, string userName, string password, string? database, Action<string>? logCallback = null)
@@ -282,6 +321,41 @@ namespace WindowsServicePlugin.ServiceManager
             SaveConfig();
         }
 
+        private bool ResolveExistingMySqlBasePath(Action<string> logCallback)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.ExePath) && File.Exists(Config.ExePath))
+            {
+                SetManualBasePath(Config.ExePath);
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(Config.InstallBasePath)
+                && File.Exists(Path.Combine(Config.InstallBasePath, "bin", "mysqld.exe")))
+            {
+                Helper.BasePath = Config.InstallBasePath;
+                return true;
+            }
+
+            if (Helper.DetectFromRegistry())
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(ServiceManagerConfig.Instance.BaseLocation)
+                && Helper.DetectFromServicePath(ServiceManagerConfig.Instance.BaseLocation))
+            {
+                return true;
+            }
+
+            if (Directory.Exists(@"D:\CVService") && Helper.DetectFromServicePath(@"D:\CVService"))
+            {
+                return true;
+            }
+
+            logCallback("未找到已有 MySQL 文件，请先浏览选择 mysqld.exe 或检查安装目录");
+            return false;
+        }
+
         public bool ExecuteColorVisionAllSql(string basePath, Action<string> logCallback)
         {
             string? sqlFilePath = ResolveColorVisionAllSqlPath(basePath);
@@ -291,6 +365,11 @@ namespace WindowsServicePlugin.ServiceManager
                 return true;
             }
 
+            return ExecuteRootSqlFile(sqlFilePath, logCallback);
+        }
+
+        private bool ExecuteRootSqlFile(string sqlFilePath, Action<string> logCallback)
+        {
             Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
             if (!File.Exists(Helper.MysqlExePath))
             {
@@ -299,25 +378,19 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (string.IsNullOrWhiteSpace(Config.RootPassword))
             {
-                logCallback("未找到 root 密码，无法执行 color_vision_all.sql");
+                logCallback("未找到 root 密码，无法执行数据库重置脚本");
                 return false;
             }
 
-            logCallback($"执行 SQL: {Path.GetFileName(sqlFilePath)}");
+            logCallback($"执行 SQL: {sqlFilePath}");
             return Helper.ExecuteSqlFile("root", Config.RootPassword, null, sqlFilePath, logCallback);
         }
 
-        public static string? ResolveColorVisionAllSqlPath(string basePath)
+        public static string? ResolveColorVisionAllSqlPath(string? basePath)
         {
-            string installRoot = ResolveServiceInstallRoot(basePath);
-            string[] candidates =
-            [
-                Path.Combine(installRoot, "SQL", "color_vision_all.sql"),
-                Path.Combine(basePath, "SQL", "color_vision_all.sql"),
-                Path.Combine(basePath, "CVWindowsService", "SQL", "color_vision_all.sql")
-            ];
-
-            return candidates.FirstOrDefault(File.Exists);
+            return EnumerateServiceInstallRoots(basePath)
+                .Select(root => Path.Combine(root, "SQL", "color_vision_all.sql"))
+                .FirstOrDefault(File.Exists);
         }
 
         private void MigrateFromLegacySettings()
@@ -367,6 +440,54 @@ namespace WindowsServicePlugin.ServiceManager
                 Config.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
                 SaveConfig();
             }
+        }
+
+        private static IEnumerable<string> EnumerateServiceInstallRoots(string? basePath)
+        {
+            var roots = new List<string>();
+
+            void AddRoot(string? root)
+            {
+                if (string.IsNullOrWhiteSpace(root))
+                {
+                    return;
+                }
+
+                string fullPath;
+                try
+                {
+                    fullPath = Path.GetFullPath(root);
+                }
+                catch
+                {
+                    return;
+                }
+
+                if (Directory.Exists(fullPath) && !roots.Contains(fullPath, StringComparer.OrdinalIgnoreCase))
+                {
+                    roots.Add(fullPath);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(basePath))
+            {
+                AddRoot(ResolveServiceInstallRoot(basePath));
+                AddRoot(basePath);
+                AddRoot(Path.Combine(basePath, "CVWindowsService"));
+            }
+
+            foreach (string serviceName in new[] { "RegistrationCenterService", "CVMainService_x64", "CVMainService_dev" })
+            {
+                string? exePath = WinServiceHelper.GetServiceInstallPath(serviceName);
+                string? serviceRoot = string.IsNullOrWhiteSpace(exePath)
+                    ? null
+                    : Directory.GetParent(exePath)?.Parent?.FullName;
+                AddRoot(serviceRoot);
+            }
+
+            AddRoot(@"D:\CVService");
+
+            return roots;
         }
 
         private static string ResolveServiceInstallRoot(string basePath)

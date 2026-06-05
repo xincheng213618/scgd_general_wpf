@@ -233,8 +233,6 @@ namespace ColorVision.Engine.Services
                 ServiceCode = Code,
                 ServiceType = ServiceTypes.ToString(),
                 DeviceStatus = mqttService?.DeviceStatus.ToString() ?? string.Empty,
-                IsAlive = mqttService == null ? IsAlive.ToString() : (mqttService.IsAlive ? "在线" : "离线"),
-                LastAliveTime = mqttService?.LastAliveTime == default ? LastAliveTime.ToString("yyyy-MM-dd HH:mm:ss") : mqttService?.LastAliveTime.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
                 HeartbeatTime = HeartbeatTime > 0 ? $"{HeartbeatTime} ms" : string.Empty,
                 SendTopic = SendTopic,
                 SubscribeTopic = SubscribeTopic,
@@ -260,8 +258,6 @@ namespace ColorVision.Engine.Services
                 properties.Add(new CopilotContextProperty { Name = "MQTTServiceName", Value = mqttService.ServiceName ?? string.Empty });
                 properties.Add(new CopilotContextProperty { Name = "MQTTDeviceCode", Value = mqttService.DeviceCode ?? string.Empty });
                 properties.Add(new CopilotContextProperty { Name = "MQTTDeviceStatus", Value = mqttService.DeviceStatus.ToString() });
-                properties.Add(new CopilotContextProperty { Name = "MQTTLastAliveTime", Value = mqttService.LastAliveTime.ToString("yyyy-MM-dd HH:mm:ss") });
-                properties.Add(new CopilotContextProperty { Name = "MQTTIsAlive", Value = mqttService.IsAlive ? "true" : "false" });
             }
 
             return properties;
@@ -414,7 +410,6 @@ namespace ColorVision.Engine.Services
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; OnPropertyChanged(); } }
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; OnPropertyChanged(); } }
-        public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; OnPropertyChanged(); } }
 
         public event EventHandler ConfigChanged;
 

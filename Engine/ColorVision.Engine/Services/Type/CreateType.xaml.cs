@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Types
             sysResource.Type = TypeService.SysDictionaryModel.Value;
 
 
-            TerminalServiceConfig terminalServiceConfig = new() { HeartbeatTime = 5000 };
+            TerminalServiceConfig terminalServiceConfig = new() { };
 
             terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{RCSetting.Instance.Config.RCName}";
             terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.Config.RCName}";

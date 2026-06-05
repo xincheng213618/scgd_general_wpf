@@ -172,7 +172,7 @@ namespace ColorVision.Engine.Services.RC
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                LastAliveTime = DateTime.Now; 
+                LastAliveTime = DateTime.Now;
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
                 try
                 {
@@ -258,8 +258,6 @@ namespace ColorVision.Engine.Services.RC
                     {
                     }
                 }
-                if (MQTTNodeServiceStatus.OverTime > 0) serviceTerminal.Config.HeartbeatTime = MQTTNodeServiceStatus.OverTime;
-
                 foreach (var baseChannel in serviceTerminal.VisualChildren.Cast<DeviceService>())
                 {
                     if (baseChannel.GetConfig() is DeviceServiceConfig baseDeviceConfig)
@@ -269,7 +267,6 @@ namespace ColorVision.Engine.Services.RC
                         MQTTServiceBase mQTTServiceBase = baseChannel.GetMQTTService();
                         if (mQTTServiceBase == null) continue;
                         mQTTServiceBase.DeviceStatus = Enum.Parse<DeviceStatusType>(devNew.Status);
-                        mQTTServiceBase.LastAliveTime = lastLive;
                     }
                 }
 
@@ -325,7 +322,6 @@ namespace ColorVision.Engine.Services.RC
                     if (nodeService == null) { continue; }
                     serviceTerminal.Config.SendTopic = nodeService.UpChannel;
                     serviceTerminal.Config.SubscribeTopic = nodeService.DownChannel;
-                    if (nodeService.OverTime > 0) serviceTerminal.Config.HeartbeatTime = nodeService.OverTime;
                     serviceTerminal.MQTTServiceTerminalBase.ServiceToken = nodeService.ServiceToken;
 
                     foreach (var baseChannel in serviceTerminal.VisualChildren.Cast<DeviceService>())
@@ -407,7 +403,7 @@ namespace ColorVision.Engine.Services.RC
                 PublishAsyncClient(RCPublicTopic, JsonConvert.SerializeObject(reg));
             }
         }
-
+        private DateTime LastAliveTime = DateTime.MinValue;
         public void KeepLive()
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;

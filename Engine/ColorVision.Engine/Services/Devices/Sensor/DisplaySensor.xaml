@@ -1,78 +1,80 @@
 ﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Sensor.DisplaySensor"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Sensor"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:DeviceSensor}"
-             d:DesignWidth="300" ContextMenu="{Binding ContextMenu}"  Initialized="UserControl_Initialized">
+             d:DesignWidth="300"
+             ContextMenu="{Binding ContextMenu}"
+             Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
         </Style>
-        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
+        <Style BasedOn="{StaticResource TextBox.Small}" TargetType="{x:Type TextBox}" />
     </UserControl.Resources>
     <StackPanel>
         <DockPanel Margin="0,0,5,0">
-            <Grid DockPanel.Dock="Right" >
-                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
-                <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
+            <Grid DockPanel.Dock="Right">
+                <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
+                <Image Height="18" Margin="0,0,0,0" Source="{DynamicResource DrawingImageProperty}" />
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
-            <Button DockPanel.Dock="Right" Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" Padding="3">
+            <Button Padding="3" Background="Transparent" BorderThickness="0" Command="{Binding RefreshCommand}" DockPanel.Dock="Right">
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
                             </Storyboard>
                         </BeginStoryboard>
                     </EventTrigger>
                 </Button.Triggers>
-                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="{x:Static properties:Resources.Refresh}">
+                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE72C;" ToolTip="{x:Static properties:Resources.Refresh}">
                     <TextBlock.RenderTransform>
-                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
+                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6" />
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
-            <ToggleButton Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" ToolTip="{Binding DService.DeviceStatus}"/>
+            <ToggleButton Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
-        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" Command="{Binding EditCommand}"/>
-                <TextBlock x:Name="TextBlockOffLine" Text="OffLine"  HorizontalAlignment="Center"/>
+                <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
+                <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Center" Text="OffLine" />
                 <StackPanel x:Name="StackPanelContent">
-                    <Button x:Name="ButtonOpen" Margin="0,2" Content="{x:Static properties:Resources.Connect}"  Click="Open_Click"/>
-                    <Button x:Name="ButtonClose" Margin="0,2" Content="{x:Static properties:Resources.Close}"  Click="Close_Click" Visibility="Collapsed"/>
+                    <Button x:Name="ButtonOpen" Margin="0,2" Click="Open_Click" Content="{x:Static properties:Resources.Connect}" />
+                    <Button x:Name="ButtonClose" Margin="0,2" Click="Close_Click" Content="{x:Static properties:Resources.Close}" Visibility="Collapsed" />
                     <DockPanel Margin="0,0,0,5">
-                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.ExecteTemplate}" Margin="5,0,0,0" Click="SendTemp_Click"/>
-                        <ComboBox  x:Name="ComboxSensorTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Button Margin="5,0,0,0" Click="SendTemp_Click" Content="{x:Static properties:Resources.ExecteTemplate}" DockPanel.Dock="Right" />
+                        <ComboBox x:Name="ComboxSensorTemplate" Width="130" HorizontalAlignment="Left" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template"/>
+                            <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE713;" />
+                            <Button Width="20" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Click="MenuItem_Template" />
                         </Grid>
                     </DockPanel>
-                    <TextBlock Text="{x:Static properties:Resources.DebugMode}" Margin="0,0,0,5"/>
+                    <TextBlock Margin="0,0,0,5" Text="{x:Static properties:Resources.DebugMode}" />
                     <StackPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <ComboBox x:Name="ComboBoxType" Style="{StaticResource ComboBox.Small}"/>
-                            <CheckBox x:Name="IsAddNewLine" Content="{x:Static properties:Resources.AddNewLine}" Margin="5,0,0,0"/>
+                            <ComboBox x:Name="ComboBoxType" Style="{StaticResource ComboBox.Small}" />
+                            <CheckBox x:Name="IsAddNewLine" Margin="5,0,0,0" Content="{x:Static properties:Resources.AddNewLine}" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="{x:Static properties:Resources.SendCmd}" Width="60"/>
-                            <TextBox  x:Name="TextBoxSendCommand" Height="40"  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}" Text="" Width="200"/>
+                            <TextBlock Width="60" Text="{x:Static properties:Resources.SendCmd}" />
+                            <TextBox x:Name="TextBoxSendCommand" Width="200" Height="40" Style="{StaticResource TextBox.Small}" Text="" TextWrapping="Wrap" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="{x:Static properties:Resources.RevCmd}" Width="60"/>
-                            <TextBox  x:Name="TextBoxResCommand" Height="40" TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="" Width="200"/>
+                            <TextBlock Width="60" Text="{x:Static properties:Resources.RevCmd}" />
+                            <TextBox x:Name="TextBoxResCommand" Width="200" Height="40" Style="{StaticResource TextBox.Small}" Text="" TextWrapping="Wrap" />
                         </DockPanel>
-                        <Button  DockPanel.Dock="Right" Padding="10,5" Content="{x:Static properties:Resources.Send}" HorizontalAlignment="Right" Click="SendCommand_Click"/>
+                        <Button Padding="10,5" HorizontalAlignment="Right" Click="SendCommand_Click" Content="{x:Static properties:Resources.Send}" DockPanel.Dock="Right" />
                     </StackPanel>
 
 
