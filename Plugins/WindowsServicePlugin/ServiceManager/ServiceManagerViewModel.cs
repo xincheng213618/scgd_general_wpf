@@ -62,7 +62,9 @@ namespace WindowsServicePlugin.ServiceManager
 
         public RelayCommand OneKeyStartCommand { get; }
         public RelayCommand OneKeyStopCommand { get; }
+        public RelayCommand RegisterPackagedServicesCommand { get; }
         public RelayCommand UpdateConfigCommand { get; }
+        public RelayCommand UnregisterArchiveCommand { get; }
         public RelayCommand OpenInstallManagerCommand { get; }
         public RelayCommand RefreshCommand { get; }
         public RelayCommand ClearLogCommand { get; }
@@ -79,12 +81,14 @@ namespace WindowsServicePlugin.ServiceManager
 
         // MySQL commands
         public RelayCommand MySqlInstallZipCommand { get; }
+        public RelayCommand MySqlRegisterExistingCommand { get; }
         public RelayCommand MySqlStartCommand { get; }
         public RelayCommand MySqlStopCommand { get; }
         public RelayCommand MySqlUninstallCommand { get; }
         public RelayCommand MySqlBackupCommand { get; }
         public RelayCommand MySqlRestoreCommand { get; }
         public RelayCommand MySqlRunScriptCommand { get; }
+        public RelayCommand MySqlResetDatabaseCommand { get; }
         public RelayCommand MySqlBrowseCommand { get; }
         public RelayCommand MySqlSetRootPasswordCommand { get; }
         public RelayCommand MySqlForceResetRootPasswordCommand { get; }
@@ -98,7 +102,9 @@ namespace WindowsServicePlugin.ServiceManager
             // Commands
             OneKeyStartCommand = new RelayCommand(a => _ = OneKeyStartAsync(), a => !IsBusy);
             OneKeyStopCommand = new RelayCommand(a => _ = OneKeyStopAsync(), a => !IsBusy);
+            RegisterPackagedServicesCommand = new RelayCommand(a => _ = RegisterPackagedServicesAsync(), a => !IsBusy);
             UpdateConfigCommand = new RelayCommand(a => UpdateConfig(), a => !IsBusy);
+            UnregisterArchiveCommand = new RelayCommand(a => _ = UnregisterArchiveAsync(), a => !IsBusy);
             OpenInstallManagerCommand = new RelayCommand(a => OpenInstallManager());
             RefreshCommand = new RelayCommand(a => RefreshAll());
             ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
@@ -114,12 +120,14 @@ namespace WindowsServicePlugin.ServiceManager
             MqttStopCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Stop(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsRunning);
 
             MySqlInstallZipCommand = new RelayCommand(a => _ = MySqlInstallZipAsync(), a => !IsBusy);
+            MySqlRegisterExistingCommand = new RelayCommand(a => _ = RegisterExistingMySqlServiceAsync(), a => !IsBusy);
             MySqlStartCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Start(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
             MySqlStopCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Stop(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlUninstallCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Uninstall(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsInstalled);
             MySqlBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlBackup()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlRestoreCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlRestore()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlRunScriptCommand = new RelayCommand(a => _ = Task.Run(() => DoRunSqlScript()), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlResetDatabaseCommand = new RelayCommand(a => _ = ResetDatabaseAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlBrowseCommand = new RelayCommand(a => BrowseMySqlPath());
             MySqlSetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoSetRootPassword()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlForceResetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoForceResetRootPassword()), a => !IsBusy);
@@ -140,13 +148,19 @@ namespace WindowsServicePlugin.ServiceManager
             // 自动检测路径
             if (string.IsNullOrEmpty(Config.BaseLocation))
             {
-                Config.TryDetectInstallPath();
+                if (Config.TryDetectInstallPath())
+                {
+                    SaveServiceManagerConfig();
+                }
             }
 
             // 尝试从CVWinSMS配置读取
             if (string.IsNullOrEmpty(Config.BaseLocation) && File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
             {
-                Config.ReadFromCVWinSMSConfig(CVWinSMSConfig.Instance.CVWinSMSPath);
+                if (Config.ReadFromCVWinSMSConfig(CVWinSMSConfig.Instance.CVWinSMSPath))
+                {
+                    SaveServiceManagerConfig();
+                }
             }
 
             MySqlManager.Initialize(Config.MySqlPort);

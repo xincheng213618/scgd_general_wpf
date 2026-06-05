@@ -1,4 +1,5 @@
 using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -152,10 +153,16 @@ namespace WindowsServicePlugin.ServiceManager
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 Config.BaseLocation = dlg.SelectedPath;
+                SaveServiceManagerConfig();
                 OnPropertyChanged(nameof(LegacyConfigPath));
                 OnPropertyChanged(nameof(HasLegacyConfig));
                 RefreshAll();
             }
+        }
+
+        private void SaveServiceManagerConfig()
+        {
+            ConfigHandler.GetInstance().Save<ServiceManagerConfig>();
         }
 
         private void OpenInstallManager()
