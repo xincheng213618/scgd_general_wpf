@@ -358,27 +358,28 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public void FireFinished(CVStartCFC startAction)
 	{
+		if (startAction == null)
+		{
+			logger.WarnFormat("Fire Flow Finished ignored because start action is null");
+			return;
+		}
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
 		string text = string.Empty;
 		if (flowStatus == StatusTypeEnum.Failed || flowStatus == StatusTypeEnum.OverTime)
 		{
-			string text2 = string.Empty;
-			string msg = string.Empty;
-			if (startAction.Data.ContainsKey("ErrorNodeName"))
+			Dictionary<string, object> data = startAction.Data;
+			string text2 = GetDataString(data, "ErrorNodeName");
+			string msg = GetDataString(data, "Msg");
+			if (!string.IsNullOrWhiteSpace(text2) && data != null && data.TryGetValue(text2, out object nodeStatusObj))
 			{
-				text2 = startAction.Data["ErrorNodeName"].ToString();
-			}
-			if (startAction.Data.ContainsKey("Msg"))
-			{
-				msg = startAction.Data["Msg"].ToString();
-			}
-			if (startAction.Data.ContainsKey(text2))
-			{
-				string text3 = startAction.Data[text2].ToString();
-				text = text2 + ":" + text3;
-				if (!string.IsNullOrWhiteSpace(msg))
+				string text3 = Convert.ToString(nodeStatusObj) ?? string.Empty;
+				if (!string.IsNullOrWhiteSpace(text3))
 				{
-					text += "," + msg;
+					text = text2 + ":" + text3;
+					if (!string.IsNullOrWhiteSpace(msg))
+					{
+						text += "," + msg;
+					}
 				}
 			}
 			if (string.IsNullOrEmpty(text) && !string.IsNullOrWhiteSpace(msg))
@@ -389,5 +390,14 @@ public abstract class BaseStartNode : CVCommonNode
 		logger.InfoFormat("Fire Flow Finished Before");
 		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, text));
 		logger.InfoFormat("Fire Flow Finished End");
+	}
+
+	private static string GetDataString(Dictionary<string, object> data, string key)
+	{
+		if (data != null && data.TryGetValue(key, out object value))
+		{
+			return Convert.ToString(value) ?? string.Empty;
+		}
+		return string.Empty;
 	}
 }

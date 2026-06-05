@@ -145,9 +145,17 @@ public class CVBaseCFC
 	public void Failed(string message, string nodeName, DateTime startTime)
 	{
 		SetStatusType(StatusTypeEnum.Failed);
-		AddData("Msg", message);
-		AddData("ErrorNodeName", nodeName);
-		AddResultStatus(nodeName, FlowStatus.ToString(), startTime);
+		string errorNodeName = nodeName ?? string.Empty;
+		AddData("Msg", message ?? string.Empty);
+		AddData("ErrorNodeName", errorNodeName);
+		if (!string.IsNullOrWhiteSpace(errorNodeName))
+		{
+			AddResultStatus(errorNodeName, FlowStatus.ToString(), startTime);
+		}
+		else
+		{
+			AddTTL(startTime);
+		}
 	}
 
 	internal ActionTypeEnum GetActionType()
