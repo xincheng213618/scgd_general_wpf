@@ -267,6 +267,91 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Command = histogramEqualizationCommand 
             });
 
+            RelayCommand erodeCommand = new(o =>
+            {
+                var window = new MorphologyWindow(imageContext, 0)
+                {
+                    Owner = Application.Current.GetActiveWindow()
+                };
+                window.ShowDialog();
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "Algorithms",
+                GuidId = "Erode",
+                Order = 13,
+                Header = "腐蚀",
+                Command = erodeCommand
+            });
+
+            RelayCommand dilateCommand = new(o =>
+            {
+                var window = new MorphologyWindow(imageContext, 1)
+                {
+                    Owner = Application.Current.GetActiveWindow()
+                };
+                window.ShowDialog();
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "Algorithms",
+                GuidId = "Dilate",
+                Order = 14,
+                Header = "膨胀",
+                Command = dilateCommand
+            });
+
+            RelayCommand morphologyCommand = new(o =>
+            {
+                var window = new MorphologyWindow(imageContext, 2)
+                {
+                    Owner = Application.Current.GetActiveWindow()
+                };
+                window.ShowDialog();
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "Algorithms",
+                GuidId = "MorphologyEx",
+                Order = 15,
+                Header = "形态学操作",
+                Command = morphologyCommand
+            });
+
+            RelayCommand bilateralFilterCommand = new(o =>
+            {
+                var window = new FilterDenoiseWindow(imageContext, 0)
+                {
+                    Owner = Application.Current.GetActiveWindow()
+                };
+                window.ShowDialog();
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "Algorithms",
+                GuidId = "BilateralFilter",
+                Order = 16,
+                Header = "双边滤波",
+                Command = bilateralFilterCommand
+            });
+
+            RelayCommand blurCommand = new(o =>
+            {
+                var window = new FilterDenoiseWindow(imageContext, 1)
+                {
+                    Owner = Application.Current.GetActiveWindow()
+                };
+                window.ShowDialog();
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "Algorithms",
+                GuidId = "Blur",
+                Order = 17,
+                Header = "均值模糊",
+                Command = blurCommand
+            });
+
             return MenuItemMetadatas;
         }
     }

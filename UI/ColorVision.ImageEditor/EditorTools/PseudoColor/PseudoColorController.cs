@@ -335,11 +335,11 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
             if (frameRequest.HasValidAutoRange)
             {
-                ret = OpenCVMediaHelper.M_PseudoColorAutoRange((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel, frameRequest.DataMin, frameRequest.DataMax);
+                ret = OpenCVMediaHelper.ApplyPseudoColorAutoRange((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel, frameRequest.DataMin, frameRequest.DataMax);
             }
             else
             {
-                ret = OpenCVMediaHelper.M_PseudoColor((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel);
+                ret = OpenCVMediaHelper.ApplyPseudoColor((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel);
             }
 
             var algoMs = stopwatch.Elapsed.TotalMilliseconds;

@@ -34,6 +34,37 @@ cv::Mat CreateMatView(const HImage& img)
 	return cv::Mat(img.rows, img.cols, img.type(), img.pData, step);
 }
 
+int SelectSingleChannelSource(const cv::Mat& mat, int channel, cv::Mat& temp, cv::Mat& source)
+{
+	if (mat.empty()) {
+		return -1;
+	}
+
+	if (mat.channels() == 1) {
+		source = mat;
+		return 0;
+	}
+
+	if (channel >= 0 && channel < mat.channels()) {
+		cv::extractChannel(mat, temp, channel);
+	}
+	else {
+		cv::cvtColor(mat, temp, cv::COLOR_BGR2GRAY);
+	}
+
+	source = temp;
+	return 0;
+}
+
+bool IsPseudoColorOutputCompatible(const cv::Mat& source, const cv::Mat& output)
+{
+	return !source.empty()
+		&& !output.empty()
+		&& output.rows == source.rows
+		&& output.cols == source.cols
+		&& output.type() == CV_8UC3;
+}
+
 cv::Mat ClipToRoi(const cv::Mat& mat, const RoiRect& roi)
 {
 	if (mat.empty()) {
@@ -246,80 +277,98 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 
 COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel)
 {
-	// 构造 Mat 头，不拷贝数据
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat mat = CreateMatView(img);
 
 	if (mat.empty())
 		return -1;
 
+	cv::Mat temp;
+	cv::Mat source;
+	int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
+	if (sourceRet != 0)
+		return sourceRet;
+
 	cv::Mat out;
+	int ret = pseudoColorTo(source, out, min, max, types);
+	if (ret != 0)
+		return ret;
 
-	// 优化通道提取
-	if (mat.channels() != 1) {
-		if (channel >= 0 && channel < mat.channels()) {
-			cv::extractChannel(mat, out, channel);
-		}
-		else {
-			cv::cvtColor(mat, out, cv::COLOR_BGR2GRAY);
-		}
-	}
-	else {
-		out = mat.clone();
-	}
-
-	// 执行伪彩色变换
-	pseudoColor(out, min, max, types);
-
-	// 转回 HImage (假设 MatToHImage 负责数据拷贝或接管)
 	return MatToHImage(out, outImage);
 }
 
 COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat mat = CreateMatView(img);
 
 	if (mat.empty())
 		return -1;
 
+	cv::Mat temp;
+	cv::Mat source;
+	int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
+	if (sourceRet != 0)
+		return sourceRet;
+
 	cv::Mat out;
-
-	if (mat.channels() != 1) {
-		if (channel >= 0 && channel < mat.channels()) {
-			cv::extractChannel(mat, out, channel);
-		}
-		else {
-			cv::cvtColor(mat, out, cv::COLOR_BGR2GRAY);
-		}
-	}
-	else {
-		out = mat.clone();
-	}
-
-	pseudoColorAutoRange(out, min, max, types, dataMin, dataMax);
+	int ret = pseudoColorAutoRangeTo(source, out, min, max, types, dataMin, dataMax);
+	if (ret != 0)
+		return ret;
 
 	return MatToHImage(out, outImage);
 }
 
-COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int channel)
+COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types, int channel)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat mat = CreateMatView(img);
+	cv::Mat output = CreateMatView(outImage);
 
 	if (mat.empty())
 		return -1;
 
-	cv::Mat gray;
+	if (!IsPseudoColorOutputCompatible(mat, output))
+		return -2;
 
-	if (mat.channels() != 1) {
-		if (channel >= 0 && channel < mat.channels()) {
-			cv::extractChannel(mat, gray, channel);
-		}
-		else {
-			cv::cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
-		}
-	}
-	else {
-		gray = mat;
-	}
+	cv::Mat temp;
+	cv::Mat source;
+	int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
+	if (sourceRet != 0)
+		return sourceRet;
+
+	return pseudoColorTo(source, output, min, max, types);
+}
+
+COLORVISIONCORE_API int M_PseudoColorAutoRangeInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax)
+{
+	cv::Mat mat = CreateMatView(img);
+	cv::Mat output = CreateMatView(outImage);
+
+	if (mat.empty())
+		return -1;
+
+	if (!IsPseudoColorOutputCompatible(mat, output))
+		return -2;
+
+	cv::Mat temp;
+	cv::Mat source;
+	int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
+	if (sourceRet != 0)
+		return sourceRet;
+
+	return pseudoColorAutoRangeTo(source, output, min, max, types, dataMin, dataMax);
+}
+
+COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int channel)
+{
+	cv::Mat mat = CreateMatView(img);
+
+	if (mat.empty())
+		return -1;
+
+	cv::Mat temp;
+	cv::Mat gray;
+	int sourceRet = SelectSingleChannelSource(mat, channel, temp, gray);
+	if (sourceRet != 0)
+		return sourceRet;
 
 	double minVal, maxVal;
 	cv::minMaxLoc(gray, &minVal, &maxVal);

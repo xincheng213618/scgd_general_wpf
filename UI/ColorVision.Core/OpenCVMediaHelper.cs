@@ -69,6 +69,58 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_PseudoColorAutoRange(HImage image, out HImage hImage, uint min, uint max, ColormapTypes colormapTypes, int channel, uint dataMin, uint dataMax);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_PseudoColorInto(HImage image, HImage output, uint min, uint max, ColormapTypes colormapTypes, int channel);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_PseudoColorAutoRangeInto(HImage image, HImage output, uint min, uint max, ColormapTypes colormapTypes, int channel, uint dataMin, uint dataMax);
+
+        public static HImage AllocateHImage(int width, int height, int channels, int depth)
+        {
+            if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(width), "Invalid HImage dimensions or format.");
+            }
+
+            int stride = checked(width * channels * (depth / 8));
+            int length = checked(stride * height);
+            return new HImage
+            {
+                rows = height,
+                cols = width,
+                channels = channels,
+                depth = depth,
+                stride = stride,
+                pData = Marshal.AllocHGlobal(length)
+            };
+        }
+
+        public static int ApplyPseudoColor(HImage image, out HImage output, uint min, uint max, ColormapTypes colormapTypes, int channel)
+        {
+            output = AllocateHImage(image.cols, image.rows, 3, 8);
+            int ret = M_PseudoColorInto(image, output, min, max, colormapTypes, channel);
+            if (ret != 0)
+            {
+                output.Dispose();
+                output = default;
+            }
+
+            return ret;
+        }
+
+        public static int ApplyPseudoColorAutoRange(HImage image, out HImage output, uint min, uint max, ColormapTypes colormapTypes, int channel, uint dataMin, uint dataMax)
+        {
+            output = AllocateHImage(image.cols, image.rows, 3, 8);
+            int ret = M_PseudoColorAutoRangeInto(image, output, min, max, colormapTypes, channel, dataMin, dataMax);
+            if (ret != 0)
+            {
+                output.Dispose();
+                output = default;
+            }
+
+            return ret;
+        }
+
         /// <summary>
         /// 从图像数据中获取最小最大值
         /// </summary>

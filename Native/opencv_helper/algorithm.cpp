@@ -542,23 +542,117 @@ static void applyLUT(const cv::Mat& image, const cv::Mat& lut, cv::Mat& result)
     });
 }
 
-int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
+struct PseudoColorLutCache
+{
+    bool valid = false;
+    bool stretched = false;
+    int mapType = 0;
+    int minTh = 0;
+    int maxTh = 0;
+    cv::Mat lut;
+};
+
+static void GetCachedPseudoColorLUT(cv::ColormapTypes mapType, int minTh, int maxTh, bool stretched, cv::Mat& outLut)
+{
+    thread_local PseudoColorLutCache cache;
+    const int mapTypeValue = static_cast<int>(mapType);
+
+    if (cache.valid
+        && cache.stretched == stretched
+        && cache.mapType == mapTypeValue
+        && cache.minTh == minTh
+        && cache.maxTh == maxTh) {
+        outLut = cache.lut;
+        return;
+    }
+
+    if (stretched) {
+        GetStretchedLUT(mapType, minTh, maxTh, cache.lut);
+    }
+    else {
+        GetOptimizedLUT(mapType, minTh, maxTh, cache.lut);
+    }
+
+    cache.valid = true;
+    cache.stretched = stretched;
+    cache.mapType = mapTypeValue;
+    cache.minTh = minTh;
+    cache.maxTh = maxTh;
+    outLut = cache.lut;
+}
+
+static void applyLUT16U(const cv::Mat& image, const cv::Mat& lut, cv::Mat& result, double scale, double offset)
+{
+    result.create(image.rows, image.cols, CV_8UC3);
+    const cv::Vec3b* lutPtr = lut.ptr<cv::Vec3b>();
+
+    cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range) {
+        for (int y = range.start; y < range.end; y++) {
+            const uint16_t* srcRow = image.ptr<uint16_t>(y);
+            cv::Vec3b* dstRow = result.ptr<cv::Vec3b>(y);
+            for (int x = 0; x < image.cols; x++) {
+                const uint8_t index = cv::saturate_cast<uint8_t>(srcRow[x] * scale + offset);
+                dstRow[x] = lutPtr[index];
+            }
+        }
+    });
+}
+
+static int pseudoColorCore(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, bool autoRange, uint dataMin, uint dataMax)
 {
     if (image.empty()) return -1;
 
+    cv::Mat gray;
+    const cv::Mat* source = &image;
     if (image.channels() > 1) {
-        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+        source = &gray;
     }
 
-    switch (image.depth()) {
+    cv::Mat source8;
+    switch (source->depth()) {
     case CV_16U:
-        min1 >>= 8;
-        max1 >>= 8;
-        image.convertTo(image, CV_8U, 1.0 / 257.0);
+    {
+        double scale = 1.0 / 257.0;
+        double offset = 0.0;
+
+        if (autoRange) {
+            scale = (dataMax > dataMin) ? 255.0 / (dataMax - dataMin) : 1.0;
+            offset = -((double)dataMin) * scale;
+            if (dataMax > dataMin) {
+                double range = (double)dataMax - (double)dataMin;
+                min1 = (uint)std::clamp(((double)min1 - (double)dataMin) / range * 255.0, 0.0, 255.0);
+                max1 = (uint)std::clamp(((double)max1 - (double)dataMin) / range * 255.0, 0.0, 255.0);
+            }
+        }
+        else {
+            min1 >>= 8;
+            max1 >>= 8;
+        }
+
+        min1 = std::min(min1, 255u);
+        max1 = std::min(max1, 255u);
+
+        cv::Mat customLut;
+        GetCachedPseudoColorLUT(types, (int)min1, (int)max1, autoRange, customLut);
+        applyLUT16U(*source, customLut, dst, scale, offset);
+        return 0;
+    }
         break;
     case CV_32F:
     case CV_64F:
-        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+        cv::normalize(*source, source8, 0, 255, cv::NORM_MINMAX, CV_8U);
+        if (autoRange) {
+            min1 = 0;
+            max1 = 255;
+        }
+        source = &source8;
+        break;
+    case CV_8U:
+        break;
+    default:
+        source->convertTo(source8, CV_8U);
+        source = &source8;
         break;
     }
 
@@ -566,55 +660,35 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     max1 = std::min(max1, 255u);
 
     cv::Mat customLut;
-    GetOptimizedLUT(types, (int)min1, (int)max1, customLut);
+    GetCachedPseudoColorLUT(types, (int)min1, (int)max1, autoRange, customLut);
+    applyLUT(*source, customLut, dst);
+    return 0;
+}
 
+int pseudoColorTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types)
+{
+    return pseudoColorCore(image, dst, min1, max1, types, false, 0, 0);
+}
+
+int pseudoColorAutoRangeTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax)
+{
+    return pseudoColorCore(image, dst, min1, max1, types, true, dataMin, dataMax);
+}
+
+int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
+{
     cv::Mat result;
-    applyLUT(image, customLut, result);
+    int ret = pseudoColorTo(image, result, min1, max1, types);
+    if (ret != 0) return ret;
     image = std::move(result);
     return 0;
 }
 
 int pseudoColorAutoRange(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax)
 {
-    if (image.empty()) return -1;
-
-    if (image.channels() > 1) {
-        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
-    }
-
-    switch (image.depth()) {
-    case CV_16U:
-    {
-        double scale = (dataMax > dataMin) ? 255.0 / (dataMax - dataMin) : 1.0;
-        double offset = -((double)dataMin) * scale;
-        image.convertTo(image, CV_8U, scale, offset);
-        // Remap slider min/max from [dataMin, dataMax] to [0, 255]
-        if (dataMax > dataMin) {
-            double range = (double)dataMax - (double)dataMin;
-            min1 = (uint)std::clamp(((double)min1 - (double)dataMin) / range * 255.0, 0.0, 255.0);
-            max1 = (uint)std::clamp(((double)max1 - (double)dataMin) / range * 255.0, 0.0, 255.0);
-        }
-        break;
-    }
-    case CV_32F:
-    case CV_64F:
-        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
-        min1 = 0;
-        max1 = 255;
-        break;
-    default:
-        // 8-bit: no conversion needed, slider values are already in [0, 255] range
-        break;
-    }
-
-    min1 = std::min(min1, 255u);
-    max1 = std::min(max1, 255u);
-
-    cv::Mat customLut;
-    GetStretchedLUT(types, (int)min1, (int)max1, customLut);
-
     cv::Mat result;
-    applyLUT(image, customLut, result);
+    int ret = pseudoColorAutoRangeTo(image, result, min1, max1, types, dataMin, dataMax);
+    if (ret != 0) return ret;
     image = std::move(result);
     return 0;
 }

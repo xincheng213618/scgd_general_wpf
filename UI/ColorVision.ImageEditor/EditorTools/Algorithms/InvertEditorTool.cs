@@ -1,7 +1,7 @@
-using ColorVision.Core;
+using ColorVision.ImageEditor.Algorithms;
 using log4net;
+using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms
@@ -24,35 +24,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (_image.HImageCache == null) return;
-                
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 log.Info("InvertImage - 开始执行");
-                
-                Task.Run(() =>
+
+                try
                 {
-                    int ret = OpenCVMediaHelper.M_InvertImage((HImage)_image.HImageCache, out HImage hImageProcessed);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(_image.ViewBitmapSource, hImageProcessed))
-                            {
-                                double DpiX = _image.Config.GetProperties<double>("DpiX");
-                                double DpiY = _image.Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmap();
-                                hImageProcessed.Dispose();
-                                _image.ViewBitmapSource = image;
-                            }
-                            _image.HImageCache?.Dispose();
-                            _image.HImageCache = null;
-                            _image.ImageShow.Source = _image.ViewBitmapSource;
-                            stopwatch.Stop();
-                            log.Info($"InvertImage 完成 - 耗时: {stopwatch.Elapsed}");
-                        }
-                    });
-                });
+                    ImageAlgorithmApplier.Apply(_image, OpenCvImageAlgorithms.Invert);
+                    stopwatch.Stop();
+                    log.Info($"InvertImage 完成 - 耗时: {stopwatch.Elapsed}");
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    MessageBox.Show(ex.Message);
+                }
             });
         }
     }

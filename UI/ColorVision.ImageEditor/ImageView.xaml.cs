@@ -7,11 +7,12 @@ using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Layers;
-using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Properties;
+using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using HandyControl.Controls;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using WpfMessageBox = System.Windows.MessageBox;
+using WpfTextBox = System.Windows.Controls.TextBox;
+using WpfWindow = System.Windows.Window;
 
 namespace ColorVision.ImageEditor
 {
@@ -142,6 +146,8 @@ namespace ColorVision.ImageEditor
         {
             _defaultDisplayConfig.PropertyChanged += DefaultDisplayConfig_PropertyChanged;
 
+
+            RenderOptions.SetBitmapScalingMode(ImageShow, DefaultBitmapScalingConfig.Current.DefaultBitmapScalingMode);
             EditorContext = CreateEditorContext();
             EditorContext.DrawEditorContext.SelectionVisual = new SelectEditorVisual(EditorContext.DrawEditorContext);
             EditorContext.DrawEditorContext.SelectionVisual.TextEditingContext = EditorContext.TextEditingContext;
@@ -561,7 +567,7 @@ namespace ColorVision.ImageEditor
         {
             ImageViewSettingsWindow window = new(this, initialGroup)
             {
-                Owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                Owner = WpfWindow.GetWindow(this) ?? Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             window.ShowDialog();
@@ -671,14 +677,14 @@ namespace ColorVision.ImageEditor
             List<DrawingVisualBase> visuals = EditorContext.DrawEditorContext.DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
             if (visuals.Count == 0)
             {
-                MessageBox.Show(Properties.Resources.ImageView_NoExportableAnnotations, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                WpfMessageBox.Show(Properties.Resources.ImageView_NoExportableAnnotations, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             AnnotationDocument document = AnnotationMapper.CreateDocument(visuals);
             if (document.Items.Count == 0)
             {
-                MessageBox.Show(Properties.Resources.ImageView_NoAnnotationTypes, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                WpfMessageBox.Show(Properties.Resources.ImageView_NoAnnotationTypes, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -696,7 +702,7 @@ namespace ColorVision.ImageEditor
             string message = skippedCount > 0
                 ? string.Format(Properties.Resources.ImageView_ExportedAnnotationsWithSkip, document.Items.Count, skippedCount)
                 : string.Format(Properties.Resources.ImageView_ExportedAnnotations, document.Items.Count);
-            MessageBox.Show(message, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+            WpfMessageBox.Show(message, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public void ImportAnnotations()
@@ -719,11 +725,11 @@ namespace ColorVision.ImageEditor
                     ImageShow.AddVisual(visual);
                 }
 
-                MessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, visuals.Count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, visuals.Count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(Properties.Resources.ImageView_ImportAnnotationsFailed, ex.Message), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Error);
+                WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportAnnotationsFailed, ex.Message), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -875,7 +881,7 @@ namespace ColorVision.ImageEditor
                     }
                     else
                     {
-                        MessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, ext));
+                        WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, ext));
                     }
                 }
             }
@@ -884,7 +890,7 @@ namespace ColorVision.ImageEditor
                 EditorContext.IImageOpen = null;
                 IEditorToolFactory.ApplyImageOpenTools(null);
                 log.Error(ex);
-                MessageBox.Show(ex.Message);
+                WpfMessageBox.Show(ex.Message);
             }
         }
 
@@ -982,7 +988,7 @@ namespace ColorVision.ImageEditor
                         depth = 32; // 16 bits per channel
                         break;
                     default:
-                        MessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedPixelFormat, writeableBitmap.Format));
+                        WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedPixelFormat, writeableBitmap.Format));
                         throw new NotSupportedException("The pixel format is not supported.");
                 }
 
@@ -1188,7 +1194,7 @@ namespace ColorVision.ImageEditor
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (sender is TextBox textBox && textBox.AcceptsReturn)
+            if (sender is WpfTextBox textBox && textBox.AcceptsReturn)
             {
                 return;
             }

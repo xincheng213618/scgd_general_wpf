@@ -1,8 +1,8 @@
 using ColorVision.Common.Utilities;
-using ColorVision.Core;
+using ColorVision.ImageEditor.Algorithms;
 using log4net;
+using System;
 using System.Windows;
-using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms
 {
@@ -12,21 +12,25 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     public partial class MedianBlurWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MedianBlurWindow));
-        private readonly ImageProcessingContext _image;
+        private readonly string _debounceKey = $"{nameof(MedianBlurWindow)}_{Guid.NewGuid():N}";
+        private ImageAlgorithmPreviewSession? _preview;
 
         public MedianBlurWindow(ImageProcessingContext image)
         {
             InitializeComponent();
-            _image = image;
+            _preview = ImageAlgorithmPreviewSession.Start(image);
+            ApplyMedianBlur((int)KernelSizeSlider.Value);
         }
-        public ImageSource FunctionImage { get; set; }
-
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (!IsInitialized || _preview == null)
+            {
+                return;
+            }
+
             if (KernelSizeSlider != null)
             {
-                // Ensure kernel size is odd
                 int kernelSize = (int)KernelSizeSlider.Value;
                 if (kernelSize % 2 == 0)
                 {
@@ -35,53 +39,39 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     return;
                 }
 
-                DebounceTimer.AddOrResetTimer("ApplyMedianBlur", 50, () => ApplyMedianBlur(kernelSize));
+                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => ApplyMedianBlur(kernelSize));
             }
         }
 
         private void ApplyMedianBlur(int kernelSize)
         {
-            if (_image.HImageCache == null) return;
-
-            int ret = OpenCVMediaHelper.M_ApplyMedianBlur((HImage)_image.HImageCache, out HImage hImageProcessed, kernelSize);
-
-            if (ret == 0)
+            try
             {
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                    {
-                        double DpiX = _image.Config.GetProperties<double>("DpiX");
-                        double DpiY = _image.Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
-                        hImageProcessed.Dispose();
-
-                        FunctionImage = image;
-                    }
-                    _image.ImageShow.Source = FunctionImage;
-                });
+                _preview?.Apply(mat => OpenCvImageAlgorithms.MedianBlur(mat, kernelSize));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                MessageBox.Show(ex.Message);
             }
         }
 
         private void Apply_Click(object sender, RoutedEventArgs e)
         {
-            // 应用更改到原始图像
-            if (_image.FunctionImage is System.Windows.Media.Imaging.WriteableBitmap writeableBitmap)
-            {
-                _image.ViewBitmapSource = writeableBitmap;
-                _image.ImageShow.Source = _image.ViewBitmapSource;
-                _image.HImageCache = null;
-                _image.FunctionImage = null;
-            }
+            _preview?.Commit();
             Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            // 取消更改，恢复原始图像
-            _image.ImageShow.Source = _image.ViewBitmapSource;
-            FunctionImage = null;
+            _preview?.Cancel();
             Close();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _preview?.CancelIfActive();
+            base.OnClosed(e);
         }
     }
 }

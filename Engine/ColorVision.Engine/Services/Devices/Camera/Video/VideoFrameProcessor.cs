@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 int ret;
                 if (pseudoColor.HasValidAutoRange)
                 {
-                    ret = OpenCVMediaHelper.M_PseudoColorAutoRange(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel, pseudoColor.DataMin, pseudoColor.DataMax);
+                    ret = OpenCVMediaHelper.ApplyPseudoColorAutoRange(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel, pseudoColor.DataMin, pseudoColor.DataMax);
                     if (ret == 0)
                     {
                         pseudoImage = processedImage;
@@ -153,7 +153,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 }
                 else
                 {
-                    ret = OpenCVMediaHelper.M_PseudoColor(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel);
+                    ret = OpenCVMediaHelper.ApplyPseudoColor(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel);
                     if (ret == 0)
                     {
                         pseudoImage = processedImage;
