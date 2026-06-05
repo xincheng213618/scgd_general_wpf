@@ -18,7 +18,7 @@ namespace ColorVision.Solution.MultiImageViewer
         {
             var MenuItemMetadatas = new List<MenuItemMetadata>();
             string filepath = context.Config.FilePath;
-            if (string.IsNullOrWhiteSpace(filepath))
+            if (File.Exists(filepath))
             {
                 string DirectoryPath = Directory.GetParent(filepath)?.FullName;
                 if (DirectoryPath != null)
