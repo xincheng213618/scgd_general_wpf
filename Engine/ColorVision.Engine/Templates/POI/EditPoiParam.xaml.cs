@@ -1687,7 +1687,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                if ( ImageView.HImageCache != null)
+                if (ImageView.HImageCache != null)
                 {
                     string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
                     Task.Run(() =>
@@ -1760,14 +1760,14 @@ namespace ColorVision.Engine.Templates.POI
 
         private void Button_Click_41(object sender, RoutedEventArgs e)
         {
-            PoiEditRectCache.Instance.RightTopX = PoiParam.PoiConfig.Polygon1X;
-            PoiEditRectCache.Instance.RightTopY = PoiParam.PoiConfig.Polygon1Y;
-            PoiEditRectCache.Instance.LeftTopX = PoiParam.PoiConfig.Polygon2X;
-            PoiEditRectCache.Instance.LeftTopY = PoiParam.PoiConfig.Polygon2Y;
-            PoiEditRectCache.Instance.LeftBottomX = PoiParam.PoiConfig.Polygon3X;
-            PoiEditRectCache.Instance.LeftBottomY = PoiParam.PoiConfig.Polygon3Y;
-            PoiEditRectCache.Instance.RightBottomX = PoiParam.PoiConfig.Polygon4X;
-            PoiEditRectCache.Instance.RightBottomY = PoiParam.PoiConfig.Polygon4Y;
+            PoiEditRectCache.Instance.LeftTopX = PoiConfig.Polygon1X;
+            PoiEditRectCache.Instance.LeftTopY = PoiConfig.Polygon1Y;
+            PoiEditRectCache.Instance.RightTopX = PoiConfig.Polygon2X;
+            PoiEditRectCache.Instance.RightTopY = PoiConfig.Polygon2Y;
+            PoiEditRectCache.Instance.RightBottomX = PoiConfig.Polygon3X;
+            PoiEditRectCache.Instance.RightBottomY = PoiConfig.Polygon3Y;
+            PoiEditRectCache.Instance.LeftBottomX = PoiConfig.Polygon4X;
+            PoiEditRectCache.Instance.LeftBottomY = PoiConfig.Polygon4Y;
         }
 
         private void ListView1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
