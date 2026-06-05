@@ -11,37 +11,38 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoLevelsAdjustEditorTool));
 
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _image;
 
-        public AutoLevelsAdjustEditorTool(ImageView imageView)
+        public AutoLevelsAdjustEditorTool(ImageProcessingContext image)
         {
-            _imageView = imageView;
+            _image = image;
         }
 
         public void Execute()
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (_imageView.HImageCache == null) return;
+                if (_image.HImageCache == null) return;
 
                 log.Info("AutoLevelsAdjust - 开始执行");
                 
-                int ret = OpenCVMediaHelper.M_AutoLevelsAdjust((HImage)_imageView.HImageCache, out HImage hImageProcessed);
+                int ret = OpenCVMediaHelper.M_AutoLevelsAdjust((HImage)_image.HImageCache, out HImage hImageProcessed);
                 if (ret == 0)
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(_imageView.FunctionImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(_image.FunctionImage, hImageProcessed))
                     {
-                        double DpiX = _imageView.Config.GetProperties<double>("DpiX");
-                        double DpiY = _imageView.Config.GetProperties<double>("DpiY");
+                        double DpiX = _image.Config.GetProperties<double>("DpiX");
+                        double DpiY = _image.Config.GetProperties<double>("DpiY");
                         var image = hImageProcessed.ToWriteableBitmap();
 
                         hImageProcessed.Dispose();
-                        _imageView.FunctionImage = image;
+                        _image.FunctionImage = image;
                     }
-                    _imageView.ImageShow.Source = _imageView.FunctionImage;
+                    _image.ImageShow.Source = _image.FunctionImage;
                     log.Info("AutoLevelsAdjust 完成");
                 }
             });
         }
     }
 }
+

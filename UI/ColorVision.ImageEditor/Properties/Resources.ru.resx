@@ -436,9 +436,6 @@
   <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
     <value>Среда выполнения открывателя</value>
   </data>
-  <data name="ImageView_Scope_Legacy" xml:space="preserve">
-    <value>Устаревшие</value>
-  </data>
   <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
     <value>Определяется текущим файлом и содержимым пикселей; полностью обновляется при смене изображения.</value>
   </data>
@@ -447,9 +444,6 @@
   </data>
   <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
     <value>Информация среды выполнения, значимая только в определённых рабочих процессах открывателя.</value>
-  </data>
-  <data name="ImageView_ScopeDesc_Legacy" xml:space="preserve">
-    <value>Устаревшие ключи, ещё не перенесённые в явные области; рекомендуется консолидация.</value>
   </data>
   <data name="Cie_Title" xml:space="preserve">
     <value>Диаграмма цветности CIE</value>
@@ -593,7 +587,7 @@
     <value>Current Image Context</value>
   </data>
   <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
-    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, loader runtime state, and legacy keys pending migration.</value>
+    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, and loader runtime state.</value>
   </data>
   <data name="Settings_DefaultImageScaling" xml:space="preserve">
     <value>Default Image Scaling</value>

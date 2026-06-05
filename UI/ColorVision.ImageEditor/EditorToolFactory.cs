@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -23,9 +24,13 @@ namespace ColorVision.ImageEditor
     {
         private static readonly Type[] SupportedContextTypes =
         {
-            typeof(DrawEditorContext),
-            typeof(RealtimeEditorContext),
             typeof(EditorContext),
+            typeof(DrawEditorContext),
+            typeof(ImageProcessingContext),
+            typeof(DrawCanvas),
+            typeof(TextEditingContext),
+            typeof(RealtimeEditorContext),
+            typeof(ImageViewConfig),
         };
 
         private readonly ImageView _imageView;
@@ -71,7 +76,7 @@ namespace ColorVision.ImageEditor
                 {
                     if (typeof(IDVContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
                     {
-                        if (Activator.CreateInstance(type) is IDVContextMenu instance)
+                        if (CreateContextBoundOrDefaultInstance(type, context) is IDVContextMenu instance)
                         {
                             ContextMenuProviders.Add(instance);
                         }
@@ -274,28 +279,78 @@ namespace ColorVision.ImageEditor
 
         private static bool CanCreateGlobalEditorTool(Type type)
         {
-            return SupportedContextTypes.Any(contextType => type.GetConstructor(new[] { contextType }) != null);
+            return SelectContextConstructor(type) != null;
         }
 
         private static object? CreateContextBoundInstance(Type type, EditorContext context)
         {
-            foreach (Type contextType in SupportedContextTypes)
-            {
-                if (type.GetConstructor(new[] { contextType }) is not { } ctor)
+            ConstructorInfo? ctor = SelectContextConstructor(type);
+            return ctor == null
+                ? null
+                : ctor.Invoke(ctor.GetParameters().Select(parameter => ResolveContextArgument(parameter.ParameterType, context)).ToArray());
+        }
+
+        private static object? CreateContextBoundOrDefaultInstance(Type type, EditorContext context)
+        {
+            return CreateContextBoundInstance(type, context)
+                ?? (type.GetConstructor(Type.EmptyTypes) != null ? Activator.CreateInstance(type) : null);
+        }
+
+        private static ConstructorInfo? SelectContextConstructor(Type type)
+        {
+            return type.GetConstructors()
+                .Where(ctor =>
                 {
-                    continue;
-                }
+                    ParameterInfo[] parameters = ctor.GetParameters();
+                    return parameters.Length > 0 && parameters.All(parameter => CanResolveContextType(parameter.ParameterType));
+                })
+                .OrderByDescending(ctor => ctor.GetParameters().Length)
+                .FirstOrDefault();
+        }
 
-                object argument = contextType == typeof(DrawEditorContext)
-                    ? context.DrawEditorContext
-                    : contextType == typeof(RealtimeEditorContext)
-                        ? context.RealtimeEditorContext
-                        : context;
+        private static bool CanResolveContextType(Type contextType)
+        {
+            return SupportedContextTypes.Contains(contextType);
+        }
 
-                return ctor.Invoke(new[] { argument });
+        private static object ResolveContextArgument(Type contextType, EditorContext context)
+        {
+            if (contextType == typeof(DrawEditorContext))
+            {
+                return context.DrawEditorContext;
             }
 
-            return null;
+            if (contextType == typeof(EditorContext))
+            {
+                return context;
+            }
+
+            if (contextType == typeof(ImageProcessingContext))
+            {
+                return context.ProcessingContext;
+            }
+
+            if (contextType == typeof(DrawCanvas))
+            {
+                return context.DrawEditorContext.DrawCanvas;
+            }
+
+            if (contextType == typeof(TextEditingContext))
+            {
+                return context.TextEditingContext;
+            }
+
+            if (contextType == typeof(RealtimeEditorContext))
+            {
+                return context.RealtimeEditorContext;
+            }
+
+            if (contextType == typeof(ImageViewConfig))
+            {
+                return context.Config;
+            }
+
+            throw new InvalidOperationException($"Unsupported context type: {contextType.FullName}");
         }
 
         private static object? CreateEditorTool(Type type, EditorContext context)

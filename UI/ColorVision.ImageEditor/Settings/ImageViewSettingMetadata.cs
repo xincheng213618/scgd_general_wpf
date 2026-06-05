@@ -136,7 +136,7 @@ namespace ColorVision.ImageEditor.Settings
             DefaultImageViewDisplayConfig.SaveCurrent();
             DefaultTextStyleConfig.SaveCurrent();
             DefaultRealtimeCameraConfig.SaveCurrent();
-            ImageCalibrationService.SaveCurrent(imageView.EditorContext);
+            ImageCalibrationService.SaveCurrent(imageView.Config);
         }
     }
 

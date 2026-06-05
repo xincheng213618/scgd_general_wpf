@@ -1850,7 +1850,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (provider.ContextType.IsAssignableFrom(type))
                 {
-                    var items = provider.GetContextMenuItems(ImageView.EditorContext, DrawingVisualLists[ListView1.SelectedIndex]);
+                    var items = provider.GetContextMenuItems(DrawingVisualLists[ListView1.SelectedIndex]);
                     foreach (var item in items)
                         ListView1.ContextMenu.Items.Add(item);
                 }

@@ -6,9 +6,9 @@ namespace ColorVision.ImageEditor.EditorTools.WindowTools
 {
     public class FullScreenEditorTool : IEditorTool
     {
-        public FullScreenEditorTool(EditorContext EditorContext)
+        public FullScreenEditorTool(EditorContext context)
         {
-            ImageFullScreenMode = new ImageFullScreenMode(EditorContext.ImageView);
+            ImageFullScreenMode = new ImageFullScreenMode(context.ImageView);
             Command = new RelayCommand(_ =>
             {
                 ImageFullScreenMode.ToggleFullScreen();

@@ -293,7 +293,7 @@
     <value>Current Image Context</value>
   </data>
   <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
-    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, loader runtime state, and legacy keys pending migration.</value>
+    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, and loader runtime state.</value>
   </data>
   <data name="Settings_DefaultImageScaling" xml:space="preserve">
     <value>Default Image Scaling</value>
@@ -412,9 +412,6 @@
   <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
     <value>Opener Runtime</value>
   </data>
-  <data name="ImageView_Scope_Legacy" xml:space="preserve">
-    <value>Legacy</value>
-  </data>
   <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
     <value>Determined by the current file and pixel content; fully refreshed when switching images.</value>
   </data>
@@ -423,9 +420,6 @@
   </data>
   <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
     <value>Runtime information meaningful only in specific opener workflows.</value>
-  </data>
-  <data name="ImageView_ScopeDesc_Legacy" xml:space="preserve">
-    <value>Legacy keys not yet migrated to explicit scopes; consolidation recommended.</value>
   </data>
   <data name="Cie_Title" xml:space="preserve">
     <value>CIE Chromaticity Diagram</value>

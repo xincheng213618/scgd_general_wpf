@@ -8,9 +8,16 @@ namespace ColorVision.ImageEditor.Draw.Line
 {
     public class DVLineDVContextMenu : IDVContextMenu
     {
+        private readonly DrawCanvas _drawCanvas;
+
+        public DVLineDVContextMenu(DrawCanvas drawCanvas)
+        {
+            _drawCanvas = drawCanvas;
+        }
+
         public Type ContextType => typeof(DVLine);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DVLine dVLine)
@@ -25,7 +32,7 @@ namespace ColorVision.ImageEditor.Draw.Line
                     }
 
                     // 检查图像源是否为 WriteableBitmap
-                    if (context.DrawCanvas.Source is WriteableBitmap writeableBitmap)
+                    if (_drawCanvas.Source is WriteableBitmap writeableBitmap)
                     {
                         // 提取截面数据（支持多通道）
                         ProfileData profileData = ProfileDataExtractor.ExtractAlongPath(dVLine.Points, writeableBitmap);

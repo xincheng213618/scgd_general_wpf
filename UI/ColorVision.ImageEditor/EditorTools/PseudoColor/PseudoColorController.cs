@@ -21,11 +21,11 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         private static readonly ILog log = LogManager.GetLogger(typeof(PseudoColorController));
 
-        private readonly ImageView _owner;
+        private readonly ImageProcessingContext _owner;
         private readonly PseudoColorToolState _state;
         private int _renderVersion;
 
-        public PseudoColorController(ImageView owner, PseudoColorToolState state)
+        public PseudoColorController(ImageProcessingContext owner, PseudoColorToolState state)
         {
             _owner = owner;
             _state = state;

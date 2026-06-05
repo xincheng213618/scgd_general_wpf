@@ -20,7 +20,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             _state = new PseudoColorToolState();
             _state.ApplyDefaults(PseudoColorDefaultConfig.Current);
 
-            _controller = new PseudoColorController(editorContext.ImageView, _state);
+            _controller = new PseudoColorController(editorContext.ProcessingContext, _state);
             _editorContext.RegisterService<IPseudoColorService>(_controller);
             _controller.RefreshPreview();
         }

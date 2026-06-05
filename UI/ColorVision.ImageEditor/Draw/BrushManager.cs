@@ -340,7 +340,7 @@ namespace ColorVision.ImageEditor.Draw
             Render();
         }
 
-        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems()
         {
             return new CompactInspectorItem[]
             {

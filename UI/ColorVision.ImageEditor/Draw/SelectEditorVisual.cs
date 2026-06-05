@@ -16,7 +16,7 @@ namespace ColorVision.ImageEditor.Draw
     {
         public Type ContextType => typeof(SelectEditorVisual);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is SelectEditorVisual selectEditorVisual)
@@ -42,6 +42,8 @@ namespace ColorVision.ImageEditor.Draw
         private DrawingVisual SelectRect = new DrawingVisual();
 
         public DrawEditorContext EditorContext { get; set; }
+
+        public TextEditingContext? TextEditingContext { get; set; }
 
         public SelectEditorVisual(DrawEditorContext editorContext)
         {
@@ -595,12 +597,17 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         private void HandleDoubleClick(Point point)
         {
+            if (TextEditingContext == null)
+            {
+                return;
+            }
+
             // 检查当前选中的视觉元素
             foreach (var visual in SelectVisuals)
             {
                 if (visual is IEditableDrawingVisual editableVisual && visual.GetRect().Contains(point))
                 {
-                    editableVisual.HandleDoubleClick(EditorContext, point);
+                    editableVisual.HandleDoubleClick(TextEditingContext, point);
                     return;
                 }
             }
@@ -610,7 +617,7 @@ namespace ColorVision.ImageEditor.Draw
             if (clickedVisual is IEditableDrawingVisual editable && clickedVisual is ISelectVisual selectVisual)
             {
                 SetRender(selectVisual);
-                editable.HandleDoubleClick(EditorContext, point);
+                editable.HandleDoubleClick(TextEditingContext, point);
             }
         }
         private void DrawCanvas_MouseMove(object sender, MouseEventArgs e)

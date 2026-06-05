@@ -15,7 +15,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
         public ICommand? Command { get; set; } = new RelayCommand(a =>
         {
-            EditorContext.ImageView?.ExportAnnotations();
-        }, a => EditorContext.ImageView != null);
+            EditorContext.ExportAnnotations();
+        }, a => true);
     }
 }

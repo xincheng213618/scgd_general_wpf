@@ -1582,15 +1582,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 遗留未分类 的本地化字符串。
-        /// </summary>
-        public static string ImageView_Scope_Legacy {
-            get {
-                return ResourceManager.GetString("ImageView_Scope_Legacy", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 打开器运行态 的本地化字符串。
         /// </summary>
         public static string ImageView_Scope_OpenerRuntime {
@@ -1614,15 +1605,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string ImageView_ScopeDesc_ImageMetadata {
             get {
                 return ResourceManager.GetString("ImageView_ScopeDesc_ImageMetadata", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 尚未迁移到显式作用域的旧键，建议继续收口。 的本地化字符串。
-        /// </summary>
-        public static string ImageView_ScopeDesc_Legacy {
-            get {
-                return ResourceManager.GetString("ImageView_ScopeDesc_Legacy", resourceCulture);
             }
         }
         
@@ -2068,7 +2050,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 按作用域只读展示当前 ImageView 的属性字典，帮助区分图像元数据、当前视窗状态、打开器运行态和仍待迁移的旧键。 的本地化字符串。
+        ///   查找类似 按作用域只读展示当前 ImageView 的属性字典，帮助区分图像元数据、当前视窗状态和打开器运行态。 的本地化字符串。
         /// </summary>
         public static string Settings_CurrentImageContextDesc {
             get {

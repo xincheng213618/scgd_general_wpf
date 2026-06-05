@@ -15,16 +15,16 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousArea
 {
-    public record FindLuminousArea(EditorContext Context)
+    public record FindLuminousArea(ImageProcessingContext ImageContext, DrawEditorContext DrawContext)
     {
         public void Execute(FindLuminousAreaCorner findLuminousAreaCorner, RoiRect roiRect)
         {
-            if (Context.ImageView.HImageCache == null) return;
+            if (ImageContext.HImageCache == null) return;
 
             string FindLuminousAreajson = findLuminousAreaCorner.ToJsonN();
             Task.Run(() =>
             {
-                int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)Context.ImageView.HImageCache, roiRect, FindLuminousAreajson, out IntPtr resultPtr);
+                int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageContext.HImageCache, roiRect, FindLuminousAreajson, out IntPtr resultPtr);
                 if (length > 0)
                 {
                     string result = Marshal.PtrToStringAnsi(resultPtr);
@@ -46,14 +46,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                                 List<Point> result1 = Helpers.SortPolyPoints(pts_src);
 
                                 DVPolygon Polygon = new DVPolygon() { IsComple = true };
-                                Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Context.Zoombox.ContentMatrix.M11);
+                                Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
                                 Polygon.Attribute.Brush = Brushes.Transparent;
                                 Polygon.Attribute.Points.Add(result1[0]);
                                 Polygon.Attribute.Points.Add(result1[1]);
                                 Polygon.Attribute.Points.Add(result1[2]);
                                 Polygon.Attribute.Points.Add(result1[3]);
                                 Polygon.Render();
-                                Context.DrawCanvas.AddVisualCommand(Polygon);
+                                DrawContext.DrawCanvas.AddVisualCommand(Polygon);
                             }
                         }
                         else
@@ -68,14 +68,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                             List<Point> result1 = Helpers.SortPolyPoints(pts_src);
 
                             DVPolygon Polygon = new DVPolygon() { IsComple = true };
-                            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Context.Zoombox.ContentMatrix.M11);
+                            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
                             Polygon.Attribute.Brush = Brushes.Transparent;
                             Polygon.Attribute.Points.Add(result1[0]);
                             Polygon.Attribute.Points.Add(result1[1]);
                             Polygon.Attribute.Points.Add(result1[2]);
                             Polygon.Attribute.Points.Add(result1[3]);
                             Polygon.Render();
-                            Context.DrawCanvas.AddVisualCommand(Polygon);
+                            DrawContext.DrawCanvas.AddVisualCommand(Polygon);
                         }
 
                     });
@@ -89,16 +89,27 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
     }
     public class DVCMFindLuminousArea : IDVContextMenu
     {
+        private readonly ImageProcessingContext _imageContext;
+        private readonly DrawEditorContext _drawContext;
+        private readonly ImageViewConfig _config;
+
+        public DVCMFindLuminousArea(ImageProcessingContext imageContext, DrawEditorContext drawContext, ImageViewConfig config)
+        {
+            _imageContext = imageContext;
+            _drawContext = drawContext;
+            _config = config;
+        }
+
         public Type ContextType => typeof(IRectangle);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            if (context.ImageView.HImageCache is not HImage hImage) return menuItems;
-            double DpiX = context.Config.GetProperties<double>("DpiX");
-            double DpiY = context.Config.GetProperties<double>("DpiY");
+            if (_imageContext.HImageCache is not HImage hImage) return menuItems;
+            double DpiX = _config.GetProperties<double>("DpiX");
+            double DpiY = _config.GetProperties<double>("DpiY");
 
             double DpiSacleX = DpiX / 96.0;
             double DpiSacleY = DpiY / 96.0; // 每毫米多少像素
@@ -144,7 +155,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                 var PropertyEditorWindow = new PropertyEditorWindow(findLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 PropertyEditorWindow.Submited += (_, _) =>
                 {
-                    new FindLuminousArea(context).Execute(findLuminousAreaCorner, new RoiRect(roiX, roiY, roiW,roiH));
+                    new FindLuminousArea(_imageContext, _drawContext).Execute(findLuminousAreaCorner, new RoiRect(roiX, roiY, roiW,roiH));
                 };
                 PropertyEditorWindow.ShowDialog();
             };
@@ -153,7 +164,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
         }
     }
 
-    public record class CMFindLuminousArea(EditorContext Context) : IIEditorToolContextMenu
+    public record class CMFindLuminousArea(ImageProcessingContext ImageContext, DrawEditorContext DrawContext) : IIEditorToolContextMenu
     {
         public List<MenuItemMetadata> GetContextMenuItems()
         {
@@ -165,7 +176,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                 var PropertyEditorWindow = new PropertyEditorWindow(findLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 PropertyEditorWindow.Submited += (_, _) =>
                 {
-                    new FindLuminousArea(Context).Execute(findLuminousAreaCorner, new RoiRect());
+                    new FindLuminousArea(ImageContext, DrawContext).Execute(findLuminousAreaCorner, new RoiRect());
                 };
                 PropertyEditorWindow.ShowDialog();
             });

@@ -53,7 +53,7 @@ namespace ColorVision.ImageEditor.Draw
 
         protected virtual bool IgnoreWhenCtrlPressed => false;
 
-        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context) => BuildCompactInspectorItems();
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems() => BuildCompactInspectorItems();
 
         protected virtual IEnumerable<CompactInspectorItem> BuildCompactInspectorItems() => Array.Empty<CompactInspectorItem>();
 

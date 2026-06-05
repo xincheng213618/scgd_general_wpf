@@ -436,9 +436,6 @@
   <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
     <value>開啟器執行期</value>
   </data>
-  <data name="ImageView_Scope_Legacy" xml:space="preserve">
-    <value>舊版未分類</value>
-  </data>
   <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
     <value>由目前檔案和像素內容決定，切換影像後會整體重新整理。</value>
   </data>
@@ -447,9 +444,6 @@
   </data>
   <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
     <value>只在特定開啟器工作流程裡有意義的執行期資訊。</value>
-  </data>
-  <data name="ImageView_ScopeDesc_Legacy" xml:space="preserve">
-    <value>尚未遷移到明確作用域的舊鍵，建議繼續收口。</value>
   </data>
   <data name="Cie_Title" xml:space="preserve">
     <value>CIE 色度圖</value>
@@ -593,7 +587,7 @@
     <value>Current Image Context</value>
   </data>
   <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
-    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, loader runtime state, and legacy keys pending migration.</value>
+    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, and loader runtime state.</value>
   </data>
   <data name="Settings_DefaultImageScaling" xml:space="preserve">
     <value>Default Image Scaling</value>

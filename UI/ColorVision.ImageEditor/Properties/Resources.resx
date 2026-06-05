@@ -293,7 +293,7 @@
     <value>当前图像上下文</value>
   </data>
   <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
-    <value>按作用域只读展示当前 ImageView 的属性字典，帮助区分图像元数据、当前视窗状态、打开器运行态和仍待迁移的旧键。</value>
+    <value>按作用域只读展示当前 ImageView 的属性字典，帮助区分图像元数据、当前视窗状态和打开器运行态。</value>
   </data>
   <data name="Settings_DefaultImageScaling" xml:space="preserve">
     <value>默认图像缩放</value>
@@ -871,9 +871,6 @@
   <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
     <value>打开器运行态</value>
   </data>
-  <data name="ImageView_Scope_Legacy" xml:space="preserve">
-    <value>遗留未分类</value>
-  </data>
   <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
     <value>由当前文件和像素内容决定，切换图像后会整体刷新。</value>
   </data>
@@ -882,9 +879,6 @@
   </data>
   <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
     <value>只在特定打开器工作流里有意义的运行态信息。</value>
-  </data>
-  <data name="ImageView_ScopeDesc_Legacy" xml:space="preserve">
-    <value>尚未迁移到显式作用域的旧键，建议继续收口。</value>
   </data>
   <data name="Cie_Title" xml:space="preserve">
     <value>CIE 色度图</value>

@@ -18,7 +18,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                EditorContext.ImageView?.OpenImage(openFileDialog.FileName);
+                EditorContext.OpenImage(openFileDialog.FileName);
             }
         }, a => true);
     }

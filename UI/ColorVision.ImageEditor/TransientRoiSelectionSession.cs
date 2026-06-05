@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,7 +75,7 @@ namespace ColorVision.ImageEditor
     /// </summary>
     internal class TransientRoiSelectionSession
     {
-        private readonly EditorContext _editorContext;
+        private readonly DrawEditorContext _drawContext;
         private readonly DrawCanvas _drawCanvas;
         private readonly Zoombox _zoombox;
         private readonly TaskCompletionSource<SelectResult> _tcs;
@@ -95,11 +96,11 @@ namespace ColorVision.ImageEditor
         /// </summary>
         private bool IsMultiClickMode => _shapeType == SelectShapeType.Polygon || _shapeType == SelectShapeType.Quadrilateral;
 
-        public TransientRoiSelectionSession(EditorContext editorContext, SelectShapeType shapeType)
+        public TransientRoiSelectionSession(DrawEditorContext drawContext, SelectShapeType shapeType)
         {
-            _editorContext = editorContext;
-            _drawCanvas = editorContext.DrawCanvas;
-            _zoombox = editorContext.Zoombox;
+            _drawContext = drawContext;
+            _drawCanvas = drawContext.DrawCanvas;
+            _zoombox = drawContext.Zoombox;
             _shapeType = shapeType;
             _tcs = new TaskCompletionSource<SelectResult>();
         }
@@ -108,13 +109,13 @@ namespace ColorVision.ImageEditor
         {
             _previousCursor = _zoombox.Cursor;
             _previousActivateOn = _zoombox.ActivateOn;
-            _previousEditMode = _editorContext.IsImageEditMode;
+            _previousEditMode = _drawContext.IsImageEditMode;
 
             // Suppress edit mode so SelectEditorVisual doesn't interfere without
             // running the full ImageViewModel mode toggle side effects.
             if (_previousEditMode)
             {
-                _editorContext.IsImageEditMode = false;
+                _drawContext.IsImageEditMode = false;
             }
             // Ensure zoombox is in draw-friendly mode
             _zoombox.ActivateOn = ModifierKeys.Control;
@@ -402,7 +403,7 @@ namespace ColorVision.ImageEditor
             _zoombox.ActivateOn = _previousActivateOn;
             if (_previousEditMode)
             {
-                _editorContext.IsImageEditMode = true;
+                _drawContext.IsImageEditMode = true;
             }
         }
     }

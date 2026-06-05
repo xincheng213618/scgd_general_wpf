@@ -14,16 +14,16 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SFREditorTool));
 
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _image;
 
-        public SFREditorTool(ImageView imageView)
+        public SFREditorTool(ImageProcessingContext image)
         {
-            _imageView = imageView;
+            _image = image;
         }
 
         public void Execute()
         {
-            if (_imageView.HImageCache is not HImage hImage) return;
+            if (_image.HImageCache is not HImage hImage) return;
 
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
@@ -44,7 +44,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                     double mtf10_l, mtf50_l, mtf10c_l, mtf50c_l;
 
                     int ret = OpenCVMediaHelper.M_CalSFRMultiChannel(
-                        (HImage)_imageView.HImageCache, 1.0,
+                        (HImage)_image.HImageCache, 1.0,
                         new RoiRect(0, 0, hImage.cols, hImage.rows),
                         freq, sfr_r, sfr_g, sfr_b, sfr_l,
                         maxLen,
@@ -115,17 +115,26 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
     /// </summary>
     public class SFRIDVContextMenu : IDVContextMenu
     {
+        private readonly ImageProcessingContext _imageContext;
+        private readonly ImageViewConfig _config;
+
+        public SFRIDVContextMenu(ImageProcessingContext imageContext, ImageViewConfig config)
+        {
+            _imageContext = imageContext;
+            _config = config;
+        }
+
         public Type ContextType => typeof(IRectangle);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            if (context.ImageView.HImageCache is not HImage hImage) return menuItems;
+            if (_imageContext.HImageCache is not HImage hImage) return menuItems;
 
-            double DpiX = context.Config.GetProperties<double>("DpiX");
-            double DpiY = context.Config.GetProperties<double>("DpiY");
+            double DpiX = _config.GetProperties<double>("DpiX");
+            double DpiY = _config.GetProperties<double>("DpiY");
 
             double DpiSacleX  = DpiX / 96.0;
             double DpiSacleY = DpiY / 96.0; // 每毫米多少像素
@@ -181,12 +190,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 double mtf10_b, mtf50_b, mtf10c_b, mtf50c_b;
                 double mtf10_l, mtf50_l, mtf10c_l, mtf50c_l;
 
-                if (context.ImageView.HImageCache == null) return;
+                if (_imageContext.HImageCache == null) return;
                 
                 Task.Run(() =>
                 {
                     int ret = OpenCVMediaHelper.M_CalSFRMultiChannel(
-                        (HImage)context.ImageView.HImageCache, 1.0,
+                        (HImage)_imageContext.HImageCache, 1.0,
                         new RoiRect(roiX, roiY, roiW, roiH),
                         freq, sfr_r, sfr_g, sfr_b, sfr_l,
                         maxLen,
@@ -253,3 +262,4 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         }
     }
 }
+

@@ -93,7 +93,7 @@ namespace ColorVision.ImageEditor.Draw.Special
     {
         public Type ContextType => typeof(ReferenceLine);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is ReferenceLine referenceLine)

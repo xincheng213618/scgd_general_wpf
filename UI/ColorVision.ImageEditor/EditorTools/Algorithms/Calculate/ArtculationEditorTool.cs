@@ -24,14 +24,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
     /// </summary>
     public class DVRectangleDVContextMenu : IDVContextMenu
     {
+        private readonly ImageProcessingContext _imageContext;
+
+        public DVRectangleDVContextMenu(ImageProcessingContext imageContext)
+        {
+            _imageContext = imageContext;
+        }
+
         public Type ContextType => typeof(IRectangle);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            if (context.ImageView.HImageCache is not HImage hImage) return menuItems;
+            if (_imageContext.HImageCache is not HImage hImage) return menuItems;
 
             // 图像尺寸
             int imgWidth = hImage.cols;
@@ -82,10 +89,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
 
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    if (context.ImageView.HImageCache == null) return;
+                    if (_imageContext.HImageCache == null) return;
                     Task.Run(() =>
                     {
-                        double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)context.ImageView.HImageCache, sharpnessConfig.FocusAlgorithm, new RoiRect(roiX,roiY,roiW,roiH));
+                        double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_imageContext.HImageCache, sharpnessConfig.FocusAlgorithm, new RoiRect(roiX,roiY,roiW,roiH));
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MessageBox.Show(
@@ -110,16 +117,16 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ArtculationEditorTool));
 
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _image;
 
-        public ArtculationEditorTool(ImageView imageView)
+        public ArtculationEditorTool(ImageProcessingContext image)
         {
-            _imageView = imageView;
+            _image = image;
         }
 
         public void Execute()
         {
-            if (_imageView.HImageCache == null) return;
+            if (_image.HImageCache == null) return;
 
             ArtculationConfig sharpnessConfig  = new ArtculationConfig();
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sharpnessConfig)
@@ -134,7 +141,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             {
                 Task.Run(() =>
                 {
-                    double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_imageView.HImageCache, sharpnessConfig.FocusAlgorithm, new RoiRect(0,0, (int)Math.Round(_imageView.Width), (int)Math.Round(_imageView.Height)));
+                    double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_image.HImageCache, sharpnessConfig.FocusAlgorithm, new RoiRect(0,0, (int)Math.Round(_image.Width), (int)Math.Round(_image.Height)));
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show(
@@ -148,3 +155,4 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
         }
     }
 }
+

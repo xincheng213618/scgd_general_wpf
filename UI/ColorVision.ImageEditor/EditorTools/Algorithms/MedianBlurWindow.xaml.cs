@@ -12,12 +12,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     public partial class MedianBlurWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MedianBlurWindow));
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _image;
 
-        public MedianBlurWindow(ImageView imageView)
+        public MedianBlurWindow(ImageProcessingContext image)
         {
             InitializeComponent();
-            _imageView = imageView;
+            _image = image;
         }
         public ImageSource FunctionImage { get; set; }
 
@@ -41,9 +41,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         private void ApplyMedianBlur(int kernelSize)
         {
-            if (_imageView.HImageCache == null) return;
+            if (_image.HImageCache == null) return;
 
-            int ret = OpenCVMediaHelper.M_ApplyMedianBlur((HImage)_imageView.HImageCache, out HImage hImageProcessed, kernelSize);
+            int ret = OpenCVMediaHelper.M_ApplyMedianBlur((HImage)_image.HImageCache, out HImage hImageProcessed, kernelSize);
 
             if (ret == 0)
             {
@@ -51,14 +51,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        double DpiX = _imageView.Config.GetProperties<double>("DpiX");
-                        double DpiY = _imageView.Config.GetProperties<double>("DpiY");
+                        double DpiX = _image.Config.GetProperties<double>("DpiX");
+                        double DpiY = _image.Config.GetProperties<double>("DpiY");
                         var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                         hImageProcessed.Dispose();
 
                         FunctionImage = image;
                     }
-                    _imageView.ImageShow.Source = FunctionImage;
+                    _image.ImageShow.Source = FunctionImage;
                 });
             }
         }
@@ -66,12 +66,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private void Apply_Click(object sender, RoutedEventArgs e)
         {
             // 应用更改到原始图像
-            if (_imageView.FunctionImage is System.Windows.Media.Imaging.WriteableBitmap writeableBitmap)
+            if (_image.FunctionImage is System.Windows.Media.Imaging.WriteableBitmap writeableBitmap)
             {
-                _imageView.ViewBitmapSource = writeableBitmap;
-                _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-                _imageView.HImageCache = null;
-                _imageView.FunctionImage = null;
+                _image.ViewBitmapSource = writeableBitmap;
+                _image.ImageShow.Source = _image.ViewBitmapSource;
+                _image.HImageCache = null;
+                _image.FunctionImage = null;
             }
             Close();
         }
@@ -79,9 +79,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             // 取消更改，恢复原始图像
-            _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
+            _image.ImageShow.Source = _image.ViewBitmapSource;
             FunctionImage = null;
             Close();
         }
     }
 }
+

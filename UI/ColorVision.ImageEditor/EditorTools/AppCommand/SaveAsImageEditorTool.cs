@@ -15,7 +15,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
         public ICommand? Command { get; set; } = new RelayCommand(a =>
         {
-            EditorContext.ImageView.SaveAs();
+            EditorContext.SaveAs();
         }, a => true);
     }
 
