@@ -10,6 +10,7 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
@@ -90,6 +91,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; OnPropertyChanged(); } }
         private double _SaturationB = -1;
+
+        public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
+        private DisplayShaderFilterState _DisplayShaderFilter = new DisplayShaderFilterState();
 
         [JsonIgnore]
         public bool IsLocalVideoOpen { get => _IsLocalVideoOpen; set { _IsLocalVideoOpen = value; OnPropertyChanged(); } }

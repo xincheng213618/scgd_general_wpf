@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.EditorTools.Filters;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using SqlSugar;
@@ -46,9 +48,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             this.DataContext = Config;
             ImageView = new ImageView();
+            ImageView.Initialized += ImageView_Initialized;
             ListView = listViewSide;
             SideTextBox = TextBoxside;
             Grid1.Children.Add(ImageView);
+            if (ImageView.IsInitialized)
+            {
+                AttachDisplayFilterConfig();
+            }
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -68,6 +75,33 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ViewResultContext.LeftGridViewColumnVisibilitys = LeftGridViewColumnVisibilitys;
             ViewResultContext.ListView = ListView;
 
+        }
+
+        private void ImageView_Initialized(object sender, EventArgs e)
+        {
+            ImageView.Initialized -= ImageView_Initialized;
+            AttachDisplayFilterConfig();
+        }
+
+        private void AttachDisplayFilterConfig()
+        {
+            if (ImageView.EditorContext.TryGetService<IDisplayShaderFilterService>(out var filterService) && filterService != null)
+            {
+                filterService.AttachPersistence(Config.DisplayShaderFilter, SaveDisplayFilterConfig);
+            }
+        }
+
+        private static void SaveDisplayFilterConfig()
+        {
+            ConfigService.Instance?.Save<ViewAlgorithmConfig>();
+        }
+
+        private void ShaderFilter_Click(object sender, RoutedEventArgs e)
+        {
+            if (ImageView.EditorContext.TryGetService<IDisplayShaderFilterService>(out var filterService) && filterService != null)
+            {
+                filterService.OpenSettingsWindow();
+            }
         }
 
         private void Delete()

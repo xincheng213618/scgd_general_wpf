@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
@@ -23,6 +24,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ClearListCommand = new RelayCommand(a => ViewResults.Clear());
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
+        private DisplayShaderFilterState _DisplayShaderFilter = new DisplayShaderFilterState();
 
         [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowList"), Category("View")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
