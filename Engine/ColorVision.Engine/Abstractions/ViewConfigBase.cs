@@ -3,7 +3,8 @@ using ColorVision.UI;
 using SqlSugar;
 using System.ComponentModel;
 using System.Windows;
-
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine
 {
@@ -30,10 +31,10 @@ namespace ColorVision.Engine
         public bool InsertAtBeginning { get => _InsertAtBeginning; set { _InsertAtBeginning = value; OnPropertyChanged(); } }
         private bool _InsertAtBeginning = true;
 
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "QueryCount"), Category("View")]
+        [LocalizedDisplayName(nameof(Resources.QueryCount)), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "SortByType"), Category("View")]
+        [LocalizedDisplayName(nameof(Resources.SortByType)), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
 

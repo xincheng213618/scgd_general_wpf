@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using MQTTMessageLib.FileServer;
@@ -27,6 +28,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; OnPropertyChanged(); } }
         private double _ExpTimeB = 10;
+
+        public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
+        private DisplayShaderFilterState _DisplayShaderFilter = new DisplayShaderFilterState();
     }
 
     /// <summary>

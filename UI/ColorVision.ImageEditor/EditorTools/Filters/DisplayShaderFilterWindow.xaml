@@ -1,0 +1,291 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Filters.DisplayShaderFilterWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.Filters"
+        Title="Shader Filter"
+        Width="480"
+        Height="680"
+        MinWidth="420"
+        MinHeight="560"
+        Background="{DynamicResource GlobalBackground}">
+    <Window.Resources>
+        <Style x:Key="RowText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
+        <Style x:Key="ValueText" TargetType="TextBlock">
+            <Setter Property="Width" Value="48" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+        <Style x:Key="SliderRow" TargetType="Grid">
+            <Setter Property="Margin" Value="0,4,0,4" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="12">
+        <StackPanel DockPanel.Dock="Bottom"
+                    Margin="0,10,0,0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Width="80"
+                    Margin="0,0,8,0"
+                    Click="Reset_Click"
+                    Content="Reset" />
+            <Button Width="80"
+                    Click="Close_Click"
+                    Content="Close" />
+        </StackPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <CheckBox Margin="0,0,0,10"
+                          Content="Enable display shader filter"
+                          IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                <GroupBox Header="Color channel">
+                    <StackPanel Margin="8">
+                        <DockPanel Margin="0,0,0,6">
+                            <TextBlock Width="96"
+                                       Style="{StaticResource RowText}"
+                                       Text="Mode" />
+                            <ComboBox SelectedValue="{Binding ChannelMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Content="RGB" Tag="{x:Static local:DisplayShaderChannelMode.Rgb}" />
+                                <ComboBoxItem Content="Red channel" Tag="{x:Static local:DisplayShaderChannelMode.Red}" />
+                                <ComboBoxItem Content="Green channel" Tag="{x:Static local:DisplayShaderChannelMode.Green}" />
+                                <ComboBoxItem Content="Blue channel" Tag="{x:Static local:DisplayShaderChannelMode.Blue}" />
+                                <ComboBoxItem Content="Luma" Tag="{x:Static local:DisplayShaderChannelMode.Luma}" />
+                            </ComboBox>
+                        </DockPanel>
+
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="R gain" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="3" Value="{Binding RedGain, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding RedGain, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="G gain" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="3" Value="{Binding GreenGain, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding GreenGain, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="B gain" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="3" Value="{Binding BlueGain, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding BlueGain, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="R offset" />
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding RedOffset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding RedOffset, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="G offset" />
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding GreenOffset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding GreenOffset, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="B offset" />
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding BlueOffset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding BlueOffset, StringFormat=F2}" />
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Margin="0,10,0,0" Header="Tone">
+                    <StackPanel Margin="8">
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Brightness" />
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding Brightness, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Brightness, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Contrast" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="3" Value="{Binding Contrast, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Contrast, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Gamma" />
+                            <Slider Grid.Column="1" Minimum="0.1" Maximum="4" Value="{Binding Gamma, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Gamma, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Saturation" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="3" Value="{Binding Saturation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Saturation, StringFormat=F2}" />
+                        </Grid>
+                        <CheckBox Margin="0,6,0,0"
+                                  Content="Invert"
+                                  IsChecked="{Binding Invert, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Margin="0,10,0,0" Header="Threshold / Highlight">
+                    <StackPanel Margin="8">
+                        <DockPanel Margin="0,0,0,6">
+                            <TextBlock Width="96"
+                                       Style="{StaticResource RowText}"
+                                       Text="Mode" />
+                            <ComboBox SelectedValue="{Binding ThresholdMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Content="Off" Tag="{x:Static local:DisplayShaderThresholdMode.Off}" />
+                                <ComboBoxItem Content="Binary" Tag="{x:Static local:DisplayShaderThresholdMode.Binary}" />
+                                <ComboBoxItem Content="Low transparent" Tag="{x:Static local:DisplayShaderThresholdMode.LowTransparent}" />
+                                <ComboBoxItem Content="Highlight over" Tag="{x:Static local:DisplayShaderThresholdMode.HighlightOver}" />
+                                <ComboBoxItem Content="Highlight under" Tag="{x:Static local:DisplayShaderThresholdMode.HighlightUnder}" />
+                                <ComboBoxItem Content="Highlight range" Tag="{x:Static local:DisplayShaderThresholdMode.HighlightRange}" />
+                                <ComboBoxItem Content="Under + over" Tag="{x:Static local:DisplayShaderThresholdMode.HighlightUnderAndOver}" />
+                            </ComboBox>
+                        </DockPanel>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Threshold" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Threshold, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Threshold, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Low" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding ThresholdLow, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding ThresholdLow, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="High" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding ThresholdHigh, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding ThresholdHigh, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Range low" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding RangeLow, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding RangeLow, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Range high" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding RangeHigh, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding RangeHigh, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Opacity" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding HighlightOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding HighlightOpacity, StringFormat=F2}" />
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Margin="0,10,0,0" Header="Pseudo color">
+                    <StackPanel Margin="8">
+                        <DockPanel Margin="0,0,0,6">
+                            <TextBlock Width="96"
+                                       Style="{StaticResource RowText}"
+                                       Text="Mode" />
+                            <ComboBox SelectedValue="{Binding PseudoColorMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Content="Off" Tag="{x:Static local:DisplayShaderPseudoColorMode.Off}" />
+                                <ComboBoxItem Content="LUT Jet" Tag="{x:Static local:DisplayShaderPseudoColorMode.LutJet}" />
+                            </ComboBox>
+                        </DockPanel>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Min" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding PseudoMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding PseudoMin, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Max" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding PseudoMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding PseudoMax, StringFormat=F2}" />
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

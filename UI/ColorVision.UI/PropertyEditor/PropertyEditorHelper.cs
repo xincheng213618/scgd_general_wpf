@@ -3,6 +3,7 @@ using ColorVision.Themes;
 using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
@@ -24,6 +25,7 @@ namespace ColorVision.UI
 
         // Cache for resources and reflection results
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new();
+        private static readonly ConcurrentDictionary<(ResourceManager ResourceManager, string CultureName, string Key), string> ResourceStringCache = new();
         public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache { get; } = new();
         private static readonly Dictionary<Type, Type> EditorTypeRegistry = new();
         private static readonly List<(Func<Type, bool> Predicate, Type EditorType)> TypePredicateRegistry = new();
@@ -171,37 +173,40 @@ namespace ColorVision.UI
 
         public static ResourceManager? GetResourceManager(object obj, ResourceManager? resourceManager = null)
         {
-            var type = obj.GetType();
-            if (resourceManager == null)
-            {
-                var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
-                {
-                    try
-                    {
-                        string namespaceName = t.Assembly.GetName().Name!;
-                        string resourceClassName = $"{namespaceName}.Properties.Resources";
-                        Type? resourceType = t.Assembly.GetType(resourceClassName);
-                        if (resourceType != null)
-                        {
-                            var rmProp = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                            if (rmProp?.GetValue(null) is ResourceManager rm)
-                                return rm;
-                        }
-                    }
-                    catch
-                    {
-                        // ignore and fallback to null
-                    }
-                    return null;
-                }));
-                return lazyResourceManager.Value;
+            ArgumentNullException.ThrowIfNull(obj);
+            return GetResourceManager(obj.GetType(), resourceManager);
+        }
 
-            }
-            else
+        public static ResourceManager? GetResourceManager(Type type, ResourceManager? resourceManager = null)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            if (resourceManager != null)
             {
                 ResourceManagerCache.AddOrUpdate(type, new Lazy<ResourceManager?>(() => resourceManager), (_, __) => new Lazy<ResourceManager?>(() => resourceManager));
                 return resourceManager;
             }
+
+            var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
+            {
+                try
+                {
+                    string namespaceName = t.Assembly.GetName().Name!;
+                    string resourceClassName = $"{namespaceName}.Properties.Resources";
+                    Type? resourceType = t.Assembly.GetType(resourceClassName);
+                    if (resourceType != null)
+                    {
+                        var rmProp = resourceType.GetProperty(nameof(ResourceManager), BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                        if (rmProp?.GetValue(null) is ResourceManager rm)
+                            return rm;
+                    }
+                }
+                catch
+                {
+                    // ignore and fallback to null
+                }
+                return null;
+            }));
+            return lazyResourceManager.Value;
         }
 
         public static void GenCommand(object obj, UniformGrid uniformGrid)
@@ -254,7 +259,7 @@ namespace ColorVision.UI
                 stackPanel.Children.Add(nameText);
 
                 var descriptionAttr = item.Prop.GetCustomAttribute<DescriptionAttribute>();
-                var description = descriptionAttr?.Description ?? string.Empty;
+                var description = GetLocalizedString(rm, descriptionAttr?.Description);
                 if (!string.IsNullOrWhiteSpace(description))
                 {
                     var assemblyText = new TextBlock
@@ -704,12 +709,33 @@ namespace ColorVision.UI
         {
             var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
             var raw = overrideName ?? displayNameAttr?.DisplayName ?? prop.Name;
-            return rm?.GetString(raw, Thread.CurrentThread.CurrentUICulture) ?? raw;
+            return GetLocalizedString(rm, raw);
+        }
+
+        public static string GetLocalizedString(ResourceManager? rm, string? key)
+        {
+            if (rm == null || string.IsNullOrWhiteSpace(key))
+            {
+                return key ?? string.Empty;
+            }
+
+            var culture = CultureInfo.CurrentUICulture;
+            return ResourceStringCache.GetOrAdd((rm, culture.Name, key), _ =>
+            {
+                try
+                {
+                    return rm.GetString(key, culture) ?? key;
+                }
+                catch
+                {
+                    return key;
+                }
+            });
         }
 
         public static TextBlock CreateLabel(PropertyInfo property, ResourceManager? rm)
         {
-            var desc = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
+            var desc = GetLocalizedString(rm, property.GetCustomAttribute<DescriptionAttribute>()?.Description);
             var tb = new TextBlock
             {
                 Text = GetDisplayName(rm, property),

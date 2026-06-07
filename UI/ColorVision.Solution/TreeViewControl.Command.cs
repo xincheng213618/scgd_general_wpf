@@ -119,23 +119,27 @@ namespace ColorVision.Solution
                     if (File.Exists(sourcePath))
                     {
                         var destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
-                        if (!File.Exists(destPath))
+                        if (_isCutOperation)
                         {
-                            if (_isCutOperation)
+                            if (!PathExists(destPath))
                                 File.Move(sourcePath, destPath);
-                            else
-                                File.Copy(sourcePath, destPath);
+                        }
+                        else
+                        {
+                            File.Copy(sourcePath, GetAvailableCopyPath(destPath, isDirectory: false));
                         }
                     }
                     else if (Directory.Exists(sourcePath))
                     {
                         var destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
-                        if (!Directory.Exists(destPath))
+                        if (_isCutOperation)
                         {
-                            if (_isCutOperation)
+                            if (!PathExists(destPath))
                                 Directory.Move(sourcePath, destPath);
-                            else
-                                CopyDirectory(sourcePath, destPath);
+                        }
+                        else
+                        {
+                            CopyDirectory(sourcePath, GetAvailableCopyPath(destPath, isDirectory: true));
                         }
                     }
                 }
@@ -150,11 +154,46 @@ namespace ColorVision.Solution
 
         private static void CopyDirectory(string sourceDir, string destinationDir)
         {
+            var files = Directory.GetFiles(sourceDir);
+            var directories = Directory.GetDirectories(sourceDir);
+
             Directory.CreateDirectory(destinationDir);
-            foreach (var file in Directory.GetFiles(sourceDir))
+            foreach (var file in files)
                 File.Copy(file, Path.Combine(destinationDir, Path.GetFileName(file)));
-            foreach (var dir in Directory.GetDirectories(sourceDir))
+            foreach (var dir in directories)
                 CopyDirectory(dir, Path.Combine(destinationDir, Path.GetFileName(dir)));
+        }
+
+        private static string GetAvailableCopyPath(string desiredPath, bool isDirectory)
+        {
+            if (!PathExists(desiredPath))
+                return desiredPath;
+
+            string? directory = Path.GetDirectoryName(desiredPath);
+            if (string.IsNullOrEmpty(directory))
+                return desiredPath;
+
+            string baseName = isDirectory
+                ? Path.GetFileName(desiredPath)
+                : Path.GetFileNameWithoutExtension(desiredPath);
+            string extension = isDirectory ? string.Empty : Path.GetExtension(desiredPath);
+            if (string.IsNullOrEmpty(baseName))
+            {
+                baseName = Path.GetFileName(desiredPath);
+                extension = string.Empty;
+            }
+
+            for (int count = 1; ; count++)
+            {
+                string candidate = Path.Combine(directory, $"{baseName} - Copy ({count}){extension}");
+                if (!PathExists(candidate))
+                    return candidate;
+            }
+        }
+
+        private static bool PathExists(string path)
+        {
+            return File.Exists(path) || Directory.Exists(path);
         }
 
         #endregion

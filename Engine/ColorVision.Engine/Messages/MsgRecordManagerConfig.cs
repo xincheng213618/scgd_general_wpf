@@ -3,6 +3,8 @@ using ColorVision.UI;
 using SqlSugar;
 using System;
 using System.ComponentModel;
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Messages
 {
@@ -12,11 +14,11 @@ namespace ColorVision.Engine.Messages
 
         public string SqliteDbPath { get => DirectoryPath + "MsgRecords.db"; }
 
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "QueryCount"), Category("View")]
+        [LocalizedDisplayName(nameof(Resources.QueryCount)), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
 
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "SortByType"), Category("View")]
+        [LocalizedDisplayName(nameof(Resources.SortByType)), Category("View")]
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
 

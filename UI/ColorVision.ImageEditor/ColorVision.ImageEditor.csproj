@@ -16,6 +16,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<None Remove="EditorTools\Filters\Shaders\DisplayShaderFilter.ps" />
 		<None Remove="Assets\Colormap\colorscale_autumn.jpg" />
 		<None Remove="Assets\Colormap\colorscale_bone.jpg" />
 		<None Remove="Assets\Colormap\colorscale_cividis.jpg" />
@@ -76,6 +77,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="EditorTools\Filters\Shaders\DisplayShaderFilter.ps" />
 		<Resource Include="Assets\Colormap\colorscale_autumn.jpg" />
 		<Resource Include="Assets\Colormap\colorscale_bone.jpg" />
 		<Resource Include="Assets\Colormap\colorscale_cividis.jpg" />

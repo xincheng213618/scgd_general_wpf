@@ -40,6 +40,9 @@
                 </ToolBar>
             </ToolBarTray>
             <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                <Button Click="ShaderFilter_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0" ToolTip="Shader Filter">
+                    <TextBlock Text="FX" HorizontalAlignment="Center" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}" />
+                </Button>
                 <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                     <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
                 </Button>
