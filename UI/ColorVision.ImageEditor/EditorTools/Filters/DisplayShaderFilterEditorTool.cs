@@ -12,8 +12,9 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 {
     internal sealed class DisplayShaderFilterEditorTool : IEditorCustomControlTool, IDisplayShaderFilterService, IDisposable, IImageViewSettingProvider, IImageViewSettingPersistence
     {
+        private static bool s_environmentNoticeShown;
         private readonly EditorContext _context;
-        private readonly DisplayShaderFilterEffect _effect = new();
+        private readonly DisplayShaderFilterEffect? _effect;
         private readonly string _saveDebounceKey = $"{nameof(DisplayShaderFilterEditorTool)}_{Guid.NewGuid():N}";
         private DisplayShaderFilterState _persistenceState;
         private Action? _saveAction;
@@ -32,7 +33,12 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             State.CopyFrom(_persistenceState);
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
             State.PropertyChanged += State_PropertyChanged;
-            _effect.Apply(State);
+            if (DisplayShaderFilterEnvironment.Current.CanUseShaderFilter)
+            {
+                _effect = new DisplayShaderFilterEffect();
+                _effect.Apply(State);
+            }
+
             UpdateEffectAttachment();
             _context.RegisterService<IDisplayShaderFilterService>(this);
         }
@@ -58,7 +64,7 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
         private void State_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            _effect.Apply(State);
+            _effect?.Apply(State);
             if (!_isApplyingPersistenceState)
             {
                 StateChanged?.Invoke(this, EventArgs.Empty);
@@ -67,13 +73,18 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
             if (e.PropertyName == nameof(DisplayShaderFilterState.IsEnabled))
             {
+                if (State.IsEnabled)
+                {
+                    ShowEnvironmentNotice(false);
+                }
+
                 UpdateEffectAttachment();
             }
         }
 
         private void UpdateEffectAttachment()
         {
-            if (State.IsEnabled)
+            if (State.IsEnabled && _effect != null)
             {
                 if (!_effectAttached)
                 {
@@ -109,6 +120,14 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
         public void OpenSettingsWindow()
         {
+            if (!DisplayShaderFilterEnvironment.Current.CanUseShaderFilter)
+            {
+                ShowEnvironmentNotice(true);
+                return;
+            }
+
+            ShowEnvironmentNotice(false);
+
             if (_window != null)
             {
                 _window.Activate();
@@ -141,7 +160,7 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             try
             {
                 State.CopyFrom(_persistenceState);
-                _effect.Apply(State);
+                _effect?.Apply(State);
                 UpdateEffectAttachment();
             }
             finally
@@ -159,6 +178,23 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         {
             _persistenceState.CopyFrom(State);
             _saveAction?.Invoke();
+        }
+
+        private static void ShowEnvironmentNotice(bool force)
+        {
+            DisplayShaderFilterEnvironment environment = DisplayShaderFilterEnvironment.Current;
+            if (!force && (!environment.ShouldShowNotice || s_environmentNoticeShown))
+            {
+                return;
+            }
+
+            s_environmentNoticeShown = true;
+            MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                environment.CreateNoticeText(),
+                "Shader Filter Environment",
+                MessageBoxButton.OK,
+                environment.CanUseShaderFilter ? MessageBoxImage.Information : MessageBoxImage.Warning);
         }
 
         public IEnumerable<ImageViewSettingMetadata> GetImageViewSettings(ImageView imageView)

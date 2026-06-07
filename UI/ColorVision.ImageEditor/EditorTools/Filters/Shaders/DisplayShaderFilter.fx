@@ -1,6 +1,14 @@
 sampler2D Input : register(s0);
 sampler2D Lut : register(s1);
 
+#ifndef USE_PSEUDO_COLOR
+#define USE_PSEUDO_COLOR 0
+#endif
+
+#ifndef FILTER_THRESHOLD_MODE
+#define FILTER_THRESHOLD_MODE 0
+#endif
+
 float ChannelMode : register(c0);
 float RedGain : register(c1);
 float GreenGain : register(c2);
@@ -53,10 +61,9 @@ float3 ChannelSelect(float3 rgb)
     return luma.xxx;
 }
 
-float4 main(float2 uv : TEXCOORD) : COLOR
+float3 ApplyBasicFilter(float3 sourceRgb)
 {
-    float4 source = tex2D(Input, uv);
-    float3 rgb = ChannelSelect(source.rgb);
+    float3 rgb = ChannelSelect(sourceRgb);
 
     rgb = rgb * float3(RedGain, GreenGain, BlueGain) + float3(RedOffset, GreenOffset, BlueOffset);
     rgb = saturate(rgb);
@@ -71,49 +78,41 @@ float4 main(float2 uv : TEXCOORD) : COLOR
     rgb = pow(max(rgb, 0.0001), 1.0 / max(Gamma, 0.0001));
     rgb = lerp(rgb, 1.0 - rgb, step(0.5, Invert));
 
+    return rgb;
+}
+
+float4 main(float2 uv : TEXCOORD) : COLOR
+{
+    float4 source = tex2D(Input, uv);
+    float3 rgb = ApplyBasicFilter(source.rgb);
     float analysisLuma = LumaValue(rgb);
     float alpha = source.a;
 
-    if (PseudoColorMode > 0.5)
-    {
-        float pseudoValue = saturate((analysisLuma - PseudoMin) / max(PseudoMax - PseudoMin, 0.0001));
-        rgb = tex2D(Lut, float2(0.5, 1.0 - pseudoValue)).rgb;
-    }
+#if USE_PSEUDO_COLOR
+    float pseudoValue = saturate((analysisLuma - PseudoMin) / max(PseudoMax - PseudoMin, 0.0001));
+    rgb = tex2D(Lut, float2(0.5, 1.0 - pseudoValue)).rgb;
+#endif
 
-    if (ThresholdMode > 0.5)
-    {
-        if (ThresholdMode < 1.5)
-        {
-            float thresholdValue = step(Threshold, analysisLuma);
-            rgb = thresholdValue.xxx;
-        }
-        else if (ThresholdMode < 2.5)
-        {
-            alpha *= step(Threshold, analysisLuma);
-        }
-        else if (ThresholdMode < 3.5)
-        {
-            float overMask = step(ThresholdHigh, analysisLuma);
-            rgb = lerp(rgb, float3(1.0, 0.05, 0.0), overMask * HighlightOpacity);
-        }
-        else if (ThresholdMode < 4.5)
-        {
-            float underMask = 1.0 - step(ThresholdLow, analysisLuma);
-            rgb = lerp(rgb, float3(0.0, 0.35, 1.0), underMask * HighlightOpacity);
-        }
-        else if (ThresholdMode < 5.5)
-        {
-            float rangeMask = step(RangeLow, analysisLuma) * (1.0 - step(RangeHigh, analysisLuma));
-            rgb = lerp(rgb, float3(0.0, 1.0, 0.15), rangeMask * HighlightOpacity);
-        }
-        else
-        {
-            float underMask = 1.0 - step(ThresholdLow, analysisLuma);
-            float overMask = step(ThresholdHigh, analysisLuma);
-            rgb = lerp(rgb, float3(0.0, 0.35, 1.0), underMask * HighlightOpacity);
-            rgb = lerp(rgb, float3(1.0, 0.05, 0.0), overMask * HighlightOpacity);
-        }
-    }
+#if FILTER_THRESHOLD_MODE == 1
+    float thresholdValue = step(Threshold, analysisLuma);
+    rgb = thresholdValue.xxx;
+#elif FILTER_THRESHOLD_MODE == 2
+    alpha *= step(Threshold, analysisLuma);
+#elif FILTER_THRESHOLD_MODE == 3
+    float overMask = step(ThresholdHigh, analysisLuma);
+    rgb = lerp(rgb, float3(1.0, 0.05, 0.0), overMask * HighlightOpacity);
+#elif FILTER_THRESHOLD_MODE == 4
+    float underMask = 1.0 - step(ThresholdLow, analysisLuma);
+    rgb = lerp(rgb, float3(0.0, 0.35, 1.0), underMask * HighlightOpacity);
+#elif FILTER_THRESHOLD_MODE == 5
+    float rangeMask = step(RangeLow, analysisLuma) * (1.0 - step(RangeHigh, analysisLuma));
+    rgb = lerp(rgb, float3(0.0, 1.0, 0.15), rangeMask * HighlightOpacity);
+#elif FILTER_THRESHOLD_MODE == 6
+    float underMask = 1.0 - step(ThresholdLow, analysisLuma);
+    float overMask = step(ThresholdHigh, analysisLuma);
+    rgb = lerp(rgb, float3(0.0, 0.35, 1.0), underMask * HighlightOpacity);
+    rgb = lerp(rgb, float3(1.0, 0.05, 0.0), overMask * HighlightOpacity);
+#endif
 
     return float4(saturate(rgb), alpha);
 }

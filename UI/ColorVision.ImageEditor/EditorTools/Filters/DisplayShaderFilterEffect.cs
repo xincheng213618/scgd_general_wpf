@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
@@ -8,10 +9,25 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 {
     internal sealed class DisplayShaderFilterEffect : ShaderEffect
     {
-        private static readonly PixelShader Shader = new()
+        private const string ShaderResourcePrefix = "pack://application:,,,/ColorVision.ImageEditor;component/EditorTools/Filters/Shaders/";
+        private static readonly IReadOnlyDictionary<DisplayShaderFilterVariant, PixelShader> Shaders = new Dictionary<DisplayShaderFilterVariant, PixelShader>
         {
-            UriSource = new Uri("pack://application:,,,/ColorVision.ImageEditor;component/EditorTools/Filters/Shaders/DisplayShaderFilter.ps", UriKind.Absolute)
+            [DisplayShaderFilterVariant.Basic] = CreateShader("DisplayShaderFilter.ps"),
+            [DisplayShaderFilterVariant.Pseudo] = CreateShader("DisplayShaderFilterPseudo.ps"),
+            [DisplayShaderFilterVariant.Binary] = CreateShader("DisplayShaderFilterBinary.ps"),
+            [DisplayShaderFilterVariant.LowTransparent] = CreateShader("DisplayShaderFilterLowTransparent.ps"),
+            [DisplayShaderFilterVariant.HighlightOver] = CreateShader("DisplayShaderFilterHighlightOver.ps"),
+            [DisplayShaderFilterVariant.HighlightUnder] = CreateShader("DisplayShaderFilterHighlightUnder.ps"),
+            [DisplayShaderFilterVariant.HighlightRange] = CreateShader("DisplayShaderFilterHighlightRange.ps"),
+            [DisplayShaderFilterVariant.HighlightUnderAndOver] = CreateShader("DisplayShaderFilterHighlightUnderAndOver.ps"),
+            [DisplayShaderFilterVariant.PseudoLowTransparent] = CreateShader("DisplayShaderFilterPseudoLowTransparent.ps"),
+            [DisplayShaderFilterVariant.PseudoHighlightOver] = CreateShader("DisplayShaderFilterPseudoHighlightOver.ps"),
+            [DisplayShaderFilterVariant.PseudoHighlightUnder] = CreateShader("DisplayShaderFilterPseudoHighlightUnder.ps"),
+            [DisplayShaderFilterVariant.PseudoHighlightRange] = CreateShader("DisplayShaderFilterPseudoHighlightRange.ps"),
+            [DisplayShaderFilterVariant.PseudoHighlightUnderAndOver] = CreateShader("DisplayShaderFilterPseudoHighlightUnderAndOver.ps"),
         };
+
+        private DisplayShaderFilterVariant _currentVariant = DisplayShaderFilterVariant.Basic;
 
         public static readonly DependencyProperty InputProperty =
             RegisterPixelShaderSamplerProperty(nameof(Input), typeof(DisplayShaderFilterEffect), 0);
@@ -44,33 +60,10 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
         public DisplayShaderFilterEffect()
         {
-            PixelShader = Shader;
+            PixelShader = Shaders[_currentVariant];
             Lut = CreateLutBrush();
 
-            UpdateShaderValue(InputProperty);
-            UpdateShaderValue(LutProperty);
-            UpdateShaderValue(ChannelModeProperty);
-            UpdateShaderValue(RedGainProperty);
-            UpdateShaderValue(GreenGainProperty);
-            UpdateShaderValue(BlueGainProperty);
-            UpdateShaderValue(RedOffsetProperty);
-            UpdateShaderValue(GreenOffsetProperty);
-            UpdateShaderValue(BlueOffsetProperty);
-            UpdateShaderValue(BrightnessProperty);
-            UpdateShaderValue(ContrastProperty);
-            UpdateShaderValue(GammaProperty);
-            UpdateShaderValue(SaturationProperty);
-            UpdateShaderValue(InvertProperty);
-            UpdateShaderValue(ThresholdModeProperty);
-            UpdateShaderValue(ThresholdProperty);
-            UpdateShaderValue(ThresholdLowProperty);
-            UpdateShaderValue(ThresholdHighProperty);
-            UpdateShaderValue(RangeLowProperty);
-            UpdateShaderValue(RangeHighProperty);
-            UpdateShaderValue(HighlightOpacityProperty);
-            UpdateShaderValue(PseudoColorModeProperty);
-            UpdateShaderValue(PseudoMinProperty);
-            UpdateShaderValue(PseudoMaxProperty);
+            UpdateAllShaderValues();
         }
 
         public Brush? Input
@@ -219,6 +212,7 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
         public void Apply(DisplayShaderFilterState state)
         {
+            ApplyShaderVariant(state);
             ChannelMode = (double)state.ChannelMode;
             RedGain = state.RedGain;
             GreenGain = state.GreenGain;
@@ -241,6 +235,84 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             PseudoColorMode = (double)state.PseudoColorMode;
             PseudoMin = state.PseudoMin;
             PseudoMax = state.PseudoMax;
+        }
+
+        private static PixelShader CreateShader(string fileName)
+        {
+            return new PixelShader
+            {
+                UriSource = new Uri(ShaderResourcePrefix + fileName, UriKind.Absolute)
+            };
+        }
+
+        private void ApplyShaderVariant(DisplayShaderFilterState state)
+        {
+            DisplayShaderFilterVariant variant = GetVariant(state);
+            if (variant == _currentVariant)
+            {
+                return;
+            }
+
+            _currentVariant = variant;
+            PixelShader = Shaders[variant];
+            UpdateAllShaderValues();
+        }
+
+        private static DisplayShaderFilterVariant GetVariant(DisplayShaderFilterState state)
+        {
+            bool usePseudo = state.PseudoColorMode != DisplayShaderPseudoColorMode.Off;
+
+            return state.ThresholdMode switch
+            {
+                DisplayShaderThresholdMode.Off => usePseudo
+                    ? DisplayShaderFilterVariant.Pseudo
+                    : DisplayShaderFilterVariant.Basic,
+                DisplayShaderThresholdMode.Binary => DisplayShaderFilterVariant.Binary,
+                DisplayShaderThresholdMode.LowTransparent => usePseudo
+                    ? DisplayShaderFilterVariant.PseudoLowTransparent
+                    : DisplayShaderFilterVariant.LowTransparent,
+                DisplayShaderThresholdMode.HighlightOver => usePseudo
+                    ? DisplayShaderFilterVariant.PseudoHighlightOver
+                    : DisplayShaderFilterVariant.HighlightOver,
+                DisplayShaderThresholdMode.HighlightUnder => usePseudo
+                    ? DisplayShaderFilterVariant.PseudoHighlightUnder
+                    : DisplayShaderFilterVariant.HighlightUnder,
+                DisplayShaderThresholdMode.HighlightRange => usePseudo
+                    ? DisplayShaderFilterVariant.PseudoHighlightRange
+                    : DisplayShaderFilterVariant.HighlightRange,
+                DisplayShaderThresholdMode.HighlightUnderAndOver => usePseudo
+                    ? DisplayShaderFilterVariant.PseudoHighlightUnderAndOver
+                    : DisplayShaderFilterVariant.HighlightUnderAndOver,
+                _ => DisplayShaderFilterVariant.Basic
+            };
+        }
+
+        private void UpdateAllShaderValues()
+        {
+            UpdateShaderValue(InputProperty);
+            UpdateShaderValue(LutProperty);
+            UpdateShaderValue(ChannelModeProperty);
+            UpdateShaderValue(RedGainProperty);
+            UpdateShaderValue(GreenGainProperty);
+            UpdateShaderValue(BlueGainProperty);
+            UpdateShaderValue(RedOffsetProperty);
+            UpdateShaderValue(GreenOffsetProperty);
+            UpdateShaderValue(BlueOffsetProperty);
+            UpdateShaderValue(BrightnessProperty);
+            UpdateShaderValue(ContrastProperty);
+            UpdateShaderValue(GammaProperty);
+            UpdateShaderValue(SaturationProperty);
+            UpdateShaderValue(InvertProperty);
+            UpdateShaderValue(ThresholdModeProperty);
+            UpdateShaderValue(ThresholdProperty);
+            UpdateShaderValue(ThresholdLowProperty);
+            UpdateShaderValue(ThresholdHighProperty);
+            UpdateShaderValue(RangeLowProperty);
+            UpdateShaderValue(RangeHighProperty);
+            UpdateShaderValue(HighlightOpacityProperty);
+            UpdateShaderValue(PseudoColorModeProperty);
+            UpdateShaderValue(PseudoMinProperty);
+            UpdateShaderValue(PseudoMaxProperty);
         }
 
         private static DependencyProperty RegisterShaderDouble(string name, int constantRegister, double defaultValue)
@@ -266,6 +338,23 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             };
             brush.Freeze();
             return brush;
+        }
+
+        private enum DisplayShaderFilterVariant
+        {
+            Basic,
+            Pseudo,
+            Binary,
+            LowTransparent,
+            HighlightOver,
+            HighlightUnder,
+            HighlightRange,
+            HighlightUnderAndOver,
+            PseudoLowTransparent,
+            PseudoHighlightOver,
+            PseudoHighlightUnder,
+            PseudoHighlightRange,
+            PseudoHighlightUnderAndOver
         }
     }
 }
