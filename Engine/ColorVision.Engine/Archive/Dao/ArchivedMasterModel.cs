@@ -1,6 +1,8 @@
 ﻿using SqlSugar;
 using System;
 using System.ComponentModel;
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Archive.Dao
 {
@@ -9,9 +11,9 @@ namespace ColorVision.Engine.Archive.Dao
     [SugarTable("t_scgd_archived_master")]
     public class ArchivedMasterModel 
     {
-        [SugarColumn(ColumnName = "code", IsPrimaryKey = true), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "Code")]
+        [SugarColumn(ColumnName = "code", IsPrimaryKey = true), LocalizedDisplayName(nameof(Resources.Code))]
         public string Code { get; set; }
-        [SugarColumn(ColumnName ="name"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "Name")]
+        [SugarColumn(ColumnName ="name"), LocalizedDisplayName(nameof(Resources.Name))]
         public string Name { get; set; }
         [SugarColumn(ColumnName ="data"),DisplayName("Data")]
         public string Data { get; set; }
@@ -19,9 +21,9 @@ namespace ColorVision.Engine.Archive.Dao
         public string Remark { get; set; }
         [SugarColumn(ColumnName ="tenant_id")]
         public int? TenantId { get; set; }
-        [SugarColumn(ColumnName ="create_date"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "CreationDate")]
+        [SugarColumn(ColumnName ="create_date"), LocalizedDisplayName(nameof(Resources.CreationDate))]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
-        [SugarColumn(ColumnName ="arch_date"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ArchiveDate")]
+        [SugarColumn(ColumnName ="arch_date"), LocalizedDisplayName(nameof(Resources.ArchiveDate))]
         public DateTime? ArchDate { get; set; } = DateTime.Now;
     }
 }

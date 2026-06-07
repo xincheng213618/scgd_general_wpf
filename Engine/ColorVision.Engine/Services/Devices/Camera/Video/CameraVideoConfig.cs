@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
@@ -11,7 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             DeafutPort++;
             _Port = Common.Utilities.Tool.GetFreePort(DeafutPort);
         }
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "Host")]
+        [LocalizedDisplayName(nameof(Resources.Host))]
         public string Host { get => _Host; set { _Host = value; OnPropertyChanged(); } }
         private string _Host = "127.0.0.1";
 
@@ -21,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         /// <summary>
         /// 端口地址
         /// </summary>
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "PortAddress")]
+        [LocalizedDisplayName(nameof(Resources.PortAddress))]
         public int Port
         {
             get => _Port; set
@@ -50,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private long _Capacity = 1073741824;
 
         [JsonIgnore]
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "CacheSize")]
+        [LocalizedDisplayName(nameof(Resources.CacheSize))]
         public string CapacityText
         {
             get => Common.Utilities.MemorySize.MemorySizeText(_Capacity);
