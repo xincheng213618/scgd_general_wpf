@@ -79,6 +79,10 @@
         </StackPanel>
     </HierarchicalDataTemplate>
 
+    <DataTemplate DataType="{x:Type Explorer:LazyLoadingNode}">
+        <TextBlock Text="{Binding Name}" Padding="6,0" Opacity="0.6"/>
+    </DataTemplate>
+
     <HierarchicalDataTemplate DataType="{x:Type Explorer:FileNode}"   ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}">
             <Image Source="{Binding Icon}" Height="14" Margin="0,0,1,0"/>

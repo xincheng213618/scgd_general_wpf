@@ -200,6 +200,11 @@ namespace ColorVision.Solution.Explorer
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 var parentNode = FindNodeByFullPath(parentPath) ?? this;
+                if (parentNode is FolderNode unloadedFolder && !unloadedFolder.AreChildrenLoaded)
+                {
+                    unloadedFolder.MarkChildrenChanged();
+                    return;
+                }
 
                 // Duplicate protection
                 if (parentNode.VisualChildren.Any(c => PathEquals(c.FullPath, e.FullPath)))
@@ -230,6 +235,12 @@ namespace ColorVision.Solution.Explorer
                     if (child is IDisposable disposable)
                         disposable.Dispose();
                 }
+                else
+                {
+                    string? parentPath = Path.GetDirectoryName(e.FullPath);
+                    if (!string.IsNullOrWhiteSpace(parentPath) && FindNodeByFullPath(parentPath) is FolderNode unloadedFolder)
+                        unloadedFolder.MarkChildrenChanged();
+                }
                 VisualChildrenEventHandler?.Invoke(this, EventArgs.Empty);
             });
         }
@@ -258,6 +269,12 @@ namespace ColorVision.Solution.Explorer
                 }
 
                 var parentNode = FindNodeByFullPath(parentPath) ?? this;
+                if (parentNode is FolderNode unloadedFolder && !unloadedFolder.AreChildrenLoaded)
+                {
+                    unloadedFolder.MarkChildrenChanged();
+                    return;
+                }
+
                 if (parentNode.VisualChildren.Any(c => PathEquals(c.FullPath, e.FullPath)))
                     return;
 

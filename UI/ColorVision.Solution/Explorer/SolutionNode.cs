@@ -268,4 +268,18 @@ namespace ColorVision.Solution.Explorer
             else return -1;
         }
     }
+
+    public sealed class LazyLoadingNode : SolutionNode
+    {
+        public LazyLoadingNode()
+        {
+            Name1 = "Loading...";
+            CanAdd = false;
+            CanCopy = false;
+            CanCut = false;
+            CanDelete = false;
+            CanPaste = false;
+            CanReName = false;
+        }
+    }
 }

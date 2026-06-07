@@ -96,6 +96,34 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
+        public List<FileTreeCacheEntry> Search(string[] keywords, int maxResults = 500)
+        {
+            if (_disposed || keywords.Length == 0) return new List<FileTreeCacheEntry>();
+            lock (_lock)
+            {
+                try
+                {
+                    var query = _db.Queryable<FileTreeCacheEntry>();
+                    foreach (string keyword in keywords.Where(keyword => !string.IsNullOrWhiteSpace(keyword)))
+                    {
+                        string term = keyword;
+                        query = query.Where(entry => entry.Name.Contains(term));
+                    }
+
+                    return query
+                        .OrderBy(entry => entry.IsDirectory, OrderByType.Desc)
+                        .OrderBy(entry => entry.Name)
+                        .Take(maxResults)
+                        .ToList();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"搜索缓存失败: {ex.Message}");
+                    return new List<FileTreeCacheEntry>();
+                }
+            }
+        }
+
         /// <summary>
         /// Rebuild the entire cache from the file system.
         /// Called on first load or when cache is invalidated.

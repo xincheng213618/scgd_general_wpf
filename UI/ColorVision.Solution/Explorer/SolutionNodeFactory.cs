@@ -101,8 +101,13 @@ namespace ColorVision.Solution.Explorer
             if (cache != null && cache.HasCache() && cache.ValidateDirectory(directoryInfo.FullName) && TryPopulateChildrenFromCache(parent, directoryInfo, cache))
                 return;
 
+            int directoryCount = 0;
             foreach (var item in directoryInfo.GetDirectories())
             {
+                directoryCount++;
+                if (directoryCount % 50 == 0)
+                    await Task.Yield();
+
                 if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
                     continue;
 
@@ -114,10 +119,9 @@ namespace ColorVision.Solution.Explorer
             foreach (var item in directoryInfo.GetFiles())
             {
                 fileCount++;
-                if (fileCount % 10 == 0)
-                {
-                    await Task.Delay(100);
-                }
+                if (fileCount % 50 == 0)
+                    await Task.Yield();
+
                 var sw = Stopwatch.StartNew();
                 AddFileNode(parent, item);
                 sw.Stop();
@@ -158,6 +162,29 @@ namespace ColorVision.Solution.Explorer
             }
 
             return parent.VisualChildren.Count > 0;
+        }
+
+        public static bool HasVisibleChildren(DirectoryInfo directoryInfo)
+        {
+            try
+            {
+                foreach (var directory in directoryInfo.EnumerateDirectories())
+                {
+                    if ((directory.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                        return true;
+                }
+
+                foreach (var file in directoryInfo.EnumerateFiles())
+                {
+                    if (!IsInternalFile(file.Name))
+                        return true;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
         }
 
         /// <summary>
