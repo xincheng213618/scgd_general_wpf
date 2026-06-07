@@ -97,24 +97,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86服务日志</value>
-  </data>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64服务日志</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>服务日志</value>
-  </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>光谱仪日志</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>相机日志</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC服务日志</value>
-  </data>
   <data name="ManagementService" xml:space="preserve">
     <value>管理服务</value>
   </data>
@@ -133,12 +115,6 @@
   <data name="CVWinSMSPathDescription" xml:space="preserve">
     <value>CVWinSMS 服务程序的可执行文件路径。</value>
   </data>
-  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
-    <value>CVWinSMS 自动更新</value>
-  </data>
-  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
-    <value>允许 CVWinSMS 服务工具自动检测并应用更新。</value>
-  </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>服务安装根目录</value>
   </data>
@@ -150,18 +126,6 @@
   </data>
   <data name="ServiceManagerMySqlPortDescription" xml:space="preserve">
     <value>MySQL 服务监听端口。</value>
-  </data>
-  <data name="ServiceManagerUpdateServerUrl" xml:space="preserve">
-    <value>服务更新地址</value>
-  </data>
-  <data name="ServiceManagerUpdateServerUrlDescription" xml:space="preserve">
-    <value>服务包在线更新和下载使用的服务器地址。</value>
-  </data>
-  <data name="ServiceManagerDownloadLocation" xml:space="preserve">
-    <value>下载目录</value>
-  </data>
-  <data name="ServiceManagerDownloadLocationDescription" xml:space="preserve">
-    <value>服务包、MySQL、MQTT 等在线下载的保存目录。</value>
   </data>
   <data name="ServiceManagerInstallServiceChecked" xml:space="preserve">
     <value>默认勾选安装服务包</value>

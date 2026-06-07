@@ -19,7 +19,7 @@ namespace WindowsServicePlugin.ServiceManager
 
             var confirm = MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                $"将从现有文件直接安装并启动基础服务：\n{installRoot}\n\n归档服务不会自动安装。是否继续？",
+                $"将从现有文件直接安装并启动基础服务：\n{installRoot}\n\n是否继续？",
                 "直接安装服务",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
@@ -48,12 +48,6 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 if (!svc.IsPackaged)
                     continue;
-
-                if (string.Equals(svc.ServiceName, ArchiveServiceName, StringComparison.OrdinalIgnoreCase))
-                {
-                    AddLog($"跳过归档服务: {svc.ServiceName}");
-                    continue;
-                }
 
                 string exePath = Path.Combine(installRoot, svc.FolderName, svc.GetExecutableName());
                 if (!File.Exists(exePath))
