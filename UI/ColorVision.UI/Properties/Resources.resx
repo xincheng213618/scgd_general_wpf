@@ -99,11 +99,7 @@
   </resheader>
   <data name="MenuFile" xml:space="preserve">
     <value>文件(_F)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>模板(_M)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
+  </data>  <data name="MenuTool" xml:space="preserve">
     <value>工具(_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
@@ -165,35 +161,14 @@
   </data>
   <data name="LanguageDescription" xml:space="preserve">
     <value>选择界面显示语言，跟随系统时使用系统语言。</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>自动切换选中视图</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
+  </data>  <data name="HotKeys" xml:space="preserve">
     <value>快捷键</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>隐藏</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>独立窗口</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
+  </data>  <data name="MenuExit" xml:space="preserve">
     <value>退出(_X)</value>
   </data>
   <data name="Log" xml:space="preserve">
     <value>日志</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>打开配置文件</value>
-  </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>打开配置文件夹</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>打开日志文件夹</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
+  </data>  <data name="AutoScrollToEnd" xml:space="preserve">
     <value>自动滚动到底部</value>
   </data>
   <data name="AutoRefresh" xml:space="preserve">
@@ -207,17 +182,7 @@
   </data>
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>发生错误</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>剩余时间：</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>当前速度：</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
+  </data>  <data name="MenuOpen" xml:space="preserve">
     <value>打开(_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
@@ -267,74 +232,11 @@
   </data>
   <data name="MenuClose" xml:space="preserve">
     <value>关闭(_C)</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>自动选择</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
+  </data>  <data name="MenuRedo" xml:space="preserve">
     <value>重做(_R)</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>缓冲区大小</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
+  </data>  <data name="GeneralSettings" xml:space="preserve">
     <value>通用设置</value>
-  </data>
-  <data name="SettingsNoMatchingSettings" xml:space="preserve">
-    <value>没有匹配的设置。</value>
-  </data>
-  <data name="SettingsMatchingCountFormat" xml:space="preserve">
-    <value>找到 {0} 项匹配设置</value>
-  </data>
-  <data name="SettingsCountFormat" xml:space="preserve">
-    <value>{0} 项设置</value>
-  </data>
-  <data name="SettingsEditorUnavailable" xml:space="preserve">
-    <value>设置项不可用</value>
-  </data>
-  <data name="SettingsEditorLoadFailed" xml:space="preserve">
-    <value>设置项加载失败</value>
-  </data>
-  <data name="SettingsPageTypeInvalid" xml:space="preserve">
-    <value>设置页类型无效</value>
-  </data>
-  <data name="SettingsPageUnavailable" xml:space="preserve">
-    <value>设置页不可用</value>
-  </data>
-  <data name="SettingsPageLoadFailed" xml:space="preserve">
-    <value>设置页加载失败</value>
-  </data>
-  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
-    <value>启动时检查更新</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
-    <value>启动应用时检查主程序、插件和主题是否有可用更新。</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
-    <value>插件更新 主程序更新 启动检测 软件启动时检测更新 检查插件更新 自动更新 主题更新</value>
-  </data>
-  <data name="SettingsSectionBasic" xml:space="preserve">
-    <value>基础</value>
-  </data>
-  <data name="SettingsSectionSearch" xml:space="preserve">
-    <value>搜索</value>
-  </data>
-  <data name="SettingsSectionFileArchive" xml:space="preserve">
-    <value>文件归档</value>
-  </data>
-  <data name="SettingsSectionServices" xml:space="preserve">
-    <value>服务</value>
-  </data>
-  <data name="SettingsSectionPaths" xml:space="preserve">
-    <value>路径</value>
-  </data>
-  <data name="SettingsSectionExtensions" xml:space="preserve">
-    <value>扩展页面</value>
-  </data>
-  <data name="SettingsSectionOther" xml:space="preserve">
-    <value>其他</value>
-  </data>
-  <data name="LogLevelDescription" xml:space="preserve">
+  </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>控制应用写入日志的详细程度。</value>
   </data>
   <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
@@ -342,11 +244,7 @@
   </data>
   <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
     <value>插件市场、更新检查和在线包接口使用的服务地址。</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>插件名称</value>
-  </data>
-  <data name="Search" xml:space="preserve">
+  </data>  <data name="Search" xml:space="preserve">
     <value>搜索</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -396,11 +294,7 @@
   </data>
   <data name="SearchIconSettingsTooltip" xml:space="preserve">
     <value>双击打开搜索设置</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>更新</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>删除</value>
   </data>
   <data name="Version" xml:space="preserve">
@@ -408,32 +302,11 @@
   </data>
   <data name="Options" xml:space="preserve">
     <value>选项</value>
-  </data>
-  <data name="NoLocalLog4Output" xml:space="preserve">
-    <value>没有配置本地的log4输出</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
+  </data>  <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>更新Log4Net 日志级别：</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>视图模式1</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>视图模式2</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>视图模式4</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>视图模式9</value>
-  </data>
-  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+  </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在检索是否存在附加项目</value>
-  </data>
-  <data name="Download" xml:space="preserve">
-    <value>下载</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>找不到项目{0}</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
@@ -444,41 +317,7 @@
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>排序选项</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>智能排序 (升序)</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>智能排序 (降序)</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>按 {0} 排序</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>升序</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>降序</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>默认排序</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>按名称排序</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>按分类排序</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>是否更新</value>
-  </data>
-  <data name="ConfirmDeletePlugin" xml:space="preserve">
-    <value>是否确认删除插件{0}</value>
-  </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
+  </data>  <data name="CheckingCUDASupport" xml:space="preserve">
     <value>正在检测是否支持CUDA</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
@@ -594,11 +433,7 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 资源未找到</value>
-  </data>
-  <data name="Install" xml:space="preserve">
-    <value>安装</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
+  </data>  <data name="Rename" xml:space="preserve">
     <value>重命名</value>
   </data>
   <data name="ProjectSolution_P" xml:space="preserve">
@@ -606,14 +441,7 @@
   </data>
   <data name="MysqlTool" xml:space="preserve">
     <value>Mysql工具</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>消息日志窗口</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>Socket管理窗口</value>
-  </data>
-  <data name="OK" xml:space="preserve">
+  </data>  <data name="OK" xml:space="preserve">
     <value>确定</value>
   </data>
   <data name="Cancel" xml:space="preserve">

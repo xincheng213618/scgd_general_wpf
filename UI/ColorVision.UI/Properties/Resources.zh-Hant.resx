@@ -60,11 +60,7 @@
   </resheader>
   <data name="MenuFile" xml:space="preserve">
     <value>文件(_F)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>範本(_M)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
+  </data>  <data name="MenuTool" xml:space="preserve">
     <value>工具(_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
@@ -126,35 +122,14 @@
   </data>
   <data name="LanguageDescription" xml:space="preserve">
     <value>選擇介面顯示語言，跟隨系統時使用系統語言。</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>自動切換選取視圖</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
+  </data>  <data name="HotKeys" xml:space="preserve">
     <value>快捷鍵</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>隱藏</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>獨立視窗</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
+  </data>  <data name="MenuExit" xml:space="preserve">
     <value>退出(_X)</value>
   </data>
   <data name="Log" xml:space="preserve">
     <value>紀錄</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>開啟設定檔</value>
-  </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>打開設定資料夾</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>打開日誌資料夾</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
+  </data>  <data name="AutoScrollToEnd" xml:space="preserve">
     <value>自動滾動到底部</value>
   </data>
   <data name="AutoRefresh" xml:space="preserve">
@@ -168,17 +143,7 @@
   </data>
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>發生錯誤</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>剩餘時間：</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>目前速度：</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
+  </data>  <data name="MenuOpen" xml:space="preserve">
     <value>打开(_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
@@ -228,74 +193,11 @@
   </data>
   <data name="MenuClose" xml:space="preserve">
     <value>關閉(_C)</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>自動選擇</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
+  </data>  <data name="MenuRedo" xml:space="preserve">
     <value>重新執行(_R)</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>緩衝區大小</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
+  </data>  <data name="GeneralSettings" xml:space="preserve">
     <value>通用設定</value>
-  </data>
-  <data name="SettingsNoMatchingSettings" xml:space="preserve">
-    <value>沒有符合的設定。</value>
-  </data>
-  <data name="SettingsMatchingCountFormat" xml:space="preserve">
-    <value>找到 {0} 項符合設定</value>
-  </data>
-  <data name="SettingsCountFormat" xml:space="preserve">
-    <value>{0} 項設定</value>
-  </data>
-  <data name="SettingsEditorUnavailable" xml:space="preserve">
-    <value>設定項不可用</value>
-  </data>
-  <data name="SettingsEditorLoadFailed" xml:space="preserve">
-    <value>設定項載入失敗</value>
-  </data>
-  <data name="SettingsPageTypeInvalid" xml:space="preserve">
-    <value>設定頁類型無效</value>
-  </data>
-  <data name="SettingsPageUnavailable" xml:space="preserve">
-    <value>設定頁不可用</value>
-  </data>
-  <data name="SettingsPageLoadFailed" xml:space="preserve">
-    <value>設定頁載入失敗</value>
-  </data>
-  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
-    <value>啟動時檢查更新</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
-    <value>啟動應用程式時檢查主程式、外掛程式和主題是否有可用更新。</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
-    <value>外掛程式更新 主程式更新 啟動檢查 軟體啟動時檢查更新 檢查外掛程式更新 自動更新 主題更新</value>
-  </data>
-  <data name="SettingsSectionBasic" xml:space="preserve">
-    <value>基礎</value>
-  </data>
-  <data name="SettingsSectionSearch" xml:space="preserve">
-    <value>搜尋</value>
-  </data>
-  <data name="SettingsSectionFileArchive" xml:space="preserve">
-    <value>檔案封存</value>
-  </data>
-  <data name="SettingsSectionServices" xml:space="preserve">
-    <value>服務</value>
-  </data>
-  <data name="SettingsSectionPaths" xml:space="preserve">
-    <value>路徑</value>
-  </data>
-  <data name="SettingsSectionExtensions" xml:space="preserve">
-    <value>擴充頁面</value>
-  </data>
-  <data name="SettingsSectionOther" xml:space="preserve">
-    <value>其他</value>
-  </data>
-  <data name="LogLevelDescription" xml:space="preserve">
+  </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>控制應用程式寫入日誌的詳細程度。</value>
   </data>
   <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
@@ -303,11 +205,7 @@
   </data>
   <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
     <value>插件市場、更新檢查與線上套件介面使用的服務地址。</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>插件名稱</value>
-  </data>
-  <data name="Search" xml:space="preserve">
+  </data>  <data name="Search" xml:space="preserve">
     <value>搜尋</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -357,11 +255,7 @@
   </data>
   <data name="SearchIconSettingsTooltip" xml:space="preserve">
     <value>雙擊開啟搜尋設定</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>更新</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>刪除</value>
   </data>
   <data name="Version" xml:space="preserve">
@@ -369,32 +263,11 @@
   </data>
   <data name="Options" xml:space="preserve">
     <value>選項</value>
-  </data>
-  <data name="NoLocalLog4Output" xml:space="preserve">
-    <value>沒有配置本地的log4輸出</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
+  </data>  <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>更新Log4Net 日誌級別：</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>視圖模式1</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>視圖模式2</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>視圖模式4</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>視圖模式9</value>
-  </data>
-  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+  </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在檢索是否存在附加項目</value>
-  </data>
-  <data name="Download" xml:space="preserve">
-    <value>下載</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>找不到項目{0}</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
@@ -405,32 +278,7 @@
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>排序選項</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>智能排序 (升序)</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>智能排序 (降序)</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>按 {0} 排序</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>升序</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>降序</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>是否更新</value>
-  </data>
-  <data name="ConfirmDeletePlugin" xml:space="preserve">
-    <value>是否確認刪除插件{0}</value>
-  </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
+  </data>  <data name="CheckingCUDASupport" xml:space="preserve">
     <value>正在檢測是否支持CUDA</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
@@ -546,11 +394,7 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 資源未找到</value>
-  </data>
-  <data name="Install" xml:space="preserve">
-    <value>安裝</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
+  </data>  <data name="Rename" xml:space="preserve">
     <value>重新命名</value>
   </data>
   <data name="ProjectSolution_P" xml:space="preserve">
@@ -558,23 +402,7 @@
   </data>
   <data name="MysqlTool" xml:space="preserve">
     <value>Mysql工具</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>訊息日誌視窗</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>Socket管理視窗</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>預設排序</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>按名稱排序</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>按類別排序</value>
-  </data>
-  <data name="OK" xml:space="preserve">
+  </data>  <data name="OK" xml:space="preserve">
     <value>確定</value>
   </data>
   <data name="Cancel" xml:space="preserve">

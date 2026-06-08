@@ -79,15 +79,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 升序 的本地化字符串。
-        /// </summary>
-        public static string Ascending {
-            get {
-                return ResourceManager.GetString("Ascending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 自动调整列宽 的本地化字符串。
         /// </summary>
         public static string AutoAdjustColumnWidth {
@@ -111,15 +102,6 @@ namespace ColorVision.UI.Properties {
         public static string AutoScrollToEnd {
             get {
                 return ResourceManager.GetString("AutoScrollToEnd", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 自动切换选中视图 的本地化字符串。
-        /// </summary>
-        public static string AutoSwitchSelectedView {
-            get {
-                return ResourceManager.GetString("AutoSwitchSelectedView", resourceCulture);
             }
         }
         
@@ -232,33 +214,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 是否确认删除插件{0} 的本地化字符串。
-        /// </summary>
-        public static string ConfirmDeletePlugin {
-            get {
-                return ResourceManager.GetString("ConfirmDeletePlugin", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 是否更新 的本地化字符串。
-        /// </summary>
-        public static string ConfirmUpdate {
-            get {
-                return ResourceManager.GetString("ConfirmUpdate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前速度： 的本地化字符串。
-        /// </summary>
-        public static string CurrentSpeed {
-            get {
-                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
         public static string Delete {
@@ -291,15 +246,6 @@ namespace ColorVision.UI.Properties {
         public static string DependencyVersionInsufficient {
             get {
                 return ResourceManager.GetString("DependencyVersionInsufficient", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 降序 的本地化字符串。
-        /// </summary>
-        public static string Descending {
-            get {
-                return ResourceManager.GetString("Descending", resourceCulture);
             }
         }
         
@@ -453,15 +399,6 @@ namespace ColorVision.UI.Properties {
         public static string DictItemEditor_Value {
             get {
                 return ResourceManager.GetString("DictItemEditor_Value", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下载 的本地化字符串。
-        /// </summary>
-        public static string Download {
-            get {
-                return ResourceManager.GetString("Download", resourceCulture);
             }
         }
         
@@ -628,15 +565,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 发生错误 的本地化字符串。
-        /// </summary>
-        public static string ErrorOccurred {
-            get {
-                return ResourceManager.GetString("ErrorOccurred", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Everything路径 的本地化字符串。
         /// </summary>
         public static string EverythingPath {
@@ -777,24 +705,6 @@ namespace ColorVision.UI.Properties {
         public static string HotKeySet2 {
             get {
                 return ResourceManager.GetString("HotKeySet2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 安装 的本地化字符串。
-        /// </summary>
-        public static string Install {
-            get {
-                return ResourceManager.GetString("Install", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 自动选择 的本地化字符串。
-        /// </summary>
-        public static string IsAutoSelect {
-            get {
-                return ResourceManager.GetString("IsAutoSelect", resourceCulture);
             }
         }
         
@@ -1285,15 +1195,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 模板(_M) 的本地化字符串。
-        /// </summary>
-        public static string MenuTemplate {
-            get {
-                return ResourceManager.GetString("MenuTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 工具(_T) 的本地化字符串。
         /// </summary>
         public static string MenuTool {
@@ -1330,29 +1231,11 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 消息日志窗口 的本地化字符串。
-        /// </summary>
-        public static string MsgList {
-            get {
-                return ResourceManager.GetString("MsgList", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Mysql工具 的本地化字符串。
         /// </summary>
         public static string MysqlTool {
             get {
                 return ResourceManager.GetString("MysqlTool", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 没有配置本地的log4输出 的本地化字符串。
-        /// </summary>
-        public static string NoLocalLog4Output {
-            get {
-                return ResourceManager.GetString("NoLocalLog4Output", resourceCulture);
             }
         }
         
@@ -1375,24 +1258,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开配置文件 的本地化字符串。
-        /// </summary>
-        public static string OpenConfigFile {
-            get {
-                return ResourceManager.GetString("OpenConfigFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开配置文件夹 的本地化字符串。
-        /// </summary>
-        public static string OpenConfigFolder {
-            get {
-                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 打开所在文件夹 的本地化字符串。
         /// </summary>
         public static string OpenContainingFolder {
@@ -1407,15 +1272,6 @@ namespace ColorVision.UI.Properties {
         public static string OpenFolder {
             get {
                 return ResourceManager.GetString("OpenFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开日志文件夹 的本地化字符串。
-        /// </summary>
-        public static string OpenLogFolder {
-            get {
-                return ResourceManager.GetString("OpenLogFolder", resourceCulture);
             }
         }
         
@@ -1452,15 +1308,6 @@ namespace ColorVision.UI.Properties {
         public static string PluginMissingId {
             get {
                 return ResourceManager.GetString("PluginMissingId", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件名称 的本地化字符串。
-        /// </summary>
-        public static string PluginName {
-            get {
-                return ResourceManager.GetString("PluginName", resourceCulture);
             }
         }
         
@@ -1834,249 +1681,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 {0} 项设置 的本地化字符串。
-        /// </summary>
-        public static string SettingsCountFormat {
-            get {
-                return ResourceManager.GetString("SettingsCountFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置项加载失败 的本地化字符串。
-        /// </summary>
-        public static string SettingsEditorLoadFailed {
-            get {
-                return ResourceManager.GetString("SettingsEditorLoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置项不可用 的本地化字符串。
-        /// </summary>
-        public static string SettingsEditorUnavailable {
-            get {
-                return ResourceManager.GetString("SettingsEditorUnavailable", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 找到 {0} 项匹配设置 的本地化字符串。
-        /// </summary>
-        public static string SettingsMatchingCountFormat {
-            get {
-                return ResourceManager.GetString("SettingsMatchingCountFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 没有匹配的设置。 的本地化字符串。
-        /// </summary>
-        public static string SettingsNoMatchingSettings {
-            get {
-                return ResourceManager.GetString("SettingsNoMatchingSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置页加载失败 的本地化字符串。
-        /// </summary>
-        public static string SettingsPageLoadFailed {
-            get {
-                return ResourceManager.GetString("SettingsPageLoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置页类型无效 的本地化字符串。
-        /// </summary>
-        public static string SettingsPageTypeInvalid {
-            get {
-                return ResourceManager.GetString("SettingsPageTypeInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置页不可用 的本地化字符串。
-        /// </summary>
-        public static string SettingsPageUnavailable {
-            get {
-                return ResourceManager.GetString("SettingsPageUnavailable", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 基础 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionBasic {
-            get {
-                return ResourceManager.GetString("SettingsSectionBasic", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 扩展页面 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionExtensions {
-            get {
-                return ResourceManager.GetString("SettingsSectionExtensions", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文件归档 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionFileArchive {
-            get {
-                return ResourceManager.GetString("SettingsSectionFileArchive", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 其他 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionOther {
-            get {
-                return ResourceManager.GetString("SettingsSectionOther", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 路径 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionPaths {
-            get {
-                return ResourceManager.GetString("SettingsSectionPaths", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 搜索 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionSearch {
-            get {
-                return ResourceManager.GetString("SettingsSectionSearch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 服务 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionServices {
-            get {
-                return ResourceManager.GetString("SettingsSectionServices", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启动时检查更新 的本地化字符串。
-        /// </summary>
-        public static string SettingsStartupCheckUpdates {
-            get {
-                return ResourceManager.GetString("SettingsStartupCheckUpdates", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启动应用时检查主程序、插件和主题是否有可用更新。 的本地化字符串。
-        /// </summary>
-        public static string SettingsStartupCheckUpdatesDescription {
-            get {
-                return ResourceManager.GetString("SettingsStartupCheckUpdatesDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件更新 主程序更新 启动检测 软件启动时检测更新 检查插件更新 自动更新 主题更新 的本地化字符串。
-        /// </summary>
-        public static string SettingsStartupCheckUpdatesSearchAliases {
-            get {
-                return ResourceManager.GetString("SettingsStartupCheckUpdatesSearchAliases", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 智能排序 (升序) 的本地化字符串。
-        /// </summary>
-        public static string SmartSortAscending {
-            get {
-                return ResourceManager.GetString("SmartSortAscending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 智能排序 (降序) 的本地化字符串。
-        /// </summary>
-        public static string SmartSortDescending {
-            get {
-                return ResourceManager.GetString("SmartSortDescending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 缓冲区大小 的本地化字符串。
-        /// </summary>
-        public static string SocketBufferSize {
-            get {
-                return ResourceManager.GetString("SocketBufferSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Socket管理窗口 的本地化字符串。
-        /// </summary>
-        public static string SocketManagementWindow {
-            get {
-                return ResourceManager.GetString("SocketManagementWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 按分类排序 的本地化字符串。
-        /// </summary>
-        public static string SortByCategory {
-            get {
-                return ResourceManager.GetString("SortByCategory", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 按 {0} 排序 的本地化字符串。
-        /// </summary>
-        public static string SortByColumn {
-            get {
-                return ResourceManager.GetString("SortByColumn", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 按名称排序 的本地化字符串。
-        /// </summary>
-        public static string SortByName {
-            get {
-                return ResourceManager.GetString("SortByName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 默认排序 的本地化字符串。
-        /// </summary>
-        public static string SortDefault {
-            get {
-                return ResourceManager.GetString("SortDefault", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 排序选项 的本地化字符串。
-        /// </summary>
-        public static string SortOptions {
-            get {
-                return ResourceManager.GetString("SortOptions", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
         public static string Theme {
@@ -2235,15 +1839,6 @@ namespace ColorVision.UI.Properties {
         public static string TimedOp_WarmupNote {
             get {
                 return ResourceManager.GetString("TimedOp_WarmupNote", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 剩余时间： 的本地化字符串。
-        /// </summary>
-        public static string TimeLeft {
-            get {
-                return ResourceManager.GetString("TimeLeft", resourceCulture);
             }
         }
         
@@ -2662,15 +2257,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 更新 的本地化字符串。
-        /// </summary>
-        public static string Update {
-            get {
-                return ResourceManager.GetString("Update", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 更新Log4Net 日志级别： 的本地化字符串。
         /// </summary>
         public static string UpdateLog4NetLevel {
@@ -2712,60 +2298,6 @@ namespace ColorVision.UI.Properties {
         public static string Version {
             get {
                 return ResourceManager.GetString("Version", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图模式1 的本地化字符串。
-        /// </summary>
-        public static string ViewMode1 {
-            get {
-                return ResourceManager.GetString("ViewMode1", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图模式2 的本地化字符串。
-        /// </summary>
-        public static string ViewMode2 {
-            get {
-                return ResourceManager.GetString("ViewMode2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图模式4 的本地化字符串。
-        /// </summary>
-        public static string ViewMode4 {
-            get {
-                return ResourceManager.GetString("ViewMode4", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图模式9 的本地化字符串。
-        /// </summary>
-        public static string ViewMode9 {
-            get {
-                return ResourceManager.GetString("ViewMode9", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 隐藏 的本地化字符串。
-        /// </summary>
-        public static string WindowHidden {
-            get {
-                return ResourceManager.GetString("WindowHidden", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 独立窗口 的本地化字符串。
-        /// </summary>
-        public static string WindowSingle {
-            get {
-                return ResourceManager.GetString("WindowSingle", resourceCulture);
             }
         }
         

@@ -60,11 +60,7 @@
   </resheader>
   <data name="MenuFile" xml:space="preserve">
     <value>ファイル (_F)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>テンプレート(_M)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
+  </data>  <data name="MenuTool" xml:space="preserve">
     <value>ツール (_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
@@ -126,35 +122,14 @@
   </data>
   <data name="LanguageDescription" xml:space="preserve">
     <value>インターフェイスの表示言語を選択します。システムに従う場合はシステム言語を使用します。</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>選択したビューを自動的に切り替える</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
+  </data>  <data name="HotKeys" xml:space="preserve">
     <value>ショートカットキー</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>非表示</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>独立したウィンドウ</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
+  </data>  <data name="MenuExit" xml:space="preserve">
     <value>終了する (_X)</value>
   </data>
   <data name="Log" xml:space="preserve">
     <value>ログ</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>設定ファイルを開く</value>
-  </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>設定フォルダーを開く</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>ログフォルダを開く</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
+  </data>  <data name="AutoScrollToEnd" xml:space="preserve">
     <value>自動的に一番下までスクロールします</value>
   </data>
   <data name="AutoRefresh" xml:space="preserve">
@@ -168,17 +143,7 @@
   </data>
   <data name="Clear" xml:space="preserve">
     <value>クリア</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>エラーが発生しました</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>残り時間：</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>現在の速度:</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
+  </data>  <data name="MenuOpen" xml:space="preserve">
     <value>開く (_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
@@ -228,74 +193,11 @@
   </data>
   <data name="MenuClose" xml:space="preserve">
     <value>閉じる_C)</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>自動選択かどうか</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
+  </data>  <data name="MenuRedo" xml:space="preserve">
     <value>やり直し</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>バッファサイズ</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
+  </data>  <data name="GeneralSettings" xml:space="preserve">
     <value>一般設定</value>
-  </data>
-  <data name="SettingsNoMatchingSettings" xml:space="preserve">
-    <value>一致する設定はありません。</value>
-  </data>
-  <data name="SettingsMatchingCountFormat" xml:space="preserve">
-    <value>{0} 件の一致する設定</value>
-  </data>
-  <data name="SettingsCountFormat" xml:space="preserve">
-    <value>{0} 件の設定</value>
-  </data>
-  <data name="SettingsEditorUnavailable" xml:space="preserve">
-    <value>設定項目は利用できません</value>
-  </data>
-  <data name="SettingsEditorLoadFailed" xml:space="preserve">
-    <value>設定項目の読み込みに失敗しました</value>
-  </data>
-  <data name="SettingsPageTypeInvalid" xml:space="preserve">
-    <value>設定ページの種類が無効です</value>
-  </data>
-  <data name="SettingsPageUnavailable" xml:space="preserve">
-    <value>設定ページは利用できません</value>
-  </data>
-  <data name="SettingsPageLoadFailed" xml:space="preserve">
-    <value>設定ページの読み込みに失敗しました</value>
-  </data>
-  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
-    <value>起動時に更新を確認</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
-    <value>アプリ起動時に本体、プラグイン、テーマの更新を確認します。</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
-    <value>プラグイン更新 本体更新 テーマ更新 起動時確認 自動更新 check plugin updates startup update</value>
-  </data>
-  <data name="SettingsSectionBasic" xml:space="preserve">
-    <value>基本</value>
-  </data>
-  <data name="SettingsSectionSearch" xml:space="preserve">
-    <value>検索</value>
-  </data>
-  <data name="SettingsSectionFileArchive" xml:space="preserve">
-    <value>ファイルアーカイブ</value>
-  </data>
-  <data name="SettingsSectionServices" xml:space="preserve">
-    <value>サービス</value>
-  </data>
-  <data name="SettingsSectionPaths" xml:space="preserve">
-    <value>パス</value>
-  </data>
-  <data name="SettingsSectionExtensions" xml:space="preserve">
-    <value>拡張ページ</value>
-  </data>
-  <data name="SettingsSectionOther" xml:space="preserve">
-    <value>その他</value>
-  </data>
-  <data name="LogLevelDescription" xml:space="preserve">
+  </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>アプリケーションがログに書き込む詳細度を制御します。</value>
   </data>
   <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
@@ -303,11 +205,7 @@
   </data>
   <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
     <value>マーケットプレイス、更新確認、オンラインパッケージ API で使用するサービス URL。</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>プラグイン名</value>
-  </data>
-  <data name="Search" xml:space="preserve">
+  </data>  <data name="Search" xml:space="preserve">
     <value>検索</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -357,11 +255,7 @@
   </data>
   <data name="SearchIconSettingsTooltip" xml:space="preserve">
     <value>ダブルクリックして検索設定を開く</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>更新する</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>消去</value>
   </data>
   <data name="Version" xml:space="preserve">
@@ -369,32 +263,11 @@
   </data>
   <data name="Options" xml:space="preserve">
     <value>オプション</value>
-  </data>
-  <data name="NoLocalLog4Output" xml:space="preserve">
-    <value>ローカルlog4出力が設定されていません</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
+  </data>  <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>Log4Netログレベルの更新:</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>表示モード1</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>表示モード2</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>表示モード4</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>表示モード9</value>
-  </data>
-  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+  </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>追加プロジェクトを確認中</value>
-  </data>
-  <data name="Download" xml:space="preserve">
-    <value>ダウンロード</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>プロジェクト{0}が見つかりません</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
@@ -405,32 +278,7 @@
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>サポートされていないファイル形式</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>並び替えオプション</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>スマートソート（昇順）</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>スマートソート（降順）</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>{0}で並べ替え</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>昇順</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>降順</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>更新</value>
-  </data>
-  <data name="ConfirmDeletePlugin" xml:space="preserve">
-    <value>プラグイン{0}を削除しますか？</value>
-  </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
+  </data>  <data name="CheckingCUDASupport" xml:space="preserve">
     <value>CUDAサポートを確認中</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
@@ -546,11 +394,7 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverterリソースが見つかりません</value>
-  </data>
-  <data name="Install" xml:space="preserve">
-    <value>インストール</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
+  </data>  <data name="Rename" xml:space="preserve">
     <value>名前を変更</value>
   </data>
   <data name="ProjectSolution_P" xml:space="preserve">
@@ -558,23 +402,7 @@
   </data>
   <data name="MysqlTool" xml:space="preserve">
     <value>MySQLツール</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>メッセージログウィンドウ</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>ソケット管理ウィンドウ</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>ソートデフォルト</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>名前で並べ替え</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>カテゴリで並べ替え</value>
-  </data>
-  <data name="OK" xml:space="preserve">
+  </data>  <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
   <data name="Cancel" xml:space="preserve">

@@ -60,11 +60,7 @@
   </resheader>
   <data name="MenuFile" xml:space="preserve">
     <value>_File</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>Te_mplate</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
+  </data>  <data name="MenuTool" xml:space="preserve">
     <value>_Tool</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
@@ -126,35 +122,14 @@
   </data>
   <data name="LanguageDescription" xml:space="preserve">
     <value>Select the interface display language. When following the system, the system language is used.</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>Automatically switch selected views</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
+  </data>  <data name="HotKeys" xml:space="preserve">
     <value>Hotkeys</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>Hide</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>Independent</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
+  </data>  <data name="MenuExit" xml:space="preserve">
     <value>E_xit</value>
   </data>
   <data name="Log" xml:space="preserve">
     <value>_Log</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>Open Configuration File</value>
-  </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>Open Configuration Folder</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>Open Log Folder</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
+  </data>  <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Automatically scroll to the bottom</value>
   </data>
   <data name="AutoRefresh" xml:space="preserve">
@@ -168,17 +143,7 @@
   </data>
   <data name="Clear" xml:space="preserve">
     <value>Clear</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>An error occurred</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>Time Left:</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>Current Speed:</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
+  </data>  <data name="MenuOpen" xml:space="preserve">
     <value>_Open</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
@@ -228,74 +193,11 @@
   </data>
   <data name="MenuClose" xml:space="preserve">
     <value>_Close</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>Auto Select</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
+  </data>  <data name="MenuRedo" xml:space="preserve">
     <value>_Redo</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>Socket Buffer Size</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
+  </data>  <data name="GeneralSettings" xml:space="preserve">
     <value>General</value>
-  </data>
-  <data name="SettingsNoMatchingSettings" xml:space="preserve">
-    <value>No matching settings.</value>
-  </data>
-  <data name="SettingsMatchingCountFormat" xml:space="preserve">
-    <value>{0} matching settings</value>
-  </data>
-  <data name="SettingsCountFormat" xml:space="preserve">
-    <value>{0} settings</value>
-  </data>
-  <data name="SettingsEditorUnavailable" xml:space="preserve">
-    <value>Setting is unavailable</value>
-  </data>
-  <data name="SettingsEditorLoadFailed" xml:space="preserve">
-    <value>Failed to load this setting</value>
-  </data>
-  <data name="SettingsPageTypeInvalid" xml:space="preserve">
-    <value>Settings page type is invalid</value>
-  </data>
-  <data name="SettingsPageUnavailable" xml:space="preserve">
-    <value>Settings page is unavailable</value>
-  </data>
-  <data name="SettingsPageLoadFailed" xml:space="preserve">
-    <value>Failed to load the settings page</value>
-  </data>
-  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
-    <value>Check for updates at startup</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
-    <value>Check whether updates are available for the main application, plugins, and themes when the app starts.</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
-    <value>application update plugin updates theme update startup check detect updates when software starts check plugin updates</value>
-  </data>
-  <data name="SettingsSectionBasic" xml:space="preserve">
-    <value>Basic</value>
-  </data>
-  <data name="SettingsSectionSearch" xml:space="preserve">
-    <value>Search</value>
-  </data>
-  <data name="SettingsSectionFileArchive" xml:space="preserve">
-    <value>File archive</value>
-  </data>
-  <data name="SettingsSectionServices" xml:space="preserve">
-    <value>Services</value>
-  </data>
-  <data name="SettingsSectionPaths" xml:space="preserve">
-    <value>Paths</value>
-  </data>
-  <data name="SettingsSectionExtensions" xml:space="preserve">
-    <value>Extensions</value>
-  </data>
-  <data name="SettingsSectionOther" xml:space="preserve">
-    <value>Other</value>
-  </data>
-  <data name="LogLevelDescription" xml:space="preserve">
+  </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>Controls how much detail the application writes to logs.</value>
   </data>
   <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
@@ -303,11 +205,7 @@
   </data>
   <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
     <value>Service URL used by the marketplace, update checks, and online package APIs.</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>Name</value>
-  </data>
-  <data name="Search" xml:space="preserve">
+  </data>  <data name="Search" xml:space="preserve">
     <value>Search</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -357,11 +255,7 @@
   </data>
   <data name="SearchIconSettingsTooltip" xml:space="preserve">
     <value>Double-click to open search settings</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>Update</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
   <data name="Version" xml:space="preserve">
@@ -369,32 +263,11 @@
   </data>
   <data name="Options" xml:space="preserve">
     <value>Options</value>
-  </data>
-  <data name="NoLocalLog4Output" xml:space="preserve">
-    <value>No local log4 output configured</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
+  </data>  <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>Updating Log4Net log level:</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>View Mode 1</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>View Mode 2</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>View Mode 4</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>View Mode 9</value>
-  </data>
-  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+  </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Checking for additional projects</value>
-  </data>
-  <data name="Download" xml:space="preserve">
-    <value>Download</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>Project {0} not found</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
@@ -405,32 +278,7 @@
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>Sort Options</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>Smart Sort (Ascending)</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>Smart Sort (Descending)</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>Sort by {0}</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>Ascending</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>Descending</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>Update</value>
-  </data>
-  <data name="ConfirmDeletePlugin" xml:space="preserve">
-    <value>Confirm delete plugin {0}?</value>
-  </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
+  </data>  <data name="CheckingCUDASupport" xml:space="preserve">
     <value>Checking CUDA support</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
@@ -546,11 +394,7 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter resource not found</value>
-  </data>
-  <data name="Install" xml:space="preserve">
-    <value>Install</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
+  </data>  <data name="Rename" xml:space="preserve">
     <value>Rename</value>
   </data>
   <data name="ProjectSolution_P" xml:space="preserve">
@@ -558,23 +402,7 @@
   </data>
   <data name="MysqlTool" xml:space="preserve">
     <value>MySQL tools</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>Message Log Window</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>Socket Management Window</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>Default Sort</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>Sort by Name</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>Sort by Category</value>
-  </data>
-  <data name="OK" xml:space="preserve">
+  </data>  <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
   <data name="Cancel" xml:space="preserve">

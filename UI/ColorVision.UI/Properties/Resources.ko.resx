@@ -60,11 +60,7 @@
   </resheader>
   <data name="MenuFile" xml:space="preserve">
     <value>파일 (_F)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>템플릿(_M)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
+  </data>  <data name="MenuTool" xml:space="preserve">
     <value>도구 (_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
@@ -126,35 +122,14 @@
   </data>
   <data name="LanguageDescription" xml:space="preserve">
     <value>인터페이스 표시 언어를 선택합니다. 시스템을 따를 때는 시스템 언어를 사용합니다.</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>선택한 보기를 자동으로 전환</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
+  </data>  <data name="HotKeys" xml:space="preserve">
     <value>키보드 단축키</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>숨기기</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>독립 창</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
+  </data>  <data name="MenuExit" xml:space="preserve">
     <value>종료 (_X)</value>
   </data>
   <data name="Log" xml:space="preserve">
     <value>통나무</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>구성 파일 열기</value>
-  </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>오픈 구성 폴더</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>로그 폴더 열기</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
+  </data>  <data name="AutoScrollToEnd" xml:space="preserve">
     <value>자동으로 아래쪽으로 스크롤</value>
   </data>
   <data name="AutoRefresh" xml:space="preserve">
@@ -168,17 +143,7 @@
   </data>
   <data name="Clear" xml:space="preserve">
     <value>분명한</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>에러 발생됨</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>남은 시간:</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>현재 속도:</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
+  </data>  <data name="MenuOpen" xml:space="preserve">
     <value>열기 (_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
@@ -228,74 +193,11 @@
   </data>
   <data name="MenuClose" xml:space="preserve">
     <value>닫기_C)</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>자동 선택 여부</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
+  </data>  <data name="MenuRedo" xml:space="preserve">
     <value>다시 하기</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>버퍼 크기</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
+  </data>  <data name="GeneralSettings" xml:space="preserve">
     <value>일반 설정</value>
-  </data>
-  <data name="SettingsNoMatchingSettings" xml:space="preserve">
-    <value>일치하는 설정이 없습니다.</value>
-  </data>
-  <data name="SettingsMatchingCountFormat" xml:space="preserve">
-    <value>일치하는 설정 {0}개</value>
-  </data>
-  <data name="SettingsCountFormat" xml:space="preserve">
-    <value>설정 {0}개</value>
-  </data>
-  <data name="SettingsEditorUnavailable" xml:space="preserve">
-    <value>설정을 사용할 수 없습니다</value>
-  </data>
-  <data name="SettingsEditorLoadFailed" xml:space="preserve">
-    <value>설정을 불러오지 못했습니다</value>
-  </data>
-  <data name="SettingsPageTypeInvalid" xml:space="preserve">
-    <value>설정 페이지 형식이 올바르지 않습니다</value>
-  </data>
-  <data name="SettingsPageUnavailable" xml:space="preserve">
-    <value>설정 페이지를 사용할 수 없습니다</value>
-  </data>
-  <data name="SettingsPageLoadFailed" xml:space="preserve">
-    <value>설정 페이지를 불러오지 못했습니다</value>
-  </data>
-  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
-    <value>시작할 때 업데이트 확인</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
-    <value>앱이 시작될 때 기본 프로그램, 플러그인, 테마의 사용 가능한 업데이트를 확인합니다.</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
-    <value>플러그인 업데이트 기본 프로그램 업데이트 테마 업데이트 시작 확인 자동 업데이트 check plugin updates startup update</value>
-  </data>
-  <data name="SettingsSectionBasic" xml:space="preserve">
-    <value>기본</value>
-  </data>
-  <data name="SettingsSectionSearch" xml:space="preserve">
-    <value>검색</value>
-  </data>
-  <data name="SettingsSectionFileArchive" xml:space="preserve">
-    <value>파일 보관</value>
-  </data>
-  <data name="SettingsSectionServices" xml:space="preserve">
-    <value>서비스</value>
-  </data>
-  <data name="SettingsSectionPaths" xml:space="preserve">
-    <value>경로</value>
-  </data>
-  <data name="SettingsSectionExtensions" xml:space="preserve">
-    <value>확장 페이지</value>
-  </data>
-  <data name="SettingsSectionOther" xml:space="preserve">
-    <value>기타</value>
-  </data>
-  <data name="LogLevelDescription" xml:space="preserve">
+  </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>애플리케이션이 로그에 기록하는 상세 수준을 제어합니다.</value>
   </data>
   <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
@@ -303,11 +205,7 @@
   </data>
   <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
     <value>마켓플레이스, 업데이트 확인, 온라인 패키지 API에 사용할 서비스 URL입니다.</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>플러그인 이름</value>
-  </data>
-  <data name="Search" xml:space="preserve">
+  </data>  <data name="Search" xml:space="preserve">
     <value>찾다</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -357,11 +255,7 @@
   </data>
   <data name="SearchIconSettingsTooltip" xml:space="preserve">
     <value>두 번 클릭하여 검색 설정 열기</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>고쳐 쓰다</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>삭제</value>
   </data>
   <data name="Version" xml:space="preserve">
@@ -369,32 +263,11 @@
   </data>
   <data name="Options" xml:space="preserve">
     <value>옵션</value>
-  </data>
-  <data name="NoLocalLog4Output" xml:space="preserve">
-    <value>로컬 log4 출력이 구성되지 않았습니다</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
+  </data>  <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>Log4Net 로그 수준 업데이트 중:</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>보기 모드 1</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>보기 모드 2</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>보기 모드 4</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>보기 모드 9</value>
-  </data>
-  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+  </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>추가 프로젝트 확인 중</value>
-  </data>
-  <data name="Download" xml:space="preserve">
-    <value>다운로드</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>프로젝트 {0}을(를) 찾을 수 없습니다</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
@@ -405,32 +278,7 @@
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>지원되지 않는 파일 형식</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>정렬 옵션</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>스마트 정렬 (오름차순)</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>스마트 정렬 (내림차순)</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>{0}(으)로 정렬</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>오름차순</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>내림차순</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>업데이트</value>
-  </data>
-  <data name="ConfirmDeletePlugin" xml:space="preserve">
-    <value>플러그인 {0}을(를) 삭제하시겠습니까?</value>
-  </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
+  </data>  <data name="CheckingCUDASupport" xml:space="preserve">
     <value>CUDA 지원 확인 중</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
@@ -546,11 +394,7 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 리소스를 찾을 수 없습니다</value>
-  </data>
-  <data name="Install" xml:space="preserve">
-    <value>설치하다</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
+  </data>  <data name="Rename" xml:space="preserve">
     <value>이름 바꾸기</value>
   </data>
   <data name="ProjectSolution_P" xml:space="preserve">
@@ -558,23 +402,7 @@
   </data>
   <data name="MysqlTool" xml:space="preserve">
     <value>MySQL 도구</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>메시지 로그 창</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>소켓 관리 창</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>정렬기본값</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>이름순 정렬</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>카테고리별 정렬</value>
-  </data>
-  <data name="OK" xml:space="preserve">
+  </data>  <data name="OK" xml:space="preserve">
     <value>확인</value>
   </data>
   <data name="Cancel" xml:space="preserve">
