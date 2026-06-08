@@ -116,11 +116,7 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <data name="Search" xml:space="preserve">
-    <value>Recherche</value>
-  </data>
-  <data name="EventWindow" xml:space="preserve">
+  </resheader>  <data name="EventWindow" xml:space="preserve">
     <value>Observateur d'événements</value>
   </data>
   <data name="DumpFileSettings" xml:space="preserve">
