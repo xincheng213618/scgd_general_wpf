@@ -133,15 +133,6 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 当前日志 的本地化字符串。
-        /// </summary>
-        public static string CurrentLog {
-            get {
-                return ResourceManager.GetString("CurrentLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 数据库名称 的本地化字符串。
         /// </summary>
         public static string Database {
@@ -210,24 +201,6 @@ namespace ColorVision.Database.Properties {
         public static string DB_AdvancedQuery {
             get {
                 return ResourceManager.GetString("DB_AdvancedQuery", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 归档保留数量 的本地化字符串。
-        /// </summary>
-        public static string DB_ArchiveCount {
-            get {
-                return ResourceManager.GetString("DB_ArchiveCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 超过该数量后将自动删除最旧的归档。 的本地化字符串。
-        /// </summary>
-        public static string DB_ArchiveCountDesc {
-            get {
-                return ResourceManager.GetString("DB_ArchiveCountDesc", resourceCulture);
             }
         }
         
@@ -385,33 +358,6 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启用压缩归档 的本地化字符串。
-        /// </summary>
-        public static string DB_EnableCompress {
-            get {
-                return ResourceManager.GetString("DB_EnableCompress", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 如果启用，日志超过大小限制后将被压缩保存。 的本地化字符串。
-        /// </summary>
-        public static string DB_EnableCompressDesc {
-            get {
-                return ResourceManager.GetString("DB_EnableCompressDesc", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启用日志记录 的本地化字符串。
-        /// </summary>
-        public static string DB_EnableLogging {
-            get {
-                return ResourceManager.GetString("DB_EnableLogging", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 错误 的本地化字符串。
         /// </summary>
         public static string DB_Error {
@@ -426,15 +372,6 @@ namespace ColorVision.Database.Properties {
         public static string DB_ExpandHint {
             get {
                 return ResourceManager.GetString("DB_ExpandHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 单文件大小限制 (MB) 的本地化字符串。
-        /// </summary>
-        public static string DB_FileSizeLimit {
-            get {
-                return ResourceManager.GetString("DB_FileSizeLimit", resourceCulture);
             }
         }
         
@@ -835,15 +772,6 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 SQLite 日志 的本地化字符串。
-        /// </summary>
-        public static string DB_SqliteLogTable {
-            get {
-                return ResourceManager.GetString("DB_SqliteLogTable", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 SQL 预览 的本地化字符串。
         /// </summary>
         public static string DB_SqlPreview {
@@ -984,24 +912,6 @@ namespace ColorVision.Database.Properties {
         public static string LoadFailed {
             get {
                 return ResourceManager.GetString("LoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 日志数据库 的本地化字符串。
-        /// </summary>
-        public static string LogDatabase {
-            get {
-                return ResourceManager.GetString("LogDatabase", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 记录器 的本地化字符串。
-        /// </summary>
-        public static string Logger {
-            get {
-                return ResourceManager.GetString("Logger", resourceCulture);
             }
         }
         
@@ -1155,15 +1065,6 @@ namespace ColorVision.Database.Properties {
         public static string ShowDetail {
             get {
                 return ResourceManager.GetString("ShowDetail", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 日志数据库查看器 的本地化字符串。
-        /// </summary>
-        public static string SqliteLogWindow {
-            get {
-                return ResourceManager.GetString("SqliteLogWindow", resourceCulture);
             }
         }
         

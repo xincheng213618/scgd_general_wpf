@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
 		Microsoft ResX Schema
@@ -142,12 +142,6 @@
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
-  <data name="LogDatabase" xml:space="preserve">
-    <value>日志数据库</value>
-  </data>
-  <data name="SqliteLogWindow" xml:space="preserve">
-    <value>日志数据库查看器</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>刷新</value>
   </data>
@@ -168,9 +162,6 @@
   </data>
   <data name="Thread" xml:space="preserve">
     <value>线程</value>
-  </data>
-  <data name="Logger" xml:space="preserve">
-    <value>记录器</value>
   </data>
   <data name="Message" xml:space="preserve">
     <value>消息</value>
@@ -225,9 +216,6 @@
   </data>
   <data name="DataSource" xml:space="preserve">
     <value>数据源:</value>
-  </data>
-  <data name="CurrentLog" xml:space="preserve">
-    <value>当前日志</value>
   </data>
   <data name="MenuMySql" xml:space="preserve">
     <value>MySQL</value>
@@ -438,33 +426,6 @@
   </data>
   <data name="DB_Success" xml:space="preserve">
     <value>成功</value>
-  </data>
-  <data name="DB_EnableLogging" xml:space="preserve">
-    <value>启用日志记录</value>
-  </data>
-  <data name="DB_EnableLoggingDesc" xml:space="preserve">
-    <value>启用后会记录本地数据库日志。</value>
-  </data>
-  <data name="DB_EnableCompress" xml:space="preserve">
-    <value>启用压缩归档</value>
-  </data>
-  <data name="DB_EnableCompressDesc" xml:space="preserve">
-    <value>如果启用，日志超过大小限制后将被压缩保存。</value>
-  </data>
-  <data name="DB_FileSizeLimit" xml:space="preserve">
-    <value>单文件大小限制 (MB)</value>
-  </data>
-  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
-    <value>单个日志数据库文件达到该大小后触发归档，单位 MB。</value>
-  </data>
-  <data name="DB_ArchiveCount" xml:space="preserve">
-    <value>归档保留数量</value>
-  </data>
-  <data name="DB_ArchiveCountDesc" xml:space="preserve">
-    <value>超过该数量后将自动删除最旧的归档。</value>
-  </data>
-  <data name="DB_SqliteLogTable" xml:space="preserve">
-    <value>SQLite 日志</value>
   </data>
   <data name="DB_ProviderIdEmpty" xml:space="preserve">
     <value>ProviderId 不能为空。</value>

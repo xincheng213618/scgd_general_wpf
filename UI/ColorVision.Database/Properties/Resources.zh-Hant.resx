@@ -162,12 +162,6 @@
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
-  <data name="LogDatabase" xml:space="preserve">
-    <value>日誌資料庫</value>
-  </data>
-  <data name="SqliteLogWindow" xml:space="preserve">
-    <value>日誌資料庫檢視器</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>重新整理</value>
   </data>
@@ -188,9 +182,6 @@
   </data>
   <data name="Thread" xml:space="preserve">
     <value>執行緒</value>
-  </data>
-  <data name="Logger" xml:space="preserve">
-    <value>記錄器</value>
   </data>
   <data name="Message" xml:space="preserve">
     <value>訊息</value>
@@ -245,9 +236,6 @@
   </data>
   <data name="DataSource" xml:space="preserve">
     <value>資料來源:</value>
-  </data>
-  <data name="CurrentLog" xml:space="preserve">
-    <value>當前日誌</value>
   </data>
   <data name="MenuMySql" xml:space="preserve">
     <value>MySQL</value>
@@ -458,33 +446,6 @@
   </data>
   <data name="DB_Success" xml:space="preserve">
     <value>成功</value>
-  </data>
-  <data name="DB_EnableLogging" xml:space="preserve">
-    <value>啟用日誌記錄</value>
-  </data>
-  <data name="DB_EnableLoggingDesc" xml:space="preserve">
-    <value>啟用後會記錄本機資料庫日誌。</value>
-  </data>
-  <data name="DB_EnableCompress" xml:space="preserve">
-    <value>啟用壓縮歸檔</value>
-  </data>
-  <data name="DB_EnableCompressDesc" xml:space="preserve">
-    <value>如果啟用，日誌超過大小限制後將被壓縮保存。</value>
-  </data>
-  <data name="DB_FileSizeLimit" xml:space="preserve">
-    <value>單檔案大小限制 (MB)</value>
-  </data>
-  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
-    <value>單個日誌資料庫檔案達到該大小後觸發封存，單位 MB。</value>
-  </data>
-  <data name="DB_ArchiveCount" xml:space="preserve">
-    <value>歸檔保留數量</value>
-  </data>
-  <data name="DB_ArchiveCountDesc" xml:space="preserve">
-    <value>超過該數量後將自動刪除最舊的歸檔。</value>
-  </data>
-  <data name="DB_SqliteLogTable" xml:space="preserve">
-    <value>SQLite 日誌</value>
   </data>
   <data name="DB_ProviderIdEmpty" xml:space="preserve">
     <value>ProviderId 不能為空。</value>

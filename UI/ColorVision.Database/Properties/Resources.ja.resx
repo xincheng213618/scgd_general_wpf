@@ -162,12 +162,6 @@
   <data name="Cancel" xml:space="preserve">
     <value>キャンセル</value>
   </data>
-  <data name="LogDatabase" xml:space="preserve">
-    <value>ログデータベース</value>
-  </data>
-  <data name="SqliteLogWindow" xml:space="preserve">
-    <value>ログデータベースビューア</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>更新</value>
   </data>
@@ -188,9 +182,6 @@
   </data>
   <data name="Thread" xml:space="preserve">
     <value>スレッド</value>
-  </data>
-  <data name="Logger" xml:space="preserve">
-    <value>ロガー</value>
   </data>
   <data name="Message" xml:space="preserve">
     <value>メッセージ</value>
@@ -245,9 +236,6 @@
   </data>
   <data name="DataSource" xml:space="preserve">
     <value>データソース:</value>
-  </data>
-  <data name="CurrentLog" xml:space="preserve">
-    <value>現在のログ</value>
   </data>
   <data name="MenuMySql" xml:space="preserve">
     <value>MySQL</value>
@@ -458,33 +446,6 @@
   </data>
   <data name="DB_Success" xml:space="preserve">
     <value>成功</value>
-  </data>
-  <data name="DB_EnableLogging" xml:space="preserve">
-    <value>ログを有効にする</value>
-  </data>
-  <data name="DB_EnableLoggingDesc" xml:space="preserve">
-    <value>有効にすると、ローカル データベース ログを記録します。</value>
-  </data>
-  <data name="DB_EnableCompress" xml:space="preserve">
-    <value>圧縮アーカイブを有効にする</value>
-  </data>
-  <data name="DB_EnableCompressDesc" xml:space="preserve">
-    <value>有効にすると、サイズ制限を超えた場合にログが圧縮されます。</value>
-  </data>
-  <data name="DB_FileSizeLimit" xml:space="preserve">
-    <value>単一ファイルサイズ制限 (MB)</value>
-  </data>
-  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
-    <value>ログ データベース ファイルがこのサイズに達するとアーカイブします。単位は MB です。</value>
-  </data>
-  <data name="DB_ArchiveCount" xml:space="preserve">
-    <value>アーカイブ保持数</value>
-  </data>
-  <data name="DB_ArchiveCountDesc" xml:space="preserve">
-    <value>この数を超えると最古のアーカイブが削除されます。</value>
-  </data>
-  <data name="DB_SqliteLogTable" xml:space="preserve">
-    <value>SQLiteログ</value>
   </data>
   <data name="DB_ProviderIdEmpty" xml:space="preserve">
     <value>ProviderIdは空にできません。</value>
