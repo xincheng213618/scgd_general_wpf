@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -161,83 +161,9 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>重新整理</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>清理快取</value>
-  </data>
-  <data name="OpenFolder" xml:space="preserve">
-    <value>開啟資料夾</value>
-  </data>
-  <data name="TotalRecords" xml:space="preserve">
-    <value>總記錄數:</value>
-  </data>
-  <data name="Date" xml:space="preserve">
-    <value>日期</value>
-  </data>
-  <data name="Level" xml:space="preserve">
-    <value>級別</value>
-  </data>
-  <data name="Thread" xml:space="preserve">
-    <value>執行緒</value>
-  </data>
-  <data name="Message" xml:space="preserve">
-    <value>訊息</value>
-  </data>
-  <data name="Exception" xml:space="preserve">
-    <value>例外</value>
-  </data>
-  <data name="LoadFailed" xml:space="preserve">
-    <value>載入失敗</value>
-  </data>
-  <data name="ClearCacheConfirm" xml:space="preserve">
-    <value>確定要清理所有日誌快取嗎？此操作不可恢復。</value>
-  </data>
-  <data name="ClearCacheSuccess" xml:space="preserve">
-    <value>日誌快取已清理完畢</value>
-  </data>
-  <data name="ClearCacheFailed" xml:space="preserve">
-    <value>清理快取失敗</value>
-  </data>
-  <data name="Query" xml:space="preserve">
+  </data>  <data name="Query" xml:space="preserve">
     <value>查詢</value>
-  </data>
-  <data name="StartDate" xml:space="preserve">
-    <value>開始日期</value>
-  </data>
-  <data name="EndDate" xml:space="preserve">
-    <value>結束日期</value>
-  </data>
-  <data name="ShowDetail" xml:space="preserve">
-    <value>顯示詳情</value>
-  </data>
-  <data name="DetailInfo" xml:space="preserve">
-    <value>詳細資訊</value>
-  </data>
-  <data name="PageSize" xml:space="preserve">
-    <value>每頁筆數:</value>
-  </data>
-  <data name="Page" xml:space="preserve">
-    <value>頁</value>
-  </data>
-  <data name="FirstPage" xml:space="preserve">
-    <value>第一頁</value>
-  </data>
-  <data name="PrevPage" xml:space="preserve">
-    <value>上一頁</value>
-  </data>
-  <data name="NextPage" xml:space="preserve">
-    <value>下一頁</value>
-  </data>
-  <data name="LastPage" xml:space="preserve">
-    <value>最後一頁</value>
-  </data>
-  <data name="DataSource" xml:space="preserve">
-    <value>資料來源:</value>
-  </data>
-  <data name="MenuMySql" xml:space="preserve">
+  </data>  <data name="MenuMySql" xml:space="preserve">
     <value>MySQL</value>
   </data>
   <data name="MenuEntityBrowser" xml:space="preserve">
