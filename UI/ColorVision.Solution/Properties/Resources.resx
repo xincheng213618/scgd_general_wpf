@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-  
+
   <xs:schema id="root">
     <xs:element name="root" ns1:IsDataSet="true">
       <xs:complexType>
@@ -54,26 +54,9 @@
   </data>
   <data name="Open" xml:space="preserve">
     <value>打开</value>
-  </data>
-  <data name="Import" xml:space="preserve">
-    <value>导入</value>
-  </data>
-  <data name="Export" xml:space="preserve">
-    <value>导出</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
+  </data>  <data name="Edit" xml:space="preserve">
     <value>编辑</value>
-  </data>
-  <data name="Create" xml:space="preserve">
-    <value>创建</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>应用</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>打开工程</value>
-  </data>
-  <data name="OpenItem" xml:space="preserve">
+  </data>  <data name="OpenItem" xml:space="preserve">
     <value>打开项目</value>
   </data>
   <data name="OpenLocalProjectOrFile" xml:space="preserve">
@@ -81,62 +64,23 @@
   </data>
   <data name="NewSolution" xml:space="preserve">
     <value>新建工程</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>新建工程格式</value>
-  </data>
-  <data name="Reset" xml:space="preserve">
-    <value>重置</value>
-  </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>工程设置</value>
-  </data>
-  <data name="Property" xml:space="preserve">
+  </data>  <data name="Property" xml:space="preserve">
     <value>属性</value>
-  </data>
-  <data name="Reseted" xml:space="preserve">
-    <value>已重置</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
+  </data>  <data name="Refresh" xml:space="preserve">
     <value>刷新</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>清除</value>
-  </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
+  </data>  <data name="ConfigureNewProject" xml:space="preserve">
     <value>配置新工程</value>
   </data>
   <data name="ProjectName" xml:space="preserve">
     <value>项目名称</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>工程</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>清除缓存</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>保存</value>
-  </data>
-  <data name="Search" xml:space="preserve">
-    <value>搜索</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
+  </data>  <data name="CreateProject" xml:space="preserve">
     <value>创建工程</value>
-  </data>
-  <data name="DefaultExportStorageFormat" xml:space="preserve">
-    <value>默认导出存储格式</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
+  </data>  <data name="CreateNewProjectOrFile" xml:space="preserve">
     <value>创建一个新的的项目或文件</value>
   </data>
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>选择项目保存位置</value>
-  </data>
-  <data name="MenuCopyFullPath" xml:space="preserve">
-    <value>复制完整路径(_U)</value>
-  </data>
-  <data name="MenuOpenContainingFolder" xml:space="preserve">
+  </data>  <data name="MenuOpenContainingFolder" xml:space="preserve">
     <value>打开所在的文件夹(_O)</value>
   </data>
   <data name="MenuOpenFileInExplorer" xml:space="preserve">
@@ -189,11 +133,7 @@
   </data>
   <data name="Column" xml:space="preserve">
     <value>列</value>
-  </data>
-  <data name="Terminal" xml:space="preserve">
-    <value>终端</value>
-  </data>
-  <data name="EditSolution" xml:space="preserve">
+  </data>  <data name="EditSolution" xml:space="preserve">
     <value>编辑解决方案</value>
   </data>
   <data name="AddFolder" xml:space="preserve">
@@ -234,17 +174,9 @@
   </data>
   <data name="UserManagement" xml:space="preserve">
     <value>用户管理</value>
-  </data>
-  <data name="Status" xml:space="preserve">
-    <value>状态</value>
-  </data>
-  <data name="LoginOrSwitch" xml:space="preserve">
+  </data>  <data name="LoginOrSwitch" xml:space="preserve">
     <value>登录/切换</value>
-  </data>
-  <data name="Unknown" xml:space="preserve">
-    <value>未知</value>
-  </data>
-  <data name="WelcomeBack" xml:space="preserve">
+  </data>  <data name="WelcomeBack" xml:space="preserve">
     <value>欢迎回来</value>
   </data>
   <data name="RememberLoginStatus7Days" xml:space="preserve">
@@ -279,11 +211,7 @@
   </data>
   <data name="LayoutNotFoundTitle" xml:space="preserve">
     <value>应用窗口布局</value>
-  </data>
-  <data name="MenuFusion" xml:space="preserve">
-    <value>景深融合(_F)</value>
-  </data>
-<data name="MultiImageViewer" xml:space="preserve"><value>多图浏览器</value></data>
+  </data><data name="MultiImageViewer" xml:space="preserve"><value>多图浏览器</value></data>
   <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>显示文件列表</value></data>
   <data name="Sol_MivCfg_View" xml:space="preserve"><value>视图</value></data>
   <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>列表高度</value></data>
@@ -423,17 +351,7 @@
   </data>
   <data name="Sol_Miv_SelectImage" xml:space="preserve">
     <value>请从左侧列表选择图片</value>
-  </data>
-  <data name="Sol_Miv_FileCount" xml:space="preserve">
-    <value>共 {0} 个文件</value>
-  </data>
-  <data name="Sol_Miv_FolderNotExist" xml:space="preserve">
-    <value>文件夹不存在: {0}</value>
-  </data>
-  <data name="Sol_Miv_Error" xml:space="preserve">
-    <value>错误</value>
-  </data>
-  <data name="Sol_AddProject_Title" xml:space="preserve">
+  </data>  <data name="Sol_AddProject_Title" xml:space="preserve">
     <value>添加新项目</value>
   </data>
   <data name="Sol_AddProject_Category" xml:space="preserve">
@@ -501,14 +419,7 @@
   </data>
   <data name="Sol_OpenFolderDesc" xml:space="preserve">
     <value>直接将本地目录作为工作区打开</value>
-  </data>
-  <data name="Sol_NewTerminal" xml:space="preserve">
-    <value>+ 新终端</value>
-  </data>
-  <data name="Sol_NewTerminalTooltip" xml:space="preserve">
-    <value>启动新的终端会话</value>
-  </data>
-  <data name="Terminal_NewPowerShell" xml:space="preserve">
+  </data>  <data name="Terminal_NewPowerShell" xml:space="preserve">
     <value>新建 PowerShell</value>
   </data>
   <data name="Terminal_NewCmd" xml:space="preserve">
@@ -519,11 +430,7 @@
   </data>
   <data name="Sol_Terminate" xml:space="preserve">
     <value>终止</value>
-  </data>
-  <data name="Sol_TerminateTooltip" xml:space="preserve">
-    <value>终止当前终端进程</value>
-  </data>
-  <data name="Sol_Login_Welcome" xml:space="preserve">
+  </data>  <data name="Sol_Login_Welcome" xml:space="preserve">
     <value>欢迎使用 ColorVision 系统</value>
   </data>
   <data name="Sol_Login_AutoLogin" xml:space="preserve">

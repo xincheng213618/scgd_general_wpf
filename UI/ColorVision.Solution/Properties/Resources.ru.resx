@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-  
+
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xs:element name="root" ns1:IsDataSet="true">
@@ -73,26 +73,9 @@
   </data>
   <data name="Open" xml:space="preserve">
     <value>Открыть</value>
-  </data>
-  <data name="Import" xml:space="preserve">
-    <value>Импортировать</value>
-  </data>
-  <data name="Export" xml:space="preserve">
-    <value>Экспорт</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
+  </data>  <data name="Edit" xml:space="preserve">
     <value>Редактировать</value>
-  </data>
-  <data name="Create" xml:space="preserve">
-    <value>создавать</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>приложение</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>Открыть проект</value>
-  </data>
-  <data name="OpenItem" xml:space="preserve">
+  </data>  <data name="OpenItem" xml:space="preserve">
     <value>Открыть проект</value>
   </data>
   <data name="OpenLocalProjectOrFile" xml:space="preserve">
@@ -100,62 +83,23 @@
   </data>
   <data name="NewSolution" xml:space="preserve">
     <value>Новое строительство</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>Новый формат проекта</value>
-  </data>
-  <data name="Reset" xml:space="preserve">
-    <value>перезагрузить</value>
-  </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>Настройки проекта</value>
-  </data>
-  <data name="Property" xml:space="preserve">
+  </data>  <data name="Property" xml:space="preserve">
     <value>Атрибуты</value>
-  </data>
-  <data name="Reseted" xml:space="preserve">
-    <value>Сброс завершен</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
+  </data>  <data name="Refresh" xml:space="preserve">
     <value>обновить</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>Прозрачный</value>
-  </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
+  </data>  <data name="ConfigureNewProject" xml:space="preserve">
     <value>Настроить новый проект</value>
   </data>
   <data name="ProjectName" xml:space="preserve">
     <value>название проекта</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>проект</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>очистить кэш</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>сохранять</value>
-  </data>
-  <data name="Search" xml:space="preserve">
-    <value>поиск</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
+  </data>  <data name="CreateProject" xml:space="preserve">
     <value>Создать проект</value>
-  </data>
-  <data name="DefaultExportStorageFormat" xml:space="preserve">
-    <value>Формат хранения экспорта по умолчанию</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
+  </data>  <data name="CreateNewProjectOrFile" xml:space="preserve">
     <value>Создать новый проект или файл</value>
   </data>
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>Выберите, где сохранить проект</value>
-  </data>
-  <data name="MenuCopyFullPath" xml:space="preserve">
-    <value>Скопировать полный путь (U)</value>
-  </data>
-  <data name="MenuOpenContainingFolder" xml:space="preserve">
+  </data>  <data name="MenuOpenContainingFolder" xml:space="preserve">
     <value>Откройте папку (O)</value>
   </data>
   <data name="MenuOpenFileInExplorer" xml:space="preserve">
@@ -208,11 +152,7 @@
   </data>
   <data name="Column" xml:space="preserve">
     <value>Список</value>
-  </data>
-  <data name="Terminal" xml:space="preserve">
-    <value>Терминал</value>
-  </data>
-  <data name="EditSolution" xml:space="preserve">
+  </data>  <data name="EditSolution" xml:space="preserve">
     <value>Редактирование решений</value>
   </data>
   <data name="AddFolder" xml:space="preserve">
@@ -253,17 +193,9 @@
   </data>
   <data name="UserManagement" xml:space="preserve">
     <value>Управление пользователями</value>
-  </data>
-  <data name="Status" xml:space="preserve">
-    <value>Статус</value>
-  </data>
-  <data name="LoginOrSwitch" xml:space="preserve">
+  </data>  <data name="LoginOrSwitch" xml:space="preserve">
     <value>Вход/Переключение</value>
-  </data>
-  <data name="Unknown" xml:space="preserve">
-    <value>неизвестный</value>
-  </data>
-  <data name="WelcomeBack" xml:space="preserve">
+  </data>  <data name="WelcomeBack" xml:space="preserve">
     <value>Добро пожаловать</value>
   </data>
   <data name="RememberLoginStatus7Days" xml:space="preserve">
@@ -298,11 +230,7 @@
   </data>
   <data name="LayoutNotFoundTitle" xml:space="preserve">
     <value>Применить раскладку окон</value>
-  </data>
-  <data name="MenuFusion" xml:space="preserve">
-    <value>Слияние глубины(_F)</value>
-  </data>
-<data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data>
+  </data><data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data>
   <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>Показать список файлов</value></data>
   <data name="Sol_MivCfg_View" xml:space="preserve"><value>Вид</value></data>
   <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>Высота списка</value></data>
@@ -442,17 +370,7 @@
   </data>
   <data name="Sol_Miv_SelectImage" xml:space="preserve">
     <value>Выберите изображение из списка слева</value>
-  </data>
-  <data name="Sol_Miv_FileCount" xml:space="preserve">
-    <value>Всего файлов: {0}</value>
-  </data>
-  <data name="Sol_Miv_FolderNotExist" xml:space="preserve">
-    <value>Папка не существует: {0}</value>
-  </data>
-  <data name="Sol_Miv_Error" xml:space="preserve">
-    <value>Ошибка</value>
-  </data>
-  <data name="Sol_AddProject_Title" xml:space="preserve">
+  </data>  <data name="Sol_AddProject_Title" xml:space="preserve">
     <value>Добавить новый проект</value>
   </data>
   <data name="Sol_AddProject_Category" xml:space="preserve">
@@ -520,23 +438,12 @@
   </data>
   <data name="Sol_OpenFolderDesc" xml:space="preserve">
     <value>Открыть локальную директорию как рабочее пространство</value>
-  </data>
-  <data name="Sol_NewTerminal" xml:space="preserve">
-    <value>+ Новый терминал</value>
-  </data>
-  <data name="Sol_NewTerminalTooltip" xml:space="preserve">
-    <value>Запустить новый сеанс терминала</value>
-  </data>
-  <data name="Sol_ClearScreen" xml:space="preserve">
+  </data>  <data name="Sol_ClearScreen" xml:space="preserve">
     <value>Очистить экран</value>
   </data>
   <data name="Sol_Terminate" xml:space="preserve">
     <value>Завершить</value>
-  </data>
-  <data name="Sol_TerminateTooltip" xml:space="preserve">
-    <value>Завершить текущий процесс терминала</value>
-  </data>
-  <data name="Sol_Login_Welcome" xml:space="preserve">
+  </data>  <data name="Sol_Login_Welcome" xml:space="preserve">
     <value>Добро пожаловать в систему ColorVision</value>
   </data>
   <data name="Sol_Login_AutoLogin" xml:space="preserve">
