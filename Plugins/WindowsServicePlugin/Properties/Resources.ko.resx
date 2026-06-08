@@ -117,24 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86 서비스 로그</value>
-  </data>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64 서비스 로그</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>서비스 로그</value>
-  </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>분광계 로그</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>카메라 로그</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC 서비스 로그</value>
-  </data>
   <data name="ManagementService" xml:space="preserve">
     <value>관리 서비스</value>
   </data>
@@ -153,12 +135,6 @@
   <data name="CVWinSMSPathDescription" xml:space="preserve">
     <value>CVWinSMS 서비스 도구의 실행 파일 경로입니다.</value>
   </data>
-  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
-    <value>CVWinSMS 자동 업데이트</value>
-  </data>
-  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
-    <value>CVWinSMS 서비스 도구가 업데이트를 자동으로 감지하고 적용하도록 허용합니다.</value>
-  </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>서비스 설치 루트</value>
   </data>
@@ -170,18 +146,6 @@
   </data>
   <data name="ServiceManagerMySqlPortDescription" xml:space="preserve">
     <value>MySQL 서비스 수신 포트입니다.</value>
-  </data>
-  <data name="ServiceManagerUpdateServerUrl" xml:space="preserve">
-    <value>서비스 업데이트 URL</value>
-  </data>
-  <data name="ServiceManagerUpdateServerUrlDescription" xml:space="preserve">
-    <value>서비스 패키지를 온라인으로 업데이트하고 다운로드하는 데 사용하는 서버 URL입니다.</value>
-  </data>
-  <data name="ServiceManagerDownloadLocation" xml:space="preserve">
-    <value>다운로드 폴더</value>
-  </data>
-  <data name="ServiceManagerDownloadLocationDescription" xml:space="preserve">
-    <value>서비스 패키지, MySQL, MQTT 등의 온라인 다운로드를 저장하는 폴더입니다.</value>
   </data>
   <data name="ServiceManagerInstallServiceChecked" xml:space="preserve">
     <value>서비스 패키지 기본 선택</value>

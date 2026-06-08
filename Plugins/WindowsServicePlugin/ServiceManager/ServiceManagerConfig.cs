@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Microsoft.Win32;
-using Newtonsoft.Json;
 using System.ComponentModel;
 using System.IO;
 using System.Xml.Linq;
@@ -25,25 +24,6 @@ namespace WindowsServicePlugin.ServiceManager
         public int MySqlPort { get => _MySqlPort; set { _MySqlPort = value; OnPropertyChanged(); } }
         private int _MySqlPort = 3306;
 
-        [DisplayName("ServiceManagerUpdateServerUrl")]
-        [Description("ServiceManagerUpdateServerUrlDescription")]
-        public string UpdateServerUrl { get => _UpdateServerUrl; set { _UpdateServerUrl = value; OnPropertyChanged(); } }
-        private string _UpdateServerUrl = "http://xc213618.ddns.me:9998";
-
-        [DisplayName("ServiceManagerDownloadLocation")]
-        [Description("ServiceManagerDownloadLocationDescription")]
-        public string DownloadLocation
-        {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(_DownloadLocation))
-                    _DownloadLocation = Environments.DirDownloads;
-                return _DownloadLocation;
-            }
-            set { _DownloadLocation = value; OnPropertyChanged(); }
-        }
-        private string _DownloadLocation = string.Empty;
-
         [DisplayName("ServiceManagerInstallServiceChecked")]
         [Description("ServiceManagerInstallServiceCheckedDescription")]
         public bool InstallServiceChecked { get => _InstallServiceChecked; set { _InstallServiceChecked = value; OnPropertyChanged(); } }
@@ -58,20 +38,6 @@ namespace WindowsServicePlugin.ServiceManager
         [Description("ServiceManagerInstallMqttCheckedDescription")]
         public bool InstallMqttChecked { get => _InstallMqttChecked; set { _InstallMqttChecked = value; OnPropertyChanged(); } }
         private bool _InstallMqttChecked;
-
-        [JsonIgnore]
-        public string LatestReleaseUrl
-        {
-            get
-            {
-                string url = UpdateServerUrl?.TrimEnd('/') ?? string.Empty;
-                if (url.Contains("/browse/", StringComparison.OrdinalIgnoreCase))
-                {
-                    url = url.Replace("/browse/", "/download/", StringComparison.OrdinalIgnoreCase);
-                }
-                return url + "/LATEST_RELEASE";
-            }
-        }
 
         public static ServiceEntry MQTTServiceEntries { get; set; } = new ServiceEntry
         {
@@ -110,14 +76,6 @@ namespace WindowsServicePlugin.ServiceManager
                     ServiceName = "CVMainService_dev",
                     DisplayName = "CV主服务(Dev)",
                     FolderName = "CVMainWindowsService_dev",
-                    IsPackaged = true
-                },
-                new ServiceEntry
-                {
-                    ServiceName = "CVArchService",
-                    DisplayName = "归档服务",
-                    FolderName = "RegWindowsService",
-                    ExecutableName = "ArchivedWindowsService.exe",
                     IsPackaged = true
                 },
 

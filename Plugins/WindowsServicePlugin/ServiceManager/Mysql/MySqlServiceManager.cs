@@ -28,7 +28,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public async Task<bool> InstallFromZipAsync(string zipFilePath, string baseLocation, Action<string> logCallback)
         {
-            string targetDir = Path.Combine(Directory.GetParent(baseLocation)?.FullName ?? baseLocation, "Mysql");
+            string targetDir = Directory.GetParent(baseLocation)?.FullName ?? baseLocation;
             var credentials = CreateFreshInstallCredentials();
 
             Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
@@ -62,7 +62,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public (string RootPassword, string AppUser, string AppPassword, string Database) CreateFreshInstallCredentials()
         {
-            string database = string.IsNullOrWhiteSpace(Config.Database) ? "color_vision" : Config.Database.Trim();
+            string database = string.IsNullOrWhiteSpace(Config.Database) ? "color_vision_4xx" : Config.Database.Trim();
             string appUser = string.IsNullOrWhiteSpace(Config.AppUser) || string.Equals(Config.AppUser, "root", StringComparison.OrdinalIgnoreCase)
                 ? "cv"
                 : Config.AppUser.Trim();
@@ -192,7 +192,7 @@ namespace WindowsServicePlugin.ServiceManager
             return Helper.ExecuteSqlFile(Config.AppUser, Config.AppPassword, Config.Database, filePath, logCallback);
         }
 
-        public string? ResolveResetDatabaseSqlPath()
+        public static string? ResolveResetDatabaseSqlPath()
         {
             return ResolveColorVisionAllSqlPath(ServiceManagerConfig.Instance.BaseLocation);
         }
@@ -442,7 +442,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private static IEnumerable<string> EnumerateServiceInstallRoots(string? basePath)
+        private static List<string> EnumerateServiceInstallRoots(string? basePath)
         {
             var roots = new List<string>();
 

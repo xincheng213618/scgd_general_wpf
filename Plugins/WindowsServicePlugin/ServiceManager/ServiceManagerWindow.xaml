@@ -77,8 +77,6 @@
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
                     <Button Content="更新配置" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                    <Button Content="注销归档" Command="{Binding UnregisterArchiveCommand}" Margin="0,0,8,0" Padding="12,6"
-                            ToolTip="停止并注销 CVArchService，同时从注册中心 Monitor.Services 中移除"/>
                     <Button Content="检查数据库配置" Command="{Binding CheckDatabaseConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
                     <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
                             Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
@@ -133,7 +131,6 @@
                                             <Button Content="WinService" Command="{Binding DataContext.OpenWinServiceConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                             <Button Content="MySql" Command="{Binding DataContext.OpenMySqlConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                             <Button Content="MQTT" Command="{Binding DataContext.OpenMqttConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
-                                            <Button Content="log4net" Command="{Binding DataContext.OpenLog4NetConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                         </WrapPanel>
                                     </StackPanel>
                                 </Border>

@@ -47,15 +47,10 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <CheckBox Grid.Column="0" Content="服务包" IsChecked="{Binding InstallServiceChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
                     <TextBox Grid.Column="1" Text="{Binding ServicePackagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <TextBlock Grid.Column="2" Text="{Binding ServicePackageTypeDescription}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource PrimaryBrush}" FontSize="11" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="更新" Command="{Binding CheckUpdateCommand}" Padding="12,4" Margin="0,0,4,0" Style="{StaticResource ButtonPrimary}"/>
-                    <Button Grid.Column="4" Content="选择" Command="{Binding SelectServicePackageCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="选择" Command="{Binding SelectServicePackageCommand}" Padding="12,4"/>
                 </Grid>
 
                 <!-- MySQL -->
@@ -64,12 +59,10 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <CheckBox Grid.Column="0" Content="MySQL" IsChecked="{Binding InstallMySqlChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
                     <TextBox Grid.Column="1" Text="{Binding MySqlPackagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="在线下载" Command="{Binding DownloadMySqlCommand}" Padding="12,4" Margin="0,0,4,0"/>
-                    <Button Grid.Column="3" Content="选择" Command="{Binding SelectMySqlZipCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="选择" Command="{Binding SelectMySqlZipCommand}" Padding="12,4"/>
                 </Grid>
 
                 <!-- MQTT -->
@@ -78,24 +71,10 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <CheckBox Grid.Column="0" Content="MQTT" IsChecked="{Binding InstallMqttChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
                     <TextBox Grid.Column="1" Text="{Binding MqttInstallerPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="在线下载" Command="{Binding DownloadMqttCommand}" Padding="12,4" Margin="0,0,4,0"/>
-                    <Button Grid.Column="3" Content="选择" Command="{Binding SelectMqttInstallerCommand}" Padding="12,4"/>
-                </Grid>
-
-                <!-- 下载目录 -->
-                <Grid Margin="0,6,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="下载目录" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
-                    <TextBox Grid.Column="1" Text="{Binding DownloadLocation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="浏览" Command="{Binding SelectDownloadLocationCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="选择" Command="{Binding SelectMqttInstallerCommand}" Padding="12,4"/>
                 </Grid>
             </StackPanel>
         </Border>
@@ -149,7 +128,6 @@
                 </Grid.RowDefinitions>
                 <DockPanel Grid.Row="0" Margin="0,0,0,6">
                     <TextBlock Text="安装日志" VerticalAlignment="Center" FontWeight="Bold"/>
-                    <TextBlock DockPanel.Dock="Right" Text="{Binding UpdateStatusText}" VerticalAlignment="Center" Foreground="Gray" Margin="8,0,0,0"/>
                     <Button DockPanel.Dock="Right" Content="清除" Command="{Binding ClearLogCommand}" Padding="8,2"/>
                 </DockPanel>
                 <TextBox Grid.Row="1" Text="{Binding LogText, Mode=OneWay}" IsReadOnly="True"

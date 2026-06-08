@@ -50,7 +50,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 string baseLocation = Config.BaseLocation;
                 if (string.IsNullOrEmpty(baseLocation) || !Directory.Exists(baseLocation))
-                    return;
+                    throw new DirectoryNotFoundException($"安装根目录不存在: {baseLocation}");
 
                 SyncAllConfigs(false);
                 AddLog("已执行安装后配置同步(UpdateConfig)");
@@ -59,12 +59,13 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 AddLog($"安装后配置同步失败: {ex.Message}");
+                throw;
             }
         }
 
         private void SyncManagedServiceConfigs()
         {
-            string baseLocation = Config.BaseLocation;
+            string baseLocation = ResolveManagedServiceInstallRoot() ?? Config.BaseLocation;
             if (string.IsNullOrWhiteSpace(baseLocation) || !Directory.Exists(baseLocation))
                 return;
 
@@ -101,7 +102,8 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 var doc = XDocument.Load(configPath);
                 var settings = doc.Element("configuration")?.Element("appSettings")?.Elements("add");
-                if (settings == null) return;
+                if (settings == null)
+                    throw new InvalidDataException($"MySql.config 缺少 appSettings: {configPath}");
 
                 var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
                 foreach (var setting in settings)
@@ -126,6 +128,7 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 AddLog($"更新 MySQL 配置失败: {ex.Message}");
+                throw;
             }
         }
 
@@ -136,7 +139,8 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 var doc = XDocument.Load(configPath);
                 var settings = doc.Element("configuration")?.Element("appSettings")?.Elements("add");
-                if (settings == null) return;
+                if (settings == null)
+                    throw new InvalidDataException($"MQTT.config 缺少 appSettings: {configPath}");
 
                 var mqttConfig = MqttManager.Config;
                 foreach (var setting in settings)
@@ -160,6 +164,7 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 AddLog($"更新 MQTT 配置失败: {ex.Message}");
+                throw;
             }
         }
 
@@ -170,7 +175,8 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 var doc = XDocument.Load(configPath);
                 var settings = doc.Element("configuration")?.Element("appSettings")?.Elements("add");
-                if (settings == null) return;
+                if (settings == null)
+                    throw new InvalidDataException($"WinService.config 缺少 appSettings: {configPath}");
 
                 var rcConfig = ColorVision.Engine.Services.RC.RCSetting.Instance.Config;
                 foreach (var setting in settings)
@@ -183,6 +189,8 @@ namespace WindowsServicePlugin.ServiceManager
                         "NodeName" when isRC => rcConfig.RCName,
                         "NodeAppId" => rcConfig.AppId,
                         "NodeKey" => rcConfig.AppSecret,
+                        "Monitor.Services" when isRC => "MySQL,CVMainService_x64,CVMainService_dev",
+                        "Monitor.UIServices" when isRC => string.Empty,
                         _ => null
                     };
                     if (value != null)
@@ -194,6 +202,7 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 AddLog($"更新 WinService 配置失败: {ex.Message}");
+                throw;
             }
         }
 
@@ -262,7 +271,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private string? GetLegacyAppConfigPath()
+        private static string? GetLegacyAppConfigPath()
         {
             if (string.IsNullOrWhiteSpace(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath))
                 return null;
@@ -382,7 +391,7 @@ namespace WindowsServicePlugin.ServiceManager
             return Process.GetProcessesByName("CVWinSMS").Length > 0;
         }
 
-        private string? ResolveCVWinSMSExecutablePath()
+        private static string? ResolveCVWinSMSExecutablePath()
         {
             if (!string.IsNullOrWhiteSpace(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath) && File.Exists(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath))
             {
@@ -403,7 +412,7 @@ namespace WindowsServicePlugin.ServiceManager
             return null;
         }
 
-        private void StopCVWinSMSProcesses()
+        private static void StopCVWinSMSProcesses()
         {
             foreach (var process in Process.GetProcessesByName("CVWinSMS"))
             {
@@ -457,7 +466,7 @@ namespace WindowsServicePlugin.ServiceManager
             public string AppUser { get; init; } = string.Empty;
             public string AppPassword { get; init; } = string.Empty;
             public string RootPassword { get; init; } = string.Empty;
-            public string Database { get; init; } = "color_vision";
+            public string Database { get; init; } = "color_vision_4xx";
         }
     }
 }

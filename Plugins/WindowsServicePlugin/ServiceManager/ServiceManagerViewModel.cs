@@ -24,7 +24,8 @@ namespace WindowsServicePlugin.ServiceManager
 
         public static ServiceManagerViewModel Instance { get; } = new ServiceManagerViewModel();
 
-        public ServiceManagerConfig Config => ServiceManagerConfig.Instance;
+        private readonly ServiceManagerConfig _config = ServiceManagerConfig.Instance;
+        public ServiceManagerConfig Config => _config;
 
         public ObservableCollection<ServiceEntry> Services { get; set; } = [];
 
@@ -52,10 +53,12 @@ namespace WindowsServicePlugin.ServiceManager
         public string ProgressText { get => _ProgressText; set { _ProgressText = value; OnPropertyChanged(); } }
         private string _ProgressText = string.Empty;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Used by WPF instance binding.")]
         public bool IsAdministratorMode => Tool.IsAdministrator();
         public bool NeedsAdministratorRestart => !IsAdministratorMode;
         public string AdministratorModeText => IsAdministratorMode ? "权限: 管理员模式" : "权限: 普通模式";
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as an instance property for change notification and command binding.")]
         public string LegacyConfigPath => GetLegacyAppConfigPath() ?? string.Empty;
         public bool HasLegacyConfig => !string.IsNullOrWhiteSpace(LegacyConfigPath) && File.Exists(LegacyConfigPath);
 
@@ -64,7 +67,6 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand OneKeyStopCommand { get; }
         public RelayCommand RegisterPackagedServicesCommand { get; }
         public RelayCommand UpdateConfigCommand { get; }
-        public RelayCommand UnregisterArchiveCommand { get; }
         public RelayCommand OpenInstallManagerCommand { get; }
         public RelayCommand RefreshCommand { get; }
         public RelayCommand ClearLogCommand { get; }
@@ -73,7 +75,6 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand OpenWinServiceConfigCommand { get; }
         public RelayCommand OpenMySqlConfigCommand { get; }
         public RelayCommand OpenMqttConfigCommand { get; }
-        public RelayCommand OpenLog4NetConfigCommand { get; }
         public RelayCommand OpenLegacyConfigCommand { get; }
         public RelayCommand RestartAsAdministratorCommand { get; }
         public RelayCommand MqttStartCommand { get; }
@@ -104,7 +105,6 @@ namespace WindowsServicePlugin.ServiceManager
             OneKeyStopCommand = new RelayCommand(a => _ = OneKeyStopAsync(), a => !IsBusy);
             RegisterPackagedServicesCommand = new RelayCommand(a => _ = RegisterPackagedServicesAsync(), a => !IsBusy);
             UpdateConfigCommand = new RelayCommand(a => UpdateConfig(), a => !IsBusy);
-            UnregisterArchiveCommand = new RelayCommand(a => _ = UnregisterArchiveAsync(), a => !IsBusy);
             OpenInstallManagerCommand = new RelayCommand(a => OpenInstallManager());
             RefreshCommand = new RelayCommand(a => RefreshAll());
             ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
@@ -113,7 +113,6 @@ namespace WindowsServicePlugin.ServiceManager
             OpenWinServiceConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "WinService.config"));
             OpenMySqlConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MySql.config"));
             OpenMqttConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MQTT.config"));
-            OpenLog4NetConfigCommand = new RelayCommand(a => OpenServiceLog4Net(a as ServiceEntry));
             OpenLegacyConfigCommand = new RelayCommand(a => OpenLegacyConfigFile(), a => HasLegacyConfig);
             RestartAsAdministratorCommand = new RelayCommand(a => RestartAsAdministrator(), a => !IsBusy && NeedsAdministratorRestart);
             MqttStartCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Start(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsInstalled && !MqttManager.Config.IsRunning);

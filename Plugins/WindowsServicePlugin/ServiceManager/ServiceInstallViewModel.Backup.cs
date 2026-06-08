@@ -270,7 +270,7 @@ namespace WindowsServicePlugin.ServiceManager
             return packed;
         }
 
-        private int CreateCfgOnlyBackupZip(string sourceRoot, string zipPath)
+        private static int CreateCfgOnlyBackupZip(string sourceRoot, string zipPath)
         {
             int packed = 0;
             using var fs = new FileStream(zipPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
@@ -346,7 +346,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private string? FindWinRarExecutable()
+        private static string? FindWinRarExecutable()
         {
             string[] fixedCandidates =
             {
@@ -417,7 +417,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private string GetServiceVersionTag(string sourceRoot)
+        private static string GetServiceVersionTag(string sourceRoot)
         {
             string[] candidates =
             {

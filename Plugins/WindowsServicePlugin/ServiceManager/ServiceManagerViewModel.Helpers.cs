@@ -52,16 +52,11 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private bool ExecuteShellCommand(string command, bool requireAdmin)
+        private static bool ExecuteShellCommand(string command, bool requireAdmin)
         {
             return requireAdmin
                 ? WinServiceHelper.ExecuteCommand(command, true)
                 : WinServiceHelper.ExecuteCommand(command, false);
-        }
-
-        private void RefreshServiceEntryStatus(ServiceEntry entry)
-        {
-            Application.Current?.Dispatcher.Invoke(() => entry.RefreshStatus());
         }
 
         private void OpenLegacyConfigFile()
@@ -114,35 +109,6 @@ namespace WindowsServicePlugin.ServiceManager
             PlatformHelper.OpenFolderAndSelectFile(filePath);
         }
 
-        private void OpenServiceLog4Net(ServiceEntry? entry)
-        {
-            if (entry == null)
-                return;
-
-            string? serviceDir = !string.IsNullOrWhiteSpace(entry.ExePath)
-                ? Path.GetDirectoryName(entry.ExePath)
-                : (!string.IsNullOrWhiteSpace(Config.BaseLocation) ? Path.Combine(Config.BaseLocation, entry.FolderName) : null);
-            if (string.IsNullOrWhiteSpace(serviceDir))
-            {
-                AddLog($"无法定位 {entry.DisplayName} 的目录");
-                return;
-            }
-
-            string[] candidates =
-            [
-                Path.Combine(serviceDir, "log4net.config"),
-                Path.Combine(serviceDir, "cfg", "log4net.config")
-            ];
-
-            string? filePath = candidates.FirstOrDefault(File.Exists);
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                AddLog($"log4net 配置文件不存在: {entry.DisplayName}");
-                return;
-            }
-            PlatformHelper.OpenFolderAndSelectFile(filePath);
-        }
-
         private void SetBasePath()
         {
             using var dlg = new System.Windows.Forms.FolderBrowserDialog
@@ -160,14 +126,16 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void SaveServiceManagerConfig()
+        private static void SaveServiceManagerConfig()
         {
             ConfigHandler.GetInstance().Save<ServiceManagerConfig>();
         }
 
         private void OpenInstallManager()
         {
-            EnsureElevatedOrRestart("更新");
+            if (!EnsureElevatedOrRestart("更新"))
+                return;
+
             var installWindow = new ServiceInstallWindow
             {
                 Owner = Application.Current.GetActiveWindow()
