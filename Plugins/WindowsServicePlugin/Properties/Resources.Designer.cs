@@ -61,24 +61,6 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 激活Windows 的本地化字符串。
-        /// </summary>
-        public static string ActivateWindows {
-            get {
-                return ResourceManager.GetString("ActivateWindows", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 找不到BCompare，是否下载 的本地化字符串。
-        /// </summary>
-        public static string BCompareNotFound_DownloadPrompt {
-            get {
-                return ResourceManager.GetString("BCompareNotFound_DownloadPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 CVWinSMS 路径 的本地化字符串。
         /// </summary>
         public static string CVWinSMSPath {
@@ -93,96 +75,6 @@ namespace WindowsServicePlugin.Properties {
         public static string CVWinSMSPathDescription {
             get {
                 return ResourceManager.GetString("CVWinSMSPathDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下载BeyondCompare 的本地化字符串。
-        /// </summary>
-        public static string DownLoadBeyondCompare {
-            get {
-                return ResourceManager.GetString("DownLoadBeyondCompare", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 转储文件设置 的本地化字符串。
-        /// </summary>
-        public static string DumpFileSettings {
-            get {
-                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 安装MQTT 的本地化字符串。
-        /// </summary>
-        public static string InstallMqtt {
-            get {
-                return ResourceManager.GetString("InstallMqtt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 管理服务 的本地化字符串。
-        /// </summary>
-        public static string ManagementService {
-            get {
-                return ResourceManager.GetString("ManagementService", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开BeyondCompare 的本地化字符串。
-        /// </summary>
-        public static string OpenBeyondCompare {
-            get {
-                return ResourceManager.GetString("OpenBeyondCompare", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 读取服务的配置 的本地化字符串。
-        /// </summary>
-        public static string ReadServiceConfig {
-            get {
-                return ResourceManager.GetString("ReadServiceConfig", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 替换服务的CFG 的本地化字符串。
-        /// </summary>
-        public static string ReplaceServiceCfg {
-            get {
-                return ResourceManager.GetString("ReplaceServiceCfg", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 重启服务 的本地化字符串。
-        /// </summary>
-        public static string RestartService {
-            get {
-                return ResourceManager.GetString("RestartService", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 重启服务成功 的本地化字符串。
-        /// </summary>
-        public static string RestartServiceSucess {
-            get {
-                return ResourceManager.GetString("RestartServiceSucess", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 服务 的本地化字符串。
-        /// </summary>
-        public static string Service {
-            get {
-                return ResourceManager.GetString("Service", resourceCulture);
             }
         }
         
@@ -282,24 +174,6 @@ namespace WindowsServicePlugin.Properties {
         public static string ServiceManagerMySqlPortDescription {
             get {
                 return ResourceManager.GetString("ServiceManagerMySqlPortDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 重启服务失败请手动重启服务 的本地化字符串。
-        /// </summary>
-        public static string ServiceRestartFailed_PleaseRestartManually {
-            get {
-                return ResourceManager.GetString("ServiceRestartFailed_PleaseRestartManually", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 更新服务 的本地化字符串。
-        /// </summary>
-        public static string UpdateService {
-            get {
-                return ResourceManager.GetString("UpdateService", resourceCulture);
             }
         }
     }

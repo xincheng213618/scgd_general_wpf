@@ -116,17 +116,7 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <data name="ManagementService" xml:space="preserve">
-    <value>管理サービス</value>
-  </data>
-  <data name="ReadServiceConfig" xml:space="preserve">
-    <value>サービス設定を読み取る</value>
-  </data>
-  <data name="ReplaceServiceCfg" xml:space="preserve">
-    <value>サービスCFGを置き換える</value>
-  </data>
-  <data name="ServiceManager" xml:space="preserve">
+  </resheader>  <data name="ServiceManager" xml:space="preserve">
     <value>サービスマネージャー</value>
   </data>
   <data name="CVWinSMSPath" xml:space="preserve">
@@ -164,38 +154,4 @@
   </data>
   <data name="ServiceManagerInstallMqttCheckedDescription" xml:space="preserve">
     <value>サービス インストール ウィザードを開いたときに、MQTT のインストール項目を既定で選択します。</value>
-  </data>
-  <data name="Service" xml:space="preserve">
-    <value>サービス</value>
-  </data>
-  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
-    <value>BCompare が見つかりません。ダウンロードしますか?</value>
-  </data>
-  <data name="DownLoadBeyondCompare" xml:space="preserve">
-    <value>BeyondCompareをダウンロード</value>
-  </data>
-  <data name="OpenBeyondCompare" xml:space="preserve">
-    <value>BeyondCompareを開く</value>
-  </data>
-  <data name="InstallMqtt" xml:space="preserve">
-    <value>MQTTをインストールする</value>
-  </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>ダンプファイルの設定</value>
-  </data>
-  <data name="ActivateWindows" xml:space="preserve">
-    <value>Windowsのアクティベーション</value>
-  </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>サービスを再起動する</value>
-  </data>
-  <data name="RestartServiceSucess" xml:space="preserve">
-    <value>サービスの再起動に成功しました</value>
-  </data>
-  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
-    <value>サービスの再起動に失敗した場合は、手動でサービスを再起動してください。</value>
-  </data>
-  <data name="UpdateService" xml:space="preserve">
-    <value>アップデートサービス</value>
-  </data>
-</root>
+  </data></root>

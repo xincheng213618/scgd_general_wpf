@@ -116,17 +116,7 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <data name="ManagementService" xml:space="preserve">
-    <value>Управленческие услуги</value>
-  </data>
-  <data name="ReadServiceConfig" xml:space="preserve">
-    <value>Прочитать конфигурацию службы</value>
-  </data>
-  <data name="ReplaceServiceCfg" xml:space="preserve">
-    <value>Заменить CFG службы</value>
-  </data>
-  <data name="ServiceManager" xml:space="preserve">
+  </resheader>  <data name="ServiceManager" xml:space="preserve">
     <value>Диспетчер служб</value>
   </data>
   <data name="CVWinSMSPath" xml:space="preserve">
@@ -164,38 +154,4 @@
   </data>
   <data name="ServiceManagerInstallMqttCheckedDescription" xml:space="preserve">
     <value>Выбирает установку MQTT по умолчанию при открытии мастера установки.</value>
-  </data>
-  <data name="Service" xml:space="preserve">
-    <value>Услуга</value>
-  </data>
-  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
-    <value>BCompare не найден, хотите его скачать?</value>
-  </data>
-  <data name="DownLoadBeyondCompare" xml:space="preserve">
-    <value>Скачать BeyondCompare</value>
-  </data>
-  <data name="OpenBeyondCompare" xml:space="preserve">
-    <value>Открыть BeyondCompare</value>
-  </data>
-  <data name="InstallMqtt" xml:space="preserve">
-    <value>Установить MQTT</value>
-  </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>Настройки файла дампа</value>
-  </data>
-  <data name="ActivateWindows" xml:space="preserve">
-    <value>Активировать Windows</value>
-  </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>Перезапустить службу</value>
-  </data>
-  <data name="RestartServiceSucess" xml:space="preserve">
-    <value>Перезапуск службы успешен</value>
-  </data>
-  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
-    <value>Если перезапуск службы не удался, перезапустите ее вручную.</value>
-  </data>
-  <data name="UpdateService" xml:space="preserve">
-    <value>Обновление сервиса</value>
-  </data>
-</root>
+  </data></root>

@@ -116,17 +116,7 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>
-  <data name="ManagementService" xml:space="preserve">
-    <value>Services de gestion</value>
-  </data>
-  <data name="ReadServiceConfig" xml:space="preserve">
-    <value>Lire la configuration du service</value>
-  </data>
-  <data name="ReplaceServiceCfg" xml:space="preserve">
-    <value>Remplacer le CFG du service</value>
-  </data>
-  <data name="ServiceManager" xml:space="preserve">
+  </resheader>  <data name="ServiceManager" xml:space="preserve">
     <value>Gestionnaire de services</value>
   </data>
   <data name="CVWinSMSPath" xml:space="preserve">
@@ -164,38 +154,4 @@
   </data>
   <data name="ServiceManagerInstallMqttCheckedDescription" xml:space="preserve">
     <value>Sélectionne par défaut l'installation de MQTT à l'ouverture de l'assistant.</value>
-  </data>
-  <data name="Service" xml:space="preserve">
-    <value>Service</value>
-  </data>
-  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
-    <value>BCompare introuvable, voulez-vous le télécharger ?</value>
-  </data>
-  <data name="DownLoadBeyondCompare" xml:space="preserve">
-    <value>Télécharger BeyondCompare</value>
-  </data>
-  <data name="OpenBeyondCompare" xml:space="preserve">
-    <value>Ouvrir BeyondCompare</value>
-  </data>
-  <data name="InstallMqtt" xml:space="preserve">
-    <value>Installer MQTT</value>
-  </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>Paramètres du fichier de sauvegarde</value>
-  </data>
-  <data name="ActivateWindows" xml:space="preserve">
-    <value>Activer Windows</value>
-  </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>Redémarrer le service</value>
-  </data>
-  <data name="RestartServiceSucess" xml:space="preserve">
-    <value>Redémarrage du service réussi</value>
-  </data>
-  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
-    <value>Si le redémarrage du service échoue, veuillez le redémarrer manuellement.</value>
-  </data>
-  <data name="UpdateService" xml:space="preserve">
-    <value>Service de mise à jour</value>
-  </data>
-</root>
+  </data></root>
