@@ -1,6 +1,5 @@
 using ColorVision.Core;
 using ColorVision.Engine.Media;
-using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
@@ -34,7 +33,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private readonly System.Diagnostics.Stopwatch _fpsTimer = new();
         private double _lastFps;
         private double _articulation;
-        private bool _firstFrame = true;
         private bool _overlaysAdded;
         private bool _disposed;
         private readonly object _displayBufferGate = new();
@@ -67,7 +65,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _frameCount = 0;
             _lastFps = 0;
             _articulation = 0;
-            _firstFrame = true;
             _fpsTimer.Restart();
             EnsureConfigSubscription();
             _overlayVisual.Attach();
@@ -173,49 +170,33 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
-            bool enablePseudo = imageView.PseudoColorService.IsEnabled;
-
-            if (TryBuildProcessingRequest(imageView, layout.Width, layout.Height, enablePseudo, out VideoFrameProcessingRequest? request))
+            if (TryBuildProcessingRequest(layout.Width, layout.Height, out VideoFrameProcessingRequest? request))
             {
                 submitProcessing(request);
             }
 
-            if (!enablePseudo)
-            {
-                submitDisplay(imageView);
-                if (_firstFrame)
-                {
-                    _firstFrame = false;
-                }
-            }
+            submitDisplay(imageView);
 
             RecordFrameRate();
         }
 
-        private bool TryBuildProcessingRequest(ImageView imageView, int width, int height, bool enablePseudo, out VideoFrameProcessingRequest? request)
+        private bool TryBuildProcessingRequest(int width, int height, out VideoFrameProcessingRequest? request)
         {
             request = null;
 
             bool enableArticulation = _config.IsUseCacheFile && _config.IsCalArtculation;
-            if (!enablePseudo && !enableArticulation)
+            if (!enableArticulation)
             {
                 return false;
             }
 
             Rect rect = _overlayVisual.GetProcessingRoi(width, height);
 
-            PseudoColorFrameRequest? pseudoColorRequest = null;
-            if (enablePseudo && imageView.PseudoColorService.TryCreateRequest(out var capturedRequest, 0))
-            {
-                pseudoColorRequest = capturedRequest;
-            }
-
             request = new VideoFrameProcessingRequest
             {
                 EnableArticulation = enableArticulation,
                 FocusAlgorithm = _config.EvaFunc,
-                Roi = new RoiRect(rect),
-                PseudoColor = pseudoColorRequest
+                Roi = new RoiRect(rect)
             };
             return true;
         }
@@ -227,33 +208,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 ImageView? imageView = _imageView;
                 if (!_isRunning || imageView == null)
                 {
-                    DisposePseudoImage(result.PseudoImage);
                     return;
                 }
 
                 if (result.Articulation is double articulation)
                 {
                     _articulation = articulation;
-                }
-
-                if (result.PseudoImage is HImage pseudoImage)
-                {
-                    if (imageView.PseudoColorService.IsEnabled)
-                    {
-                        imageView.PseudoColorService.ApplyProcessedImage(pseudoImage);
-                        if (_firstFrame)
-                        {
-                            _firstFrame = false;
-                            if (imageView.Realtime.Options.AutoZoomOnFirstFrame)
-                            {
-                                imageView.Zoombox1.ZoomUniform();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        pseudoImage.Dispose();
-                    }
                 }
 
                 _overlayVisual.UpdateMetrics(_articulation, _lastFps);
@@ -374,14 +334,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 }
 
                 _displayBufferSize = 0;
-            }
-        }
-
-        private static void DisposePseudoImage(HImage? image)
-        {
-            if (image is HImage pseudoImage)
-            {
-                pseudoImage.Dispose();
             }
         }
 

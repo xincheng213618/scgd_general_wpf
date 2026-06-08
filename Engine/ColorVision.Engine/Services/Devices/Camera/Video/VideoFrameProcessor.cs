@@ -1,5 +1,4 @@
 using ColorVision.Core;
-using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -12,15 +11,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public bool EnableArticulation { get; init; }
         public FocusAlgorithm FocusAlgorithm { get; init; }
         public RoiRect Roi { get; init; }
-        public PseudoColorFrameRequest? PseudoColor { get; init; }
 
-        public bool NeedsProcessing => EnableArticulation || PseudoColor.HasValue;
+        public bool NeedsProcessing => EnableArticulation;
     }
 
     internal sealed class VideoFrameProcessingResult
     {
         public double? Articulation { get; init; }
-        public HImage? PseudoImage { get; init; }
     }
 
     internal sealed class VideoFrameProcessor : IDisposable
@@ -117,7 +114,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 {
                     if (_cts.IsCancellationRequested)
                     {
-                        DisposePseudoImage(result.PseudoImage);
                         break;
                     }
 
@@ -125,7 +121,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 }
                 catch
                 {
-                    DisposePseudoImage(result.PseudoImage);
                 }
             }
         }
@@ -133,38 +128,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private static VideoFrameProcessingResult ProcessFrame(HImage frame, VideoFrameProcessingRequest request)
         {
             double? articulation = null;
-            HImage? pseudoImage = null;
 
             if (request.EnableArticulation)
             {
                 articulation = OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi);
             }
 
-            if (request.PseudoColor is PseudoColorFrameRequest pseudoColor)
-            {
-                int ret;
-                if (pseudoColor.HasValidAutoRange)
-                {
-                    ret = OpenCVMediaHelper.ApplyPseudoColorAutoRange(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel, pseudoColor.DataMin, pseudoColor.DataMax);
-                    if (ret == 0)
-                    {
-                        pseudoImage = processedImage;
-                    }
-                }
-                else
-                {
-                    ret = OpenCVMediaHelper.ApplyPseudoColor(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel);
-                    if (ret == 0)
-                    {
-                        pseudoImage = processedImage;
-                    }
-                }
-            }
-
             return new VideoFrameProcessingResult
             {
-                Articulation = articulation,
-                PseudoImage = pseudoImage
+                Articulation = articulation
             };
         }
 
@@ -191,14 +163,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     pData = Marshal.AllocHGlobal(requiredLength)
                 };
                 capacity = requiredLength;
-            }
-        }
-
-        private static void DisposePseudoImage(HImage? image)
-        {
-            if (image is HImage pseudoImage)
-            {
-                pseudoImage.Dispose();
             }
         }
 

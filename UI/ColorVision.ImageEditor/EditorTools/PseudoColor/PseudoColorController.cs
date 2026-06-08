@@ -13,6 +13,18 @@ using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 {
+    internal readonly record struct PseudoColorFrameRequest(
+        uint Min,
+        uint Max,
+        ColormapTypes ColormapTypes,
+        int Channel,
+        bool IsAutoRangeEnabled,
+        uint DataMin,
+        uint DataMax)
+    {
+        public bool HasValidAutoRange => IsAutoRangeEnabled && DataMin < DataMax;
+    }
+
     internal readonly record struct PseudoColorPreviewRequest(int Version, bool IsEnabled, PseudoColorFrameRequest? Request);
 
     internal sealed class PseudoColorController : IPseudoColorService, IDisposable
@@ -96,7 +108,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             });
         }
 
-        public bool TryCreateRequest(out PseudoColorFrameRequest request, int? channelOverride = null)
+        private bool TryCreateRequest(out PseudoColorFrameRequest request, int? channelOverride = null)
         {
             var snapshot = InvokeOnUiThread(() =>
             {
@@ -106,27 +118,6 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
             request = snapshot.Request;
             return snapshot.IsEnabled;
-        }
-
-        public void ApplyProcessedImage(HImage pseudoImage)
-        {
-            if (!IsEnabled)
-            {
-                pseudoImage.Dispose();
-                return;
-            }
-
-            if (!HImageExtension.UpdateWriteableBitmap(_owner.FunctionImage, pseudoImage))
-            {
-                var image = pseudoImage.ToWriteableBitmap();
-                pseudoImage.Dispose();
-                _owner.FunctionImage = image;
-            }
-
-            if (IsEnabled)
-            {
-                _owner.ImageShow.Source = _owner.FunctionImage;
-            }
         }
 
         public void RestoreSource()
