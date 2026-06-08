@@ -81,21 +81,13 @@
   </data>
   <data name="Upload" xml:space="preserve">
     <value>Upload</value>
-  </data>
-  <data name="Unsubscribe" xml:space="preserve">
-    <value>Unsubscribe</value>
-  </data>
-  <data name="UnderDevelopment" xml:space="preserve">
+  </data>  <data name="UnderDevelopment" xml:space="preserve">
     <value>Under Development</value>
   </data>
 
   <data name="TransmitChannel" xml:space="preserve">
     <value>Send Channel</value>
-  </data>
-  <data name="Topic" xml:space="preserve">
-    <value>Topic</value>
-  </data>
-  <data name="Timeout" xml:space="preserve">
+  </data>  <data name="Timeout" xml:space="preserve">
     <value>Timeout(ms)</value>
   </data>
 
@@ -110,16 +102,8 @@
   </data>
   <data name="Template" xml:space="preserve">
     <value>Template</value>
-  </data>
-  <data name="TbSettingsStartBoot" xml:space="preserve">
-    <value>Start on boot</value>
-  </data>
-  <data name="Success" xml:space="preserve">
+  </data>  <data name="Success" xml:space="preserve">
     <value>Success</value>
-  </data>
-
-  <data name="Subscribe" xml:space="preserve">
-    <value>Subscription</value>
   </data>
   <data name="Submit" xml:space="preserve">
     <value>Submit</value>
@@ -209,11 +193,7 @@
   </data>
   <data name="Port" xml:space="preserve">
     <value>Port</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>Pin</value>
-  </data>
-  <data name="PhysicalCameraManager" xml:space="preserve">
+  </data>  <data name="PhysicalCameraManager" xml:space="preserve">
     <value>Physical Camera Management</value>
   </data>
   <data name="Password" xml:space="preserve">
@@ -221,10 +201,6 @@
   </data>
   <data name="Parameter" xml:space="preserve">
     <value>Parameter</value>
-  </data>
-
-  <data name="OpenItem" xml:space="preserve">
-    <value>Open Project</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>Open</value>
@@ -255,26 +231,8 @@
   </data>
   <data name="MqttConnection" xml:space="preserve">
     <value>MQTT Connection</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>Minimize</value>
-  </data>
-
-  <data name="MenuView" xml:space="preserve">
-    <value>_View</value>
-  </data>
-  <data name="MenuValidue" xml:space="preserve">
+  </data>  <data name="MenuValidue" xml:space="preserve">
     <value>Verification template settings (B)</value>
-  </data>
-
-  <data name="MenuUndo" xml:space="preserve">
-    <value>_Undo</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>_Tool</value>
-  </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>T_heme</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
     <value>Te_mplate</value>
@@ -297,18 +255,6 @@
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>_Physical Camera Management</value>
   </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>_Options</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>_Open</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>_New</value>
-  </data>
-
-
-
 
 
 
@@ -322,11 +268,7 @@
 
   <data name="MenuDelete" xml:space="preserve">
     <value>_Delete</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>Cu_t</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
+  </data>  <data name="MenuCopy" xml:space="preserve">
     <value>_Copy</value>
   </data>
 
@@ -379,11 +321,7 @@
 
   <data name="Gain" xml:space="preserve">
     <value>Gain</value>
-  </data>
-  <data name="FocusPoint" xml:space="preserve">
-    <value>Focus Point</value>
-  </data>
-  <data name="Flow" xml:space="preserve">
+  </data>  <data name="Flow" xml:space="preserve">
     <value>Flow</value>
   </data>
   <data name="Filter" xml:space="preserve">
@@ -420,11 +358,7 @@
 
   <data name="EnterAcquisitionWindow" xml:space="preserve">
     <value>Enter the collection window</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Enable Database</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
+  </data>  <data name="Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
   <data name="Duration" xml:space="preserve">
@@ -449,14 +383,6 @@
     <value>default</value>
   </data>
 
-
-  <data name="Database" xml:space="preserve">
-    <value>Database</value>
-  </data>
-  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
-    <value>The current version is already the latest version</value>
-  </data>
-
   <data name="CreateTime" xml:space="preserve">
     <value>Create Time</value>
   </data>
@@ -476,30 +402,14 @@
   <data name="ConnectionName" xml:space="preserve">
     <value>Connection Name</value>
   </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>Update or not</value>
-  </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
-    <value>Configure new project</value>
-  </data>
-
-
   <data name="Code" xml:space="preserve">
     <value>Code</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
-
-  <data name="ClearCache" xml:space="preserve">
-    <value>Clear Cache</value>
-  </data>
   <data name="Clear" xml:space="preserve">
     <value>Clear</value>
-  </data>
-
-  <data name="ChangeLog" xml:space="preserve">
-    <value>Change log</value>
   </data>
   <data name="Capture" xml:space="preserve">
     <value>Capture</value>
@@ -533,10 +443,6 @@
   <data name="Add" xml:space="preserve">
     <value>Add</value>
   </data>
-
-  <data name="About" xml:space="preserve">
-    <value>About</value>
-  </data>
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>Choose where to save the project</value>
   </data>
@@ -548,10 +454,6 @@
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>_File</value>
-  </data>
-
 
   <data name="AddUncreatedCamera" xml:space="preserve">
     <value>Adding an uncreated camera</value>
@@ -628,20 +530,12 @@
 
 
 
-  <data name="ReleaseDate" xml:space="preserve">
-    <value>Release Date</value>
-  </data>
-
   <data name="Version" xml:space="preserve">
     <value>Version</value>
   </data>
   <data name="Command" xml:space="preserve">
     <value>Command</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>Project Name</value>
-  </data>
-  <data name="Workflow" xml:space="preserve">
+  </data>  <data name="Workflow" xml:space="preserve">
     <value>Workflow</value>
   </data>
   <data name="DeviceOffline" xml:space="preserve">
@@ -1455,17 +1349,9 @@
   <data name="Extinguish" xml:space="preserve">
     <value>OFF</value>
   </data>
-  <data name="Start" xml:space="preserve">
-    <value>Start</value>
-  </data>
-
   <data name="PointCount" xml:space="preserve">
     <value>Point Count</value>
   </data>
-  <data name="Network" xml:space="preserve">
-    <value>Network</value>
-  </data>
-
   <data name="MeasurementType" xml:space="preserve">
     <value>Measurement Type</value>
   </data>
@@ -1585,11 +1471,7 @@
   </data>
   <data name="Operation" xml:space="preserve">
     <value>Operate</value>
-  </data>
-  <data name="OpenFailed" xml:space="preserve">
-    <value>Failed to open</value>
-  </data>
-  <data name="ImageFlip" xml:space="preserve">
+  </data>  <data name="ImageFlip" xml:space="preserve">
     <value>Image Flip</value>
   </data>
   <data name="ParameterTemplate" xml:space="preserve">
@@ -2275,17 +2157,9 @@
   </data>
   <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
     <value>Please do not delete unless absolutely necessary. (Delete if desired)</value>
-  </data>
-  <data name="ThirdPartyApps" xml:space="preserve">
-    <value>Third-Party Apps</value>
-  </data>
-  <data name="NotInstalled" xml:space="preserve">
+  </data>  <data name="NotInstalled" xml:space="preserve">
     <value>Not Installed</value>
-  </data>
-  <data name="OpenDirectory" xml:space="preserve">
-    <value>Open Directory</value>
-  </data>
-  <data name="PortableTools" xml:space="preserve">
+  </data>  <data name="PortableTools" xml:space="preserve">
     <value>Portable Tools</value>
   </data>
   <data name="InstallTools" xml:space="preserve">
@@ -2790,10 +2664,6 @@
 
   <data name="ButtonCalibrationEdit" xml:space="preserve">
     <value>Calibration Edit</value>
-  </data>
-
-  <data name="ButtonCancel" xml:space="preserve">
-    <value>Cancel</value>
   </data>
 
 
@@ -3973,14 +3843,6 @@ Please close camera or other programs using this serial port, or check device co
 
 
 
-
-
-  <data name="Algorithm_AlgorithmCalls" xml:space="preserve">
-    <value>Algorithm Calls</value>
-  </data>
-  <data name="BilateralFilter" xml:space="preserve">
-    <value>Bilateral Filter</value>
-  </data>
   <data name="Blur" xml:space="preserve">
     <value>Blur</value>
   </data>
@@ -3990,27 +3852,9 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Erode" xml:space="preserve">
     <value>Erode</value>
   </data>
-
-
-  <data name="KernelSize" xml:space="preserve">
-    <value>Kernel Size</value>
-  </data>
-  <data name="MorphologyEx" xml:space="preserve">
-    <value>Morphology</value>
-  </data>
   <data name="OpenWithImageJ" xml:space="preserve">
     <value>Open with ImageJ</value>
   </data>
-  <data name="GaussianBlur" xml:space="preserve">
-    <value>Gaussian Blur</value>
-  </data>
-  <data name="MedianFilter" xml:space="preserve">
-    <value>Median Filter</value>
-  </data>
-  <data name="ThresholdProcessing" xml:space="preserve">
-    <value>Threshold Processing</value>
-  </data>
-
 
 
 
@@ -4413,11 +4257,7 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="SampleGroup" xml:space="preserve">
     <value>Sample Group</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>Apply</value>
-  </data>
-  <data name="AutoCreateGroupHint" xml:space="preserve">
+  </data>  <data name="AutoCreateGroupHint" xml:space="preserve">
     <value>Entering a non-existent group name will auto-create on save</value>
   </data>
   <data name="AutoDetectKeyRegions" xml:space="preserve">

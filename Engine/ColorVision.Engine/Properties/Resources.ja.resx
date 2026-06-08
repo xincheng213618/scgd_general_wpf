@@ -82,21 +82,13 @@
   </data>
   <data name="Upload" xml:space="preserve">
     <value>アップロード</value>
-  </data>
-  <data name="Unsubscribe" xml:space="preserve">
-    <value>Unsubscribe</value>
-  </data>
-  <data name="UnderDevelopment" xml:space="preserve">
+  </data>  <data name="UnderDevelopment" xml:space="preserve">
     <value>Under Development</value>
   </data>
 
   <data name="TransmitChannel" xml:space="preserve">
     <value>Send Channel</value>
-  </data>
-  <data name="Topic" xml:space="preserve">
-    <value>トピック</value>
-  </data>
-  <data name="Timeout" xml:space="preserve">
+  </data>  <data name="Timeout" xml:space="preserve">
     <value>タイムアウト</value>
   </data>
 
@@ -111,11 +103,7 @@
   </data>
   <data name="Template" xml:space="preserve">
     <value>テンプレート</value>
-  </data>
-  <data name="TbSettingsStartBoot" xml:space="preserve">
-    <value>Start on boot</value>
-  </data>
-  <data name="Success" xml:space="preserve">
+  </data>  <data name="Success" xml:space="preserve">
     <value>成功</value>
   </data>
 
@@ -207,11 +195,7 @@
   </data>
   <data name="Port" xml:space="preserve">
     <value>ポート</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>Pin</value>
-  </data>
-  <data name="PhysicalCameraManager" xml:space="preserve">
+  </data>  <data name="PhysicalCameraManager" xml:space="preserve">
     <value>物理カメラ管理</value>
   </data>
   <data name="Password" xml:space="preserve">
@@ -219,10 +203,6 @@
   </data>
   <data name="Parameter" xml:space="preserve">
     <value>パラメータ</value>
-  </data>
-
-  <data name="OpenItem" xml:space="preserve">
-    <value>Open Project</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>Open</value>
@@ -253,26 +233,8 @@
   </data>
   <data name="MqttConnection" xml:space="preserve">
     <value>MQTT Connection</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>Minimize</value>
-  </data>
-
-  <data name="MenuView" xml:space="preserve">
-    <value>_View</value>
-  </data>
-  <data name="MenuValidue" xml:space="preserve">
+  </data>  <data name="MenuValidue" xml:space="preserve">
     <value>Verification template settings (B)</value>
-  </data>
-
-  <data name="MenuUndo" xml:space="preserve">
-    <value>_Undo</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>ツール (_T)</value>
-  </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>テーマ（_H）</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
     <value>テンプレート(_M)</value>
@@ -295,18 +257,6 @@
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>_Physical Camera Management</value>
   </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>オプション (_O)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>_Open</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>_New</value>
-  </data>
-
-
-
 
 
 
@@ -320,11 +270,7 @@
 
   <data name="MenuDelete" xml:space="preserve">
     <value>_Delete</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>Cu_t</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
+  </data>  <data name="MenuCopy" xml:space="preserve">
     <value>コピーする (_C)</value>
   </data>
 
@@ -377,11 +323,7 @@
 
   <data name="Gain" xml:space="preserve">
     <value>ゲイン</value>
-  </data>
-  <data name="FocusPoint" xml:space="preserve">
-    <value>フォーカスポイント</value>
-  </data>
-  <data name="Flow" xml:space="preserve">
+  </data>  <data name="Flow" xml:space="preserve">
     <value>プロセス</value>
   </data>
   <data name="Filter" xml:space="preserve">
@@ -418,11 +360,7 @@
 
   <data name="EnterAcquisitionWindow" xml:space="preserve">
     <value>Enter the collection window</value>
-  </data>
-  <data name="EnableDatabase" xml:space="preserve">
-    <value>Enable Database</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
+  </data>  <data name="Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
   <data name="Duration" xml:space="preserve">
@@ -447,14 +385,6 @@
     <value>デフォルト</value>
   </data>
 
-
-  <data name="Database" xml:space="preserve">
-    <value>Database</value>
-  </data>
-  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
-    <value>Current version is up to date</value>
-  </data>
-
   <data name="CreateTime" xml:space="preserve">
     <value>測定時間</value>
   </data>
@@ -474,30 +404,14 @@
   <data name="ConnectionName" xml:space="preserve">
     <value>Connection Name</value>
   </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>アップデートするかしないか</value>
-  </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
-    <value>新しいプロジェクトを設定</value>
-  </data>
-
-
   <data name="Code" xml:space="preserve">
     <value>コード</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
-
-  <data name="ClearCache" xml:space="preserve">
-    <value>キャッシュクリア</value>
-  </data>
   <data name="Clear" xml:space="preserve">
     <value>クリア</value>
-  </data>
-
-  <data name="ChangeLog" xml:space="preserve">
-    <value>変更ログ</value>
   </data>
   <data name="Capture" xml:space="preserve">
     <value>キャプチャ</value>
@@ -531,10 +445,6 @@
   <data name="Add" xml:space="preserve">
     <value>Add</value>
   </data>
-
-  <data name="About" xml:space="preserve">
-    <value>について</value>
-  </data>
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>Choose where to save the project</value>
   </data>
@@ -546,10 +456,6 @@
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>ファイル (_F)</value>
-  </data>
-
 
   <data name="AddUncreatedCamera" xml:space="preserve">
     <value>未作成のカメラを追加</value>
@@ -626,20 +532,12 @@
 
 
 
-  <data name="ReleaseDate" xml:space="preserve">
-    <value>Release Date</value>
-  </data>
-
   <data name="Version" xml:space="preserve">
     <value>バージョン</value>
   </data>
   <data name="Command" xml:space="preserve">
     <value>コマンド</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>Project Name</value>
-  </data>
-  <data name="Workflow" xml:space="preserve">
+  </data>  <data name="Workflow" xml:space="preserve">
     <value>ワークフロー</value>
   </data>
   <data name="DeviceOffline" xml:space="preserve">
@@ -1453,17 +1351,9 @@
   <data name="Extinguish" xml:space="preserve">
     <value>OFF</value>
   </data>
-  <data name="Start" xml:space="preserve">
-    <value>開始</value>
-  </data>
-
   <data name="PointCount" xml:space="preserve">
     <value>Point Count</value>
   </data>
-  <data name="Network" xml:space="preserve">
-    <value>ネットワーク</value>
-  </data>
-
   <data name="MeasurementType" xml:space="preserve">
     <value>Measurement Type</value>
   </data>
@@ -1583,11 +1473,7 @@
   </data>
   <data name="Operation" xml:space="preserve">
     <value>操作</value>
-  </data>
-  <data name="OpenFailed" xml:space="preserve">
-    <value>Failed to open</value>
-  </data>
-  <data name="ImageFlip" xml:space="preserve">
+  </data>  <data name="ImageFlip" xml:space="preserve">
     <value>画像反転</value>
   </data>
   <data name="ParameterTemplate" xml:space="preserve">
@@ -2276,17 +2162,9 @@
   </data>
   <data name="InternalTools" xml:space="preserve">
     <value>Internal Tools</value>
-  </data>
-  <data name="ThirdPartyApps" xml:space="preserve">
-    <value>Third-Party Apps</value>
-  </data>
-  <data name="NotInstalled" xml:space="preserve">
+  </data>  <data name="NotInstalled" xml:space="preserve">
     <value>インストールされていません</value>
-  </data>
-  <data name="OpenDirectory" xml:space="preserve">
-    <value>Open Directory</value>
-  </data>
-  <data name="PortableTools" xml:space="preserve">
+  </data>  <data name="PortableTools" xml:space="preserve">
     <value>ポータブルツール</value>
   </data>
   <data name="InstallTools" xml:space="preserve">
@@ -2508,7 +2386,7 @@
   <data name="DeviceStatusSPContinuousMode" xml:space="preserve">
     <value>Spectrometer Continuous Mode</value>
   </data>
-<data name="AddNewLine" xml:space="preserve"><value>Add Newline</value></data><data name="AddPhysicalCameraFailed" xml:space="preserve"><value>物理カメラの追加に失敗しました</value></data><data name="AddPhysicalCameraSuccess" xml:space="preserve"><value>物理カメラが正常に追加されました</value></data><data name="AllowSave" xml:space="preserve"><value>Allow Saving</value></data><data name="AppSecretTooltip" xml:space="preserve"><value>アプリシークレット</value></data><data name="AutoCopyFolderConfirm" xml:space="preserve"><value>Auto copy folder {0} to {1}</value></data><data name="AutoExposureFailedCheckLog" xml:space="preserve"><value>Auto exposure failed, check log {0}{1}</value></data><data name="AutoExposureParamSettings" xml:space="preserve"><value>自動露光パラメータ設定</value></data><data name="AutoExposureTimeoutCheckLog" xml:space="preserve"><value>Auto exposure timeout, check service log</value></data><data name="AutoFocusTest" xml:space="preserve"><value>オートフォーカステスト</value></data><data name="BasicParamSettings" xml:space="preserve"><value>基本パラメータ設定</value></data><data name="BatchNumberCannotBeEmpty" xml:space="preserve"><value>Batch number cannot be empty, enter first</value></data><data name="BindDLL" xml:space="preserve"><value>DLLをバインド</value></data><data name="ButtonCalibrationEdit" xml:space="preserve"><value>キャリブレーション編集</value></data><data name="ButtonCancel" xml:space="preserve"><value>キャンセル</value></data><data name="ButtonDefault" xml:space="preserve"><value>デフォルト</value></data><data name="ButtonEditConfig" xml:space="preserve"><value>設定を編集</value></data><data name="ButtonGoToCameraManager" xml:space="preserve"><value>カメラマネージャーへ移動</value></data><data name="ButtonOK" xml:space="preserve"><value>OK</value></data><data name="ButtonOpenConfigFile" xml:space="preserve"><value>設定ファイルを開く</value></data><data name="ButtonResetChannels" xml:space="preserve"><value>Reset Channel</value></data><data name="ButtonScanOnlineCameras" xml:space="preserve"><value>オンラインカメラをスキャン</value></data><data name="ButtonSelectAll" xml:space="preserve"><value>すべて選択</value></data><data name="ButtonUpdateLicense" xml:space="preserve"><value>ライセンスを更新</value></data><data name="CalcAutoExposure" xml:space="preserve"><value>自動露光を計算</value></data><data name="CalcPosition" xml:space="preserve"><value>位置を計算</value></data><data name="CalculateEQE" xml:space="preserve"><value>EQEを計算</value></data><data name="CaliEditToolTipAngleShift" xml:space="preserve"><value>Color difference correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value></data><data name="CaliEditToolTipAngleShiftShort" xml:space="preserve"><value>Angle Correction</value></data><data name="CaliEditToolTipColorDiff" xml:space="preserve"><value>Color difference correction (ColorDiff): corrects color difference shift between channels</value></data><data name="CaliEditToolTipColorDiffShort" xml:space="preserve"><value>Eliminates color difference shift between channels</value></data><data name="CaliEditToolTipColorShift" xml:space="preserve"><value>Color Shift correction (ColorShift): inter-channel spatial shift compensation
+<data name="AddNewLine" xml:space="preserve"><value>Add Newline</value></data><data name="AddPhysicalCameraFailed" xml:space="preserve"><value>物理カメラの追加に失敗しました</value></data><data name="AddPhysicalCameraSuccess" xml:space="preserve"><value>物理カメラが正常に追加されました</value></data><data name="AllowSave" xml:space="preserve"><value>Allow Saving</value></data><data name="AppSecretTooltip" xml:space="preserve"><value>アプリシークレット</value></data><data name="AutoCopyFolderConfirm" xml:space="preserve"><value>Auto copy folder {0} to {1}</value></data><data name="AutoExposureFailedCheckLog" xml:space="preserve"><value>Auto exposure failed, check log {0}{1}</value></data><data name="AutoExposureParamSettings" xml:space="preserve"><value>自動露光パラメータ設定</value></data><data name="AutoExposureTimeoutCheckLog" xml:space="preserve"><value>Auto exposure timeout, check service log</value></data><data name="AutoFocusTest" xml:space="preserve"><value>オートフォーカステスト</value></data><data name="BasicParamSettings" xml:space="preserve"><value>基本パラメータ設定</value></data><data name="BatchNumberCannotBeEmpty" xml:space="preserve"><value>Batch number cannot be empty, enter first</value></data><data name="BindDLL" xml:space="preserve"><value>DLLをバインド</value></data><data name="ButtonCalibrationEdit" xml:space="preserve"><value>キャリブレーション編集</value></data><data name="ButtonDefault" xml:space="preserve"><value>デフォルト</value></data><data name="ButtonEditConfig" xml:space="preserve"><value>設定を編集</value></data><data name="ButtonGoToCameraManager" xml:space="preserve"><value>カメラマネージャーへ移動</value></data><data name="ButtonOK" xml:space="preserve"><value>OK</value></data><data name="ButtonOpenConfigFile" xml:space="preserve"><value>設定ファイルを開く</value></data><data name="ButtonResetChannels" xml:space="preserve"><value>Reset Channel</value></data><data name="ButtonScanOnlineCameras" xml:space="preserve"><value>オンラインカメラをスキャン</value></data><data name="ButtonSelectAll" xml:space="preserve"><value>すべて選択</value></data><data name="ButtonUpdateLicense" xml:space="preserve"><value>ライセンスを更新</value></data><data name="CalcAutoExposure" xml:space="preserve"><value>自動露光を計算</value></data><data name="CalcPosition" xml:space="preserve"><value>位置を計算</value></data><data name="CalculateEQE" xml:space="preserve"><value>EQEを計算</value></data><data name="CaliEditToolTipAngleShift" xml:space="preserve"><value>Color difference correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value></data><data name="CaliEditToolTipAngleShiftShort" xml:space="preserve"><value>Angle Correction</value></data><data name="CaliEditToolTipColorDiff" xml:space="preserve"><value>Color difference correction (ColorDiff): corrects color difference shift between channels</value></data><data name="CaliEditToolTipColorDiffShort" xml:space="preserve"><value>Eliminates color difference shift between channels</value></data><data name="CaliEditToolTipColorShift" xml:space="preserve"><value>Color Shift correction (ColorShift): inter-channel spatial shift compensation
 Algorithm: Sub-pixel channel shift via OpenCV affine transform
 Configuration: JSON format (fillOffset and offset/offsets parameters)</value></data><data name="CaliEditToolTipColorShiftShort" xml:space="preserve"><value>Compensates spatial shift between color channels in multi-channel optical systems</value></data><data name="CaliEditToolTipDSNU" xml:space="preserve"><value>DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation
 Algorithm: pixel_out = max(pixel_in - DSNU_ref, 0)
@@ -2539,7 +2417,7 @@ Please check serial port settings.</value></data><data name="InvalidSerialPortTi
 
 Exception: {1}</value></data><data name="SerialPortErrorTitle" xml:space="preserve"><value>SerialPortErrorTitle</value></data><data name="SerialPortOccupied" xml:space="preserve"><value>Serial port {0} is occupied by another program.
 
-Please close camera or other programs using this serial port, or check device connection.</value></data><data name="SerialPortOccupiedTitle" xml:space="preserve"><value>SerialPortOccupiedTitle</value></data><data name="SetCorrectParameters" xml:space="preserve"><value>Please set correct parameters!</value></data><data name="ShowCenterLine" xml:space="preserve"><value>Show Center Line</value></data><data name="SourceMeterSwitch" xml:space="preserve"><value>SourceMeterSwitch</value></data><data name="Subscribe" xml:space="preserve"><value>Subscribe</value></data><data name="SwapRB" xml:space="preserve"><value>Exchange R/B</value></data><data name="Temperature" xml:space="preserve"><value>Temperature</value></data><data name="TemperatureChartTitle" xml:space="preserve"><value>TemperatureChartTitle</value></data><data name="TemperatureChartTitleWithDate" xml:space="preserve"><value>Temperature Chart - {0}</value></data><data name="TemperatureUnit" xml:space="preserve"><value>°C</value></data><data name="TemplateFileNotExist" xml:space="preserve"><value>Using {0} template, {1} file does not exist</value></data><data name="ThirdPartyAlgorithm" xml:space="preserve"><value>ThirdPartyAlgorithm</value></data><data name="ThresholdRange" xml:space="preserve"><value>Threshold (0-255)</value></data><data name="Time" xml:space="preserve"><value>Time</value></data><data name="TitleCameraSearchResults" xml:space="preserve"><value>TitleCameraSearchResults</value></data><data name="TitleEditCameraConfig" xml:space="preserve"><value>TitleEditCameraConfig</value></data><data name="TitleLicenseExpiryNotification" xml:space="preserve"><value>TitleLicenseExpiryNotification</value></data><data name="TitleSearchCameraType" xml:space="preserve"><value>TitleSearchCameraType</value></data><data name="ToggleSpectrum" xml:space="preserve"><value>ToggleSpectrum</value></data><data name="ToolTipAngleShift" xml:space="preserve"><value>Color correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value></data><data name="ToolTipColorDiff" xml:space="preserve"><value>Color correction (ColorDiff): corrects color difference between channels</value></data><data name="ToolTipColorShift" xml:space="preserve"><value>Color shift correction (ColorShift): inter-channel spatial shift compensation. Configuration: JSON format (fillOffset and offset parameters)</value></data><data name="ToolTipDSNU" xml:space="preserve"><value>DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation. Configuration: Binary format (V0/V1 header + ushort data)</value></data><data name="ToolTipDarkNoise" xml:space="preserve"><value>Dark current correction (DarkNoise): eliminate sensor dark current noise. Configuration: JSON format (bpp and DarkNoiseRatio)</value></data><data name="ToolTipDefectPoint" xml:space="preserve"><value>Defect point correction (DefectPoint): detect and repair defective pixels. Configuration: Binary format (defect count + coordinate list)</value></data><data name="ToolTipDistortion" xml:space="preserve"><value>Distortion correction (Distortion): lens radial/tangential distortion correction. Configuration: JSON format (camera intrinsic matrix and distortion coefficients)</value></data><data name="ToolTipEditCameraConfig" xml:space="preserve"><value>Edit current camera configuration</value></data><data name="ToolTipFourColor" xml:space="preserve"><value>Four-color correction (LumFourColor): 3×3 matrix full channel mixing color conversion.</value></data><data name="ToolTipLineArity" xml:space="preserve"><value>Linearity correction (LineArity): corrects non-linear sensor response characteristics</value></data><data name="ToolTipLuminance" xml:space="preserve"><value>Luminance correction (Luminance): linear conversion from grayscale to absolute luminance Lv(cd/m²). Configuration: JSON format (bpp, exposure time, coefficient a)</value></data><data name="ToolTipMultiColor" xml:space="preserve"><value>Multi-color correction (LumMultiColor): dynamic size coefficient matrix, supports higher-order color conversion.</value></data><data name="ToolTipOneColor" xml:space="preserve"><value>Single-color correction (LumOneColor): 4-coefficient model converts 3-channel grayscale to CIE XYZ tristimulus.</value></data><data name="ToolTipUniformity" xml:space="preserve"><value>Uniformity correction (Uniformity): compensates lens vignetting and sensor response non-uniformity. Configuration: Binary format (V0/V1 header + float factor matrix)</value></data><data name="TryRestartService" xml:space="preserve"><value>Try restarting service</value></data><data name="UnknownCalibrationType" xml:space="preserve"><value>Unknown calibration type: {0}</value></data><data name="UnknownCamera" xml:space="preserve"><value>Unknown camera</value></data><data name="UpdateSuccess" xml:space="preserve"><value>Update Successful</value></data><data name="UploadFinished" xml:space="preserve"><value>Upload finished</value></data><data name="UploadingCalibrationFilePleaseWait" xml:space="preserve"><value>Uploading calibration file: {0}, please wait...</value></data><data name="UserCancelledOrElevationFailed" xml:space="preserve"><value>User cancelled the operation or elevation failed.</value></data><data name="VIScan" xml:space="preserve"><value>VIScan</value></data><data name="VideoCaptureMode" xml:space="preserve"><value>Video Mode</value></data><data name="VideoCaptureTimeoutCheckLog" xml:space="preserve"><value>VideoCaptureTimeoutCheckLog</value></data><data name="VoltageSource" xml:space="preserve"><value>Voltage Source</value></data><data name="Flow_ConfirmDeleteFlow" xml:space="preserve"><value>Confirm delete flow "{0}"?</value></data><data name="Flow_ExportFlow" xml:space="preserve"><value>Export Flow</value></data><data name="Flow_GetCanvasDataFailed" xml:space="preserve"><value>Failed to get canvas data</value></data><data name="Flow_ImportFlow" xml:space="preserve"><value>フローインポート</value></data><data name="Flow_ImportModuleFailed" xml:space="preserve"><value>Failed to import module: {0}</value></data><data name="Flow_ImportTemplateAsModule" xml:space="preserve"><value>Import Template as Module</value></data><data name="Flow_Module" xml:space="preserve"><value> Module</value></data><data name="Flow_NewFlow" xml:space="preserve"><value>New Flow</value></data><data name="Flow_NoFlowParamSelected" xml:space="preserve"><value>No flow parameter selected, cannot save</value></data><data name="Flow_NoFlowTemplate" xml:space="preserve"><value>No flow templates available</value></data><data name="Flow_NodeTimeAnalysis" xml:space="preserve"><value>Node Time Analysis</value></data><data name="Flow_RunFlowFirst" xml:space="preserve"><value>Please run the flow first</value></data><data name="Flow_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data><data name="Flow_TemplateNoFlowData" xml:space="preserve"><value>Selected template has no flow data</value></data><data name="Flow_MessageList_All" xml:space="preserve"><value>All</value></data><data name="Flow_MessageList_ClearRecords" xml:space="preserve"><value>Clear Records</value></data><data name="Flow_MessageList_DisplayCount" xml:space="preserve"><value>Showing:</value></data><data name="Flow_MessageList_ElapsedMs" xml:space="preserve"><value>Elapsed(ms)</value></data><data name="Flow_MessageList_LoadCount" xml:space="preserve"><value>Load Count:</value></data><data name="Flow_MessageList_Node" xml:space="preserve"><value>Node:</value></data><data name="Flow_MessageList_NodeHeader" xml:space="preserve"><value>Node</value></data><data name="Flow_MessageList_Query" xml:space="preserve"><value>Query</value></data><data name="Flow_MessageList_RecvData" xml:space="preserve"><value>Receive Data</value></data><data name="Flow_MessageList_RecvTime" xml:space="preserve"><value>Receive Time</value></data><data name="Flow_MessageList_Refresh" xml:space="preserve"><value>Refresh</value></data><data name="Flow_MessageList_SendData" xml:space="preserve"><value>Send Data</value></data><data name="Flow_MessageList_SendTime" xml:space="preserve"><value>Send Time</value></data><data name="Flow_MessageList_State" xml:space="preserve"><value>State:</value></data><data name="Flow_MessageList_StateHeader" xml:space="preserve"><value>State</value></data><data name="Flow_MessageList_StatusCode" xml:space="preserve"><value>Status Code</value></data><data name="Flow_MessageList_Title" xml:space="preserve"><value>Flow MQTT Message Query</value></data><data name="Flow_MessageList_TotalCount" xml:space="preserve"><value>Total:</value></data><data name="Flow_NodeAnalysis_All" xml:space="preserve"><value>All</value></data><data name="Flow_NodeAnalysis_BatchSelection" xml:space="preserve"><value>Batch Selection:</value></data><data name="Flow_NodeAnalysis_Compare" xml:space="preserve"><value>Compare</value></data><data name="Flow_NodeAnalysis_CsvHeader" xml:space="preserve"><value>BatchId,NodeName,NodeType,StartTime,EndTime,Elapsed(ms),SN</value></data><data name="Flow_NodeAnalysis_ElapsedMs" xml:space="preserve"><value>Elapsed(ms)</value></data><data name="Flow_NodeAnalysis_EndTime" xml:space="preserve"><value>End Time</value></data><data name="Flow_NodeAnalysis_Export" xml:space="preserve"><value>Export</value></data><data name="Flow_NodeAnalysis_FileNamePrefix" xml:space="preserve"><value>NodeTimeAnalysis_</value></data><data name="Flow_NodeAnalysis_GanttCompareTitle" xml:space="preserve"><value>Flow Node Comparison (Multi-batch)</value></data><data name="Flow_NodeAnalysis_GanttTitle" xml:space="preserve"><value>Flow Node Gantt Chart</value></data><data name="Flow_NodeAnalysis_Load" xml:space="preserve"><value>Load</value></data><data name="Flow_NodeAnalysis_MessageQueryWindow" xml:space="preserve"><value>Message Query Window</value></data><data name="Flow_NodeAnalysis_MqttCsvHeader" xml:space="preserve"><value>BatchId,Node,NodeId,EventName,MsgId,SendTopic,SendTime,RecvTopic,RecvTime,Elapsed(ms),StatusCode,StatusMessage,State</value></data><data name="Flow_NodeAnalysis_MqttMessageTrace" xml:space="preserve"><value>MQTT Message Trace</value></data><data name="Flow_NodeAnalysis_NoDataToExport" xml:space="preserve"><value>No data to export, please load batch data first</value></data><data name="Flow_NodeAnalysis_Node" xml:space="preserve"><value>Node</value></data><data name="Flow_NodeAnalysis_NodeFilter" xml:space="preserve"><value>Node Filter:</value></data><data name="Flow_NodeAnalysis_NodeName" xml:space="preserve"><value>Node Name</value></data><data name="Flow_NodeAnalysis_NodeType" xml:space="preserve"><value>Node Type</value></data><data name="Flow_NodeAnalysis_RecvData" xml:space="preserve"><value>Receive Data</value></data><data name="Flow_NodeAnalysis_RecvTime" xml:space="preserve"><value>Receive Time</value></data><data name="Flow_NodeAnalysis_SelectAtLeastOneBatch" xml:space="preserve"><value>Please select at least one batch</value></data><data name="Flow_NodeAnalysis_SelectAtLeastTwoBatches" xml:space="preserve"><value>Please select at least two batches to compare</value></data><data name="Flow_NodeAnalysis_SendData" xml:space="preserve"><value>Send Data</value></data><data name="Flow_NodeAnalysis_SendTime" xml:space="preserve"><value>Send Time</value></data><data name="Flow_NodeAnalysis_StartTime" xml:space="preserve"><value>Start Time</value></data><data name="Flow_NodeAnalysis_State" xml:space="preserve"><value>State</value></data><data name="Flow_NodeAnalysis_StateFilter" xml:space="preserve"><value>State Filter:</value></data><data name="Flow_NodeAnalysis_Title" xml:space="preserve"><value>Flow Node Time Analysis</value></data><data name="Flow_NodeAnalysis_TotalTime" xml:space="preserve"><value>Total Time</value></data><data name="Flow_NodeAnalysis_XLabelElapsed" xml:space="preserve"><value>Elapsed (ms)</value></data><data name="Flow_NodeAnalysis_XLabelTime" xml:space="preserve"><value>Time (ms)</value></data><data name="Flow_PreProcess_Title" xml:space="preserve"><value>Pre-Process Configuration</value></data><data name="Flow_MessageList_ConfirmClearAll" xml:space="preserve"><value>Are you sure you want to clear all flow MQTT message records?</value></data><data name="Flow_NodeAnalysis_Timeout" xml:space="preserve"><value>Timeout</value></data><data name="Flow_MeasureBatch_PostProcessExecution" xml:space="preserve"><value>Post-Process Execution</value></data><data name="Flow_MeasureBatch_SelectedBatch" xml:space="preserve"><value>Selected Batch:</value></data><data name="Flow_NoEndNode" xml:space="preserve"><value>Flow end node not found</value></data><data name="Flow_NoStartNode" xml:space="preserve"><value>Flow start node not found</value></data><data name="Flow_NoTemplateAvailable" xml:space="preserve"><value>(No templates available)</value></data><data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data><data name="BilateralFilter" xml:space="preserve"><value>Bilateral Filter</value></data><data name="Blur" xml:space="preserve"><value>Blur</value></data><data name="Dilate" xml:space="preserve"><value>Dilate</value></data><data name="Erode" xml:space="preserve"><value>Erode</value></data><data name="KernelSize" xml:space="preserve"><value>Kernel Size</value></data><data name="MorphologyEx" xml:space="preserve"><value>Morphology</value></data><data name="OpenWithImageJ" xml:space="preserve"><value>Open with ImageJ</value></data><data name="GaussianBlur" xml:space="preserve"><value>Gaussian Blur</value></data><data name="MedianFilter" xml:space="preserve"><value>Median Filter</value></data><data name="ThresholdProcessing" xml:space="preserve"><value>Threshold Processing</value></data>
+Please close camera or other programs using this serial port, or check device connection.</value></data><data name="SerialPortOccupiedTitle" xml:space="preserve"><value>SerialPortOccupiedTitle</value></data><data name="SetCorrectParameters" xml:space="preserve"><value>Please set correct parameters!</value></data><data name="ShowCenterLine" xml:space="preserve"><value>Show Center Line</value></data><data name="SourceMeterSwitch" xml:space="preserve"><value>SourceMeterSwitch</value></data><data name="SwapRB" xml:space="preserve"><value>Exchange R/B</value></data><data name="Temperature" xml:space="preserve"><value>Temperature</value></data><data name="TemperatureChartTitle" xml:space="preserve"><value>TemperatureChartTitle</value></data><data name="TemperatureChartTitleWithDate" xml:space="preserve"><value>Temperature Chart - {0}</value></data><data name="TemperatureUnit" xml:space="preserve"><value>°C</value></data><data name="TemplateFileNotExist" xml:space="preserve"><value>Using {0} template, {1} file does not exist</value></data><data name="ThirdPartyAlgorithm" xml:space="preserve"><value>ThirdPartyAlgorithm</value></data><data name="ThresholdRange" xml:space="preserve"><value>Threshold (0-255)</value></data><data name="Time" xml:space="preserve"><value>Time</value></data><data name="TitleCameraSearchResults" xml:space="preserve"><value>TitleCameraSearchResults</value></data><data name="TitleEditCameraConfig" xml:space="preserve"><value>TitleEditCameraConfig</value></data><data name="TitleLicenseExpiryNotification" xml:space="preserve"><value>TitleLicenseExpiryNotification</value></data><data name="TitleSearchCameraType" xml:space="preserve"><value>TitleSearchCameraType</value></data><data name="ToggleSpectrum" xml:space="preserve"><value>ToggleSpectrum</value></data><data name="ToolTipAngleShift" xml:space="preserve"><value>Color correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value></data><data name="ToolTipColorDiff" xml:space="preserve"><value>Color correction (ColorDiff): corrects color difference between channels</value></data><data name="ToolTipColorShift" xml:space="preserve"><value>Color shift correction (ColorShift): inter-channel spatial shift compensation. Configuration: JSON format (fillOffset and offset parameters)</value></data><data name="ToolTipDSNU" xml:space="preserve"><value>DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation. Configuration: Binary format (V0/V1 header + ushort data)</value></data><data name="ToolTipDarkNoise" xml:space="preserve"><value>Dark current correction (DarkNoise): eliminate sensor dark current noise. Configuration: JSON format (bpp and DarkNoiseRatio)</value></data><data name="ToolTipDefectPoint" xml:space="preserve"><value>Defect point correction (DefectPoint): detect and repair defective pixels. Configuration: Binary format (defect count + coordinate list)</value></data><data name="ToolTipDistortion" xml:space="preserve"><value>Distortion correction (Distortion): lens radial/tangential distortion correction. Configuration: JSON format (camera intrinsic matrix and distortion coefficients)</value></data><data name="ToolTipEditCameraConfig" xml:space="preserve"><value>Edit current camera configuration</value></data><data name="ToolTipFourColor" xml:space="preserve"><value>Four-color correction (LumFourColor): 3×3 matrix full channel mixing color conversion.</value></data><data name="ToolTipLineArity" xml:space="preserve"><value>Linearity correction (LineArity): corrects non-linear sensor response characteristics</value></data><data name="ToolTipLuminance" xml:space="preserve"><value>Luminance correction (Luminance): linear conversion from grayscale to absolute luminance Lv(cd/m²). Configuration: JSON format (bpp, exposure time, coefficient a)</value></data><data name="ToolTipMultiColor" xml:space="preserve"><value>Multi-color correction (LumMultiColor): dynamic size coefficient matrix, supports higher-order color conversion.</value></data><data name="ToolTipOneColor" xml:space="preserve"><value>Single-color correction (LumOneColor): 4-coefficient model converts 3-channel grayscale to CIE XYZ tristimulus.</value></data><data name="ToolTipUniformity" xml:space="preserve"><value>Uniformity correction (Uniformity): compensates lens vignetting and sensor response non-uniformity. Configuration: Binary format (V0/V1 header + float factor matrix)</value></data><data name="TryRestartService" xml:space="preserve"><value>Try restarting service</value></data><data name="UnknownCalibrationType" xml:space="preserve"><value>Unknown calibration type: {0}</value></data><data name="UnknownCamera" xml:space="preserve"><value>Unknown camera</value></data><data name="UpdateSuccess" xml:space="preserve"><value>Update Successful</value></data><data name="UploadFinished" xml:space="preserve"><value>Upload finished</value></data><data name="UploadingCalibrationFilePleaseWait" xml:space="preserve"><value>Uploading calibration file: {0}, please wait...</value></data><data name="UserCancelledOrElevationFailed" xml:space="preserve"><value>User cancelled the operation or elevation failed.</value></data><data name="VIScan" xml:space="preserve"><value>VIScan</value></data><data name="VideoCaptureMode" xml:space="preserve"><value>Video Mode</value></data><data name="VideoCaptureTimeoutCheckLog" xml:space="preserve"><value>VideoCaptureTimeoutCheckLog</value></data><data name="VoltageSource" xml:space="preserve"><value>Voltage Source</value></data><data name="Flow_ConfirmDeleteFlow" xml:space="preserve"><value>Confirm delete flow "{0}"?</value></data><data name="Flow_ExportFlow" xml:space="preserve"><value>Export Flow</value></data><data name="Flow_GetCanvasDataFailed" xml:space="preserve"><value>Failed to get canvas data</value></data><data name="Flow_ImportFlow" xml:space="preserve"><value>フローインポート</value></data><data name="Flow_ImportModuleFailed" xml:space="preserve"><value>Failed to import module: {0}</value></data><data name="Flow_ImportTemplateAsModule" xml:space="preserve"><value>Import Template as Module</value></data><data name="Flow_Module" xml:space="preserve"><value> Module</value></data><data name="Flow_NewFlow" xml:space="preserve"><value>New Flow</value></data><data name="Flow_NoFlowParamSelected" xml:space="preserve"><value>No flow parameter selected, cannot save</value></data><data name="Flow_NoFlowTemplate" xml:space="preserve"><value>No flow templates available</value></data><data name="Flow_NodeTimeAnalysis" xml:space="preserve"><value>Node Time Analysis</value></data><data name="Flow_RunFlowFirst" xml:space="preserve"><value>Please run the flow first</value></data><data name="Flow_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data><data name="Flow_TemplateNoFlowData" xml:space="preserve"><value>Selected template has no flow data</value></data><data name="Flow_MessageList_All" xml:space="preserve"><value>All</value></data><data name="Flow_MessageList_ClearRecords" xml:space="preserve"><value>Clear Records</value></data><data name="Flow_MessageList_DisplayCount" xml:space="preserve"><value>Showing:</value></data><data name="Flow_MessageList_ElapsedMs" xml:space="preserve"><value>Elapsed(ms)</value></data><data name="Flow_MessageList_LoadCount" xml:space="preserve"><value>Load Count:</value></data><data name="Flow_MessageList_Node" xml:space="preserve"><value>Node:</value></data><data name="Flow_MessageList_NodeHeader" xml:space="preserve"><value>Node</value></data><data name="Flow_MessageList_Query" xml:space="preserve"><value>Query</value></data><data name="Flow_MessageList_RecvData" xml:space="preserve"><value>Receive Data</value></data><data name="Flow_MessageList_RecvTime" xml:space="preserve"><value>Receive Time</value></data><data name="Flow_MessageList_Refresh" xml:space="preserve"><value>Refresh</value></data><data name="Flow_MessageList_SendData" xml:space="preserve"><value>Send Data</value></data><data name="Flow_MessageList_SendTime" xml:space="preserve"><value>Send Time</value></data><data name="Flow_MessageList_State" xml:space="preserve"><value>State:</value></data><data name="Flow_MessageList_StateHeader" xml:space="preserve"><value>State</value></data><data name="Flow_MessageList_StatusCode" xml:space="preserve"><value>Status Code</value></data><data name="Flow_MessageList_Title" xml:space="preserve"><value>Flow MQTT Message Query</value></data><data name="Flow_MessageList_TotalCount" xml:space="preserve"><value>Total:</value></data><data name="Flow_NodeAnalysis_All" xml:space="preserve"><value>All</value></data><data name="Flow_NodeAnalysis_BatchSelection" xml:space="preserve"><value>Batch Selection:</value></data><data name="Flow_NodeAnalysis_Compare" xml:space="preserve"><value>Compare</value></data><data name="Flow_NodeAnalysis_CsvHeader" xml:space="preserve"><value>BatchId,NodeName,NodeType,StartTime,EndTime,Elapsed(ms),SN</value></data><data name="Flow_NodeAnalysis_ElapsedMs" xml:space="preserve"><value>Elapsed(ms)</value></data><data name="Flow_NodeAnalysis_EndTime" xml:space="preserve"><value>End Time</value></data><data name="Flow_NodeAnalysis_Export" xml:space="preserve"><value>Export</value></data><data name="Flow_NodeAnalysis_FileNamePrefix" xml:space="preserve"><value>NodeTimeAnalysis_</value></data><data name="Flow_NodeAnalysis_GanttCompareTitle" xml:space="preserve"><value>Flow Node Comparison (Multi-batch)</value></data><data name="Flow_NodeAnalysis_GanttTitle" xml:space="preserve"><value>Flow Node Gantt Chart</value></data><data name="Flow_NodeAnalysis_Load" xml:space="preserve"><value>Load</value></data><data name="Flow_NodeAnalysis_MessageQueryWindow" xml:space="preserve"><value>Message Query Window</value></data><data name="Flow_NodeAnalysis_MqttCsvHeader" xml:space="preserve"><value>BatchId,Node,NodeId,EventName,MsgId,SendTopic,SendTime,RecvTopic,RecvTime,Elapsed(ms),StatusCode,StatusMessage,State</value></data><data name="Flow_NodeAnalysis_MqttMessageTrace" xml:space="preserve"><value>MQTT Message Trace</value></data><data name="Flow_NodeAnalysis_NoDataToExport" xml:space="preserve"><value>No data to export, please load batch data first</value></data><data name="Flow_NodeAnalysis_Node" xml:space="preserve"><value>Node</value></data><data name="Flow_NodeAnalysis_NodeFilter" xml:space="preserve"><value>Node Filter:</value></data><data name="Flow_NodeAnalysis_NodeName" xml:space="preserve"><value>Node Name</value></data><data name="Flow_NodeAnalysis_NodeType" xml:space="preserve"><value>Node Type</value></data><data name="Flow_NodeAnalysis_RecvData" xml:space="preserve"><value>Receive Data</value></data><data name="Flow_NodeAnalysis_RecvTime" xml:space="preserve"><value>Receive Time</value></data><data name="Flow_NodeAnalysis_SelectAtLeastOneBatch" xml:space="preserve"><value>Please select at least one batch</value></data><data name="Flow_NodeAnalysis_SelectAtLeastTwoBatches" xml:space="preserve"><value>Please select at least two batches to compare</value></data><data name="Flow_NodeAnalysis_SendData" xml:space="preserve"><value>Send Data</value></data><data name="Flow_NodeAnalysis_SendTime" xml:space="preserve"><value>Send Time</value></data><data name="Flow_NodeAnalysis_StartTime" xml:space="preserve"><value>Start Time</value></data><data name="Flow_NodeAnalysis_State" xml:space="preserve"><value>State</value></data><data name="Flow_NodeAnalysis_StateFilter" xml:space="preserve"><value>State Filter:</value></data><data name="Flow_NodeAnalysis_Title" xml:space="preserve"><value>Flow Node Time Analysis</value></data><data name="Flow_NodeAnalysis_TotalTime" xml:space="preserve"><value>Total Time</value></data><data name="Flow_NodeAnalysis_XLabelElapsed" xml:space="preserve"><value>Elapsed (ms)</value></data><data name="Flow_NodeAnalysis_XLabelTime" xml:space="preserve"><value>Time (ms)</value></data><data name="Flow_PreProcess_Title" xml:space="preserve"><value>Pre-Process Configuration</value></data><data name="Flow_MessageList_ConfirmClearAll" xml:space="preserve"><value>Are you sure you want to clear all flow MQTT message records?</value></data><data name="Flow_NodeAnalysis_Timeout" xml:space="preserve"><value>Timeout</value></data><data name="Flow_MeasureBatch_PostProcessExecution" xml:space="preserve"><value>Post-Process Execution</value></data><data name="Flow_MeasureBatch_SelectedBatch" xml:space="preserve"><value>Selected Batch:</value></data><data name="Flow_NoEndNode" xml:space="preserve"><value>Flow end node not found</value></data><data name="Flow_NoStartNode" xml:space="preserve"><value>Flow start node not found</value></data><data name="Flow_NoTemplateAvailable" xml:space="preserve"><value>(No templates available)</value></data><data name="Blur" xml:space="preserve"><value>Blur</value></data><data name="Dilate" xml:space="preserve"><value>Dilate</value></data><data name="Erode" xml:space="preserve"><value>Erode</value></data><data name="OpenWithImageJ" xml:space="preserve"><value>Open with ImageJ</value></data>
   <data name="Engine_Msg_ConfigFileFormatError" xml:space="preserve">
     <value>Config file format error: {0}</value>
   </data>
@@ -2936,11 +2814,7 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="SampleGroup" xml:space="preserve">
     <value>Sample Group</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>Apply</value>
-  </data>
-  <data name="AutoCreateGroupHint" xml:space="preserve">
+  </data>  <data name="AutoCreateGroupHint" xml:space="preserve">
     <value>Entering a non-existent group name will auto-create on save</value>
   </data>
   <data name="AutoDetectKeyRegions" xml:space="preserve">
