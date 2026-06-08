@@ -61,6 +61,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; OnPropertyChanged(); } }
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
+        public int LocalVideoTransform { get => _LocalVideoTransform; set { _LocalVideoTransform = value; OnPropertyChanged(); } }
+        private int _LocalVideoTransform = RealtimeFramePresenter.TransformNone;
+
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeLog)); } }
         private double _ExpTime = 100;
         public double ExpTimeLog { get => Math.Log(ExpTime); set { ExpTime = Math.Pow(Math.E, value); } }
@@ -168,8 +171,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CBFilp1.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
                                   select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
-            CBFilp2.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
-                                  select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
+            CBFilp2.ItemsSource = new[]
+            {
+                new KeyValuePair<int, string>(RealtimeFramePresenter.TransformNone, "None"),
+                new KeyValuePair<int, string>(RealtimeFramePresenter.TransformFlipX, "FlipX"),
+                new KeyValuePair<int, string>(RealtimeFramePresenter.TransformFlipY, "FlipY"),
+                new KeyValuePair<int, string>(RealtimeFramePresenter.TransformFlipXY, "FlipXY")
+            };
 
 
             DService_DeviceStatusChanged(sender, DService.DeviceStatus);
@@ -997,7 +1005,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
 
                 button.Content = "Close Video";
-                _localRealtimePipeline.Start(Device.View.ImageView, ToRealtimeTransform(Device.DisplayConfig.FlipMode));
+                _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform);
                 SetLocalVideoPoiTemplateSupported(true);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
                 localVideoOpened = true;
@@ -1130,24 +1138,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void CBFilp2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox { SelectedValue: CVImageFlipMode flipMode })
+            if (sender is ComboBox { SelectedValue: int transform })
             {
-                _localRealtimePipeline.Transform = ToRealtimeTransform(flipMode);
+                _localRealtimePipeline.Transform = transform;
                 return;
             }
 
-            _localRealtimePipeline.Transform = ToRealtimeTransform(Device.DisplayConfig.FlipMode);
-        }
-
-        private static RealtimeFrameTransform ToRealtimeTransform(CVImageFlipMode flipMode)
-        {
-            return flipMode switch
-            {
-                CVImageFlipMode.X => RealtimeFrameTransform.FlipX,
-                CVImageFlipMode.Y => RealtimeFrameTransform.FlipY,
-                CVImageFlipMode.XY => RealtimeFrameTransform.FlipXY,
-                _ => RealtimeFrameTransform.None
-            };
+            _localRealtimePipeline.Transform = Device.DisplayConfig.LocalVideoTransform;
         }
 
     }

@@ -10,22 +10,13 @@ using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Realtime
 {
-    public sealed class RealtimeFrameRenderedEventArgs : EventArgs
-    {
-        public RealtimeFrameRenderedEventArgs(int width, int height, PixelFormat pixelFormat)
-        {
-            Width = width;
-            Height = height;
-            PixelFormat = pixelFormat;
-        }
-
-        public int Width { get; }
-        public int Height { get; }
-        public PixelFormat PixelFormat { get; }
-    }
-
     public sealed class RealtimeFramePresenter : IDisposable
     {
+        public const int TransformNone = 0;
+        public const int TransformFlipX = 1;
+        public const int TransformFlipY = 2;
+        public const int TransformFlipXY = TransformFlipX | TransformFlipY;
+
         private sealed class FrameBuffer : IDisposable
         {
             public IntPtr Buffer;
@@ -35,7 +26,7 @@ namespace ColorVision.ImageEditor.Realtime
             public int Height;
             public int Stride;
             public PixelFormat PixelFormat;
-            public RealtimeFrameTransform Transform;
+            public int Transform;
             public DateTime TimestampUtc;
 
             public void EnsureCapacity(int requiredLength)
@@ -80,7 +71,6 @@ namespace ColorVision.ImageEditor.Realtime
 
         public RealtimeFrameOptions Options { get; private set; }
         public RealtimeFrameStats Stats { get; } = new();
-        public event EventHandler<RealtimeFrameRenderedEventArgs>? FrameRendered;
 
         public void Configure(RealtimeFrameOptions options)
         {
@@ -98,7 +88,7 @@ namespace ColorVision.ImageEditor.Realtime
             return SubmitFrame(frame.pData, frame.cols, frame.rows, pixelFormat, stride, length);
         }
 
-        public unsafe bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, RealtimeFrameTransform transform = RealtimeFrameTransform.None)
+        public unsafe bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, int transform = TransformNone)
         {
             if (sourceBuffer == null) throw new ArgumentNullException(nameof(sourceBuffer));
             if (sourceBuffer.Length == 0) return false;
@@ -115,7 +105,7 @@ namespace ColorVision.ImageEditor.Realtime
             }
         }
 
-        public unsafe bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, RealtimeFrameTransform transform = RealtimeFrameTransform.None)
+        public unsafe bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, int transform = TransformNone)
         {
             if (_isDisposed || sourcePointer == IntPtr.Zero || width <= 0 || height <= 0) return false;
             if (!TryNormalizeLayout(width, height, pixelFormat, ref sourceStride, ref bufferLength))
@@ -291,7 +281,7 @@ namespace ColorVision.ImageEditor.Realtime
 
             try
             {
-                if (frame.Transform == RealtimeFrameTransform.None)
+                if (frame.Transform == TransformNone)
                 {
                     _writeableBitmap.WritePixels(
                         new Int32Rect(0, 0, frame.Width, frame.Height),
@@ -311,7 +301,6 @@ namespace ColorVision.ImageEditor.Realtime
 
             _hasRenderedFrame = true;
 
-            FrameRendered?.Invoke(this, new RealtimeFrameRenderedEventArgs(frame.Width, frame.Height, frame.PixelFormat));
             _imageView.SchedulePixelValueOverlayRefresh();
             Stats.RecordDisplayed(frame.TimestampUtc, Options.IsFrozen);
         }
@@ -330,8 +319,8 @@ namespace ColorVision.ImageEditor.Realtime
                 return false;
             }
 
-            bool flipX = frame.Transform is RealtimeFrameTransform.FlipX or RealtimeFrameTransform.FlipXY;
-            bool flipY = frame.Transform is RealtimeFrameTransform.FlipY or RealtimeFrameTransform.FlipXY;
+            bool flipX = (frame.Transform & TransformFlipX) != 0;
+            bool flipY = (frame.Transform & TransformFlipY) != 0;
 
             _writeableBitmap.Lock();
             try
@@ -366,27 +355,6 @@ namespace ColorVision.ImageEditor.Realtime
             finally
             {
                 _writeableBitmap.Unlock();
-            }
-        }
-
-        public RealtimeFrameSnapshot? CaptureCurrentFrame()
-        {
-            lock (_gate)
-            {
-                if (_displayFrame == null || _displayFrame.Buffer == IntPtr.Zero || _displayFrame.Length <= 0)
-                {
-                    return null;
-                }
-
-                byte[] data = new byte[_displayFrame.Length];
-                Marshal.Copy(_displayFrame.Buffer, data, 0, data.Length);
-                return new RealtimeFrameSnapshot(
-                    data,
-                    _displayFrame.Width,
-                    _displayFrame.Height,
-                    _displayFrame.Stride,
-                    _displayFrame.PixelFormat,
-                    _displayFrame.TimestampUtc);
             }
         }
 

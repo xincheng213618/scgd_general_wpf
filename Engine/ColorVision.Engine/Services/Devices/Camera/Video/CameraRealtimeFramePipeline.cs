@@ -23,20 +23,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _disposed;
         private bool _configSubscribed;
         private bool _isRunning;
-        private int _transform = (int)RealtimeFrameTransform.None;
+        private int _transform = RealtimeFramePresenter.TransformNone;
 
         public CameraRealtimeFramePipeline()
         {
             _overlayVisual = new RealtimeCameraOverlayVisual(_config);
         }
 
-        public RealtimeFrameTransform Transform
+        public int Transform
         {
-            get => (RealtimeFrameTransform)System.Threading.Volatile.Read(ref _transform);
-            set => System.Threading.Volatile.Write(ref _transform, (int)value);
+            get => System.Threading.Volatile.Read(ref _transform);
+            set => System.Threading.Volatile.Write(ref _transform, value & RealtimeFramePresenter.TransformFlipXY);
         }
 
-        public void Start(ImageView imageView, RealtimeFrameTransform transform = RealtimeFrameTransform.None)
+        public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone)
         {
             ArgumentNullException.ThrowIfNull(imageView);
             ThrowIfDisposed();
@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             if (!_overlaysAdded)
             {
-                imageView.Realtime.AddOverlayVisual(_overlayVisual);
+                imageView.ImageShow.AddOverlayVisual(_overlayVisual);
                 _overlaysAdded = true;
             }
 
@@ -95,7 +95,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             {
                 if (_overlaysAdded)
                 {
-                    imageView.Realtime.RemoveOverlayVisual(_overlayVisual);
+                    imageView.ImageShow.RemoveOverlayVisual(_overlayVisual);
                     _overlaysAdded = false;
                 }
 
