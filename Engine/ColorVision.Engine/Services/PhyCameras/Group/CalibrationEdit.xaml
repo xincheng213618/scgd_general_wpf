@@ -54,7 +54,6 @@
                     <Button Style="{StaticResource ToolbarButtonStyle}" Command="{Binding UploadCalibrationCommand}" Content="{x:Static properties:Resources.Upload}" />
                     <Button Style="{StaticResource ToolbarButtonStyle}" Click="Export_Click" Content="{x:Static properties:Resources.ExportCalibration}" />
                     <Button Style="{StaticResource ToolbarButtonStyle}" Command="{Binding OepnCalibrationToolCommand}" Content="{x:Static properties:Resources.CreateCalibration}" />
-                    <Button Style="{StaticResource ToolbarButtonStyle}" Click="Help_Click" Content="{x:Static properties:Resources.ButtonCalibrationManual}" ToolTip="{x:Static properties:Resources.ToolTipCalibrationHelpDetail}" />
                 </WrapPanel>
             </Grid>
         </Border>

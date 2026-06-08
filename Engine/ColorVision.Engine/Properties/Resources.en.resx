@@ -3043,9 +3043,6 @@
   <data name="ButtonCalibrationEdit" xml:space="preserve">
     <value>Calibration Edit</value>
   </data>
-  <data name="ButtonCalibrationManual" xml:space="preserve">
-    <value>Calibration Manual</value>
-  </data>
   <data name="ButtonCalibrationTemplateSettings" xml:space="preserve">
     <value>Calibration Template Settings</value>
   </data>
@@ -3509,259 +3506,6 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="HeartbeatTimeLabel" xml:space="preserve">
     <value>Heartbeat Time</value>
   </data>
-  <data name="HelpAlgorithmDescLabel" xml:space="preserve">
-    <value>Algorithm Description:</value>
-  </data>
-  <data name="HelpAlgorithmStepsLabel" xml:space="preserve">
-    <value>Algorithm Steps:</value>
-  </data>
-  <data name="HelpCalibrationSystemDesc" xml:space="preserve">
-    <value>This system provides a complete calibration pipeline from raw image acquisition to CIE color space (XYZ/xy/uv/CCT) conversion</value>
-  </data>
-  <data name="HelpCalibrationSystemTitle" xml:space="preserve">
-    <value>Image Calibration System Reference Manual</value>
-  </data>
-  <data name="HelpChromaticParamsLabel" xml:space="preserve">
-    <value>Supported Chromaticity Parameters:</value>
-  </data>
-  <data name="HelpColorCalibrationTip" xml:space="preserve">
-    <value>Tip: Color calibration modes are mutually exclusive. Selecting one deselects others.</value>
-  </data>
-  <data name="HelpColorDiffDesc" xml:space="preserve">
-    <value>Principle: Corrects color difference shift between channels, eliminates inter-channel color errors from optical system.</value>
-  </data>
-  <data name="HelpColorDiffTitle" xml:space="preserve">
-    <value>2.8 Color Difference Correction (ColorDiff)</value>
-  </data>
-  <data name="HelpColorShiftDesc" xml:space="preserve">
-    <value>Principle: In multi-channel optical systems, different color channels may have spatial shifts. Channel-level shift compensation via OpenCV affine transform.</value>
-  </data>
-  <data name="HelpColorShiftTitle" xml:space="preserve">
-    <value>2.5 Color Shift Correction (ColorShift)</value>
-  </data>
-  <data name="HelpDSNUDesc" xml:space="preserve">
-    <value>Principle: DSNU is inherent pixel-level dark current variation. Compensated by per-pixel subtraction using pre-acquired dark frame reference.</value>
-  </data>
-  <data name="HelpDSNUTitle" xml:space="preserve">
-    <value>2.2 Dark Signal Non-Uniformity Correction (DSNU)</value>
-  </data>
-  <data name="HelpDarkNoiseDesc" xml:space="preserve">
-    <value>Principle: Sensors produce dark current without illumination. Eliminates dark current noise by per-pixel multiplication using pre-calibrated ratio.</value>
-  </data>
-  <data name="HelpDarkNoiseNote" xml:space="preserve">
-    <value>Note: Per-pixel multiplication by dark current coefficient in ROI, overflow truncated to max.</value>
-  </data>
-  <data name="HelpDarkNoiseTitle" xml:space="preserve">
-    <value>2.1 Dark Current Correction (DarkNoise)</value>
-  </data>
-  <data name="HelpDefectPointDesc" xml:space="preserve">
-    <value>Principle: Pre-calibrated defective pixel list, each replaced by 7x7 neighborhood median. Multi-channel independent processing.</value>
-  </data>
-  <data name="HelpDefectPointTitle" xml:space="preserve">
-    <value>2.3 Defective Pixel Correction (DefectPoint)</value>
-  </data>
-  <data name="HelpDistortionDesc" xml:space="preserve">
-    <value>Principle: Uses OpenCV camera calibration, supports pinhole and fisheye models. Pre-computes remap table then executes via cv::remap.</value>
-  </data>
-  <data name="HelpDistortionTitle" xml:space="preserve">
-    <value>2.6 Distortion Correction (Distortion)</value>
-  </data>
-  <data name="HelpEngineFooter" xml:space="preserve">
-    <value>-- Based on C++ DLL Calibration Engine (CVCommCore.dll) --</value>
-  </data>
-  <data name="HelpFileFormatBinary" xml:space="preserve">
-    <value>Configuration file format: Binary</value>
-  </data>
-  <data name="HelpFileFormatColorShift" xml:space="preserve">
-    <value>Unified offset: { "fillOffset": true, "offset": { "X": 2, "Y": -1 } }
-Multi-channel independent offset: { "fillOffset": false, "offsets": [{"X":1,"Y":0}, {"X":0,"Y":-1}, ...] }</value>
-  </data>
-  <data name="HelpFileFormatDSNU" xml:space="preserve">
-    <value>V0: [8-byte header: height, width] + [ushort data: height × width]
-V1: [20-byte header: height, width, databpp, channels, typebpp] + [ushort data: height × width × channels]</value>
-  </data>
-  <data name="HelpFileFormatDefectPoint" xml:space="preserve">
-    <value>[4 bytes: defect count N]
-[4 bytes: y coordinate][4 bytes: x coordinate] × N</value>
-  </data>
-  <data name="HelpFileFormatJSON" xml:space="preserve">
-    <value>Configuration file format: JSON</value>
-  </data>
-  <data name="HelpFileFormatUniformity" xml:space="preserve">
-    <value>V0: [8-byte header: height, width] + [float data: height × width]
-V1: [20-byte header: height, width, databpp, channels, typebpp] + [float data: height × width × channels]</value>
-  </data>
-  <data name="HelpFilterDesc" xml:space="preserve">
-    <value>Filtering: supports threshold, out-of-region, XYZ channel, percentage filtering and other anomaly pixel exclusion mechanisms.</value>
-  </data>
-  <data name="HelpFormulaChromatic" xml:space="preserve">
-    <value>CIE xy chromaticity: x = X/(X+Y+Z), y = Y/(X+Y+Z)
-CIE u'v' chromaticity: u' = 4X/(X+15Y+3Z), v' = 9Y/(X+15Y+3Z)
-CCT (Correlated Color Temperature) and Dominant Wavelength</value>
-  </data>
-  <data name="HelpFormulaColorShift" xml:space="preserve">
-    <value>Construct 2×3 affine transform matrix:
-M = | 1  0  dx |
-    | 0  1  dy |
-
-call cv::warpAffine to execute sub-pixel shift
-When fillOffset=true, fill shifted blank area with edge mirror data</value>
-  </data>
-  <data name="HelpFormulaDSNU" xml:space="preserve">
-    <value>pixel_out = max(pixel_in - DSNU_ref[i], 0)
-
-Supports single and multi-channel (R/G/B subtract corresponding channel DSNU reference)
-Underflow truncated to 0</value>
-  </data>
-  <data name="HelpFormulaDefectPoint" xml:space="preserve">
-    <value>1. Read defect list (row, col)
-2. For each defect, take neighborhood pixels within center ±3 range
-3. Sort neighborhood pixels, take median as repair value
-4. Multi-channel independent processing
-
-Median filter window: 7×7, boundary auto-cropped to image boundary</value>
-  </data>
-  <data name="HelpFormulaDistortion" xml:space="preserve">
-    <value>1. Load calibration parameters (fx, fy, cx, cy, k1-k3, p1-p2)
-2. Background thread pre-computes remap table:
-   Standard model → cv::initUndistortRectifyMap
-   Fisheye model → cv::fisheye::initUndistortRectifyMap
-3. Use cv::remap for pixel remapping during calibration
-4. alpha parameter controls scaling (0=no black border, 1=keep all pixels)
-
-Distortion model:
-  Standard: k1, k2, p1, p2, k3 (radial + tangential)
-  Fisheye: 4 distortion coefficients</value>
-  </data>
-  <data name="HelpFormulaFourColor" xml:space="preserve">
-    <value>| X |   | a/(Tx·Gx)  b/(Ty·Gy)  c/(Tz·Gz) |   | R |
-| Y | = | d/(Tx·Gx)  e/(Ty·Gy)  f/(Tz·Gz) | × | G |
-| Z |   | g/(Tx·Gx)  h/(Ty·Gy)  i/(Tz·Gz) |   | B |
-
-Configuration file contains 9 coefficients a-i, plus each channel exposure time and gain
-Also supports multi-threaded parallel calculation</value>
-  </data>
-  <data name="HelpFormulaLabel" xml:space="preserve">
-    <value>Algorithm Formula:</value>
-  </data>
-  <data name="HelpFormulaLuminance" xml:space="preserve">
-    <value>Lv[i] = (a / Texp) × pixel[i]
-
-Linear conversion, coefficient a normalized by exposure time
-Only processes valid pixels outside optical black area (OB)
-Output: Single-channel 32-bit floating point luminance map (cd/m²)</value>
-  </data>
-  <data name="HelpFormulaMultiColor" xml:space="preserve">
-    <value>Coefficient array pa[N], gain array Gain[N/3]
-Every 3 coefficients form a group (pa[3k], pa[3k+1], pa[3k+2]):
-  output[k] = pa[3k]×R + pa[3k+1]×G + pa[3k+2]×B
-
-Suitable for special optical systems requiring higher accuracy</value>
-  </data>
-  <data name="HelpFormulaOneColor" xml:space="preserve">
-    <value>X[i] = (a / Tx·Gx) × R[i] + (d / Tz·Gz) × B[i]
-Y[i] = (b / Ty·Gy) × G[i]
-Z[i] = (c / Tz·Gz) × B[i]
-
-Where Tx/Ty/Tz = each channel exposure time, Gx/Gy/Gz = each channel gain
-Supports BGR interleaved and channel-separated input layouts
-Multi-threaded acceleration: image divided into 4 thread blocks by row for parallel calculation
-Output: 3 channels of 32-bit float [CIE_X][CIE_Y][CIE_Z]</value>
-  </data>
-  <data name="HelpFormulaUniformity" xml:space="preserve">
-    <value>pixel_out = min(pixel_in × Uniformity_factor[i], MaxValue)
-
-Overflow truncated to max (8-bit: 255, 16-bit: 65535)
-Supports single channel and RGB three-channel independent correction
-Supports BGR interleaved and channel-separated memory layouts</value>
-  </data>
-  <data name="HelpFourColorDesc" xml:space="preserve">
-    <value>Principle: Uses full 3x3 matrix (9 coefficients a-i) for channel mixing color conversion. Each output channel is weighted sum of all 3 input channels, higher accuracy than single color.</value>
-  </data>
-  <data name="HelpFourColorTitle" xml:space="preserve">
-    <value>3.3 Four-color correction (LumFourColor) — 3x3 matrix (9 coefficients)</value>
-  </data>
-  <data name="HelpIndicatorChecked" xml:space="preserve">
-    <value>● Checkbox (checked): enables this calibration step, applied during calibration execution</value>
-  </data>
-  <data name="HelpIndicatorGray" xml:space="preserve">
-    <value>● Gray indicator (off): calibration file not found or invalid, step will be skipped</value>
-  </data>
-  <data name="HelpIndicatorGreen" xml:space="preserve">
-    <value>● Green indicator (on): calibration file ready, file exists on server and available</value>
-  </data>
-  <data name="HelpIndicatorUnchecked" xml:space="preserve">
-    <value>● Checkbox (unchecked): disables this calibration step, not applied even if file exists</value>
-  </data>
-  <data name="HelpLineArityDesc" xml:space="preserve">
-    <value>Principle: Corrects non-linear response between sensor output grayscale and actual light intensity, ensuring linear mapping.</value>
-  </data>
-  <data name="HelpLineArityTitle" xml:space="preserve">
-    <value>2.7 Linearity Correction (LineArity)</value>
-  </data>
-  <data name="HelpLuminanceDesc" xml:space="preserve">
-    <value>Principle: Converts single-channel grayscale to absolute luminance Lv (cd/m²), outputs 32-bit float CIE-Y channel.</value>
-  </data>
-  <data name="HelpLuminanceTitle" xml:space="preserve">
-    <value>3.1 Luminance Correction (Luminance)</value>
-  </data>
-  <data name="HelpMultiColorDesc" xml:space="preserve">
-    <value>Principle: Uses dynamic-size coefficient matrix (N coefficients), supports higher-order color conversion. Coefficient array length N, gain array length N/3, linear combination of RGB per 3-coefficient group.</value>
-  </data>
-  <data name="HelpMultiColorTitle" xml:space="preserve">
-    <value>3.4 Multi-color correction (LumMultiColor) — Dynamic higher-order matrix</value>
-  </data>
-  <data name="HelpOneColorDesc" xml:space="preserve">
-    <value>Principle: Uses 4-coefficient model to convert 3-channel (RGB) grayscale to CIE XYZ tristimulus. Assumes X from R+B linear combination, Y from G only, Z from B only.</value>
-  </data>
-  <data name="HelpOneColorTitle" xml:space="preserve">
-    <value>3.2 Single-color correction (LumOneColor) — 4-coefficient model</value>
-  </data>
-  <data name="HelpPipelineAdvanced" xml:space="preserve">
-    <value>Advanced Calibration Pipeline</value>
-  </data>
-  <data name="HelpPipelineBasic" xml:space="preserve">
-    <value>  →  DarkNoise  →  DefectPoint  →  DSNU</value>
-  </data>
-  <data name="HelpPipelineColorConversion" xml:space="preserve">
-    <value>Color Conversion</value>
-  </data>
-  <data name="HelpPipelineCorrectedImage" xml:space="preserve">
-    <value>Corrected Image</value>
-  </data>
-  <data name="HelpPipelineRawImage" xml:space="preserve">
-    <value>Raw Image</value>
-  </data>
-  <data name="HelpSection1Desc" xml:space="preserve">
-    <value>Calibration executes in fixed order below. Each step output feeds next step input, skipping disabled steps.</value>
-  </data>
-  <data name="HelpSection1Title" xml:space="preserve">
-    <value>1. Calibration Pipeline Overview</value>
-  </data>
-  <data name="HelpSection2Title" xml:space="preserve">
-    <value>2. Basic Calibration Details</value>
-  </data>
-  <data name="HelpSection3Desc" xml:space="preserve">
-    <value>Four color calibration modes are mutually exclusive, only one enabled at a time. They convert sensor grayscale/RGB to CIE XYZ tristimulus or absolute luminance.</value>
-  </data>
-  <data name="HelpSection3Title" xml:space="preserve">
-    <value>3. Color Calibration Details (choose one of four, mutually exclusive)</value>
-  </data>
-  <data name="HelpSection4Desc" xml:space="preserve">
-    <value>After calibration, chromaticity data can be extracted from CIE XYZ float image. Supports circular and rectangular ROI regions.</value>
-  </data>
-  <data name="HelpSection4Title" xml:space="preserve">
-    <value>4. CIE Chromaticity Data Extraction</value>
-  </data>
-  <data name="HelpSection5Title" xml:space="preserve">
-    <value>5. UI Indicator Description</value>
-  </data>
-  <data name="HelpUniformityDesc" xml:space="preserve">
-    <value>Principle: Compensates lens vignetting and sensor sensitivity spatial variation. Uses pre-calibrated multiplication factor matrix, multiplying each pixel by corresponding correction coefficient.</value>
-  </data>
-  <data name="HelpUniformityTitle" xml:space="preserve">
-    <value>2.4 Uniformity Correction (Uniformity)</value>
-  </data>
   <data name="IgniteMeasurement" xml:space="preserve">
     <value>Ignition Measurement</value>
   </data>
@@ -3844,12 +3588,6 @@ Please check serial port settings.</value>
   </data>
   <data name="LabelCalibrationGroupHint" xml:space="preserve">
     <value>Select calibration group then check calibration files for current camera processing chain.</value>
-  </data>
-  <data name="LabelCalibrationHelpDesc" xml:space="preserve">
-    <value>This system provides a complete calibration pipeline from raw image acquisition to CIE color space (XYZ/xy/uv/CCT) conversion</value>
-  </data>
-  <data name="LabelCalibrationHelpTitle" xml:space="preserve">
-    <value>Image Calibration System Reference Manual</value>
   </data>
   <data name="LabelCalibrationPipelineHint" xml:space="preserve">
     <value>Calibration pipeline: Raw Image → Dark Current → Defect Point → DSNU → Uniformity → Color Shift → Distortion → Corrected Image</value>
@@ -4006,9 +3744,6 @@ Please check serial port settings.</value>
   </data>
   <data name="LabelMeasurementTypeVoltage" xml:space="preserve">
     <value>Measurement Type: Voltage</value>
-  </data>
-  <data name="LabelOpenCalibrationManual" xml:space="preserve">
-    <value>Open Calibration Manual</value>
   </data>
   <data name="LabelResetFailed" xml:space="preserve">
     <value>Cannot reset, check DB config</value>
@@ -4305,9 +4040,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="TitleCacheManagement" xml:space="preserve">
     <value>TitleCacheManagement</value>
   </data>
-  <data name="TitleCalibrationHelp" xml:space="preserve">
-    <value>TitleCalibrationHelp</value>
-  </data>
   <data name="TitleCameraSearchResults" xml:space="preserve">
     <value>TitleCameraSearchResults</value>
   </data>
@@ -4328,9 +4060,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="ToolTipAngleShift" xml:space="preserve">
     <value>Color correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value>
-  </data>
-  <data name="ToolTipCalibrationHelpDetail" xml:space="preserve">
-    <value>Open calibration system reference manual, view algorithm principles and configuration instructions for each calibration step</value>
   </data>
   <data name="ToolTipColorDiff" xml:space="preserve">
     <value>Color correction (ColorDiff): corrects color difference between channels</value>
@@ -4367,9 +4096,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="ToolTipOneColor" xml:space="preserve">
     <value>Single-color correction (LumOneColor): 4-coefficient model converts 3-channel grayscale to CIE XYZ tristimulus.</value>
-  </data>
-  <data name="ToolTipOpenCalibrationHelp" xml:space="preserve">
-    <value>Open calibration system reference manual</value>
   </data>
   <data name="ToolTipUniformity" xml:space="preserve">
     <value>Uniformity correction (Uniformity): compensates lens vignetting and sensor response non-uniformity. Configuration: Binary format (V0/V1 header + float factor matrix)</value>
@@ -5671,14 +5397,6 @@ Error details: {0}</value>
   </data>
   <data name="MacOrSn" xml:space="preserve">
     <value>MAC/SN</value>
-  </data>
-  <data name="HelpPipelineOutputLabel" xml:space="preserve">
-    <value>CIE XYZ / Lv</value>
-  </data>
-  <data name="HelpFormulaDarkNoiseText" xml:space="preserve">
-    <value>pixel_out = min(pixel_in × DarkNoiseRatio, MaxValue)
-
-MaxValue: 8-bit -&gt; 255, 16-bit -&gt; 65535</value>
   </data>
   <data name="ObLeft" xml:space="preserve">
     <value>Excluded left</value>

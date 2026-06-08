@@ -213,12 +213,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             CalibrationEdit.Show();
         }
 
-        private void Help_Click(object sender, System.Windows.RoutedEventArgs e)
-        {
-            CalibrationHelpWindow.ShowHelp(System.Windows.Window.GetWindow(this));
-        }
-
-
     }
 
 
