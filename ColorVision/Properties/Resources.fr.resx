@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -117,21 +117,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuUpdate" xml:space="preserve">
-    <value>Vérifier les mises à jour (_U)</value>
-  </data>
-  <data name="MenuViewSidebar" xml:space="preserve">
-    <value>Barre latérale</value>
-  </data>
+
+
   <data name="MenuViewStatusBar" xml:space="preserve">
     <value>Barre d'état</value>
   </data>
-  <data name="MenuAbout" xml:space="preserve">
-    <value>À propos de)</value>
-  </data>
-  <data name="About" xml:space="preserve">
-    <value>à propos</value>
-  </data>
+
+
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Démarrage (peut échouer)</value>
   </data>
@@ -141,9 +133,7 @@
   <data name="StartRecoverUILayoutDescription" xml:space="preserve">
     <value>Restaure au démarrage la position et la taille de la fenêtre principale avant sa dernière fermeture.</value>
   </data>
-  <data name="SoftwareVersion" xml:space="preserve">
-    <value>Une version de logiciel</value>
-  </data>
+
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Vérifier les mises à jour</value>
   </data>
@@ -153,18 +143,14 @@
   <data name="CheckUpdatesOnStartupDescription" xml:space="preserve">
     <value>Recherche automatiquement les mises à jour disponibles au démarrage de l'application.</value>
   </data>
-  <data name="Project" xml:space="preserve">
-    <value>projet</value>
-  </data>
+
   <data name="SolutionExplorer" xml:space="preserve">
     <value>Explorateur de solutions</value>
   </data>
   <data name="DeviceControl" xml:space="preserve">
     <value>Contrôle des appareils</value>
   </data>
-  <data name="DataView" xml:space="preserve">
-    <value>Vue des données</value>
-  </data>
+
   <data name="Log" xml:space="preserve">
     <value>Journal</value>
   </data>
@@ -180,42 +166,24 @@
   <data name="NewVersionFound" xml:space="preserve">
     <value>nouvelle version trouvée</value>
   </data>
-  <data name="DownloadCancelled" xml:space="preserve">
-    <value>Téléchargement annulé</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>Une erreur s'est produite</value>
-  </data>
+
+
   <data name="ChangeLog" xml:space="preserve">
     <value>Journal des modifications</value>
   </data>
-  <data name="ColorVisionUpdater" xml:space="preserve">
-    <value>Programme de mise à jour ColorVision</value>
-  </data>
-  <data name="Loading" xml:space="preserve">
-    <value>charger</value>
-  </data>
-  <data name="ConfigurationComplete" xml:space="preserve">
-    <value>Configuration terminée</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>Vitesse actuelle:</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>temps restant:</value>
-  </data>
-  <data name="Upgrade" xml:space="preserve">
-    <value>mise à niveau</value>
-  </data>
+
+
+
+
+
+
   <data name="Duration" xml:space="preserve">
     <value>coût du temps</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>renouveler</value>
   </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>Contrat de service</value>
-  </data>
+
   <data name="ApplicationExit" xml:space="preserve">
     <value>Le programme se termine</value>
   </data>
@@ -225,18 +193,12 @@
   <data name="Initializer" xml:space="preserve">
     <value>Module d'initialisation</value>
   </data>
-  <data name="ForceUpdate" xml:space="preserve">
-    <value>Mise à jour forcée</value>
-  </data>
-  <data name="UploadFile" xml:space="preserve">
-    <value>Télécharger des fichiers</value>
-  </data>
+
+
   <data name="Version" xml:space="preserve">
     <value>Version</value>
   </data>
-  <data name="BuildDate" xml:space="preserve">
-    <value>DateDeConstruction</value>
-  </data>
+
   <data name="Search" xml:space="preserve">
     <value>Recherche</value>
   </data>
@@ -255,57 +217,39 @@
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Paramètres du fichier de sauvegarde</value>
   </data>
-  <data name="OpenBeyondCompare" xml:space="preserve">
-    <value>Ouvrir BeyondCompare</value>
-  </data>
-  <data name="DownLoadBeyondCompare" xml:space="preserve">
-    <value>Télécharger BeyondCompare</value>
-  </data>
+
+
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Menu classique du bureau Windows 10</value>
   </data>
   <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
     <value>Utilise le menu contextuel classique du bureau sur les systèmes pris en charge.</value>
   </data>
-  <data name="SaveConfiguration" xml:space="preserve">
-    <value>Enregistrer la configuration</value>
-  </data>
+
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>Fenêtre de gestion de la configuration</value>
   </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>Ouvrez le dossier de configuration</value>
-  </data>
+
   <data name="Step" xml:space="preserve">
     <value>étape</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>Échec de la mise à jour</value>
   </data>
-  <data name="CheckUpdateOld" xml:space="preserve">
-    <value>Vérifier les mises à jour (anciennes).</value>
-  </data>
+
   <data name="DownloadLocal" xml:space="preserve">
     <value>Téléchargement local</value>
   </data>
   <data name="UpdateBaidu" xml:space="preserve">
     <value>Téléchargement de Baidu Cloud</value>
   </data>
-  <data name="MenuUpdateReInstall_重新安装当前版本" xml:space="preserve">
-    <value>Réinstaller la version actuelle</value>
-  </data>
-  <data name="ClearPackageCache" xml:space="preserve">
-    <value>Vider le cache du package d'installation</value>
-  </data>
-  <data name="OpenCacheFolder" xml:space="preserve">
-    <value>Ouvrez le dossier cache</value>
-  </data>
+
+
+
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>Même version du logiciel</value>
   </data>
-  <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
-    <value>Pour annuler la modification du logiciel, vous devez d'abord le désinstaller puis le réinstaller, ou réinstaller le package après l'installation.</value>
-  </data>
+
   <data name="FullScreen" xml:space="preserve">
     <value>plein écran</value>
   </data>
@@ -420,9 +364,7 @@
   <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
     <value>Exigence hôte : {0}</value>
   </data>
-  <data name="UpdatePreviewHostVersionFormat" xml:space="preserve">
-    <value>Version de l'application principale {0}</value>
-  </data>
+
   <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
     <value>Version de l'application principale</value>
   </data>
@@ -465,15 +407,9 @@
   <data name="UpdatePreviewShowNoUpdatesSkippedMessage" xml:space="preserve">
     <value>Aucune mise à jour combinée exécutable n'est disponible. Les plugins suivants ont été ignorés en raison des exigences de compatibilité : {0}</value>
   </data>
-  <data name="MenuRegisterThumbnail" xml:space="preserve">
-    <value>Activer l'aperçu des miniatures</value>
-  </data>
-  <data name="MenuUnregisterThumbnail" xml:space="preserve">
-    <value>Désactiver l'aperçu des miniatures</value>
-  </data>
-  <data name="MenuFileAssociation" xml:space="preserve">
-    <value>Association de fichiers</value>
-  </data>
+
+
+
   <data name="CopilotNewConversation" xml:space="preserve">
     <value>Nouvelle conversation</value>
   </data>
@@ -504,9 +440,7 @@
   <data name="CopilotCurrentWindowContext" xml:space="preserve">
     <value>Contexte de la fenêtre actuelle</value>
   </data>
-  <data name="CopilotAttachTooltip" xml:space="preserve">
-    <value>Joindre des fichiers, images ou contexte</value>
-  </data>
+
   <data name="CopilotPasteImage" xml:space="preserve">
     <value>Coller une image</value>
   </data>
@@ -531,15 +465,11 @@
   <data name="CopilotLanguageModel" xml:space="preserve">
     <value>Modèle de langue</value>
   </data>
-  <data name="CopilotModelConfigDescription" xml:space="preserve">
-    <value>Enregistrez plusieurs configurations de modèles ; le panneau AI à droite utilisera directement cette liste de modèles.</value>
-  </data>
+
   <data name="CopilotAddModel" xml:space="preserve">
     <value>+ Ajouter un modèle</value>
   </data>
-  <data name="CopilotVendorHint" xml:space="preserve">
-    <value>Sélectionnez d'abord un fournisseur, puis ajoutez ; vous pouvez continuer à modifier la compatibilité, l'adresse, le modèle et l'invite système à droite.</value>
-  </data>
+
   <data name="CopilotName" xml:space="preserve">
     <value>Nom</value>
   </data>
@@ -564,9 +494,7 @@
   <data name="CopilotSystemPrompt" xml:space="preserve">
     <value>Invite système</value>
   </data>
-  <data name="CopilotSettingsHint" xml:space="preserve">
-    <value>Prend en charge les préréglages de fournisseurs, de modèles et la saisie manuelle d'adresses ; le panneau AI peut changer de modèle avant l'envoi.</value>
-  </data>
+
   <data name="Cancel" xml:space="preserve">
     <value>Annuler</value>
   </data>
@@ -738,78 +666,34 @@
   <data name="PluginLoadFailedPrompt" xml:space="preserve">
     <value>The software failed to open last time. Do you want to disable plugins?</value>
   </data>
-  <data name="UpdateCurrentVersion" xml:space="preserve">
-    <value>Current Version</value>
-  </data>
-  <data name="UpdateTargetVersion" xml:space="preserve">
-    <value>Target Version</value>
-  </data>
-  <data name="UpdateMethod" xml:space="preserve">
-    <value>Update Method</value>
-  </data>
-  <data name="UpdateIncrementalPackage" xml:space="preserve">
-    <value>Incremental Package</value>
-  </data>
-  <data name="UpdateFullPackage" xml:space="preserve">
-    <value>Full Package</value>
-  </data>
-  <data name="UpdatePackageCount" xml:space="preserve">
-    <value>Package Count</value>
-  </data>
-  <data name="UpdateScope" xml:space="preserve">
-    <value>Update Scope</value>
-  </data>
-  <data name="UpdateFullApplicationUpdate" xml:space="preserve">
-    <value>Full Application Update</value>
-  </data>
-  <data name="UpdatePluginId" xml:space="preserve">
-    <value>Plugin ID</value>
-  </data>
-  <data name="UpdateHostRequirement" xml:space="preserve">
-    <value>Host Requirement</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
   <data name="UpdateCompatibilityStability" xml:space="preserve">
     <value>Includes compatibility and stability updates.</value>
   </data>
   <data name="UpdateUnnamedPlugin" xml:space="preserve">
     <value>Unnamed Plugin</value>
   </data>
-  <data name="UpdatePluginCount" xml:space="preserve">
-    <value>and {0} other plugins</value>
-  </data>
-  <data name="UpdateIncrementalChain" xml:space="preserve">
-    <value>Incremental chain: {0}</value>
-  </data>
-  <data name="UpdateExecutionIncremental" xml:space="preserve">
-    <value>Execution: Incremental packages and plugin packages will be downloaded first, then applied in one go.</value>
-  </data>
-  <data name="UpdateExecutionFull" xml:space="preserve">
-    <value>Execution: Download the full installer and install using the current application update process.\nPlugins are not included in this automatic update.</value>
-  </data>
-  <data name="UpdateNotes" xml:space="preserve">
-    <value>Update Notes:</value>
-  </data>
-  <data name="UpdatePlugin" xml:space="preserve">
-    <value>Plugin:</value>
-  </data>
-  <data name="UpdatePluginIdLabel" xml:space="preserve">
-    <value>Plugin ID:</value>
-  </data>
-  <data name="UpdateCurrentVersionLabel" xml:space="preserve">
-    <value>Current Version:</value>
-  </data>
-  <data name="UpdateTargetVersionLabel" xml:space="preserve">
-    <value>Target Version:</value>
-  </data>
-  <data name="UpdateHostRequirementLabel" xml:space="preserve">
-    <value>Host Requirement:</value>
-  </data>
-  <data name="UpdatePluginDescription" xml:space="preserve">
-    <value>Plugin Description:</value>
-  </data>
-  <data name="UpdateVersionNotes" xml:space="preserve">
-    <value>Version Notes:</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
+
+
   <data name="CannotFindUpdateRecord" xml:space="preserve">
     <value>Cannot find update record</value>
   </data>
@@ -837,66 +721,26 @@
   <data name="RegistryAppliedSuccess" xml:space="preserve">
     <value>Registry applied successfully</value>
   </data>
-  <data name="CopilotNoSendableContent" xml:space="preserve">
-    <value>No sendable exception content.</value>
-  </data>
-  <data name="CopilotAiViewNotReady" xml:space="preserve">
-    <value>The AI view in the main interface is not ready yet.</value>
-  </data>
-  <data name="CopilotAiNotConfigured" xml:space="preserve">
-    <value>AI is not configured, cannot directly send exception diagnosis request.</value>
-  </data>
-  <data name="CopilotSentToAiView" xml:space="preserve">
-    <value>Sent to the AI view in the main interface.</value>
-  </data>
-  <data name="CopilotAiGenerating" xml:space="preserve">
-    <value>AI is generating, exception context has been placed in the input box.</value>
-  </data>
-  <data name="CopilotContextPlaced" xml:space="preserve">
-    <value>Exception context has been placed in the AI input box.</value>
-  </data>
-  <data name="CopilotCallerContext" xml:space="preserve">
-    <value># Caller Additional Context</value>
-  </data>
-  <data name="CopilotContext" xml:space="preserve">
-    <value>Context</value>
-  </data>
-  <data name="CopilotSummary" xml:space="preserve">
-    <value>Résumé :</value>
-  </data>
-  <data name="CopilotChatAssistant" xml:space="preserve">
-    <value>Chat Assistant</value>
-  </data>
-  <data name="CopilotNoRecentLog" xml:space="preserve">
-    <value>No recent logs found.</value>
-  </data>
-  <data name="CopilotNoLogFile" xml:space="preserve">
-    <value>No readable log files found in the current environment.</value>
-  </data>
-  <data name="CopilotFilterKeyword" xml:space="preserve">
-    <value>[Mot-clé de filtre] {0}</value>
-  </data>
-  <data name="CopilotContentTruncated" xml:space="preserve">
-    <value>...&amp;lt;Content truncated, only the last {0} characters are retained.&amp;gt;</value>
-  </data>
-  <data name="CopilotReadLogFailed" xml:space="preserve">
-    <value>Failed to read recent logs.</value>
-  </data>
-  <data name="CopilotReadTodayLog" xml:space="preserve">
-    <value>Read today's log: {0}, {2} lines matched keyword {1}.</value>
-  </data>
-  <data name="CopilotReadRecentLog" xml:space="preserve">
-    <value>Read recent log: {0}, {2} lines matched keyword {1}.</value>
-  </data>
-  <data name="CopilotTodayLogSummary" xml:space="preserve">
-    <value>Read today's log: {0}, {1} lines total.</value>
-  </data>
-  <data name="CopilotRecentLogSummary" xml:space="preserve">
-    <value>Read recent log: {0}, showing {2} of the last {1} lines.</value>
-  </data>
-  <data name="CopilotContentLargeTruncated" xml:space="preserve">
-    <value>Content is large, display truncated.</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <data name="CopilotUpdateSnapshot" xml:space="preserve">
     <value>Update Snapshot</value>
   </data>
@@ -918,388 +762,162 @@
   <data name="CopilotExecuteAgent" xml:space="preserve">
     <value>Execute Agent</value>
   </data>
-  <data name="CopilotTokenUsageAfterSend" xml:space="preserve">
-    <value>Show real token usage after sending</value>
-  </data>
-  <data name="CopilotLocalEstimateRemoved" xml:space="preserve">
-    <value>No local estimation is done now, only showing real token usage returned by the API.</value>
-  </data>
-  <data name="CopilotReplyCancelled" xml:space="preserve">
-    <value>Current reply cancelled.</value>
-  </data>
-  <data name="CopilotRequestFailed" xml:space="preserve">
-    <value>Request failed: {0}</value>
-  </data>
-  <data name="CopilotContextNotInitialized" xml:space="preserve">
-    <value>Request context not initialized.</value>
-  </data>
-  <data name="CopilotReusedContext" xml:space="preserve">
-    <value>Reused context from previous execution, tools were not called again.</value>
-  </data>
-  <data name="CopilotStatus" xml:space="preserve">
-    <value>Statut :</value>
-  </data>
-  <data name="CopilotSuccess" xml:space="preserve">
-    <value>Success</value>
-  </data>
-  <data name="CopilotFailed" xml:space="preserve">
-    <value>Failed</value>
-  </data>
-  <data name="CopilotResult" xml:space="preserve">
-    <value>Result:</value>
-  </data>
-  <data name="CopilotError" xml:space="preserve">
-    <value>Erreur :</value>
-  </data>
-  <data name="CopilotNoFinalAnswer" xml:space="preserve">
-    <value>No final answer received, only execution process or reasoning content.</value>
-  </data>
-  <data name="CopilotNoDisplayText" xml:space="preserve">
-    <value>API returned success, but no displayable text.</value>
-  </data>
-  <data name="CopilotTitleGeneratorPrompt" xml:space="preserve">
-    <value>You are a conversation title generator. Generate a short, natural Chinese title based on the given conversation. Return only the title itself, no explanation.</value>
-  </data>
-  <data name="CopilotRenameConversation" xml:space="preserve">
-    <value>Rename Conversation</value>
-  </data>
-  <data name="CopilotEnterNewName" xml:space="preserve">
-    <value>Enter new conversation name</value>
-  </data>
-  <data name="CopilotDeleteConversationConfirm" xml:space="preserve">
-    <value>Are you sure you want to delete conversation "{0}"?</value>
-  </data>
-  <data name="CopilotAllFiles" xml:space="preserve">
-    <value>All Files|*.*</value>
-  </data>
-  <data name="CopilotMountContext" xml:space="preserve">
-    <value>Monter le contexte</value>
-  </data>
-  <data name="CopilotEnterContextDescription" xml:space="preserve">
-    <value>Enter context description to attach to the current session</value>
-  </data>
-  <data name="CopilotMountWebPage" xml:space="preserve">
-    <value>Monter la page web</value>
-  </data>
-  <data name="CopilotEnterWebPageUrl" xml:space="preserve">
-    <value>Enter web page URL to fetch and attach to the current session</value>
-  </data>
-  <data name="CopilotInvalidUrl" xml:space="preserve">
-    <value>Invalid web page URL format.</value>
-  </data>
-  <data name="CopilotFetchFailed" xml:space="preserve">
-    <value>Failed to fetch web page: {0}</value>
-  </data>
-  <data name="CopilotNoImageInClipboard" xml:space="preserve">
-    <value>No mountable image in clipboard.</value>
-  </data>
-  <data name="CopilotPasteImageTitle" xml:space="preserve">
-    <value>Paste Image {0}</value>
-  </data>
-  <data name="CopilotPasteImageFailed" xml:space="preserve">
-    <value>Failed to paste image: {0}</value>
-  </data>
-  <data name="CopilotCopyMessageFailed" xml:space="preserve">
-    <value>Failed to copy message: {0}</value>
-  </data>
-  <data name="CopilotExecutionProcess" xml:space="preserve">
-    <value>Execution Process:</value>
-  </data>
-  <data name="CopilotReasoning" xml:space="preserve">
-    <value>Reasoning:</value>
-  </data>
-  <data name="CopilotAnswer" xml:space="preserve">
-    <value>Answer:</value>
-  </data>
-  <data name="CopilotWaitingTokenUsage" xml:space="preserve">
-    <value>Waiting for API to return real token usage...</value>
-  </data>
-  <data name="CopilotNoModelSelected" xml:space="preserve">
-    <value>No model selected</value>
-  </data>
-  <data name="CopilotSelectModelFirst" xml:space="preserve">
-    <value>Please select or configure a model before sending. This panel only shows real token usage returned by the API.</value>
-  </data>
-  <data name="CopilotNoTokenUsage" xml:space="preserve">
-    <value>Last request did not return token usage</value>
-  </data>
-  <data name="CopilotLatestRequest" xml:space="preserve">
-    <value>Latest: Input {0} · Output {1} · Total {2}</value>
-  </data>
-  <data name="CopilotModelLabel" xml:space="preserve">
-    <value>Model:</value>
-  </data>
-  <data name="CopilotModeLabel" xml:space="preserve">
-    <value>Mode :</value>
-  </data>
-  <data name="CopilotInputTokens" xml:space="preserve">
-    <value>Jetons d'entrée :</value>
-  </data>
-  <data name="CopilotOutputTokens" xml:space="preserve">
-    <value>Jetons de sortie :</value>
-  </data>
-  <data name="CopilotTotalTokens" xml:space="preserve">
-    <value>Total des jetons :</value>
-  </data>
-  <data name="CopilotRealUsageNote" xml:space="preserve">
-    <value>Note: This shows the real token usage from the most recent API request.</value>
-  </data>
-  <data name="CopilotAgentAccumulated" xml:space="preserve">
-    <value>Agent mode has accumulated multiple model calls from planner and final answer.</value>
-  </data>
-  <data name="CopilotCurrentRequestUsage" xml:space="preserve">
-    <value>Note: Only showing real usage returned by the API. Statistics will refresh after this request completes.</value>
-  </data>
-  <data name="CopilotLocalEstimateNote" xml:space="preserve">
-    <value>Note: This panel no longer does local estimation, only showing real usage returned by the API. The last request did not return a usage field, so there are no input/output tokens to display.</value>
-  </data>
-  <data name="CopilotSendToSeeUsage" xml:space="preserve">
-    <value>Note: After sending, if the API returns a usage field, this will show real input, output, and total tokens.</value>
-  </data>
-  <data name="CopilotUnnamedModel" xml:space="preserve">
-    <value>Unnamed Model</value>
-  </data>
-  <data name="CopilotTitlePrompt" xml:space="preserve">
-    <value>Generate a short Chinese conversation title for the following conversation.</value>
-  </data>
-  <data name="CopilotTitleRequirements" xml:space="preserve">
-    <value>Requirements: 6 to 14 characters, return only the title, no explanation, no quotes, no period.</value>
-  </data>
-  <data name="CopilotUserPrefix" xml:space="preserve">
-    <value>Utilisateur :</value>
-  </data>
-  <data name="CopilotAssistantPrefix" xml:space="preserve">
-    <value>Assistant:</value>
-  </data>
-  <data name="CopilotTitlePrefix" xml:space="preserve">
-    <value>Titre</value>
-  </data>
-  <data name="CopilotAdditionalContext" xml:space="preserve">
-    <value>Additional Context</value>
-  </data>
-  <data name="CopilotContextInjection" xml:space="preserve">
-    <value>The following is the additional context mounted in the current session. They are reference information explicitly provided by the user. Please use them as needed when answering:</value>
-  </data>
-  <data name="CopilotContextTag" xml:space="preserve">
-    <value>[Contexte] {0}</value>
-  </data>
-  <data name="CopilotExplicitSnapshot" xml:space="preserve">
-    <value>The following is an explicit business snapshot attached by the user. It was captured when clicking "Ask Copilot" or manually attaching; answers should prioritize analysis based on these snapshots.</value>
-  </data>
-  <data name="CopilotFileAttachment" xml:space="preserve">
-    <value>[Fichier] {0}</value>
-  </data>
-  <data name="CopilotFileNotExist" xml:space="preserve">
-    <value>File does not exist, cannot read.</value>
-  </data>
-  <data name="CopilotFileTruncated" xml:space="preserve">
-    <value>...&amp;lt;Truncated&amp;gt;</value>
-  </data>
-  <data name="CopilotFileReadFailed" xml:space="preserve">
-    <value>Read failed: {0}</value>
-  </data>
-  <data name="CopilotImageAttachment" xml:space="preserve">
-    <value>[Image] {0}</value>
-  </data>
-  <data name="CopilotImageNotExist" xml:space="preserve">
-    <value>Local image attachment does not exist: {0}</value>
-  </data>
-  <data name="CopilotImagePath" xml:space="preserve">
-    <value>Local image path: {0}</value>
-  </data>
-  <data name="CopilotImagePreviewNote" xml:space="preserve">
-    <value>The current version displays image preview in the interface, but does not automatically upload pixel content to the model.</value>
-  </data>
-  <data name="CopilotWebPageAttachment" xml:space="preserve">
-    <value>[Web Page] {0}</value>
-  </data>
-  <data name="CopilotSource" xml:space="preserve">
-    <value>Source :</value>
-  </data>
-  <data name="CopilotLocalWebPageContext" xml:space="preserve">
-    <value>[Local Web Page Context Injection]</value>
-  </data>
-  <data name="CopilotWebPageContextInstruction" xml:space="preserve">
-    <value>The following web page content was actually fetched by the local program before sending. You must answer web page questions based only on these fetch results, and must not say you cannot browse the internet; if the fetch failed or the fetched content does not contain relevant information, you must clearly state that you cannot complete the analysis based on real web page content, and cannot assume the web page contains information that was not fetched.</value>
-  </data>
-  <data name="CopilotWebPageContextTruncated" xml:space="preserve">
-    <value>...&amp;lt;Web page context truncated&amp;gt;</value>
-  </data>
-  <data name="CopilotCurrentWindowContextTag" xml:space="preserve">
-    <value>[Contexte de la fenêtre actuelle]</value>
-  </data>
-  <data name="CopilotLocation" xml:space="preserve">
-    <value>Location:</value>
-  </data>
-  <data name="CopilotWindowContextNote" xml:space="preserve">
-    <value>The above is only a lightweight summary of the current business window; if the current session also has an explicit snapshot mounted, please prioritize combining that snapshot when answering.</value>
-  </data>
-  <data name="CopilotExceptionDetailsCopied" xml:space="preserve">
-    <value>Exception details copied to clipboard.</value>
-  </data>
-  <data name="CopilotCopyFailed" xml:space="preserve">
-    <value>Copy failed: {0}</value>
-  </data>
-  <data name="CopilotSendToAiFailed" xml:space="preserve">
-    <value>Failed to send to AI: {0}</value>
-  </data>
-  <data name="CopilotNoSearchKeyword" xml:space="preserve">
-    <value>No searchable keywords in the current exception.</value>
-  </data>
-  <data name="CopilotGoogleSearchOpened" xml:space="preserve">
-    <value>Google search results opened in default browser.</value>
-  </data>
-  <data name="CopilotCanSendToAi" xml:space="preserve">
-    <value>Can send the current exception and recent logs directly to the AI view in the main interface.</value>
-  </data>
-  <data name="CopilotCannotAskAi" xml:space="preserve">
-    <value>AI is not configured or the main interface is not ready, cannot ask directly.</value>
-  </data>
-  <data name="CopilotInvalidLineCount" xml:space="preserve">
-    <value>Invalid line count input, restored to {0} lines.</value>
-  </data>
-  <data name="CopilotDuplicateException" xml:space="preserve">
-    <value>Detected {0} duplicate exceptions of the same type, merged into the current window.</value>
-  </data>
-  <data name="CopilotAdditionalException" xml:space="preserve">
-    <value>[Additional Exception {0}]</value>
-  </data>
-  <data name="CopilotExtraExceptions" xml:space="preserve">
-    <value>{0} additional exceptions caught in a short time, merged into the current window.</value>
-  </data>
-  <data name="CopilotExceptionDetailsTag" xml:space="preserve">
-    <value>[Détails de l'exception]</value>
-  </data>
-  <data name="CopilotRecentLogsTag" xml:space="preserve">
-    <value>[Recent Logs]</value>
-  </data>
-  <data name="CopilotAiRequestTag" xml:space="preserve">
-    <value>[Requête IA]</value>
-  </data>
-  <data name="CopilotNoExceptionMessage" xml:space="preserve">
-    <value>No exception message provided</value>
-  </data>
-  <data name="CopilotCaptureSource" xml:space="preserve">
-    <value>Source de capture :</value>
-  </data>
-  <data name="CopilotOccurredTime" xml:space="preserve">
-    <value>Occurred At:</value>
-  </data>
-  <data name="CopilotFirstSource" xml:space="preserve">
-    <value>Première source :</value>
-  </data>
-  <data name="CopilotRepeatCount" xml:space="preserve">
-    <value>Repeated: {0} times</value>
-  </data>
-  <data name="CopilotAdditionalExceptionCount" xml:space="preserve">
-    <value>Additional Exceptions: {0}</value>
-  </data>
-  <data name="CopilotType" xml:space="preserve">
-    <value>Type :</value>
-  </data>
-  <data name="CopilotMessage" xml:space="preserve">
-    <value>Message:</value>
-  </data>
-  <data name="CopilotStack" xml:space="preserve">
-    <value>Pile :</value>
-  </data>
-  <data name="CopilotDiagnosticPrompt" xml:space="preserve">
-    <value>Please help me analyze the unhandled exception in the ColorVision WPF client. Based on the exception content and recent logs, provide the most likely cause, priority troubleshooting points, and minimal viable fix direction; if information is insufficient, please clearly indicate what is missing.</value>
-  </data>
-  <data name="CopilotExceptionTag" xml:space="preserve">
-    <value>[Exception]</value>
-  </data>
-  <data name="CopilotLogFile" xml:space="preserve">
-    <value>Fichier journal :</value>
-  </data>
-  <data name="CopilotSupplementaryNote" xml:space="preserve">
-    <value>[Note complémentaire] {0}</value>
-  </data>
-  <data name="CopilotOpenAiPanel" xml:space="preserve">
-    <value>Open AI Chat Panel</value>
-  </data>
-  <data name="CopilotDocsOnlineSearch" xml:space="preserve">
-    <value>[Recherche de documentation en ligne]</value>
-  </data>
-  <data name="CopilotDocsQuery" xml:space="preserve">
-    <value>Query:</value>
-  </data>
-  <data name="CopilotDocsIndexUrl" xml:space="preserve">
-    <value>Index URL:</value>
-  </data>
-  <data name="CopilotDocsHitPages" xml:space="preserve">
-    <value>Hit Pages:</value>
-  </data>
-  <data name="CopilotDocsCandidateFragments" xml:space="preserve">
-    <value>Fragments candidats :</value>
-  </data>
-  <data name="CopilotDocsPage" xml:space="preserve">
-    <value>Page :</value>
-  </data>
-  <data name="CopilotDocsDomain" xml:space="preserve">
-    <value>Doc Domain:</value>
-  </data>
-  <data name="CopilotDocsPageLink" xml:space="preserve">
-    <value>Lien de page :</value>
-  </data>
-  <data name="CopilotDocsSourcePath" xml:space="preserve">
-    <value>Source Path:</value>
-  </data>
-  <data name="CopilotDocsTitleChain" xml:space="preserve">
-    <value>Chaîne de titres :</value>
-  </data>
-  <data name="CopilotDocsFragmentLink" xml:space="preserve">
-    <value>Lien de fragment :</value>
-  </data>
-  <data name="CopilotDocsExcerpt" xml:space="preserve">
-    <value>Extrait :</value>
-  </data>
-  <data name="CopilotDocsIndexNotPublished" xml:space="preserve">
-    <value>Online documentation index not published, please confirm GitHub Pages has completed the latest deployment.</value>
-  </data>
-  <data name="CopilotDocsIndexFormatError" xml:space="preserve">
-    <value>Online documentation index format cannot be recognized: {0}</value>
-  </data>
-  <data name="CopilotDocsIndexEmpty" xml:space="preserve">
-    <value>Online documentation index is empty, cannot answer software documentation questions at this time.</value>
-  </data>
-  <data name="CopilotDocsIndexAccessError" xml:space="preserve">
-    <value>Cannot access online documentation index: {0}</value>
-  </data>
-  <data name="CopilotPlannerNoTools" xml:space="preserve">
-    <value>No tools currently available.</value>
-  </data>
-  <data name="CopilotPlannerFallback" xml:space="preserve">
-    <value>Planner did not return parseable JSON, falling back to default tool selection.</value>
-  </data>
-  <data name="CopilotPlannerContextSufficient" xml:space="preserve">
-    <value>Planner determined current context is sufficient.</value>
-  </data>
-  <data name="CopilotPlannerExecuteTool" xml:space="preserve">
-    <value>Prioritize executing {0} to obtain missing information.</value>
-  </data>
-  <data name="CopilotPlannerUnknownTool" xml:space="preserve">
-    <value>Planner selected unknown tool {0}, falling back to default tool selection.</value>
-  </data>
-  <data name="CopilotPlannerOutputUnrecognized" xml:space="preserve">
-    <value>Planner output cannot be recognized, falling back to default tool selection.</value>
-  </data>
-  <data name="CopilotObservationTruncated" xml:space="preserve">
-    <value>...&amp;lt;Observation content truncated&amp;gt;</value>
-  </data>
-  <data name="CopilotBase64" xml:space="preserve">
-    <value>Base URL</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <data name="CopilotApiKey" xml:space="preserve">
     <value>API Key</value>
   </data>
-  <data name="CopilotDuplicateProfile" xml:space="preserve">
-    <value>{0} Copy</value>
-  </data>
+
   <data name="AllowMultipleInstances" xml:space="preserve">
     <value>Allow Multiple Instances</value>
   </data>
   <data name="AllowMultipleInstancesDescription" xml:space="preserve">
     <value>Autorise l'exécution simultanée de plusieurs instances de ColorVision.</value>
+  </data>
+
+<data name="MenuAbout" xml:space="preserve">
+    <value>À propos de)</value>
+  </data>
+
+<data name="About" xml:space="preserve">
+    <value>à propos</value>
+  </data>
+
+<data name="ForceUpdate" xml:space="preserve">
+    <value>Mise à jour forcée</value>
+  </data>
+
+<data name="MenuRegisterThumbnail" xml:space="preserve">
+    <value>Activer l'aperçu des miniatures</value>
+  </data>
+
+<data name="MenuUnregisterThumbnail" xml:space="preserve">
+    <value>Désactiver l'aperçu des miniatures</value>
+  </data>
+
+<data name="MenuFileAssociation" xml:space="preserve">
+    <value>Association de fichiers</value>
   </data>
 </root>
