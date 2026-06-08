@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
@@ -1184,14 +1183,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                         }
                     }
                     Msg = Properties.Resources.UploadFinished;
-                    if (UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
-                    {
-                        SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
-                    }
-                    else
+                    if (!UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
                     {
                         await Task.Delay(500);
-                        SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
                         Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                     }
                 }
@@ -1199,7 +1193,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     log.Error(ex);
                     Msg = ex.Message;
-                    SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
 
                     Application.Current.Dispatcher.Invoke(() => 
                     {
