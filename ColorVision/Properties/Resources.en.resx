@@ -127,13 +127,6 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Start on boot</value>
   </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>Start recovery interface layout</value>
-  </data>
-  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
-    <value>Restore the main window position and size from before it was last closed at startup.</value>
-  </data>
-
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Check for updates</value>
   </data>
@@ -176,10 +169,6 @@
 
 
 
-
-  <data name="Duration" xml:space="preserve">
-    <value>Duration</value>
-  </data>
   <data name="Update" xml:space="preserve">
     <value>Update</value>
   </data>
@@ -214,24 +203,12 @@
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>Dump file settings</value>
-  </data>
-
 
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Windows 10 desktop classic menu</value>
   </data>
   <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
     <value>Use the classic desktop context menu on supported systems.</value>
-  </data>
-
-  <data name="ConfigurationManagement" xml:space="preserve">
-    <value>Configuration Management Window</value>
-  </data>
-
-  <data name="Step" xml:space="preserve">
-    <value>step</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>Update failed</value>
@@ -258,11 +235,7 @@
   </data>
   <data name="ClickYesToUpdateNow" xml:space="preserve">
     <value>Click Yes to update immediately, click No to skip this version, or click Cancel to remind me later.</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>Check for plugin updates</value>
-  </data>
-  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
+  </data>  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
     <value>Checking for updates</value>
   </data>
   <data name="UpdatePreviewCheckingSummary" xml:space="preserve">

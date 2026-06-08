@@ -127,13 +127,6 @@
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Запуск (может быть неудачным)</value>
   </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>Макет интерфейса запуска восстановления</value>
-  </data>
-  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
-    <value>Восстанавливать положение и размер главного окна при запуске из состояния перед последним закрытием.</value>
-  </data>
-
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Проверьте наличие обновлений</value>
   </data>
@@ -176,10 +169,6 @@
 
 
 
-
-  <data name="Duration" xml:space="preserve">
-    <value>затраты времени</value>
-  </data>
   <data name="Update" xml:space="preserve">
     <value>возобновлять</value>
   </data>
@@ -214,24 +203,12 @@
   <data name="Delete" xml:space="preserve">
     <value>удалить</value>
   </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>Настройки файла дампа</value>
-  </data>
-
 
   <data name="Win10ClassicDesktopMenu" xml:space="preserve">
     <value>Классическое меню рабочего стола Windows 10</value>
   </data>
   <data name="Win10ClassicDesktopMenuDescription" xml:space="preserve">
     <value>Использовать классическое контекстное меню рабочего стола в поддерживаемых системах.</value>
-  </data>
-
-  <data name="ConfigurationManagement" xml:space="preserve">
-    <value>Окно управления конфигурацией</value>
-  </data>
-
-  <data name="Step" xml:space="preserve">
-    <value>шаг</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>Обновление не удалось</value>
@@ -258,11 +235,7 @@
   </data>
   <data name="ClickYesToUpdateNow" xml:space="preserve">
     <value>Нажмите «Да», чтобы обновить немедленно, нажмите «Нет», чтобы пропустить эту версию, или нажмите «Отмена», чтобы напомнить мне позже.</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>Проверить обновления плагинов</value>
-  </data>
-  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
+  </data>  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
     <value>Проверка обновлений</value>
   </data>
   <data name="UpdatePreviewCheckingSummary" xml:space="preserve">

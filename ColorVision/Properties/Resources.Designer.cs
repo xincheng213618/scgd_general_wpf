@@ -142,15 +142,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 检测插件更新 的本地化字符串。
-        /// </summary>
-        public static string CheckPluginUpdates {
-            get {
-                return ResourceManager.GetString("CheckPluginUpdates", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 软件启动时检测更新 的本地化字符串。
         /// </summary>
         public static string CheckUpdatesOnStartup {
@@ -354,15 +345,6 @@ namespace ColorVision.Properties {
         public static string ConfigLive2DRenderScale {
             get {
                 return ResourceManager.GetString("ConfigLive2DRenderScale", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置管理窗口 的本地化字符串。
-        /// </summary>
-        public static string ConfigurationManagement {
-            get {
-                return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
             }
         }
         
@@ -997,24 +979,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 转储文件设置 的本地化字符串。
-        /// </summary>
-        public static string DumpFileSettings {
-            get {
-                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 用时 的本地化字符串。
-        /// </summary>
-        public static string Duration {
-            get {
-                return ResourceManager.GetString("Duration", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 强制更新 的本地化字符串。
         /// </summary>
         public static string ForceUpdate {
@@ -1263,33 +1227,6 @@ namespace ColorVision.Properties {
         public static string SolutionExplorer {
             get {
                 return ResourceManager.GetString("SolutionExplorer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 恢复上次退出时窗口的大小和位置 的本地化字符串。
-        /// </summary>
-        public static string StartRecoverUILayout {
-            get {
-                return ResourceManager.GetString("StartRecoverUILayout", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启动时恢复主窗口上次关闭前的位置和尺寸。 的本地化字符串。
-        /// </summary>
-        public static string StartRecoverUILayoutDescription {
-            get {
-                return ResourceManager.GetString("StartRecoverUILayoutDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 步骤 的本地化字符串。
-        /// </summary>
-        public static string Step {
-            get {
-                return ResourceManager.GetString("Step", resourceCulture);
             }
         }
         
