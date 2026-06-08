@@ -6,19 +6,9 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
-    internal sealed class VideoFrameProcessingRequest
-    {
-        public bool EnableArticulation { get; init; }
-        public FocusAlgorithm FocusAlgorithm { get; init; }
-        public RoiRect Roi { get; init; }
+    internal readonly record struct VideoFrameProcessingRequest(FocusAlgorithm FocusAlgorithm, RoiRect Roi);
 
-        public bool NeedsProcessing => EnableArticulation;
-    }
-
-    internal sealed class VideoFrameProcessingResult
-    {
-        public double? Articulation { get; init; }
-    }
+    internal readonly record struct VideoFrameProcessingResult(double Articulation);
 
     internal sealed class VideoFrameProcessor : IDisposable
     {
@@ -32,7 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private HImage? _workingFrame;
         private int _pendingCapacity;
         private int _workingCapacity;
-        private VideoFrameProcessingRequest? _pendingRequest;
+        private VideoFrameProcessingRequest _pendingRequest;
         private bool _hasPendingFrame;
         private bool _disposed;
 
@@ -50,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int depth, int stride, VideoFrameProcessingRequest request)
         {
             ArgumentNullException.ThrowIfNull(sourceBuffer);
-            if (length <= 0 || length > sourceBuffer.Length || request == null || !request.NeedsProcessing || _disposed) return;
+            if (length <= 0 || length > sourceBuffer.Length || _disposed) return;
 
             unsafe
             {
@@ -63,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, VideoFrameProcessingRequest request)
         {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || request == null || !request.NeedsProcessing || _disposed) return;
+            if (sourcePointer == IntPtr.Zero || length <= 0 || _disposed) return;
             SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, request);
         }
 
@@ -91,11 +81,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 }
 
                 HImage workingFrame;
-                VideoFrameProcessingRequest? request;
+                VideoFrameProcessingRequest request;
 
                 lock (_gate)
                 {
-                    if (!_hasPendingFrame || _pendingFrame == null || _pendingRequest == null)
+                    if (!_hasPendingFrame || _pendingFrame == null)
                     {
                         continue;
                     }
@@ -103,7 +93,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     (_pendingFrame, _workingFrame) = (_workingFrame, _pendingFrame);
                     (_pendingCapacity, _workingCapacity) = (_workingCapacity, _pendingCapacity);
                     request = _pendingRequest;
-                    _pendingRequest = null;
+                    _pendingRequest = default;
                     _hasPendingFrame = false;
                     workingFrame = _workingFrame!.Value;
                 }
@@ -126,19 +116,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         }
 
         private static VideoFrameProcessingResult ProcessFrame(HImage frame, VideoFrameProcessingRequest request)
-        {
-            double? articulation = null;
-
-            if (request.EnableArticulation)
-            {
-                articulation = OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi);
-            }
-
-            return new VideoFrameProcessingResult
-            {
-                Articulation = articulation
-            };
-        }
+            => new(OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi));
 
         private static void EnsureBuffer(ref HImage? buffer, ref int capacity, int width, int height, int channels, int depth, int stride, int requiredLength)
         {

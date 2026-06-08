@@ -1,6 +1,5 @@
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using System;
@@ -29,7 +28,6 @@ namespace ColorVision.ImageEditor
             typeof(ImageProcessingContext),
             typeof(DrawCanvas),
             typeof(TextEditingContext),
-            typeof(RealtimeEditorContext),
             typeof(ImageViewConfig),
         };
 
@@ -338,11 +336,6 @@ namespace ColorVision.ImageEditor
             if (contextType == typeof(TextEditingContext))
             {
                 return context.TextEditingContext;
-            }
-
-            if (contextType == typeof(RealtimeEditorContext))
-            {
-                return context.RealtimeEditorContext;
             }
 
             if (contextType == typeof(ImageViewConfig))

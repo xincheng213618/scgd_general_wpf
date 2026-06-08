@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
+using FlowEngineLib.Algorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
@@ -246,19 +247,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
 
-        public MsgRecord OpenVideo(string host, int port)
+        public MsgRecord OpenVideo()
         {
             CurrentTakeImageMode = TakeImageMode.Live;
-            bool IsLocal = (host=="127.0.0.1");
+            bool IsLocal = true;
 
-            var Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Device.DisplayConfig.Gain }, { "ExpTime", Device.DisplayConfig.ExpTime }, { "IsLocal", IsLocal } };
+            var Params = new Dictionary<string, object>() { { "RemoteIp", "127.0.0.1" }, { "RemotePort", "25558" }, { "Gain", Device.DisplayConfig.Gain }, { "ExpTime", Device.DisplayConfig.ExpTime }, { "IsLocal", IsLocal } };
             MsgSend msg = new()
             {
                 EventName = "OpenLive",
                 Params = Params
             };
-            Params.Add("FlipMode", Device.DisplayConfig.FlipMode);
-
+            Params.Add("FlipMode", CVImageFlipMode.None);
             return PublishAsyncClient(msg);
         }
         public TakeImageMode CurrentTakeImageMode { get; set; }

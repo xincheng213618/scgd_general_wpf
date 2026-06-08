@@ -130,13 +130,10 @@ namespace ColorVision.ImageEditor
                     SetImageSource = SetImageSource,
                     UpdateZoomAndScale = UpdateZoomAndScale,
                 });
-            RealtimeEditorContext realtimeContext = new(this, Realtime);
-
             return new EditorContext(
                 this,
                 config,
                 drawContext,
-                realtimeContext,
                 processingContext,
                 TextEditorOverlay);
         }

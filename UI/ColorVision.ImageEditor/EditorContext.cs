@@ -1,7 +1,6 @@
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.ImageEditor.Realtime;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -24,14 +23,12 @@ namespace ColorVision.ImageEditor
             ImageView imageView,
             ImageViewConfig config,
             DrawEditorContext drawEditorContext,
-            RealtimeEditorContext realtimeEditorContext,
             ImageProcessingContext processingContext,
             Panel? textEditorOverlay)
         {
             ImageView = imageView ?? throw new ArgumentNullException(nameof(imageView));
             Config = config ?? throw new ArgumentNullException(nameof(config));
             DrawEditorContext = drawEditorContext ?? throw new ArgumentNullException(nameof(drawEditorContext));
-            RealtimeEditorContext = realtimeEditorContext ?? throw new ArgumentNullException(nameof(realtimeEditorContext));
             ProcessingContext = processingContext ?? throw new ArgumentNullException(nameof(processingContext));
             _textEditorOverlay = textEditorOverlay ?? CreateFallbackTextEditorOverlay();
         }
@@ -91,8 +88,6 @@ namespace ColorVision.ImageEditor
             DrawEditorContext.SelectionVisual,
             DrawEditorContext.DrawEditorManager,
             DrawEditorContext.DrawingVisualLists);
-
-        public RealtimeEditorContext RealtimeEditorContext { get; }
 
         public ImageProcessingContext ProcessingContext { get; }
 

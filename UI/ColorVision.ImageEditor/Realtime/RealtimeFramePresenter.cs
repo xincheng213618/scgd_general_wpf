@@ -35,6 +35,7 @@ namespace ColorVision.ImageEditor.Realtime
             public int Height;
             public int Stride;
             public PixelFormat PixelFormat;
+            public RealtimeFrameTransform Transform;
             public DateTime TimestampUtc;
 
             public void EnsureCapacity(int requiredLength)
@@ -97,7 +98,7 @@ namespace ColorVision.ImageEditor.Realtime
             return SubmitFrame(frame.pData, frame.cols, frame.rows, pixelFormat, stride, length);
         }
 
-        public unsafe bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0)
+        public unsafe bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, RealtimeFrameTransform transform = RealtimeFrameTransform.None)
         {
             if (sourceBuffer == null) throw new ArgumentNullException(nameof(sourceBuffer));
             if (sourceBuffer.Length == 0) return false;
@@ -110,11 +111,11 @@ namespace ColorVision.ImageEditor.Realtime
 
             fixed (byte* source = sourceBuffer)
             {
-                return SubmitFrame((IntPtr)source, width, height, pixelFormat, sourceStride, bufferLength);
+                return SubmitFrame((IntPtr)source, width, height, pixelFormat, sourceStride, bufferLength, transform);
             }
         }
 
-        public unsafe bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0)
+        public unsafe bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, RealtimeFrameTransform transform = RealtimeFrameTransform.None)
         {
             if (_isDisposed || sourcePointer == IntPtr.Zero || width <= 0 || height <= 0) return false;
             if (!TryNormalizeLayout(width, height, pixelFormat, ref sourceStride, ref bufferLength))
@@ -146,6 +147,7 @@ namespace ColorVision.ImageEditor.Realtime
                 _pendingFrame.Stride = sourceStride;
                 _pendingFrame.Length = bufferLength;
                 _pendingFrame.PixelFormat = pixelFormat;
+                _pendingFrame.Transform = transform;
                 _pendingFrame.TimestampUtc = DateTime.UtcNow;
                 _hasPendingFrame = true;
             }
@@ -289,11 +291,18 @@ namespace ColorVision.ImageEditor.Realtime
 
             try
             {
-                _writeableBitmap.WritePixels(
-                    new Int32Rect(0, 0, frame.Width, frame.Height),
-                    frame.Buffer,
-                    frame.Length,
-                    frame.Stride);
+                if (frame.Transform == RealtimeFrameTransform.None)
+                {
+                    _writeableBitmap.WritePixels(
+                        new Int32Rect(0, 0, frame.Width, frame.Height),
+                        frame.Buffer,
+                        frame.Length,
+                        frame.Stride);
+                }
+                else if (!WriteTransformedPixels(frame))
+                {
+                    return;
+                }
             }
             catch (ArgumentException)
             {
@@ -305,6 +314,59 @@ namespace ColorVision.ImageEditor.Realtime
             FrameRendered?.Invoke(this, new RealtimeFrameRenderedEventArgs(frame.Width, frame.Height, frame.PixelFormat));
             _imageView.SchedulePixelValueOverlayRefresh();
             Stats.RecordDisplayed(frame.TimestampUtc, Options.IsFrozen);
+        }
+
+        private unsafe bool WriteTransformedPixels(FrameBuffer frame)
+        {
+            if (_writeableBitmap == null || frame.PixelFormat.BitsPerPixel % 8 != 0)
+            {
+                return false;
+            }
+
+            int pixelBytes = frame.PixelFormat.BitsPerPixel / 8;
+            int rowBytes = GetDefaultStride(frame.Width, frame.PixelFormat);
+            if (pixelBytes <= 0 || rowBytes <= 0)
+            {
+                return false;
+            }
+
+            bool flipX = frame.Transform is RealtimeFrameTransform.FlipX or RealtimeFrameTransform.FlipXY;
+            bool flipY = frame.Transform is RealtimeFrameTransform.FlipY or RealtimeFrameTransform.FlipXY;
+
+            _writeableBitmap.Lock();
+            try
+            {
+                byte* sourceBase = (byte*)frame.Buffer;
+                byte* targetBase = (byte*)_writeableBitmap.BackBuffer;
+                int targetStride = _writeableBitmap.BackBufferStride;
+
+                for (int y = 0; y < frame.Height; y++)
+                {
+                    int sourceY = flipX ? frame.Height - 1 - y : y;
+                    byte* sourceRow = sourceBase + sourceY * frame.Stride;
+                    byte* targetRow = targetBase + y * targetStride;
+
+                    if (!flipY)
+                    {
+                        Buffer.MemoryCopy(sourceRow, targetRow, targetStride, rowBytes);
+                        continue;
+                    }
+
+                    for (int x = 0; x < frame.Width; x++)
+                    {
+                        byte* sourcePixel = sourceRow + (frame.Width - 1 - x) * pixelBytes;
+                        byte* targetPixel = targetRow + x * pixelBytes;
+                        Buffer.MemoryCopy(sourcePixel, targetPixel, pixelBytes, pixelBytes);
+                    }
+                }
+
+                _writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, frame.Width, frame.Height));
+                return true;
+            }
+            finally
+            {
+                _writeableBitmap.Unlock();
+            }
         }
 
         public RealtimeFrameSnapshot? CaptureCurrentFrame()

@@ -53,14 +53,14 @@ namespace ColorVision.ImageEditor.Realtime
             _presenter?.Configure(Options);
         }
 
-        public bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0)
+        public bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, RealtimeFrameTransform transform = RealtimeFrameTransform.None)
         {
-            return Presenter.SubmitFrame(sourcePointer, width, height, pixelFormat, sourceStride, bufferLength);
+            return Presenter.SubmitFrame(sourcePointer, width, height, pixelFormat, sourceStride, bufferLength, transform);
         }
 
-        public bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0)
+        public bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, RealtimeFrameTransform transform = RealtimeFrameTransform.None)
         {
-            return Presenter.SubmitFrame(sourceBuffer, width, height, pixelFormat, sourceStride, bufferLength);
+            return Presenter.SubmitFrame(sourceBuffer, width, height, pixelFormat, sourceStride, bufferLength, transform);
         }
 
         public RealtimeFrameSnapshot? CaptureCurrentFrame()

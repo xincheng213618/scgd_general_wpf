@@ -122,14 +122,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             Device = device;
             View = Device.View;
+            _localRealtimePipeline = new CameraRealtimeFramePipeline();
             InitializeComponent();
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromMilliseconds(100);
             _timer.Tick += Timer_Tick;
             CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
-
-            // Initialize video display components
-            _localRealtimePipeline = new CameraRealtimeFramePipeline();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -563,53 +561,45 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (!DService.IsVideoOpen)
                 {
                     DService.CurrentTakeImageMode = TakeImageMode.Live;
-                    string host = Device.Config.VideoConfig.Host;
-                    int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
-                    if (port > 0)
-                    {
-                        MsgRecord msgRecord = DService.OpenVideo(host, port);
-                        EnsureTimedButtonOperations();
-                        ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
-                        {
-                            if (state == MsgRecordState.Success)
-                            {
-                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(record.MsgReturn.Data));
-                                string mapName = Device.Code;
-                                if (pm_live.IsLocal) mapName = pm_live.MapName;
-                                if (string.IsNullOrEmpty(mapName))
-                                {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "CameraID is empty, cannot start video", "ColorVision");
-                                    DService.IsVideoOpen = false;
-                                    return;
-                                }
-                                Device.CameraVideoControl.Startup(mapName, View.ImageView);
 
-                                DService.IsVideoOpen = true;
-                                ButtonOpen.Visibility = Visibility.Collapsed;
-                                ButtonClose.Visibility = Visibility.Visible;
-                                StackPanelOpen.Visibility = Visibility.Visible;
+                    MsgRecord msgRecord = DService.OpenVideo();
+                    EnsureTimedButtonOperations();
+                    ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
+                    {
+                        if (state == MsgRecordState.Success)
+                        {
+                            DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(record.MsgReturn.Data));
+                            string mapName = Device.Code;
+                            if (pm_live.IsLocal) mapName = pm_live.MapName;
+                            if (string.IsNullOrEmpty(mapName))
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "CameraID is empty, cannot start video", "ColorVision");
+                                DService.IsVideoOpen = false;
                                 return;
                             }
+                            Device.CameraVideoControl.Startup(mapName, View.ImageView);
 
-                            if (state == MsgRecordState.Fail)
-                            {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
-                            }
-                            else if (state == MsgRecordState.Timeout)
-                            {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.VideoCaptureTimeoutCheckLog, "ColorVision");
-                            }
+                            DService.IsVideoOpen = true;
+                            ButtonOpen.Visibility = Visibility.Collapsed;
+                            ButtonClose.Visibility = Visibility.Visible;
+                            StackPanelOpen.Visibility = Visibility.Visible;
+                            return;
+                        }
 
-                            Device.CameraVideoControl.Close();
-                            DService.Close();
-                            DService.IsVideoOpen = false;
-                        });
-                    }
-                    else
-                    {
-                        MessageBox1.Show(Properties.Resources.LocalPortOpenFailedInVideoMode);
-                        logger.Debug($"Local socket open failed.{host}:{port}");
-                    }
+                        if (state == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
+                        }
+                        else if (state == MsgRecordState.Timeout)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.VideoCaptureTimeoutCheckLog, "ColorVision");
+                        }
+
+                        Device.CameraVideoControl.Close();
+                        DService.Close();
+                        DService.IsVideoOpen = false;
+                    });
+
                 }
             }
         }
@@ -1007,7 +997,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
 
                 button.Content = "Close Video";
-                _localRealtimePipeline.Start(Device.View.ImageView, flipModeProvider: () => Device.DisplayConfig.FlipMode);
+                _localRealtimePipeline.Start(Device.View.ImageView, ToRealtimeTransform(Device.DisplayConfig.FlipMode));
                 SetLocalVideoPoiTemplateSupported(true);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
                 localVideoOpened = true;
@@ -1057,7 +1047,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return (false, szMsg);
             }
 
-            cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
             cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
             cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
             callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
@@ -1141,9 +1130,26 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void CBFilp2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
+            if (sender is ComboBox { SelectedValue: CVImageFlipMode flipMode })
+            {
+                _localRealtimePipeline.Transform = ToRealtimeTransform(flipMode);
+                return;
+            }
 
+            _localRealtimePipeline.Transform = ToRealtimeTransform(Device.DisplayConfig.FlipMode);
         }
+
+        private static RealtimeFrameTransform ToRealtimeTransform(CVImageFlipMode flipMode)
+        {
+            return flipMode switch
+            {
+                CVImageFlipMode.X => RealtimeFrameTransform.FlipX,
+                CVImageFlipMode.Y => RealtimeFrameTransform.FlipY,
+                CVImageFlipMode.XY => RealtimeFrameTransform.FlipXY,
+                _ => RealtimeFrameTransform.None
+            };
+        }
+
     }
 }
 
