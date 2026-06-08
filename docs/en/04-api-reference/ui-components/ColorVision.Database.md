@@ -20,7 +20,6 @@ From the project directory, the most worthwhile to recognize first are:
 - `IDatabaseBrowserProvider.cs`: Browser Provider contract
 - `DatabaseBrowserModels.cs`: Database, table, column, pagination models
 - `MySqlControl.cs`: MySQL configuration and Provider creation
-- `SqliteLog/SqliteLogManager.cs`: SQLite log database and Provider creation
 - `BaseTableDao.cs`, `EntityBase.cs`, `ViewEntity.cs`: Business entity access layer base types
 
 ## Key Entry Point Types
@@ -41,7 +40,6 @@ Its key feature is: the current browser no longer relies on C# entity definition
 `DatabaseBrowserProviderRegistry` is responsible for uniformly managing browsable data sources. It currently lazy-loads default Providers and exposes to the browser:
 
 - MySQL default Provider
-- SQLite log Provider
 - Other Providers registered by callers
 
 Therefore, it is the dispatch entry point for the current database browser system.
@@ -67,12 +65,6 @@ So the core extension point of this module is not "add an entity class," but "re
 - MySQL browser Provider creation
 
 Therefore, MySQL-related entry points should be approached directly through it, rather than only looking at `BaseTableDao<T>`.
-
-### SqliteLogManager
-
-`SqliteLogManager` is both a SQLite log manager and an actual Provider source within the browser system. It provides the log database path and corresponding SQLite browsing entry points.
-
-This also shows that `ColorVision.Database` currently does not only serve "business data," but also takes on some runtime log landing and browsing responsibilities.
 
 ### BaseTableDao / EntityBase / ViewEntity
 
@@ -119,12 +111,11 @@ Read first:
 - `DatabaseBrowserProviderRegistry.cs`
 - `IDatabaseBrowserProvider.cs`
 
-### To View Actual MySQL and SQLite Integration
+### To View Actual MySQL Integration
 
 Read first:
 
 - `MySqlControl.cs`
-- `SqliteLog/SqliteLogManager.cs`
 
 ### To View the Business Entity Access Layer
 

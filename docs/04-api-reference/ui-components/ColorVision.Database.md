@@ -20,7 +20,6 @@
 - `IDatabaseBrowserProvider.cs`：浏览器 Provider 契约
 - `DatabaseBrowserModels.cs`：库、表、列、分页模型
 - `MySqlControl.cs`：MySQL 配置和 Provider 创建
-- `SqliteLog/SqliteLogManager.cs`：SQLite 日志数据库和 Provider 创建
 - `BaseTableDao.cs`、`EntityBase.cs`、`ViewEntity.cs`：业务实体访问层基础类型
 
 ## 关键入口类型
@@ -41,7 +40,6 @@
 `DatabaseBrowserProviderRegistry` 负责统一管理可浏览的数据源。它当前会懒加载默认 Provider，并向浏览器暴露：
 
 - MySQL 默认 Provider
-- SQLite 日志 Provider
 - 其他调用方自行注册的 Provider
 
 因此它是当前数据库浏览器体系的调度入口。
@@ -67,12 +65,6 @@
 - MySQL 浏览器 Provider 创建
 
 因此 MySQL 相关入口应直接顺着它去看，而不是只看 `BaseTableDao<T>`。
-
-### SqliteLogManager
-
-`SqliteLogManager` 既是 SQLite 日志管理器，也是浏览器体系里的一个实际 Provider 来源。它会提供日志数据库路径和对应的 SQLite 浏览入口。
-
-这也说明 `ColorVision.Database` 当前并不是只服务“业务数据”，还承接了一部分运行日志落地与浏览职责。
 
 ### BaseTableDao / EntityBase / ViewEntity
 
@@ -119,12 +111,11 @@
 - `DatabaseBrowserProviderRegistry.cs`
 - `IDatabaseBrowserProvider.cs`
 
-### 想看 MySQL 和 SQLite 的实际接入
+### 想看 MySQL 的实际接入
 
 先看：
 
 - `MySqlControl.cs`
-- `SqliteLog/SqliteLogManager.cs`
 
 ### 想看业务实体访问层
 

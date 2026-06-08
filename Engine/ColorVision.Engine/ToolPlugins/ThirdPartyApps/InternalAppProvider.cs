@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.ThirdPartyApps;
-using ColorVision.Database.SqliteLog;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.SocketProtocol;
 using System.Collections.Generic;
@@ -16,19 +15,9 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             {
                 new ThirdPartyAppInfo
                 {
-                    Name = ColorVision.Database.Properties.Resources.SqliteLogWindow,
-                    Group = group,
-                    Order = 0,
-                    LaunchAction = () =>
-                    {
-                        new SqliteLogWindow() { Owner = Application.Current.GetActiveWindow() }.Show();
-                    },
-                },
-                new ThirdPartyAppInfo
-                {
                     Name = ColorVision.SocketProtocol.Properties.Resources.SocketManagementWindow,
                     Group = group,
-                    Order = 1,
+                    Order = 0,
                     LaunchAction = () =>
                     {
                         new SocketManagerWindow()
@@ -42,7 +31,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 {
                     Name = Properties.Resources.MenuPhyCameraManager,
                     Group = group,
-                    Order = 2,
+                    Order = 1,
                     LaunchAction = () =>
                     {
                         new PhyCameraManagerWindow()

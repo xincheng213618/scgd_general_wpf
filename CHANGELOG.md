@@ -841,9 +841,7 @@
 
 23.更新流程,现在在运行流程的时候多调用一个清空
 
-24.现在支持独立的SqliteLog，可以手动启用和关闭
-
-25.从Engine中独立ColorVision.Database
+24.从Engine中独立ColorVision.Database
 
 ## [1.3.7.1] 2025.08.11
 
