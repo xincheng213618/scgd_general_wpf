@@ -13,7 +13,7 @@ using System.Timers;
 
 namespace ColorVision.Engine.Services
 {
-    public class MQTTServiceBase : ViewModelBase, IServiceConfig, IDisposable
+    public class MQTTServiceBase : ViewModelBase, IDisposable
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(MQTTServiceBase));
         public MQTTControl MQTTControl { get; set; }

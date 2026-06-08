@@ -12,7 +12,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices
 {
-    public class BaseConfig: ViewModelBase, IServiceConfig
+    public class BaseConfig: ViewModelBase
     {
         [Browsable(false)]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }

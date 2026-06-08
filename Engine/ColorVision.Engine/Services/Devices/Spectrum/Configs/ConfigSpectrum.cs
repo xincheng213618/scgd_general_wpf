@@ -79,7 +79,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         }
     }
 
-    public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig, IFileServerCfg
+    public class ConfigSpectrum : DeviceServiceConfig, IFileServerCfg
     {
         public ConfigSpectrum()
         {
