@@ -144,14 +144,7 @@
   </data>
   <data name="ColormapTypes" xml:space="preserve">
     <value>偽彩色</value>
-  </data>
-  <data name="Reload" xml:space="preserve">
-    <value>重新載入</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>應用目前圖片</value>
-  </data>
-  <data name="AutoLevelsAdjustment" xml:space="preserve">
+  </data>  <data name="AutoLevelsAdjustment" xml:space="preserve">
     <value>自動色階調整</value>
   </data>
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
@@ -198,65 +191,12 @@
   </data>
   <data name="Draw_ResetToImageCenter" xml:space="preserve">
     <value>重置為圖像中心</value>
-  </data>
-  <data name="Draw_Mode" xml:space="preserve">
-    <value>模式</value>
-  </data>
-  <data name="Draw_Color" xml:space="preserve">
+  </data>  <data name="Draw_Color" xml:space="preserve">
     <value>顏色</value>
   </data>
   <data name="Draw_LineWidth" xml:space="preserve">
     <value>線寬</value>
-  </data>
-  <data name="Draw_Angle" xml:space="preserve">
-    <value>角度</value>
-  </data>
-  <data name="Draw_CenterX" xml:space="preserve">
-    <value>中心點X</value>
-  </data>
-  <data name="Draw_CenterY" xml:space="preserve">
-    <value>中心點Y</value>
-  </data>
-  <data name="Draw_MaskSettings" xml:space="preserve">
-    <value>遮罩設定</value>
-  </data>
-  <data name="Draw_MaskShape" xml:space="preserve">
-    <value>遮罩形狀</value>
-  </data>
-  <data name="Draw_MaskTransparentSize" xml:space="preserve">
-    <value>遮罩透明區大小</value>
-  </data>
-  <data name="Draw_MaskOpacity" xml:space="preserve">
-    <value>遮罩不透明度(0-255)</value>
-  </data>
-  <data name="Draw_CenterOverlay" xml:space="preserve">
-    <value>中心覆蓋</value>
-  </data>
-  <data name="Draw_OverlayShape" xml:space="preserve">
-    <value>覆蓋形狀</value>
-  </data>
-  <data name="Draw_OverlayColor" xml:space="preserve">
-    <value>覆蓋顏色</value>
-  </data>
-  <data name="Draw_OverlaySize" xml:space="preserve">
-    <value>覆蓋大小</value>
-  </data>
-  <data name="Draw_PhysicalSize" xml:space="preserve">
-    <value>物理尺寸</value>
-  </data>
-  <data name="Draw_PhysicalSizeX" xml:space="preserve">
-    <value>物理尺寸X(mm)</value>
-  </data>
-  <data name="Draw_PhysicalSizeY" xml:space="preserve">
-    <value>物理尺寸Y(mm)</value>
-  </data>
-  <data name="Draw_PixelPerUnit" xml:space="preserve">
-    <value>像素/單位(px/mm)</value>
-  </data>
-  <data name="Draw_Highlighter" xml:space="preserve">
-    <value>螢光筆</value>
-  </data>
-  <data name="Draw_SampleSpacing" xml:space="preserve">
+  </data>  <data name="Draw_SampleSpacing" xml:space="preserve">
     <value>取樣間距</value>
   </data>
   <data name="Draw_StrokeWidth" xml:space="preserve">
@@ -267,20 +207,7 @@
   </data>
   <data name="Draw_FontSize" xml:space="preserve">
     <value>字號</value>
-  </data>
-  <data name="Draw_FontSizeLabel" xml:space="preserve">
-    <value>字體大小</value>
-  </data>
-  <data name="Draw_FontFamily" xml:space="preserve">
-    <value>字體</value>
-  </data>
-  <data name="Draw_Position" xml:space="preserve">
-    <value>位置</value>
-  </data>
-  <data name="Draw_Background" xml:space="preserve">
-    <value>背景</value>
-  </data>
-  <data name="Draw_Fill" xml:space="preserve">
+  </data>  <data name="Draw_Fill" xml:space="preserve">
     <value>填充</value>
   </data>
   <data name="Draw_DefaultFontSize" xml:space="preserve">
@@ -339,11 +266,7 @@
   </data>
   <data name="Ruler_ActualDistance" xml:space="preserve">
     <value>實際距離</value>
-  </data>
-  <data name="Ruler_PhysicalLength" xml:space="preserve">
-    <value>物理長度</value>
-  </data>
-  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
+  </data>  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
     <value>該圖形沒有足夠的點來生成切面圖。</value>
   </data>
   <data name="Annotation_CannotExtractData" xml:space="preserve">
@@ -919,38 +842,7 @@
   </data>
   <data name="Graphic_ArrayCountMin1" xml:space="preserve">
     <value>點陣數的行列不能小於1</value>
-  </data>
-  <data name="Desc_BinaryThreshold" xml:space="preserve">
-    <value>二值化閾值 (0-255)</value>
-  </data>
-  <data name="Desc_BeadSize" xml:space="preserve">
-    <value>燈珠尺寸</value>
-  </data>
-  <data name="Desc_MinBeadSize" xml:space="preserve">
-    <value>最小燈珠尺寸 (像素)</value>
-  </data>
-  <data name="Desc_MaxBeadSize" xml:space="preserve">
-    <value>最大燈珠尺寸 (像素)</value>
-  </data>
-  <data name="Desc_ExpectedRows" xml:space="preserve">
-    <value>預期燈珠行數</value>
-  </data>
-  <data name="Desc_ExpectedCols" xml:space="preserve">
-    <value>預期燈珠列數</value>
-  </data>
-  <data name="Desc_BinaryThresholdAuto" xml:space="preserve">
-    <value>二值化閾值，-1表示自動(OTSU)</value>
-  </data>
-  <data name="Desc_MinKeyArea" xml:space="preserve">
-    <value>最小按鍵面積(像素)</value>
-  </data>
-  <data name="Desc_MaxKeyArea" xml:space="preserve">
-    <value>最大按鍵面積(像素), 0表示不限制</value>
-  </data>
-  <data name="Desc_MarginRatio" xml:space="preserve">
-    <value>邊距縮進比例(0~0.45)，縮小檢測框以更貼合按鍵</value>
-  </data>
-  <data name="Sfr_FrequencyInputError" xml:space="preserve">
+  </data>  <data name="Sfr_FrequencyInputError" xml:space="preserve">
     <value>頻率輸入錯誤</value>
   </data>
   <data name="Sfr_MtfNotFound" xml:space="preserve">
@@ -991,29 +883,7 @@
   </data>
   <data name="PseudoColor_DefaultDescription" xml:space="preserve">
     <value>控制新圖像或重置後採用的默認僞彩色類型和自動範圍開關，不會直接覆蓋當前畫布狀態。</value>
-  </data>
-  <data name="PseudoColor_Enable" xml:space="preserve">
-    <value>啓用僞彩色</value>
-  </data>
-  <data name="PseudoColor_AutoRange" xml:space="preserve">
-    <value>自動範圍</value>
-  </data>
-  <data name="PseudoColor_Type" xml:space="preserve">
-    <value>僞彩色類型</value>
-  </data>
-  <data name="PseudoColor_MinValue" xml:space="preserve">
-    <value>最小值</value>
-  </data>
-  <data name="PseudoColor_MaxValue" xml:space="preserve">
-    <value>最大值</value>
-  </data>
-  <data name="PseudoColor_DefaultType" xml:space="preserve">
-    <value>默認僞彩色類型</value>
-  </data>
-  <data name="PseudoColor_DefaultAutoRange" xml:space="preserve">
-    <value>默認自動範圍</value>
-  </data>
-  <data name="Artculation_MenuHeader" xml:space="preserve">
+  </data>  <data name="Artculation_MenuHeader" xml:space="preserve">
     <value>清晰度評估</value>
   </data>
   <data name="Artculation_ParamSettings" xml:space="preserve">

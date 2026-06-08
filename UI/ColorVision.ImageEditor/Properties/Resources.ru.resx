@@ -144,14 +144,7 @@
   </data>
   <data name="ColormapTypes" xml:space="preserve">
     <value>Ложный цвет</value>
-  </data>
-  <data name="Reload" xml:space="preserve">
-    <value>Перезагрузить</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>Применить текущее изображение</value>
-  </data>
-  <data name="AutoLevelsAdjustment" xml:space="preserve">
+  </data>  <data name="AutoLevelsAdjustment" xml:space="preserve">
     <value>Автоматическая регулировка уровней</value>
   </data>
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
@@ -198,65 +191,12 @@
   </data>
   <data name="Draw_ResetToImageCenter" xml:space="preserve">
     <value>Сбросить к центру изображения</value>
-  </data>
-  <data name="Draw_Mode" xml:space="preserve">
-    <value>Режим</value>
-  </data>
-  <data name="Draw_Color" xml:space="preserve">
+  </data>  <data name="Draw_Color" xml:space="preserve">
     <value>Цвет</value>
   </data>
   <data name="Draw_LineWidth" xml:space="preserve">
     <value>Толщина линии</value>
-  </data>
-  <data name="Draw_Angle" xml:space="preserve">
-    <value>Угол</value>
-  </data>
-  <data name="Draw_CenterX" xml:space="preserve">
-    <value>Центр X</value>
-  </data>
-  <data name="Draw_CenterY" xml:space="preserve">
-    <value>Центр Y</value>
-  </data>
-  <data name="Draw_MaskSettings" xml:space="preserve">
-    <value>Настройки маски</value>
-  </data>
-  <data name="Draw_MaskShape" xml:space="preserve">
-    <value>Форма маски</value>
-  </data>
-  <data name="Draw_MaskTransparentSize" xml:space="preserve">
-    <value>Размер прозрачной области маски</value>
-  </data>
-  <data name="Draw_MaskOpacity" xml:space="preserve">
-    <value>Непрозрачность маски (0-255)</value>
-  </data>
-  <data name="Draw_CenterOverlay" xml:space="preserve">
-    <value>Центральное наложение</value>
-  </data>
-  <data name="Draw_OverlayShape" xml:space="preserve">
-    <value>Форма наложения</value>
-  </data>
-  <data name="Draw_OverlayColor" xml:space="preserve">
-    <value>Цвет наложения</value>
-  </data>
-  <data name="Draw_OverlaySize" xml:space="preserve">
-    <value>Размер наложения</value>
-  </data>
-  <data name="Draw_PhysicalSize" xml:space="preserve">
-    <value>Физический размер</value>
-  </data>
-  <data name="Draw_PhysicalSizeX" xml:space="preserve">
-    <value>Физический размер X (мм)</value>
-  </data>
-  <data name="Draw_PhysicalSizeY" xml:space="preserve">
-    <value>Физический размер Y (мм)</value>
-  </data>
-  <data name="Draw_PixelPerUnit" xml:space="preserve">
-    <value>Пиксель/Единица (px/мм)</value>
-  </data>
-  <data name="Draw_Highlighter" xml:space="preserve">
-    <value>Маркер</value>
-  </data>
-  <data name="Draw_SampleSpacing" xml:space="preserve">
+  </data>  <data name="Draw_SampleSpacing" xml:space="preserve">
     <value>Интервал выборки</value>
   </data>
   <data name="Draw_StrokeWidth" xml:space="preserve">
@@ -267,20 +207,7 @@
   </data>
   <data name="Draw_FontSize" xml:space="preserve">
     <value>Размер шрифта</value>
-  </data>
-  <data name="Draw_FontSizeLabel" xml:space="preserve">
-    <value>Размер шрифта</value>
-  </data>
-  <data name="Draw_FontFamily" xml:space="preserve">
-    <value>Шрифт</value>
-  </data>
-  <data name="Draw_Position" xml:space="preserve">
-    <value>Позиция</value>
-  </data>
-  <data name="Draw_Background" xml:space="preserve">
-    <value>Фон</value>
-  </data>
-  <data name="Draw_Fill" xml:space="preserve">
+  </data>  <data name="Draw_Fill" xml:space="preserve">
     <value>Заливка</value>
   </data>
   <data name="Draw_DefaultFontSize" xml:space="preserve">
@@ -339,11 +266,7 @@
   </data>
   <data name="Ruler_ActualDistance" xml:space="preserve">
     <value>Фактическое расстояние</value>
-  </data>
-  <data name="Ruler_PhysicalLength" xml:space="preserve">
-    <value>Физическая длина</value>
-  </data>
-  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
+  </data>  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
     <value>Недостаточно точек для построения графика профиля.</value>
   </data>
   <data name="Annotation_CannotExtractData" xml:space="preserve">
@@ -919,38 +842,7 @@
   </data>
   <data name="Graphic_ArrayCountMin1" xml:space="preserve">
     <value>Array rows and columns cannot be less than 1</value>
-  </data>
-  <data name="Desc_BinaryThreshold" xml:space="preserve">
-    <value>Binary threshold (0-255)</value>
-  </data>
-  <data name="Desc_BeadSize" xml:space="preserve">
-    <value>Bead size</value>
-  </data>
-  <data name="Desc_MinBeadSize" xml:space="preserve">
-    <value>Minimum bead size (pixels)</value>
-  </data>
-  <data name="Desc_MaxBeadSize" xml:space="preserve">
-    <value>Maximum bead size (pixels)</value>
-  </data>
-  <data name="Desc_ExpectedRows" xml:space="preserve">
-    <value>Expected bead rows</value>
-  </data>
-  <data name="Desc_ExpectedCols" xml:space="preserve">
-    <value>Expected bead columns</value>
-  </data>
-  <data name="Desc_BinaryThresholdAuto" xml:space="preserve">
-    <value>Binary threshold, -1 for auto (OTSU)</value>
-  </data>
-  <data name="Desc_MinKeyArea" xml:space="preserve">
-    <value>Minimum key area (pixels)</value>
-  </data>
-  <data name="Desc_MaxKeyArea" xml:space="preserve">
-    <value>Maximum key area (pixels), 0 for unlimited</value>
-  </data>
-  <data name="Desc_MarginRatio" xml:space="preserve">
-    <value>Margin ratio (0~0.45), shrink detection box to better fit keys</value>
-  </data>
-  <data name="Sfr_FrequencyInputError" xml:space="preserve">
+  </data>  <data name="Sfr_FrequencyInputError" xml:space="preserve">
     <value>Invalid frequency input</value>
   </data>
   <data name="Sfr_MtfNotFound" xml:space="preserve">
@@ -991,29 +883,7 @@
   </data>
   <data name="PseudoColor_DefaultDescription" xml:space="preserve">
     <value>Controls the default pseudo color type and auto-range setting for new images or after reset. Does not directly override the current canvas state.</value>
-  </data>
-  <data name="PseudoColor_Enable" xml:space="preserve">
-    <value>Enable Pseudo Color</value>
-  </data>
-  <data name="PseudoColor_AutoRange" xml:space="preserve">
-    <value>Auto Range</value>
-  </data>
-  <data name="PseudoColor_Type" xml:space="preserve">
-    <value>Pseudo Color Type</value>
-  </data>
-  <data name="PseudoColor_MinValue" xml:space="preserve">
-    <value>Minimum Value</value>
-  </data>
-  <data name="PseudoColor_MaxValue" xml:space="preserve">
-    <value>Maximum Value</value>
-  </data>
-  <data name="PseudoColor_DefaultType" xml:space="preserve">
-    <value>Default Pseudo Color Type</value>
-  </data>
-  <data name="PseudoColor_DefaultAutoRange" xml:space="preserve">
-    <value>Default Auto Range</value>
-  </data>
-  <data name="Artculation_MenuHeader" xml:space="preserve">
+  </data>  <data name="Artculation_MenuHeader" xml:space="preserve">
     <value>Sharpness Evaluation</value>
   </data>
   <data name="Artculation_ParamSettings" xml:space="preserve">

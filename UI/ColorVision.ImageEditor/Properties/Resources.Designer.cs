@@ -349,15 +349,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 应用当前图片 的本地化字符串。
-        /// </summary>
-        public static string Apply {
-            get {
-                return ResourceManager.GetString("Apply", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 清晰度评估 的本地化字符串。
         /// </summary>
         public static string Artculation_MenuHeader {
@@ -547,141 +538,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 灯珠尺寸 的本地化字符串。
-        /// </summary>
-        public static string Desc_BeadSize {
-            get {
-                return ResourceManager.GetString("Desc_BeadSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 二值化阈值 (0-255) 的本地化字符串。
-        /// </summary>
-        public static string Desc_BinaryThreshold {
-            get {
-                return ResourceManager.GetString("Desc_BinaryThreshold", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 二值化阈值，-1表示自动(OTSU) 的本地化字符串。
-        /// </summary>
-        public static string Desc_BinaryThresholdAuto {
-            get {
-                return ResourceManager.GetString("Desc_BinaryThresholdAuto", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 预期灯珠列数 的本地化字符串。
-        /// </summary>
-        public static string Desc_ExpectedCols {
-            get {
-                return ResourceManager.GetString("Desc_ExpectedCols", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 预期灯珠行数 的本地化字符串。
-        /// </summary>
-        public static string Desc_ExpectedRows {
-            get {
-                return ResourceManager.GetString("Desc_ExpectedRows", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 边距缩进比例(0~0.45)，缩小检测框以更贴合按键 的本地化字符串。
-        /// </summary>
-        public static string Desc_MarginRatio {
-            get {
-                return ResourceManager.GetString("Desc_MarginRatio", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最大灯珠尺寸 (像素) 的本地化字符串。
-        /// </summary>
-        public static string Desc_MaxBeadSize {
-            get {
-                return ResourceManager.GetString("Desc_MaxBeadSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最大按键面积(像素), 0表示不限制 的本地化字符串。
-        /// </summary>
-        public static string Desc_MaxKeyArea {
-            get {
-                return ResourceManager.GetString("Desc_MaxKeyArea", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最小灯珠尺寸 (像素) 的本地化字符串。
-        /// </summary>
-        public static string Desc_MinBeadSize {
-            get {
-                return ResourceManager.GetString("Desc_MinBeadSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最小按键面积(像素) 的本地化字符串。
-        /// </summary>
-        public static string Desc_MinKeyArea {
-            get {
-                return ResourceManager.GetString("Desc_MinKeyArea", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 角度 的本地化字符串。
-        /// </summary>
-        public static string Draw_Angle {
-            get {
-                return ResourceManager.GetString("Draw_Angle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 背景 的本地化字符串。
-        /// </summary>
-        public static string Draw_Background {
-            get {
-                return ResourceManager.GetString("Draw_Background", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 中心覆盖 的本地化字符串。
-        /// </summary>
-        public static string Draw_CenterOverlay {
-            get {
-                return ResourceManager.GetString("Draw_CenterOverlay", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 中心点X 的本地化字符串。
-        /// </summary>
-        public static string Draw_CenterX {
-            get {
-                return ResourceManager.GetString("Draw_CenterX", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 中心点Y 的本地化字符串。
-        /// </summary>
-        public static string Draw_CenterY {
-            get {
-                return ResourceManager.GetString("Draw_CenterY", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 颜色 的本地化字符串。
         /// </summary>
         public static string Draw_Color {
@@ -772,38 +628,11 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 字体 的本地化字符串。
-        /// </summary>
-        public static string Draw_FontFamily {
-            get {
-                return ResourceManager.GetString("Draw_FontFamily", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 字号 的本地化字符串。
         /// </summary>
         public static string Draw_FontSize {
             get {
                 return ResourceManager.GetString("Draw_FontSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 字体大小 的本地化字符串。
-        /// </summary>
-        public static string Draw_FontSizeLabel {
-            get {
-                return ResourceManager.GetString("Draw_FontSizeLabel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 荧光笔 的本地化字符串。
-        /// </summary>
-        public static string Draw_Highlighter {
-            get {
-                return ResourceManager.GetString("Draw_Highlighter", resourceCulture);
             }
         }
         
@@ -858,123 +687,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Draw_LockDefaultSize {
             get {
                 return ResourceManager.GetString("Draw_LockDefaultSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 遮罩不透明度(0-255) 的本地化字符串。
-        /// </summary>
-        public static string Draw_MaskOpacity {
-            get {
-                return ResourceManager.GetString("Draw_MaskOpacity", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 遮罩设置 的本地化字符串。
-        /// </summary>
-        public static string Draw_MaskSettings {
-            get {
-                return ResourceManager.GetString("Draw_MaskSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 遮罩形状 的本地化字符串。
-        /// </summary>
-        public static string Draw_MaskShape {
-            get {
-                return ResourceManager.GetString("Draw_MaskShape", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 遮罩透明区大小 的本地化字符串。
-        /// </summary>
-        public static string Draw_MaskTransparentSize {
-            get {
-                return ResourceManager.GetString("Draw_MaskTransparentSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 模式 的本地化字符串。
-        /// </summary>
-        public static string Draw_Mode {
-            get {
-                return ResourceManager.GetString("Draw_Mode", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 覆盖颜色 的本地化字符串。
-        /// </summary>
-        public static string Draw_OverlayColor {
-            get {
-                return ResourceManager.GetString("Draw_OverlayColor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 覆盖形状 的本地化字符串。
-        /// </summary>
-        public static string Draw_OverlayShape {
-            get {
-                return ResourceManager.GetString("Draw_OverlayShape", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 覆盖大小 的本地化字符串。
-        /// </summary>
-        public static string Draw_OverlaySize {
-            get {
-                return ResourceManager.GetString("Draw_OverlaySize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 物理尺寸 的本地化字符串。
-        /// </summary>
-        public static string Draw_PhysicalSize {
-            get {
-                return ResourceManager.GetString("Draw_PhysicalSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 物理尺寸X(mm) 的本地化字符串。
-        /// </summary>
-        public static string Draw_PhysicalSizeX {
-            get {
-                return ResourceManager.GetString("Draw_PhysicalSizeX", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 物理尺寸Y(mm) 的本地化字符串。
-        /// </summary>
-        public static string Draw_PhysicalSizeY {
-            get {
-                return ResourceManager.GetString("Draw_PhysicalSizeY", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 像素/单位(px/mm) 的本地化字符串。
-        /// </summary>
-        public static string Draw_PixelPerUnit {
-            get {
-                return ResourceManager.GetString("Draw_PixelPerUnit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 位置 的本地化字符串。
-        /// </summary>
-        public static string Draw_Position {
-            get {
-                return ResourceManager.GetString("Draw_Position", resourceCulture);
             }
         }
         
@@ -1762,15 +1474,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 自动范围 的本地化字符串。
-        /// </summary>
-        public static string PseudoColor_AutoRange {
-            get {
-                return ResourceManager.GetString("PseudoColor_AutoRange", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 控制当前画布的伪彩色启用状态、当前色表和当前范围。这里的修改立即生效，不会写回默认值。 的本地化字符串。
         /// </summary>
         public static string PseudoColor_CurrentDescription {
@@ -1785,15 +1488,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string PseudoColor_CurrentPseudoColor {
             get {
                 return ResourceManager.GetString("PseudoColor_CurrentPseudoColor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 默认自动范围 的本地化字符串。
-        /// </summary>
-        public static string PseudoColor_DefaultAutoRange {
-            get {
-                return ResourceManager.GetString("PseudoColor_DefaultAutoRange", resourceCulture);
             }
         }
         
@@ -1816,24 +1510,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 默认伪彩色类型 的本地化字符串。
-        /// </summary>
-        public static string PseudoColor_DefaultType {
-            get {
-                return ResourceManager.GetString("PseudoColor_DefaultType", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启用伪彩色 的本地化字符串。
-        /// </summary>
-        public static string PseudoColor_Enable {
-            get {
-                return ResourceManager.GetString("PseudoColor_Enable", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 伪彩色 的本地化字符串。
         /// </summary>
         public static string PseudoColor_Group {
@@ -1843,47 +1519,11 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 最大值 的本地化字符串。
-        /// </summary>
-        public static string PseudoColor_MaxValue {
-            get {
-                return ResourceManager.GetString("PseudoColor_MaxValue", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最小值 的本地化字符串。
-        /// </summary>
-        public static string PseudoColor_MinValue {
-            get {
-                return ResourceManager.GetString("PseudoColor_MinValue", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 伪彩色类型 的本地化字符串。
-        /// </summary>
-        public static string PseudoColor_Type {
-            get {
-                return ResourceManager.GetString("PseudoColor_Type", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 相对值 的本地化字符串。
         /// </summary>
         public static string Relative {
             get {
                 return ResourceManager.GetString("Relative", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 重新加载 的本地化字符串。
-        /// </summary>
-        public static string Reload {
-            get {
-                return ResourceManager.GetString("Reload", resourceCulture);
             }
         }
         
@@ -1938,15 +1578,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Ruler_MeasureWithRealUnits {
             get {
                 return ResourceManager.GetString("Ruler_MeasureWithRealUnits", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 物理长度 的本地化字符串。
-        /// </summary>
-        public static string Ruler_PhysicalLength {
-            get {
-                return ResourceManager.GetString("Ruler_PhysicalLength", resourceCulture);
             }
         }
         

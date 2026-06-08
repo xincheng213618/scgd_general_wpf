@@ -144,14 +144,7 @@
   </data>
   <data name="ColormapTypes" xml:space="preserve">
     <value>伪彩色</value>
-  </data>
-  <data name="Reload" xml:space="preserve">
-    <value>重新加载</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>应用当前图片</value>
-  </data>
-  <data name="AutoLevelsAdjustment" xml:space="preserve">
+  </data>  <data name="AutoLevelsAdjustment" xml:space="preserve">
     <value>自动色阶调整</value>
   </data>
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
@@ -618,38 +611,7 @@
   </data>
   <data name="Graphic_ArrayCountMin1" xml:space="preserve">
     <value>点阵数的行列不能小于1</value>
-  </data>
-  <data name="Desc_BinaryThreshold" xml:space="preserve">
-    <value>二值化阈值 (0-255)</value>
-  </data>
-  <data name="Desc_BeadSize" xml:space="preserve">
-    <value>灯珠尺寸</value>
-  </data>
-  <data name="Desc_MinBeadSize" xml:space="preserve">
-    <value>最小灯珠尺寸 (像素)</value>
-  </data>
-  <data name="Desc_MaxBeadSize" xml:space="preserve">
-    <value>最大灯珠尺寸 (像素)</value>
-  </data>
-  <data name="Desc_ExpectedRows" xml:space="preserve">
-    <value>预期灯珠行数</value>
-  </data>
-  <data name="Desc_ExpectedCols" xml:space="preserve">
-    <value>预期灯珠列数</value>
-  </data>
-  <data name="Desc_BinaryThresholdAuto" xml:space="preserve">
-    <value>二值化阈值，-1表示自动(OTSU)</value>
-  </data>
-  <data name="Desc_MinKeyArea" xml:space="preserve">
-    <value>最小按键面积(像素)</value>
-  </data>
-  <data name="Desc_MaxKeyArea" xml:space="preserve">
-    <value>最大按键面积(像素), 0表示不限制</value>
-  </data>
-  <data name="Desc_MarginRatio" xml:space="preserve">
-    <value>边距缩进比例(0~0.45)，缩小检测框以更贴合按键</value>
-  </data>
-  <data name="Sfr_FrequencyInputError" xml:space="preserve">
+  </data>  <data name="Sfr_FrequencyInputError" xml:space="preserve">
     <value>频率输入错误</value>
   </data>
   <data name="Sfr_MtfNotFound" xml:space="preserve">
@@ -690,29 +652,7 @@
   </data>
   <data name="PseudoColor_DefaultDescription" xml:space="preserve">
     <value>控制新图像或重置后采用的默认伪彩色类型和自动范围开关，不会直接覆盖当前画布状态。</value>
-  </data>
-  <data name="PseudoColor_Enable" xml:space="preserve">
-    <value>启用伪彩色</value>
-  </data>
-  <data name="PseudoColor_AutoRange" xml:space="preserve">
-    <value>自动范围</value>
-  </data>
-  <data name="PseudoColor_Type" xml:space="preserve">
-    <value>伪彩色类型</value>
-  </data>
-  <data name="PseudoColor_MinValue" xml:space="preserve">
-    <value>最小值</value>
-  </data>
-  <data name="PseudoColor_MaxValue" xml:space="preserve">
-    <value>最大值</value>
-  </data>
-  <data name="PseudoColor_DefaultType" xml:space="preserve">
-    <value>默认伪彩色类型</value>
-  </data>
-  <data name="PseudoColor_DefaultAutoRange" xml:space="preserve">
-    <value>默认自动范围</value>
-  </data>
-  <data name="Artculation_MenuHeader" xml:space="preserve">
+  </data>  <data name="Artculation_MenuHeader" xml:space="preserve">
     <value>清晰度评估</value>
   </data>
   <data name="Artculation_ParamSettings" xml:space="preserve">
@@ -921,65 +861,12 @@
   </data>
   <data name="Draw_ResetToImageCenter" xml:space="preserve">
     <value>重置为图像中心</value>
-  </data>
-  <data name="Draw_Mode" xml:space="preserve">
-    <value>模式</value>
-  </data>
-  <data name="Draw_Color" xml:space="preserve">
+  </data>  <data name="Draw_Color" xml:space="preserve">
     <value>颜色</value>
   </data>
   <data name="Draw_LineWidth" xml:space="preserve">
     <value>线宽</value>
-  </data>
-  <data name="Draw_Angle" xml:space="preserve">
-    <value>角度</value>
-  </data>
-  <data name="Draw_CenterX" xml:space="preserve">
-    <value>中心点X</value>
-  </data>
-  <data name="Draw_CenterY" xml:space="preserve">
-    <value>中心点Y</value>
-  </data>
-  <data name="Draw_MaskSettings" xml:space="preserve">
-    <value>遮罩设置</value>
-  </data>
-  <data name="Draw_MaskShape" xml:space="preserve">
-    <value>遮罩形状</value>
-  </data>
-  <data name="Draw_MaskTransparentSize" xml:space="preserve">
-    <value>遮罩透明区大小</value>
-  </data>
-  <data name="Draw_MaskOpacity" xml:space="preserve">
-    <value>遮罩不透明度(0-255)</value>
-  </data>
-  <data name="Draw_CenterOverlay" xml:space="preserve">
-    <value>中心覆盖</value>
-  </data>
-  <data name="Draw_OverlayShape" xml:space="preserve">
-    <value>覆盖形状</value>
-  </data>
-  <data name="Draw_OverlayColor" xml:space="preserve">
-    <value>覆盖颜色</value>
-  </data>
-  <data name="Draw_OverlaySize" xml:space="preserve">
-    <value>覆盖大小</value>
-  </data>
-  <data name="Draw_PhysicalSize" xml:space="preserve">
-    <value>物理尺寸</value>
-  </data>
-  <data name="Draw_PhysicalSizeX" xml:space="preserve">
-    <value>物理尺寸X(mm)</value>
-  </data>
-  <data name="Draw_PhysicalSizeY" xml:space="preserve">
-    <value>物理尺寸Y(mm)</value>
-  </data>
-  <data name="Draw_PixelPerUnit" xml:space="preserve">
-    <value>像素/单位(px/mm)</value>
-  </data>
-  <data name="Draw_Highlighter" xml:space="preserve">
-    <value>荧光笔</value>
-  </data>
-  <data name="Draw_SampleSpacing" xml:space="preserve">
+  </data>  <data name="Draw_SampleSpacing" xml:space="preserve">
     <value>采样间距</value>
   </data>
   <data name="Draw_StrokeWidth" xml:space="preserve">
@@ -990,20 +877,7 @@
   </data>
   <data name="Draw_FontSize" xml:space="preserve">
     <value>字号</value>
-  </data>
-  <data name="Draw_FontSizeLabel" xml:space="preserve">
-    <value>字体大小</value>
-  </data>
-  <data name="Draw_FontFamily" xml:space="preserve">
-    <value>字体</value>
-  </data>
-  <data name="Draw_Position" xml:space="preserve">
-    <value>位置</value>
-  </data>
-  <data name="Draw_Background" xml:space="preserve">
-    <value>背景</value>
-  </data>
-  <data name="Draw_Fill" xml:space="preserve">
+  </data>  <data name="Draw_Fill" xml:space="preserve">
     <value>填充</value>
   </data>
   <data name="Draw_DefaultFontSize" xml:space="preserve">
@@ -1062,11 +936,7 @@
   </data>
   <data name="Ruler_ActualDistance" xml:space="preserve">
     <value>实际距离</value>
-  </data>
-  <data name="Ruler_PhysicalLength" xml:space="preserve">
-    <value>物理长度</value>
-  </data>
-  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
+  </data>  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
     <value>该图形没有足够的点来生成切面图。</value>
   </data>
   <data name="Annotation_CannotExtractData" xml:space="preserve">
