@@ -10,8 +10,8 @@
 
 namespace ProjectBlackMura.Properties {
     using System;
-    
-    
+
+
     /// <summary>
     ///   一个强类型的资源类，用于查找本地化的字符串等。
     /// </summary>
@@ -23,15 +23,15 @@ namespace ProjectBlackMura.Properties {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
-        
+
         private static global::System.Resources.ResourceManager resourceMan;
-        
+
         private static global::System.Globalization.CultureInfo resourceCulture;
-        
+
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
-        
+
         /// <summary>
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
@@ -45,7 +45,7 @@ namespace ProjectBlackMura.Properties {
                 return resourceMan;
             }
         }
-        
+
         /// <summary>
         ///   重写当前线程的 CurrentUICulture 属性，对
         ///   使用此强类型资源类的所有资源查找执行重写。
@@ -59,16 +59,7 @@ namespace ProjectBlackMura.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   查找类似 ARVR检测 的本地化字符串。
-        /// </summary>
-        public static string ARVRDetect {
-            get {
-                return ResourceManager.GetString("ARVRDetect", resourceCulture);
-            }
-        }
-        
+
         /// <summary>
         ///   查找类似 BlackMura检测 的本地化字符串。
         /// </summary>
@@ -77,70 +68,7 @@ namespace ProjectBlackMura.Properties {
                 return ResourceManager.GetString("BlackMuraDetect", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   查找类似 取消 的本地化字符串。
-        /// </summary>
-        public static string Cancel {
-            get {
-                return ResourceManager.GetString("Cancel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 连接名 的本地化字符串。
-        /// </summary>
-        public static string ConnectionName {
-            get {
-                return ResourceManager.GetString("ConnectionName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 复制配置文件 的本地化字符串。
-        /// </summary>
-        public static string CopyConfigurationFile {
-            get {
-                return ResourceManager.GetString("CopyConfigurationFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 新建配置文件 的本地化字符串。
-        /// </summary>
-        public static string CreateNewConfigurationFile {
-            get {
-                return ResourceManager.GetString("CreateNewConfigurationFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 删除 的本地化字符串。
-        /// </summary>
-        public static string Delete {
-            get {
-                return ResourceManager.GetString("Delete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 主机 的本地化字符串。
-        /// </summary>
-        public static string Host {
-            get {
-                return ResourceManager.GetString("Host", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文件(_F) 的本地化字符串。
-        /// </summary>
-        public static string MenuFile {
-            get {
-                return ResourceManager.GetString("MenuFile", resourceCulture);
-            }
-        }
-        
+
         /// <summary>
         ///   查找类似 确定 的本地化字符串。
         /// </summary>
@@ -149,23 +77,5 @@ namespace ProjectBlackMura.Properties {
                 return ResourceManager.GetString("OK", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   查找类似 端口 的本地化字符串。
-        /// </summary>
-        public static string Port {
-            get {
-                return ResourceManager.GetString("Port", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 测试连接 的本地化字符串。
-        /// </summary>
-        public static string TesConnection {
-            get {
-                return ResourceManager.GetString("TesConnection", resourceCulture);
-            }
-        }
-    }
+                    }
 }
