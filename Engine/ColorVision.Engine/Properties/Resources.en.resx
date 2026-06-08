@@ -61,15 +61,9 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>Process engine debug window</value>
   </data>
-  <data name="WorkflowEngine" xml:space="preserve">
-    <value>_Process Engine</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>Independent</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>Hide</value>
-  </data>
+
+
+
   <data name="ViewSentData" xml:space="preserve">
     <value>View sending data</value>
   </data>
@@ -94,9 +88,7 @@
   <data name="UnderDevelopment" xml:space="preserve">
     <value>Under Development</value>
   </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>Transparent Window</value>
-  </data>
+
   <data name="TransmitChannel" xml:space="preserve">
     <value>Send Channel</value>
   </data>
@@ -106,9 +98,7 @@
   <data name="Timeout" xml:space="preserve">
     <value>Timeout(ms)</value>
   </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>Time Left:</value>
-  </data>
+
   <data name="TesConnection" xml:space="preserve">
     <value>Test Connection</value>
   </data>
@@ -127,9 +117,7 @@
   <data name="Success" xml:space="preserve">
     <value>Success</value>
   </data>
-  <data name="SubscribedTopic" xml:space="preserve">
-    <value>Subscribed topics</value>
-  </data>
+
   <data name="Subscribe" xml:space="preserve">
     <value>Subscription</value>
   </data>
@@ -145,9 +133,7 @@
   <data name="StartTime" xml:space="preserve">
     <value>Starting time</value>
   </data>
-  <data name="StartingService" xml:space="preserve">
-    <value>Starting service</value>
-  </data>
+
   <data name="Size" xml:space="preserve">
     <value>Size</value>
   </data>
@@ -166,9 +152,7 @@
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>Service ID</value>
   </data>
-  <data name="ServiceConfiguration" xml:space="preserve">
-    <value>Service configuration</value>
-  </data>
+
   <data name="SerialNumber1" xml:space="preserve">
     <value>No</value>
   </data>
@@ -181,15 +165,11 @@
   <data name="Send" xml:space="preserve">
     <value>Send</value>
   </data>
-  <data name="SelectResourceToLoad" xml:space="preserve">
-    <value>Please select the resource you want to load:</value>
-  </data>
+
   <data name="Search" xml:space="preserve">
     <value>Search</value>
   </data>
-  <data name="SaveWindowLayout" xml:space="preserve">
-    <value>Save window layout</value>
-  </data>
+
   <data name="SaveDataColumn" xml:space="preserve">
     <value>Save data column</value>
   </data>
@@ -205,9 +185,7 @@
   <data name="RestartService" xml:space="preserve">
     <value>Restart service</value>
   </data>
-  <data name="Reseted" xml:space="preserve">
-    <value>Reset Completed</value>
-  </data>
+
   <data name="Reset" xml:space="preserve">
     <value>Reset</value>
   </data>
@@ -244,9 +222,7 @@
   <data name="Parameter" xml:space="preserve">
     <value>Parameter</value>
   </data>
-  <data name="OutputView" xml:space="preserve">
-    <value>Output View</value>
-  </data>
+
   <data name="OpenItem" xml:space="preserve">
     <value>Open Project</value>
   </data>
@@ -265,21 +241,15 @@
   <data name="Name" xml:space="preserve">
     <value>Name</value>
   </data>
-  <data name="MyLicense_R" xml:space="preserve">
-    <value>My License(R)</value>
-  </data>
-  <data name="MTFToolTip" xml:space="preserve">
-    <value>modulation transfer function</value>
-  </data>
+
+
   <data name="MsgLogWindow" xml:space="preserve">
     <value>Msg recording window</value>
   </data>
   <data name="MsgList" xml:space="preserve">
     <value>Message list</value>
   </data>
-  <data name="MQTTLog" xml:space="preserve">
-    <value>MQTT logs</value>
-  </data>
+
   <data name="MqttConnectionConfiguration" xml:space="preserve">
     <value>MQTT Connection Configuration</value>
   </data>
@@ -289,18 +259,14 @@
   <data name="Minimize" xml:space="preserve">
     <value>Minimize</value>
   </data>
-  <data name="MessageRetention" xml:space="preserve">
-    <value>Message Retention</value>
-  </data>
+
   <data name="MenuView" xml:space="preserve">
     <value>_View</value>
   </data>
   <data name="MenuValidue" xml:space="preserve">
     <value>Verification template settings (B)</value>
   </data>
-  <data name="MenuUpdate" xml:space="preserve">
-    <value>Check For _Updates</value>
-  </data>
+
   <data name="MenuUndo" xml:space="preserve">
     <value>_Undo</value>
   </data>
@@ -316,12 +282,8 @@
   <data name="MenuSUM" xml:space="preserve">
     <value>SMU template settings(_S)</value>
   </data>
-  <data name="MenuSFR" xml:space="preserve">
-    <value>_SFR</value>
-  </data>
-  <data name="MenuSettings" xml:space="preserve">
-    <value>_Settings</value>
-  </data>
+
+
   <data name="MenuService" xml:space="preserve">
     <value>Administrator _Service Configuration</value>
   </data>
@@ -331,9 +293,7 @@
   <data name="MenuRename" xml:space="preserve">
     <value>Rena_me</value>
   </data>
-  <data name="MenuPoi" xml:space="preserve">
-    <value>POI Template Settings (_P)</value>
-  </data>
+
   <data name="MenuPhyCameraManager" xml:space="preserve">
     <value>_Physical Camera Management</value>
   </data>
@@ -346,36 +306,20 @@
   <data name="MenuNew" xml:space="preserve">
     <value>_New</value>
   </data>
-  <data name="MenuMTF" xml:space="preserve">
-    <value>_MTF</value>
-  </data>
-  <data name="MenuMeasure" xml:space="preserve">
-    <value>Measurement template settings</value>
-  </data>
-  <data name="MenuLogin" xml:space="preserve">
-    <value>_Login account</value>
-  </data>
-  <data name="MenuGhost" xml:space="preserve">
-    <value>_Ghost</value>
-  </data>
-  <data name="MenuFOV" xml:space="preserve">
-    <value>_FOV</value>
-  </data>
-  <data name="MenuFocusPoints" xml:space="preserve">
-    <value>Focus _Point</value>
-  </data>
+
+
+
+
+
+
   <data name="MenuFlow" xml:space="preserve">
     <value>Flow (_L)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>_Edit</value>
   </data>
-  <data name="MenuDistortion" xml:space="preserve">
-    <value>_Distortion</value>
-  </data>
-  <data name="MenuDevice" xml:space="preserve">
-    <value>_Device Configuration</value>
-  </data>
+
+
   <data name="MenuDelete" xml:space="preserve">
     <value>_Delete</value>
   </data>
@@ -385,51 +329,37 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>_Copy</value>
   </data>
-  <data name="MenuCameraExp" xml:space="preserve">
-    <value>Camera exposure template settings (_B)</value>
-  </data>
-  <data name="MenuCalibrationTool" xml:space="preserve">
-    <value>_Calibration Generation Tool</value>
-  </data>
-  <data name="MenuBuildPOI" xml:space="preserve">
-    <value>_BuildPOI</value>
-  </data>
+
+
+
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>_Algorithm</value>
   </data>
   <data name="Manager" xml:space="preserve">
     <value>Manage</value>
   </data>
-  <data name="Male" xml:space="preserve">
-    <value>Male</value>
-  </data>
+
   <data name="Local" xml:space="preserve">
     <value>Local</value>
   </data>
   <data name="Loading" xml:space="preserve">
     <value>Loading</value>
   </data>
-  <data name="LicenseManagement" xml:space="preserve">
-    <value>License Management</value>
-  </data>
+
   <data name="Layers" xml:space="preserve">
     <value>Layers</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Started successfully</value>
   </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>Open the local service when the software starts</value>
-  </data>
+
   <data name="Inquire" xml:space="preserve">
     <value>Inquire</value>
   </data>
   <data name="Info" xml:space="preserve">
     <value>Info</value>
   </data>
-  <data name="ImportLicense" xml:space="preserve">
-    <value>Import License</value>
-  </data>
+
   <data name="Import" xml:space="preserve">
     <value>Import</value>
   </data>
@@ -445,12 +375,8 @@
   <data name="Host" xml:space="preserve">
     <value>Host</value>
   </data>
-  <data name="HistoryCache" xml:space="preserve">
-    <value>history cache</value>
-  </data>
-  <data name="GhostShadow" xml:space="preserve">
-    <value>Ghost</value>
-  </data>
+
+
   <data name="Gain" xml:space="preserve">
     <value>Gain</value>
   </data>
@@ -466,9 +392,7 @@
   <data name="File" xml:space="preserve">
     <value>File</value>
   </data>
-  <data name="Female" xml:space="preserve">
-    <value>Female</value>
-  </data>
+
   <data name="Failure" xml:space="preserve">
     <value>Failure</value>
   </data>
@@ -493,9 +417,7 @@
   <data name="Exchange" xml:space="preserve">
     <value>Exchange</value>
   </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>An error occurred</value>
-  </data>
+
   <data name="EnterAcquisitionWindow" xml:space="preserve">
     <value>Enter the collection window</value>
   </data>
@@ -508,9 +430,7 @@
   <data name="Duration" xml:space="preserve">
     <value>Duration</value>
   </data>
-  <data name="DownloadCancelled" xml:space="preserve">
-    <value>Download canceled</value>
-  </data>
+
   <data name="DeviceName" xml:space="preserve">
     <value>Device Name</value>
   </data>
@@ -520,33 +440,23 @@
   <data name="DeviceCode" xml:space="preserve">
     <value>Device Code</value>
   </data>
-  <data name="DeviceCameraSign1" xml:space="preserve">
-    <value>The device is offline, please configure the camera ID first</value>
-  </data>
+
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
-  <data name="DefaultExportStorageFormat" xml:space="preserve">
-    <value>Default export storage format</value>
-  </data>
+
   <data name="DefaultCreateTemplateName" xml:space="preserve">
     <value>default</value>
   </data>
-  <data name="Deadline" xml:space="preserve">
-    <value>Deadline</value>
-  </data>
-  <data name="DatabaseConnectionFailed" xml:space="preserve">
-    <value>Database connection failed, please connect to the database first before operating</value>
-  </data>
+
+
   <data name="Database" xml:space="preserve">
     <value>Database</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
     <value>The current version is already the latest version</value>
   </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>Current Speed:</value>
-  </data>
+
   <data name="CreateTime" xml:space="preserve">
     <value>Create Time</value>
   </data>
@@ -559,9 +469,7 @@
   <data name="Create" xml:space="preserve">
     <value>Create</value>
   </data>
-  <data name="CopySerialNumber" xml:space="preserve">
-    <value>Copy Serial Number</value>
-  </data>
+
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>Copy configuration file</value>
   </data>
@@ -574,30 +482,22 @@
   <data name="ConfigureNewProject" xml:space="preserve">
     <value>Configure new project</value>
   </data>
-  <data name="ConfigurationComplete" xml:space="preserve">
-    <value>Configuration completed</value>
-  </data>
-  <data name="ColorVisionUpdater" xml:space="preserve">
-    <value>ColorVision Updater</value>
-  </data>
+
+
   <data name="Code" xml:space="preserve">
     <value>Code</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
-  <data name="ClearData" xml:space="preserve">
-    <value>Clear data</value>
-  </data>
+
   <data name="ClearCache" xml:space="preserve">
     <value>Clear Cache</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>Clear</value>
   </data>
-  <data name="Chart" xml:space="preserve">
-    <value>Chart</value>
-  </data>
+
   <data name="ChangeLog" xml:space="preserve">
     <value>Change log</value>
   </data>
@@ -619,15 +519,11 @@
   <data name="BasicInformation" xml:space="preserve">
     <value>Basic Information</value>
   </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>Automatically switch selected views</value>
-  </data>
+
   <data name="AutoExposure" xml:space="preserve">
     <value>Auto Exposure</value>
   </data>
-  <data name="Alias" xml:space="preserve">
-    <value>Aliases</value>
-  </data>
+
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Advanced Search</value>
   </data>
@@ -637,9 +533,7 @@
   <data name="Add" xml:space="preserve">
     <value>Add</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>Acquire</value>
-  </data>
+
   <data name="About" xml:space="preserve">
     <value>About</value>
   </data>
@@ -649,24 +543,16 @@
   <data name="Choice" xml:space="preserve">
     <value>Choice</value>
   </data>
-  <data name="IsDefaultOpenService" xml:space="preserve">
-    <value>Open Service on Startup</value>
-  </data>
-  <data name="IsRetorePlayControls" xml:space="preserve">
-    <value>Restore Capture Window on Startup</value>
-  </data>
+
+
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
   <data name="MenuFile" xml:space="preserve">
     <value>_File</value>
   </data>
-  <data name="MenuSensorHeYuan" xml:space="preserve">
-    <value>Generic sensor template settings(_H)</value>
-  </data>
-  <data name="AddPhysicalCamera" xml:space="preserve">
-    <value>Adding a Physical Camera</value>
-  </data>
+
+
   <data name="AddUncreatedCamera" xml:space="preserve">
     <value>Adding an uncreated camera</value>
   </data>
@@ -682,27 +568,19 @@
   <data name="ModifyConfiguration" xml:space="preserve">
     <value>Change setting</value>
   </data>
-  <data name="RefreshService" xml:space="preserve">
-    <value>Refresh Service</value>
-  </data>
-  <data name="ResetService" xml:space="preserve">
-    <value>Reset Service</value>
-  </data>
+
+
   <data name="ManagePhysicalCamera" xml:space="preserve">
     <value>Managing Physical Cameras</value>
   </data>
-  <data name="DataLoading" xml:space="preserve">
-    <value>Loading</value>
-  </data>
+
   <data name="OpenFile" xml:space="preserve">
     <value>Open File</value>
   </data>
   <data name="OpenFolder" xml:space="preserve">
     <value>Open Folder</value>
   </data>
-  <data name="ProductBrochure" xml:space="preserve">
-    <value>Product Brochure</value>
-  </data>
+
   <data name="UnknownStatus" xml:space="preserve">
     <value>Unknown Status</value>
   </data>
@@ -721,12 +599,8 @@
   <data name="IsEnable" xml:space="preserve">
     <value>Enabled</value>
   </data>
-  <data name="MenuEngine" xml:space="preserve">
-    <value>E_ngine</value>
-  </data>
-  <data name="SearchLimit" xml:space="preserve">
-    <value>Search Result Limit</value>
-  </data>
+
+
   <data name="InsertAtBeginning" xml:space="preserve">
     <value>Insert at Beginning</value>
   </data>
@@ -745,33 +619,19 @@
   <data name="Copy" xml:space="preserve">
     <value>Copy</value>
   </data>
-  <data name="Lock" xml:space="preserve">
-    <value>Lock</value>
-  </data>
+
   <data name="ConfirmDelete" xml:space="preserve">
     <value>Confirm Deletion</value>
   </data>
-  <data name="CalibrationCorrection" xml:space="preserve">
-    <value>Correction tools</value>
-  </data>
-  <data name="SelectCalibToolsExe" xml:space="preserve">
-    <value>Select CalibTools.exe</value>
-  </data>
-  <data name="CannotFindCalibToolsExe_HelpMeFindIt" xml:space="preserve">
-    <value>I can't find CalibTools (CalibTools.exe). Would you like to help me find it?</value>
-  </data>
-  <data name="OpenInCalibTools" xml:space="preserve">
-    <value>Open in CalibTools</value>
-  </data>
-  <data name="ProjectManagerWindow" xml:space="preserve">
-    <value>Project Manager Window</value>
-  </data>
+
+
+
+
+
   <data name="ReleaseDate" xml:space="preserve">
     <value>Release Date</value>
   </data>
-  <data name="BuildDate" xml:space="preserve">
-    <value>Build Date</value>
-  </data>
+
   <data name="Version" xml:space="preserve">
     <value>Version</value>
   </data>
@@ -802,12 +662,8 @@
   <data name="PleaseConfigureCameraIDFirst" xml:space="preserve">
     <value>Please configure the camera ID first</value>
   </data>
-  <data name="CheckCameraTemperature" xml:space="preserve">
-    <value>Check the camera's temperature</value>
-  </data>
-  <data name="SaveCurrentExposureAndOtherParameters" xml:space="preserve">
-    <value>Save current exposure and other parameters</value>
-  </data>
+
+
   <data name="AverageTimes" xml:space="preserve">
     <value>Average Count</value>
   </data>
@@ -871,12 +727,8 @@
   <data name="CVCIEFileSave" xml:space="preserve">
     <value>Saving CVCIE files:</value>
   </data>
-  <data name="SendChannel" xml:space="preserve">
-    <value>Transmit channel:</value>
-  </data>
-  <data name="BindPhysicalCameraCode" xml:space="preserve">
-    <value>Bind physical camera code</value>
-  </data>
+
+
   <data name="FlowTemplate" xml:space="preserve">
     <value>Flow Template</value>
   </data>
@@ -889,9 +741,7 @@
   <data name="ParsingManagement" xml:space="preserve">
     <value>Parsing Management</value>
   </data>
-  <data name="Parsing" xml:space="preserve">
-    <value>Parsing</value>
-  </data>
+
   <data name="Camera" xml:space="preserve">
     <value>Camera</value>
   </data>
@@ -913,18 +763,14 @@
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
     <value>POI Correction Template Settings</value>
   </data>
-  <data name="ApplicationPropertyTemplate" xml:space="preserve">
-    <value>Application Property Template</value>
-  </data>
+
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
     <value>POI Point Layout Template Settings</value>
   </data>
   <data name="POIAnalysis" xml:space="preserve">
     <value>POI Analysis</value>
   </data>
-  <data name="FindAARegion" xml:space="preserve">
-    <value>AA Region Detection</value>
-  </data>
+
   <data name="POIFileOutputTemplateSettings" xml:space="preserve">
     <value>POI File Output Template Settings</value>
   </data>
@@ -943,18 +789,12 @@
   <data name="CrossCalculation" xml:space="preserve">
     <value>Cross Calculation</value>
   </data>
-  <data name="DistortionDetection2_0" xml:space="preserve">
-    <value>Distortion Detection 2.0</value>
-  </data>
+
   <data name="ImageStitching" xml:space="preserve">
     <value>Image Stitching</value>
   </data>
-  <data name="AAPointFilling" xml:space="preserve">
-    <value>AA Point Filling</value>
-  </data>
-  <data name="AACropTemplateManagement" xml:space="preserve">
-    <value>AA Crop Template Management</value>
-  </data>
+
+
   <data name="EditDefaultSensorDictionary" xml:space="preserve">
     <value>Edit Default Sensor Dictionary</value>
   </data>
@@ -985,9 +825,7 @@
   <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
     <value>Unauthorized or expired license</value>
   </data>
-  <data name="ColorTemperatureWavelength" xml:space="preserve">
-    <value>Color temperature wavelength</value>
-  </data>
+
   <data name="DataDirectory" xml:space="preserve">
     <value>Data Catalog</value>
   </data>
@@ -1018,9 +856,7 @@
   <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>Keyboard Inspection</value>
   </data>
-  <data name="subPixelDetect" xml:space="preserve">
-    <value>Subpixel-level LED detection</value>
-  </data>
+
   <data name="SFRFindRoi" xml:space="preserve">
     <value>SFRROI search</value>
   </data>
@@ -1072,15 +908,11 @@
   <data name="SeviceClosed" xml:space="preserve">
     <value>The service has been shut down.</value>
   </data>
-  <data name="ServiceCach" xml:space="preserve">
-    <value>Service caching</value>
-  </data>
+
   <data name="ConfigerInfo" xml:space="preserve">
     <value>Configuration information</value>
   </data>
-  <data name="FileDirectory" xml:space="preserve">
-    <value>File Directory</value>
-  </data>
+
   <data name="Aperture" xml:space="preserve">
     <value>Aperture F</value>
   </data>
@@ -1132,9 +964,7 @@
   <data name="RevCmd" xml:space="preserve">
     <value>Return command</value>
   </data>
-  <data name="SensorCfgInfo" xml:space="preserve">
-    <value>Sensor configuration information</value>
-  </data>
+
   <data name="IPAddress" xml:space="preserve">
     <value>IP Address</value>
   </data>
@@ -1150,9 +980,7 @@
   <data name="DeviceAddr" xml:space="preserve">
     <value>Device address</value>
   </data>
-  <data name="SMUAddr" xml:space="preserve">
-    <value>SMU address</value>
-  </data>
+
   <data name="IntegrationTime" xml:space="preserve">
     <value>Integration Time</value>
   </data>
@@ -1174,9 +1002,7 @@
   <data name="DelayMs" xml:space="preserve">
     <value>Delay (ms)</value>
   </data>
-  <data name="SpectrumInfo" xml:space="preserve">
-    <value>Spectrometer Information</value>
-  </data>
+
   <data name="AutoTestInterval_Ms" xml:space="preserve">
     <value>Automatic test interval (ms)</value>
   </data>
@@ -1192,9 +1018,7 @@
   <data name="CloseCmd" xml:space="preserve">
     <value>Close command</value>
   </data>
-  <data name="Filecfg" xml:space="preserve">
-    <value>File Configuration</value>
-  </data>
+
   <data name="CalibrationFile" xml:space="preserve">
     <value>Calibration File</value>
   </data>
@@ -1405,12 +1229,8 @@
   <data name="ListHeight" xml:space="preserve">
     <value>List Height</value>
   </data>
-  <data name="MaxNumber" xml:space="preserve">
-    <value>Maximum Number</value>
-  </data>
-  <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
-    <value>Do you want to save the current exposure configuration?</value>
-  </data>
+
+
   <data name="FileSavePath" xml:space="preserve">
     <value>File Save Path</value>
   </data>
@@ -1435,18 +1255,14 @@
   <data name="SensorDicEdit" xml:space="preserve">
     <value>Sensor Dictionary Editing</value>
   </data>
-  <data name="SMUView" xml:space="preserve">
-    <value>SMU View</value>
-  </data>
+
   <data name="UploadLic" xml:space="preserve">
     <value>Upload License</value>
   </data>
   <data name="ApaptivezeroCaliSet" xml:space="preserve">
     <value>Adaptive zero setting</value>
   </data>
-  <data name="SpectrumView" xml:space="preserve">
-    <value>Spectrometer View</value>
-  </data>
+
   <data name="ExcAdaptiveZeroCali" xml:space="preserve">
     <value>Adaptive zeroing execution</value>
   </data>
@@ -1456,12 +1272,8 @@
   <data name="ThirdPartAlgorithmConfig" xml:space="preserve">
     <value>Configure third-party algorithms</value>
   </data>
-  <data name="ThirdPartAlgView" xml:space="preserve">
-    <value>Third-party algorithm view</value>
-  </data>
-  <data name="CaliTemplateManagerment" xml:space="preserve">
-    <value>Calibration Template Management</value>
-  </data>
+
+
   <data name="CaliTemplateSet" xml:space="preserve">
     <value>Calibration Template Settings</value>
   </data>
@@ -1474,9 +1286,7 @@
   <data name="LoadRestorePoint" xml:space="preserve">
     <value>Load Restore Point</value>
   </data>
-  <data name="StartRC" xml:space="preserve">
-    <value>Enable RC</value>
-  </data>
+
   <data name="DefaultCanvas" xml:space="preserve">
     <value>Default Canvas</value>
   </data>
@@ -1492,12 +1302,8 @@
   <data name="ClearPOI" xml:space="preserve">
     <value>Clear POI</value>
   </data>
-  <data name="ReRender" xml:space="preserve">
-    <value>Re-render</value>
-  </data>
-  <data name="Once" xml:space="preserve">
-    <value>Once</value>
-  </data>
+
+
   <data name="SaveToFile" xml:space="preserve">
     <value>Save to File</value>
   </data>
@@ -1606,21 +1412,13 @@
   <data name="PGParamConfig" xml:space="preserve">
     <value>PGParam Settings</value>
   </data>
-  <data name="CameraView" xml:space="preserve">
-    <value>Camera View</value>
-  </data>
-  <data name="ClearServiceCache" xml:space="preserve">
-    <value>Clear Service Cache</value>
-  </data>
+
+
   <data name="DataBasicPath" xml:space="preserve">
     <value>Base Data Path</value>
   </data>
-  <data name="singleChannel" xml:space="preserve">
-    <value>Single Channel</value>
-  </data>
-  <data name="threeChannels" xml:space="preserve">
-    <value>Three Channels</value>
-  </data>
+
+
   <data name="Absolute" xml:space="preserve">
     <value>Absolute</value>
   </data>
@@ -1660,18 +1458,14 @@
   <data name="Start" xml:space="preserve">
     <value>Start</value>
   </data>
-  <data name="End" xml:space="preserve">
-    <value>End</value>
-  </data>
+
   <data name="PointCount" xml:space="preserve">
     <value>Point Count</value>
   </data>
   <data name="Network" xml:space="preserve">
     <value>Network</value>
   </data>
-  <data name="Cleanup" xml:space="preserve">
-    <value>Cleanup</value>
-  </data>
+
   <data name="MeasurementType" xml:space="preserve">
     <value>Measurement Type</value>
   </data>
@@ -1828,9 +1622,7 @@
   <data name="TimeOut_Ms" xml:space="preserve">
     <value>Timeout (ms)</value>
   </data>
-  <data name="SMUSimulator" xml:space="preserve">
-    <value>SMU simulator</value>
-  </data>
+
   <data name="WaveLengthFile" xml:space="preserve">
     <value>Wavelength file</value>
   </data>
@@ -1879,12 +1671,8 @@
   <data name="TemplateFailed" xml:space="preserve">
     <value>Template Failed</value>
   </data>
-  <data name="CurrentDeviceCameraInfo" xml:space="preserve">
-    <value>Current device camera information</value>
-  </data>
-  <data name="RefreshDeviceListFailed" xml:space="preserve">
-    <value>Refreshing device list failed</value>
-  </data>
+
+
   <data name="AutoAlign" xml:space="preserve">
     <value>Auto Align</value>
   </data>
@@ -2029,9 +1817,7 @@
   <data name="MsgLogWin" xml:space="preserve">
     <value>Message Log Window</value>
   </data>
-  <data name="PhySpectrum" xml:space="preserve">
-    <value>Physical Spectrometer</value>
-  </data>
+
   <data name="ComplyPoint" xml:space="preserve">
     <value>Point</value>
   </data>
@@ -2041,36 +1827,18 @@
   <data name="EditDefaultComplianceDictionary" xml:space="preserve">
     <value>Edit the default compliance dictionary</value>
   </data>
-  <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
-    <value>Cannot find the calibration generation tool, do you want to download it online?</value>
-  </data>
-  <data name="DownloadCalibrationTool" xml:space="preserve">
-    <value>Download calibration generation tool</value>
-  </data>
-  <data name="SelectUpzipDirectry" xml:space="preserve">
-    <value>Please select the decompression directory.</value>
-  </data>
-  <data name="LedDataFIle" xml:space="preserve">
-    <value>LED data file</value>
-  </data>
-  <data name="LedDataFileNotFound" xml:space="preserve">
-    <value>LED data file not found</value>
-  </data>
+
+
+
+
+
   <data name="ImageFileNotFound" xml:space="preserve">
     <value>Image file not found</value>
   </data>
-  <data name="ImageFileIsnotCVCIE" xml:space="preserve">
-    <value>The image file is not a CVCIE file.</value>
-  </data>
-  <data name="ImageFileOpenFailed" xml:space="preserve">
-    <value>Image file failed to open</value>
-  </data>
-  <data name="SSCOMTool" xml:space="preserve">
-    <value>SSCOM Serial Port Debugging Assistant</value>
-  </data>
-  <data name="CalibrationFileCorrectionTool" xml:space="preserve">
-    <value>Correction File Repair Tool</value>
-  </data>
+
+
+
+
   <data name="AlgorithmView" xml:space="preserve">
     <value>Algorithm View</value>
   </data>
@@ -2158,9 +1926,7 @@
   <data name="UpdateProcessMeta" xml:space="preserve">
     <value>Update ProcessMeta</value>
   </data>
-  <data name="WorkflowTemplate" xml:space="preserve">
-    <value>Process template:</value>
-  </data>
+
   <data name="DeleteSelected" xml:space="preserve">
     <value>Delete selected</value>
   </data>
@@ -2203,9 +1969,7 @@
   <data name="Enum" xml:space="preserve">
     <value>Enumerate</value>
   </data>
-  <data name="ConfigePOINeed" xml:space="preserve">
-    <value>POI needs to be configured</value>
-  </data>
+
   <data name="ExportTo" xml:space="preserve">
     <value>ExportAs</value>
   </data>
@@ -2254,9 +2018,7 @@
   <data name="ToggleList" xml:space="preserve">
     <value>Toggle List</value>
   </data>
-  <data name="CmdSendAlready" xml:space="preserve">
-    <value>Command has been sent</value>
-  </data>
+
   <data name="License" xml:space="preserve">
     <value>License</value>
   </data>
@@ -2278,9 +2040,7 @@
   <data name="Step" xml:space="preserve">
     <value>Step</value>
   </data>
-  <data name="RestartWindowsService" xml:space="preserve">
-    <value>Restart WindowsService</value>
-  </data>
+
   <data name="SelectExportFileLocation" xml:space="preserve">
     <value>Select the export file location</value>
   </data>
@@ -2353,9 +2113,7 @@
   <data name="VoltageSourceCurrentSourceSelection" xml:space="preserve">
     <value>Voltage source, current source selection</value>
   </data>
-  <data name="EnableExposure" xml:space="preserve">
-    <value>Enable Exposure</value>
-  </data>
+
   <data name="EnableFocus" xml:space="preserve">
     <value>Enable Focus</value>
   </data>
@@ -2371,9 +2129,7 @@
   <data name="ExecutionCancelled" xml:space="preserve">
     <value>The execution has been cancelled.</value>
   </data>
-  <data name="FlowWindows" xml:space="preserve">
-    <value>Flow Window</value>
-  </data>
+
   <data name="Processing" xml:space="preserve">
     <value>Processing...</value>
   </data>
@@ -2383,9 +2139,7 @@
   <data name="IsFront" xml:space="preserve">
     <value>Enable Front Panel</value>
   </data>
-  <data name="BrightnessLvCdM2" xml:space="preserve">
-    <value>Luminance (cd/m2)</value>
-  </data>
+
   <data name="OpenDeviceManager" xml:space="preserve">
     <value>Open Device Manager</value>
   </data>
@@ -2449,9 +2203,7 @@
   <data name="EditDisplayConfig" xml:space="preserve">
     <value>Edit Display Configuration</value>
   </data>
-  <data name="OpenEditTool" xml:space="preserve">
-    <value>Editing Tools</value>
-  </data>
+
   <data name="Annotation" xml:space="preserve">
     <value>Notes</value>
   </data>
@@ -3031,78 +2783,46 @@
   <data name="BatchNumberCannotBeEmpty" xml:space="preserve">
     <value>Batch number cannot be empty, enter first</value>
   </data>
-  <data name="BatchNumberEmpty" xml:space="preserve">
-    <value>Batch number cannot be empty, enter first</value>
-  </data>
+
   <data name="BindDLL" xml:space="preserve">
     <value>Bind DLL</value>
   </data>
-  <data name="ButtonCFWConfig" xml:space="preserve">
-    <value>CFW Configuration</value>
-  </data>
+
   <data name="ButtonCalibrationEdit" xml:space="preserve">
     <value>Calibration Edit</value>
   </data>
-  <data name="ButtonCalibrationTemplateSettings" xml:space="preserve">
-    <value>Calibration Template Settings</value>
-  </data>
+
   <data name="ButtonCancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
-  <data name="ButtonCopyLicense" xml:space="preserve">
-    <value>Copy License</value>
-  </data>
-  <data name="ButtonCreateRestorePoint" xml:space="preserve">
-    <value>Create Restore Point</value>
-  </data>
+
+
   <data name="ButtonDefault" xml:space="preserve">
     <value>Default</value>
   </data>
-  <data name="ButtonDelete" xml:space="preserve">
-    <value>Delete</value>
-  </data>
+
   <data name="ButtonEditConfig" xml:space="preserve">
     <value>Edit Configuration</value>
   </data>
-  <data name="ButtonExportLicense" xml:space="preserve">
-    <value>Export License</value>
-  </data>
-  <data name="ButtonFilterWheelConfig" xml:space="preserve">
-    <value>Filter Wheel Configuration</value>
-  </data>
+
+
   <data name="ButtonGoToCameraManager" xml:space="preserve">
     <value>Go to Camera Manager</value>
   </data>
-  <data name="ButtonLoadRestorePoint" xml:space="preserve">
-    <value>Load Restore Point</value>
-  </data>
-  <data name="ButtonModifyConfig" xml:space="preserve">
-    <value>Modify Configuration</value>
-  </data>
-  <data name="ButtonModifyLicense" xml:space="preserve">
-    <value>Modify License</value>
-  </data>
+
+
+
   <data name="ButtonOK" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="ButtonOnlineDownloadLicense" xml:space="preserve">
-    <value>Download License Online</value>
-  </data>
+
   <data name="ButtonOpenConfigFile" xml:space="preserve">
     <value>Open Configuration File</value>
   </data>
-  <data name="ButtonPropertyEditor" xml:space="preserve">
-    <value>Property Editor</value>
-  </data>
-  <data name="ButtonPropertyEditorTooltip" xml:space="preserve">
-    <value>Property Editor</value>
-  </data>
-  <data name="ButtonReset" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="ButtonResetChannel" xml:space="preserve">
-    <value>Reset Channel</value>
-  </data>
+
+
+
+
   <data name="ButtonResetChannels" xml:space="preserve">
     <value>Reset Channel</value>
   </data>
@@ -3112,15 +2832,11 @@
   <data name="ButtonSelectAll" xml:space="preserve">
     <value>Select All</value>
   </data>
-  <data name="ButtonSuppressWarning" xml:space="preserve">
-    <value>Do not show this warning again</value>
-  </data>
+
   <data name="ButtonUpdateLicense" xml:space="preserve">
     <value>Update License</value>
   </data>
-  <data name="ButtonUploadCalibrationFile" xml:space="preserve">
-    <value>Upload Calibration File</value>
-  </data>
+
   <data name="CalcAutoExposure" xml:space="preserve">
     <value>Calculate Auto Exposure</value>
   </data>
@@ -3248,18 +2964,14 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="CameraID" xml:space="preserve">
     <value>Camera ID</value>
   </data>
-  <data name="CameraNotConfiguredError" xml:space="preserve">
-    <value>Physical camera not configured</value>
-  </data>
+
   <data name="CameraParamSettings" xml:space="preserve">
     <value>Camera Parameter Settings</value>
   </data>
   <data name="CameraReset" xml:space="preserve">
     <value>Reset</value>
   </data>
-  <data name="CameraTypeLabel" xml:space="preserve">
-    <value>Camera Type</value>
-  </data>
+
   <data name="CaptureMode" xml:space="preserve">
     <value>Capture mode</value>
   </data>
@@ -3293,9 +3005,7 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="CloseLocalVideo" xml:space="preserve">
     <value>Close Local Video</value>
   </data>
-  <data name="CloseSMU" xml:space="preserve">
-    <value>Close Source Meter</value>
-  </data>
+
   <data name="CloseSourceMeter" xml:space="preserve">
     <value>Close Source Meter</value>
   </data>
@@ -3311,18 +3021,12 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="ConfigureAssociatedDllFirst" xml:space="preserve">
     <value>Configure associated DLL first</value>
   </data>
-  <data name="ConnectingRC" xml:space="preserve">
-    <value>Connecting to registry center</value>
-  </data>
-  <data name="CreateServiceFailed" xml:space="preserve">
-    <value>Service creation failed</value>
-  </data>
+
+
   <data name="CurrentSource" xml:space="preserve">
     <value>Current Source</value>
   </data>
-  <data name="DatabaseResetFailed" xml:space="preserve">
-    <value>Cannot reset, check DB config</value>
-  </data>
+
   <data name="DbCreateTemplateFailed" xml:space="preserve">
     <value>Database {0} template creation failed</value>
   </data>
@@ -3338,15 +3042,9 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="DescriptionBasicPipeline" xml:space="preserve">
     <value>Calibration pipeline: Raw Image → Dark Current → Defect Point → DSNU → Uniformity → Color Shift → Distortion → Corrected Image</value>
   </data>
-  <data name="DescriptionBindNDNote" xml:space="preserve">
-    <value>Uses device list for binding, not serial port parameters directly.</value>
-  </data>
-  <data name="DescriptionCFWChannelMapping" xml:space="preserve">
-    <value>Each column corresponds to an image channel, each row to a filter wheel port position.</value>
-  </data>
-  <data name="DescriptionCFWDisableNote" xml:space="preserve">
-    <value>Channel mapping will be cleared on save when disabled.</value>
-  </data>
+
+
+
   <data name="DescriptionCFWEnableNote" xml:space="preserve">
     <value>Configure serial port, wheel count and channel position mapping when enabled.</value>
   </data>
@@ -3356,9 +3054,7 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="DescriptionCalibrationEdit" xml:space="preserve">
     <value>Maintain camera calibration groups, upload calibration files, and select calibration resources for current group.</value>
   </data>
-  <data name="DescriptionCameraListSort" xml:space="preserve">
-    <value>Sort by device status, prioritize online cameras</value>
-  </data>
+
   <data name="DescriptionColorCalibration" xml:space="preserve">
     <value>Convert sensor grayscale/RGB to CIE XYZ tristimulus or absolute luminance Lv(cd/m²), four mutually exclusive modes below</value>
   </data>
@@ -3407,15 +3103,11 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="DescriptionSelectCameraType" xml:space="preserve">
     <value>Select camera model for online search</value>
   </data>
-  <data name="DescriptionSerialPortNote" xml:space="preserve">
-    <value>Shows serial port and baud rate when no ND device is bound.</value>
-  </data>
+
   <data name="DescriptionUniformityShort" xml:space="preserve">
     <value>Lens vignetting/response compensation</value>
   </data>
-  <data name="DetectingLocalRC" xml:space="preserve">
-    <value>Local RC config detected, starting</value>
-  </data>
+
   <data name="DeviceSerialNumber" xml:space="preserve">
     <value>Device serial number: {0}</value>
   </data>
@@ -3449,9 +3141,7 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="ExecuteSFR" xml:space="preserve">
     <value>Execute SFR</value>
   </data>
-  <data name="ExportSuccess" xml:space="preserve">
-    <value>Export Successful!</value>
-  </data>
+
   <data name="ExposureBLabel" xml:space="preserve">
     <value>Exposure B</value>
   </data>
@@ -3479,18 +3169,10 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="HeaderBasicCalibrationPipeline" xml:space="preserve">
     <value>Basic Calibration (executed in sequence)</value>
   </data>
-  <data name="HeaderCFWAdvancedParams" xml:space="preserve">
-    <value>CFW Advanced Parameters</value>
-  </data>
-  <data name="HeaderChannel1" xml:space="preserve">
-    <value>Channel 1</value>
-  </data>
-  <data name="HeaderChannel2" xml:space="preserve">
-    <value>Channel 2</value>
-  </data>
-  <data name="HeaderChannel3" xml:space="preserve">
-    <value>Channel 3</value>
-  </data>
+
+
+
+
   <data name="HeaderColorCalibrationMutual" xml:space="preserve">
     <value>Color Calibration (choose one of four, mutually exclusive)</value>
   </data>
@@ -3512,9 +3194,7 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="ImageFileCannotBeEmpty" xml:space="preserve">
     <value>Image file cannot be empty, select image first</value>
   </data>
-  <data name="ImageFileEmpty" xml:space="preserve">
-    <value>Image file cannot be empty, select image first</value>
-  </data>
+
   <data name="InvalidSerialPort" xml:space="preserve">
     <value>Serial port name {0} invalid or does not exist.
 
@@ -3526,246 +3206,104 @@ Please check serial port settings.</value>
   <data name="JsonConfig" xml:space="preserve">
     <value>JSON Configuration</value>
   </data>
-  <data name="Keithley2450MaxCurrent100mA" xml:space="preserve">
-    <value>Keithley 2450: when output voltage &gt;20V, max output current is 100mA. Please adjust measurement parameters and retry!</value>
-  </data>
-  <data name="Keithley2450MaxCurrent1A" xml:space="preserve">
-    <value>Keithley 2450: when output voltage &lt;20V, max output current is 1A. Please adjust measurement parameters and retry!</value>
-  </data>
-  <data name="Keithley2450MaxVoltage200V" xml:space="preserve">
-    <value>Keithley 2450: max output voltage is 200V. Please adjust measurement parameters and retry!</value>
-  </data>
-  <data name="Keithley2600MaxCurrent1A" xml:space="preserve">
-    <value>Keithley 2600: when output voltage &gt;6V, max output current is 1A. Please adjust measurement parameters and retry!</value>
-  </data>
-  <data name="Keithley2600MaxCurrent3A" xml:space="preserve">
-    <value>Keithley 2600: when output voltage &lt;6V, max output current is 3A. Please adjust measurement parameters and retry!</value>
-  </data>
-  <data name="Keithley2600MaxVoltage40V" xml:space="preserve">
-    <value>Keithley 2600: max output voltage is 40V. Please adjust measurement parameters and retry!</value>
-  </data>
-  <data name="LabelAutoFocusTemplate" xml:space="preserve">
-    <value>Auto Focus</value>
-  </data>
-  <data name="LabelBackupRestoreSection" xml:space="preserve">
-    <value>Backup and Restore</value>
-  </data>
-  <data name="LabelBasicCalibration" xml:space="preserve">
-    <value>Basic Calibration</value>
-  </data>
-  <data name="LabelBasicCalibrationHeader" xml:space="preserve">
-    <value>Basic Calibration (executed in sequence)</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
   <data name="LabelBindNDDevice" xml:space="preserve">
     <value>Bind ND Device</value>
   </data>
-  <data name="LabelBindNDHint" xml:space="preserve">
-    <value>Uses device list for binding, not serial port parameters directly.</value>
-  </data>
+
   <data name="LabelCFWConfig" xml:space="preserve">
     <value>CFW Configuration</value>
   </data>
-  <data name="LabelCFWDisabled" xml:space="preserve">
-    <value>CFW disabled</value>
-  </data>
-  <data name="LabelCFWDisabledSaveHint" xml:space="preserve">
-    <value>Channel mapping will be cleared on save when disabled.</value>
-  </data>
-  <data name="LabelCFWMatrixHint" xml:space="preserve">
-    <value>Each column corresponds to an image channel, each row to a filter wheel port position.</value>
-  </data>
-  <data name="LabelCFWNotEnabled" xml:space="preserve">
-    <value>CFW not enabled</value>
-  </data>
-  <data name="LabelCalcEQE" xml:space="preserve">
-    <value>Calculate EQE</value>
-  </data>
-  <data name="LabelCalibrationEditHint" xml:space="preserve">
-    <value>Maintain camera calibration groups, upload calibration files, and select calibration resources for current group.</value>
-  </data>
-  <data name="LabelCalibrationFileManagement" xml:space="preserve">
-    <value>Calibration File Management</value>
-  </data>
-  <data name="LabelCalibrationGroupHint" xml:space="preserve">
-    <value>Select calibration group then check calibration files for current camera processing chain.</value>
-  </data>
-  <data name="LabelCalibrationPipelineHint" xml:space="preserve">
-    <value>Calibration pipeline: Raw Image → Dark Current → Defect Point → DSNU → Uniformity → Color Shift → Distortion → Corrected Image</value>
-  </data>
-  <data name="LabelCalibrationSection" xml:space="preserve">
-    <value>Calibration</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
   <data name="LabelCameraConsole" xml:space="preserve">
     <value>Camera Console</value>
   </data>
-  <data name="LabelCameraList" xml:space="preserve">
-    <value>Camera List</value>
-  </data>
-  <data name="LabelCameraListHint" xml:space="preserve">
-    <value>Sort by device status, prioritize online cameras</value>
-  </data>
-  <data name="LabelCameraRunParams" xml:space="preserve">
-    <value>Camera Parameters</value>
-  </data>
+
+
+
   <data name="LabelCameraType" xml:space="preserve">
     <value>Camera Type</value>
   </data>
   <data name="LabelCamerasSuffix" xml:space="preserve">
     <value> cameras</value>
   </data>
-  <data name="LabelChannel1" xml:space="preserve">
-    <value>Channel 1</value>
-  </data>
-  <data name="LabelChannel2" xml:space="preserve">
-    <value>Channel 2</value>
-  </data>
-  <data name="LabelChannel3" xml:space="preserve">
-    <value>Channel 3</value>
-  </data>
-  <data name="LabelColorCalibration" xml:space="preserve">
-    <value>Color Correction</value>
-  </data>
-  <data name="LabelColorCalibrationDesc" xml:space="preserve">
-    <value>Convert sensor grayscale/RGB to CIE XYZ tristimulus or absolute luminance Lv(cd/m²), four mutually exclusive modes below</value>
-  </data>
-  <data name="LabelColorCalibrationHeader" xml:space="preserve">
-    <value>Color Calibration (choose one of four, mutually exclusive)</value>
-  </data>
-  <data name="LabelConfigInfo" xml:space="preserve">
-    <value>Configuration Information</value>
-  </data>
-  <data name="LabelConfigSection" xml:space="preserve">
-    <value>Configuration</value>
-  </data>
-  <data name="LabelCreateDeviceHint" xml:space="preserve">
-    <value>Complete basic parameters and filter wheel configuration after selecting camera to register.</value>
-  </data>
-  <data name="LabelCreateDeviceTitle" xml:space="preserve">
-    <value>Create Device</value>
-  </data>
-  <data name="LabelCropROI" xml:space="preserve">
-    <value>Crop ROI</value>
-  </data>
-  <data name="LabelDangerousOperations" xml:space="preserve">
-    <value>Dangerous Operations</value>
-  </data>
-  <data name="LabelDeviceManagementConsole" xml:space="preserve">
-    <value>Device Management Console</value>
-  </data>
-  <data name="LabelEditConfigTooltip" xml:space="preserve">
-    <value>Edit current camera configuration</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <data name="LabelEnableCFW" xml:space="preserve">
     <value>Enable CFW</value>
   </data>
-  <data name="LabelEnableCFWSerialHint" xml:space="preserve">
-    <value>Configure serial port, wheel count and channel position mapping when enabled.</value>
-  </data>
-  <data name="LabelEnableSerialPort" xml:space="preserve">
-    <value>Enable serial port transmission</value>
-  </data>
-  <data name="LabelEnterCurrent" xml:space="preserve">
-    <value>Enter current (mA):</value>
-  </data>
-  <data name="LabelEnterValidCurrent" xml:space="preserve">
-    <value>Please enter a valid current value.</value>
-  </data>
-  <data name="LabelEnterValidVoltage" xml:space="preserve">
-    <value>Please enter a valid voltage value.</value>
-  </data>
-  <data name="LabelEnterVoltage" xml:space="preserve">
-    <value>Enter voltage (V):</value>
-  </data>
-  <data name="LabelExportBatchID" xml:space="preserve">
-    <value>Batch ID</value>
-  </data>
-  <data name="LabelExportDataPoints" xml:space="preserve">
-    <value>Data Points</value>
-  </data>
-  <data name="LabelExportDataType" xml:space="preserve">
-    <value>Data Type</value>
-  </data>
-  <data name="LabelExportLimitValue" xml:space="preserve">
-    <value>Limit Value</value>
-  </data>
-  <data name="LabelExportMeasuredCurrent" xml:space="preserve">
-    <value>Measured Current (A)</value>
-  </data>
-  <data name="LabelExportMeasuredVoltage" xml:space="preserve">
-    <value>Measured Voltage (V)</value>
-  </data>
-  <data name="LabelExportMeasurementType" xml:space="preserve">
-    <value>Measurement Type</value>
-  </data>
-  <data name="LabelExportParamValue" xml:space="preserve">
-    <value>Parameter, Value</value>
-  </data>
-  <data name="LabelExportScanEnd" xml:space="preserve">
-    <value>Scan End Value</value>
-  </data>
-  <data name="LabelExportScanStart" xml:space="preserve">
-    <value>Scan Start Value</value>
-  </data>
-  <data name="LabelExportSeqVoltageCurrent" xml:space="preserve">
-    <value>Serial Number, Voltage(V), Current(A)</value>
-  </data>
-  <data name="LabelExportTime" xml:space="preserve">
-    <value>Create Time</value>
-  </data>
-  <data name="LabelFilterWheel1" xml:space="preserve">
-    <value>Filter Wheel 1</value>
-  </data>
-  <data name="LabelFilterWheel2" xml:space="preserve">
-    <value>Filter Wheel 2</value>
-  </data>
-  <data name="LabelFilterWheel3" xml:space="preserve">
-    <value>Filter Wheel 3</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <data name="LabelFilterWheelCount" xml:space="preserve">
     <value>Filter Wheel Count</value>
   </data>
-  <data name="LabelFrameCropROI" xml:space="preserve">
-    <value>Frame Crop ROI</value>
-  </data>
-  <data name="LabelJsonConfig" xml:space="preserve">
-    <value>JSON Configuration</value>
-  </data>
+
+
   <data name="LabelLicenseExpiredNotification" xml:space="preserve">
     <value>License expired notification</value>
   </data>
-  <data name="LabelLicenseSection" xml:space="preserve">
-    <value>License</value>
-  </data>
-  <data name="LabelLuminousEfficacy" xml:space="preserve">
-    <value>Luminous Efficacy (lm/W)</value>
-  </data>
-  <data name="LabelMeasurementTypeCurrent" xml:space="preserve">
-    <value>Current Source</value>
-  </data>
-  <data name="LabelMeasurementTypeVoltage" xml:space="preserve">
-    <value>Measurement Type: Voltage</value>
-  </data>
-  <data name="LabelResetFailed" xml:space="preserve">
-    <value>Cannot reset, check DB config</value>
-  </data>
+
+
+
+
+
   <data name="LabelResourceCount" xml:space="preserve">
     <value>Resource Count</value>
   </data>
-  <data name="LabelSelectCameraHint" xml:space="preserve">
-    <value>Select a physical camera from the left to view details and management operations</value>
-  </data>
-  <data name="LabelSerialPortHint" xml:space="preserve">
-    <value>Shows serial port and baud rate when no ND device is bound.</value>
-  </data>
-  <data name="LabelTools" xml:space="preserve">
-    <value>Tools</value>
-  </data>
-  <data name="LabelTotalCameras" xml:space="preserve">
-    <value>Total Cameras</value>
-  </data>
-  <data name="LabelTotalPrefix" xml:space="preserve">
-    <value>Total: </value>
-  </data>
+
+
+
+
+
   <data name="LimitEnd" xml:space="preserve">
     <value>End Value</value>
   </data>
@@ -3799,10 +3337,7 @@ Please check serial port settings.</value>
   <data name="MeasuredVoltageV" xml:space="preserve">
     <value>Measured Voltage (V)</value>
   </data>
-  <data name="MultipleDevicesDetected" xml:space="preserve">
-    <value>Detected {0} devices:
-{1}</value>
-  </data>
+
   <data name="NoAvailableCameraDevice" xml:space="preserve">
     <value>NoAvailableCameraDevice</value>
   </data>
@@ -3812,15 +3347,11 @@ Please check serial port settings.</value>
   <data name="NoDeviceDetected" xml:space="preserve">
     <value>NoDeviceDetected</value>
   </data>
-  <data name="NoDevicesDetected" xml:space="preserve">
-    <value>NoDevicesDetected</value>
-  </data>
+
   <data name="OpenCamera" xml:space="preserve">
     <value>Open Camera</value>
   </data>
-  <data name="OpenSMU" xml:space="preserve">
-    <value>Open SMU</value>
-  </data>
+
   <data name="OpenSourceMeter" xml:space="preserve">
     <value>Open Source Meter</value>
   </data>
@@ -3833,21 +3364,13 @@ Please check serial port settings.</value>
   <data name="PixelBits" xml:space="preserve">
     <value>PixelBits</value>
   </data>
-  <data name="PleaseConfigureDllFirst" xml:space="preserve">
-    <value>Configure associated DLL first</value>
-  </data>
-  <data name="PleaseSelectDataFirst" xml:space="preserve">
-    <value>PleaseSelectDataFirst</value>
-  </data>
+
+
   <data name="PortConfigError" xml:space="preserve">
     <value>PortConfigError</value>
   </data>
-  <data name="PreciseS100MaxCurrent1A" xml:space="preserve">
-    <value>Precise S100: when output voltage &lt;30V, max output current is 1A. Please adjust measurement parameters and retry!</value>
-  </data>
-  <data name="PreciseS100MaxVoltage30V" xml:space="preserve">
-    <value>Precise S100: max output voltage is 30V. Please adjust measurement parameters and retry!</value>
-  </data>
+
+
   <data name="RadiantFlux" xml:space="preserve">
     <value>RadiantFlux(W)</value>
   </data>
@@ -3884,9 +3407,7 @@ Please check serial port settings.</value>
   <data name="SMUPreciseS100MaxVoltage" xml:space="preserve">
     <value>Precise S100: max output voltage is 30V. Please adjust measurement parameters and retry!</value>
   </data>
-  <data name="SMUSwitch" xml:space="preserve">
-    <value>SMU Switch</value>
-  </data>
+
   <data name="SaveChart" xml:space="preserve">
     <value>Save Chart</value>
   </data>
@@ -3896,24 +3417,16 @@ Please check serial port settings.</value>
   <data name="SaveFile" xml:space="preserve">
     <value>Save File</value>
   </data>
-  <data name="SearchCameraType" xml:space="preserve">
-    <value>SearchCameraType</value>
-  </data>
-  <data name="SectionAdvancedConfig" xml:space="preserve">
-    <value>AdvancedConfig</value>
-  </data>
+
+
   <data name="SectionBackupRestore" xml:space="preserve">
     <value>BackupRestore</value>
   </data>
   <data name="SectionBasicCalibration" xml:space="preserve">
     <value>Calibration</value>
   </data>
-  <data name="SectionCFWAdvanced" xml:space="preserve">
-    <value>CFWAdvanced</value>
-  </data>
-  <data name="SectionCFWConfig" xml:space="preserve">
-    <value>CFW</value>
-  </data>
+
+
   <data name="SectionCameraList" xml:space="preserve">
     <value>SectionCameraList</value>
   </data>
@@ -3926,18 +3439,14 @@ Please check serial port settings.</value>
   <data name="SectionFileService" xml:space="preserve">
     <value>SectionFileService</value>
   </data>
-  <data name="SectionMotorParams" xml:space="preserve">
-    <value>SectionMotorParams</value>
-  </data>
+
   <data name="SectionParamLimits" xml:space="preserve">
     <value>SectionParamLimits</value>
   </data>
   <data name="SelectCalibrationFileFilter" xml:space="preserve">
     <value>Calibration File (*.cvcal;*.bin;*.json;*.txt;*.dat)|*.cvcal;*.bin;*.json;*.txt;*.dat|All Files (*.*)|*.*</value>
   </data>
-  <data name="SelectCameraModelForSearch" xml:space="preserve">
-    <value>Select camera model for online search</value>
-  </data>
+
   <data name="SelectCameraType" xml:space="preserve">
     <value>Please select camera type</value>
   </data>
@@ -3952,14 +3461,8 @@ Exception: {1}</value>
   <data name="SerialPortErrorTitle" xml:space="preserve">
     <value>SerialPortErrorTitle</value>
   </data>
-  <data name="SerialPortException" xml:space="preserve">
-    <value>Serial port {0} cannot be opened.
 
-Exception: {1}</value>
-  </data>
-  <data name="SerialPortExceptionTitle" xml:space="preserve">
-    <value>SerialPortExceptionTitle</value>
-  </data>
+
   <data name="SerialPortOccupied" xml:space="preserve">
     <value>Serial port {0} is occupied by another program.
 
@@ -3968,60 +3471,40 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SerialPortOccupiedTitle" xml:space="preserve">
     <value>SerialPortOccupiedTitle</value>
   </data>
-  <data name="ServiceAlreadyRunning" xml:space="preserve">
-    <value>RegistrationCenterService is already running.</value>
-  </data>
-  <data name="ServiceNotInstalled" xml:space="preserve">
-    <value>RegistrationCenterService not detected, please confirm correct installation.</value>
-  </data>
+
+
   <data name="SetCorrectParameters" xml:space="preserve">
     <value>Please set correct parameters!</value>
   </data>
   <data name="ShowCenterLine" xml:space="preserve">
     <value>Show Center Line</value>
   </data>
-  <data name="SkipRCConnection" xml:space="preserve">
-    <value>SkipRCConnection</value>
-  </data>
+
   <data name="SourceMeterSwitch" xml:space="preserve">
     <value>SourceMeterSwitch</value>
   </data>
-  <data name="StartupServiceFailed" xml:space="preserve">
-    <value>Failed to start RegistrationCenterService with administrator privileges.</value>
-  </data>
+
   <data name="SwapRB" xml:space="preserve">
     <value>Swap R/B</value>
   </data>
-  <data name="SzComId" xml:space="preserve">
-    <value>Serial Port ID</value>
-  </data>
+
   <data name="Temperature" xml:space="preserve">
     <value>Temperature</value>
   </data>
-  <data name="TemperatureAxisLabel" xml:space="preserve">
-    <value>Temperature (°C)</value>
-  </data>
-  <data name="TemperatureChart" xml:space="preserve">
-    <value>TemperatureChart</value>
-  </data>
+
+
   <data name="TemperatureChartTitle" xml:space="preserve">
     <value>TemperatureChartTitle</value>
   </data>
   <data name="TemperatureChartTitleWithDate" xml:space="preserve">
     <value>Temperature Chart - {0}</value>
   </data>
-  <data name="TemperatureLabel" xml:space="preserve">
-    <value>Temperature:</value>
-  </data>
+
   <data name="TemperatureUnit" xml:space="preserve">
     <value>°C</value>
   </data>
-  <data name="TemplateCalibrationFileRequired" xml:space="preserve">
-    <value>Using {0} template, confirm calibration file configured</value>
-  </data>
-  <data name="TemplateFileMissing" xml:space="preserve">
-    <value>Template file missing</value>
-  </data>
+
+
   <data name="TemplateFileNotExist" xml:space="preserve">
     <value>Using {0} template, {1} file does not exist</value>
   </data>
@@ -4034,18 +3517,12 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Time" xml:space="preserve">
     <value>Time</value>
   </data>
-  <data name="TimeLabel" xml:space="preserve">
-    <value>Time:</value>
-  </data>
-  <data name="TitleCacheManagement" xml:space="preserve">
-    <value>TitleCacheManagement</value>
-  </data>
+
+
   <data name="TitleCameraSearchResults" xml:space="preserve">
     <value>TitleCameraSearchResults</value>
   </data>
-  <data name="TitleCreateDevice" xml:space="preserve">
-    <value>TitleCreateDevice</value>
-  </data>
+
   <data name="TitleEditCameraConfig" xml:space="preserve">
     <value>TitleEditCameraConfig</value>
   </data>
@@ -4115,9 +3592,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="VoltageSource" xml:space="preserve">
     <value>Voltage Source</value>
   </data>
-  <data name="WindowCloseAfter1s" xml:space="preserve">
-    <value>WindowCloseAfter1s</value>
-  </data>
+
   <data name="Flow_ConfirmDeleteFlow" xml:space="preserve">
     <value>Confirm delete flow "{0}"?</value>
   </data>
@@ -4250,15 +3725,9 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve">
     <value>Batch {0} Results</value>
   </data>
-  <data name="Flow_Display_NoTemplateSelected" xml:space="preserve">
-    <value>No valid flow template selected</value>
-  </data>
-  <data name="Flow_Display_PreprocessFailed" xml:space="preserve">
-    <value>Pre-processing failed, flow execution cancelled</value>
-  </data>
-  <data name="Flow_Display_SelectTemplateFirst" xml:space="preserve">
-    <value>Please create the corresponding template first</value>
-  </data>
+
+
+
   <data name="Flow_MessageList_All" xml:space="preserve">
     <value>All</value>
   </data>
@@ -4445,15 +3914,9 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_FlowNotStartedMessage" xml:space="preserve">
     <value>Flow could not start: validation may have failed, flow is already running, or no template is selected</value>
   </data>
-  <data name="Flow_NoAvailableTemplates" xml:space="preserve">
-    <value>(No Available Templates)</value>
-  </data>
-  <data name="Flow_StartNodeNotFound" xml:space="preserve">
-    <value>Cannot find flow start node</value>
-  </data>
-  <data name="Flow_EndNodeNotFound" xml:space="preserve">
-    <value>Cannot find flow end node</value>
-  </data>
+
+
+
   <data name="Flow_NoPathFromStartToEnd" xml:space="preserve">
     <value>Cannot find valid path from start node to end node</value>
   </data>
@@ -4472,48 +3935,22 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_MessageList_ConfirmClearAll" xml:space="preserve">
     <value>Are you sure you want to clear all flow MQTT message records?</value>
   </data>
-  <data name="Flow_NodeAnalysis_ComparisonTitle" xml:space="preserve">
-    <value>Flow Node Comparison (Multi-batch)</value>
-  </data>
-  <data name="Flow_NodeAnalysis_ElapsedMsLabel" xml:space="preserve">
-    <value>Elapsed (ms)</value>
-  </data>
-  <data name="Flow_NodeAnalysis_ExportSuccess" xml:space="preserve">
-    <value>Export successful</value>
-  </data>
-  <data name="Flow_NodeAnalysis_TimeMs" xml:space="preserve">
-    <value>Time (ms)</value>
-  </data>
+
+
+
+
   <data name="Flow_NodeAnalysis_Timeout" xml:space="preserve">
     <value>Timeout</value>
   </data>
-  <data name="Flow_MeasureBatch_AllArchiveSent" xml:space="preserve">
-    <value>All archive commands sent</value>
-  </data>
-  <data name="Flow_MeasureBatch_ArchiveSent" xml:space="preserve">
-    <value>Archive command sent</value>
-  </data>
-  <data name="Flow_MeasureBatch_BatchResult" xml:space="preserve">
-    <value>Batch {0} Results</value>
-  </data>
-  <data name="Flow_MeasureBatch_Description" xml:space="preserve">
-    <value>Description:</value>
-  </data>
-  <data name="Flow_MeasureBatch_Name" xml:space="preserve">
-    <value>Name:</value>
-  </data>
-  <data name="Flow_MeasureBatch_NodeTimeAnalysis" xml:space="preserve">
-    <value>Node Time Analysis</value>
-  </data>
-  <data name="Flow_MeasureBatch_SelectProcessTypeLabel" xml:space="preserve">
-    <value>Select Process Type:</value>
-  </data>
-  <data name="Flow_MeasureBatch_SelectToViewConfig" xml:space="preserve">
-    <value>Select a process type to view config</value>
-  </data>
-  <data name="Flow_MeasureBatch_Title" xml:space="preserve">
-    <value>Flow Batch Configuration</value>
-  </data>
+
+
+
+
+
+
+
+
+
   <data name="Flow_NoEndNode" xml:space="preserve">
     <value>Flow end node not found</value>
   </data>
@@ -4523,51 +3960,21 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NoTemplateAvailable" xml:space="preserve">
     <value>(No templates available)</value>
   </data>
-  <data name="Flow_PreProcess_AutoSaved" xml:space="preserve">
-    <value>Auto-saved {0}</value>
-  </data>
-  <data name="Flow_PreProcess_BasicInfo" xml:space="preserve">
-    <value>Basic Info</value>
-  </data>
-  <data name="Flow_PreProcess_Close" xml:space="preserve">
-    <value>Close</value>
-  </data>
-  <data name="Flow_PreProcess_Config" xml:space="preserve">
-    <value>Pre-processor Config</value>
-  </data>
-  <data name="Flow_PreProcess_ConfigLoaded" xml:space="preserve">
-    <value>Config loaded {0}</value>
-  </data>
-  <data name="Flow_PreProcess_ConfigNotFound" xml:space="preserve">
-    <value>Config file not found</value>
-  </data>
-  <data name="Flow_PreProcess_Description" xml:space="preserve">
-    <value>Description:</value>
-  </data>
-  <data name="Flow_PreProcess_Disabled" xml:space="preserve">
-    <value>Disabled</value>
-  </data>
-  <data name="Flow_PreProcess_Enabled" xml:space="preserve">
-    <value>Enabled</value>
-  </data>
-  <data name="Flow_PreProcess_LoadFailed" xml:space="preserve">
-    <value>Failed to load config</value>
-  </data>
-  <data name="Flow_PreProcess_NotSaved" xml:space="preserve">
-    <value>Not saved yet</value>
-  </data>
-  <data name="Flow_PreProcess_ProcessClass" xml:space="preserve">
-    <value>Processor:</value>
-  </data>
-  <data name="Flow_PreProcess_SaveFailed" xml:space="preserve">
-    <value>Save failed, check log</value>
-  </data>
-  <data name="Flow_PreProcess_SelectProcessor" xml:space="preserve">
-    <value>Select a pre-processor to view config</value>
-  </data>
-  <data name="Flow_PreProcess_Type" xml:space="preserve">
-    <value>Type:</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <data name="Algorithm_AlgorithmCalls" xml:space="preserve">
     <value>Algorithm Calls</value>
   </data>
@@ -4583,12 +3990,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Erode" xml:space="preserve">
     <value>Erode</value>
   </data>
-  <data name="FilterDenoise" xml:space="preserve">
-    <value>Filter / Denoise</value>
-  </data>
-  <data name="ImageProcessing" xml:space="preserve">
-    <value>Image Processing</value>
-  </data>
+
+
   <data name="KernelSize" xml:space="preserve">
     <value>Kernel Size</value>
   </data>
@@ -4607,29 +4010,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="ThresholdProcessing" xml:space="preserve">
     <value>Threshold Processing</value>
   </data>
-  <data name="DownloadingOpenCvSharpFix" xml:space="preserve">
-    <value>Downloading OpenCvSharp fix patch...</value>
-  </data>
-  <data name="FixOpenCvSharpExportCrash" xml:space="preserve">
-    <value>Fix OpenCvSharp Export Crash</value>
-  </data>
-  <data name="OpenCvSharpFixBackupFailed" xml:space="preserve">
-    <value>Failed to backup existing DLL: {0}</value>
-  </data>
-  <data name="OpenCvSharpFixDllLocked" xml:space="preserve">
-    <value>DLL is locked and cannot be replaced. Please close ColorVision and try again.
 
-Error details: {0}</value>
-  </data>
-  <data name="OpenCvSharpFixFailed" xml:space="preserve">
-    <value>Fix patch installation failed: {0}</value>
-  </data>
-  <data name="OpenCvSharpFixSuccess" xml:space="preserve">
-    <value>Fix patch installed. Please restart ColorVision for changes to take effect.</value>
-  </data>
-  <data name="OpenCvSharpFixConfirmClose" xml:space="preserve">
-    <value>Fix patch downloaded. ColorVision will close to install the patch and restart automatically. Continue?</value>
-  </data>
+
+
+
+
+
+
   <data name="Engine_Msg_ConfigFileFormatError" xml:space="preserve">
     <value>Config file format error: {0}</value>
   </data>
@@ -4672,15 +4059,11 @@ Error details: {0}</value>
   <data name="Engine_Msg_LoadingResultTableStats" xml:space="preserve">
     <value>Failed to load result table stats: {0}</value>
   </data>
-  <data name="Engine_Msg_DataCleanupComplete" xml:space="preserve">
-    <value>Data table cleanup complete</value>
-  </data>
+
   <data name="Engine_Msg_CleanupHistoryFailed" xml:space="preserve">
     <value>Failed to cleanup history results: {0}</value>
   </data>
-  <data name="Engine_Msg_AllTablesCleared" xml:space="preserve">
-    <value>All data tables have been cleared.</value>
-  </data>
+
   <data name="Engine_Msg_ClearResultTablesFailed" xml:space="preserve">
     <value>Failed to clear result tables: {0}</value>
   </data>
@@ -4735,24 +4118,18 @@ Error details: {0}</value>
   <data name="Engine_Msg_NotSingleChannelImage" xml:space="preserve">
     <value>Cannot extract: the file is not a single-channel image.</value>
   </data>
-  <data name="Engine_Msg_TiffReadFailed" xml:space="preserve">
-    <value>File read failed or corrupted TIFF file.</value>
-  </data>
+
   <data name="Engine_Msg_UnsupportedFileType" xml:space="preserve">
     <value>Unsupported file type.</value>
   </data>
   <data name="Engine_Msg_ConvertToMatFailed" xml:space="preserve">
     <value>Failed to convert to Mat.</value>
   </data>
-  <data name="Engine_Msg_SaveSuccessTo" xml:space="preserve">
-    <value>Successfully saved to: {0}</value>
-  </data>
+
   <data name="Engine_Msg_ErrorWithDetail" xml:space="preserve">
     <value>An error occurred: {0}</value>
   </data>
-  <data name="Engine_Msg_FilePathEmpty" xml:space="preserve">
-    <value>Folder path cannot be empty</value>
-  </data>
+
   <data name="Engine_Dlg_ExportTemplate" xml:space="preserve">
     <value>Export Template</value>
   </data>
@@ -4774,9 +4151,7 @@ Error details: {0}</value>
   <data name="Engine_Dlg_SelectDatFile" xml:space="preserve">
     <value>Select DAT File to Read</value>
   </data>
-  <data name="Engine_Dlg_OpenFile" xml:space="preserve">
-    <value>Open File</value>
-  </data>
+
   <data name="Engine_PG_DecimalPlaces" xml:space="preserve">
     <value>Decimal Places</value>
   </data>
@@ -4786,15 +4161,11 @@ Error details: {0}</value>
   <data name="Engine_PG_PenThickness" xml:space="preserve">
     <value>Pen Thickness</value>
   </data>
-  <data name="Engine_PG_Render" xml:space="preserve">
-    <value>Render</value>
-  </data>
+
   <data name="Engine_PG_Tag" xml:space="preserve">
     <value>Tag</value>
   </data>
-  <data name="Engine_PG_TagDesc" xml:space="preserve">
-    <value>User-defined tag information</value>
-  </data>
+
   <data name="Engine_PG_CleanupFolder" xml:space="preserve">
     <value>Cleanup Folder</value>
   </data>
@@ -4825,24 +4196,16 @@ Error details: {0}</value>
   <data name="Engine_PG_ShowWindow" xml:space="preserve">
     <value>Show Window</value>
   </data>
-  <data name="Engine_PG_SaveCameraCsv" xml:space="preserve">
-    <value>Save Camera CSV</value>
-  </data>
-  <data name="Engine_PG_SaveSpectrumCsv" xml:space="preserve">
-    <value>Save Spectrum CSV</value>
-  </data>
+
+
   <data name="Engine_PG_ShowPlot" xml:space="preserve">
     <value>Show Plot</value>
   </data>
-  <data name="Engine_PG_MonitorFolder" xml:space="preserve">
-    <value>Monitor Folder</value>
-  </data>
+
   <data name="Engine_PG_TriggerSize" xml:space="preserve">
     <value>Trigger Size</value>
   </data>
-  <data name="Engine_PG_CleanupLimit" xml:space="preserve">
-    <value>Cleanup Limit</value>
-  </data>
+
   <data name="Engine_PG_ApplyTemplate" xml:space="preserve">
     <value>Apply Template</value>
   </data>
@@ -4858,9 +4221,7 @@ Error details: {0}</value>
   <data name="Engine_PG_RectHeight" xml:space="preserve">
     <value>Rectangle Height</value>
   </data>
-  <data name="Engine_PG_InputNorm" xml:space="preserve">
-    <value>Input Normalization</value>
-  </data>
+
   <data name="Engine_PG_MatrixXRow" xml:space="preserve">
     <value>Matrix X Row</value>
   </data>
@@ -4873,9 +4234,7 @@ Error details: {0}</value>
   <data name="Engine_PG_ShowRecordData" xml:space="preserve">
     <value>Show Record Data</value>
   </data>
-  <data name="Engine_PG_DataTemplate" xml:space="preserve">
-    <value>Data Display Template</value>
-  </data>
+
   <data name="Engine_PG_CameraSettings" xml:space="preserve">
     <value>Camera Settings</value>
   </data>
@@ -4885,9 +4244,7 @@ Error details: {0}</value>
   <data name="Engine_PG_CameraDeviceNameDesc" xml:space="preserve">
     <value>Enter the camera device name to use</value>
   </data>
-  <data name="Engine_PG_CameraTask" xml:space="preserve">
-    <value>Camera Task</value>
-  </data>
+
   <data name="Engine_PG_RegisterAddress" xml:space="preserve">
     <value>Register Address</value>
   </data>
@@ -4897,51 +4254,33 @@ Error details: {0}</value>
   <data name="Engine_PG_MaxIntegrationTime" xml:space="preserve">
     <value>Max Integration Time</value>
   </data>
-  <data name="Engine_PG_MaxAverageCount" xml:space="preserve">
-    <value>Max Average Count</value>
-  </data>
+
   <data name="Engine_PG_NegativeLuminanceGuard" xml:space="preserve">
     <value>Negative Luminance Guard</value>
   </data>
   <data name="Engine_PG_MinLuminanceValue" xml:space="preserve">
     <value>Min Luminance Value</value>
   </data>
-  <data name="Engine_PG_SpectrumSettings" xml:space="preserve">
-    <value>Spectrometer Settings</value>
-  </data>
-  <data name="Engine_PG_SpectrumDeviceName" xml:space="preserve">
-    <value>Spectrometer Device Name</value>
-  </data>
-  <data name="Engine_PG_SpectrumDeviceNameDesc" xml:space="preserve">
-    <value>Enter the spectrometer device name to use</value>
-  </data>
-  <data name="Engine_PG_SpectrumTask" xml:space="preserve">
-    <value>Spectrometer Single Test</value>
-  </data>
+
+
+
+
   <data name="Engine_PG_Voltage" xml:space="preserve">
     <value>Voltage</value>
   </data>
   <data name="Engine_PG_Current" xml:space="preserve">
     <value>Current</value>
   </data>
-  <data name="Engine_PG_LicenseNotify" xml:space="preserve">
-    <value>License Notification</value>
-  </data>
+
   <data name="Engine_PG_WarningDays" xml:space="preserve">
     <value>Warning Days</value>
   </data>
   <data name="Engine_PG_WarningDaysDesc" xml:space="preserve">
     <value>Days before license expiry to start warning</value>
   </data>
-  <data name="Engine_PG_HideExpiredPrompt" xml:space="preserve">
-    <value>Hide Expired License Prompt</value>
-  </data>
-  <data name="Engine_PG_HideExpiringPrompt" xml:space="preserve">
-    <value>Hide Expiring License Prompt</value>
-  </data>
-  <data name="Engine_PG_PoiTransform" xml:space="preserve">
-    <value>POI Transform</value>
-  </data>
+
+
+
   <data name="Engine_PG_XOffset" xml:space="preserve">
     <value>X Offset</value>
   </data>
@@ -4960,39 +4299,25 @@ Error details: {0}</value>
   <data name="Engine_PG_PositionOffset" xml:space="preserve">
     <value>Position Offset</value>
   </data>
-  <data name="Engine_PG_Scale" xml:space="preserve">
-    <value>Scale</value>
-  </data>
-  <data name="Engine_PG_Threshold" xml:space="preserve">
-    <value>Threshold</value>
-  </data>
+
+
   <data name="Engine_PG_Area" xml:space="preserve">
     <value>Area</value>
   </data>
-  <data name="Engine_PG_ShapeCircle" xml:space="preserve">
-    <value>Shape Circle</value>
-  </data>
-  <data name="Engine_PG_ShapeGap" xml:space="preserve">
-    <value>Shape Gap</value>
-  </data>
-  <data name="Engine_PG_ShapeEllipse" xml:space="preserve">
-    <value>Shape Ellipse</value>
-  </data>
+
+
+
   <data name="Engine_PG_Global" xml:space="preserve">
     <value>Global</value>
   </data>
-  <data name="Engine_PG_AutoEditSave" xml:space="preserve">
-    <value>Auto Edit Save Prompt</value>
-  </data>
+
   <data name="Engine_PG_FilePath" xml:space="preserve">
     <value>File Path</value>
   </data>
   <data name="Engine_PG_LocalImage" xml:space="preserve">
     <value>Local Image</value>
   </data>
-  <data name="Engine_PG_Diff" xml:space="preserve">
-    <value>Difference</value>
-  </data>
+
   <data name="Engine_PG_Ratio" xml:space="preserve">
     <value>Ratio</value>
   </data>
@@ -5008,9 +4333,7 @@ Error details: {0}</value>
   <data name="Engine_PG_BrightnessAndChroma" xml:space="preserve">
     <value>Brightness and Chroma</value>
   </data>
-  <data name="Engine_PG_BatchConfig" xml:space="preserve">
-    <value>Batch Configuration</value>
-  </data>
+
   <data name="Engine_Msg_ResultTableStatsLoaded" xml:space="preserve">
     <value>Loaded {0} cleanable result tables.</value>
   </data>
@@ -5050,12 +4373,8 @@ Error details: {0}</value>
   <data name="OriginalImage" xml:space="preserve">
     <value>Original Image</value>
   </data>
-  <data name="ColorSigma" xml:space="preserve">
-    <value>Color Sigma</value>
-  </data>
-  <data name="Iterations" xml:space="preserve">
-    <value>Iterations</value>
-  </data>
+
+
   <data name="ShowOnCieDiagram" xml:space="preserve">
     <value>Show on CIE Diagram</value>
   </data>
@@ -5398,18 +4717,10 @@ Error details: {0}</value>
   <data name="MacOrSn" xml:space="preserve">
     <value>MAC/SN</value>
   </data>
-  <data name="ObLeft" xml:space="preserve">
-    <value>Excluded left</value>
-  </data>
-  <data name="ObRight" xml:space="preserve">
-    <value>Excluded right</value>
-  </data>
-  <data name="ObTop" xml:space="preserve">
-    <value>Excluded top</value>
-  </data>
-  <data name="ObBottom" xml:space="preserve">
-    <value>Excluded bottom</value>
-  </data>
+
+
+
+
   <data name="Roi" xml:space="preserve">
     <value>ROI</value>
   </data>
@@ -5425,15 +4736,9 @@ Error details: {0}</value>
   <data name="RoiHeight" xml:space="preserve">
     <value>ROI height</value>
   </data>
-  <data name="EnableVidMapping" xml:space="preserve">
-    <value>Enable VID mapping</value>
-  </data>
-  <data name="MappingFile" xml:space="preserve">
-    <value>Mapping file</value>
-  </data>
-  <data name="FitOrder" xml:space="preserve">
-    <value>Fit order</value>
-  </data>
+
+
+
   <data name="MvsLogViewerNotFound" xml:space="preserve">
     <value>MVS LogViewer not found at the expected location.</value>
   </data>
@@ -5472,5 +4777,14 @@ Error details: {0}</value>
   </data>
   <data name="SerialPortOpenFailedDetail" xml:space="preserve">
     <value>Unable to open port: {0}</value>
+  </data>
+  <data name="ProcessClass" xml:space="preserve">
+    <value>Process Class</value>
+  </data>
+  <data name="ResetDatabase" xml:space="preserve">
+    <value>Reset Database</value>
+  </data>
+  <data name="DataCleanup" xml:space="preserve">
+    <value>Data Cleanup</value>
   </data>
 </root>
