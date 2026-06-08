@@ -18,20 +18,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
-    /// <summary>
-    /// Menu item to open Licenses Manager
-    /// </summary>
-    public class ExportLicenseManager : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => Properties.Resources.LicenseManager;
-        public override int Order => 3;
-
-        public override void Execute()
-        {
-            new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
-        }
-    }
 
     public class LicenseManagerViewModel : ViewModelBase
     {

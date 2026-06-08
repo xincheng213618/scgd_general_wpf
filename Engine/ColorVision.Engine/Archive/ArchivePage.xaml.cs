@@ -185,10 +185,6 @@ namespace ColorVision.Engine.Archive.Dao
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
                 });
-
-                //GenericQuery<ArchivedMasterModel> genericQuery = new GenericQuery<ArchivedMasterModel>(DB, ViewResults);
-                //GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
-                //genericQueryWindow.ShowDialog();
             }
 
 
