@@ -56,6 +56,10 @@ namespace ColorVision.Engine.Services
                             foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
                             _msgRecords.Remove(foundMsgRecord);
                         }
+                        else
+                        {
+                            log.Debug($"Received MQTT response but no pending MsgRecord matched. Topic:{SubscribeTopic}, MsgID:{json.MsgID}, EventName:{json.EventName}, DeviceCode:{json.DeviceCode}");
+                        }
                     }
                     MsgReturnReceived?.Invoke(json);
                 }
@@ -96,17 +100,7 @@ namespace ColorVision.Engine.Services
 
             string json = JsonConvert.SerializeObject(msg, Formatting.None);
 
-            _ = MQTTControl.PublishAsyncClient(SendTopic, json, false);
-
-
             MsgRecord msgRecord = new() { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Sended };
-            _msgRecords.Add(msgRecord);
-
-            Task.Run(() =>
-            {
-                MsgRecordDataBaseHelper.Insert(msgRecord);
-            });
-
             var timer = new Timer(timeout)
             {
                 AutoReset = false,
@@ -125,9 +119,17 @@ namespace ColorVision.Engine.Services
             };
             lock (_locker)
             {
+                _msgRecords.Add(msgRecord);
                 _msgTimers.Add(msg.MsgID, timer);
             }
+
+            Task.Run(() =>
+            {
+                MsgRecordDataBaseHelper.Insert(msgRecord);
+            });
+
             timer.Start();
+            _ = MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return msgRecord;
         }
 

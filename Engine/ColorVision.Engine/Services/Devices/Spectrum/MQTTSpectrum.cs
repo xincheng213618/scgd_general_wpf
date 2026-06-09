@@ -43,6 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public MQTTSpectrum(DeviceSpectrum DeviceSpectrum) : base(DeviceSpectrum.Config)
         {
             this.Device = DeviceSpectrum;
+            MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 
@@ -174,8 +175,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    log.Error(ex);
                     return Task.CompletedTask;
                 }
             }

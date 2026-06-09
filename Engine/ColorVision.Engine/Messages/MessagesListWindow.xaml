@@ -40,6 +40,7 @@
                     <Button Content="{x:Static properties:Resources.Inquire}" Command="{Binding QueryCommand}" Margin="2,0,0,0" ToolTip="{x:Static properties:Resources.Inquire}"/>
                     <Button Content="{x:Static properties:Resources.AdvanceSearch}" Command="{Binding GenericQueryCommand}" Margin="2,0,0,0"/>
                     <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding ReloadCommand}" Margin="2,0,0,0" ToolTip="{x:Static properties:Resources.Refresh}"/>
+                    <Button Content="MQTT" Click="Button_Click_MqttStatus" Margin="2,0,0,0" ToolTip="MQTT subscriptions and traces"/>
                     <Separator/>
                     <Button Content="{x:Static properties:Resources.Flow_MessageList_ClearRecords}" Command="{Binding DeleteAllCommand}" Margin="2,0,0,0" ToolTip="{x:Static properties:Resources.Flow_MessageList_ClearRecords}" Foreground="#E53935"/>
                     <Button Content="{x:Static properties:Resources.ResetDatabase}" Command="{Binding ResetDatabaseCommand}" Margin="2,0,0,0" ToolTip="{x:Static properties:Resources.ResetDatabase}" Foreground="#E53935"/>
