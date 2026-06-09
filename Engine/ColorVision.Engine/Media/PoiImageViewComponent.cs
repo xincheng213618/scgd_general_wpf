@@ -5,7 +5,6 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -48,34 +47,16 @@ namespace ColorVision.Engine.Media
             SelectionChangedEventHandler? selectionChangedHandler = null;
             int loadVersion = 0;
 
-            imageView.ImageShow.ImageInitialized += (_, _) => RefreshPoiTemplateUi();
-            imageView.Config.Cleared += (_, _) =>
+            imageView.Dispatcher.BeginInvoke(() =>
             {
                 if (!GetIsTemplateSelectorEnabled(imageView))
                 {
-                    return;
-                }
-
-                ClearDrawingVisuals();
-                RemovePoiTemplateUi(clearSelection: false);
-            };
-
-            void RefreshPoiTemplateUi()
-            {
-                if (!GetIsTemplateSelectorEnabled(imageView))
-                {
-                    return;
-                }
-
-                if (!IsPoiTemplateSupported(imageView))
-                {
-                    RemovePoiTemplateUi(clearSelection: true);
                     return;
                 }
 
                 EnsurePoiTemplateUi();
                 LoadTemplatesAsync(++loadVersion);
-            }
+            });
 
             void EnsurePoiTemplateUi()
             {
@@ -96,35 +77,6 @@ namespace ColorVision.Engine.Media
                 selectionChangedHandler = (_, _) => ApplySelectedTemplate(imageView, poiTemplateComboBox, ClearDrawingVisuals);
                 poiTemplateComboBox.SelectionChanged += selectionChangedHandler;
                 imageView.ToolBarAl.Items.Add(poiTemplateComboBox);
-            }
-
-            void RemovePoiTemplateUi(bool clearSelection)
-            {
-                loadVersion++;
-                ClearDrawingVisuals();
-                if (clearSelection)
-                {
-                    imageView.Config.SetViewState(SelectedTemplateRuntimeKey, null, nameof(PoiImageViewComponent), "当前选择的 POI 模板");
-                }
-
-                if (poiTemplateComboBox == null)
-                {
-                    return;
-                }
-
-                if (selectionChangedHandler != null)
-                {
-                    poiTemplateComboBox.SelectionChanged -= selectionChangedHandler;
-                }
-
-                if (imageView.ToolBarAl.Items.Contains(poiTemplateComboBox))
-                {
-                    imageView.ToolBarAl.Items.Remove(poiTemplateComboBox);
-                }
-
-                poiTemplateComboBox.ItemsSource = null;
-                poiTemplateComboBox = null;
-                selectionChangedHandler = null;
             }
 
             void ClearDrawingVisuals()
@@ -154,7 +106,7 @@ namespace ColorVision.Engine.Media
 
             void PopulateTemplates(int version)
             {
-                if (version != loadVersion || poiTemplateComboBox == null || !IsPoiTemplateSupported(imageView))
+                if (version != loadVersion || poiTemplateComboBox == null)
                 {
                     return;
                 }
@@ -168,21 +120,6 @@ namespace ColorVision.Engine.Media
                 poiTemplateComboBox.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 poiTemplateComboBox.SelectedIndex = 0;
             }
-        }
-
-        private static bool IsPoiTemplateSupported(string? filePath)
-        {
-            if (string.IsNullOrWhiteSpace(filePath)) return false;
-
-            string extension = Path.GetExtension(filePath);
-            return extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase) ||
-                   extension.Equals(".cvcie", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsPoiTemplateSupported(ImageView imageView)
-        {
-            return imageView.Config.GetProperties<bool>(IsTemplateSupportedRuntimeKey)
-                || IsPoiTemplateSupported(imageView.Config.FilePath);
         }
 
         private static void ApplySelectedTemplate(ImageView imageView, ComboBox comboBox, Action clearDrawingVisuals)
