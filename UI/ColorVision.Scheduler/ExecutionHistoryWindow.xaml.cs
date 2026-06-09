@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using ColorVision.Scheduler.Data;
 using ColorVision.Themes;
 using System.Windows;

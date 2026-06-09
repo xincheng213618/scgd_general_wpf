@@ -1,3 +1,4 @@
+#pragma warning disable CA1510
 using System;
 using System.Windows;
 using System.Windows.Controls;

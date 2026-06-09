@@ -1,3 +1,4 @@
+#pragma warning disable CS8603
 using ColorVision.SocketProtocol;
 using log4net;
 using System.Net.Sockets;

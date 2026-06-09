@@ -1,3 +1,4 @@
+#pragma warning disable CS8603,CS8625
 using ColorVision.Database;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

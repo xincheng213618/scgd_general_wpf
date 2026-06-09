@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;

@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿#pragma warning disable CS8625
+using ColorVision.UI;
 using System.Windows;
 
 namespace ProjectLUX.PluginConfig

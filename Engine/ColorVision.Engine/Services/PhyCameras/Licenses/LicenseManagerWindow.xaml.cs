@@ -1,3 +1,4 @@
+#pragma warning disable CA1805,CA1806,CA1822,CA1863,CS0219
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Themes;

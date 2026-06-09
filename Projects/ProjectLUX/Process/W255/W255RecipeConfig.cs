@@ -1,4 +1,5 @@
-﻿
+﻿#pragma warning disable CA1707
+
 using ColorVision.Common.MVVM;
 using ProjectLUX.Recipe;
 using System.ComponentModel;

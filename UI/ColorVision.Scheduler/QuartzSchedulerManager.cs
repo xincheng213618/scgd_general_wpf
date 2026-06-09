@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1863
+using ColorVision.Common.MVVM;
 using ColorVision.Scheduler.Data;
 using ColorVision.UI;
 using log4net;

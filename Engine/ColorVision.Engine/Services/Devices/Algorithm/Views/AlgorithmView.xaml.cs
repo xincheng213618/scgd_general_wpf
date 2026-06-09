@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1822,CS8604,CS8622,CS8625
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.EditorTools.Filters;

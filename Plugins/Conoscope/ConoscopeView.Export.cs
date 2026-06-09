@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using ColorVision.UI;
 using Conoscope.Core;
 using Conoscope.Presentation.Helpers;

@@ -1,4 +1,5 @@
-﻿using ColorVision.Solution.Explorer;
+﻿#pragma warning disable CA1868
+using ColorVision.Solution.Explorer;
 using System.Globalization;
 using System.IO;
 using System.Windows;

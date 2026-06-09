@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.ThirdPartyApps;
+﻿#pragma warning disable CA1861
+using ColorVision.Common.ThirdPartyApps;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;

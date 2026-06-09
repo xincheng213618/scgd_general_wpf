@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS4014
+using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using System.Collections.ObjectModel;
 using System.Windows;

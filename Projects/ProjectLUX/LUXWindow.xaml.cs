@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1805,CA1822,CS0168,CS0219,CS4014,CS8601
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Batch;

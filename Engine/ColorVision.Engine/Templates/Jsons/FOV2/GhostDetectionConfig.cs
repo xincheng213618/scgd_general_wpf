@@ -1,4 +1,5 @@
-﻿
+﻿#pragma warning disable CA1707
+
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
     public enum Pattern

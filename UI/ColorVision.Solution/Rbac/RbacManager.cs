@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1822,CS4014
+using ColorVision.Common.MVVM;
 using ColorVision.Rbac.Services;
 using ColorVision.Rbac.Services.Auth;
 using ColorVision.Rbac.Security;

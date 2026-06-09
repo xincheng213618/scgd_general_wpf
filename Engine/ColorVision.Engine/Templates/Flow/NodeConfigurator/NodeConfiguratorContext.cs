@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;

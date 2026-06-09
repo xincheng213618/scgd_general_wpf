@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CA1725
+using ColorVision.Database;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;

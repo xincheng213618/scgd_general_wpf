@@ -1,3 +1,4 @@
+#pragma warning disable CA2255
 using System.Resources;
 using System.Runtime.CompilerServices;
 using ST.Library.UI;

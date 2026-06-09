@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1051,CA1707,CA1863
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;

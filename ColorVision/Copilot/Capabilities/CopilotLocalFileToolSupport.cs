@@ -1,3 +1,4 @@
+#pragma warning disable CA2016,CA2024
 using System;
 using System.Collections.Generic;
 using System.IO;

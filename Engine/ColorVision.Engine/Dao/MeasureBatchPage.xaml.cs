@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CA1001,CA1863
+using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System;

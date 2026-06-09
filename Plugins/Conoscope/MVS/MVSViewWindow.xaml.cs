@@ -1,4 +1,5 @@
-﻿using ColorVision.ImageEditor;
+﻿#pragma warning disable CA1805,CA1822,CS8602,CS8622,CS8625
+using ColorVision.ImageEditor;
 using ColorVision.UI.Menus;
 using log4net;
 using MvCamCtrl.NET;

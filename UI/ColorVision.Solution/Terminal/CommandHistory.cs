@@ -1,3 +1,4 @@
+#pragma warning disable CA1310
 using log4net;
 using System.IO;
 using System.Text.RegularExpressions;

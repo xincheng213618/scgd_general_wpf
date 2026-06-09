@@ -1,3 +1,4 @@
+#pragma warning disable CS8602
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;

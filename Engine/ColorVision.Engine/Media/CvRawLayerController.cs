@@ -1,3 +1,4 @@
+#pragma warning disable CA1859,CS8604
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;

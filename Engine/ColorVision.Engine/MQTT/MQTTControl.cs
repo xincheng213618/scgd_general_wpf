@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1822,CS8603
+using ColorVision.Common.MVVM;
 using log4net;
 using MQTTnet;
 using System;

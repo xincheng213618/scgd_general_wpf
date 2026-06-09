@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using ColorVision.Properties;
 using ColorVision.UI.Menus;
 using log4net;

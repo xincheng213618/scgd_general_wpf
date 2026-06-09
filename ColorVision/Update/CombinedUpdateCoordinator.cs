@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;

@@ -1,4 +1,5 @@
-﻿
+﻿#pragma warning disable CA2016
+
 using ColorVision.Scheduler.Data;
 using log4net;
 using Quartz;

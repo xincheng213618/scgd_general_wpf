@@ -1,3 +1,4 @@
+#pragma warning disable CA1859
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;

@@ -1,3 +1,4 @@
+#pragma warning disable CS8622
 using ColorVision.UI;
 using ColorVision.SocketProtocol;
 using log4net;

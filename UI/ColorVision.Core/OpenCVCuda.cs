@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿#pragma warning disable CA1401,CA1707,CA2101
+using System.Runtime.InteropServices;
 
 namespace ColorVision.Core
 {

@@ -1,3 +1,4 @@
+#pragma warning disable CA1707,CA1826,CA1861
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System;

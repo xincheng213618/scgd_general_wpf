@@ -1,4 +1,5 @@
-﻿using ProjectARVRPro.Process;
+﻿#pragma warning disable CS0168
+using ProjectARVRPro.Process;
 using System.Collections;
 using System.ComponentModel;
 using System.IO;

@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CS0168
+using ColorVision.Database;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using NPOI.SS.Formula.Functions;

@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using ColorVision.Solution.Editor.AvalonEditor;
 using iText.Kernel.Pdf;
 using iText.Layout;

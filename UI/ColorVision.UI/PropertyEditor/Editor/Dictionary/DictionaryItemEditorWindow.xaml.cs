@@ -1,4 +1,4 @@
-#pragma warning disable CS8604
+#pragma warning disable CA1863,CS8604
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;

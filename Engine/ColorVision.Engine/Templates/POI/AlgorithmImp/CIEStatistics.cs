@@ -1,3 +1,4 @@
+#pragma warning disable CA1859,CA2249
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8603,CS8604
+﻿#pragma warning disable CA1304,CA1822,CA1854,CS8602,CS8603,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;

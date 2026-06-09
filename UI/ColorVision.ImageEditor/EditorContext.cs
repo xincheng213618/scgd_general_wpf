@@ -1,3 +1,4 @@
+#pragma warning disable CA1859
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;

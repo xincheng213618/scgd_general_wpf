@@ -1,3 +1,4 @@
+#pragma warning disable CA1854
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;

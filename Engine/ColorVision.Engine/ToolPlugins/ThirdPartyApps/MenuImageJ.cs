@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1401,CA1806,CA1838,CA2101
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.ToolPlugins.ThirdPartyApps;

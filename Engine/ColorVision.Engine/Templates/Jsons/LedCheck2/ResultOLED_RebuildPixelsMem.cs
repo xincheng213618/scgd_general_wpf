@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602
+﻿#pragma warning disable CA1707,CA1725,CS8601,CS8602
 
 using ColorVision.Database;
 using ColorVision.Engine.Services;

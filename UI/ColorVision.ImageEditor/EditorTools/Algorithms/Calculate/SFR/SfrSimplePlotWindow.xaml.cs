@@ -1,3 +1,4 @@
+#pragma warning disable CA1805,CA1854
 using Microsoft.Win32;
 using System;
 using System.IO;

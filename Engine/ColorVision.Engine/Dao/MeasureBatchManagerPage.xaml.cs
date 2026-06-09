@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1863,CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.Services.RC;

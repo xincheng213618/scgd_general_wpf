@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.FileIO;

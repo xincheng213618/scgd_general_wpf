@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CA1720
+using ColorVision.Database;
 using SqlSugar;
 using System;
 using System.ComponentModel;

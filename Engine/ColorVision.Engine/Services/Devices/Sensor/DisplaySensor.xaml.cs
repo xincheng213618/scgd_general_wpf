@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Messages;
+﻿#pragma warning disable CA1816,CA1863
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;

@@ -1,3 +1,4 @@
+#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;

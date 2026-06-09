@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Media;

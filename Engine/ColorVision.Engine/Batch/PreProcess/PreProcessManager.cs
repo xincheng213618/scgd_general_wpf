@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1852,CS8601,CS8604,CS8621,CS8714
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using FlowEngineLib.Base;

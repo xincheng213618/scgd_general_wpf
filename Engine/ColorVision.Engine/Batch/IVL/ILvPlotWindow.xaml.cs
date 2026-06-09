@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.SMU.Dao;
+﻿#pragma warning disable CA1805,CA1852,CA1854,CS8602,CS8604,CS8625
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;

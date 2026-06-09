@@ -1,3 +1,4 @@
+#pragma warning disable CA1707,CA1822,CA1852
 namespace ColorVision.UI.Tests
 {
     /// <summary>

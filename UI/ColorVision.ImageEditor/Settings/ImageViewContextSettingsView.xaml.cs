@@ -1,4 +1,5 @@
-﻿using ColorVision.ImageEditor.Properties;
+﻿#pragma warning disable CA1863
+using ColorVision.ImageEditor.Properties;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -1,3 +1,4 @@
+#pragma warning disable CA1707,CA1852
 using System.ComponentModel;
 using ColorVision.UI.PropertyEditor.Editor.List;
 

@@ -1,3 +1,4 @@
+#pragma warning disable CA1707,CA1852
 using System.ComponentModel;
 
 namespace ColorVision.UI.Tests;

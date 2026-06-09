@@ -1,4 +1,5 @@
-﻿using ColorVision.Core;
+﻿#pragma warning disable CA1859
+using ColorVision.Core;
 using System;
 using System.Collections.Generic;
 using System.Windows.Media.Imaging;

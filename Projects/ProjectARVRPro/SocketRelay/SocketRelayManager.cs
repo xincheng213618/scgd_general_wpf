@@ -1,3 +1,4 @@
+#pragma warning disable CA1001,CA1822,CS0169,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;

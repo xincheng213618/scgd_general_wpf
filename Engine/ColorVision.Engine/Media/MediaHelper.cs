@@ -1,4 +1,5 @@
-﻿using ColorVision.Core;
+﻿#pragma warning disable CS8603
+using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
 using log4net;

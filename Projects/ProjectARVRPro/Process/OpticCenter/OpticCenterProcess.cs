@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CS8601,CS8602
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel

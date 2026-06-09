@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿#pragma warning disable CS8601,CS8604
+using log4net;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;

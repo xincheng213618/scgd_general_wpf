@@ -1,3 +1,4 @@
+#pragma warning disable CS8603,CS8622
 using ColorVision.UI;
 using System;
 using System.ComponentModel;

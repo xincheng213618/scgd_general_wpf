@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8622
+using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Windows;

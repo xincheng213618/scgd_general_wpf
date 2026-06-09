@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using ColorVision.UI.Json;
 using Newtonsoft.Json;
 using System.Windows.Media;

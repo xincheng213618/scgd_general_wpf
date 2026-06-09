@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Templates.SFR;
+﻿#pragma warning disable CA1805,CS8604
+using ColorVision.Engine.Templates.SFR;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using ScottPlot.Plottables;

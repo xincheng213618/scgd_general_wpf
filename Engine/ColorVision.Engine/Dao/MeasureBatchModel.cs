@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CA1822
+using ColorVision.Database;
 using ColorVision.Engine.Templates.Flow;
 using SqlSugar;
 using System;

@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS0067,CS4014
+using ColorVision.Common.MVVM;
 using log4net;
 using NModbus;
 using System.Net.Sockets;

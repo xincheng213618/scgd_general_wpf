@@ -1,3 +1,4 @@
+#pragma warning disable CA1863,CS8601
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;

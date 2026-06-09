@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8603
+using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 
 namespace ProjectARVRPro.Process

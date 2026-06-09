@@ -1,3 +1,4 @@
+#pragma warning disable CS8604
 using Conoscope.Core;
 using Conoscope.Processing.Preprocess;
 using log4net;

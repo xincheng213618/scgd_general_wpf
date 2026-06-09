@@ -1,3 +1,4 @@
+#pragma warning disable CA1806,CS0414
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
 using log4net;

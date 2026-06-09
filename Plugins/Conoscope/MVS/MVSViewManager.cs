@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1707,CA1712,CA1822
+using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;

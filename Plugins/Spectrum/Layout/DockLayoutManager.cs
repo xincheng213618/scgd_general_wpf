@@ -1,3 +1,4 @@
+#pragma warning disable CA1852
 using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;

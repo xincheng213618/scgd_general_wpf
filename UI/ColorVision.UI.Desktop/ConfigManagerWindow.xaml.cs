@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1304,CA1311,CA1805,CA1822,CA1860,CA1862,CS8601,CS8604,CS8625
+﻿#pragma warning disable CA1304,CA1311,CA1805,CA1822,CA1860,CA1862,CA1863,CS8601,CS8604,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Menus;

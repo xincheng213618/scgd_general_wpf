@@ -1,3 +1,4 @@
+#pragma warning disable CA1001,CA1822,CA1861,CA1870,CS4014
 using ColorVision.Solution;
 using ColorVision.Solution.Workspace;
 using ColorVision.Copilot.Mcp;

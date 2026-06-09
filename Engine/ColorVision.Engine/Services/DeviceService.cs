@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604,CS8631
+﻿#pragma warning disable CA1859,CS8604,CS8631
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Cache;

@@ -1,3 +1,4 @@
+#pragma warning disable CS0672,WFDEV004
 using System;
 using System.ComponentModel;
 using System.Drawing;

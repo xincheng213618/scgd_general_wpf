@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MQTT;
+﻿#pragma warning disable CS8604
+using ColorVision.Engine.MQTT;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;

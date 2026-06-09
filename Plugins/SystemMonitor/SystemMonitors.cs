@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1863
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.CUDA;
 using System;

@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using System.Text;
 
 namespace ColorVision.Solution.Terminal

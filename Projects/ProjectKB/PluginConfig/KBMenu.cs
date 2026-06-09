@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿#pragma warning disable CS8625
+using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ProjectKB.PluginConfig

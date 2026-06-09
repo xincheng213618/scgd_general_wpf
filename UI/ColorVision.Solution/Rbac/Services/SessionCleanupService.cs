@@ -1,3 +1,4 @@
+#pragma warning disable CA1805
 namespace ColorVision.Rbac.Services
 {
     /// <summary>

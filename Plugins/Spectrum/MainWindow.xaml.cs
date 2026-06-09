@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CS8625
 using AvalonDock.Layout;
 using ColorVision.ImageEditor.Cie;
 using ColorVision.Common.MVVM;

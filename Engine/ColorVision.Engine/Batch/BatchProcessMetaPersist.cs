@@ -1,4 +1,5 @@
-﻿namespace ColorVision.Engine.Batch
+﻿#pragma warning disable CA1852
+namespace ColorVision.Engine.Batch
 {
     internal class BatchProcessMetaPersist
     {

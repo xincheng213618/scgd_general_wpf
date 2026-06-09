@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes;
+﻿#pragma warning disable CS8625
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;

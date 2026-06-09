@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.ThirdPartyApps;
+﻿#pragma warning disable CA1822,CA1863
+using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using Microsoft.Win32;

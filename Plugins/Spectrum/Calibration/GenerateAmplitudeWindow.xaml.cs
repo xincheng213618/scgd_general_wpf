@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿#pragma warning disable CA1822,CS0618
+using ColorVision.UI.Menus;
 using ScottPlot;
 using Spectrum.Menus;
 using System.Windows;

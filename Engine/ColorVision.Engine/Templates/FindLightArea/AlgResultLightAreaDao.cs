@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Algorithms;
+﻿#pragma warning disable CA1725
+using ColorVision.Common.Algorithms;
 using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using SqlSugar;

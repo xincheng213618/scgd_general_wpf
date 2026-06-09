@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Messages;
+﻿#pragma warning disable CS0168
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;

@@ -1,4 +1,5 @@
-﻿using ColorVision.Solution.Editor;
+﻿#pragma warning disable CA1860,CS8601
+using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using System.IO;
 using System.Reflection;

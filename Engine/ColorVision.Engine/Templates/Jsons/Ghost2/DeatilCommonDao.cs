@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿#pragma warning disable CS8601
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
 

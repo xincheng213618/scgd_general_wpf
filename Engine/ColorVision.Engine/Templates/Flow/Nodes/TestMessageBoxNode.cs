@@ -1,3 +1,4 @@
+#pragma warning disable CA1861
 using ColorVision.Database;
 using ColorVision.FileIO;
 using FlowEngineLib;

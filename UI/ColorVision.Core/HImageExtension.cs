@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CA1863
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;

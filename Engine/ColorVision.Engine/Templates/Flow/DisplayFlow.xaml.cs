@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602,CS8603,CS8601
+﻿#pragma warning disable CS4014,CS8601,CS8602,CS8603,CS8625
 using ColorVision.Database;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.Services.Flow;

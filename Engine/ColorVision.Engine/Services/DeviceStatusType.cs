@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Utilities;
+﻿#pragma warning disable CA1707
+using ColorVision.Engine.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using ColorVision.Engine.Properties;

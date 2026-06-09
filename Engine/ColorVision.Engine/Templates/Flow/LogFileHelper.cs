@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8603
+using System;
 using System.IO;
 using System.Linq;
 

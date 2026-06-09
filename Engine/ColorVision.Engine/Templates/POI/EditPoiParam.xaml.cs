@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625,CS8604,CS8602
+﻿#pragma warning disable CA1805,CS0414,CS8601,CS8602,CS8604,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;

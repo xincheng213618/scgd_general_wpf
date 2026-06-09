@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CS8602
 using AvalonDock.Layout;
 using AvalonDock.Themes.VS2013.Themes;
 using ColorVision.Common.Utilities;

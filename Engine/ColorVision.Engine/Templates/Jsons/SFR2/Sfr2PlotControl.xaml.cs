@@ -1,3 +1,4 @@
+#pragma warning disable CS8604,CS8625
 using ScottPlot;
 using ScottPlot.Palettes;
 using ScottPlot.Plottables;

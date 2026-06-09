@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;

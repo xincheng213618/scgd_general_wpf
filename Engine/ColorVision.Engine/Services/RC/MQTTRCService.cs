@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MQTT;
+﻿#pragma warning disable CS8602
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;

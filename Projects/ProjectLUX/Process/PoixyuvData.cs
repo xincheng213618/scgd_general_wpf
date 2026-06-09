@@ -1,3 +1,4 @@
+#pragma warning disable CA1708
 namespace ProjectLUX.Process
 {
     public class PoixyuvData

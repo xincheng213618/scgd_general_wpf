@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1863
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;

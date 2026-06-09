@@ -1,3 +1,4 @@
+#pragma warning disable CA1861
 using log4net;
 using System;
 using System.Collections.Generic;

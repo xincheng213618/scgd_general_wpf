@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1720,CS0168,CS8603
+using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

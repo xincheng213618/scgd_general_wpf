@@ -1,3 +1,4 @@
+#pragma warning disable CA1806
 using log4net;
 using Microsoft.Win32.SafeHandles;
 using System.IO;

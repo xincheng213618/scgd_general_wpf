@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes.Controls;
+﻿#pragma warning disable CA1816
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System;
 using System.Windows;

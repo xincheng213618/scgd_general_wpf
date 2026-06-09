@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1863
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.UI;
 using ColorVision.Themes.Controls;

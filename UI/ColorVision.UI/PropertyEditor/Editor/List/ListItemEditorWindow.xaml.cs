@@ -1,4 +1,4 @@
-#pragma warning disable CA1310,CA1822
+#pragma warning disable CA1310,CA1822,CA1863
 using ColorVision.UI.Properties;
 using System.Collections;
 using System.ComponentModel;

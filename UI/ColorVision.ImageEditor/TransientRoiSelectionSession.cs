@@ -1,3 +1,4 @@
+#pragma warning disable CA1852,CS8625
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.Generic;

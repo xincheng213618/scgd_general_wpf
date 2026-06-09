@@ -1,4 +1,5 @@
-﻿using ColorVision.SocketProtocol;
+﻿#pragma warning disable CS8602,CS8625
+using ColorVision.SocketProtocol;
 using log4net;
 using ProjectARVRPro.PluginConfig;
 using System.Net.Sockets;

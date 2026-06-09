@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿#pragma warning disable CA1816,CS8603
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;

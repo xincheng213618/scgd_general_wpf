@@ -1,3 +1,4 @@
+#pragma warning disable CS8601,CS8602
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Templates.Jsons;

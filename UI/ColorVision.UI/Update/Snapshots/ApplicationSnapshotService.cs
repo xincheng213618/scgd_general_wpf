@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using log4net;

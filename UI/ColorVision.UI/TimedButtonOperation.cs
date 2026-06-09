@@ -1,4 +1,4 @@
-#pragma warning disable CA1513,CA1716
+#pragma warning disable CA1513,CA1716,CA1863
 using ColorVision.UI.Properties;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;

@@ -1,3 +1,4 @@
+#pragma warning disable CA1805,CA1822
 using ColorVision.UI;
 using SqlSugar;
 using System.IO;

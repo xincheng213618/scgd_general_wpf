@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
+﻿#pragma warning disable CA1816,CA1822,CS0168,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;

@@ -1,3 +1,4 @@
+#pragma warning disable CA1854,CS8625
 using ScottPlot;
 using ScottPlot.Plottables;
 using System;

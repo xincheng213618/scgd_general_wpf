@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿#pragma warning disable CS4014
+using log4net;
 using ProjectKB.Modbus;
 using System.Windows;
 

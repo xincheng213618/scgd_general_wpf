@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿#pragma warning disable CS8625
+using System.Windows;
 
 namespace ColorVision.Themes.Controls
 {

@@ -1,4 +1,5 @@
-﻿using ColorVision.ImageEditor;
+﻿#pragma warning disable CA1822
+using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.Core;
 using log4net;

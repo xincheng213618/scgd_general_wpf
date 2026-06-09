@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using ColorVision.Copilot;
 using System;
 using System.Linq;

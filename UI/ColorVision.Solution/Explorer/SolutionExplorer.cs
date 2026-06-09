@@ -1,4 +1,4 @@
-#pragma warning disable CS8604,CS4014
+#pragma warning disable CS4014,CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;

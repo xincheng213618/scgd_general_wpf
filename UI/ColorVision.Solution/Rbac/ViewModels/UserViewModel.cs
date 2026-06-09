@@ -1,3 +1,4 @@
+#pragma warning disable CA1860,CS8625
 using ColorVision.Rbac.Entity;
 
 namespace ColorVision.Rbac.ViewModels

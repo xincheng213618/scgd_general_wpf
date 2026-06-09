@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
+﻿#pragma warning disable CA1852,CS0067,CS0103,CS8602,CS8607,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw.Rasterized;
 using System;

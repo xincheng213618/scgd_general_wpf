@@ -1,3 +1,4 @@
+#pragma warning disable CA1805,CA1861
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;

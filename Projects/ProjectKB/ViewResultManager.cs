@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI;
 using SqlSugar;

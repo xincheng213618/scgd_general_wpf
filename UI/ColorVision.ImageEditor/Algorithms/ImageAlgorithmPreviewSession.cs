@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using ColorVision.Core;
 using OpenCvSharp;
 using System;

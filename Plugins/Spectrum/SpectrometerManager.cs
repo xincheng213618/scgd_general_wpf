@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1051,CA1805,CA1806,CA1822
+using ColorVision.Common.MVVM;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;

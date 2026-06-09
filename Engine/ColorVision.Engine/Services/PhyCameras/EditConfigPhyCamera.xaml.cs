@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.PhyCameras.Configs;

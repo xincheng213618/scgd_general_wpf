@@ -1,4 +1,5 @@
-﻿namespace ProjectLUX.Process
+﻿#pragma warning disable CA1852
+namespace ProjectLUX.Process
 {
     internal class ProcessMetaPersist
     {

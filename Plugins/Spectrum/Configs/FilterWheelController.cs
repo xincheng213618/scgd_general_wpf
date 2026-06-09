@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using ColorVision.Common.MVVM;
 using log4net;
 using Spectrum.TimedButtons;

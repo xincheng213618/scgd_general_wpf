@@ -1,3 +1,4 @@
+#pragma warning disable CS8629
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8604,CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Controls;
 using ColorVision.UI.Menus;

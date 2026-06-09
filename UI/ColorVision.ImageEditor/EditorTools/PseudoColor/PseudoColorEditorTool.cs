@@ -1,3 +1,4 @@
+#pragma warning disable CA1816
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Settings;
 using System;

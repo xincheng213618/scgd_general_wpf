@@ -1,4 +1,5 @@
-﻿
+﻿#pragma warning disable CA1725
+
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using log4net;

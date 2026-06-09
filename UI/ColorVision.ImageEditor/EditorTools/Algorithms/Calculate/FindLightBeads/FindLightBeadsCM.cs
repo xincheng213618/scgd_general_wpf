@@ -1,3 +1,4 @@
+#pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;

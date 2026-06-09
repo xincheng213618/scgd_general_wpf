@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CS8601,CS8625
+using ColorVision.Database;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;

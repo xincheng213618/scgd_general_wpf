@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604
+﻿#pragma warning disable CA1805,CA1859,CS8604
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;

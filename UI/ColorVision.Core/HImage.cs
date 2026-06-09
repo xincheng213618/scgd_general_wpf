@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CA1051
+using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 

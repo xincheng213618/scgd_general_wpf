@@ -1,3 +1,4 @@
+#pragma warning disable CA1510,CS8625
 using ColorVision.Core;
 using System;
 using System.Diagnostics;

@@ -1,3 +1,4 @@
+#pragma warning disable CS8601
 using ColorVision.Engine.Services.Types;
 using System;
 using System.Collections.Generic;
