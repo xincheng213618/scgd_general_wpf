@@ -2137,6 +2137,27 @@ public class STNodeEditor : Control
 		OnCanvasMoved(EventArgs.Empty);
 	}
 
+	public void MoveCanvasUnbounded(float x, float y, bool bAnimation, CanvasMoveArgs ma)
+	{
+		if (bAnimation)
+		{
+			if ((ma & CanvasMoveArgs.Left) == CanvasMoveArgs.Left)
+			{
+				m_real_canvas_x = x;
+			}
+			if ((ma & CanvasMoveArgs.Top) == CanvasMoveArgs.Top)
+			{
+				m_real_canvas_y = y;
+			}
+		}
+		else
+		{
+			m_real_canvas_x = (_CanvasOffsetX = x);
+			m_real_canvas_y = (_CanvasOffsetY = y);
+		}
+		OnCanvasMoved(EventArgs.Empty);
+	}
+
 	public void ScaleCanvas(float f, float x, float y)
 	{
 		if (_Nodes.Count == 0)
@@ -2165,7 +2186,35 @@ public class STNodeEditor : Control
 
 	public ConnectionInfo[] GetConnectionInfo()
 	{
-		return m_dic_gp_info.Values.ToArray();
+		List<ConnectionInfo> connections = new List<ConnectionInfo>();
+		HashSet<Tuple<STNodeOption, STNodeOption>> seen = new HashSet<Tuple<STNodeOption, STNodeOption>>();
+		foreach (STNode node in _Nodes)
+		{
+			foreach (STNodeOption outputOption in node.OutputOptions)
+			{
+				if (outputOption == STNodeOption.Empty || outputOption.ConnectedOption == null)
+				{
+					continue;
+				}
+				foreach (STNodeOption inputOption in outputOption.ConnectedOption)
+				{
+					if (inputOption == null || inputOption == STNodeOption.Empty || !inputOption.IsInput)
+					{
+						continue;
+					}
+					Tuple<STNodeOption, STNodeOption> key = Tuple.Create(outputOption, inputOption);
+					if (seen.Add(key))
+					{
+						connections.Add(new ConnectionInfo
+						{
+							Output = outputOption,
+							Input = inputOption
+						});
+					}
+				}
+			}
+		}
+		return connections.ToArray();
 	}
 
 	public static bool CanFindNodePath(STNode nodeStart, STNode nodeFind)
@@ -2277,8 +2326,9 @@ public class STNodeEditor : Control
 				throw new Exception("获取节点数据出错-" + node.Title, innerException);
 			}
 		}
-		gZipStream.Write(BitConverter.GetBytes(m_dic_gp_info.Count), 0, 4);
-		foreach (ConnectionInfo value in m_dic_gp_info.Values)
+		ConnectionInfo[] connectionInfo = GetConnectionInfo();
+		gZipStream.Write(BitConverter.GetBytes(connectionInfo.Length), 0, 4);
+		foreach (ConnectionInfo value in connectionInfo)
 		{
 			gZipStream.Write(BitConverter.GetBytes((dictionary[value.Output] << 32) | dictionary[value.Input]), 0, 8);
 		}
