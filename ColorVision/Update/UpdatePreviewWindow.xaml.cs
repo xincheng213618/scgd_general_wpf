@@ -92,5 +92,14 @@ namespace ColorVision.Update
             ResultAction = UpdatePreviewAction.SkipVersion;
             DialogResult = false;
         }
+
+        private void ApplicationSnapshotsLink_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            new ApplicationSnapshotsWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+        }
     }
 }

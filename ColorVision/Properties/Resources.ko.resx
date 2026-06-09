@@ -322,8 +322,20 @@
   <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
     <value>전체 설치 관리자를 다운로드하고 현재 프로그램 업데이트 절차를 따릅니다.</value>
   </data>
+  <data name="UpdatePreviewApplicationUpdateModeLabel" xml:space="preserve">
+    <value>업데이트 방식</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateModeIncremental" xml:space="preserve">
+    <value>증분 업데이트</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateModeFull" xml:space="preserve">
+    <value>전체 설치 관리자</value>
+  </data>
+  <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
+    <value>프로그램 백업</value>
+  </data>
   <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
-    <value>업데이트 전에 백업 만들기(더 안전하지만 느림)</value>
+    <value>백업 만들기</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
     <value>프로그램 업데이트 포함</value>

@@ -174,6 +174,7 @@ namespace ColorVision.Update
             {
                 SetProperty(ref _canChooseApplicationUpdateMode, value);
                 OnPropertyChanged(nameof(ApplicationUpdateModeSelectorVisibility));
+                OnPropertyChanged(nameof(CategoryBadgeVisibility));
             }
         }
         private bool _canChooseApplicationUpdateMode;
@@ -236,6 +237,10 @@ namespace ColorVision.Update
         public Visibility ApplicationUpdateModeSelectorVisibility => CanChooseApplicationUpdateMode
             ? Visibility.Visible
             : Visibility.Collapsed;
+
+        public Visibility CategoryBadgeVisibility => CanChooseApplicationUpdateMode
+            ? Visibility.Collapsed
+            : Visibility.Visible;
 
         public Visibility IncrementalBackupVisibility => CanChooseIncrementalBackup && ApplicationUpdateMode == ApplicationUpdateMode.Incremental
             ? Visibility.Visible
@@ -590,10 +595,10 @@ namespace ColorVision.Update
                 if (IsChecking)
                     return string.Empty;
 
-                Collection<string> segments = new();
-
                 if (HasApplicationUpdates)
-                    segments.Add(Resources.UpdatePreviewSelectionIncludesApplication);
+                    return Resources.UpdatePreviewSelectionRestartRequired;
+
+                Collection<string> segments = new();
 
                 if (HasDeferredPluginUpdates)
                     segments.Add(Resources.UpdatePreviewSelectionDefersPluginUpdates);
@@ -609,9 +614,7 @@ namespace ColorVision.Update
                     segments.Add(Resources.UpdatePreviewSelectionIncludesRequired);
                 }
 
-                if (HasApplicationUpdates)
-                    segments.Add(Resources.UpdatePreviewSelectionRestartRequired);
-                else if (HasSelectableItems || HasAlwaysIncludedItems)
+                if (HasSelectableItems || HasAlwaysIncludedItems)
                     segments.Add(Resources.UpdatePreviewSelectionBackupAndRestart);
 
                 return string.Join(" · ", segments);

@@ -1375,6 +1375,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 程序备份 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationSnapshotsLink {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationSnapshotsLink", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 主程序更新 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewApplicationUpdateCategory {
@@ -1555,7 +1564,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 更新前创建备份（更安全但较慢） 的本地化字符串。
+        ///   查找类似 创建备份 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewIncrementalBackupOption {
             get {

@@ -322,8 +322,20 @@
   <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
     <value>The full installer will be downloaded and the current application update workflow will be used.</value>
   </data>
+  <data name="UpdatePreviewApplicationUpdateModeLabel" xml:space="preserve">
+    <value>Update mode</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateModeIncremental" xml:space="preserve">
+    <value>Incremental update</value>
+  </data>
+  <data name="UpdatePreviewApplicationUpdateModeFull" xml:space="preserve">
+    <value>Full installer</value>
+  </data>
+  <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
+    <value>Program backups</value>
+  </data>
   <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
-    <value>Back up before updating (safer but slower)</value>
+    <value>Create backup</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
     <value>Includes an application update</value>
