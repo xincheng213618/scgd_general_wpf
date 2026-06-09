@@ -1555,6 +1555,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更新前创建备份（更安全但较慢） 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewIncrementalBackupOption {
+            get {
+                return ResourceManager.GetString("UpdatePreviewIncrementalBackupOption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 稍后 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewLaterButtonText {

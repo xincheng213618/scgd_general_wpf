@@ -322,6 +322,9 @@
   <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
     <value>Будет загружен полный установщик и использован текущий процесс обновления приложения.</value>
   </data>
+  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
+    <value>Создать резервную копию перед обновлением (безопаснее, но медленнее)</value>
+  </data>
   <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
     <value>Включает обновление приложения</value>
   </data>

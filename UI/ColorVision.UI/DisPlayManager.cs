@@ -10,6 +10,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.UI
 {
@@ -588,9 +589,20 @@ namespace ColorVision.UI
                 if (ReferenceEquals(source, owner))
                     return headerToggle != null;
 
-                source = VisualTreeHelper.GetParent(source);
+                source = GetDisplayDragParent(source);
             }
             return headerToggle != null;
+        }
+
+        private static DependencyObject? GetDisplayDragParent(DependencyObject source)
+        {
+            if (source is Visual || source is Visual3D)
+                return VisualTreeHelper.GetParent(source);
+
+            if (source is FrameworkContentElement contentElement)
+                return contentElement.Parent;
+
+            return LogicalTreeHelper.GetParent(source);
         }
 
         private static bool IsDisplayHeaderToggle(ToggleButton toggleButton)

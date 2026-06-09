@@ -322,6 +322,9 @@
   <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
     <value>전체 설치 관리자를 다운로드하고 현재 프로그램 업데이트 절차를 따릅니다.</value>
   </data>
+  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
+    <value>업데이트 전에 백업 만들기(더 안전하지만 느림)</value>
+  </data>
   <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
     <value>프로그램 업데이트 포함</value>
   </data>

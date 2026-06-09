@@ -322,6 +322,9 @@
   <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
     <value>Le programme d'installation complet sera téléchargé et le flux actuel de mise à jour de l'application sera utilisé.</value>
   </data>
+  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
+    <value>Créer une sauvegarde avant la mise à jour (plus sûr, plus lent)</value>
+  </data>
   <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
     <value>Inclut une mise à jour de l'application</value>
   </data>

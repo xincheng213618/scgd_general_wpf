@@ -187,10 +187,31 @@ namespace ColorVision.Update
                     return;
 
                 if (SetProperty(ref _applicationUpdateMode, value))
+                {
                     ApplyApplicationUpdateModePresentation();
+                    OnPropertyChanged(nameof(IncrementalBackupVisibility));
+                }
             }
         }
         private ApplicationUpdateMode _applicationUpdateMode;
+
+        public bool CanChooseIncrementalBackup
+        {
+            get => _canChooseIncrementalBackup;
+            set
+            {
+                SetProperty(ref _canChooseIncrementalBackup, value);
+                OnPropertyChanged(nameof(IncrementalBackupVisibility));
+            }
+        }
+        private bool _canChooseIncrementalBackup;
+
+        public bool CreateBackupBeforeIncrementalUpdate
+        {
+            get => _createBackupBeforeIncrementalUpdate;
+            set => SetProperty(ref _createBackupBeforeIncrementalUpdate, value);
+        }
+        private bool _createBackupBeforeIncrementalUpdate = true;
 
         private int _incrementalPackageCount;
         private string _incrementalSummary = string.Empty;
@@ -213,6 +234,10 @@ namespace ColorVision.Update
             : Visibility.Collapsed;
 
         public Visibility ApplicationUpdateModeSelectorVisibility => CanChooseApplicationUpdateMode
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        public Visibility IncrementalBackupVisibility => CanChooseIncrementalBackup && ApplicationUpdateMode == ApplicationUpdateMode.Incremental
             ? Visibility.Visible
             : Visibility.Collapsed;
 
@@ -319,6 +344,10 @@ namespace ColorVision.Update
             else if (e.PropertyName == nameof(UpdatePreviewItem.ApplicationUpdateMode))
             {
                 RefreshApplicationUpdateModeState();
+            }
+            else if (e.PropertyName == nameof(UpdatePreviewItem.CreateBackupBeforeIncrementalUpdate))
+            {
+                RefreshSelectionState();
             }
             else if (e.PropertyName == nameof(UpdatePreviewItem.IsSelectionLocked))
             {

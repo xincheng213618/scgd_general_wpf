@@ -301,6 +301,9 @@
   <data name="UpdatePreviewApplicationUpdateModeFull" xml:space="preserve">
     <value>完整安装包</value>
   </data>
+  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
+    <value>更新前创建备份（更安全但较慢）</value>
+  </data>
   <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
     <value>主程序</value>
   </data>

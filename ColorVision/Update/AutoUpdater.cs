@@ -30,6 +30,7 @@ namespace ColorVision.Update
         public required Version LatestVersion { get; init; }
         public required IReadOnlyList<Version> VersionsToApply { get; init; }
         public required bool IsIncremental { get; init; }
+        public bool CreateBackupBeforeUpdate { get; init; } = true;
 
         public Version TargetVersion => VersionsToApply.Count > 0
             ? VersionsToApply[VersionsToApply.Count - 1]
@@ -55,6 +56,12 @@ namespace ColorVision.Update
         /// </summary>
         public string SkippedVersion { get => _SkippedVersion; set { _SkippedVersion = value; OnPropertyChanged(); } }
         private string _SkippedVersion = string.Empty;
+
+        /// <summary>
+        /// 增量更新前是否创建程序备份
+        /// </summary>
+        public bool CreateBackupBeforeIncrementalUpdate { get => _CreateBackupBeforeIncrementalUpdate; set { _CreateBackupBeforeIncrementalUpdate = value; OnPropertyChanged(); } }
+        private bool _CreateBackupBeforeIncrementalUpdate = true;
 
     }
 
@@ -452,14 +459,14 @@ namespace ColorVision.Update
 
             if (plan.IsIncremental)
             {
-                UpdateIncrementalChain(plan.VersionsToApply, downloadPath, downloadFailedAction);
+                UpdateIncrementalChain(plan.VersionsToApply, downloadPath, plan.CreateBackupBeforeUpdate, downloadFailedAction);
                 return;
             }
 
             Update(plan.TargetVersion, downloadPath, false, downloadFailedAction);
         }
 
-        private static void UpdateIncrementalChain(IReadOnlyList<Version> versions, string downloadPath, Action? downloadFailedAction)
+        private static void UpdateIncrementalChain(IReadOnlyList<Version> versions, string downloadPath, bool createBackupBeforeUpdate, Action? downloadFailedAction)
         {
             if (versions.Count == 0)
                 return;
@@ -489,7 +496,7 @@ namespace ColorVision.Update
 
             if (versionsToDownload.Count == 0)
             {
-                UpdateIncrementalApplications(orderedVersions.Select(version => downloadedPaths[version.ToString()]).ToList());
+                UpdateIncrementalApplications(orderedVersions.Select(version => downloadedPaths[version.ToString()]).ToList(), createBackupBeforeUpdate);
                 return;
             }
 
@@ -522,7 +529,7 @@ namespace ColorVision.Update
                     return;
                 }
 
-                UpdateIncrementalApplications(orderedPaths);
+                UpdateIncrementalApplications(orderedPaths, createBackupBeforeUpdate);
             }
 
             DownloadWindow.ShowInstance();
@@ -555,10 +562,10 @@ namespace ColorVision.Update
             }
         }
 
-        private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
+        private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths, bool createBackupBeforeUpdate)
         {
             ConfigHandler.GetInstance().SaveConfigs();
-            RestartIsIncrementApplication(downloadPaths);
+            RestartIsIncrementApplication(downloadPaths, null, createBackupBeforeUpdate);
         }
 
         private static List<Version> BuildIncrementalUpdateChain(Version currentVersion, Version latestVersion)
@@ -661,10 +668,15 @@ namespace ColorVision.Update
 
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths)
         {
-            RestartIsIncrementApplication(downloadPaths, null);
+            RestartIsIncrementApplication(downloadPaths, null, AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate);
         }
 
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths)
+        {
+            RestartIsIncrementApplication(downloadPaths, pluginDownloadPaths, AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate);
+        }
+
+        public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths, bool createBackupBeforeUpdate)
         {
             // 保存数据库配置
             UpdateBackupPrepareResult? backupPrepareResult = null;
@@ -713,16 +725,23 @@ namespace ColorVision.Update
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
                 Version? targetVersion = TryGetTargetVersionFromPackagePaths(applicationPackagePaths);
-                ApplicationSnapshotInfo updateSnapshot = ApplicationSnapshotService.Instance.CreateUpdateSnapshot(CurrentVersion, targetVersion);
-                log.Info($"Created update snapshot before incremental update: {updateSnapshot.FilePath}");
-                backupPrepareResult = UpdateRecoveryService.Instance.PrepareBackup(
-                    tempDirectory,
-                    programDirectory,
-                    CurrentVersion,
-                    targetVersion,
-                    applicationPackagePaths,
-                    pluginPackagePaths,
-                    updateSnapshot.FilePath);
+                if (createBackupBeforeUpdate)
+                {
+                    ApplicationSnapshotInfo updateSnapshot = ApplicationSnapshotService.Instance.CreateUpdateSnapshot(CurrentVersion, targetVersion);
+                    log.Info($"Created update snapshot before incremental update: {updateSnapshot.FilePath}");
+                    backupPrepareResult = UpdateRecoveryService.Instance.PrepareBackup(
+                        tempDirectory,
+                        programDirectory,
+                        CurrentVersion,
+                        targetVersion,
+                        applicationPackagePaths,
+                        pluginPackagePaths,
+                        updateSnapshot.FilePath);
+                }
+                else
+                {
+                    log.Info("Skipping backup before incremental update by user choice.");
+                }
 
                 string batchContent = CreateIncrementalUpdateBatch(tempDirectory, programDirectory, executableName, backupPrepareResult);
 
@@ -748,7 +767,9 @@ namespace ColorVision.Update
                 }
                 catch (Exception ex)
                 {
-                    UpdateRecoveryService.Instance.MarkFailed($"Failed to start update batch: {ex.Message}");
+                    if (backupPrepareResult != null)
+                        UpdateRecoveryService.Instance.MarkFailed($"Failed to start update batch: {ex.Message}");
+
                     log.Error("Failed to start incremental update batch.", ex);
                     MessageBox.Show(ex.Message);
                 }
@@ -763,7 +784,7 @@ namespace ColorVision.Update
             }
         }
 
-        private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName, UpdateBackupPrepareResult backupPrepareResult)
+        private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName, UpdateBackupPrepareResult? backupPrepareResult)
         {
             string executablePath = Path.Combine(programDirectory, executableName);
             StringBuilder sb = new();
@@ -774,11 +795,22 @@ namespace ColorVision.Update
             sb.AppendLine($"set \"TARGET={EscapeForBatchValue(programDirectory)}\"");
             sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
-            sb.AppendLine($"set \"UPDATE_STATE_PATH={EscapeForBatchValue(backupPrepareResult.StateFilePath)}\"");
-            sb.AppendLine($"set \"STATE_APPLYING={EscapeForBatchValue(backupPrepareResult.ApplyingStatePath)}\"");
-            sb.AppendLine($"set \"STATE_APPLIED={EscapeForBatchValue(backupPrepareResult.AppliedStatePath)}\"");
-            sb.AppendLine($"set \"STATE_FAILED={EscapeForBatchValue(backupPrepareResult.FailedStatePath)}\"");
-            sb.AppendLine($"set \"BACKUP={EscapeForBatchValue(backupPrepareResult.BackupPath)}\"");
+            if (backupPrepareResult != null)
+            {
+                sb.AppendLine($"set \"UPDATE_STATE_PATH={EscapeForBatchValue(backupPrepareResult.StateFilePath)}\"");
+                sb.AppendLine($"set \"STATE_APPLYING={EscapeForBatchValue(backupPrepareResult.ApplyingStatePath)}\"");
+                sb.AppendLine($"set \"STATE_APPLIED={EscapeForBatchValue(backupPrepareResult.AppliedStatePath)}\"");
+                sb.AppendLine($"set \"STATE_FAILED={EscapeForBatchValue(backupPrepareResult.FailedStatePath)}\"");
+                sb.AppendLine($"set \"BACKUP={EscapeForBatchValue(backupPrepareResult.BackupPath)}\"");
+            }
+            else
+            {
+                sb.AppendLine("set \"UPDATE_STATE_PATH=\"");
+                sb.AppendLine("set \"STATE_APPLYING=\"");
+                sb.AppendLine("set \"STATE_APPLIED=\"");
+                sb.AppendLine("set \"STATE_FAILED=\"");
+                sb.AppendLine("set \"BACKUP=\"");
+            }
             sb.AppendLine("set \"NEED_RESTART_EXPLORER=0\"");
             sb.AppendLine();
             sb.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");

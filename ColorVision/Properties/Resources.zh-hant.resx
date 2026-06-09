@@ -322,6 +322,9 @@
   <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
     <value>將下載完整安裝套件並沿用目前的主程式更新流程。</value>
   </data>
+  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
+    <value>更新前建立備份（更安全但較慢）</value>
+  </data>
   <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
     <value>包含主程式更新</value>
   </data>

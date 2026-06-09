@@ -322,6 +322,9 @@
   <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
     <value>完全なインストーラーをダウンロードし、現在のアプリ更新フローで更新します。</value>
   </data>
+  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
+    <value>更新前にバックアップを作成（安全ですが時間がかかります）</value>
+  </data>
   <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
     <value>アプリ更新を含む</value>
   </data>
