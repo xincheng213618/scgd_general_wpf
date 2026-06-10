@@ -4,7 +4,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <nlohmann/json.hpp>
-#include "../../include/opencv_media_export.h"
+#include "opencv_media_export.h"
 #include <string>
 
 using json = nlohmann::json;

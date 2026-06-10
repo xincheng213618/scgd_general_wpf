@@ -1398,7 +1398,18 @@ public class WpfSTNodeEditor : Control, IDisposable
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(_text, _width, _height, _brush, _fontSize, _alignment, _weight);
+			unchecked
+			{
+				int hash = 17;
+				hash = hash * 31 + (_text == null ? 0 : _text.GetHashCode());
+				hash = hash * 31 + _width;
+				hash = hash * 31 + _height;
+				hash = hash * 31 + _brush;
+				hash = hash * 31 + _fontSize;
+				hash = hash * 31 + (int)_alignment;
+				hash = hash * 31 + _weight;
+				return hash;
+			}
 		}
 	}
 
@@ -1435,7 +1446,16 @@ public class WpfSTNodeEditor : Control, IDisposable
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(_startX, _startY, _endX, _endY, _curvature);
+			unchecked
+			{
+				int hash = 17;
+				hash = hash * 31 + _startX;
+				hash = hash * 31 + _startY;
+				hash = hash * 31 + _endX;
+				hash = hash * 31 + _endY;
+				hash = hash * 31 + _curvature;
+				return hash;
+			}
 		}
 	}
 
