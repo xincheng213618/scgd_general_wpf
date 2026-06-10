@@ -22,6 +22,7 @@ Per-endpoint scope requirements:
 
 admin:* grants access to all endpoints.
 Session/Basic Auth always has full access.
+Transfer file endpoints use file:transfer.
 """
 
 from __future__ import annotations
@@ -646,6 +647,7 @@ ALLOWED_SCOPES = {
     "plugin:read",
     "plugin:publish",
     "release:publish",
+    "file:transfer",
 }
 
 

@@ -176,6 +176,7 @@ curl -X POST http://localhost:9998/api/packages/publish \
 - `plugin:read` — Read plugin catalog
 - `plugin:publish` — Publish plugin packages
 - `release:publish` — Publish application releases
+- `file:transfer` — Upload, download, list, and delete transfer files
 - `cache:read` — Read cache status
 - `cache:refresh` — Refresh caches
 - `stats:read` — Read statistics
@@ -207,6 +208,28 @@ Signature-based check: each index check computes a directory signature and compa
 3. **Database backup**: `POST /api/admin/backup/db` creates a timestamped backup of `marketplace.db`.
 4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time.
 5. **Config**: Edit `config.json` to set `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
+
+### Large File Transfer
+
+The protected transfer area is configured by `transfer_upload_dir` (default: `Transfer`, relative to `storage_path`). It is intentionally limited to files directly inside that folder; subdirectories and path traversal are rejected.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/transfer` | Web page for transfer uploads and deletion |
+| GET | `/api/transfer/files` | List transfer files |
+| PUT/POST | `/api/transfer/files/<filename>` | Stream-upload a file without the package upload size limit |
+| GET | `/api/transfer/files/<filename>` | Download a transfer file |
+| DELETE | `/api/transfer/files/<filename>` | Delete a transfer file |
+
+Authentication: web session, Basic Auth using `upload_auth`, or Bearer API key with `file:transfer` (or `admin:*`).
+
+```bash
+curl -u admin:password -T "big-file.zip" http://localhost:9998/api/transfer/files/big-file.zip
+curl -u admin:password -O http://localhost:9998/api/transfer/files/big-file.zip
+curl -u admin:password -X DELETE http://localhost:9998/api/transfer/files/big-file.zip
+```
+
+If deployed behind a reverse proxy, configure that proxy to allow large request bodies as well.
 
 ## Disk Scan Points
 

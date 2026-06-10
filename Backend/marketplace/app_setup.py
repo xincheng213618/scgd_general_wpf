@@ -335,6 +335,12 @@ def register_all_blueprints(app, ctx, services, helpers):
                 return True
         return False
 
+    from routes.transfer import TransferRouteContext, register_transfer_routes
+    register_transfer_routes(app, TransferRouteContext(
+        cache=cache, storage_getter=_dynamic_storage, config_getter=_dynamic_config,
+        check_auth=_check_admin_auth, human_size=human_size,
+    ))
+
     register_admin_api_routes(app, AdminApiContext(
         cache=cache, storage_getter=_dynamic_storage, config_getter=_dynamic_config,
         get_db=helpers["get_db"], check_auth=_check_admin_auth,

@@ -26,7 +26,6 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string? MasterValue { get; set; }
     }
 
-    [STNode("/02 相机", "本地图片节点")]
     public class TestMessageBoxNode : CVBaseServerNode
     {
         private const int LocalImageMasterResultType = 100;
@@ -300,5 +299,10 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         {
             return $"{base.Title}.{NodeName}";
         }
+    }
+
+    [STNode("/99 自定义节点", "本地图片节点")]
+    public class LocalImageNode : TestMessageBoxNode
+    {
     }
 }
