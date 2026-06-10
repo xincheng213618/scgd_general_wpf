@@ -20,6 +20,12 @@
 - [プラグイン開発を始める](./plugin-development/getting-started.md)
 - [プラグインのライフサイクル](./plugin-development/lifecycle.md)
 
+### テストと検証
+
+- [テストと検証の引き継ぎ](./testing.md)
+- UI、ホスト実行時、設定、ログ、MCP/Copilot、PropertyGrid、エディタの変更は `Test/ColorVision.UI.Tests/` から確認します。
+- Native/OpenCV helper と luminous-area 検証は `Test/opencv_helper_test/` を使用します。
+
 ### ビルド、デプロイ、更新
 
 - [展開の概要](./deployment/overview.md)
@@ -30,14 +36,15 @@
 
 - [プラグイン マーケット バックエンド](./backend/README.md)
 - [パフォーマンス最適化の概要](./performance/overview.md)
-- [ソケット通信モジュールの最適化ルート](./パフォーマンス/socket-protocol-optimization-roadmap.md)
+- [ソケット通信モジュールの最適化ルート](./performance/socket-protocol-optimization-roadmap.md)
 
 ## 推奨される読み取りパス
 
 1. まず、[アーキテクチャ設計](../03-architecture/README.md) を参照して、モジュールの境界を確認します。
 2. [拡張性の概要](./core-concepts/extensibility.md) をもう一度見て、拡張ポイントとプラグインのエントリを確認します。
 3. 対象のトピックを入力します: プラグイン、エンジン、デプロイメント、またはバックエンド。
-4. クラスとインターフェイスの詳細が必要な場合は、[API リファレンス](../04-api-reference/README.md) にアクセスしてください。
+4. 配信前に [テストと検証の引き継ぎ](./testing.md) を確認し、必要な検証コマンドを選択します。
+5. クラスとインターフェイスの詳細が必要な場合は、[API リファレンス](../04-api-reference/README.md) にアクセスしてください。
 
 ## 章の境界
 
@@ -47,6 +54,6 @@
 
 ## 補助入口
 
-- [プロジェクト構造の概要](../05-resources/project- Structure/README.md)
+- [プロジェクト構造の概要](../05-resources/project-structure/README.md)
 - [オンライン ウェアハウス](https://github.com/xincheng213618/scgd_general_wpf)
 - [問題追跡](https://github.com/xincheng213618/scgd_general_wpf/issues)

@@ -93,6 +93,57 @@ For example:
 - `InitializerBase` only provides default name, order, and dependency structure
 - `View` is a shared ViewModel with index, title, and icon, not a complete view framework
 
+## Using It as a DLL
+
+### When to Reference It
+
+- A new UI library needs `ViewModelBase`, `RelayCommand`, or shared utility classes.
+- A module needs contract types for menus, status bar providers, configurations, or initializers.
+- A lightweight interface or attribute needs to be reused across multiple UI modules.
+- A module needs Win32, DWM, file association, clipboard, or cursor helpers without writing P/Invoke in business code.
+
+### What Should Not Be Added Here
+
+- Concrete windows, customer project logic, device logic, or Engine template logic.
+- Features that require `ColorVision.UI`, `ImageEditor`, or `Solution` to run.
+- Customer-specific Recipe, Fix, Socket, MES, or result export fields.
+
+### Shared Contract Checklist
+
+| Check | Meaning |
+| --- | --- |
+| Low-level enough | The interface should be reusable by several UI modules, not only one window. |
+| No reverse dependency | `Common` should not reference upper-layer UI DLLs. |
+| Clear implementer | If there is no real implementer, keep the contract inside the consuming module first. |
+| Persistence boundary | Configuration persistence implementations live outside `Common`; keep only contracts or minimal models here. |
+
+### Release Notes
+
+`ColorVision.Common` is the root dependency of many UI packages. When changing public types, namespaces, or serialized models, recheck compile compatibility for `ColorVision.UI`, `ImageEditor`, `Solution`, plugins, and project packages.
+
+### DLL Release Acceptance
+
+| Acceptance item | What to check | Pass condition |
+| --- | --- | --- |
+| Target frameworks | `ColorVision.Common.csproj` targets `net8.0-windows7.0;net10.0-windows7.0` | Both target frameworks produce DLL and symbol packages. |
+| NuGet metadata | `GeneratePackageOnBuild`, `PackageReadmeFile`, `README.md` | The package includes README and has a traceable version. |
+| Root dependency boundary | New references to `ColorVision.UI`, `ImageEditor`, `Solution`, or other upper-layer projects | `Common` remains a low-level shared library without reverse references. |
+| MVVM foundation | `ViewModelBase`, `RelayCommand`, `Commands` | Property notifications, command availability, and binding refresh still work. |
+| Extension contracts | `IConfig`, menu, status bar, and initializer interfaces | Upper modules can still discover implementers; menu and status bar entries are not lost. |
+| Permission boundary | `AccessControl`, `PermissionMode` | Mode changes do not bypass Solution-side local RBAC. |
+| Native helpers | `NativeMethods/`, clipboard, file association, cursor resource | Windows API wrappers work on x64 and the current OS version. |
+
+### Field First Checks
+
+| Symptom | Check first | Judgement point |
+| --- | --- | --- |
+| Several UI DLLs fail with `MissingMethodException` or `FileLoadException` after upgrade | `ColorVision.Common.dll` version, public type changes, caller build time | A root dependency may have been replaced while upper DLLs were compiled against old signatures. |
+| Menu, status bar, or initializer implementations disappear | `Interfaces/Menus/`, `Interfaces/StatusBar/`, `Interfaces/IInitializer/` | Confirm interface namespaces and implementation assemblies still match. |
+| Bound values change but UI does not refresh | `ViewModelBase`, property setters, `OnPropertyChanged` | Usually an MVVM base or caller notification issue. |
+| Button command enabled state does not update | `RelayCommand`, CanExecute trigger points | Confirm the caller raises executable-state refresh. |
+| Permission behavior differs from expectation | `AccessControl`, `PermissionMode`, Solution RBAC | Common only handles coarse modes; fine permission rules live in Solution. |
+| Native call crashes or only fails on one machine | `NativeMethods/`, platform target, Windows version | Check x86/x64, DWM/Win32 API availability, and resource paths first. |
+
 ## How to Better Read This Module Currently
 
 ### To View Shared MVVM and Command Foundations

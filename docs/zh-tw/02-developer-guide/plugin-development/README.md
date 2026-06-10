@@ -23,7 +23,9 @@
 
 ## 建議參考的現有外掛
 
-- [Pattern 外掛](../../04-api-reference/plugins/standard-plugins/pattern.md)
+- [Conoscope 外掛](../../04-api-reference/plugins/standard-plugins/conoscope.md)
+- [Spectrum 外掛](../../04-api-reference/plugins/standard-plugins/spectrum.md)
+- [SystemMonitor 外掛](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 - [Spectrum 外掛](../../04-api-reference/plugins/standard-plugins/spectrum.md)
 - [SystemMonitor 外掛](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 

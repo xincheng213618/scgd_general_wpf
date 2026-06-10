@@ -44,6 +44,57 @@ Some business windows provide their own export functionality, for example:
 
 This type of export is typically tightly coupled to specific business objects and should no longer be described as a unified global "data export center."
 
+## Object and Entry Mapping
+
+| Deliverable | Preferred entry | Confirm before handoff |
+| --- | --- | --- |
+| Software settings | Tools -> Import/Export Settings | `.cvsettings` imports and key settings persist after restart |
+| Workflow template | Workflow designer import/export | start node, device binding, and template parameters are correct after import |
+| Database record | Database browser or business result page | same run can be queried by SN, time, or batch |
+| CSV/Excel | owning business window or plugin export | field order, units, PASS/FAIL, and encoding match customer requirements |
+| PDF/report | project window or plugin report entry | header, customer mark, result image, and judgement items are correct |
+| Image/overlay | image editor or result window | original image, ROI/POI, annotation coordinates, and file name match |
+| Socket/MES response | project window, SocketProtocol, or integration tool | request/response samples are saved and status/Data fields are correct |
+
+## Export Acceptance Before Handoff
+
+Export issues often look like "the button works, but the delivered file is wrong." Run one end-to-end check before handoff.
+
+| Step | Action | Pass standard |
+| --- | --- | --- |
+| 1 | Run a minimal workflow with a known SN or test batch | all later query/export/response checks use the same identifier |
+| 2 | Confirm source data in database or result window | source is not empty and is not an old batch |
+| 3 | Export from the target window | file is generated and path/name are explainable |
+| 4 | Open the exported file and verify fields | field order, unit, judgement, time, and SN match customer format |
+| 5 | Save one sample file and screenshot | future upgrades can be retested against the sample |
+
+## Export Failure Triage
+
+| Symptom | Check first | Then check |
+| --- | --- | --- |
+| Cannot find export button | object belongs to settings, workflow, or business window | plugin/project docs declare export support |
+| File generated but empty | source data exists, batch/SN selected correctly | export filters and field mapping |
+| Missing or reordered fields | exporting the correct object/window | project exporter and customer format version |
+| Image or overlay misaligned | result image and original image are from the same run | ROI/POI coordinates, scaling, template version |
+| External system receives nothing | ColorVision completed and generated result | protocol, port, project handler, response fields |
+| Behavior changed after migration | exported settings only, not result data | old config, workflow template, database backup synchronized |
+
+## Handoff Record Template
+
+```text
+export object:
+source window:
+source SN/batch/time:
+database evidence:
+export file path:
+file format/version:
+required fields:
+sample screenshot:
+external response sample:
+known limitations:
+owner/date:
+```
+
 ## Common Usage Order
 
 1. First confirm exactly what object you want to export.
@@ -90,6 +141,7 @@ If a specific plugin or window does support these formats, it should be document
 - [Database Operations](./database.md)
 - [Workflow Design](../workflow/design.md)
 - [Common Issues](../troubleshooting/common-issues.md)
+- [Field Operation Acceptance Checklist](../field-operation-acceptance.md)
 
 ## Notes
 

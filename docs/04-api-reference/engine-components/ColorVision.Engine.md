@@ -116,6 +116,37 @@
 
 也就是说，这一层的算法对象通常是“显示和命令适配器”，而不是直接在本地完成图像计算的纯算法内核。
 
+## 业务交接验收表
+
+接手 `ColorVision.Engine` 时，不能只看主项目能否编译。这个模块把数据库、设备、模板、MQTT、Flow、结果和 UI 都接在一起，最小交接要按链路验。
+
+| 验收项 | 要看哪里 | 通过标准 |
+| --- | --- | --- |
+| 主目标框架 | `Directory.Build.props`、`ColorVision.Engine.csproj` | 主宿主按 `net10.0-windows`、x64 路径构建，UI/Engine 项目引用或 NuGet 包引用能解析 |
+| UI 与 Engine 依赖 | `ColorVision.Database`、`SocketProtocol`、`ImageEditor`、`Scheduler`、`Solution`、`UI.Desktop` | 主程序能打开数据库、Socket、图像、调度、项目工作区相关入口 |
+| 模板初始化 | `TemplateInitializer`、`TemplateControl.GetInstance()`、`MySqlInitializer` | MySQL 连接后能扫描 `IITemplateLoad`，`ITemplateNames` 有真实模板项 |
+| JSON 模板编辑 | `ITemplateJson<T>`、`EditTemplateJson.xaml.cs`、`Templates/Jsons/**/*.schema.json` | 模板能读取、编辑、保存、删除，schema 文件随输出发布 |
+| 设备工厂 | `DeviceServiceFactoryRegistry`、`ServiceTypes`、`Services/Devices/**` | Camera、PG、Spectrum、SMU、Sensor、Algorithm、Calibration 等类型能从资源创建服务对象 |
+| MQTT 命令链 | `MQTTServiceBase`、`MsgRecord`、`MessagesListManager` | 发命令后能看到 `MsgRecord` 状态，Success/Fail/Timeout 能被 UI 或调用方感知 |
+| RC 服务链 | `MqttRCService`、service token 缓存、RC 主题 | 注册中心连接后能刷新可用服务，Flow 节点能拿到对应服务 token |
+| Flow 桥接 | `FlowEngineManager`、`DisplayFlow`、`TemplateFlow` | 流程模板能从 Base64 加载、编辑、保存、运行，并能刷新服务节点 |
+| 结果展示 | `IViewResult`、`IResultHandleBase`、`Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs` | 历史结果能打开，ImageEditor overlay、表格明细和结果类型匹配 |
+| 交付资源 | `Assets/Image/*`、`Templates/Jsons/**/*.schema.json`、工具 exe | 发布输出包含图标、schema、Everything/WinRAR/串口/USB 工具等需要的文件 |
+
+## 现场故障首查
+
+| 现象 | 先查哪里 | 判断要点 |
+| --- | --- | --- |
+| 模板列表为空 | MySQL 连接、`TemplateInitializer.Dependencies`、`Application.Current.GetAssemblies()` | `TemplateControl` 只有在 MySQL 可用后才扫描 `IITemplateLoad` |
+| 新模板类写了但界面看不到 | 是否实现 `IITemplateLoad`、是否调用 `TemplateControl.AddITemplateInstance` | 只写参数类不够，必须进入模板注册表 |
+| JSON 模板保存失败 | `ITemplateJson<T>` 数据库读写、schema 输出、模板名重复 | 先确认表数据和 schema 是否存在，再看编辑器 |
+| 设备资源存在但设备树没有服务对象 | `SysResourceModel.Type`、`ServiceTypes`、`DeviceServiceFactoryRegistry` | 没有注册 factory 时资源不会稳定变成设备服务 |
+| 设备命令一直 Timeout | `MQTTServiceBase` 主题、服务 token、`MqttRCService` 连接状态、`MsgRecord` | 先看消息记录和 RC token，再查设备业务窗口 |
+| Flow 打开了但节点没有服务 | `FlowEngineManager`、`MqttRCService` 服务列表、`DisplayFlow` 刷新逻辑 | Flow 节点可视化不等于服务 token 已绑定 |
+| Flow 运行结束但项目拿不到结果 | `FlowCompleted`、`ViewResultAlg`、项目 `Process/` 映射 | Engine 负责通用结果，客户字段通常在项目包映射 |
+| 结果窗口打开但 overlay 不对 | `IResultHandleBase`、模板目录 DAO、`ColorVision.ImageEditor` 图元 | 先确认 handler 命中结果类型，再查坐标转换和图像路径 |
+| 打包后图标、schema 或工具缺失 | `ColorVision.Engine.csproj` 的 `Resource` / `None Update` | 本地源码存在不代表发布输出存在 |
+
 ## 当前几个最容易写错的点
 
 ### 它不是“所有算法都在本地执行”的模块

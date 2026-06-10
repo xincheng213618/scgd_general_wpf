@@ -23,7 +23,9 @@
 
 ## 既存のプラグインに関する推奨リファレンス
 
-- [パターンプラグイン](../../04-api-reference/plugins/standard-plugins/pattern.md)
+- [Conoscope プラグイン](../../04-api-reference/plugins/standard-plugins/conoscope.md)
+- [Spectrum プラグイン](../../04-api-reference/plugins/standard-plugins/spectrum.md)
+- [SystemMonitor プラグイン](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 - [スペクトラムプラグイン](../../04-api-reference/plugins/standard-plugins/spectrum.md)
 - [SystemMonitorプラグイン](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 

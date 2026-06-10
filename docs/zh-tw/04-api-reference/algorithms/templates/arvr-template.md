@@ -36,6 +36,21 @@
 - `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/AlgorithmNodeConfigurators.cs`
 - `Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs`
 
+## 當前模板矩陣
+
+ARVR 目錄下既有傳統強型別模板，也會在 Flow 中接入 JSON V2 模板。交接時先用下面這張表確認當前鏈路，不要只按目錄名判斷。
+
+| 模板族 | 傳統模板 | 字典/程式碼 | 執行事件 | 關鍵請求參數 | 結果入口 |
+| --- | --- | --- | --- | --- | --- |
+| `FOV` | `TemplateFOV` | `TemplateDicId = 6`，`Code = FOV` | `Event_FOV_GetData` | `TemplateParam` | `ViewHandleFOV`，`ViewResultAlgType.FOV` |
+| `Ghost` | `TemplateGhost` | `TemplateDicId = 7`，`Code = ghost` | `Ghost` | `TemplateParam`、`Color` | `ViewHandleGhost`，`ViewResultAlgType.Ghost` |
+| `MTF` | `TemplateMTF` | `TemplateDicId = 8`，`Code = MTF` | `Event_MTF_GetData` | `TemplateParam`、`POITemplateParam` | `ViewHandleMTF`，`ViewResultAlgType.MTF` |
+| `SFR` | `TemplateSFR` | `TemplateDicId = 9`，`Code = SFR` | `Event_SFR_GetData` | `TemplateParam`、`POITemplateParam` | `ViewHandleSFR`，`ViewResultAlgType.SFR` |
+| `Distortion` | `TemplateDistortionParam` | `TemplateDicId = 10`，`Code = distortion` | `Distortion` | `TemplateParam` | `ViewHandleDistortion`，`ViewResultAlgType.Distortion` |
+| `AOI` | `TemplateAOIParam` | `TemplateDicId = 12`，`Code = AOI` | 當前不是獨立主執行入口 | 模板參數配置 | 主要作為 ARVR/AOI 參數配置，不要誤寫成完整結果鏈 |
+
+這裡的“執行事件”來自當前手動演算法類。Flow 節點的 `operatorCode` 還會覆蓋到 `ARVR.BinocularFusion`、`ARVR.SFR.FindROI`、`FindCross` 這些 JSON 模板分支。
+
 ## 當前主鏈怎麼分
 
 ### MTF
@@ -138,6 +153,29 @@
 
 因此當前 ARVR 族不是一條平坦目錄，而是傳統模板、JSON 模板、POI 模板和 Flow 節點共同拼出來的執行面。
 
+| Flow 算子 | `operatorCode` | 配置器掛載 | 交接重點 |
+| --- | --- | --- | --- |
+| `MTF` | `MTF` | `TemplateMTF` + `TemplatePoi` | 缺 POI 時請求會少 `POITemplateParam`，結果點位解釋不完整。 |
+| `SFR` | `SFR` | `TemplateSFR` + `TemplatePoi` | SFR 結果曲線依賴 ROI/POI 的空間定義。 |
+| `FOV` | `FOV` | `TemplateDFOV` + `TemplateFOV` | 同一屬性名可掛 JSON V2 或傳統模板，排查時要看實際模板來源。 |
+| `畸變` | `Distortion` | `TemplateDistortion2` + `TemplateDistortionParam` | JSON V2 和傳統強型別參數共存，結果展示還要看 `result.Version`。 |
+| `SFR_FindROI` | `ARVR.SFR.FindROI` | `TemplateSFRFindROI` + `TemplatePoi` | 它不是傳統 `TemplateSFR`，而是 JSON ROI 檢出鏈。 |
+| `雙目融合` | `ARVR.BinocularFusion` | `TemplateBinocularFusion` | 走 JSON 模板，不要在 ARVR 傳統目錄裡找參數類。 |
+| `十字計算` | `FindCross` | `TemplateFindCross` + `TemplatePoi` 欄位作為 ROI | 名稱是 ROI，但底層仍用 `TemplatePoi` 模板選擇器。 |
+
+`AlgorithmARVRNode.getBaseEventData(...)` 還會把 `BufferLen`、顏色通道、上一步圖像參數和 SMU 結果一起組進請求。現場如果看到手動執行正常但 Flow 執行異常，需要同時比對手動演算法類和 Flow 節點生成的參數。
+
+## 結果落庫與展示
+
+結果交接不能只看 `Algorithm*.cs`。當前 ARVR 傳統結果至少有下面幾條落庫/展示鏈：
+
+| 結果 | 結果表/欄位線索 | 展示入口 | 排查重點 |
+| --- | --- | --- | --- |
+| `FOV` | `t_scgd_algorithm_result_detail_fov`，包含 `pattern`、`radio`、`camera_degrees`、`dist`、`threshold`、`degrees` | `ViewHandleFOV` | 圖像輸入、模板參數和結果表中的角度/距離欄位要一起看。 |
+| `Ghost` | `t_scgd_algorithm_result_detail_ghost`，包含 `rows`、`cols`、`radius`、`led_centers`、`ghost_pixels` | `ViewHandleGhost` | 顏色通道和點陣數量會影響最終 overlay。 |
+| `SFR` | `t_scgd_algorithm_result_detail_sfr`，包含 ROI、`gamma`、`pdfrequency`、`pdomain_sampling_data` | `ViewHandleSFR`、`WindowSFR` | CSV/曲線展示來自採樣資料反序列化，不只是單個數值。 |
+| `Distortion` | `t_scgd_algorithm_result_detail_distortion`，包含 `layout_type`、`slope_type`、`corner_type`、`max_ratio`、`final_points` | `ViewHandleDistortion`、`ViewResultDistortion` | 枚舉映射和最終點陣要一起校驗。 |
+
 ## 當前幾個最容易寫錯的點
 
 ### ARVR 不是統一 schema
@@ -155,6 +193,20 @@
 ### 結果處理程式碼同樣重要
 
 像 `ViewHandleMTF`、`WindowSFR`、`ViewResultDistortion` 這些結果層實現，是理解使用者最終看到什麼的重要入口，不該被舊文件省掉。
+
+### 傳統模板和 JSON V2 不是替代關係
+
+FOV、Ghost、Distortion、SFR_FindROI 等鏈路在 Flow 中會同時暴露傳統模板和 JSON 模板。不能簡單寫成“已經升級到 V2”，也不能只保留舊模板說明；要按實際 `operatorCode`、模板類型和結果版本確認。
+
+## 驗收建議
+
+| 場景 | 必驗項 |
+| --- | --- |
+| 手動 MTF/SFR | 請求參數同時包含 `TemplateParam` 和 `POITemplateParam`，結果能被對應 `ViewHandle*` 接住。 |
+| Flow ARVR 節點 | 切換演算法類型後，模板選擇器隨類型切換，並且 `operatorCode` 與演算法類型一致。 |
+| FOV/Distortion V2 | 同一節點能區分傳統模板和 JSON 模板，結果展示不串 handler。 |
+| SFR 曲線 | `WindowSFR` 能開啟曲線，CSV 匯出欄位和結果表 `pdomain_sampling_data` 對得上。 |
+| Ghost | 請求包含 `Color`，結果表裡的點陣數量和 overlay 展示一致。 |
 
 ## 推薦閱讀順序
 

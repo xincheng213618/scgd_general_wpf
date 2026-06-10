@@ -98,6 +98,41 @@ In this repository, `ST.Library.UI` is more used as infrastructure by `FlowEngin
 
 So documentation should not write it as a "flow system" at the same layer as business logic — it is the UI foundation library beneath the flow system.
 
+## Handoff Acceptance
+
+When taking over this module, the goal is not to validate a specific business flow, but to confirm that node-editor infrastructure still works:
+
+| Check | Where to Look | Passing Standard |
+| --- | --- | --- |
+| Node type loading | `STNodeTypeRegistry`, `CVNodeContainer.LoadAssembly(...)` | Current and external node assemblies can be registered, and the node tree shows the expected types |
+| Canvas loading | `STNodeEditor.LoadCanvas(...)`, `CVNodeContainer.LoadCanvas(...)` | File, byte[], and Stream entry points restore nodes, positions, properties, and connections |
+| Missing-type handling | `CVNodeContainer.LoadCanvas(...)` | Missing node types or assemblies produce clear exceptions/prompts instead of silently creating a broken canvas |
+| Node editing | `STNodeEditor`, `STNode` | Add, move, select, delete, active-state switching, and repainting work correctly |
+| Port connections | `STNodeOption`, `OptionConnecting`, `OptionConnected`, `OptionDisConnecting`, `OptionDisConnected` | Connection limits, disconnects, event order, and data transfer remain correct |
+| Property editing | `STNodePropertyGrid`, `FrmSTNodePropertyInput`, `FrmSTNodePropertySelect` | Text, enum, boolean, and read-only properties edit or disable according to node definitions |
+| Canvas interaction | `CanvasMoved`, `CanvasScaled` | Canvas dragging, zooming, zoom hints, and connection status hints work |
+| WPF host embedding | Upper-level Flow editor windows | Mouse, keyboard, focus, and zoom remain usable after embedding WinForms controls inside WPF |
+
+## Change Boundary
+
+| Change Type | Should This Module Change | Notes |
+| --- | --- | --- |
+| Node canvas, port connection, node tree, or node property panel interaction changes | Yes | This is the foundation responsibility of `ST.Library.UI` |
+| Business execution logic of flow nodes changes | Usually no | Start with `FlowEngineLib`, `NodeConfigurator`, Engine templates, or project-specific nodes |
+| Outer WPF page layout changes | Usually no | Start with the UI host page; this module should only handle behavior inside the WinForms controls |
+| Node configuration save format changes | Maybe | If `LoadCanvas(...)` and connection restoration are affected, update this module; if only business fields change, start in upper-level nodes |
+| New business node types are added | Usually no | Implement and register them in upper-level node assemblies instead of placing customer business logic in the foundation UI library |
+
+## First Checks
+
+| Symptom | First Check |
+| --- | --- |
+| Nodes disappear after opening a canvas | Check whether `STNodeTypeRegistry` loaded the corresponding assembly and whether `CVNodeContainer` reports missing types |
+| Connections are not restored | Check saved input/output port keys, `LoadCanvas(...)` connection restore order, and whether events are intercepted |
+| Property panel edits do not affect the node | Check `STNodePropertyGrid` property descriptors, read-only markers, and input-form writeback |
+| Mouse or keyboard behaves oddly inside WPF | Check WinFormsHost embedding, focus transfer, and shortcut handling before changing business nodes |
+| Dragging or zooming is slow | Start with `STNodeEditor` repainting, cached images, node count, and connection count |
+
 ## Most Common Mistakes to Avoid
 
 ### It Is a WinForms Library, Not a WPF Flow Framework

@@ -23,7 +23,9 @@
 
 ## 기존 플러그인에 대한 권장 참고자료
 
-- [패턴 플러그인](../../04-api-reference/plugins/standard-plugins/pattern.md)
+- [Conoscope 플러그인](../../04-api-reference/plugins/standard-plugins/conoscope.md)
+- [Spectrum 플러그인](../../04-api-reference/plugins/standard-plugins/spectrum.md)
+- [SystemMonitor 플러그인](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 - [스펙트럼 플러그인](../../04-api-reference/plugins/standard-plugins/spectrum.md)
 - [SystemMonitor 플러그인](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 

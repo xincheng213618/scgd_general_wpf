@@ -3,78 +3,82 @@ layout: home
 
 hero:
   name: "ColorVision"
-  text: "Integrated Optoelectronic Technology & Color Management Platform"
-  tagline: A professional application based on Windows WPF technology, focused on providing advanced color management and optoelectronic technology solutions. Supports multi-device integration, workflow automation, and plugin extension to meet optoelectronic R&D and industrial automation needs.
+  text: "Documentation Center for Vision Inspection Delivery"
+  tagline: Organized by project guide, user manual, developer manual, plugin development manual, and existing plugin capabilities. Start with the delivered business project, then move into operation and implementation details.
   image:
     src: /images/ColorVision.png
     alt: ColorVision
   actions:
     - theme: brand
-      text: Get Started
-      link: /en/00-getting-started/README
+      text: Project Guide
+      link: /en/00-projects/README
     - theme: alt
-      text: Daily Use
+      text: User Manual
       link: /en/01-user-guide/README
     - theme: alt
-      text: Design & Architecture
-      link: /en/03-architecture/README
+      text: Plugin Capabilities
+      link: /en/04-api-reference/plugins/README
 
 features:
-  - icon: 🚀
-    title: Installation & First Use
-    details: First confirm system requirements, then complete installation, first launch, and minimal closed-loop experience
-    link: /en/00-getting-started/README
-  
-  - icon: 📖
-    title: Daily Use
-    details: User documentation entry organized by interface, devices, workflows, and troubleshooting
+  - title: Project Guide
+    details: Customer projects and solution packages, including business positioning, flow organization, protocol entry points, result export, and handoff order.
+    link: /en/00-projects/README
+  - title: User Manual
+    details: Installation, first run, main window, devices, workflow execution, data management, and troubleshooting for operators.
     link: /en/01-user-guide/README
-  
-  - icon: 🧩
-    title: Development & Delivery
-    details: Developer entry for plugins, Engine, deployment, updates, and build scripts
+  - title: Developer Manual
+    details: Engine extension, UI DLL publishing, deployment, update packages, build scripts, backend services, and delivery checks.
     link: /en/02-developer-guide/README
-  
-  - icon: 🏗️
-    title: Design & Architecture
-    details: Understand runtime, component interactions, and template system design from a system-level perspective
-    link: /en/03-architecture/README
-  
-  - icon: 📚
-    title: API & Source Guide
-    details: Look up interfaces, find module entry points, locate template and plugin implementation locations
+  - title: Plugin Development Manual
+    details: Plugin interfaces, manifest, loading flow, build copy rules, packaging, publishing, and reference implementations.
+    link: /en/02-developer-guide/plugin-development/README
+  - title: Existing Plugin Capabilities
+    details: Conoscope, Spectrum, SystemMonitor, EventVWR, and WindowsServicePlugin capabilities, entry points, and boundaries.
+    link: /en/04-api-reference/plugins/README
+  - title: Module Reference
+    details: UI DLLs, Engine business chains, algorithm templates, extension points, and source-code anchors.
     link: /en/04-api-reference/README
-  
-  - icon: 🗂️
-    title: Structure & Appendices
-    details: Quickly locate repository content using project structure overview and module documentation cross-reference
+  - title: Resources
+    details: Repository structure, module-to-documentation map, license agreement, and stable appendix material.
     link: /en/05-resources/README
 ---
 
-## 📚 How to Choose Documentation
+## Choose by Goal
 
-| If you want to | Start here | Description |
-|------|------|----------|
-| Install the program or confirm if your machine can run it | [Getting Started](/en/00-getting-started/README) | Covers system requirements, installation, first run, and quick start |
-| Already installed, want to learn the interface and operations | [User Guide](/en/01-user-guide/README) | For daily use, does not expand on internal implementation |
-| Need to modify code, create plugins, package and release | [Developer Guide](/en/02-developer-guide/README) | Covers extension points, build, deployment, and delivery processes |
-| Want to understand why the system is designed this way | [Architecture Design](/en/03-architecture/README) | Focuses on runtime relationships, component boundaries, and design philosophy |
-| Want to directly look up modules, interfaces, and implementation entry points | [API Reference](/en/04-api-reference/README) | For source code navigation, not a user manual |
-| Want to view repository directory, appendices, and documentation mapping | [Appendices & Resources](/en/05-resources/README) | For quickly locating materials, does not carry main tutorials |
+| What you need to do | Start here | What you should know after reading |
+| --- | --- | --- |
+| Take over a customer project | [Project Guide](/en/00-projects/README) | Business purpose, workflow structure, protocol entry points, result export, and maintenance boundaries for each project |
+| Install, start, or operate the system | [User Manual](/en/01-user-guide/README) | System requirements, main window, devices, image editor, workflow execution, data, and troubleshooting |
+| Modify code, build packages, or deliver a version | [Developer Manual](/en/02-developer-guide/README) | Development entry points and delivery checks for Engine, UI, deployment, scripts, and backend services |
+| Add or maintain a plugin | [Plugin Development Manual](/en/02-developer-guide/plugin-development/README) | Plugin interfaces, manifest, loading, build copy, packaging, and publishing conventions |
+| Check what current plugins can do | [Existing Plugin Capabilities](/en/04-api-reference/plugins/README) | Capabilities, entry points, dependencies, build notes, and maintenance risks for each plugin |
+| Look up source modules | [Module Reference](/en/04-api-reference/README) | Responsibilities, entry points, and key classes for UI, Engine, algorithm templates, and extension points |
+| Locate directories quickly | [Resources](/en/05-resources/README) | Repository structure, documentation mapping, and stable appendices |
 
-## Current Organization Principles
+## Five Main Modules
 
-- Installation and first use are centralized in `00-getting-started/`
-- Daily operations are centralized in `01-user-guide/`
-- Secondary development, deployment, and delivery are centralized in `02-developer-guide/`
-- Design boundaries and runtime understanding are centralized in `03-architecture/`
-- Module, interface, and implementation guides are centralized in `04-api-reference/`
-- Project structure, appendices, and stable indexes are centralized in `05-resources/`
+The documentation is organized so handoff starts with the delivered object, then moves into operation and implementation:
 
-## Tech Stack
+| Module | Directories | Problem it answers |
+| --- | --- | --- |
+| Project Guide | `00-projects/`, `04-api-reference/projects/` | What the customer project is, how it is triggered, how flows run, how results export, and how to hand it over |
+| User Manual | `00-getting-started/`, `01-user-guide/` | How operators install, start, connect devices, run flows, view data, and troubleshoot field issues |
+| Developer Manual | `02-developer-guide/`, `03-architecture/`, `04-api-reference/engine-components/`, `04-api-reference/ui-components/` | How developers understand Engine business chains, UI DLLs, build, test, deployment, and release |
+| Plugin Development Manual | `02-developer-guide/plugin-development/` | How to add, load, debug, package, and publish a general plugin |
+| Existing Plugin Capabilities | `04-api-reference/plugins/` | What current real plugins do, where they enter, what they depend on, and how to accept and troubleshoot them |
 
-![.NET Version](https://img.shields.io/badge/.NET-10.0-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
-![WPF](https://img.shields.io/badge/UI-WPF-blue.svg)
-![License](https://img.shields.io/github/license/xincheng213618/scgd_general_wpf.svg)
-![Stars](https://img.shields.io/github/stars/xincheng213618/scgd_general_wpf.svg)
+## Supporting Material
+
+These sections support the five main modules and are not the first reading entry:
+
+- `04-api-reference/`: module reference for UI DLLs, Engine, algorithm templates, extension points, plugins, and detailed project pages.
+- `05-resources/`: project structure, module documentation map, license agreement, and stable appendices.
+- Locale directories: after Chinese pages are stable, translate the same structure to English, Traditional Chinese, Japanese, and Korean.
+
+## Maintenance Principles
+
+- The user manual should only describe what operators can see and do.
+- Module reference pages must point back to current source folders, project files, manifests, or key classes.
+- UI module docs focus on DLL/NuGet publishing, dependency relationships, and consumption patterns.
+- Engine module docs focus on the business chain across devices, templates, Flow, MQTT, data, and result display.
+- Plugin and project-package docs must match real directories in the current repository; missing historical modules must not be presented as current capabilities.

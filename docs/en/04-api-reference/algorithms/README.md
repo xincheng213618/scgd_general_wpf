@@ -18,10 +18,11 @@ If you are looking for OpenCV-level low-level processing functions, the entry po
 ### Entry Page
 
 - [Algorithm System Overview](./overview.md): Overall description of the current implementation chain — read this page first for the most efficient overview.
+- [Current Algorithm Template Coverage](./current-algorithm-template-coverage.md): Maps actual `Templates/` directories to documentation entries and follow-up gaps.
 
 ### Topic Directories
 
-- `templates/`: Template management, flow templates, JSON templates, POI/ARVR, and other topic pages.
+- `templates/`: Template management, flow templates, JSON templates, POI/ARVR, FindLightArea, JND, LED detection, BuzProduct, Validate, Compliance, DataLoad, Matching, SysDictionary, FocusPoints, ImageCropping, template menu entries, and other topic pages.
 - `detectors/`: A small number of defect/detection topics.
 - `primitives/`: A small number of basic building block descriptions.
 
@@ -49,6 +50,7 @@ From the current state, these are the most important file types in the template 
 ## Recommended Reading Order
 
 1. Start with [Algorithm System Overview](./overview.md) to build understanding of the runtime main chain.
-2. Then cross-reference [Templates Module Analysis](../../03-architecture/components/templates/analysis.md) to understand directory structure and registration entry points.
-3. If interested in flow templates, read [FlowEngineLib Architecture](../../03-architecture/components/engine/flow-engine.md).
-4. Finally, enter individual pages under `templates/` by specific business domain, always cross-referencing with source code.
+2. Then read [Current Algorithm Template Coverage](./current-algorithm-template-coverage.md) to locate the documentation entry for each `Templates/` subdirectory.
+3. Then cross-reference [Templates Module Analysis](../../03-architecture/components/templates/analysis.md) to understand directory structure and registration entry points.
+4. If interested in flow templates, read [FlowEngineLib Architecture](../../03-architecture/components/engine/flow-engine.md).
+5. Finally, enter individual pages under `templates/` by business domain, such as [FindLightArea Template](./templates/find-light-area.md), [JND Template](./templates/jnd-template.md), [LED Detection Templates](./templates/led-detection.md), [BuzProduct Business Template](./templates/buz-product-template.md), [Validate Rule Templates](./templates/validate-rules.md), [Compliance Result Handoff](./templates/compliance-results.md), [DataLoad Template](./templates/data-load-template.md), [Matching Template](./templates/matching-template.md), [SysDictionary Template](./templates/sys-dictionary-template.md), [FocusPoints Template](./templates/focus-points-template.md), [ImageCropping Template](./templates/image-cropping-template.md), and [Template Menu Entries](./templates/template-menu-entries.md), always cross-referencing with source code.

@@ -15,13 +15,13 @@
 
 ## 현재 가장 중요한 파일
 
-- `엔진/ST.Library.UI/NodeEditor/STNodeEditor.cs`
-- `엔진/ST.Library.UI/NodeEditor/STNode.cs`
-- `엔진/ST.Library.UI/NodeEditor/STNodeOption.cs`
-- `엔진/ST.Library.UI/NodeEditor/STNodePropertyGrid.cs`
-- `엔진/ST.Library.UI/NodeEditor/STNodeTreeView.cs`
-- `엔진/ST.Library.UI/NodeEditor/STNodeEditorPannel.cs`
-- `엔진/ST.Library.UI/FrmSTNodePropertyInput.cs`
+- `Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs`
+- `Engine/ST.Library.UI/NodeEditor/STNode.cs`
+- `Engine/ST.Library.UI/NodeEditor/STNodeOption.cs`
+- `Engine/ST.Library.UI/NodeEditor/STNodePropertyGrid.cs`
+- `Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs`
+- `Engine/ST.Library.UI/NodeEditor/STNodeEditorPannel.cs`
+- `Engine/ST.Library.UI/FrmSTNodePropertyInput.cs`
 
 현재 저장소에서 이 라이브러리가 실제로 무엇을 하는지 알고 싶다면 이 파일들이 이미 본문을 다루고 있습니다.
 
@@ -116,19 +116,19 @@
 
 현재 실제 사용법은 `ST.Library.UI`에 비즈니스 노드 로직을 직접 작성하는 대신 상위 계층에서 노드 유형을 정의한 다음 여기에서 편집기, 트리 및 속성 패널에 전달하는 것입니다.
 
-## 추천읽기순서
+## 추천 읽기 순서
 
-1. `엔진/ST.Library.UI/NodeEditor/STNodeEditor.cs`
-2. `엔진/ST.Library.UI/NodeEditor/STNode.cs`
-3. `엔진/ST.Library.UI/NodeEditor/STNodeOption.cs`
-4. `엔진/ST.Library.UI/NodeEditor/STNodePropertyGrid.cs`
-5. `엔진/ST.Library.UI/NodeEditor/STNodeTreeView.cs`
-6. `엔진/ST.Library.UI/NodeEditor/STNodeEditorPannel.cs`
+1. `Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs`
+2. `Engine/ST.Library.UI/NodeEditor/STNode.cs`
+3. `Engine/ST.Library.UI/NodeEditor/STNodeOption.cs`
+4. `Engine/ST.Library.UI/NodeEditor/STNodePropertyGrid.cs`
+5. `Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs`
+6. `Engine/ST.Library.UI/NodeEditor/STNodeEditorPannel.cs`
 
 이런 식으로 먼저 캔버스와 노드 모델을 설정한 다음 속성 패널과 노드 라이브러리가 어떻게 연결되어 있는지 이해할 수 있습니다.
 
 ## 계속 읽기
 
-- [docs/04-api-reference/engine-comComponents/FlowEngineLib.md](./FlowEngineLib.md)
+- [docs/04-api-reference/engine-components/FlowEngineLib.md](./FlowEngineLib.md)
 - [docs/04-api-reference/extensions/flow-node.md](../extensions/flow-node.md)
-- [문서/03-아키텍처/컴포넌트/엔진/플로우-엔진.md](../../03-아키텍처/컴포넌트/엔진/플로우-엔진.md)
+- [docs/03-architecture/components/engine/flow-engine.md](../../03-architecture/components/engine/flow-engine.md)

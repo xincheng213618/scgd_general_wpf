@@ -69,6 +69,42 @@ Two common types of problems:
 
 The current execution window continuously updates log text. When you see a failure, first check which node it last stopped at, whether preprocessing failure, execution cancellation, or status messages appeared before and after, then decide which layer to go back to for troubleshooting.
 
+## What to Record for Workflow Handoff
+
+A workflow handoff is not just a workflow file. The next maintainer needs to know the devices, templates, inputs, results, and external systems it depends on.
+
+| Record | What to capture | Why it matters |
+| --- | --- | --- |
+| Workflow template | name, version, import source, last editor | Prevents running an old workflow |
+| Start conditions | start node, SN/batch input, project window or external trigger | Explains why a workflow did not start |
+| Device dependencies | camera, motor, SMU, file service bindings | Isolates device-layer failures |
+| Template dependencies | image template, calibration template, thresholds | Explains result drift |
+| Data destinations | database table, export file, image folder, Socket/MES response | Confirms where results should appear |
+| Failure evidence | first failed node, log timestamp, error message | Lets the next person reproduce the failure |
+
+## Minimal Retest Script
+
+For field retest or upgrade verification, do not start with the full production chain. Use a minimal run first.
+
+1. Open workflow design and confirm the template and start node exist.
+2. Open execution and select the same workflow template.
+3. Confirm related device services are online; run a device smoke action if needed.
+4. Prepare a safe SN, image, or test input that will not affect production.
+5. Press `F6`, then record start time, current node, final state, and duration.
+6. Query the same run in logs, images, database, export file, or external response.
+7. If stopping is required, press `F7` and confirm the state is recorded as canceled, not unknown.
+
+## Failure Triage Table
+
+| Failure point | Typical behavior | Check first |
+| --- | --- | --- |
+| Before execution | Run does nothing, service refresh prompt, missing start node | registry center, service list, workflow template, start node |
+| Preprocessing | canceled immediately or preprocessing failed | inputs, template validity, project window context |
+| Device node | timeout, no device response, abnormal return code | device page, hardware, device Code, MQTT/serial/IP |
+| Template node | completes but result is wrong | template version, thresholds, image source, calibration data |
+| Data node | workflow completes but result is not visible | database write, batch/SN, export target, permissions |
+| External system | ColorVision completes but MES/Socket gets nothing | protocol, port, project handler, response fields |
+
 ## Common Issues
 
 ### Pressed Run but Workflow Did Not Start
@@ -102,6 +138,7 @@ The current execution window continuously updates log text. When you see a failu
 - [Device Service Overview](../devices/overview.md)
 - [Log Viewer](../interface/log-viewer.md)
 - [Data Management](../data-management/README.md)
+- [Field Operation Acceptance Checklist](../field-operation-acceptance.md)
 
 ## Notes
 

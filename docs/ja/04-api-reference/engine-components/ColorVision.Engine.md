@@ -150,5 +150,5 @@
 ## 続きを読む
 
 - [docs/04-api-reference/engine-components/FlowEngineLib.md](./FlowEngineLib.md)
-- [ドキュメント/03-アーキテクチャ/コンポーネント/テンプレート/分析.md](../../03-アーキテクチャ/コンポーネント/テンプレート/分析.md)
+- [docs/03-architecture/components/templates/analysis.md](../../03-architecture/components/templates/analysis.md)
 - [docs/04-api-reference/algorithms/overview.md](../algorithms/overview.md)

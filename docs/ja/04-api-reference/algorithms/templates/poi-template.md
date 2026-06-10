@@ -1,19 +1,15 @@
 # POI テンプレート
 
-このページでは、現在のウェアハウスに実際に存在する POI テンプレート ファミリについてのみ説明しており、「Detector Interface Encyclopedia + Pluggable Algorithm Sample」スタイルの古いドラフトは維持されていません。
+このページは、現在のリポジトリに実在する POI テンプレート群だけを扱います。POI は単独の検出アルゴリズムではなく、点集合を作成、保存、補正、出力し、他のアルゴリズムから再利用される共有テンプレート体系です。
 
-## このテンプレート ファミリは現在何をしているのでしょうか?
+## 現在の役割
 
-現在のソース コードのステータスによると、POI は独立したテンプレートではなく、「ポイント セット データ」を中心とした一連のテンプレートとアルゴリズム ホストです。
+- 主 POI テンプレートは点集合、サイズ、四隅、設定 JSON を保存します。
+- フィルタ、補正、校正、出力には別々の伴生テンプレートがあります。
+- ランタイムアルゴリズムはこれらのテンプレートを MQTT リクエストに組み立てます。
+- Flow ノード、ARVR、JSON アルゴリズムも POI テンプレートを消費します。
 
-- メインの POI テンプレートは、ポイント セット、寸法、構成を保存する役割を果たします。
-- フィルタリング、補正、キャリブレーション、および出力には、それぞれ独自の関連テンプレートがあります。
-- ランタイム アルゴリズムは、これらのテンプレートを MQTT リクエストに組み込む役割を果たします。
-- フロー ノードといくつかの JSON アルゴリズムは、引き続き POI テンプレートを使用します。
-
-したがって、このページで実際に説明するのは、「特定の POI 検出アルゴリズム」ではなく、現在のシステムで POI テンプレートがどのように作成、編集、保存、再利用されるかについてです。
-
-## 現時点で最も重要なファイル
+## 重要なファイル
 
 - `Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs`
 - `Engine/ColorVision.Engine/Templates/POI/PoiParam.cs`
@@ -23,129 +19,110 @@
 - `Engine/ColorVision.Engine/Templates/POI/POIFilters/TemplatePoiFilterParam.cs`
 - `Engine/ColorVision.Engine/Templates/POI/POIRevise/TemplatePoiReviseParam.cs`
 - `Engine/ColorVision.Engine/Templates/POI/POIOutput/TemplatePoiOutputParam.cs`
-- `Engine/ColorVision.Engine/Templates/POI/POIGenCali/TemplatePoiGenCalParam.cs`
+- `Engine/ColorVision.Engine/Templates/POI/POIGenCali/TemplatePOICalParam.cs`
 - `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/POINodeConfigurators.cs`
 
-## 現在のメインチェーンを実行する方法
+## 現在のテンプレートマトリクス
 
-### メインテンプレートとデータモデル
+| テンプレート | 辞書/コード | 編集入口 | 主な用途 |
+| --- | --- | --- | --- |
+| `TemplatePoi` | `TemplateDicId = -1`, `Code = POI` | `EditPoiParam` 独立ウィンドウ | 点集合、サイズ、四隅、設定 JSON、点明細を保存する。 |
+| `TemplateBuildPoi` | `TemplateDicId = 16`, `Code = BuildPOI` | テンプレート/布点 UI | ルールまたは CAD マッピングで POI を生成する。 |
+| `TemplatePoiFilterParam` | `TemplateDicId = 23`, `Code = POIFilter` | カスタムフィルタ編集 | POI 実行時の任意フィルタテンプレート。 |
+| `TemplatePoiReviseParam` | `TemplateDicId = 24`, `Code = PoiRevise` | テンプレート編集 | POI 実行時の任意補正テンプレート。 |
+| `TemplatePoiGenCalParam` | `TemplateDicId = 25`, `Code = POIGenCali` | カスタム校正編集 | POI 校正/補正 Flow ノードで使用。 |
+| `TemplatePoiOutputParam` | `TemplateDicId = 27`, `Code = PoiOutput` | カスタム出力編集 | POI 実行時の任意ファイル出力テンプレート。 |
+| `TemplateBuildPOIAA` | `TemplateDicId = 41`, `Code = BuildPOI` | JSON テンプレート編集 | AA 検出結果から POI を作る JSON V2 分岐。 |
 
-`TemplatePoi` が正面玄関です。現在、いくつかの重要な実装機能があります。
+主テンプレートは実際の点位置を保存し、伴生テンプレートは点をどう生成、フィルタ、補正、出力するかを表します。
 
-- `ITemplate<PoiParam>` を継承
-- `IsSideHide = true`
-- テンプレートコードは`POI`に固定されています
-- リスト項目をダブルクリックすると `EditPoiParam` を直接開きます
+## 主テンプレートとデータモデル
 
-多くの通常のテンプレートとは異なり、POI メイン テンプレートは右側の `PropertyGrid` に単純に依存するのではなく、独自の編集ウィンドウを持っています。
+`TemplatePoi` は `ITemplate<PoiParam>` を継承し、`IsSideHide = true`、`Code = POI` です。リスト項目をダブルクリックすると `EditPoiParam` が開くため、通常の右側 `PropertyGrid` だけで説明してはいけません。
 
-`PoiParam` は、いくつかの値を格納するだけの単純なパラメーター クラスではありません。現在、以下をホストしています:
+`PoiParam` は `Width`、`Height`、四隅座標、`CfgJson`、`PoiConfig`、`ObservableCollection<PoiPoint>` を保持します。`PoiPoint` は `Id`、`Name`、`PointType`、`PixX`、`PixY`、`PixWidth`、`PixHeight` を保存します。
 
-- テンプレートサイズ `Width`、`Height`
-- 四隅座標 `LeftTopX/Y`、`RightTopX/Y`、`RightBottomX/Y`、`LeftBottomX/Y`
-- `CfgJson` と `PoiConfig` 間の双方向変換
-- `ObservableCollection<PoiPoint> PoiPoints`
+## 永続化
 
-`PoiPoint` 自体は、現在のシステムで実際に使用されるポイント情報を保存します。
+POI 主テンプレートは通常の `ModMasterModel`/`ModDetailModel` ではなく、専用テーブルを使います。
 
-- `Id`
-- `Name`
-- `PointType`
-- `PixX`、`PixY`
-- `PixWidth`、`PixHeight`
+| テーブル | 主なフィールド | 意味 |
+| --- | --- | --- |
+| `t_scgd_algorithm_poi_template_master` | `name`, `type`, `width`, `height`, 四隅座標, `cfg_json`, `tenant_id`, `is_delete` | POI テンプレート本体、キャンバスサイズ、設定 JSON。 |
+| `t_scgd_algorithm_poi_template_detail` | `pid`, `pt_type`, `pix_x`, `pix_y`, `pix_width`, `pix_height`, `remark` | 各 POI 点または領域の位置とサイズ。 |
 
-したがって、POI テンプレートは現在、「ポイント セット テンプレート + 構成テンプレート」の組み合わせに近いものになります。
+`PoiParam.LoadPoiDetailFromDB(...)` は点明細を読み戻します。保存時は主レコードを保存し、古い点明細を削除して `PoiDetailModel` をまとめて書き直します。コピーやインポートではテンプレートと点の `Id` を `-1` に戻します。
 
-### 現在の永続化メソッド
+## ランタイム POI 実行
 
-POI メイン テンプレートは、通常のデフォルト パスの `ModMasterModel`/`ModDetailModel` セットではありません。現在、専用のテーブルを使用しています。
+`AlgorithmPoi` は `Event_POI_GetData` を送ります。主テンプレートだけでなく、フィルタ、補正、出力、ファイル/DB 点集合の選択もまとめます。
 
-- `PoiMasterDao`
-- `PoiDetailDao`
+| パラメータ | ソース | 説明 |
+| --- | --- | --- |
+| `TemplateParam` | `TemplatePoi` | 必須の主 POI テンプレート。 |
+| `FilterTemplate` | `TemplatePoiFilterParam` | `Id != -1` のとき送信。 |
+| `ReviseTemplate` | `TemplatePoiReviseParam` | `Id != -1` のとき送信。 |
+| `OutputTemplate` | `TemplatePoiOutputParam` | `Id != -1` のとき送信。 |
+| `POIStorageType` | `POIStorageModel` | ファイルモードで送信し、DB 点集合と外部点ファイルを区別する。 |
+| `POIPointFileName` | ファイル選択 | ファイルモードの外部点ファイルパス。 |
+| `IsSubPixel`, `IsCCTWave` | アルゴリズム UI | サブピクセル/CCT 波形関連の実行オプション。 |
 
-`PoiParam.LoadPoiDetailFromDB(...)` はポイントの詳細を `PoiPoints` にロードして戻します。拡張メソッド `Save2DB(...)` は次のことを行います。
+## BuildPOI
 
-- マスターレコードの保存
-- 古いポイント詳細を削除します
-- BulkCopy を使用して `PoiDetailModel` のセット全体を書き換えます
+`AlgorithmBuildPoi` は `Event_Build_POI` を送ります。`TemplateBuildPoi` を使い、`POILayoutReq`、`POIStorageType`、`BuildType` を送ります。`POIBuildType == CADMapping` の場合は `LayoutPolygon` と `CADMappingParam` も付けます。
 
-これは、POI ページが偏りやすい場所の 1 つでもあります。これは、「一般的なテンプレート テーブル内の通常の詳細アイテムのセット」ではなく、独自のポイント テーブルです。
+`Event_Build_POI` は点集合を生成する側、`Event_POI_GetData` は点集合から値を取る側です。現場調査ではこの 2 つを混同しないでください。
 
-### インポート、コピー、作成
+## Flow での消費
 
-`TemplatePoi` は現在以下をサポートしています:
+| Flow 設定分岐 | デバイス/入力 | テンプレート選択器 | 引き継ぎポイント |
+| --- | --- | --- | --- |
+| POI 校正補正 | `DeviceAlgorithm` | `TemplatePoiGenCalParam` | 主 POI ではなく校正補正テンプレートを扱う。 |
+| POI フィルタ/補正/出力 | `DeviceAlgorithm` | `TemplatePoiFilterParam`, `TemplatePoiReviseParam`, `TemplatePoiOutputParam` | 既存 POI 結果の後処理。 |
+| POI 実行 | `DeviceAlgorithm` + 画像パス | `TemplatePoi`, フィルタ, 補正, 出力 | `Event_POI_GetData` の完全な実行チェーン。 |
+| BuildPOI | `DeviceAlgorithm` + 画像パス | `TemplateBuildPoi` または `TemplateBuildPOIAA`, `RePOI`, `LayoutROI`, `SavePOI` | 伝統布点と JSON AA 布点を両方扱う。 |
+| PoiAnalysis | `DeviceAlgorithm` | `TemplatePoiAnalysis` | JSON 分析テンプレートも POI 関連結果を消費する。 |
 
-- 現在のテンプレートから JSON の一時コピーとしてコピーします
-- `.cfg` から点セット テンプレートをインポート
-- エクスポートする前にポイントの詳細をアクティブにロードします
-- 作成時に、インポートされたコピーまたは空のテンプレートをデータベースに書き込みます。
+## 結果保存と表示
 
-さらに、コピーまたはインポート後、古い主キーの直接の再利用を避けるために、テンプレート `Id` と各ポイントの `Id` は `-1` にリセットされます。
+| 結果タイプ | 表示/エクスポート入口 | テーブル/ファイルの手がかり |
+| --- | --- | --- |
+| `POI`, `POI_Y` | `ViewHanlePOIY` | CSV エクスポート。値は POI 明細結果から来る。 |
+| `POI_XYZ` | `ViewHanlePOIXZY` | CSV と XYZ 表示。 |
+| `POI_XYZ_File`, `POI_Y_File`, `POI_CIE_File` | `ViewHanlePOIXZY` | ファイル型結果。`t_scgd_algorithm_result_detail_poi_cie_file` を確認する。 |
+| `RealPOI`, `POI_XYZ_V2`, `POI_Y_V2`, `KB_Output_Lv`, `KB_Output_CIE` | `ViewHandleRealPOI` | V2/プロジェクト出力チェーン。実際の `ResultType` を確認する。 |
+| `BuildPOI`, `BuildPOI_File` | `ViewHandleBuildPoi`, `ViewHandleBuildPoiFile` | 布点結果またはファイル結果。新しい POI データを生成することがある。 |
 
-### ランタイムアルゴリズムチェーン
+点値明細には `t_scgd_algorithm_result_detail_poi_mtf` があり、`poi_id`、`poi_name`、`poi_type`、`poi_x/y`、`poi_width/height`、`value` を扱います。
 
-`AlgorithmPoi` は現在、メインの POI 操作エントリです。それは次のことを担当します。
+## よくある誤解
 
-- POIメインテンプレート編集ウィンドウを開きます
-- フィルタリング、修正、出力テンプレート編集ウィンドウを開く
-- ファイルモードで外部ポイントファイルを選択
-- `Event_POI_GetData` の MQTT パラメータをアセンブルする
+### POI は単独アルゴリズムではない
 
-現在送信されているパラメータには、メイン テンプレートだけでなく、次のものも含まれる場合があります。
+POI は共有点集合テンプレート体系であり、点の生成、フィルタ、補正、他アルゴリズムからの参照を受け持ちます。
 
-- `FilterTemplate`
-- `ReviseTemplate`
-- `OutputTemplate`
-- `POIStorageType`
-- `POIPointFileName`
-- `IsSubPixel`
-- `IsCCTWave`
+### 主保存は通常の detail テーブルではない
 
-これは、POI 実行チェーンが現在、単独で実行されている単一のテンプレートではなく、「複数のテンプレートの組み合わせリクエスト」であることを示しています。
+主テンプレートは `PoiMasterDao` と `PoiDetailDao` に依存します。通常のテンプレート表だけで説明すると点明細を見落とします。
 
-### ポイント レイアウトと付属のテンプレート
+### 主エディタは純粋な `PropertyGrid` ではない
 
-`AlgorithmBuildPoi` も重要なチェーンです。現在、次のことを担当しています。
+`TemplatePoi` は `EditPoiParam` を開き、フィルタや出力テンプレートも専用編集 UI を持ちます。
 
-- レイアウト テンプレート `TemplateBuildPoi` を開きます
-- CAD ファイルのオプションのロード
-- `POIBuildType == CADMapping` および `CADMappingParam` の 4 点ポリゴンが付属
-- `Event_Build_POI` をリリース
+### ファイルモードと DB モードが共存する
 
-これに加えて、POI ファミリには現在、いくつかのコンパニオン テンプレートが含まれています。
+`AlgorithmPoi` は `POIStorageModel.Db` と `POIStorageModel.File` の両方を扱います。
 
-- `TemplatePoiFilterParam`: フィルター テンプレート、`Code = POIFilter`、カスタム編集コントロールを使用します。
-- `TemplatePoiReviseParam`: テンプレートを修正、`Code = PoiRevise`
-- `TemplatePoiGenCalParam`: 正しいキャリブレーション テンプレート、`Code = POIGenCali`、カスタム編集コントロールを使用
-- `TemplatePoiOutputParam`: 出力テンプレート、`Code = PoiOutput`、カスタム編集コントロールを使用
+## 受け入れ確認
 
-これらのテンプレートは、コメント内の「オプションの拡張機能」ではなく、現在のフローおよびアルゴリズム チェーンで実際に参照されるオブジェクトです。
-
-### Flow やその他のアルゴリズムは POI をどのように消費しますか?
-
-POI は、単一アルゴリズムのプライベート テンプレートではなく、共有プリミティブになりました。現在、少なくとも 3 つの明確な消費パスがあります。
-
-1. `POINodeConfigurators` は、`TemplatePoi`、フィルタリング、補正、出力、キャリブレーション、およびその他のテンプレートを POI ノード属性パネルにハングします。
-2. `AlgorithmPoiAnalysis` には、JSON 解析テンプレートに加えて `POITemplateParam` が引き続き付属します。
-3. `AlgorithmSFRFindROI`、`AlgorithmOLEDAOI` このタイプのアルゴリズムは、さらに `TemplatePoi` も参照します。
-
-## 現在、最もよくある間違いのいくつかが犯されています
-
-### POI は別個のアルゴリズムではありません
-
-現在のウェアハウス内の POI は、ポイントを生成したり、ポイントをフィルタリングしたり、他のアルゴリズムによって使用したりできる、共有ポイント セット テンプレート システムに似ています。
-
-### メインストレージは通常の詳細テーブルではありません
-
-メインのテンプレートは `PoiMasterDao` と `PoiDetailDao` に依存しています。一般的なテンプレート表に従って説明を続けると、詳細レベルを見逃してしまいます。
-
-### メインエディタは純粋な `PropertyGrid` ではありません
-
-`TemplatePoi` はダブルクリックすると `EditPoiParam` に入ります。フィルタリングおよび出力テンプレートには、独自の `UserControl` エディターもあります。そのまま統一した右側のプロパティパネルとして書き続けると、実際のインターフェースと矛盾してしまいます。
-
-### ファイルモードとデータベースモードが共存
-
-`AlgorithmPoi` は、`POIStorageModel.Db` および `POIStorageModel.File` パスを明示的にサポートします。ドキュメントでは、POI を「データベース内にのみ存在」として記述することができなくなりました。
+| 場面 | 必須確認 |
+| --- | --- |
+| POI 新規/保存 | master 表に主レコード、detail 表に点明細ができる。 |
+| POI コピー/インポート | テンプレートと点明細の `Id` がリセットされ、旧テンプレートを上書きしない。 |
+| ファイルモード実行 | MQTT パラメータに `POIStorageType` と `POIPointFileName` が入る。 |
+| フィルタ/補正/出力 | 選択時に `FilterTemplate`、`ReviseTemplate`、`OutputTemplate` が送られる。 |
+| BuildPOI CADMapping | `LayoutPolygon` と `CADMappingParam` があり、四点 ROI と CAD ファイルパスが正しい。 |
+| 結果表示 | `ViewResultAlgType` に応じた handler に入り、CSV と結果表/ファイルが一致する。 |
 
 ## 推奨される読む順序
 
@@ -159,4 +136,4 @@ POI は、単一アルゴリズムのプライベート テンプレートでは
 
 - [POI プリミティブ](../primitives/poi.md)
 - [JSON テンプレート](./json-templates.md)
-- [プロセスエンジン](./flow-engine.md)
+- [Flow エンジン](./flow-engine.md)

@@ -1,109 +1,144 @@
-# 프로세스 실행 및 디버깅
+# Flow 실행과 디버깅
 
-이 페이지에는 현재 코드에서 확인할 수 있는 실행 항목과 문제 해결 경로만 유지됩니다. 대부분의 사용자에게 프로세스 실행에 있어 가장 중요한 것은 '고급 디버깅 용어'가 아니라 먼저 올바른 프로세스가 선택되었는지, 서비스가 온라인인지, 시작 노드가 존재하는지, 실패 시 범위를 좁히는 방법을 확인하는 것이다.
+이 페이지는 현재 구현에서 확인할 수 있는 Flow 실행 입구와 문제 분리 절차를 다룹니다. 핵심은 고급 디버깅 용어가 아니라 올바른 Flow template 선택, service online 상태, start node 존재 여부, 실패 시 어디부터 좁힐지입니다.
 
-## 직접 사용할 수 있는 현재 실행 항목
+## 현재 사용할 수 있는 실행 입구
 
-현재 구현으로 볼 때 프로세스 실행에는 최소한 두 가지 유형의 명확한 진입이 있습니다.
+현재 구현에서 명확한 동작은 다음과 같습니다.
 
-- 실행 시작 : `F6`
+- 실행 시작: `F6`
 - 실행 중지: `F7`
 
-이전 문서에 `F5`, `F10`, 중단점 또는 단일 단계 실행이 기록된 경우 현재 인터페이스 및 코드 바인딩을 참조하고 이전 단축키를 계속 사용하여 문제를 해결하지 마세요.
+이전 문서에 `F5`, `F10`, breakpoint, single step 이 있더라도 현재 UI 와 code binding 을 우선합니다.
 
-## 실행 전 확인사항
+## 실행 전 확인할 것
 
-### 유효한 프로세스 템플릿이 선택되었습니다.
+### 유효한 Flow template 선택
 
-현재 유효한 템플릿이 선택되어 있지 않으면 실행이 실제로 시작되지 않습니다. 먼저 드롭다운 상자에서 선택한 프로세스가 프로세스 창뿐만 아니라 실행하려는 프로세스인지 확인하세요.
+유효한 template 이 선택되지 않으면 실행은 시작되지 않습니다. Flow window 를 열었다는 것만으로 충분하지 않고, dropdown 에서 실행할 template 이 선택되어야 합니다.
 
-### 프로세스에 시작 노드가 있습니다.
+### start node 존재
 
-현재 실행 전에 시작 노드를 확인합니다. 시작 노드가 없으면 프로세스가 직접 실패하고 실제 실행 단계로 들어가지 않습니다.
+실행 전 start node 를 확인합니다. start node 가 없는 Flow 는 실제 실행 단계에 들어가기 전에 실패합니다.
 
-### 레지스트리 및 서비스 토큰 사용 가능
+### registry center 와 service token 사용 가능
 
-현재 구현에서는 먼저 레지스트리 연결과 사용 가능한 서비스 목록을 확인합니다. 서비스 토큰이 비어 있으면 인터페이스에 서비스를 새로 고친 후 다시 시도하라는 메시지가 표시됩니다.
+구현은 registry center 연결과 service list 를 먼저 확인합니다. service token 이 비어 있으면 service refresh 후 다시 시도합니다.
 
-### 전처리 통과
+### preprocessing 통과
 
-프로세스가 공식적으로 시작되기 전에 또 다른 사전 처리 계층이 있습니다. 전처리가 실패하면 프로세스가 취소되고 더 이상 진행되지 않습니다.
+Flow 시작 전 preprocessing 단계가 있습니다. 여기서 실패하면 Flow 는 cancel 되고 다음 node 로 진행하지 않습니다.
 
 ## 일반적인 실행 순서
 
-1. 먼저 [Process Design](./design.md)에서 현재 프로세스 내용과 시작 노드를 확인합니다.
-2. 실행 창에서 올바른 프로세스 템플릿을 선택합니다.
-3. 관련 장치 서비스가 온라인인지 확인하세요.
-4. `F6`을 누르거나 실행 항목을 클릭하여 실행을 시작합니다.
-5. 로그 영역, 현재 실행 중인 노드, 실행 중 진행 상황 변화를 관찰합니다.
-6. 중단하려면 'F7'을 누르거나 중지 항목을 사용하십시오.
+1. [Flow 설계](./design.md) 에서 template 내용과 start node 를 확인합니다.
+2. 실행 화면에서 같은 template 을 선택합니다.
+3. 관련 device service 가 online 인지 확인합니다.
+4. `F6` 또는 실행 버튼으로 시작합니다.
+5. 실행 중에는 log area, current node, progress 를 관찰합니다.
+6. 중지가 필요하면 `F7` 또는 stop 동작을 사용합니다.
 
-## 실행하면 무엇을 볼 수 있나요?
+## 실행 중 볼 것
 
-### 현재 실행 중인 노드
+### current running node
 
-실행하는 동안 인터페이스에는 현재 실행 중인 노드의 이름이 계속 표시됩니다. 프로세스가 "멈춘" 것처럼 보이면 전체 프로세스를 즉시 의심하기보다는 프로세스가 멈춰 있는 부분을 살펴보십시오.
+실행 중에는 현재 동작 중인 node 이름이 표시됩니다. 멈춘 것처럼 보이면 먼저 어떤 node 에서 멈췄는지 봅니다.
 
-### 실행 진행 및 소요 시간
+### progress 와 duration
 
-현재 구현에서는 프로세스 시간 소비, 마지막 실행 시간을 기록하고 마지막 시간 소비를 기반으로 현재 진행 상황을 추정합니다. 이 추정치는 대략적인 단계를 빠르게 판단하는 데 적합하지만 엄격한 사업 완료 정도로 간주되어서는 안 됩니다.
+현재 구현은 duration, last run time, 이전 duration 기반 progress estimate 를 기록합니다. 이는 대략적인 단계 확인용이며 엄격한 업무 완료 판정이 아닙니다.
 
-### 결과 및 현황
+### result 와 status
 
-프로세스가 완료되면 배치의 상태, 소요 시간 및 결과 요약이 기록됩니다. 실행이 중지되면 상태는 취소됨으로 기록됩니다.
+완료 후 batch status, duration, result summary 가 기록됩니다. 중지한 경우 canceled 로 기록됩니다.
 
-## 디버깅 시 범위를 좁히는 방법
+## 디버깅 시 문제 분리
 
-### 먼저 실패한 첫 번째 노드를 찾습니다.
+### 처음 실패한 node 찾기
 
-"전체 프로세스가 실패했다"는 판단보다 빨간색으로 변하거나 계속 진행되지 않는 첫 번째 노드를 먼저 찾은 다음 해당 장치, 템플릿 또는 입력 데이터로 돌아가서 확인하는 것이 더 가치가 있습니다.
+"Flow 전체 실패" 로 보지 말고, 처음 빨간색이 되거나 진행하지 않는 node 를 찾은 뒤 device, template, input data 로 돌아갑니다.
 
-### 먼저 시작하지 않았는지, 도중에 실패했는지 구분해보세요.
+### 시작 전 실패와 중간 실패 구분
 
-두 가지 일반적인 질문 유형:
+- 시작 전 중단: template not selected, start node missing, registry center disconnected, service token empty, preprocessing failed
+- 시작 후 중단: node error, timeout, message mismatch
 
-- 실행 전 차단됨: 템플릿이 선택되지 않음, 시작 노드가 누락됨, 등록 센터가 연결되지 않음, 서비스 토큰이 비어 있음, 전처리 실패
-- 실행이 시작되었지만 중간에 실패했습니다. 노드가 오류를 반환했거나 시간이 초과되었거나 메시지 불일치가 발생했습니다.
+### log 우선 확인
 
-### 로그 영역이 추측보다 우선합니다.
+실패 시 마지막 node, preprocessing failed, canceled, status message 여부를 보고 어느 계층으로 돌아갈지 결정합니다.
 
-현재 실행 창은 로그 텍스트를 지속적으로 업데이트합니다. 장애가 발생하면 먼저 어느 노드에서 중단했는지, 전후에 전처리 실패, 실행 취소, 상태 메시지가 있는지 확인한 후 어떤 레이어로 돌아가서 문제를 해결할지 결정하세요.
+## Flow 인수인계에 기록할 것
+
+Flow 인수인계는 파일 하나를 넘기는 것으로 충분하지 않습니다. device, template, input, result, external system 관계를 남깁니다.
+
+| 기록 항목 | 적을 내용 | 목적 |
+| --- | --- | --- |
+| Flow template | name, version, import source, last editor | 이전 Flow 실행 방지 |
+| start condition | start node, SN/batch input, project window, external trigger | 시작하지 않는 원인 판단 |
+| device dependency | camera, motor, SMU, file service binding | device layer failure 분리 |
+| template dependency | image template, calibration template, threshold | result drift 설명 |
+| data destination | database table, export file, image folder, Socket/MES response | 결과 위치 확인 |
+| failure evidence | first failed node, log timestamp, error message | 다음 담당자가 재현 가능 |
+
+## 최소 재테스트 절차
+
+현장 재테스트나 upgrade 후에는 full production chain 부터 돌리지 말고 최소 Flow 로 확인합니다.
+
+1. Flow design 을 열고 template 과 start node 를 확인합니다.
+2. execution 화면에서 같은 template 을 선택합니다.
+3. 관련 device service 가 online 인지 확인하고, 필요하면 device smoke action 을 수행합니다.
+4. production 에 영향을 주지 않는 SN, image, test input 을 준비합니다.
+5. `F6` 으로 실행하고 start time, current node, final state, duration 을 기록합니다.
+6. log, image, database, export file, external response 중 하나 이상에서 같은 run 을 확인합니다.
+7. 중지할 경우 `F7` 후 canceled 로 기록되었는지 확인합니다.
+
+## 실패 분리 표
+
+| 실패 위치 | 대표 증상 | 우선 확인 |
+| --- | --- | --- |
+| 실행 전 | run 이 시작되지 않음, service refresh prompt, start node missing | registry center, service list, Flow template, start node |
+| preprocessing | 즉시 cancel, preprocessing failed | input parameter, template validity, project window context |
+| device node | timeout, device no response, abnormal return code | device page, hardware, device Code, MQTT/serial/IP |
+| template node | 완료되지만 결과가 다름 | template version, threshold, image source, calibration data |
+| data node | Flow 완료 후 결과가 보이지 않음 | database write, batch/SN, export target, permission |
+| external system | ColorVision 은 완료되지만 MES/Socket 에 도착하지 않음 | protocol, port, project handler, response field |
 
 ## FAQ
 
-### 실행을 눌렀지만 프로세스가 시작되지 않았습니다.
+### Run 했지만 시작하지 않음
 
-- 먼저 등록센터가 연결되어 있는지 확인하세요.
-- 서비스 목록이 새로고침되었는지 다시 확인하세요.
-- 유효한 프로세스 템플릿이 선택되었는지 확인하십시오.
-- 프로세스에 시작 노드가 실제로 존재하는지 확인
+- registry center 가 connected 인지 확인합니다.
+- service list 가 refresh 되었는지 확인합니다.
+- 유효한 Flow template 이 선택되었는지 확인합니다.
+- start node 가 존재하는지 확인합니다.
 
-### 프로세스가 시작되었지만 빠르게 중지되었습니다.
+### 시작 후 바로 중지
 
-- 먼저 전처리가 실패했는지 확인하세요.
-- 로그에서 마지막 노드와 해당 상태를 확인하세요.
-- 장치 관련 노드인 경우 해당 장치 페이지로 돌아가 연결 및 구성을 확인합니다.
+- preprocessing failed 인지 확인합니다.
+- log 의 마지막 node 와 status 를 확인합니다.
+- device 관련 node 라면 해당 device page 에서 connection 과 config 를 확인합니다.
 
-### 진행이 움직이지 않고 멈춘 것처럼 보입니다.
+### progress 가 움직이지 않음
 
-- 먼저 현재 실행 중인 노드의 이름을 살펴보세요.
-- 그런 다음 노드가 장치나 메시지가 반환되기를 기다리고 있는지 확인합니다.
-- 필요한 경우 `F7`을 눌러 중지한 후 해당 노드가 의존하는 장치 서비스를 별도로 확인합니다.
+- current running node 를 확인합니다.
+- device 또는 message response 를 기다리는지 판단합니다.
+- 필요하면 `F7` 로 중지하고 해당 node 가 의존하는 device service 를 단독 확인합니다.
 
-### 수동 실행은 성공했지만 프로세스가 실패했습니다.
+### 수동은 성공하지만 Flow 에서는 실패
 
-- 먼저 프로세스가 동일한 장비 및 템플릿 세트를 참조하는지 확인합니다.
-- 실행 전 환경이 매뉴얼 테스트와 일치하는지 재확인
-- 필요한 경우 [장치 서비스 개요](../devices/overview.md) 및 [로그 뷰어](../interface/log-viewer.md)를 확인하세요.
+- Flow 가 같은 device 와 template 을 참조하는지 확인합니다.
+- 실행 전 환경이 수동 테스트와 같은지 확인합니다.
+- 필요하면 [장치 서비스 개요](../devices/overview.md) 와 [로그 뷰어](../interface/log-viewer.md) 를 확인합니다.
 
 ## 계속 읽기
 
-- [프로세스 디자인](./design.md)
+- [Flow 설계](./design.md)
 - [장치 서비스 개요](../devices/overview.md)
 - [로그 뷰어](../interface/log-viewer.md)
 - [데이터 관리](../data-management/README.md)
+- [현장 작업 검수 체크리스트](../field-operation-acceptance.md)
 
 ## 설명
 
-- 이 페이지에는 현재 검증 가능한 실행 및 문제 해결 항목만 유지되며 구현 기반이 없는 단일 단계, 중단점 등에 대한 설명은 더 이상 유지되지 않습니다.
-- 관련 구현은 주로 `Engine/ColorVision.Engine/Templates/Flow/DisplayFlow.xaml.cs`, `ViewFlow.xaml.cs`, `FlowControl.cs` 및 `EngineCommands.cs`에 있습니다.
+- 이 페이지는 현재 확인 가능한 실행 입구와 문제 분리 절차만 다룹니다.
+- 관련 구현은 주로 `Engine/ColorVision.Engine/Templates/Flow/DisplayFlow.xaml.cs`, `ViewFlow.xaml.cs`, `FlowControl.cs`, `EngineCommands.cs` 에 있습니다.

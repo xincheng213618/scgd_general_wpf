@@ -1,71 +1,59 @@
-# UI Components Overview
+# UI Components & DLL Publishing
 
-This chapter now only retains UI module guide pages consistent with current code implementation, no longer maintaining the old overview's mixed writing style of "version compatibility matrix + sample code + extension tutorials."
+`UI/` is a set of WPF libraries that can be built and published independently. Most projects enable `GeneratePackageOnBuild`, so a release build produces DLLs plus NuGet packages.
 
-## How to Read This Chapter
+## Publishing Facts
 
-If this is your first time entering this repository, it is recommended to build awareness in the following order:
+- Shared metadata, signing, and repository settings come from root `Directory.Build.props`.
+- If `ColorVision.snk` exists, assemblies are strong-name signed.
+- Most UI packages target `net8.0-windows7.0` and `net10.0-windows7.0`.
+- README files are packed into NuGet packages through `PackageReadmeFile` and `Pack`.
+- Image-related packages such as `ColorVision.Core` and `ColorVision.ImageEditor` must be checked for native runtime files under `runtimes/win-x64/native`.
 
-1. First read [ColorVision.UI](./ColorVision.UI.md) to understand cross-cutting infrastructure such as configuration, plugins, menus, property editors, and keyboard shortcuts.
-2. Then read [ColorVision.Solution](./ColorVision.Solution.md) and [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md) to understand the workspace shell and desktop auxiliary windows.
-3. For image-related capabilities, follow [ColorVision.Core](./ColorVision.Core.md) -> [ColorVision.ImageEditor](./ColorVision.ImageEditor.md) upward.
-4. When a specific independent subsystem needs deep exploration, then enter the corresponding individual page.
+Start with these pages:
 
-## Module Map
+- [Current UI DLL Documentation Coverage](./current-ui-dll-coverage.md): current UI projects, matching docs pages, release evidence, and maintenance rules.
+- [UI DLL Component Handbook](./component-handbook.md): what each DLL owns and who consumes it.
+- [UI Control Catalog](./control-catalog.md): concrete controls, windows, and extension points.
+- [UI Runtime Component Handoff](./ui-runtime-handoff.md): runtime discovery and troubleshooting for menus, settings, plugin loading, ImageEditor, Socket, Scheduler, Marketplace, and Solution.
+- [UI DLL Release Playbook](./ui-dll-release-playbook.md): scenario-based steps for publishing, field replacement, package checks, and handoff records.
+- [UI DLL Release Matrix](./release-matrix.md): release units, dependencies, resources, and smoke tests.
+- [UI DLL Release Evidence Checklist](./dll-release-evidence.md): `.csproj` evidence, package contents, host output checks, consumer validation, and rollback records.
 
-### Foundation Layer
+Detailed publishing steps: [UI DLL Publishing](./publishing.md).
 
-- [ColorVision.Common](./ColorVision.Common.md): MVVM, shared interfaces, status bar metadata, and coarse-grained permission foundations.
-- [ColorVision.Core](./ColorVision.Core.md): Native image/video capability bridging layer, responsible for `HImage` and P/Invoke export surface.
+## Package Map
 
-### Functional Layer
+| Module | Version | Target | Role |
+| --- | --- | --- | --- |
+| `ColorVision.Common` | `1.5.5.2` | net8/net10 Windows | MVVM, plugin interfaces, shared contracts |
+| `ColorVision.Themes` | `1.5.5.3` | net8/net10 Windows | themes, resources, window appearance |
+| `ColorVision.UI` | `1.5.5.3` | net8/net10 Windows | config, menus, plugin loading, property editor |
+| `ColorVision.Core` | `1.5.5.2` | net8/net10 Windows | OpenCV helper and image interop |
+| `ColorVision.Database` | `1.5.5.3` | net8/net10 Windows | DAO, database browser, MySQL/SQLite |
+| `ColorVision.SocketProtocol` | `1.5.5.2` | net8/net10 Windows | local TCP service and message history |
+| `ColorVision.Scheduler` | `1.5.5.2` | net8/net10 Windows | Quartz scheduling and history |
+| `ColorVision.ImageEditor` | `1.5.5.5` | net10 Windows | image viewer, drawing, overlays, 3D/CIE |
+| `ColorVision.UI.Desktop` | `1.5.5.3` | net10 Windows | settings, wizard, marketplace, desktop tools |
+| `ColorVision.Solution` | `1.5.5.2` | net10 Windows | workspace, editors, terminal, RBAC |
 
-- [ColorVision.Database](./ColorVision.Database.md): Database browser, Provider registration, SQLite logging, and general-purpose DAO.
-- [ColorVision.ImageEditor](./ColorVision.ImageEditor.md): `ImageView`, `DrawCanvas`, editor tools, openers, and main image interaction chain.
-- [ColorVision.Scheduler](./ColorVision.Scheduler.md): Quartz scheduler, task recovery, execution history, and management window.
-- [ColorVision.SocketProtocol](./ColorVision.SocketProtocol.md): Local TCP service, request dispatch, message history, and management window.
+## Release Checklist
 
-### Shell and Workspace
+- Confirm target framework and x64 output.
+- Keep strong-name signing when the key exists.
+- Check README and package metadata.
+- Inspect native runtime files for image packages.
+- Verify resource packing and `CopyToOutputDirectory`.
+- Confirm `VersionPrefix` matches the intended release.
+- Verify Engine package fallback versions if distributing without UI source.
 
-- [ColorVision.Solution](./ColorVision.Solution.md): Workspace, editor, terminal, multi-image viewer, and Solution-side local RBAC.
-- [ColorVision.UI](./ColorVision.UI.md): UI infrastructure collection, covering cross-cutting capabilities such as configuration, plugins, menus, property editors, localization, and logging.
-- [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md): Settings window, wizard, menu management, configuration management, and other desktop auxiliary windows.
+## Continue Reading
 
-### Theme Layer
-
-- [ColorVision.Themes](./ColorVision.Themes.md): Theme resource dictionaries, theme switching entry point, and window appearance support.
-
-## Currently Easily Confused Boundaries
-
-- `ColorVision.UI` is not a single control library, but a cross-cutting UI infrastructure collection.
-- `ColorVision.Solution` is not "only a solution file tree" — it also handles the workspace shell and local RBAC sub-module.
-- `ColorVision.UI.Desktop` is not the entire product main entry point — it is more like a collection of desktop auxiliary windows and management tools.
-- `ColorVision.Core` is not a high-level managed image framework, but a native interop layer.
-- `ColorVision.ImageEditor` is not a pure display control — it orchestrates openers, tools, primitives, overlays, and runtime services together.
-
-## Continue Reading Suggestions
-
-### To View Configuration, Menus, Permissions, and Plugins
-
-Read first:
-
-- [ColorVision.UI](./ColorVision.UI.md)
-- [ColorVision.Solution](./ColorVision.Solution.md)
-- [ColorVision.Common](./ColorVision.Common.md)
-
-### To View Image Pipeline
-
-Read first:
-
-- [ColorVision.Core](./ColorVision.Core.md)
-- [ColorVision.ImageEditor](./ColorVision.ImageEditor.md)
-- [ColorVision.Themes](./ColorVision.Themes.md)
-
-### To View Desktop Tools and Operations Auxiliary Features
-
-Read first:
-
-- [ColorVision.Database](./ColorVision.Database.md)
-- [ColorVision.Scheduler](./ColorVision.Scheduler.md)
-- [ColorVision.SocketProtocol](./ColorVision.SocketProtocol.md)
-- [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md)
+- [Current UI DLL Documentation Coverage](./current-ui-dll-coverage.md)
+- [UI DLL Component Handbook](./component-handbook.md)
+- [UI Control Catalog](./control-catalog.md)
+- [UI Runtime Component Handoff](./ui-runtime-handoff.md)
+- [UI DLL Release Playbook](./ui-dll-release-playbook.md)
+- [UI DLL Release Matrix](./release-matrix.md)
+- [UI DLL Release Evidence Checklist](./dll-release-evidence.md)
+- [UI DLL Publishing](./publishing.md)

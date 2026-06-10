@@ -76,11 +76,47 @@ From the current implementation of `CVFileUtil`, the key entry points include:
 - `Read(...)`
 - `OpenLocalFileChannel(...)`
 - `OpenLocalCVFile(...)`
+- `WriteCIEFile(...)`
 
 These entry points basically revolve around two goals:
 
 - Determining whether a file is a ColorVision proprietary format
 - Safely parsing proprietary formats into in-memory objects
+- Writing an in-memory `CVCIEFile` or image byte buffer back to a CVCIE file
+
+## Handoff Acceptance
+
+When taking over this module, do not stop at "it builds." At minimum, verify these scenarios:
+
+| Check | Where to Look | Passing Standard |
+| --- | --- | --- |
+| Format recognition | `IsCIEFile(...)`, `IsCVCIEFile(...)` | Valid CVCIE files return true; empty, short, and wrong-header files return false |
+| Header parsing | `ReadCIEFileHeader(...)` | version, rows, cols, bpp, channels, gain, Exp, and source filename land correctly in `CVCIEFile` by version |
+| Data-region reading | `ReadCIEFileData(...)`, `Read(...)` | `Data` length matches header-derived size, and malformed files do not read out of bounds |
+| Channel split | `OpenLocalFileChannel(...)` | A specified channel can be extracted from multi-channel files; single-channel files are not split again; rows/cols/bpp remain stable |
+| Whole-file open | `OpenLocalCVFile(...)` | CVCIE, CVRAW, and CVSRC branches return the correct `CVType`; unsupported files fail clearly |
+| File writeback | `WriteCIEFile(...)` | Written files can be read back by `ReadCIEFileHeader(...)` and `ReadCIEFileData(...)` without losing key metadata |
+| Resource release | `CVCIEFile.Dispose()` | Large `Data` and `Exp` arrays are cleared, with no obvious memory residue in batch read scenarios |
+
+## Change Boundary
+
+| Change Type | Should This Module Change | Notes |
+| --- | --- | --- |
+| CVCIE/CVRAW header, version, exposure, channel, or data-offset changes | Yes | This is the core responsibility of `ColorVision.FileIO`; read/write regression is required |
+| Result image, pseudocolor, or overlay display changes | Usually no | Start with `ColorVision.ImageEditor`, result handlers, and the drawing chain unless the underlying byte format also changes |
+| Colorimetry, XYZ, or CCT computation after device capture changes | Usually no | Start with `cvColorVision`, templates, and device services; this module only handles persistence format |
+| Batch import/export button or menu changes | Usually no | Start with UI or user manuals; come here only when proprietary parsing/writing changes |
+| Customer project adds result fields | Not directly | Prefer project, template, and result models rather than pushing business fields into the generic CVCIE carrier |
+
+## First Checks
+
+| Symptom | First Check |
+| --- | --- |
+| A file exists but cannot be opened | Check whether the header passes `IsCVCIEFile(...)`, then whether header length is enough for the current version parser |
+| Only part of the image is read | Compare `rows * cols * bpp * channels` derived size with the actual data-region length |
+| Multi-channel image colors or channels are shifted | Check `OpenLocalFileChannel(...)` channel index, single/multi-channel branch, and `Buffer.BlockCopy` offsets |
+| Large-file read crashes or stalls | Check array allocation, OOM handling, and file-length guards before suspecting UI |
+| Written file cannot be reopened | Validate the header first with `ReadCIEFileHeader(...)`, then validate the data-region length written by `WriteCIEFile(...)` |
 
 ## Most Common Mistakes to Avoid
 

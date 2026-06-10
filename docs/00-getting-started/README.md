@@ -1,4 +1,4 @@
-# 入门指南
+# 安装与首次使用
 
 本章节只保留首次接触 ColorVision 时最需要的入口，避免和后续章节重复。
 
@@ -35,10 +35,11 @@ dotnet run --project ColorVision/ColorVision.csproj
 
 ## 继续阅读
 
-- 想看界面和日常操作：前往 [用户指南](../01-user-guide/README.md)
+- 想先了解客户项目和方案包：前往 [项目说明](../00-projects/README.md)
+- 想看界面和日常操作：前往 [使用手册](../01-user-guide/README.md)
 - 想看系统设计和模块边界：前往 [架构设计](../03-architecture/README.md)
 - 想看仓库目录与模块分工：前往 [项目结构总览](../05-resources/project-structure/README.md)
-- 想进行二次开发：前往 [开发指南](../02-developer-guide/README.md)
+- 想进行二次开发：前往 [开发手册](../02-developer-guide/README.md)
 
 ## 说明
 

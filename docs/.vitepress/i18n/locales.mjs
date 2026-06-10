@@ -19,11 +19,12 @@ export const localeDefinitions = require('./locale-definitions.json')
 
 const sectionBlueprints = [
   { key: defaultSectionKey, title: { root: '首页与入口', en: 'Home & Entry' }, link: '/' },
-  { key: '00-getting-started', title: { root: '安装与首次使用', en: 'Getting Started' }, link: '/00-getting-started/README' },
-  { key: '01-user-guide', title: { root: '日常使用', en: 'Daily Use' }, link: '/01-user-guide/README' },
-  { key: '02-developer-guide', title: { root: '开发与交付', en: 'Development & Delivery' }, link: '/02-developer-guide/README' },
-  { key: '03-architecture', title: { root: '设计与架构', en: 'Design & Architecture' }, link: '/03-architecture/README' },
-  { key: '04-api-reference', title: { root: 'API 参考', en: 'API Reference' }, link: '/04-api-reference/README' },
+  { key: '00-projects', title: { root: '项目说明', en: 'Project Guide' }, link: '/00-projects/README' },
+  { key: '01-user-guide', title: { root: '使用手册', en: 'User Manual' }, link: '/01-user-guide/README' },
+  { key: '00-getting-started', title: { root: '使用手册：安装与首次使用', en: 'User Manual: Installation & First Use' }, link: '/00-getting-started/README' },
+  { key: '02-developer-guide', title: { root: '开发手册', en: 'Developer Manual' }, link: '/02-developer-guide/README' },
+  { key: '03-architecture', title: { root: '开发手册：架构设计', en: 'Developer Manual: Architecture' }, link: '/03-architecture/README' },
+  { key: '04-api-reference', title: { root: '模块参考', en: 'Module Reference' }, link: '/04-api-reference/README' },
   { key: '05-resources', title: { root: '附录与资源', en: 'Resources & Appendix' }, link: '/05-resources/README' },
 ]
 

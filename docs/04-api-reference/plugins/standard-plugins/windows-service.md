@@ -1,193 +1,199 @@
 # WindowsServicePlugin 插件
 
-本页只描述当前仓库里实际存在的 WindowsServicePlugin 实现，不再继续维护“运维平台总手册 + 大而全 API 目录”式旧稿。
+WindowsServicePlugin 是当前仓库里的本地服务管理插件，源码位于 `Plugins/WindowsServicePlugin/`。它的中心任务是安装、注册、维护本机 ColorVision Windows 服务，以及同步 MySQL、MQTT 和服务配置。
 
-## 先看这个插件现在是什么
+## manifest 信息
 
-按当前源码状态，WindowsServicePlugin 不是单纯的“服务日志快捷方式”集合，而是一个围绕本地 Windows 服务运维展开的插件包。当前最明确的几条能力线是：
+| 字段 | 当前值 |
+| --- | --- |
+| `Id` | `WindowsServicePlugin` |
+| `name` | `视彩服务插件` |
+| `version` | `1.0` |
+| `dllpath` | `WindowsServicePlugin.dll` |
+| `requires` | `1.3.12.34` |
 
-- Help 菜单中的服务管理器入口。
-- 服务安装与更新窗口。
-- 服务日志与本地日志目录快捷入口。
-- 与 CVWinSMS 配置文件和更新包的桥接。
-- Wizard 步骤里的配置读取与 CFG 覆写。
+## 当前能力边界
 
-因此它比旧文档里那种泛化的“服务工具箱”更具体，实际中心是 `ServiceManagerViewModel` 和 `ServiceInstallViewModel` 两条控制链。
+当前实现聚焦 `CVWindowsService` 工作流：
 
-## 当前最关键的文件
+- 管理 `RegistrationCenterService`、`CVMainService_x64`、`CVMainService_dev`。
+- 安装或更新完整 `CVWindowsService` 服务包。
+- 安装/注册 MySQL，并执行服务数据库 SQL。
+- 按需安装或打开 MQTT。
+- 同步 `cfg/MySql.config`、`cfg/MQTT.config`、`cfg/WinService.config`。
+- 提供本地数据库和服务文件备份/恢复。
 
-- `Plugins/WindowsServicePlugin/manifest.json`
-- `Plugins/WindowsServicePlugin/ServiceManager/MenuServiceManager.cs`
-- `Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml.cs`
-- `Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.cs`
-- `Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallWindow.xaml.cs`
-- `Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.cs`
-- `Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerConfig.cs`
-- `Plugins/WindowsServicePlugin/CVWinSMS/InstallTool.cs`
-- `Plugins/WindowsServicePlugin/SetMysqlConfig.cs`
-- `Plugins/WindowsServicePlugin/SetServiceConfig.cs`
-- `Plugins/WindowsServicePlugin/Menus/ServiceLog.cs`
+旧的 CVWinSMS 在线下载、增量更新、外部管理工具入口、服务日志菜单、归档服务注销、License、RESTful 等旧文档描述不再是当前插件表面能力。
 
-如果只是想弄清插件如何进入宿主、如何打开服务管理器、如何做配置同步和更新，这些文件已经覆盖主体。
+## 主要入口
 
-## 当前接入宿主的几条链
+| 文件 | 作用 |
+| --- | --- |
+| `ServiceManager/MenuServiceManager.cs` | Help 菜单入口，打开服务管理器 |
+| `ServiceManager/InstallServiceManager.cs` | 向导入口，打开服务管理器 |
+| `ServiceManager/ServiceManagerWindow.xaml(.cs)` | 服务管理主窗口 |
+| `ServiceManager/ServiceManagerViewModel*.cs` | 服务状态、命令、MySQL/MQTT 管理、配置同步 |
+| `ServiceManager/ServiceInstallWindow.xaml(.cs)` | 本地安装/更新窗口 |
+| `ServiceManager/ServiceInstallViewModel*.cs` | 服务包、MySQL ZIP、MQTT installer 的安装编排 |
+| `ServiceManager/ServiceManagerConfig.cs` | 服务根目录和安装选项 |
+| `ServiceManager/Mysql/` | MySQL 状态、安装和 SQL 执行 |
+| `ServiceManager/Mqtt/` | MQTT 状态和安装 |
+| `CVWinSMS/CVWinSMSConfig.cs` | 仅用于读取遗留 `App.config` 路径 |
 
-### Help 菜单中的服务管理器入口
+## 服务管理器怎么工作
 
-`MenuServiceManager` 当前挂在 `Help` 菜单下，执行时直接打开 `ServiceManagerWindow`。
+`ServiceManagerWindow` 只是窗口承载，核心状态在 `ServiceManagerViewModel.Instance`。
 
-除此之外，同文件里的 `ServiceManagerAppProvider` 还实现了 `IThirdPartyAppProvider`，把“服务管理器”作为一个内部工具暴露给宿主的第三方应用入口。
+它负责：
 
-这意味着它不只是一条菜单命令，而是至少有两条 UI 接入链。
+- 刷新服务安装状态和运行状态。
+- 一键启动、停止服务。
+- 根据服务安装路径定位 `BaseLocation`。
+- 打开服务目录和配置文件。
+- 注册完整服务包中的服务。
+- 将当前 MySQL/MQTT/服务配置写回服务目录。
+- 管理 MySQL 和 MQTT 状态。
+- 以管理员权限重启主程序。
 
-### 服务日志菜单树
+服务相关操作通常需要管理员权限。文档、测试和现场操作都应按管理员模式处理。
 
-`ServiceLog` 当前也是 `Help` 菜单下的一个根菜单项。围绕它，插件继续注入多组日志快捷入口：
+## 完整安装流程
 
-- HTTP 日志页面
-- 依据 `CVWinSMSConfig.BaseLocation` 解析出来的本地日志目录
+推荐流程：
 
-例如 `ExportRCServiceLog`、`Exportx64ServiceLog` 这类类型会直接打开本地 URL；而带后缀的目录版本则会拼接服务目录下的 `log` 文件夹。
+1. 以管理员身份启动 ColorVision。
+2. 打开服务管理器。
+3. 确认 `BaseLocation`，例如 `D:\CVService`。
+4. 打开安装窗口。
+5. 选择完整 `CVWindowsService` 包，例如 `CVWindowsService[4.0.6.603]-0603.zip`。
+6. 按需要选择 MySQL ZIP 和 MQTT 安装程序。
+7. 执行安装。
 
-### Wizard 与初始化入口
+完整服务包安装时会：
 
-`InstallTool` 目前同时实现了：
+- 校验包内是否包含服务根目录，例如 `RegWindowsService`、`CVMainWindowsService_x64` 或 `CVMainWindowsService_dev`。
+- 安装前停止受管理服务。
+- 只清理选中服务包中实际存在的顶层目标。
+- 解压服务包到 `BaseLocation`。
+- 将 `CommonDll` 复制到包内服务目录，并删除临时 `CommonDll`。
+- 注销并重新注册包内 Windows 服务。
+- 同步 MySQL、MQTT、WinService 配置。
+- 可选执行 `SQL/color_vision_all.sql`。
+- 可选启动安装后的服务。
 
-- `MenuItemBase`
-- `IWizardStep`
-- `IMainWindowInitialized`
+当前流程不支持增量更新包。
 
-它既能作为菜单入口打开或定位 CVWinSMS，也能在主窗口初始化后检查更新，还能进入安装向导的聚合链。
+## MySQL
 
-因此这个插件当前并不是“只有服务管理窗口”这么简单，CVWinSMS 相关的引导和更新逻辑也是宿主接入面的一部分。
+MySQL 管理代码集中在：
 
-### manifest 信息
+- `ServiceManager/MySqlServiceHelper.cs`
+- `ServiceManager/Mysql/MySqlServiceManager.cs`
+- `ServiceManager/Mysql/MySqlServiceConfig.cs`
 
-按当前 `manifest.json`，插件公开的装载信息是：
+当前默认业务数据库是 `color_vision_4xx`，业务用户是 `cv`。SQL 文件优先按 UTF-8 读取，失败时回退 GB18030，并以 UTF-8 送入 `mysql.exe`，避免中文 SQL 导入失败。
 
-- `Id = "WindowsServicePlugin"`
-- `name = "视彩服务插件"`
-- `version = "1.0"`
-- `dllpath = "WindowsServicePlugin.dll"`
-- `requires = "1.3.12.34"`
+如果从 ZIP 安装 MySQL，通常会放在服务根目录旁边：
 
-这比旧文档里那些额外拼出来的依赖矩阵更接近当前真实装载模型。
+```text
+D:\CVService
+D:\mysql-5.7.37-winx64
+```
 
-## 服务管理器当前怎么工作
+## MQTT
 
-`ServiceManagerWindow` 本身很薄，窗口初始化时直接把 `DataContext` 设为 `ServiceManagerViewModel.Instance`，并在日志文本变化时自动滚动日志区域。
+MQTT 管理代码集中在：
 
-真正的运行时中心在 `ServiceManagerViewModel`。按当前实现，它至少负责：
+- `ServiceManager/Mqtt/MqttServiceManager.cs`
+- `ServiceManager/Mqtt/MqttServiceConfig.cs`
 
-- 维护默认服务列表。
-- 维护 MySQL 和 MQTT 管理器。
-- 维护当前版本、可用版本、忙碌状态、进度和日志文本。
-- 暴露管理员模式状态和“以管理员身份重启”命令。
-- 暴露一键启停、刷新、打开目录和打开配置文件等命令。
+安装流程只在需要时安装或打开 MQTT，不再把 MQTT 写成完整独立运维平台。
 
-### 当前默认管理的服务
+## 配置
 
-`ServiceManagerConfig.GetDefaultServiceEntries()` 里当前明确列出了：
+`ServiceManagerConfig` 当前保留服务管理器所需的主动配置：
 
-- `RegistrationCenterService`
-- `CVMainService_x64`
-- `CVMainService_dev`
-- `CVArchService`
+| 字段 | 说明 |
+| --- | --- |
+| `BaseLocation` | 服务安装根目录 |
+| `MySqlPort` | MySQL 端口 |
+| `InstallServiceChecked` | 安装窗口默认是否选择服务包 |
+| `InstallMySqlChecked` | 安装窗口默认是否选择 MySQL |
+| `InstallMqttChecked` | 安装窗口默认是否选择 MQTT |
 
-所以这页文档应当围绕这些真实服务项写，而不是继续泛化成“任意服务编排框架”。
+`MySqlServiceConfig` 保存 MySQL 服务路径、端口、凭据和数据库。
 
-### 路径与版本检测
+`MqttServiceConfig` 保存 MQTT 进程/服务状态和连接配置。
 
-`ServiceManagerConfig` 当前会优先尝试：
+`CVWinSMSConfig` 只作为读取遗留 `App.config` 的辅助配置存在，不再代表一个外部工具下载/更新入口。
 
-1. 从注册表的 `RegistrationCenterService` 读取安装路径。
-2. 如果失败，再尝试从 CVWinSMS 的 `App.config` 读取 `BaseLocation` 和 `MysqlPort`。
+## 构建与打包
 
-`RefreshAll()` 则会顺带刷新每个服务状态，并根据 `RegistrationCenterService` 的版本文本更新当前版本显示。
+构建：
 
-## 安装与更新链当前怎么展开
+```powershell
+dotnet build Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj -c Release -p:Platform=x64
+```
 
-`ServiceInstallWindow` 本身同样很薄，核心逻辑在 `ServiceInstallViewModel`。当前这条链真正管理的是：
+打包：
 
-- 服务安装包选择
-- MySQL ZIP 选择
-- MQTT 安装程序选择
-- 下载目录选择
-- 在线检查更新
-- 备份与恢复
-- 一键安装全部组件
+```powershell
+Scripts\package_plugin.bat WindowsServicePlugin --no-upload
+```
 
-按当前实现，这个窗口关心的不是单一的“下载最新版”，而是完整的安装编排状态，包括进度、日志、自动启动、数据库更新和备份开关。
+PostBuild 会复制主 DLL、`manifest.json`、`README.md` 和 `CHANGELOG.md` 到主程序插件目录。
 
-## 当前与 CVWinSMS 的关系
+## 交接验收表
 
-`CVWinSMSConfig` 负责维护 `CVWinSMSPath`、更新地址和自动更新开关，并提供从外部 `App.config` 解析出来的 `BaseLocation`。
+| 验收项 | 操作 | 通过标准 |
+| --- | --- | --- |
+| 插件装载 | 检查 `manifest.json`、`dllpath` 和 Help 菜单 | 服务管理器入口和安装向导入口可见，窗口能打开 |
+| 权限边界 | 分别以普通用户和管理员运行关键命令 | 普通用户下危险操作失败可理解；管理员测试环境下注册、启动、停止可执行 |
+| 只读刷新 | 打开服务管理器并刷新 | 能显示 `BaseLocation`、服务安装状态、运行状态和配置路径 |
+| 打开目录/配置 | 点击打开服务目录和 CFG | 打开的是当前受管理服务目录及其 `cfg` 文件 |
+| MySQL 管理 | 查看状态、写入配置或执行测试 SQL | `MySqlServiceManager` 能读取状态，配置变更能同步到服务目录 |
+| MQTT 管理 | 查看状态、安装或打开 MQTT | `MqttServiceManager` 能识别进程/服务状态，连接配置可同步 |
+| 服务包校验 | 分别选择无效 ZIP 和完整服务包 ZIP | 无效包被拒绝；有效包能识别服务根目录和 `CommonDll` |
+| 备份与覆盖 | 在已有服务目录上执行安装 | 安装前生成备份，覆盖范围只限服务包中存在的顶层目录 |
+| 注册与启停 | 在测试环境注册、启动、停止、重启、注销服务 | 服务状态变化和窗口日志一致，失败时能看到可追踪原因 |
+| 交付结构 | 构建或打包插件 | `WindowsServicePlugin.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` 存在 |
 
-`InstallTool` 则负责：
+## 故障首查
 
-- 检测现有 CVWinSMS 可执行文件。
-- 在需要时下载更新包。
-- 解压并替换旧目录。
-- 以管理员权限重新启动 CVWinSMS。
+| 现象 | 先查什么 |
+| --- | --- |
+| Help 菜单没有服务入口 | 插件目录、`manifest.json`、`WindowsServicePlugin.dll`、`MenuServiceManager` 和 `InstallServiceManager` 是否装载 |
+| 操作提示拒绝访问 | 是否管理员启动、UAC、服务控制权限、服务目录 ACL |
+| `BaseLocation` 为空 | 服务是否已安装、注册表/服务路径是否可读、`ServiceManagerConfig` 是否配置 |
+| 服务包无法安装 | ZIP 是否为完整 `CVWindowsService` 包，是否包含服务根目录和 `CommonDll` |
+| 注册服务失败 | 服务名是否冲突、旧服务是否停止/注销、安装路径是否包含预期 exe |
+| 服务启动后立即停止 | 服务目录 `cfg`、MySQL/MQTT 可达性、Windows 事件日志和服务自身日志 |
+| MySQL 配置没有生效 | `cfg/MySql.config` 写入路径、端口、账号、SQL 文件编码和 `mysql.exe` 调用 |
+| MQTT 配置没有生效 | `cfg/MQTT.config` 写入路径、MQTT installer/进程状态和端口占用 |
+| 回退困难 | 安装前备份目录、原服务包、原 `cfg` 文件和窗口日志是否留存 |
+| 窗口卡住或状态不刷新 | 后台命令是否超时、窗口日志、服务控制命令返回码和刷新命令状态 |
 
-这说明 WindowsServicePlugin 当前不是单独封闭的一套服务运维 UI，而是明确带着对外部 CVWinSMS 工具的桥接和迁移逻辑。
+## 交接注意事项
 
-## Wizard 步骤当前怎么落地
-
-### 读取服务配置
-
-`SetMysqlConfig` 会读取 CVWinSMS 目录下的 `config/App.config`，把其中的 MySQL 配置写回到当前宿主使用的数据库配置对象里。
-
-### 覆写服务 CFG
-
-`SetServiceConfigStep` 会读取同一个 `App.config`，然后用当前宿主里的：
-
-- MySQL 设置
-- MQTT 设置
-- RC 设置
-
-去更新服务目录中的：
-
-- `cfg/MySql.config`
-- `cfg/MQTT.config`
-- `cfg/WinService.config`
-
-写回完成后，它还会尝试重启 `RegistrationCenterService`。这是一条真正会修改服务端配置的运维链，不应继续被写成“普通向导按钮”。
-
-## 当前几个最容易写错的点
-
-### 它不只是日志菜单插件
-
-虽然当前确实有一整组日志入口，但插件主体仍然是服务管理与安装更新控制链。如果只写日志菜单，会把主要实现面缩得过小。
-
-### `Application` 壳不是宿主扩展重点
-
-仓库里有 `App.xaml.cs`，但它当前更像独立启动或调试壳。对于主程序插件文档，更应该关注 manifest、菜单、provider、view model 和 wizard 步骤，而不是把这个 `Application` 类型误当成日常插件入口。
-
-### 配置同步会真的改服务端 CFG
-
-`SetServiceConfigStep` 不是只读检查器。它会把当前宿主配置写回多个服务目录下的配置文件，并尝试重启注册中心服务。
-
-### 服务管理器当前是单例中心
-
-`ServiceManagerViewModel.Instance` 是当前窗口和命令共用的状态中心。继续把它写成“每次打开窗口重新构造一套上下文”的模型，会和当前实现不符。
+- 服务安装、注册和配置同步都可能修改本机服务状态，必须以管理员权限验证。
+- 如果配置同步失败，当前安装流程应失败，而不是带着旧配置启动服务。
+- 旧 CVWinSMS 相关代码只保留兼容读取，不要把旧下载/更新功能重新写进当前文档。
+- 现场问题先看窗口日志，再看 Windows 服务状态、MySQL 状态、MQTT 状态和服务目录下 CFG 文件。
 
 ## 推荐阅读顺序
 
-1. `Plugins/WindowsServicePlugin/ServiceManager/MenuServiceManager.cs`
-2. `Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.cs`
-3. `Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerConfig.cs`
-4. `Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.cs`
-5. `Plugins/WindowsServicePlugin/CVWinSMS/InstallTool.cs`
-6. `Plugins/WindowsServicePlugin/SetMysqlConfig.cs`
-7. `Plugins/WindowsServicePlugin/SetServiceConfig.cs`
-8. `Plugins/WindowsServicePlugin/Menus/ServiceLog.cs`
+1. `Plugins/WindowsServicePlugin/README.md`
+2. `Plugins/WindowsServicePlugin/ServiceManager/MenuServiceManager.cs`
+3. `Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.cs`
+4. `Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.Config.cs`
+5. `Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.cs`
+6. `Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.Install.cs`
+7. `Plugins/WindowsServicePlugin/ServiceManager/Mysql/MySqlServiceManager.cs`
+8. `Plugins/WindowsServicePlugin/ServiceManager/Mqtt/MqttServiceManager.cs`
 9. `Plugins/WindowsServicePlugin/manifest.json`
-
-这样能先看到宿主入口，再看到状态中心、配置桥接和安装链。
 
 ## 继续阅读
 
-- [Plugins/README.md](../../../../Plugins/README.md)
-- [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
-- [docs/04-api-reference/plugins/standard-plugins/eventvwr.md](./eventvwr.md)
+- [现有插件现场验收与交接清单](../plugin-field-acceptance.md)
+- [插件能力与交接矩阵](../plugin-capability-matrix.md)
+- [插件运行与交接场景手册](../plugin-handoff-playbook.md)

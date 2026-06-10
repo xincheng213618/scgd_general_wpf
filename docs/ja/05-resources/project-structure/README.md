@@ -11,11 +11,11 @@
 | `UI/ColorVision.SocketProtocol/` |ローカル TCP サービス、メッセージ履歴、管理ウィンドウ | [ColorVision.SocketProtocol](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) / [ソケット通信最適化ロードマップ](../../02-developer-guide/performance/socket-protocol-optimization-roadmap.md) |
 | `Engine/` |コアエンジン、デバイスサービス、テンプレートシステム、プロセス実行 | [エンジン開発ガイド](../../02-developer-guide/engine-development/README.md) / [エンジン コンポーネントの概要](../../04-api-reference/engine-components/README.md) |
 | `Plugins/` |ランタイム プラグインと拡張機能 | [プラグイン開発の概要](../../02-developer-guide/plugin-development/overview.md) |
-| `Projects/` |顧客プロジェクトパッケージとビジネスカスタマイズの実装 | [コンポーネントの相互作用](../../03-architecture/overview/component-interactions.md) |
+| `Projects/` | 顧客プロジェクトパッケージ、業務カスタマイズ、連携デモ | [プロジェクト説明](../../00-projects/README.md) / [プロジェクトパッケージ概要](../../04-api-reference/projects/README.md) |
 | `Backend/marketplace/` |プラグインマーケットバックエンドサービス | [プラグイン マーケット バックエンド](../../02-developer-guide/backend/README.md) |
 | `Scripts/` |スクリプトのビルド、パッケージ化、リリース | [スクリプトのビルドとリリース](../../02-developer-guide/scripts/README.md) |
 | `ColorVisionSetup/` |インストーラーと更新プログラム | [自動更新システム](../../02-developer-guide/deployment/auto-update.md) |
-| `Test/` |テストプロジェクト | [開発者ガイド](../../02-developer-guide/README.md) |
+| `Test/` | xUnit、native helper、バックエンド、スクリプト検証 | [テストと検証の引き継ぎ](../../02-developer-guide/testing.md) |
 | `docs/` | VitePress ドキュメントのソース コード |現在のドキュメント / [モジュールとドキュメントの比較表](./module-documentation-map.md) |
 
 ## 役割ごとに読み取る
@@ -36,7 +36,15 @@
 
 1. [拡張性の概要](../../02-developer-guide/core-concepts/extensibility.md)
 2. [プラグイン開発の概要](../../02-developer-guide/plugin-development/overview.md)
-3. [標準プラグインのトピック](../../04-api-reference/plugins/standard-plugins/pattern.md)
+3. [既存プラグイン機能](../../04-api-reference/plugins/README.md)
+4. [現在のプラグイン文書カバレッジ](../../04-api-reference/plugins/current-plugin-coverage.md)
+
+### 顧客プロジェクト引き継ぎ
+
+1. [プロジェクト説明](../../00-projects/README.md)
+2. [プロジェクトパッケージ概要](../../04-api-reference/projects/README.md)
+3. [現在のプロジェクト文書カバレッジ](../../04-api-reference/projects/current-project-coverage.md)
+4. [プロジェクト能力と引き継ぎマトリクス](../../04-api-reference/projects/project-capability-matrix.md)
 
 ### 文書の保守
 

@@ -11,7 +11,7 @@
 - 편집 창이 `STNodeEditor`, 속성 패널 및 노드 트리를 호스팅하는 방법.
 - 호스트 계층이 장치, 템플릿 및 노드 구성자를 프로세스 편집기에 연결하는 방법.
 
-노드 실행 의미 체계와 노드 기본 클래스를 보려면 [FlowEngineLib](../../engine-comComponents/FlowEngineLib.md)로 이동하세요.
+노드 실행 의미 체계와 노드 기본 클래스를 보려면 [FlowEngineLib](../../engine-components/FlowEngineLib.md)로 이동하세요.
 
 ## 현재 가장 중요한 파일
 
@@ -85,6 +85,43 @@
 
 따라서 단순히 프로세스 템플릿을 "노드 그래프 파일"로 작성하면 현재 패키지를 내보내는 기능이 누락됩니다.
 
+### 저장 경로는 데이터베이스와 로컬 파일을 구분해야 합니다
+
+`FlowEngineToolWindow.Save()`에는 현재 두 가지 명확한 저장 경로가 있습니다.
+
+| 상황 | 현재 동작 | 인수인계 시 주의점 |
+| --- | --- | --- |
+| 로컬 `.stn` 파일 | `SaveToFile(FileFlow)`가 캔버스 bytes를 파일에 직접 씁니다 | 디스크 파일만 갱신하며 템플릿 데이터베이스는 갱신하지 않습니다 |
+| `FlowParam` 템플릿 | `CheckFlow()` -> `GetCanvasData()` -> Base64 -> `TemplateFlow.Save2DB(...)` | `ModMasterModel`, 상세 테이블, `SysResourceModel`에 저장합니다 |
+
+즉 플로우 편집기는 단순 파일 편집기가 아닙니다. 템플릿 관리에서 열면 주 데이터 원천은 데이터베이스이고, 파일에서 열었을 때만 저장 대상이 로컬 `.stn`입니다.
+
+### `.cvflow` 패키지 구조
+
+단일 플로우를 `.cvflow`로 내보내면 `FlowPackageHelper`가 ZIP 패키지를 만듭니다.
+
+| 파일 | 역할 |
+| --- | --- |
+| `flow.stn` | 노드 캔버스의 바이너리 내용 |
+| `manifest.json` | `FlowPackageManifest`이며 플로우 이름, 버전, 관련 템플릿을 기록합니다 |
+
+관련 템플릿은 사람이 목록을 직접 쓰는 방식이 아니라 노드 속성에서 `TempName`, `TemplateName`, `CalibTempName`, `POITempName`, `FilterTemplateName`, `ReviseTemplateName`, `XRTempName`, `CamTempName`, `AlgTempName`, `LayoutROITemplate` 같은 참조 필드를 스캔해 수집합니다. 가져오기 중 이름이 충돌하면 플로우 이름을 이용해 새 템플릿명을 만들고, 플로우 안의 참조도 함께 교체합니다.
+
+다중 선택 내보내기는 여전히 구형 `.zip`이며 여러 `.stn`만 포함합니다. `manifest.json`이 없고 관련 템플릿도 재귀적으로 수집하지 않습니다. 인수인계 문서에서는 두 내보내기 방식을 분리해서 설명해야 합니다.
+
+## 실행 및 스케줄링 체인
+
+플로우 템플릿은 편집만 되는 것이 아니라 실제 실행 대상이기도 합니다.
+
+1. 사용자 또는 호출자가 `DisplayFlow.TemplateCombox`에서 플로우 템플릿을 선택합니다.
+2. `DisplayFlow.RunFlow(sn)`가 `MeasureBatchModel`을 만들고, `TId`에는 `TemplateFlow.Params[selectedIndex].Id`를 넣습니다.
+3. `FlowControl.Start(sn)`가 노드 그래프를 시작합니다.
+4. `FlowControl_FlowCompleted(...)`가 배치 상태, 총 시간, 결과를 갱신하고 `FlowExecutionCompleted`를 발생시킵니다.
+5. `RunFlowAndWaitAsync()`가 이 이벤트를 기다릴 수 있는 작업으로 감쌉니다.
+6. `FlowJob`은 Quartz 작업 안에서 WPF Dispatcher로 돌아와 `DisplayFlow.RunFlowAndWaitAsync()`를 호출하고 `FlowJobResult`를 만듭니다.
+
+“예약 작업이 왜 플로우를 실행할 수 있는가”를 추적할 때는 Quartz만 보지 말고 `DisplayFlow`와 `FlowExecutionCompleted` 이벤트도 함께 확인해야 합니다.
+
 ## 현재 가장 흔히 저지르는 실수 중 일부는 다음과 같습니다.
 
 ### 이 페이지는 FlowEngineLib의 중복 페이지가 아닙니다.
@@ -103,16 +140,27 @@
 
 일반 템플릿은 대부분 `TemplateEditorWindow` 오른쪽에서 편집됩니다. 프로세스 템플릿은 현재 "목록 창 + 독립 프로세스 편집기 창"의 경로를 따릅니다. 일반적인 템플릿 내러티브를 계속 따르면 독자를 오도할 수 있습니다.
 
+### 가져오기와 내보내기에는 두 가지 호환 경로가 있습니다
+
+`.cvflow`는 패키지 가져오기 경로를 사용해 `manifest.json`을 읽고 관련 템플릿을 가져옵니다. 다른 파일은 bytes를 읽어 Base64로 바꾸고 `FlowParam`을 만드는 경로로 되돌아갑니다. `.stn`만 테스트하면 템플릿 참조 교체라는 중요한 인수인계 체인을 놓칠 수 있습니다.
+
+## 인수인계 검증
+
+- 템플릿 관리자에서 플로우를 새로 만들고 저장 후 `ModMasterModel`과 `SysResourceModel` 기록을 확인합니다.
+- 단일 플로우를 `.cvflow`로 내보낸 뒤 ZIP 안에 `flow.stn`과 `manifest.json`이 있는지 확인합니다.
+- 같은 이름의 플로우 패키지를 가져와 관련 템플릿명이 충돌할 때 새 이름으로 바뀌고 플로우 참조도 함께 바뀌는지 확인합니다.
+- `DisplayFlow.RunFlowAndWaitAsync()` 또는 `FlowJob`으로 한 번 실행해 배치 상태와 결과가 갱신되는지 확인합니다.
+
 ## 추천읽기순서
 
-1. `엔진/ColorVision.Engine/템플릿/Flow/TemplateFlow.cs`
-2. `엔진/ColorVision.Engine/템플릿/Flow/FlowEngineToolWindow.xaml.cs`
-3. `엔진/ColorVision.Engine/템플릿/Flow/STNodeEditorHelper.cs`
-4. `엔진/ColorVision.Engine/템플릿/Flow/NodeConfigurator/POINodeConfigurators.cs`
+1. `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`
+2. `Engine/ColorVision.Engine/Templates/Flow/FlowEngineToolWindow.xaml.cs`
+3. `Engine/ColorVision.Engine/Templates/Flow/STNodeEditorHelper.cs`
+4. `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/POINodeConfigurators.cs`
 5. `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator` 아래의 기타 구성자
 
 ## 계속 읽기
 
-- [FlowEngineLib](../../engine-comComponents/FlowEngineLib.md)
+- [FlowEngineLib](../../engine-components/FlowEngineLib.md)
 - [플로우 노드 확장](../../extensions/flow-node.md)
-- [ColorVision.Engine](../../엔진-컴포넌트/ColorVision.Engine.md)
+- [ColorVision.Engine](../../engine-components/ColorVision.Engine.md)

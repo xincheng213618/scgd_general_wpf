@@ -52,6 +52,41 @@ Typical device categories visible in the current code directory include:
 - Device list order, enabled status, and configuration content typically affect visibility in subsequent windows and workflows.
 - Some devices, in addition to basic configuration, have independent physical device management, calibration, or parameter configuration pages.
 
+## What to Record for Device Handoff
+
+Do not hand over a device with only "configured" written down. The next maintainer needs enough evidence to identify, connect, test, and trace the device inside workflows.
+
+| Record | What to capture | Why it matters |
+| --- | --- | --- |
+| Device identity | name, Code, device type, real hardware or service | Prevents workflows from binding to the wrong device |
+| Communication config | IP, port, serial, baud rate, MQTT topics, file paths | Recreates the field connection conditions |
+| Minimal action | camera capture, motor home, SMU point measurement, file list | Proves the device is usable, not just listed |
+| Workflow binding | workflow, node, or project window that references it | Explains "manual works, workflow fails" cases |
+| Log evidence | successful connection time, error, timeout, permission issue | Gives remote support a starting point |
+| Rollback path | previous config, driver, firmware, or project package | Allows recovery after upgrade problems |
+
+## Field Smoke Acceptance
+
+| Step | Action | Pass standard |
+| --- | --- | --- |
+| 1 | Open and refresh the device list | Target device is visible, name and Code match the handoff record |
+| 2 | Open the device detail or dedicated window | Key parameters are visible and save state is clear |
+| 3 | Run one safe minimal action | Response, log, and state change are explainable |
+| 4 | Open the workflow or project window that depends on it | The same device can be selected, not an old device with a similar name |
+| 5 | Run a minimal or simulated workflow | The device node is reached and result or failure reason is traceable |
+
+If step 3 fails, start at the device layer. If step 3 passes but step 5 fails, inspect workflow binding, template parameters, and project mapping first.
+
+## Device Issue Triage
+
+| Symptom | Check first | Then check |
+| --- | --- | --- |
+| Device missing from list | Created, saved, and correct type | Plugin/project package provides the device entry |
+| Device exists but cannot open | Hardware online, driver, port/IP, permission | Connection and timeout errors in logs |
+| Manual action works but workflow fails | Device Code referenced by the workflow node | Node parameters, template version, project window selection |
+| Result exists but image/data is wrong | Device parameters and acquisition conditions | Downstream template, export fields, database record |
+| Broken only after upgrade | Config overwritten | Old package/config mixed with new DLLs |
+
 ## Troubleshooting Suggestions
 
 ### Device Does Not Appear in List
@@ -69,3 +104,4 @@ Typical device categories visible in the current code directory include:
 
 - This page only serves as an entry point and usage path guide, and no longer carries device service code analysis.
 - Device implementation details are subject to the actual code under `Engine/ColorVision.Engine/Services/`.
+- For field delivery, also record the overall result in [Field Operation Acceptance Checklist](../field-operation-acceptance.md).

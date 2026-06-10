@@ -94,6 +94,38 @@ This module is currently closer to the following chain:
 3. The WPF display chain updates image data to `WriteableBitmap` via `HImageExtension`.
 4. Upper-layer modules like `ColorVision.ImageEditor` continue to do interaction, drawing, and display around these bitmaps.
 
+## Using It as a DLL
+
+### When to Reference It
+
+- Upper image modules need to exchange image buffers with `opencv_helper.dll`.
+- Native image data must be converted to WPF `WriteableBitmap`.
+- Pseudo-color, image enhancement, filtering, thresholding, focus evaluation, SFR, or fusion native methods are required.
+- Native logs need to be bridged into managed logging.
+
+### DLL Release Acceptance
+
+| Check | What to Inspect | Passing Standard |
+| --- | --- | --- |
+| Target framework outputs | `net8.0-windows7.0`, `net10.0-windows7.0` | Both TFMs produce DLL, `.nupkg`, and `.snupkg` |
+| Native runtime | NuGet package and host output | `opencv_helper.dll` and OpenCV 4130 DLLs are under `runtimes/win-x64/native` or final output |
+| Optional CUDA package | `opencv_cuda.dll` | Included when the source file exists; non-CUDA paths do not fail when it is absent |
+| P/Invoke entry points | `OpenCVMediaHelper`, `OpenCVCuda`, `NativeLogBridge` | No `DllNotFoundException`, `EntryPointNotFoundException`, or x86/x64 mismatch |
+| Image memory | `HImage.Dispose()`, `Marshal.FreeHGlobal` | Batch conversions release memory and repeated image opens do not keep growing |
+| WPF display bridge | `HImageExtension` | `HImage` dimensions, channels, depth, stride, and WPF `PixelFormat` line up |
+| Upper-layer regression | `ColorVision.ImageEditor` | At least one image can open, render, and refresh after pseudo-color or enhancement |
+
+### Field First Checks
+
+| Symptom | First Check |
+| --- | --- |
+| Startup or call fails with `DllNotFoundException` | Check `runtimes/win-x64/native` and the main app output for native DLLs |
+| `BadImageFormatException` appears | Check that host, plugins, and native DLLs are all x64 |
+| Image is black or colors are shifted | Check `HImage` rows, cols, channels, depth, stride, and WPF `PixelFormat` derivation |
+| Memory grows after batch processing | Check whether `HImage.Dispose()` is called and who owns native output buffers |
+| CUDA fusion is unavailable | Check `opencv_cuda.dll`, NVIDIA driver, CUDA runtime, and whether a non-CUDA fallback exists |
+| Native logs do not reach managed logs | Check `NativeLogBridge` initialization order and whether helper/cuda DLLs loaded successfully |
+
 ## What Boundaries the Current Implementation Has
 
 ### Do Not Write It as a High-Level OO API

@@ -4,9 +4,15 @@
 
 ## 章の入り口
 
+### 操作目標から探す
+
+- [ユーザー操作ワークフローマトリクス](./operation-workflow-matrix.md)
+- [現場操作受入チェックリスト](./field-operation-acceptance.md)
+
 ### インターフェースと基本的な対話
 
 - [メインウィンドウナビゲーション](./interface/main-window.md)
+- [UI コンポーネント利用手順](./interface/ui-component-handbook.md)
 - [プロパティエディタ](./interface/property-editor.md)
 - [ログビューア](./interface/log-viewer.md)
 - [ターミナル](./interface/terminal.md)
@@ -46,11 +52,14 @@
 
 ## 推奨される読書ルート
 
-1. まず、[メイン ウィンドウ ナビゲーション](./interface/main-window.md) を読んで、メイン インターフェイスのレイアウトを理解します。
-2. [プロパティ エディタ](./interface/property-editor.md) と [イメージ エディタの概要](./image-editor/overview.md) を参照して、基本的な操作パスを確立します。
-3. ハードウェアが関係する場合は、[デバイス サービスの概要](./devices/overview.md) および対応するデバイスの特別ページに移動します。
-4. 自動化が必要な場合は、[ワークフロー概要](./workflow/README.md)を入力します。
-5. 例外が発生した場合は、まず [FAQ](./troubleshooting/common-issues.md) を確認してください。
+1. どのページを見るべきか迷う場合は、[ユーザー操作ワークフローマトリクス](./operation-workflow-matrix.md) から始めます。
+2. 現場納入または再テストでは、[現場操作受入チェックリスト](./field-operation-acceptance.md) に沿って確認します。
+3. まず [メインウィンドウナビゲーション](./interface/main-window.md) でメイン画面の構成を理解します。
+4. 次に [UI コンポーネント利用手順](./interface/ui-component-handbook.md) で、各ウィンドウ/部品の入口、成功基準、確認方向を把握します。
+5. [プロパティエディタ](./interface/property-editor.md) と [イメージエディターの概要](./image-editor/overview.md) で基本操作を確認します。
+6. ハードウェアが関係する場合は [デバイスサービスの概要](./devices/overview.md) と対応するデバイスページへ進みます。
+7. 自動化が必要な場合は [ワークフロー概要](./workflow/README.md) へ進みます。
+8. 例外が発生した場合は、まず [FAQ](./troubleshooting/common-issues.md) を確認してください。
 
 ## 章の境界
 

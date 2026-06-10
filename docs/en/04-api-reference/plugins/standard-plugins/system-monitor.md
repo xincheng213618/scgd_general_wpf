@@ -110,6 +110,20 @@ The user commands currently exposed by `SystemMonitors` are primarily:
 
 The real behaviors corresponding to these commands are, respectively: clearing app data and log directories, reloading disk list, reloading network interface list, reloading high-usage process list.
 
+## Runtime Refresh Model
+
+`SystemMonitors` starts a `Timer` in its constructor. The interval comes from `SystemMonitorSetting.UpdateSpeed`, and the current config accepts values no lower than `100`. Performance counters initialize in a background task, while disk, network, and process lists are loaded through explicit functions.
+
+Split the data into these groups during handoff:
+
+| Data | Refresh path | Maintenance focus |
+| --- | --- | --- |
+| CPU/RAM/time/uptime | Timer refresh | Performance counter failures should degrade, not crash the plugin |
+| Drive list | Initialization and `RefreshDrivesCommand` | Shows ready drives only; verify target directories before clearing cache |
+| Network interfaces | Initialization and `RefreshNetworkCommand` | Excludes loopback/tunnel and uses IPv4 addresses |
+| High-memory processes | Initialization and `RefreshProcessesCommand` | Process reads can fail by permission; code skips failing items |
+| CUDA information | Constructor reads `ConfigCuda.Instance` | Empty CUDA info is valid when CUDA is unavailable |
+
 ## Most Common Mistakes to Avoid
 
 ### It Is Not a Standalone Window Application-Centered Plugin
@@ -137,8 +151,31 @@ The refresh of status bar display items currently depends on `SystemMonitorIStat
 
 This allows grasping the real control surface first, then returning to menus, status bar, and loading information.
 
+## Handoff Acceptance
+
+| Check | Action | Pass criteria |
+| --- | --- | --- |
+| Settings page | Open system monitor settings | `SystemMonitorControl` shows the singleton data source |
+| Tool menu | Open Performance Monitor from Tool menu | Window shows CPU/RAM/disk/network/process data |
+| Status bar toggles | Toggle time, CPU, RAM, uptime, and disk | Status bar items dynamically add/remove through `StatusBarItemsChanged` |
+| Refresh commands | Refresh drives, network, and processes | Lists reload and failures do not close the window |
+| Cache clear | Confirm target directories before clearing | Only app data/log-related directories are cleared; permission failures are visible |
+| Degraded environment | Start where performance counters fail | Plugin still opens; CPU/RAM may be empty or stale |
+
+## First Checks
+
+| Symptom | First check | Handling |
+| --- | --- | --- |
+| Status bar does not refresh | Whether `SystemMonitorIStatusBarProvider` hears config changes | Check `StatusBarItemsChanged` |
+| CPU/RAM empty | Windows performance counter initialization | This is degradable; inspect logs instead of treating it as plugin load failure |
+| Drive list empty | Drive readiness and read permission | Use refresh command to reload |
+| Network info missing | Loopback/tunnel filtering and IPv4 availability | Do not promise every NIC will be shown |
+| Cache clear fails | Target directory permissions or files in use | Do not expand cleanup to arbitrary directories |
+
 ## Continue Reading
 
-- [Plugins/README.md](../../../../Plugins/README.md)
+- [Existing Plugin Field Acceptance And Handoff Checklist](../plugin-field-acceptance.md)
+- [Plugin Capability & Handoff Matrix](../plugin-capability-matrix.md)
+- [Plugins/README.md](../../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
-- [docs/04-api-reference/plugins/standard-plugins/pattern.md](./pattern.md)
+- [docs/04-api-reference/plugins/standard-plugins/conoscope.md](./conoscope.md)

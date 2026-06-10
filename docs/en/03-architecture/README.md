@@ -23,7 +23,7 @@ This chapter only retains the main reading path for the current system design. H
 
 - When encountering the system for the first time, read in the order: "System Overview → Runtime → Component Interactions."
 - When you need to modify flows or templates, then enter the topic pages under `components/`.
-- When you need interface and type details, go to [API Reference](../04-api-reference/README.md).
+- When you need module details, implementation anchors, or handoff notes, go to [Module Handbook](../04-api-reference/README.md).
 
 ## Supplementary Reading
 

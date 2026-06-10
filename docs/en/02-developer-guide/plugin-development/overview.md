@@ -92,7 +92,7 @@ Plugins/
 1. First read [Plugin Development Overview](./README.md)
 2. Then read [Plugin Development Getting Started](./getting-started.md)
 3. When you need to understand loading and runtime phases, read [Plugin Lifecycle](./lifecycle.md)
-4. To reference existing plugins, directly check [Pattern Plugin](../../04-api-reference/plugins/standard-plugins/pattern.md)
+4. To reference existing plugins, start with [Existing Plugin Capabilities](../../04-api-reference/plugins/README.md), then open [Conoscope](../../04-api-reference/plugins/standard-plugins/conoscope.md), [Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md), or [SystemMonitor](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 
 ## Notes
 

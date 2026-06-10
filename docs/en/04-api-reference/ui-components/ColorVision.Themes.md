@@ -110,6 +110,50 @@ ThemeManager is also responsible for calling DWM APIs to update window appearanc
 
 Window.ApplyCaption also switches window icon resources based on the current theme. This behavior is a very practical layer of value in the current module that old documentation did not actually clarify.
 
+## Using It as a DLL
+
+### When to Reference It
+
+- A new window needs `BaseWindow`, shared theme resources, or common controls.
+- Application startup needs to call `Application.ApplyTheme`.
+- Windows need to follow dark or light theme changes for title bar color and icon.
+- The UI needs `LoadingOverlay`, `ProgressRing`, `ToggleSwitch`, upload controls, or built-in converters.
+
+### Integration Steps
+
+1. Confirm the application references `ColorVision.Themes.dll`.
+2. During startup, call `Application.Current.ApplyTheme(...)`, or let the `ColorVision.UI` theme menu chain trigger it.
+3. Inherit from `BaseWindow` when appropriate, or call `ApplyCaption` on a normal `Window`.
+4. If adding a resource dictionary, place it under `Themes/` and register it in the relevant `ThemeManager` list.
+
+### Release Notes
+
+Theme resources are packaged through WPF `ResourceDictionary` and `Resource` entries. When adding XAML, image, icon, or AVIF resources, confirm the `.csproj` `Resource`, `None Remove`, and `CopyToOutputDirectory` settings. Otherwise local debugging may work while the NuGet package is missing resources.
+
+### DLL Release Acceptance
+
+| Acceptance item | What to check | Pass condition |
+| --- | --- | --- |
+| Target frameworks | `ColorVision.Themes.csproj` targets `net8.0-windows7.0;net10.0-windows7.0` | Both target frameworks package successfully and the host can resolve the dependency. |
+| Package metadata | `GeneratePackageOnBuild`, `PackageReadmeFile`, `README.md` | Package README and version are complete. |
+| Third-party dependency | `HandyControl` version | Host output has a compatible dependency version without XAML resource conflicts. |
+| Theme resources | `Themes/Base.xaml`, `Dark.xaml`, `White.xaml`, `Pink.xaml`, `Cyan.xaml` | Every built-in theme loads its resource dictionary. |
+| Application entry | `Application.ApplyTheme`, `ThemeManager.ApplyTheme`, `ForceApplyTheme` | Startup and runtime switching both update global resources. |
+| Window caption | `Window.ApplyCaption`, DWM calls | Dark, light, pink, and cyan title bars and icons behave as expected. |
+| Follow system | `SystemEvents`, `AppsUseLightTheme`, `SystemUsesLightTheme` | Windows theme changes update the app according to the current implementation. |
+| Packaged assets | `ColorVision.ico`, `ColorVision1.ico`, `uploadbg.avif` | Package contains assets; window icons and upload background are not missing. |
+
+### Field First Checks
+
+| Symptom | Check first | Judgement point |
+| --- | --- | --- |
+| Theme is not applied after startup | `Application.ApplyTheme` call timing, `ThemeManager.CurrentTheme` | Confirm the theme entry point actually runs. |
+| One theme fails with missing resource errors | `Themes/*.xaml`, project file Resource entries | If local debug works but package fails, check resource packaging first. |
+| Title bar color does not follow theme | `Window.ApplyCaption`, DWM API, window type | Only windows that call the caption extension follow this behavior. |
+| Follow-system mode does not change | Windows registry values, system event subscription | Current implementation depends on events and registry values, not a real-time sync service. |
+| Icon or upload background is missing | `Assets/Image/`, `Assets/uploadbg.avif` | Check both the NuGet package and host output directory for assets. |
+| Custom theme cannot be connected | Current `Theme` enum and `ThemeManager` | The current code has no old-doc `Theme.Custom` extension point. |
+
 ## Boundaries of the Current Implementation
 
 ### Theme Persistence Is Not Done by ThemeManager Itself

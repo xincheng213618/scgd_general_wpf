@@ -20,6 +20,12 @@
 - [外掛開發入門](./plugin-development/getting-started.md)
 - [外掛生命週期](./plugin-development/lifecycle.md)
 
+### 測試與驗證
+
+- [測試與驗證交接手冊](./testing.md)
+- UI、主程式執行時、設定、日誌、MCP/Copilot、PropertyGrid 和編輯器變更，先從 `Test/ColorVision.UI.Tests/` 開始。
+- Native/OpenCV helper 和亮區查找驗證進入 `Test/opencv_helper_test/`。
+
 ### 建置、部署與更新
 
 - [部署概覽](./deployment/overview.md)
@@ -37,7 +43,8 @@
 1. 先看 [架構設計](../03-architecture/README.md)，確認模組邊界。
 2. 再看 [擴充套件性概覽](./core-concepts/extensibility.md)，確認擴充套件點和外掛入口。
 3. 進入自己的目標專題：外掛、Engine、部署或後端。
-4. 需要類和介面細節時，轉到 [API 參考](../04-api-reference/README.md)。
+4. 交付前先看 [測試與驗證交接手冊](./testing.md)，選擇正確的驗證命令。
+5. 需要類和介面細節時，轉到 [API 參考](../04-api-reference/README.md)。
 
 ## 章節邊界
 

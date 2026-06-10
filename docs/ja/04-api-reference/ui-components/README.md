@@ -6,10 +6,23 @@
 
 この倉庫に初めて入る場合は、次の順序で認識を確立することをお勧めします。
 
-1. まず [ColorVision.UI](./ColorVision.UI.md) を見て、構成、プラグイン、メニュー、プロパティ エディタ、ショートカット キーの横断的なインフラストラクチャを理解します。
-2. [ColorVision.Solution](./ColorVision.Solution.md) と [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md) をもう一度見て、ワークスペース シェルとデスクトップ補助ウィンドウを理解します。
-3. 画像関連の機能については、[ColorVision.Core](./ColorVision.Core.md) -> [ColorVision.ImageEditor](./ColorVision.ImageEditor.md) に従って検索します。
-4. 独立したサブシステムをさらに詳しく調べる必要がある場合は、対応する単一のページに入ります。
+1. まず [現在の UI DLL 文書カバレッジ](./current-ui-dll-coverage.md) を読み、現在の 10 個の UI プロジェクト、対応文書、リリース証跡を確認します。
+2. 次に [UI DLL コンポーネントハンドブック](./component-handbook.md) を読み、DLL 単位の境界を確認します。
+3. DLL をリリースまたは置換する場合は、[UI DLL リリースプレイブック](./ui-dll-release-playbook.md) と [UI DLL リリースマトリクス](./release-matrix.md) を読みます。
+4. menu、settings、plugin loading、ImageEditor、Socket、Scheduler、Solution workspace の問題は [UI ランタイムコンポーネント引き継ぎ](./ui-runtime-handoff.md) から確認します。
+5. 具体的な control や window を探す場合は [UI コンポーネントカタログ](./control-catalog.md) を使います。
+6. 最後に個別 DLL ページへ進みます。
+
+## リリースと引き継ぎ入口
+
+- [UI DLL コンポーネントハンドブック](./component-handbook.md): DLL ごとの責務と境界。
+- [現在の UI DLL 文書カバレッジ](./current-ui-dll-coverage.md): 現在の UI プロジェクト、文書ページ、リリース証跡、保守ルール。
+- [UI コンポーネントカタログ](./control-catalog.md): control、window、Provider、extension point からソースを探す。
+- [UI ランタイムコンポーネント引き継ぎ](./ui-runtime-handoff.md): menu、settings、PropertyGrid、ImageEditor、Socket、Scheduler、Solution の discovery と debug。
+- [UI DLL リリースプレイブック](./ui-dll-release-playbook.md): release scenario ごとの build/acceptance。
+- [UI DLL リリースマトリクス](./release-matrix.md): version、target framework、dependency、resource、smoke test。
+- [UI DLL リリース証跡と現地確認表](./dll-release-evidence.md): `.csproj`、package content、host output、consumer validation、rollback record。
+- [UI DLL リリース手順](./publishing.md): 共通 build command、package check、post-release verification。
 
 ## モジュールマップ
 

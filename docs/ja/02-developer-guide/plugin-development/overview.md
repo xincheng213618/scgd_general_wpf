@@ -96,7 +96,7 @@ Plugins/
 1. まずは[プラグイン開発の概要](./README.md)をご覧ください。
 2. [プラグイン開発入門](./getting-started.md) をもう一度見てください。
 3. 読み込みフェーズと実行フェーズを理解する必要がある場合は、[プラグイン ライフ サイクル](./lifecycle.md) を参照してください。
-4. 既製のプラグインを参照したい場合は、[パターンプラグイン](../../04-api-reference/plugins/standard-plugins/pattern.md)を直接参照してください。
+4. 既存プラグインを参照する場合は、まず [既存プラグイン機能](../../04-api-reference/plugins/README.md) を読み、次に [Conoscope](../../04-api-reference/plugins/standard-plugins/conoscope.md)、[Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md)、または [SystemMonitor](../../04-api-reference/plugins/standard-plugins/system-monitor.md) を確認してください。
 
 ## 説明
 

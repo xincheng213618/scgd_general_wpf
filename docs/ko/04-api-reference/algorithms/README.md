@@ -18,12 +18,13 @@ OpenCV 레벨에서 기본 처리 기능을 찾고 있다면 진입점은 일반
 ### 참가 페이지
 
 - [알고리즘 시스템 개요](./overview.md): 현재 구현 체인에 대한 전반적인 설명입니다. 이 페이지를 먼저 읽으면 시간이 절약됩니다.
+- [현재 알고리즘 템플릿 커버리지](./current-algorithm-template-coverage.md): 실제 `Templates/` 디렉터리를 문서 진입점과 후속 보완 항목에 매핑합니다.
 
 ### 특별 카탈로그
 
-- `템플릿/`: 템플릿 관리, 프로세스 템플릿, JSON 템플릿, POI/ARVR 및 기타 특수 페이지.
-- `Detectors/`: 소수의 결함/감지 주제.
-- `프리미티브/`: 소수의 기본 구성 요소에 대한 설명입니다.
+- `templates/`: 템플릿 관리, 프로세스 템플릿, JSON 템플릿, POI/ARVR, FindLightArea, JND, LED 검출, BuzProduct, Validate, Compliance, DataLoad, Matching, SysDictionary, FocusPoints, ImageCropping, 템플릿 메뉴 등 특수 페이지.
+- `detectors/`: 소수의 결함/감지 주제.
+- `primitives/`: 소수의 기본 구성 요소에 대한 설명입니다.
 
 이 디렉토리에는 여전히 일부 역사적인 페이지가 있지만 더 이상 이 장의 홈페이지에 안정적인 입구로 배치되지 않습니다.
 
@@ -49,6 +50,7 @@ OpenCV 레벨에서 기본 처리 기능을 찾고 있다면 진입점은 일반
 ## 추천읽기순서
 
 1. 먼저 [알고리즘 시스템 개요](./overview.md)를 읽고 런타임 시 메인 체인에 대한 인식을 설정합니다.
-2. 그런 다음 [템플릿 모듈 분석](../../03-architecture/comComponents/templates/analytic.md)과 비교하여 디렉토리 및 등록 항목을 이해합니다.
-3. 프로세스 템플릿이 걱정된다면 [FlowEngineLib 아키텍처](../../03-architecture/comComponents/engine/flow-engine.md)를 살펴보세요.
-4. 마지막으로 특정 비즈니스 도메인에 따라 'templates/' 아래에 단일 페이지를 입력하고 항상 소스 코드와 대조하여 읽습니다.
+2. 그런 다음 [현재 알고리즘 템플릿 커버리지](./current-algorithm-template-coverage.md)에서 각 `Templates/` 하위 디렉터리의 문서 진입점을 확인합니다.
+3. 그런 다음 [템플릿 모듈 분석](../../03-architecture/components/templates/analysis.md)과 비교하여 디렉토리 및 등록 항목을 이해합니다.
+4. 프로세스 템플릿이 걱정된다면 [FlowEngineLib 아키텍처](../../03-architecture/components/engine/flow-engine.md)를 살펴보세요.
+5. 마지막으로 [FindLightArea 발광 영역 템플릿](./templates/find-light-area.md), [JND 템플릿](./templates/jnd-template.md), [LED 검출 템플릿](./templates/led-detection.md), [BuzProduct 제품 업무 파라미터 템플릿](./templates/buz-product-template.md), [Validate 판정 규칙 템플릿](./templates/validate-rules.md), [Compliance 결과 인수인계](./templates/compliance-results.md), [DataLoad 데이터 로드 템플릿](./templates/data-load-template.md), [Matching 템플릿 매칭](./templates/matching-template.md), [SysDictionary 시스템 사전 템플릿](./templates/sys-dictionary-template.md), [FocusPoints 포커스 포인트 템플릿](./templates/focus-points-template.md), [ImageCropping 이미지 크롭 템플릿](./templates/image-cropping-template.md), [템플릿 메뉴 진입점](./templates/template-menu-entries.md) 등 업무 도메인별 페이지를 읽고 항상 소스 코드와 대조합니다.

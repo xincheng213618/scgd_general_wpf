@@ -63,6 +63,7 @@
 
 ## 继续阅读
 
+- [UI 组件使用手册](./ui-component-handbook.md)
 - [属性编辑器](./property-editor.md)
 - [日志查看器](./log-viewer.md)
 - [终端](./terminal.md)

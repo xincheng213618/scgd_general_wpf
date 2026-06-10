@@ -87,6 +87,45 @@ This module is currently closer to the following chain:
 4. Inserts, edits, and deletes land back to the database through the Provider's generic write interface.
 5. For business code, the entity and DAO system can still be used in parallel, but no longer controls the browser UI.
 
+## Using It as a DLL
+
+### When to Reference It
+
+- Business modules need `BaseTableDao<T>`, `EntityBase`, or `ViewEntity`.
+- Plugins or project packages need MySQL configuration, connection windows, or status entries.
+- A database source needs to be exposed through the unified database browser.
+- Existing business tables need to be accessed through `SqlSugarCore`.
+
+### Adding a Database Browser Provider
+
+1. Implement `IDatabaseBrowserProvider`.
+2. Implement database, table, column, paginated query, insert, update, and delete operations.
+3. Register it with `DatabaseBrowserProviderRegistry` at the appropriate initialization point.
+4. Open `DatabaseBrowserWindow` and verify the tree, paging, editing, and deletion paths.
+
+### DLL Release Acceptance
+
+| Check | What to Inspect | Passing Standard |
+| --- | --- | --- |
+| Target framework outputs | `net8.0-windows7.0`, `net10.0-windows7.0` | Both TFMs produce DLL, `.nupkg`, and `.snupkg` |
+| Package dependencies | `SqlSugarCore`, `Newtonsoft.Json`, `log4net`, `ColorVision.UI` | NuGet package and host output can resolve these dependencies |
+| Package README | `README.md`, `.csproj` `PackageReadmeFile` | Package README matches the current database browser capability |
+| MySQL configuration | `MySqlControl`, settings window | Connection string, database name, timeout, and connection test work with field configuration |
+| Provider registration | `DatabaseBrowserProviderRegistry` | Default MySQL Provider and caller-registered Providers appear in the browser |
+| Generic browsing | `DatabaseBrowserWindow` | Databases, tables, columns, paging, search, and sorting show the real database structure |
+| Generic writeback | `IDatabaseBrowserProvider` | Tables with primary keys can insert, update, delete; missing keys or permissions fail clearly |
+
+### Field First Checks
+
+| Symptom | First Check |
+| --- | --- |
+| Database browser has no data source | Check whether `DatabaseBrowserProviderRegistry.GetProviders()` loads the default Provider and whether MySQL config is usable |
+| MySQL connection fails | Check `MySqlControl.GetConnectionString(...)`, account permissions, network, and database service |
+| Table can be viewed but not edited | Check Provider primary-key detection, database write permission, and `CanWriteCurrentTable` |
+| Save reports SQL errors | Check `IDatabaseBrowserProvider.Insert/Update/Delete` parameter mapping and field types |
+| Runtime cannot find SqlSugar | Check whether `SqlSugarCore` and transitive dependencies are in the package and host output |
+| SQLite or MySQL file is locked | Separate service locks, file permissions, and UI windows that still hold connections |
+
 ## What Boundaries the Current Implementation Has
 
 ### The Browser Main Line Is Already "Database-First"

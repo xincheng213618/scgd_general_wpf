@@ -85,6 +85,41 @@ Current flow template export has at least two actual forms:
 
 Therefore, simply writing flow templates as "just a node graph file" would miss the current package export capability.
 
+### Saving Has Database and Local-File Paths
+
+`FlowEngineToolWindow.Save()` currently has two paths:
+
+| Scenario | Behavior | Handoff focus |
+| --- | --- | --- |
+| Local `.stn` file is open | `SaveToFile(FileFlow)` writes the canvas back to that file | It does not update database templates or resource rows. |
+| A `FlowParam` template is open | `CheckFlow()`, `GetCanvasData()`, Base64, then `TemplateFlow.Save2DB(...)` | Updates `ModMasterModel.Name`, `SysResourceModel.Value`, and detail resource references. |
+
+`TemplateFlow.Save2DB(...)` stores canvas data in `SysResourceModel` with `Type = 101`, while `ModDetailModel.ValueA` stores the resource id. If a flow appears to save but reopens with old content, check `DataBase64`, `ValueA`, and the resource table value first.
+
+### .cvflow Package Structure
+
+`.cvflow` is a ZIP package, not only a renamed `.stn` file.
+
+| Entry | Role |
+| --- | --- |
+| `flow.stn` | Binary node-canvas data |
+| `manifest.json` | `FlowPackageManifest` with flow name, version, and related templates |
+
+`FlowPackageHelper.CollectTemplatesForExport(...)` scans template-reference properties such as `TempName`, `POITempName`, `SavePOITempName`, `OutputTemplateName`, and `ModelName`. Import then creates related templates, resolves duplicate names, and rewrites template names in STN when needed.
+
+Multi-select export still creates a zip of `.stn` files and does not collect a manifest like single `.cvflow` export. For field migration, validate the single-flow `.cvflow` path first.
+
+## Runtime And Scheduling Chain
+
+| Entry | Current chain | Handoff focus |
+| --- | --- | --- |
+| Manual UI run | `DisplayFlow.RunFlow()` -> `FlowControl.Start(sn)` | Creates `MeasureBatchModel` and binds `FlowCompleted`. |
+| Awaitable run | `DisplayFlow.RunFlowAndWaitAsync()` | Used by scheduling and automation to wait for flow completion. |
+| Quartz job | `FlowJob.Execute(...)` -> dispatcher -> `RunFlowAndWaitAsync()` | Switches back to the WPF UI thread before starting the flow. |
+| Stop | `DisplayFlow.StopFlow()` -> `FlowControl.Stop()` | Updates the current batch to `Canceled`. |
+
+When `FlowCompleted` fires, the current batch receives `FlowStatus`, `TotalTime`, and `Result`, then project-side processing continues. If a flow completes but the project package has no result, trace `FlowCompleted`, batch update, and project `Processing` in order.
+
 ## Most Common Mistakes to Avoid
 
 ### This Page Is Not a FlowEngineLib Duplicate
@@ -102,6 +137,21 @@ What actually connects device dropdowns, template dropdowns, and JSON template d
 ### Window Behavior Differs from Regular Template Editors
 
 Regular templates are mostly edited on the right side of `TemplateEditorWindow`; flow templates currently follow a "list window + separate flow editor window" path. Continuing to use the narrative of regular templates would mislead readers.
+
+### Import/Export Has Two Compatibility Paths
+
+`.stn` contains only the node graph; `.cvflow` contains a manifest and related templates. Multi-select zip export is still closer to the old `.stn` semantics. Always confirm the actual format before using a flow package for backup, migration, or handoff.
+
+## Acceptance Checklist
+
+| Scenario | Required check |
+| --- | --- |
+| Save flow | Add nodes, choose templates, save, close, reopen, and confirm parameters remain |
+| Export one flow | Export `.cvflow` and confirm `flow.stn` and `manifest.json` exist |
+| Import one flow | Import into an environment with duplicate template names and confirm references are rewritten |
+| Export multiple flows | Confirm the zip contains multiple `.stn` files and no related-template manifest |
+| Scheduled run | `FlowJob` starts the flow and returns `FlowJobResult` in `context.Result` |
+| Project handoff | Batch status, elapsed time, result string, and project processing are all traceable |
 
 ## Recommended Reading Order
 

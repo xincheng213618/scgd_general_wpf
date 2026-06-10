@@ -19,7 +19,7 @@ This page is retained for backward compatibility with old links. The current doc
 
 - The old feature list mixed in descriptions that are difficult to verify against the current repository
 - Some capabilities only apply in specific projects, plugins, or delivery environments and are not suitable as general entry-point commitments
-- The current structure has separated "Installation & First Use", "Daily Use", "Design & Architecture", and "API Reference"; readers should follow these entry points
+- The current structure has separated "Installation & First Use", "Daily Use", "Design & Architecture", and "Module Handbook"; readers should follow these entry points
 
 ## Current Judgement Principle
 

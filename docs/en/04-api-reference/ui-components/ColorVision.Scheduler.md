@@ -89,6 +89,47 @@ The scheduling module is currently closer to the following chain:
 
 This chain is closer to the existing implementation than the old documentation's "task editor/monitor panel/log viewer three-layer architecture."
 
+## Using It as a DLL
+
+### When to Reference It
+
+- Desktop code needs to create, pause, resume, delete, or trigger scheduled tasks.
+- Quartz `IJob` implementations need to be exposed for user configuration.
+- Task execution history and post-restart statistics need to be recorded.
+- A menu or status-bar entry should expose scheduler state and the task window.
+
+### Adding a Task Type
+
+1. Add a type that implements `Quartz.IJob`.
+2. Add `DisplayNameAttribute` if a friendly name is needed.
+3. If the task has configuration, implement `IConfigurableJob` or a matching `IJobConfig`.
+4. Ensure the task assembly is collected by `AssemblyService`.
+5. Create the task in `TaskViewerWindow` and verify JSON configuration plus SQLite history.
+
+### DLL Release Acceptance
+
+| Check | What to Inspect | Passing Standard |
+| --- | --- | --- |
+| Target framework outputs | `net8.0-windows7.0`, `net10.0-windows7.0` | Both TFMs produce DLL, `.nupkg`, and `.snupkg` |
+| Package dependencies | `Quartz`, `SqlSugarCore`, `Newtonsoft.Json`, `ColorVision.UI` | Host output can resolve scheduler and history dependencies |
+| Package README | `ColorVision.Scheduler.csproj` | The project root has `README.md`, but the current pack item points at `Properties\\README.md`; open the `.nupkg` and verify the README is actually included |
+| Menu and status bar | `MenuTaskViewer`, `SchedulerStatusBarProvider` | Menu opens the task window and status bar reflects scheduler state |
+| Task type scanning | `AssemblyService`, `QuartzSchedulerManager` | `IJob` types from loaded assemblies appear in the create-task window |
+| Configuration recovery | `%AppData%/ColorVision/scheduler_tasks.json` | Existing tasks recover after upgrade and are not overwritten by empty config |
+| History recovery | `%AppData%/ColorVision/SchedulerHistory.db` | Run count, success/failure count, and duration statistics survive restart |
+| Basic operations | `TaskViewerWindow`, `CreateTask` | Create, pause, resume, trigger now, delete, and view history all close the loop |
+
+### Field First Checks
+
+| Symptom | First Check |
+| --- | --- |
+| Create-task window has no task types | Check whether the task assembly is loaded by `AssemblyService` and whether types implement `Quartz.IJob` |
+| Tasks disappear after upgrade | Check whether `%AppData%/ColorVision/scheduler_tasks.json` still exists and can deserialize |
+| History is empty | Check whether `%AppData%/ColorVision/SchedulerHistory.db` exists and whether permissions or path migration changed |
+| Task does not run at schedule time | Check whether Quartz is started, the task is paused, and Cron/time zone settings are correct |
+| Status bar does not show scheduler state | Check whether `SchedulerStatusBarProvider` is loaded by the host and UI resources initialized correctly |
+| NuGet package lacks README | Open the `.nupkg` root and verify README; if missing, fix the README pack item in the `.csproj` |
+
 ## What Boundaries the Current Implementation Has
 
 ### Task Types Come from Loaded Assemblies

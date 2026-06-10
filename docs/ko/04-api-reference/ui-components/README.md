@@ -6,10 +6,23 @@
 
 이 창고에 처음 입장하는 경우 다음 순서로 인식을 확립하는 것이 좋습니다.
 
-1. 구성, 플러그인, 메뉴, 속성 편집기 및 단축키의 크로스커팅 인프라를 이해하려면 먼저 [ColorVision.UI](./ColorVision.UI.md)를 살펴보세요.
-2. 작업 공간 쉘과 데스크탑 보조 창을 이해하려면 [ColorVision.Solution](./ColorVision.Solution.md) 및 [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md)을 다시 살펴보십시오.
-3. 이미지 관련 기능은 [ColorVision.Core](./ColorVision.Core.md) -> [ColorVision.ImageEditor](./ColorVision.ImageEditor.md)를 따라 찾아보세요.
-4. 독립적인 하위 시스템을 더 깊이 파고들려면 해당 단일 페이지를 입력하세요.
+1. 먼저 [현재 UI DLL 문서 커버리지](./current-ui-dll-coverage.md)를 읽고 현재 10개 UI 프로젝트, 대응 문서, 릴리스 증거를 확인합니다.
+2. 다음으로 [UI DLL 컴포넌트 핸드북](./component-handbook.md)을 읽고 DLL 단위 경계를 확인합니다.
+3. DLL을 릴리스하거나 교체해야 하면 [UI DLL 릴리스 플레이북](./ui-dll-release-playbook.md)과 [UI DLL 릴리스 매트릭스](./release-matrix.md)를 읽습니다.
+4. menu, settings, plugin loading, ImageEditor, Socket, Scheduler, Solution workspace 문제는 [UI 런타임 컴포넌트 인수인계](./ui-runtime-handoff.md)에서 확인합니다.
+5. 구체적인 control이나 window를 찾을 때는 [UI 컴포넌트 카탈로그](./control-catalog.md)를 사용합니다.
+6. 마지막으로 개별 DLL 페이지로 이동합니다.
+
+## 릴리스 및 인수인계 진입점
+
+- [UI DLL 컴포넌트 핸드북](./component-handbook.md): DLL별 책임과 경계.
+- [현재 UI DLL 문서 커버리지](./current-ui-dll-coverage.md): 현재 UI 프로젝트, 문서 페이지, 릴리스 증거, 유지보수 규칙.
+- [UI 컴포넌트 카탈로그](./control-catalog.md): control, window, Provider, extension point 기준으로 소스 위치를 찾음.
+- [UI 런타임 컴포넌트 인수인계](./ui-runtime-handoff.md): menu, settings, PropertyGrid, ImageEditor, Socket, Scheduler, Solution의 discovery와 debug.
+- [UI DLL 릴리스 플레이북](./ui-dll-release-playbook.md): release scenario별 build/acceptance.
+- [UI DLL 릴리스 매트릭스](./release-matrix.md): version, target framework, dependency, resource, smoke test.
+- [UI DLL 릴리스 증거 및 현장 확인표](./dll-release-evidence.md): `.csproj`, package content, host output, consumer validation, rollback record.
+- [UI DLL 릴리스 절차](./publishing.md): 공통 build command, package check, post-release verification.
 
 ## 모듈 맵
 

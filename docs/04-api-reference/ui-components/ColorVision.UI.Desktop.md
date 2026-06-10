@@ -97,6 +97,57 @@
 2. 向导链：`WizardManager` -> `IWizardStep` 发现 -> `WizardWindow` 切换与完成。
 3. 管理链：`MenuItemManagerWindow` / `ConfigManagerWindow` / `ViewDllVersionsWindow` 提供不同侧面的桌面管理窗口。
 
+## 作为 DLL/桌面工具包使用时
+
+### 应该引用它的场景
+
+- 需要统一设置窗口或配置导入导出。
+- 需要首次配置向导、安装向导或多步骤引导流程。
+- 需要插件市场、DLL 版本查看、下载管理、第三方应用入口。
+- 需要桌面侧反馈窗口、WebView Markdown 展示或定时按钮操作统计。
+
+### 新增设置页
+
+1. 在业务配置类或 Provider 中暴露设置元数据。
+2. 确认 `ConfigSettingManager` 能收集到设置项。
+3. 如果是自定义 View，确认 `SettingWindow` 的懒加载能实例化该 View。
+4. 打开设置窗口验证分组、保存和重启后的恢复。
+
+### 新增向导步骤
+
+1. 实现 `IWizardStep`。
+2. 设置 `Order` 和显示信息。
+3. 让步骤所在程序集被加载。
+4. 打开 `WizardWindow` 验证排序、前后切换、完成条件和完成状态。
+
+### 发布注意
+
+`ColorVision.UI.Desktop` 当前会打包 `Assets/css/github-markdown.css` 和 `Assets/Tool/aria2c.exe`。市场、下载、Markdown 展示相关问题要同时检查这些资源是否复制到输出目录。
+
+### DLL/工具包发布验收表
+
+| 验收项 | 要查什么 | 通过标准 |
+| --- | --- | --- |
+| 目标框架产物 | `net10.0-windows7.0`、`OutputType=WinExe` | 能生成桌面工具程序集、`.nupkg`、`.snupkg` |
+| 包内 README | `PackageReadmeFile`、包根目录 | `README.md` 随包进入根目录 |
+| 项目依赖 | `ColorVision.UI`、`ColorVision.Database` | 设置窗口、数据库配置和基础壳层依赖能解析 |
+| WebView2/Markdown | `Microsoft.Web.WebView2`、`Markdig.Signed`、`Assets/css/github-markdown.css` | 插件市场或 Markdown 预览能初始化并使用 CSS |
+| 下载工具 | `Assets/Tool/aria2c.exe`、`Aria2cDownloadManager` | 输出目录能找到 `aria2c.exe`，下载窗口能启动或复用 RPC daemon |
+| 设置窗口 | `SettingWindow`、`ConfigSettingManager` | 设置分组、搜索、懒加载 View、保存和重启恢复正常 |
+| 向导窗口 | `WizardManager`、`WizardWindow` | `IWizardStep` 能被发现，排序、前后切换、完成状态正常 |
+| 诊断窗口 | `ViewDllVersionsWindow` | 能列出已加载程序集、文件版本、产品版本和路径 |
+
+### 现场故障首查
+
+| 现象 | 第一检查点 |
+| --- | --- |
+| 设置页为空或少项 | 检查 `ConfigSettingManager` 是否收集到 Provider，以及 Provider 所在程序集是否加载 |
+| 向导步骤不出现 | 检查步骤是否实现 `IWizardStep`，程序集是否被加载，`Order` 是否异常 |
+| 插件市场 README/CHANGELOG 空白 | 先查 WebView2 初始化，再查 Markdown CSS 是否复制到 `Assets/css/` |
+| 下载失败或卡住 | 检查 `Assets/Tool/aria2c.exe`、RPC 端口和是否有旧的 aria2c 进程占用 |
+| DLL 版本窗口缺少条目 | 检查目标程序集是否真的加载到当前 AppDomain |
+| 第三方应用入口打不开 | 检查 `SystemAppProvider` 生成的路径、权限和系统工具是否存在 |
+
 ## 当前实现有哪些边界
 
 ### 不是整个系统主入口

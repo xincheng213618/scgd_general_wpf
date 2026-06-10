@@ -139,6 +139,6 @@
 
 ## 続きを読む
 
-- [プラグイン/README.md](../../../../プラグイン/README.md)
+- [Plugins/README.md](../../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
-- [docs/04-api-reference/plugins/standard-plugins/pattern.md](./pattern.md)
+- [既存プラグイン機能](../README.md)

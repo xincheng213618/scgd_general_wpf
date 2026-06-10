@@ -41,7 +41,7 @@
 
 ### カラーとクロマのサンプリング
 
-`ConvertXYZ.cs` は、`cvCamera.dll` の XYZ 関連の入口をさらに焦点を絞ったバインディング サーフェスに分割し、現在次の点に焦点を当てています。
+`ConvertXYZ.cs` は、`cvCamera.dll` の XYZ 関連の入り口をさらに焦点を絞ったバインディング サーフェスに分割し、現在次の点に焦点を当てています。
 
 - XYZバッファの初期化と解放
 - 円/長方形領域のサンプリング
@@ -118,5 +118,5 @@
 ## 続きを読む
 
 - [docs/04-api-reference/engine-components/ColorVision.Engine.md](./ColorVision.Engine.md)
-- [docs/03-アーキテクチャ/概要/システム-概要.md](../../03-アーキテクチャ/概要/システム-概要.md)
+- [docs/03-architecture/overview/system-overview.md](../../03-architecture/overview/system-overview.md)
 - [docs/04-api-reference/engine-components/ColorVision.FileIO.md](./ColorVision.FileIO.md)

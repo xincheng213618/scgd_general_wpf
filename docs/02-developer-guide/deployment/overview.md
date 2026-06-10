@@ -36,7 +36,7 @@ dotnet run --project ColorVision/ColorVision.csproj
 
 ## 配套文档
 
-- [入门指南](../../00-getting-started/README.md)
+- [安装与首次使用](../../00-getting-started/README.md)
 - [系统要求](../../00-getting-started/prerequisites.md)
 - [自动更新系统](./auto-update.md)
 - [构建与发布脚本](../scripts/README.md)

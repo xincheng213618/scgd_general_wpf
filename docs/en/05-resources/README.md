@@ -19,4 +19,4 @@ This section only retains content that is long-term stable and suitable as index
 ## Boundaries of This Round of Organization
 
 - Old API v1.1, template, data storage, and other entry points are no longer placed in the resource section navigation.
-- Topical content should return to corresponding chapters — for example, deployment goes back to Developer Guide, interfaces go back to API Reference, system design goes back to Architecture Design.
+- Topical content should return to corresponding chapters: deployment goes back to Developer Guide, module details go back to Module Handbook, and system design goes back to Architecture Design.

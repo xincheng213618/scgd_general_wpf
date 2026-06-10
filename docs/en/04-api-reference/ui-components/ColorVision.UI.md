@@ -86,6 +86,120 @@ Multi-language resources and UI culture switching related capabilities are centr
 
 Log-related UI configuration and local log window state are also placed in this project. It is more oriented toward "log display and configuration support" rather than the complete log backend itself.
 
+## Using It as a DLL
+
+### When to Reference It
+
+- Plugins or project packages need to register menus, status-bar items, settings, hotkeys, or property editors.
+- Runtime code needs to load `Plugins/<Name>/manifest.json` through `PluginLoader`.
+- Unified configuration services such as `ConfigHandler` or `ConfigSettingManager` are needed.
+- Desktop shell services such as search, log display, update recovery, tray icon, or jump list are needed.
+
+### Common Extension Points
+
+| Need | First Entry |
+| --- | --- |
+| Add a menu | `Menus/MenuManager.cs`, `GlobalMenuBase`, `MenuItemBase`, `MenuItemAttribute` |
+| Add a setting | `ConfigSetting/ConfigSettingManager.cs`, `IConfigSettingProvider` |
+| Add a property editor | `PropertyEditor/PropertyEditors.cs`, `PropertyEditorTypeAttribute` |
+| Add a status-bar item | `StatusBar/StatusBarManager.cs`, `IStatusBarProvider` |
+| Add a hotkey | `HotKey/HotKeys.cs`, `GlobalHotKey/`, `WindowHotKey/` |
+| Adjust plugin loading | `Plugins/PluginLoader.cs`, `PluginManifest.cs`, `DepsJson.cs` |
+
+### DLL Release Acceptance
+
+| Check | What to Inspect | Passing Standard |
+| --- | --- | --- |
+| Target framework outputs | `net8.0-windows7.0`, `net10.0-windows7.0` | Both TFMs produce DLL, `.nupkg`, and `.snupkg` |
+| Package README | `PackageReadmeFile`, package root | `README.md` is included at the package root and matches the current shell capabilities |
+| Package dependencies | `ColorVision.Common`, `ColorVision.Themes`, `log4net`, `Newtonsoft.Json` | Host and plugin output can resolve these dependencies |
+| Configuration chain | `ConfigHandler`, `ConfigSettingManager` | A setting can be changed, saved, restarted, and read back consistently |
+| Plugin chain | `PluginLoader`, `PluginManifest`, `.deps.json` | Manifest, README, and CHANGELOG can be read, and dependency-version issues are reportable |
+| Discovery chain | `AssemblyHandler`, `MenuManager`, `StatusBarManager`, `SearchManager` | Menus, status items, search entries, and property editors are rediscovered after plugin load |
+| Property editing | `PropertyEditorWindow`, `PropertyEditorTypeAttribute` | Common property types and custom editors open, with diagnosable logs on failure |
+| Language/resources | `Languages/`, `Properties/Resources.*.resx` | Menus, settings, and log windows refresh primary text after language switch |
+
+## Component Details And Handoff Checks
+
+This section is organized around what a maintainer must verify after publishing `ColorVision.UI.dll`.
+
+### Runtime Component Matrix
+
+| Component family | Key classes/windows | Source entry | Runtime role | Minimum acceptance |
+| --- | --- | --- | --- | --- |
+| Configuration | `ConfigHandler`, `Environments`, `ConfigSettingManager`, `ConfigServiceAdapters` | `UI/ColorVision.UI/ConfigHandler.cs`, `ConfigSetting/` | Read, cache, save, and aggregate configuration items. | Change one simple setting, save, restart, and confirm persistence. |
+| Plugin loading | `PluginLoader`, `PluginManifest`, `DepsJson`, `PluginExtractor` | `UI/ColorVision.UI/Plugins/` | Scan `Plugins/`, read manifest files, check `.deps.json`, and load assemblies. | Plugin manager can read manifest, README, CHANGELOG, and enabled state. |
+| Menus | `MenuManager`, `GlobalMenuBase`, `MenuItemAttribute` | `UI/ColorVision.UI/Menus/` | Discover `IMenuItem` / `IMenuItemProvider` and build menu trees. | Built-in and plugin menus appear in the expected order and commands execute. |
+| Property editor | `PropertyEditorWindow`, `PropertyEditorHelper`, `PropertyEditorTypeAttribute` | `UI/ColorVision.UI/PropertyEditor/` | Build parameter editing UI from property metadata and editor types. | Open bool, enum, path, list, and dictionary editors. |
+| Hotkeys | `HotKeys`, `HotKeysSetting`, `GlobalHotKey/`, `WindowHotKey/` | `UI/ColorVision.UI/HotKey/` | Manage global and window-scoped hotkeys. | Open hotkey settings, change a non-critical hotkey, and verify conflict detection. |
+| Language | `Languages/`, `LanguageConfig`, `LanguagePropertiesEditor` | `UI/ColorVision.UI/Languages/` | Manage culture switching and language configuration. | Menus, settings, and log windows refresh after language change. |
+| Log UI | `WindowLog`, `WindowLogLocal`, `LogViewerControl`, `LogViewerAppender` | `UI/ColorVision.UI/LogImp/` | Show local logs, levels, and filters. | Filter by Error/Warn and locate the latest startup or click error. |
+| Status bar | `StatusBarManager`, `StatusBarControl` | `UI/ColorVision.UI/StatusBar/` | Discover status providers and refresh main-window state. | Socket, Scheduler, or Database status items appear and can be clicked. |
+| Search | `SearchManager`, `SearchControl`, `MenuSearchProvider` | `UI/ColorVision.UI/Serach/` | Aggregate search providers for quick entry points. | Searching a menu or window name opens the target entry. |
+| Shell helpers | `JumpListManager`, `TrayIconManager`, `ArgumentParser` | `UI/ColorVision.UI/Shell/` | Windows jump list, tray icon, and command-line helpers. | Tray/jump-list features do not break startup; command-line args parse correctly. |
+| Assembly discovery | `AssemblyHandler`, `FileProcessorFactory` | `UI/ColorVision.UI/` | Refresh scannable assemblies and file processors. | After plugin load, menus, settings, status providers, and tools are discoverable. |
+
+### Runtime Discovery Chain
+
+```mermaid
+flowchart TD
+  Start["Application startup"] --> Config["ConfigHandler / Environments"]
+  Start --> Plugins["PluginLoader"]
+  Plugins --> Assemblies["AssemblyHandler.RefreshAssemblies"]
+  Assemblies --> Menus["MenuManager"]
+  Assemblies --> Settings["ConfigSettingManager"]
+  Assemblies --> PropertyEditors["PropertyEditorHelper"]
+  Assemblies --> Status["StatusBarManager"]
+  Assemblies --> Search["SearchManager"]
+  Menus --> Windows["Tool windows / plugin windows"]
+  Settings --> SettingWindow["UI.Desktop SettingWindow"]
+  PropertyEditors --> PropertyGrid["PropertyEditorWindow"]
+```
+
+When a UI component is missing, follow this chain from left to right. First verify the plugin and assembly were loaded, then inspect menu, setting, property-editor, or status-bar discovery.
+
+### Required Smoke Tests After Publishing
+
+| Smoke test | Action | Pass condition |
+| --- | --- | --- |
+| Application startup | Build and start the main app. | No `MissingMethodException`, `FileLoadException`, or resource-load errors. |
+| Plugin loading | Open plugin management or marketplace. | Plugin manifest and README/CHANGELOG are readable. |
+| Menus | Open main menus and at least one plugin menu. | Sort order, permission filtering, and command execution work. |
+| Settings | Open settings and search for theme, language, or log items. | Items can be searched, modified, and saved. |
+| PropertyGrid | Edit a device/template/config object. | Categories, display names, descriptions, and editor types render correctly. |
+| Status bar | Inspect Socket/Scheduler/Database status. | Provider items appear and refresh without blocking the UI. |
+| Hotkeys | Open hotkey settings. | Global and window hotkeys do not double-register. |
+| Log window | Open logs and filter Error/Warn. | The latest startup or interaction logs are visible. |
+
+### Common Incidents
+
+| Symptom | First check | Notes |
+| --- | --- | --- |
+| Plugin folder exists but menu is missing | Whether `PluginLoader` loaded the DLL and `AssemblyHandler` refreshed. | Menu discovery depends on loaded assemblies, not folders. |
+| Setting item is missing | `IConfigSettingProvider` or `[ConfigSetting]` discovery. | Missing assemblies, constructor failures, or wrong attributes hide settings. |
+| Property editor falls back to text | `PropertyEditorTypeAttribute` and `PropertyEditorHelper`. | Custom-editor creation failure degrades the editing experience. |
+| Menu click does nothing | `CanExecute`, permissions, target-window logs. | A menu tree can exist while its command still cannot execute. |
+| Status item does not refresh | `IStatusBarProviderUpdatable`, timer, main-window binding. | A provider can exist but never emit updates. |
+| Some text ignores language change | Resource key, binding mode, window reload. | Some windows need recreation or rebinding. |
+| Plugin dependency version error | `.deps.json` and root output `ColorVision.*.dll` versions. | Plugin-folder DLLs and root DLLs may not be the same batch. |
+
+## Field First Checks
+
+After replacing or publishing `ColorVision.UI.dll`, use this table when the application starts but shell behavior is wrong. The goal is to quickly decide whether the issue belongs to DLL versions, assembly discovery, config persistence, runtime providers, or an upper-level window.
+
+| Symptom | Check first | Pass signal |
+| --- | --- | --- |
+| Application fails after replacing the DLL | Root-output `ColorVision.UI.dll`, `ColorVision.Common.dll`, and `ColorVision.Themes.dll` versions | The three base DLLs come from the same build batch, with no `FileLoadException` or `MissingMethodException` |
+| Plugin is loaded but menu is missing | `PluginLoader` logs, `AssemblyHandler.RefreshAssemblies`, and `MenuManager` scan result | Plugin assembly is in the scanned assembly set, and menu item types can be created |
+| A setting item is missing | `ConfigSettingManager`, `IConfigSettingProvider`, and `[ConfigSetting]` attributes | Provider construction has no exception, and config objects can be resolved from `ConfigService` |
+| Setting changes disappear after restart | `ConfigHandler` save path, JSON serialization, and config file permissions | Saved file timestamp changes, and restart reads the same config file |
+| Custom PropertyGrid editor does not open | `PropertyEditorTypeAttribute`, editor constructor, and property type | Custom editor instantiates; failure logs identify the property or editor type |
+| Status-bar item exists but does not refresh | `StatusBarManager`, `IStatusBarProviderUpdatable`, and refresh events | Provider is created and emits `ItemsChanged` or an update callback |
+| Saved hotkey does not work | `HotkeyService`, `HotKeyConfig.Instance.Hotkeys`, and global/window registration | Saved hotkeys are reapplied to runtime, and conflicts are detected |
+| Language switch is inconsistent | `LanguageManager`, resource keys, and whether the window must be recreated | New windows show the new language; stale windows reveal binding/reload boundaries |
+| Search cannot find a menu or window | `SearchManager`, `MenuSearchProvider`, and whether menus were scanned | Once the menu exists, the search index returns the entry |
+| Plugin dependency warning is confusing | Plugin `.deps.json`, root-output DLLs, and private plugin-folder DLLs | Dependency check points to the host version actually being loaded, not just plugin-folder files |
+
 ## Where This Project Is Currently Most Easily Miswritten
 
 ### It Is Not a Single Control Library

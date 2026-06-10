@@ -1,50 +1,43 @@
-# 플러그인 및 상태 페이지
+# 기존 플러그인 기능
 
-이 장에는 두 가지 범주의 콘텐츠만 포함됩니다.
+이 장은 현재 `Plugins/` 디렉터리에 실제로 존재하는 플러그인만 현재 기능으로 다룹니다. `Plugins/<Name>/`, `.csproj`, `manifest.json` 이 없는 이름은 현재 플러그인 목록에 넣지 않습니다.
 
-- 현재 작업공간에서 소스 코드 플러그인 페이지에 직접 액세스할 수 있습니다.
-- 해당 소스 코드가 없거나 더 이상 완전히 유지 관리되지 않아 이전 플러그인 페이지가 "역사적 상태 설명"으로 다시 작성됩니다.
+## 현재 플러그인
 
-더 이상 "완전한 플러그인 디렉토리"의 역할을 가정하지 않으며 여기에 나열된 모든 페이지가 현재 소스 트리에서 직접 개발할 수 있는 플러그인 프로젝트를 나타내는 기본 설정도 아닙니다.
+| 플러그인 | 소스 디렉터리 | manifest Id | 주요 기능 | 문서 |
+| --- | --- | --- | --- | --- |
+| Conoscope | `Plugins/Conoscope/` | `Conoscope` | VAM/코노스코프 이미지, 포커스 포인트, 색역, 대비 분석 | [Conoscope](./standard-plugins/conoscope.md) |
+| Spectrum | `Plugins/Spectrum/` | `Spectrum` | 분광기 연결, 보정, 측정, EQE, SQLite 결과 | [Spectrum](./standard-plugins/spectrum.md) |
+| SystemMonitor | `Plugins/SystemMonitor/` | `SystemMonitor` | 성능 모니터링, 상태 표시줄, 디스크/네트워크/프로세스 정보 | [SystemMonitor](./standard-plugins/system-monitor.md) |
+| EventVWR | `Plugins/EventVWR/` | `EventVWR` | Windows 이벤트 오류 보기, Dump 설정 | [EventVWR](./standard-plugins/eventvwr.md) |
+| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | `WindowsServicePlugin` | CVWindowsService 설치, 등록, MySQL/MQTT 설정 | [WindowsServicePlugin](./standard-plugins/windows-service.md) |
 
-## 먼저 이 장의 경계를 이해하세요.
+## 먼저 읽을 문서
 
-- 현재 플러그인 로딩 모델은 `manifest.json` 및 `UI/ColorVision.UI/Plugins/PluginLoader.cs`의 실제 구현을 기반으로 해야 합니다.
-- 플러그인 API 참조 페이지는 현재 문서에서 다룬 몇 가지 주제만 다루고 `Plugins/` 디렉토리를 완전히 반영하지는 않습니다.
-- 문서 설명이 현재 소스 코드 디렉터리와 일치하지 않는 경우 소스 코드 디렉터리 및 런타임 로딩 동작이 우선되어야 합니다.
+| 목적 | 문서 |
+| --- | --- |
+| 현재 플러그인과 문서 대응 확인 | [현재 플러그인 문서 커버리지](./current-plugin-coverage.md) |
+| 기능, 진입점, 위험 비교 | [플러그인 기능 및 인수인계 매트릭스](./plugin-capability-matrix.md) |
+| 로딩, DLL, 권한, Socket, 패키징 문제 | [플러그인 런타임 및 인수인계 플레이북](./plugin-handoff-playbook.md) |
+| 릴리스 또는 현장 교체 검수 | [기존 플러그인 현장 검수 체크리스트](./plugin-field-acceptance.md) |
+| manifest, DLL version, `.cvxp`, native file, rollback 기록 | [플러그인 릴리스 증거 및 버전 확인표](./plugin-release-evidence.md) |
+| 새 플러그인 개발 | [플러그인 개발 매뉴얼](../../02-developer-guide/plugin-development/README.md) |
 
-## 현재 어떤 페이지가 포함되어 있나요?
+## 로딩 및 배포 모델
 
-### 소스코드에 직접 연결될 수 있는 주제
+플러그인은 `UI/ColorVision.UI/Plugins/PluginLoader.cs` 로 로드됩니다. 애플리케이션 출력 폴더의 `Plugins/` 1단계 하위 폴더를 스캔하고, `manifest.json`, `dllpath`, 필요한 경우 `.deps.json` 의 `ColorVision.*` 의존성을 확인한 뒤 `Assembly.LoadFrom(...)` 으로 로드합니다.
 
-- [스펙트럼 플러그인](./standard-plugins/spectrum.md)
-- [SystemMonitor 플러그인](./standard-plugins/system-monitor.md)
-- [EventVWR 플러그인](./standard-plugins/eventvwr.md)
-- [Windows 서비스 플러그인](./standard-plugins/windows-service.md)
+권장 배포 형태:
 
-### 과거 상태 설명 페이지
+```text
+ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/<PluginName>/
+  <PluginName>.dll
+  manifest.json
+  README.md
+  CHANGELOG.md
+  PackageIcon.png        # optional
+```
 
-- [패턴/그림카드 생성 기능](./standard-plugins/pattern.md)
-- [ImageProjector(기록 상태)](./standard-plugins/image-projector.md)
-- [ScreenRecorder(기록 상태)](./standard-plugins/screen-recorder.md)
+## 현재 목록에 없는 이름
 
-이러한 페이지를 유지하는 목적은 기능 약속 페이지 역할을 계속하기보다는 "현재 웨어하우스에서 소스 코드가 여전히 일치할 수 있는지 여부와 현재 상황을 찾을 수 있는 곳"을 설명하는 것입니다.
-
-## 이 장을 더 효과적으로 읽는 방법
-
-1. 먼저 [플러그인 개발 개요](../../02-developer-guide/plugin-development/overview.md)를 읽고 플러그인 항목, 제품 형태 및 런타임 경계를 이해하세요.
-2. 현재 'Plugins/' 디렉터리에 대상 플러그인의 해당 소스 코드가 있는지 다시 확인하세요.
-3. 페이지에 "이전 상태"라고 명확하게 기재된 경우 현재 개발 매뉴얼이 아닌 현재 상태에 대한 설명으로 간주되어야 합니다.
-4. 런타임 로딩 체인을 추적하려면 `PluginLoader`로 돌아가서 각 플러그인 디렉터리의 `manifest.json`을 읽어야 합니다.
-
-## 현재 알려진 공백
-
-- 현재 API 참조는 `Plugins/` 디렉토리의 모든 실제 프로젝트를 다루지 않습니다.
-- Conscope와 같이 아직 소스 코드가 남아 있는 플러그인에는 현재 별도의 API 참조 페이지가 없습니다.
-- 따라서 이 장은 "전체 플러그인 색인"보다는 "구성된 주제 항목"으로 더 적합합니다.
-
-## 계속 읽기
-
-- [API 참조 개요](../README.md)
-- [플러그인 개발 개요](../../02-developer-guide/plugin-development/overview.md)
-- [FlowEngineLib 노드 확장](../extensions/flow-node.md)
+Pattern, ImageProjector, ScreenRecorder 는 현재 `Plugins/<Name>/` 소스, `.csproj`, `manifest.json` 이 없으므로 현재 기능 진입점이 아닙니다. 다시 복원하려면 소스, manifest, README, CHANGELOG, 빌드 복사, 패키징 검증을 먼저 복구해야 합니다.

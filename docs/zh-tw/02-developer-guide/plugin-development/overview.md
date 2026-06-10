@@ -92,7 +92,7 @@ Plugins/
 1. 先看 [外掛開發總覽](./README.md)
 2. 再看 [外掛開發入門](./getting-started.md)
 3. 需要理解裝載和執行階段時，再看 [外掛生命週期](./lifecycle.md)
-4. 想參考現成外掛時，直接看 [Pattern 外掛](../../04-api-reference/plugins/standard-plugins/pattern.md)
+4. 想參考現成外掛時，先看 [現有外掛能力說明](../../04-api-reference/plugins/README.md)，再進入 [Conoscope](../../04-api-reference/plugins/standard-plugins/conoscope.md)、[Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md) 或 [SystemMonitor](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 
 ## 說明
 

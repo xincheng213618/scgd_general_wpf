@@ -131,6 +131,51 @@ ColorVision.SocketProtocol 当前是一个桌面侧本地 TCP 通信模块，主
 5. 收发消息被写入 `SocketMessageManager` 管理的 SQLite 数据库。
 6. `SocketStatusBarProvider` 和 `SocketManagerWindow` 从管理器读取状态与消息列表。
 
+## 作为 DLL 使用时
+
+### 应该引用它的场景
+
+- 项目包需要提供本地 TCP 接口给客户设备、上位机或测试软件调用。
+- 需要按 `EventName` 分发 JSON 请求到业务处理器。
+- 需要把收发消息落 SQLite，方便现场追踪。
+- 需要在状态栏显示 Socket 服务状态并打开管理窗口。
+
+### 新增 JSON Handler
+
+1. 新增类实现 `ISocketJsonHandler`。
+2. 设置唯一 `EventName`。
+3. 在处理逻辑中返回 `SocketResponse` 或等效响应数据。
+4. 确认程序集已被加载，Dispatcher 能扫描到该 handler。
+5. 用 `SocketManagerWindow` 查看收到的请求、响应码和消息历史。
+
+### 发布注意
+
+Socket 模块依赖运行时配置。升级 DLL 后要保留或迁移 `%AppData%/ColorVision/Config/SocketMessages.db` 和 Socket 配置，否则现场会表现为服务未启用、端口变化或历史消息丢失。
+
+### DLL 发布验收表
+
+| 验收项 | 要查什么 | 通过标准 |
+| --- | --- | --- |
+| 目标框架 | `ColorVision.SocketProtocol.csproj` 的 `net8.0-windows7.0;net10.0-windows7.0` | 主程序目标框架能加载对应 DLL |
+| 包元数据 | `GeneratePackageOnBuild`、`PackageReadmeFile`、`README.md` | NuGet 包包含 README，版本号可追溯 |
+| 上层依赖 | `ColorVision.UI`、`ColorVision.Database`、`log4net`、`Newtonsoft.Json` | 发布目录中依赖完整，没有运行时加载失败 |
+| 服务生命周期 | `SocketInitializer`、`SocketConfig.Instance.IsServerEnabled`、`SocketManager` | 启用后能监听，禁用后能释放端口 |
+| 协议分发 | JSON / Text 模式、`ISocketJsonHandler.EventName` | JSON 事件能匹配 handler，文本模式不被误删 |
+| 消息持久化 | `%AppData%/ColorVision/Config/SocketMessages.db`、`SocketMessageManager` | 收发消息能写入并在窗口刷新 |
+| UI 集成 | `SocketStatusBarProvider`、`SocketManagerWindow` | 状态栏状态、管理窗口、过滤和诊断页可用 |
+| 配置迁移 | `SocketConfig` 真实字段 | 升级后端口、启用状态、协议模式保持或有明确迁移说明 |
+
+### 现场故障首查
+
+| 现象 | 先查哪里 | 判断要点 |
+| --- | --- | --- |
+| 服务启用但端口没有监听 | `SocketConfig.IsServerEnabled`、端口占用、`SocketManager` 最近错误 | 管理窗口诊断页的 last error 是第一证据 |
+| JSON 请求没有进入业务处理 | `EventName`、`ISocketJsonHandler` 实现程序集是否加载 | handler 不在已加载程序集时 Dispatcher 扫不到 |
+| 外部设备收到格式错误响应 | `SocketResponse`、JSON 序列化、异常包装 | 先用管理窗口查看原始请求和响应内容 |
+| 历史消息为空或丢失 | `SocketMessages.db` 路径和权限 | 升级包不能覆盖或误删现场数据库 |
+| 重发失败 | 客户端连接列表、原始 client address、当前选中客户端 | 当前逻辑优先按原地址匹配，失败后才用选中客户端兜底 |
+| 修改配置后仍按旧端口工作 | 配置保存、服务重启、旧监听是否释放 | 通信配置变更通常需要重启 Socket 服务链 |
+
 ## 当前实现有哪些边界
 
 ### 不是纯 JSON 协议库

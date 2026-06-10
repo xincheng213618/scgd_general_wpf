@@ -121,6 +121,58 @@
 - 它和全局 `PermissionMode` 并存
 - 不能把整个解决方案树、所有编辑器和全部文件操作都描述成已经全面接入细粒度权限码控制
 
+## 作为 DLL 使用时
+
+### 应该引用它的场景
+
+- 需要 `.cvsln` 工作区、文件树、最近文件和工作区状态栏。
+- 需要可插拔文件编辑器、文件夹编辑器或通用编辑器。
+- 需要 AvalonDock 文档区、布局保存恢复和面板 Provider。
+- 需要内置终端、Markdown 预览、多图预览或本地 RBAC 管理窗口。
+
+### 新增文件编辑器
+
+1. 实现 `IEditor`，通常继承 `EditorBase`。
+2. 按场景添加 `EditorForExtensionAttribute`、`GenericEditorAttribute` 或 `FolderEditorAttribute`。
+3. 确认 `EditorManager` 能扫描到类型。
+4. 打开对应文件或文件夹，验证编辑器选择、默认编辑器和文档区激活。
+
+### 新增项目或文件模板
+
+1. 新项目模板实现 `IProjectTemplate` 并添加 `ProjectTemplateAttribute`。
+2. 新文件模板实现 `INewItemTemplate` 并添加 `NewItemTemplateAttribute`。
+3. 通过 `AddNewProjectWindow` 或 `AddNewItemWindow` 验证 UI 是否出现。
+
+### 发布注意
+
+`Solution` 依赖 `ImageEditor`、`UI.Desktop`、AvalonDock、AvalonEdit、WebView2 和 WPFHexaEditor。发布后要验证 `.cvsln` 打开、文件树、文本编辑器、图像编辑器、终端和布局恢复。
+
+### DLL 发布验收表
+
+| 验收项 | 要查什么 | 通过标准 |
+| --- | --- | --- |
+| 目标框架产物 | `net10.0-windows7.0` | 能生成 DLL、`.nupkg`、`.snupkg` |
+| 包内 README | `PackageReadmeFile`、包根目录 | `README.md` 随包进入根目录 |
+| 项目依赖 | `ColorVision.Database`、`ColorVision.ImageEditor`、`ColorVision.UI.Desktop`、`ColorVision.UI` | 工作区、数据库、图像编辑和桌面工具依赖能解析 |
+| 三方依赖 | `AvalonEdit`、`AvalonDock`、`WebView2`、`WPFHexaEditor`、`Markdig.Signed` | 文本编辑、停靠布局、Markdown/Web、Hex 查看都能加载 |
+| 解决方案入口 | `SolutionManager`、`OpenSolutionWindow` | `.cvsln`、文件夹、最近文件打开路径正常 |
+| 编辑器注册 | `EditorManager`、`EditorForExtensionAttribute`、`FolderEditorAttribute` | 文本、图像、Web、Hex、文件夹编辑器可被扫描和选择 |
+| 工作区布局 | `WorkspaceManager`、`DockLayoutManager` | 标签页、面板布局保存、加载、重置正常 |
+| 终端和资源释放 | `TerminalControl`、`TerminalService` | 打开/关闭终端不残留 shell，退出时能释放计时器和进程 |
+| 本地 RBAC | `RbacManager`、`RbacManagerConfig` | 登录、退出、用户/角色/权限管理窗口能打开，登录态边界清楚 |
+
+### 现场故障首查
+
+| 现象 | 第一检查点 |
+| --- | --- |
+| `.cvsln` 打不开或最近文件失效 | 检查 `SolutionManager` 的路径归一化、文件是否存在、目录权限 |
+| 文件双击没有合适编辑器 | 检查 `EditorManager` 是否扫描到对应 Attribute，默认编辑器配置是否指向旧类型 |
+| 布局恢复后标签页丢失 | 先查 `DockLayoutManager` 的 layout 文件和 `ContentId` 是否稳定 |
+| 终端打开空白或无法输入 | 检查 ConPTY 初始化、shell 路径、当前解决方案目录和 `TerminalControl.Dispose()` |
+| Markdown/WebView2 空白 | 检查 WebView2 Runtime、用户数据目录权限和 `WebEditor` 初始化 |
+| 多图浏览器卡顿或缩略图异常 | 检查目录图片数量、扩展名过滤、缩略图缓存和释放流程 |
+| RBAC 登录态异常 | 区分 Solution 本地 RBAC 与全局 `PermissionMode`，先查 `RbacManagerConfig` 和本地 SQLite |
+
 ## 当前更适合怎样读这个项目
 
 ### 想看解决方案入口

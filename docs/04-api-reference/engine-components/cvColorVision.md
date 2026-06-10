@@ -87,6 +87,43 @@
 
 所以这一层的职责不是统一设计所有 API 风格，而是尽可能把底层能力完整映射进来。
 
+## 交接验收表
+
+接手这个模块时，最重要的是验证托管声明、原生 DLL、设备流程三者是否一致：
+
+| 验收项 | 要看哪里 | 通过标准 |
+| --- | --- | --- |
+| 原生 DLL 就位 | `cvCamera.dll`、`cvOled.dll` 及其依赖 | Release/x64 输出目录能加载 DLL，不出现 `DllNotFoundException` |
+| 平台位数一致 | 项目平台、DLL 位数、`DllImport` 声明 | x64 主流程不出现 `BadImageFormatException`，调用约定和入口名能匹配 |
+| 相机基础链路 | `cvCameraCSLib.cs` | 初始化、枚举/打开、取帧、关闭和释放能按真实设备流程跑通 |
+| XYZ 采样链路 | `ConvertXYZ.cs` | `CM_InitXYZ`、`CM_SetBufferXYZ`、采样函数、`CM_ReleaseBuffer`、`CM_UnInitXYZ` 顺序清楚 |
+| OLED 算法链路 | `CvOledDLL.cs` | `CvOledInit`、`CvLoadParam`、图片读入/点位查找/重建、`CvOledRealse` 能按同一套参数验证 |
+| PG 图卡链路 | `PG.cs` | 初始化、连接、Start/Stop/Reset、上下切换或指定帧切换能被设备服务调用 |
+| 源表/电源链路 | `PassSx.cs` | 打开、设置源模式、读电压电流、步进/扫描、关闭有明确调用顺序 |
+| 光谱仪链路 | `Spectrometer.cs` | `CM_CreateEmission`、初始化、加载波长/校准文件、取数、释放有成对验证 |
+| 错误码翻译 | `CM_GetErrorMessage(...)` | 原生返回码不要被吞掉，日志或上层异常里能看到可定位的信息 |
+
+## 变更边界
+
+| 变更类型 | 应该改这里吗 | 说明 |
+| --- | --- | --- |
+| DLL 入口名、参数、调用约定、结构体布局变化 | 是 | 这是本模块最核心边界，改完必须做设备或最小 native smoke |
+| 采集后的模板判定、OK/NG 业务规则变化 | 通常不是 | 先看 `ColorVision.Engine/Templates`、项目包和流程节点 |
+| CVCIE/CVRAW 文件格式变化 | 通常不是 | 先看 `ColorVision.FileIO`，这里只提供 native 能力绑定 |
+| WPF 界面按钮、菜单、图像叠加显示变化 | 通常不是 | 先看 UI、ImageEditor、结果展示链 |
+| 新客户项目需要调用已有 native 能力 | 可能是 | 优先复用现有声明；只有 DLL 新增入口或签名变化时才扩展这里 |
+
+## 故障首查
+
+| 现象 | 第一检查点 |
+| --- | --- |
+| 启动或调用时报 `DllNotFoundException` | 检查 DLL 是否随输出发布到 x64 目录，以及依赖 DLL 是否也在 |
+| 报 `EntryPointNotFoundException` | 检查 `EntryPoint` 名称、DLL 版本和供应商导出符号是否一致 |
+| 报 `BadImageFormatException` | 先查 x86/x64 位数混用，再查 AnyCPU 配置 |
+| 调用后崩溃或 `AccessViolationException` | 先查 `DllImport` 参数类型、数组长度、指针生命周期和释放顺序 |
+| XYZ、CCT、xy/uv 数值明显异常 | 先查 `CM_SetBufferXYZ` 的 rows/cols/bpp/channels 和采样区域是否一致 |
+| PG 或源表无响应 | 先查连接方式、端口/IP、Start/Stop 顺序和设备服务是否吞掉原生返回码 |
+
 ## 当前几个最容易写错的点
 
 ### 它不是纯 C# 算法中心

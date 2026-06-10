@@ -89,6 +89,51 @@
 
 这个链路比旧文档里那种“任务编辑器/监控面板/日志查看器三层架构”更贴近现有实现。
 
+## 作为 DLL 使用时
+
+### 应该引用它的场景
+
+- 需要在桌面端创建、暂停、恢复、删除定时任务。
+- 需要把 Quartz `IJob` 实现暴露给用户配置。
+- 需要记录任务执行历史和重启后的统计恢复。
+- 需要通过状态栏或任务窗口查看调度器状态。
+
+### 新增任务类型
+
+1. 新增实现 `Quartz.IJob` 的类型。
+2. 如需显示友好名称，添加 `DisplayNameAttribute`。
+3. 如果任务有配置，实现 `IConfigurableJob` 或配套 `IJobConfig`。
+4. 确保任务所在程序集会被 `AssemblyService` 收集。
+5. 在 `TaskViewerWindow` 中创建任务并验证 JSON 配置和 SQLite 历史。
+
+### 发布注意
+
+任务定义保存在 `%AppData%/ColorVision/scheduler_tasks.json`，历史记录保存在 `%AppData%/ColorVision/SchedulerHistory.db`。升级时不要把配置恢复和历史恢复混为一谈。
+
+### DLL 发布验收表
+
+| 验收项 | 要查什么 | 通过标准 |
+| --- | --- | --- |
+| 目标框架产物 | `net8.0-windows7.0`、`net10.0-windows7.0` | 两个 TFM 都能生成 DLL、`.nupkg`、`.snupkg` |
+| 包依赖 | `Quartz`、`SqlSugarCore`、`Newtonsoft.Json`、`ColorVision.UI` | 宿主输出目录能解析调度器和历史库依赖 |
+| 包内 README | `ColorVision.Scheduler.csproj` | 当前项目根目录有 `README.md`，但 `.csproj` 里打包项指向 `Properties\README.md`；发包时必须实际打开 `.nupkg` 核查 README 是否进入包 |
+| 菜单和状态栏 | `MenuTaskViewer`、`SchedulerStatusBarProvider` | 菜单能打开任务窗口，状态栏能反映调度器状态 |
+| 任务类型扫描 | `AssemblyService`、`QuartzSchedulerManager` | 已加载程序集里的 `IJob` 类型能出现在创建任务窗口 |
+| 配置恢复 | `%AppData%/ColorVision/scheduler_tasks.json` | 升级后已有任务能按 JSON 恢复，不被空配置覆盖 |
+| 历史恢复 | `%AppData%/ColorVision/SchedulerHistory.db` | 执行次数、成功失败数、耗时统计能跨重启保留 |
+| 基础操作 | `TaskViewerWindow`、`CreateTask` | 新建、暂停、恢复、立即执行、删除、查看历史都能闭环 |
+
+### 现场故障首查
+
+| 现象 | 第一检查点 |
+| --- | --- |
+| 创建任务窗口没有任务类型 | 检查任务所在程序集是否被 `AssemblyService` 加载，以及类型是否实现 `Quartz.IJob` |
+| 升级后任务丢失 | 先查 `%AppData%/ColorVision/scheduler_tasks.json` 是否还在、格式是否能反序列化 |
+| 历史记录为空 | 先查 `%AppData%/ColorVision/SchedulerHistory.db` 是否存在、是否被权限或路径迁移影响 |
+| 任务到了时间不执行 | 检查 Quartz 调度器是否启动、任务是否暂停、Cron 表达式和时区是否正确 |
+| 状态栏不显示调度状态 | 检查 `SchedulerStatusBarProvider` 是否被宿主加载，资源字典和 UI 初始化是否正常 |
+| NuGet 包缺 README | 打开 `.nupkg` 看根目录 README；若缺失，需要修正 `.csproj` 的 README 打包项 |
+
 ## 当前实现有哪些边界
 
 ### 任务类型来自已加载程序集

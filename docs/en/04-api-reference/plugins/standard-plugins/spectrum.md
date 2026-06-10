@@ -195,8 +195,41 @@ The current calibration configuration is not a simple global single-file path, b
 
 This allows seeing the host entry point first, then the state center, device chain, and result landing points.
 
+## Handoff Acceptance
+
+| Item | Action | Pass criteria |
+| --- | --- | --- |
+| Plugin loading | Check `manifest.json`, `dllpath`, and the Tool menu | The Tool menu shows Spectrum, and `MainWindow` opens |
+| Window extension | Open the Spectrum window | The `TargetName = "Spectrum"` menu and status bar load; the status bar shows connection, model, SN, calibration group, and mode |
+| Delivery resources | Inspect the build output or `.cvxp` package | `Spectrum.dll`, `manifest.json`, `README.md`, `CHANGELOG.md`, calibration files, and required native DLLs exist |
+| License synchronization | Open license management or connect before measurement | `LicenseDatabase` synchronizes global and local licenses; license failures guide the user to license management |
+| Device connection | Connect a known spectrometer with field USB/COM settings | A handle is created, model and SN are read, and the calibration group for that SN is loaded |
+| Calibration groups | Edit a group, save, close, and reopen | Saved groups restore by SN; closing without saving does not pollute configuration |
+| Standard measurement | Run standard measurement mode | The chart refreshes, the result list adds a row, and step timings/input snapshots are recorded |
+| EQE measurement | Configure SMU and run EQE mode | Voltage, current, and EQE fields are written to result objects and can be exported |
+| Database landing | Inspect `AppData\Spectromer\Config\Spectrum.db` | `SprectrumModel`, `SpectrumMeasurementProfile`, and measurement step JSON are present |
+| Export and list actions | Run CSV/EQE CSV export, copy visible columns, delete, and clear | File columns are correct, and list/database operations match window prompts |
+| Socket commands | Call measurement handlers when Socket is enabled | Connect, status, measure, dark, and auto-integration commands return readable states |
+
+## First Checks
+
+| Symptom | Check first |
+| --- | --- |
+| Tool menu has no Spectrum | Plugin folder, `manifest.json` `Id/dllpath/requires`, and whether `Spectrum.dll` was copied to the host plugin folder |
+| Window status bar is empty | Whether `SpectrumStatusBarProvider` is registered, and whether `LoadMenuForWindow("Spectrum", ...)` and `StatusBarManager.Init(..., "Spectrum")` ran |
+| Connection fails | License sync, USB/COM settings, device list, native SDK DLLs, device ownership, administrator/driver state |
+| SN is empty or calibration fails | Device SN readout, SN-bound calibration group, `WavaLength.dat`, and `Magiude.dat` paths |
+| Auto-zero cannot continue | `ShutterController` connection state, dark flow, and auto-zero pre-check result |
+| Measurement times out or chart does not refresh | Integration time, sync-frequency mode, SDK return codes, retry result, and chart refresh chain |
+| Result list has rows but database is empty | `ViewResultManager` config, SQLite path, write exceptions, and `SpectrumMeasurementProfile` saving |
+| EQE fields stay zero | `SmuController` config, window measurement mode, EQE field writeback, and recalculation update |
+| Socket command has no response | Whether the Socket handler is enabled and lands on current `MainWindow.ViewResultManager` and `SpectrometerManager` state |
+| Export is empty | Current list filter, relative/absolute spectrum toggle, visible columns, and export model |
+
 ## Continue Reading
 
-- [Plugins/README.md](../../../../Plugins/README.md)
+- [Existing Plugin Field Acceptance And Handoff Checklist](../plugin-field-acceptance.md)
+- [Plugin Capability & Handoff Matrix](../plugin-capability-matrix.md)
+- [Plugins/README.md](../../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
 - [docs/04-api-reference/plugins/standard-plugins/system-monitor.md](./system-monitor.md)

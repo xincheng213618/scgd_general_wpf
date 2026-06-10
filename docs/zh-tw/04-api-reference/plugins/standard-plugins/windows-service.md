@@ -188,6 +188,6 @@
 
 ## 繼續閱讀
 
-- [Plugins/README.md](../../../../Plugins/README.md)
+- [Plugins/README.md](../../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
 - [docs/04-api-reference/plugins/standard-plugins/eventvwr.md](./eventvwr.md)
