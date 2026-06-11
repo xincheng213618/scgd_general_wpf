@@ -786,13 +786,29 @@ public class CVBaseServerNode : CVCommonNode
 		});
 	}
 
-	private async void DoNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
+	private void DoNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
 	{
-		CVServerResponse resp = cmd.resp;
-		DoTransNodeEndOut(trans, cmd);
-		if (m_op_svr_out_act != null)
+		try
 		{
-			m_op_svr_out_act.TransferData(null);
+			DoTransNodeEndOut(trans, cmd);
+		}
+		catch (Exception ex)
+		{
+			logger.ErrorFormat("[{0}]DoNodeCompleted transfer failed => {1}", ToShortString(), ex);
+		}
+		finally
+		{
+			if (m_op_svr_out_act != null)
+			{
+				try
+				{
+					m_op_svr_out_act.TransferData(null);
+				}
+				catch (Exception ex)
+				{
+					logger.ErrorFormat("[{0}]DoNodeCompleted clear server output failed => {1}", ToShortString(), ex);
+				}
+			}
 		}
 	}
 

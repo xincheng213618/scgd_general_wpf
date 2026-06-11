@@ -649,7 +649,38 @@ namespace ColorVision.ImageEditor
         /// <param name="fileName">文件路径</param>
         public void Save(string fileName)
         {
-            RenderTargetBitmap renderTargetBitmap = new((int)ImageShow.ActualWidth, (int)ImageShow.ActualHeight, Config.GetProperties<double>("DpiX"), Config.GetProperties<double>("DpiY"), PixelFormats.Pbgra32);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                log.Warn("Skip saving ImageView because file name is empty.");
+                return;
+            }
+
+            ImageShow.UpdateLayout();
+            int pixelWidth = GetRenderPixelLength(ImageShow.ActualWidth, ImageShow.RenderSize.Width);
+            int pixelHeight = GetRenderPixelLength(ImageShow.ActualHeight, ImageShow.RenderSize.Height);
+            if (pixelWidth <= 0 || pixelHeight <= 0)
+            {
+                log.WarnFormat(
+                    "Skip saving ImageView because render size is invalid. File={0}, Actual={1}x{2}, RenderSize={3}x{4}, Source={5}",
+                    fileName,
+                    ImageShow.ActualWidth,
+                    ImageShow.ActualHeight,
+                    ImageShow.RenderSize.Width,
+                    ImageShow.RenderSize.Height,
+                    ImageShow.Source?.GetType().FullName ?? "<null>");
+                return;
+            }
+
+            double dpiX = GetPositiveDpi(Config.GetProperties<double>("DpiX"));
+            double dpiY = GetPositiveDpi(Config.GetProperties<double>("DpiY"));
+
+            string? directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            RenderTargetBitmap renderTargetBitmap = new(pixelWidth, pixelHeight, dpiX, dpiY, PixelFormats.Pbgra32);
             renderTargetBitmap.Render(ImageShow);
 
             // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
@@ -659,6 +690,29 @@ namespace ColorVision.ImageEditor
             // 将PNG内容保存到文件
             using FileStream fileStream = new(fileName, FileMode.Create);
             pngEncoder.Save(fileStream);
+        }
+
+        private static int GetRenderPixelLength(params double[] values)
+        {
+            foreach (double value in values)
+            {
+                if (IsPositiveFinite(value))
+                {
+                    return Math.Max(1, (int)Math.Ceiling(value));
+                }
+            }
+
+            return 0;
+        }
+
+        private static double GetPositiveDpi(double value)
+        {
+            return IsPositiveFinite(value) ? value : 96d;
+        }
+
+        private static bool IsPositiveFinite(double value)
+        {
+            return value > 0 && !double.IsNaN(value) && !double.IsInfinity(value);
         }
 
         public void ClearAnnotations()

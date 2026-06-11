@@ -2046,49 +2046,56 @@ namespace ProjectARVRLite
                 {
                     log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
                     IsSaveImageReuslt = false;
-                    Task.Run(async () =>
+                    _ = Task.Run(async () =>
                     {
-                        await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
-                        string linkPath = ViewResultManager.Config.CsvSavePath;
-                        string sn = result.SN;
-
-                        if (ViewResultManager.Config.SaveByDate)
+                        try
                         {
-                            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                            linkPath = Path.Combine(linkPath, dateFolder);
-                        }
+                            await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                            string linkPath = ViewResultManager.Config.CsvSavePath;
+                            string sn = result.SN;
 
-                        // 处理 SN 不为空的情况
-                        if (!string.IsNullOrWhiteSpace(sn))
-                        {
-                            // 移除 SN 中的非法文件名字符
-                            foreach (char c in Path.GetInvalidFileNameChars())
+                            if (ViewResultManager.Config.SaveByDate)
                             {
-                                sn = sn.Replace(c.ToString(), "");
+                                string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                                linkPath = Path.Combine(linkPath, dateFolder);
                             }
 
-                            // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
+                            // 处理 SN 不为空的情况
                             if (!string.IsNullOrWhiteSpace(sn))
                             {
-                                linkPath = Path.Combine(linkPath, sn);
+                                // 移除 SN 中的非法文件名字符
+                                foreach (char c in Path.GetInvalidFileNameChars())
+                                {
+                                    sn = sn.Replace(c.ToString(), "");
+                                }
+
+                                // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
+                                if (!string.IsNullOrWhiteSpace(sn))
+                                {
+                                    linkPath = Path.Combine(linkPath, sn);
+                                }
                             }
+
+                            // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
+
+                            // 注意：原始代码中是 if (Directory.Exists) Create... 
+                            // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
+                            if (!Directory.Exists(linkPath))
+                                Directory.CreateDirectory(linkPath);
+
+                            string FileName = Path.GetFileNameWithoutExtension(result.FileName);
+
+                            string FilePath = Path.Combine(linkPath, $"{FileName}_{result.Model}result.png");
+                            log.Info(FilePath);
+                            Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                ImageView.Save(FilePath);
+                            });
                         }
-
-                        // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
-
-                        // 注意：原始代码中是 if (Directory.Exists) Create... 
-                        // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
-                        if (!Directory.Exists(linkPath))
-                            Directory.CreateDirectory(linkPath);
-
-                        string FileName = Path.GetFileNameWithoutExtension(result.FileName);
-
-                        string FilePath = Path.Combine(linkPath, $"{FileName}_{result.Model}result.png");
-                        log.Info(FilePath);
-                        Application.Current.Dispatcher.Invoke(() =>
+                        catch (Exception ex)
                         {
-                            ImageView.Save(FilePath);
-                        });
+                            log.Error("保存结果截图失败", ex);
+                        }
                     });
                 }
 
