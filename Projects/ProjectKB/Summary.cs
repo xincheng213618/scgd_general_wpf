@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using ProjectKB.Auth;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
@@ -107,7 +108,7 @@ namespace ProjectKB
         public Summary Summary { get; set; } = new Summary();
         public SummaryManager()
         {
-            EditCommand = new RelayCommand(a => Edit());
+            EditCommand = new RelayCommand(a => Edit(), a => KBAuthManager.GetInstance().IsAdmin);
 
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);

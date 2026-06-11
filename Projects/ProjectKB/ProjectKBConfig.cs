@@ -3,6 +3,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using ProjectKB.Auth;
 using ProjectKB.Modbus;
 using ProjectKB.Services;
 using System.Collections.ObjectModel;
@@ -35,13 +36,18 @@ namespace ProjectKB
 
         public ProjectKBConfig()
         {
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
+            OpenTemplateCommand = new RelayCommand(a => OpenTemplate(), a => KBAuthManager.GetInstance().IsAdmin);
+            OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool(), a => KBAuthManager.GetInstance().IsAdmin);
             TemplateItemSource = TemplateFlow.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
-            EditConfigCommand = new RelayCommand(a => EditConfig());
-            OpenModbusCommand = new RelayCommand(a => OpenModbus());
-            OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
+            EditConfigCommand = new RelayCommand(a => EditConfig(), a => KBAuthManager.GetInstance().IsAdmin);
+            OpenModbusCommand = new RelayCommand(a => OpenModbus(), a => KBAuthManager.GetInstance().IsAdmin);
+            OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig(), a => KBAuthManager.GetInstance().IsAdmin);
+
+            KBAuthManager.GetInstance().IsAdminChanged += (s, e) =>
+            {
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            };
         }
 
         [DisplayName("显示日志面板"), Category("KB")]

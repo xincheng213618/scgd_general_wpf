@@ -17,6 +17,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
+using ProjectKB.Auth;
 using ProjectKB.Modbus;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
@@ -67,6 +68,8 @@ namespace ProjectKB
         }
         public LogOutput? logOutput { get; set; }
 
+        public static KBAuthManager AuthManager => KBAuthManager.GetInstance();
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectKBConfig.Instance;
@@ -92,6 +95,9 @@ namespace ProjectKB
             ProjectKBConfig.Instance.PropertyChanged += ProjectKBConfig_PropertyChanged;
             ApplyLogControlVisibility();
 
+            // 初始化权限系统
+            InitAuth();
+
             this.Closed += (s, e) =>
             {
                 ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
@@ -99,10 +105,72 @@ namespace ProjectKB
 
                 SummaryManager.GetInstance().Save();
                 ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
+                AuthManager.IsAdminChanged -= AuthManager_IsAdminChanged;
+                AuthManager.AutoLoggedOut -= AuthManager_AutoLoggedOut;
+                AuthManager.Dispose();
                 this.Dispose();
             };
 
         }
+
+        #region Auth
+
+        private void InitAuth()
+        {
+            AuthManager.IsAdminChanged += AuthManager_IsAdminChanged;
+            AuthManager.AutoLoggedOut += AuthManager_AutoLoggedOut;
+            ApplyAuthState();
+        }
+
+        private void AuthManager_IsAdminChanged(object? sender, EventArgs e)
+        {
+            ApplyAuthState();
+        }
+
+        private void AuthManager_AutoLoggedOut(object? sender, EventArgs e)
+        {
+            logTextBox.Text = "空闲超时，已自动退出管理员模式";
+            MessageBox.Show(this, $"空闲超时（{AuthManager.IdleTimeoutMinutes}分钟），已自动退出管理员模式。\n如需编辑配置请重新登录。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ApplyAuthState()
+        {
+            bool isAdmin = AuthManager.IsAdmin;
+
+            AuthModeText.Text = isAdmin ? "🔧 管理员" : "🟢 产线";
+            AuthModeText.Foreground = isAdmin ? Brushes.Orange : Brushes.Green;
+            AuthButton.Content = isAdmin ? "🔓 登出" : "🔐 登录";
+
+            TestStatusBarItem.IsEnabled = isAdmin;
+            DatabaseCleanupButton.IsEnabled = isAdmin;
+        }
+
+        private void AuthButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (AuthManager.IsAdmin)
+            {
+                AuthManager.Logout();
+            }
+            else
+            {
+                var loginWindow = new KBLoginWindow
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                loginWindow.ShowDialog();
+            }
+        }
+
+        /// <summary>
+        /// 重置空闲计时器（用户交互时调用）
+        /// </summary>
+        private static void ResetAuthIdleTimer()
+        {
+            AuthManager.ResetIdleTimer();
+        }
+
+        #endregion
 
         private void ProjectKBConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
@@ -160,6 +228,12 @@ namespace ProjectKB
 
         private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
         {
+            if (!AuthManager.IsAdmin)
+            {
+                MessageBox.Show(this, "此功能需要管理员权限，请先登录。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            ResetAuthIdleTimer();
             DatabaseCleanupWindow.OpenWindow();
         }
 
@@ -194,6 +268,7 @@ namespace ProjectKB
 
                 }
                 Refresh();
+                ResetAuthIdleTimer();
             };
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -304,6 +379,7 @@ namespace ProjectKB
         }
         private void TestClick(object sender, RoutedEventArgs e)
         {
+            ResetAuthIdleTimer();
             RunTemplate();
         }
 
@@ -1228,6 +1304,12 @@ namespace ProjectKB
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (!AuthManager.IsAdmin)
+            {
+                MessageBox.Show(this, "此功能需要管理员权限，请先登录。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            ResetAuthIdleTimer();
             new TestWindow().Show();
         }
 

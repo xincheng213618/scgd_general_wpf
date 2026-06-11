@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Flow;
 using Newtonsoft.Json;
+using ProjectKB.Auth;
 using System.IO;
 using System.Windows;
 
@@ -31,7 +32,7 @@ namespace ProjectKB
 
         public RecipeManager()
         {
-            EditCommand = new RelayCommand(a => Edit());
+            EditCommand = new RelayCommand(a => Edit(), a => KBAuthManager.GetInstance().IsAdmin);
             EnsureRecipeDirectory();
 
             RecipeConfigs = LoadFromFile(RecipeFixPath) ?? LoadFromFile(LegacyRecipeFixPath) ?? new Dictionary<string, KBRecipeConfig>();

@@ -120,7 +120,11 @@ namespace ColorVision.Engine.Services.RC
         
         // 使用锁保护Token访问
         private readonly object _tokenLock = new object();
-        private NodeToken? Token; 
+        private NodeToken? Token;
+        private DateTime TokenReceivedTime = DateTime.MinValue;
+        private readonly object _registLock = new object();
+        private DateTime LastRegistTime = DateTime.MinValue;
+        private static readonly TimeSpan AutoRegistInterval = TimeSpan.FromSeconds(3);
 
         public event EventHandler RCServiceConnectChanged;
 
@@ -196,11 +200,7 @@ namespace ColorVision.Engine.Services.RC
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg, settings);
                             if (req?.Data?.Token != null)
                             {
-                                // 线程安全地更新Token
-                                lock (_tokenLock)
-                                {
-                                    Token = req.Data.Token;
-                                }
+                                SetToken(req.Data.Token);
 
                                 // 在UI线程上更新IsConnect属性(如果需要触发UI更新)
                                 Application.Current?.Dispatcher.BeginInvoke(() =>
@@ -344,13 +344,86 @@ namespace ColorVision.Engine.Services.RC
             return Regist();
         }
 
-        public bool Regist()
+        private void SetToken(NodeToken? token)
         {
             lock (_tokenLock)
             {
-                Token = null;
+                Token = token;
+                TokenReceivedTime = token == null ? DateTime.MinValue : DateTime.Now;
             }
-            
+        }
+
+        private NodeToken? GetToken(out DateTime tokenReceivedTime)
+        {
+            lock (_tokenLock)
+            {
+                tokenReceivedTime = TokenReceivedTime;
+                return Token;
+            }
+        }
+
+        private bool TryGetUsableToken(out NodeToken? token)
+        {
+            token = GetToken(out DateTime tokenReceivedTime);
+            if (token == null)
+                return false;
+
+            if (IsTokenExpiredOrExpiring(token, tokenReceivedTime))
+            {
+                SetDisconnectedState();
+                RequestRegist();
+                token = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsTokenExpiredOrExpiring(NodeToken token, DateTime tokenReceivedTime)
+        {
+            if (token.IsExpired())
+                return true;
+
+            if (token.Expires <= 0 || tokenReceivedTime == DateTime.MinValue)
+                return false;
+
+            int refreshAheadSeconds = Math.Min(60, Math.Max(1, token.Expires / 10));
+            DateTime refreshAt = tokenReceivedTime.AddSeconds(token.Expires).Subtract(TimeSpan.FromSeconds(refreshAheadSeconds));
+            return DateTime.Now >= refreshAt;
+        }
+
+        private bool RequestRegist()
+        {
+            return RegistCore(false);
+        }
+
+        public bool Regist()
+        {
+            return RegistCore(true);
+        }
+
+        private bool RegistCore(bool force)
+        {
+            lock (_registLock)
+            {
+                DateTime now = DateTime.Now;
+                if (!force && now - LastRegistTime < AutoRegistInterval)
+                    return false;
+
+                LastRegistTime = now;
+            }
+
+            SetDisconnectedState();
+
+            MQTTNodeServiceRegist reg = new(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
+            PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
+            return true;
+        }
+
+        private void SetDisconnectedState()
+        {
+            SetToken(null);
+
             // 在UI线程更新IsConnect
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
@@ -358,10 +431,6 @@ namespace ColorVision.Engine.Services.RC
             });
             
             ServiceTokens.Clear();
-
-            MQTTNodeServiceRegist reg = new(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
-            PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
-            return true;
         }
         public async Task <bool> Connect()
         {
@@ -377,13 +446,7 @@ namespace ColorVision.Engine.Services.RC
 
         public void QueryServices()
         {
-            NodeToken? token;
-            lock (_tokenLock)
-            {
-                token = Token;
-            }
-            
-            if (token != null)
+            if (TryGetUsableToken(out NodeToken? token) && token != null)
             {
                 MQTTRCServicesQueryRequest reg = new(NodeName, null, token.AccessToken);
                 PublishAsyncClient(RCPublicTopic, JsonConvert.SerializeObject(reg));
@@ -392,13 +455,7 @@ namespace ColorVision.Engine.Services.RC
 
         public void QueryServiceStatus()
         {
-            NodeToken? token;
-            lock (_tokenLock)
-            {
-                token = Token;
-            }
-            
-            if (token != null)
+            if (TryGetUsableToken(out NodeToken? token) && token != null)
             {
                 MQTTRCServiceStatusQueryRequest reg = new(NodeName, null, token.AccessToken);
                 PublishAsyncClient(RCPublicTopic, JsonConvert.SerializeObject(reg));
@@ -410,19 +467,13 @@ namespace ColorVision.Engine.Services.RC
             TimeSpan sp = DateTime.Now - LastAliveTime;
             if (sp.TotalMilliseconds > 10000)
             {
-                Regist();
+                RequestRegist();
                 return;
             }
             if (!IsConnect)
                 return;
 
-            NodeToken? token;
-            lock (_tokenLock)
-            {
-                token = Token;
-            }
-            
-            if (token == null)
+            if (!TryGetUsableToken(out NodeToken? token) || token == null)
                 return;
 
             List<DeviceHeartbeat> deviceStatues = new();
@@ -435,14 +486,8 @@ namespace ColorVision.Engine.Services.RC
         public void RestartServices(string? nodeType = null, string? svrCode =null)
         {
             log.Info($"RestartServices {nodeType} {svrCode}");
-            
-            NodeToken? token;
-            lock (_tokenLock)
-            {
-                token = Token;
-            }
-            
-            if (token != null)
+
+            if (TryGetUsableToken(out NodeToken? token) && token != null)
             {
                 nodeType ??= string.Empty;
                 MQTTRCServicesRestartRequest reg = svrCode == null ? new(AppId, NodeName, nodeType, token.AccessToken) : new(AppId, NodeName, nodeType, token.AccessToken, svrCode);
@@ -453,14 +498,8 @@ namespace ColorVision.Engine.Services.RC
         public void RestartServices(string nodeType, string svrCode, string devCode)
         {
             log.Info($"RestartServices {nodeType} {svrCode} {devCode}");
-            
-            NodeToken? token;
-            lock (_tokenLock)
-            {
-                token = Token;
-            }
-            
-            if (token != null)
+
+            if (TryGetUsableToken(out NodeToken? token) && token != null)
             {
                 MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, token.AccessToken, svrCode, devCode);
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
