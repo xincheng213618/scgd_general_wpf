@@ -8,7 +8,9 @@ using System.Windows;
 using System.Windows.Input;
 using System.Collections.Specialized;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.IO;
+using Microsoft.Win32;
 
 namespace ProjectARVRPro.Process
 {
@@ -17,9 +19,15 @@ namespace ProjectARVRPro.Process
         private static readonly ILog log = LogManager.GetLogger(nameof(ProcessManager));
         private const string PersistFileName = "ProcessMetas.json";
         private const string GroupPersistFileName = "ProcessGroups.json";
+        private const string ExportConfigFilter = "ARVR流程配置 (*.arvrprocess.json)|*.arvrprocess.json|JSON文件 (*.json)|*.json|所有文件 (*.*)|*.*";
         private static string PersistDirectory => ViewResultManager.DirectoryPath;
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
         private static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);
+        private static JsonSerializerSettings ExportJsonSerializerSettings => new()
+        {
+            TypeNameHandling = TypeNameHandling.All,
+            Formatting = Formatting.Indented
+        };
 
         private static ProcessManager _instance;
         private static readonly object _locker = new();
@@ -95,6 +103,8 @@ namespace ProjectARVRPro.Process
         public RelayCommand RemoveGroupCommand { get; set; }
         public RelayCommand RenameGroupCommand { get; set; }
         public RelayCommand DuplicateGroupCommand { get; set; }
+        public RelayCommand ImportConfigCommand { get; set; }
+        public RelayCommand ExportConfigCommand { get; set; }
 
         /// <summary>
         /// 新组名称（UI绑定）
@@ -116,6 +126,8 @@ namespace ProjectARVRPro.Process
             RemoveGroupCommand = new RelayCommand(a => RemoveGroup(), a => ProcessGroups.Count > 1);
             RenameGroupCommand = new RelayCommand(a => RenameGroup(), a => ActiveGroup != null && !string.IsNullOrWhiteSpace(NewGroupName));
             DuplicateGroupCommand = new RelayCommand(a => DuplicateGroup(), a => ActiveGroup != null);
+            ImportConfigCommand = new RelayCommand(a => ImportConfig());
+            ExportConfigCommand = new RelayCommand(a => ExportConfig(), a => ProcessGroups.Count > 0);
 
             LoadPersistedGroups();
         }
@@ -206,6 +218,84 @@ namespace ProjectARVRPro.Process
             ProcessGroups.Add(newGroup);
             ActiveGroupIndex = ProcessGroups.Count - 1;
             SavePersistedGroups();
+        }
+
+        private void ExportConfig()
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Title = "导出流程配置",
+                    Filter = ExportConfigFilter,
+                    DefaultExt = "arvrprocess.json",
+                    FileName = $"ARVRProcessConfig_{DateTime.Now:yyyyMMdd_HHmmss}.arvrprocess.json"
+                };
+
+                if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
+                    return;
+
+                var exportRoot = new ProcessManagerConfigPersist
+                {
+                    Version = 1,
+                    ExportedAt = DateTime.Now,
+                    ProcessGroups = CreateProcessGroupsRoot(),
+                    RecipeConfig = RecipeManager.GetInstance().RecipeConfig
+                };
+
+                string json = JsonConvert.SerializeObject(exportRoot, ExportJsonSerializerSettings);
+                File.WriteAllText(dialog.FileName, json);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"流程配置已导出到:\n{dialog.FileName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                log.Error("导出流程配置失败", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"导出流程配置失败:\n{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ImportConfig()
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "导入流程配置",
+                Filter = ExportConfigFilter,
+                DefaultExt = "arvrprocess.json"
+            };
+
+            if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
+                return;
+
+            if (!TryReadConfigFile(dialog.FileName, out var importedGroups, out var importedRecipe, out var warningMessage, out var errorMessage))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"导入流程配置失败:\n{errorMessage}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            int groupCount = importedGroups.Groups?.Count ?? 0;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"导入后将替换当前流程组配置，共 {groupCount} 个组。是否继续？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                ApplyImportedGroups(importedGroups);
+
+                if (importedRecipe != null)
+                {
+                    RecipeManager.GetInstance().RecipeConfig = importedRecipe;
+                    RecipeManager.GetInstance().Save();
+                }
+
+                string message = $"流程配置已导入，共 {ProcessGroups.Count} 个组。";
+                if (!string.IsNullOrWhiteSpace(warningMessage))
+                    message += $"\n{warningMessage}";
+                MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                log.Error("应用导入流程配置失败", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"应用导入流程配置失败:\n{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         #endregion
@@ -528,24 +618,7 @@ namespace ProjectARVRPro.Process
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
 
-                var root = new ProcessGroupsRoot
-                {
-                    Version = 1,
-                    ActiveGroupIndex = _ActiveGroupIndex,
-                    Groups = ProcessGroups.Select(g => new ProcessGroupPersist
-                    {
-                        Name = g.Name,
-                        Metas = g.ProcessMetas.Select(m => new ProcessMetaPersist
-                        {
-                            Name = m.Name,
-                            FlowTemplate = m.FlowTemplate,
-                            ProcessTypeFullName = m.Process?.GetType().FullName ?? string.Empty,
-                            IsEnabled = m.IsEnabled,
-                            ConfigJson = m.ConfigJson,
-                            PictureSwitchConfig = m.PictureSwitchConfig
-                        }).ToList()
-                    }).ToList()
-                };
+                var root = CreateProcessGroupsRoot();
 
                 string json = JsonConvert.SerializeObject(root, Formatting.Indented);
                 File.WriteAllText(GroupPersistFilePath, json);
@@ -554,6 +627,183 @@ namespace ProjectARVRPro.Process
             {
                 log.Error("保存ProcessGroups失败", ex);
             }
+        }
+
+        private ProcessGroupsRoot CreateProcessGroupsRoot()
+        {
+            return new ProcessGroupsRoot
+            {
+                Version = 1,
+                ActiveGroupIndex = _ActiveGroupIndex,
+                Groups = ProcessGroups.Select(g => new ProcessGroupPersist
+                {
+                    Name = g.Name,
+                    Metas = g.ProcessMetas.Select(m => new ProcessMetaPersist
+                    {
+                        Name = m.Name,
+                        FlowTemplate = m.FlowTemplate,
+                        ProcessTypeFullName = m.Process?.GetType().FullName ?? string.Empty,
+                        IsEnabled = m.IsEnabled,
+                        ConfigJson = GetProcessConfigJson(m),
+                        PictureSwitchConfig = m.PictureSwitchConfig.Clone()
+                    }).ToList()
+                }).ToList()
+            };
+        }
+
+        private static string GetProcessConfigJson(ProcessMeta meta)
+        {
+            var config = meta.Process?.GetProcessConfig();
+            return config == null ? meta.ConfigJson : JsonConvert.SerializeObject(config);
+        }
+
+        private static bool TryReadConfigFile(string filePath, out ProcessGroupsRoot groupsRoot, out RecipeConfig? recipeConfig, out string warningMessage, out string errorMessage)
+        {
+            groupsRoot = new ProcessGroupsRoot();
+            recipeConfig = null;
+            warningMessage = string.Empty;
+            errorMessage = string.Empty;
+
+            try
+            {
+                string json = File.ReadAllText(filePath);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    errorMessage = "配置文件为空。";
+                    return false;
+                }
+
+                var token = JToken.Parse(json);
+
+                if (token is JObject packageObject && packageObject[nameof(ProcessManagerConfigPersist.ProcessGroups)] != null)
+                {
+                    groupsRoot = packageObject[nameof(ProcessManagerConfigPersist.ProcessGroups)]?.ToObject<ProcessGroupsRoot>(JsonSerializer.Create(ExportJsonSerializerSettings)) ?? new ProcessGroupsRoot();
+
+                    if (packageObject[nameof(ProcessManagerConfigPersist.RecipeConfig)] != null && packageObject[nameof(ProcessManagerConfigPersist.RecipeConfig)]?.Type != JTokenType.Null)
+                    {
+                        try
+                        {
+                            recipeConfig = packageObject[nameof(ProcessManagerConfigPersist.RecipeConfig)]?.ToObject<RecipeConfig>(JsonSerializer.Create(ExportJsonSerializerSettings));
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Warn($"导入Recipe配置失败，仅导入流程组配置: {ex.Message}");
+                            warningMessage = "Recipe配置导入失败，已保留当前Recipe配置。";
+                        }
+                    }
+
+                    return ValidateImportedGroups(groupsRoot, out errorMessage);
+                }
+
+                if (token is JObject groupsObject && groupsObject[nameof(ProcessGroupsRoot.Groups)] != null)
+                {
+                    groupsRoot = groupsObject.ToObject<ProcessGroupsRoot>() ?? new ProcessGroupsRoot();
+                    return ValidateImportedGroups(groupsRoot, out errorMessage);
+                }
+
+                if (token is JArray legacyMetas)
+                {
+                    var metas = legacyMetas.ToObject<List<ProcessMetaPersist>>() ?? new List<ProcessMetaPersist>();
+                    groupsRoot = new ProcessGroupsRoot
+                    {
+                        Version = 1,
+                        ActiveGroupIndex = 0,
+                        Groups = new List<ProcessGroupPersist>
+                        {
+                            new()
+                            {
+                                Name = "Default",
+                                Metas = metas
+                            }
+                        }
+                    };
+                    return ValidateImportedGroups(groupsRoot, out errorMessage);
+                }
+
+                errorMessage = "不支持的配置文件格式。";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log.Error("读取流程配置文件失败", ex);
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
+        private static bool ValidateImportedGroups(ProcessGroupsRoot groupsRoot, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            if (groupsRoot.Groups == null || groupsRoot.Groups.Count == 0)
+            {
+                errorMessage = "配置文件中没有流程组。";
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ApplyImportedGroups(ProcessGroupsRoot importedGroups)
+        {
+            var importedProcessGroups = new List<ProcessGroup>();
+            var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var groupPersist in importedGroups.Groups)
+            {
+                var group = new ProcessGroup
+                {
+                    Name = GetUniqueGroupName(groupPersist.Name, usedNames)
+                };
+
+                foreach (var metaPersist in groupPersist.Metas ?? new List<ProcessMetaPersist>())
+                {
+                    group.ProcessMetas.Add(DeserializeProcessMeta(metaPersist));
+                }
+
+                importedProcessGroups.Add(group);
+            }
+
+            if (importedProcessGroups.Count == 0)
+            {
+                importedProcessGroups.Add(new ProcessGroup { Name = "Default" });
+            }
+
+            UnhookProcessMetasEvents();
+            SelectedProcessMeta = null;
+            ProcessGroups.Clear();
+
+            foreach (var group in importedProcessGroups)
+            {
+                ProcessGroups.Add(group);
+            }
+
+            if (ProcessGroups.Count == 0)
+                _ActiveGroupIndex = 0;
+            else
+                _ActiveGroupIndex = Math.Max(0, Math.Min(importedGroups.ActiveGroupIndex, ProcessGroups.Count - 1));
+
+            OnPropertyChanged(nameof(ProcessGroups));
+            OnPropertyChanged(nameof(ActiveGroupIndex));
+            OnPropertyChanged(nameof(ActiveGroup));
+            OnPropertyChanged(nameof(ProcessMetas));
+            HookProcessMetasEvents();
+            ActiveGroupChanged?.Invoke(this, EventArgs.Empty);
+            SavePersistedGroups();
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private static string GetUniqueGroupName(string name, HashSet<string> usedNames)
+        {
+            string baseName = string.IsNullOrWhiteSpace(name) ? "Default" : name.Trim();
+            string uniqueName = baseName;
+            int counter = 1;
+
+            while (!usedNames.Add(uniqueName))
+            {
+                uniqueName = $"{baseName}_{counter++}";
+            }
+
+            return uniqueName;
         }
 
         #endregion

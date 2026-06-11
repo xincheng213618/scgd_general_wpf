@@ -15,14 +15,12 @@ namespace ColorVision.Engine.Services.Devices
 {
     public class BaseConfig: ViewModelBase
     {
-        [Browsable(false)]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
         [Browsable(false)]
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
         private string _Code;
-
 
         [Browsable(false)]
         public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; OnPropertyChanged(); } }
