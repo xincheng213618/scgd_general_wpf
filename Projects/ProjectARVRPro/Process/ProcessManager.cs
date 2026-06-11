@@ -513,6 +513,10 @@ namespace ProjectARVRPro.Process
                 {
                     LoadFromGroupsFile();
                 }
+                else if (File.Exists(PersistFilePath))
+                {
+                    MigrateFromOldFormat();
+                }
                 // Ensure we have at least one group
                 if (ProcessGroups.Count == 0)
                 {
@@ -750,6 +754,9 @@ namespace ProjectARVRPro.Process
             var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var groupPersist in importedGroups.Groups)
             {
+                if (groupPersist == null)
+                    continue;
+
                 var group = new ProcessGroup
                 {
                     Name = GetUniqueGroupName(groupPersist.Name, usedNames)
@@ -757,6 +764,9 @@ namespace ProjectARVRPro.Process
 
                 foreach (var metaPersist in groupPersist.Metas ?? new List<ProcessMetaPersist>())
                 {
+                    if (metaPersist == null)
+                        continue;
+
                     group.ProcessMetas.Add(DeserializeProcessMeta(metaPersist));
                 }
 

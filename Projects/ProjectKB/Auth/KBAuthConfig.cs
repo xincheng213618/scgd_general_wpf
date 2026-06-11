@@ -9,6 +9,16 @@ namespace ProjectKB.Auth
         public static KBAuthConfig Instance => ConfigService.Instance.GetRequiredService<KBAuthConfig>();
 
         /// <summary>
+        /// 管理员账号
+        /// </summary>
+        public string AdminUserName { get; set; } = "admin";
+
+        /// <summary>
+        /// 是否启用ProjectKB权限控制；默认关闭，关闭时所有功能可用。
+        /// </summary>
+        public bool EnablePermissionControl { get; set; }
+
+        /// <summary>
         /// 管理员密码的SHA256哈希值
         /// </summary>
         public string AdminPasswordHash { get; set; } = string.Empty;
@@ -29,19 +39,41 @@ namespace ProjectKB.Auth
         public bool IsInitialized { get; set; }
 
         [JsonIgnore]
+        private const string DefaultUserName = "admin";
+
+        [JsonIgnore]
         private const string DefaultPassword = "admin";
 
         /// <summary>
-        /// 初始化默认密码（仅首次）
+        /// 初始化默认账号密码（仅首次）
         /// </summary>
         public void EnsureInitialized()
         {
             if (!IsInitialized)
             {
+                AdminUserName = DefaultUserName;
                 SetPassword(DefaultPassword);
                 IsInitialized = true;
                 ConfigService.Instance.SaveConfigs();
+                return;
             }
+
+            if (string.IsNullOrWhiteSpace(AdminUserName))
+            {
+                AdminUserName = DefaultUserName;
+                ConfigService.Instance.SaveConfigs();
+            }
+        }
+
+        /// <summary>
+        /// 验证账号密码是否正确
+        /// </summary>
+        public bool VerifyCredentials(string userName, string password)
+        {
+            if (!string.Equals(userName?.Trim(), AdminUserName, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            return VerifyPassword(password);
         }
 
         /// <summary>

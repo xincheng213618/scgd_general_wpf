@@ -1,6 +1,7 @@
 using ColorVision.UI;
 using log4net;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace ProjectKB.Auth
@@ -23,8 +24,38 @@ namespace ProjectKB.Auth
         /// <summary>
         /// 当前是否为管理员模式
         /// </summary>
-        public bool IsAdmin { get => _isAdmin; private set { if (_isAdmin == value) return; _isAdmin = value; IsAdminChanged?.Invoke(this, EventArgs.Empty); } }
+        public bool IsAdmin
+        {
+            get => _isAdmin;
+            private set
+            {
+                if (_isAdmin == value) return;
+                _isAdmin = value;
+                IsAdminChanged?.Invoke(this, EventArgs.Empty);
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
         private bool _isAdmin;
+
+        public string AdminUserName => _config.AdminUserName;
+
+        public bool IsPermissionControlEnabled
+        {
+            get => _config.EnablePermissionControl;
+            set
+            {
+                if (_config.EnablePermissionControl == value) return;
+
+                _config.EnablePermissionControl = value;
+                IsAdmin = false;
+                StopIdleTimer();
+                ConfigService.Instance.SaveConfigs();
+                IsAdminChanged?.Invoke(this, EventArgs.Empty);
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public bool HasAdminAccess => !IsPermissionControlEnabled || IsAdmin;
 
         /// <summary>
         /// 权限状态变更事件
@@ -45,19 +76,50 @@ namespace ProjectKB.Auth
         /// <summary>
         /// 登录（验证密码）
         /// </summary>
-        public bool Login(string password)
+        public bool Login(string userName, string password)
         {
-            if (_config.VerifyPassword(password))
+            if (_config.VerifyCredentials(userName, password))
             {
                 IsAdmin = true;
-                StartIdleTimer();
-                ResetIdleTimer();
-                log.Info("管理员登录成功");
+                if (IsPermissionControlEnabled)
+                {
+                    StartIdleTimer();
+                    ResetIdleTimer();
+                }
+                log.Info($"管理员登录成功：{userName}");
                 return true;
             }
 
-            log.Warn("管理员登录失败：密码错误");
+            log.Warn($"管理员登录失败：账号或密码错误，账号：{userName}");
             return false;
+        }
+
+        /// <summary>
+        /// 兼容旧调用：仅验证当前管理员密码。
+        /// </summary>
+        public bool Login(string password)
+        {
+            return Login(_config.AdminUserName, password);
+        }
+
+        public bool RequireAdmin(Window? owner = null)
+        {
+            if (!IsPermissionControlEnabled)
+                return true;
+
+            if (IsAdmin)
+            {
+                ResetIdleTimer();
+                return true;
+            }
+
+            Window? loginOwner = owner ?? Application.Current?.GetActiveWindow();
+            var loginWindow = new KBLoginWindow
+            {
+                Owner = loginOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            return loginWindow.ShowDialog() == true && IsAdmin;
         }
 
         /// <summary>
@@ -77,7 +139,7 @@ namespace ProjectKB.Auth
         /// </summary>
         public bool ChangePassword(string oldPassword, string newPassword)
         {
-            if (!IsAdmin) return false;
+            if (!HasAdminAccess) return false;
 
             bool result = _config.ChangePassword(oldPassword, newPassword);
             if (result)
@@ -92,7 +154,7 @@ namespace ProjectKB.Auth
         /// </summary>
         public void ResetIdleTimer()
         {
-            if (!IsAdmin) return;
+            if (!IsPermissionControlEnabled || !IsAdmin) return;
 
             if (_idleTimer != null)
             {

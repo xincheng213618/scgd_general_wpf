@@ -13,6 +13,7 @@ namespace ProjectKB.Auth
         public KBLoginWindow()
         {
             InitializeComponent();
+            UserNameTextBox.Text = KBAuthManager.GetInstance().AdminUserName;
             Loaded += (s, e) => PasswordBox.Focus();
         }
 
@@ -47,9 +48,21 @@ namespace ProjectKB.Auth
             ErrorText.Visibility = Visibility.Collapsed;
         }
 
+        private void UserNameTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            ErrorText.Visibility = Visibility.Collapsed;
+        }
+
         private void AttemptLogin()
         {
+            string userName = UserNameTextBox.Text.Trim();
             string password = PasswordBox.Password;
+
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                ShowError("请输入账号");
+                return;
+            }
 
             if (string.IsNullOrWhiteSpace(password))
             {
@@ -57,7 +70,7 @@ namespace ProjectKB.Auth
                 return;
             }
 
-            bool success = KBAuthManager.GetInstance().Login(password);
+            bool success = KBAuthManager.GetInstance().Login(userName, password);
 
             if (success)
             {
@@ -77,7 +90,7 @@ namespace ProjectKB.Auth
                 }
                 else
                 {
-                    ShowError("密码错误");
+                    ShowError("账号或密码错误");
                     AttemptText.Text = $"剩余尝试次数：{remaining}";
                     AttemptText.Visibility = Visibility.Visible;
                     PasswordBox.Clear();

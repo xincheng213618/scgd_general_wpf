@@ -75,7 +75,14 @@ namespace ProjectKB
             this.DataContext = ProjectKBConfig.Instance;
 
             ViewResultManager.ListView = listView1;
-            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => ViewResultManager.Delete(listView1.SelectedIndex), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(
+                ApplicationCommands.Delete,
+                (s, e) =>
+                {
+                    if (AuthManager.RequireAdmin(this))
+                        ViewResultManager.Delete(listView1.SelectedIndex);
+                },
+                (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.ItemsSource = ViewResluts;
             InitFlow();
             Task.Run(async () =>
@@ -129,45 +136,75 @@ namespace ProjectKB
 
         private void AuthManager_AutoLoggedOut(object? sender, EventArgs e)
         {
+            CloseOwnedAdminWindows();
             logTextBox.Text = "空闲超时，已自动退出管理员模式";
             MessageBox.Show(this, $"空闲超时（{AuthManager.IdleTimeoutMinutes}分钟），已自动退出管理员模式。\n如需编辑配置请重新登录。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        private void CloseOwnedAdminWindows()
+        {
+            foreach (Window ownedWindow in OwnedWindows.Cast<Window>().ToList())
+            {
+                if (ownedWindow is KBLoginWindow)
+                    continue;
+
+                ownedWindow.Close();
+            }
+        }
+
         private void ApplyAuthState()
         {
+            if (!AuthManager.IsPermissionControlEnabled)
+            {
+                AuthModeText.Text = "🟡 全部权限";
+                AuthModeText.Foreground = Brushes.DarkGoldenrod;
+                AuthButton.Content = "权限未启用";
+                TestStatusBarItem.IsEnabled = true;
+                DatabaseCleanupButton.IsEnabled = true;
+                ChangePasswordButton.IsEnabled = true;
+                return;
+            }
+
             bool isAdmin = AuthManager.IsAdmin;
 
             AuthModeText.Text = isAdmin ? "🔧 管理员" : "🟢 产线";
             AuthModeText.Foreground = isAdmin ? Brushes.Orange : Brushes.Green;
             AuthButton.Content = isAdmin ? "🔓 登出" : "🔐 登录";
 
-            TestStatusBarItem.IsEnabled = isAdmin;
-            DatabaseCleanupButton.IsEnabled = isAdmin;
+            TestStatusBarItem.IsEnabled = true;
+            DatabaseCleanupButton.IsEnabled = true;
+            ChangePasswordButton.IsEnabled = true;
         }
 
         private void AuthButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!AuthManager.IsPermissionControlEnabled)
+            {
+                MessageBox.Show(this, "ProjectKB权限控制未启用。可在“设置”中开启“启用权限控制”。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             if (AuthManager.IsAdmin)
             {
+                CloseOwnedAdminWindows();
                 AuthManager.Logout();
             }
             else
             {
-                var loginWindow = new KBLoginWindow
-                {
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-                loginWindow.ShowDialog();
+                AuthManager.RequireAdmin(this);
             }
         }
 
-        /// <summary>
-        /// 重置空闲计时器（用户交互时调用）
-        /// </summary>
-        private static void ResetAuthIdleTimer()
+        private void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
         {
-            AuthManager.ResetIdleTimer();
+            if (!AuthManager.RequireAdmin(this)) return;
+
+            var changePasswordWindow = new KBChangePasswordWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            changePasswordWindow.ShowDialog();
         }
 
         #endregion
@@ -228,12 +265,8 @@ namespace ProjectKB
 
         private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
         {
-            if (!AuthManager.IsAdmin)
-            {
-                MessageBox.Show(this, "此功能需要管理员权限，请先登录。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            ResetAuthIdleTimer();
+            if (!AuthManager.RequireAdmin(this)) return;
+
             DatabaseCleanupWindow.OpenWindow();
         }
 
@@ -268,7 +301,6 @@ namespace ProjectKB
 
                 }
                 Refresh();
-                ResetAuthIdleTimer();
             };
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -379,7 +411,6 @@ namespace ProjectKB
         }
         private void TestClick(object sender, RoutedEventArgs e)
         {
-            ResetAuthIdleTimer();
             RunTemplate();
         }
 
@@ -1179,6 +1210,8 @@ namespace ProjectKB
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
+            if (!AuthManager.RequireAdmin(this)) return;
+
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
@@ -1304,12 +1337,8 @@ namespace ProjectKB
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!AuthManager.IsAdmin)
-            {
-                MessageBox.Show(this, "此功能需要管理员权限，请先登录。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            ResetAuthIdleTimer();
+            if (!AuthManager.RequireAdmin(this)) return;
+
             new TestWindow().Show();
         }
 

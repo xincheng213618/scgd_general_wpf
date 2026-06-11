@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// <summary>
         /// 不参与计算的区域，左
         /// </summary>
+        [DisplayName("ObL")]
         [JsonProperty("ob")]
         public int Ob { get => _Ob; set { _Ob = value; OnPropertyChanged();  } }
         private int _Ob = 4;

@@ -108,7 +108,7 @@ namespace ProjectKB
         public Summary Summary { get; set; } = new Summary();
         public SummaryManager()
         {
-            EditCommand = new RelayCommand(a => Edit(), a => KBAuthManager.GetInstance().IsAdmin);
+            EditCommand = new RelayCommand(a => Edit());
 
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
@@ -125,6 +125,8 @@ namespace ProjectKB
 
         public void Edit()
         {
+            if (!KBAuthManager.GetInstance().RequireAdmin(Application.Current.GetActiveWindow())) return;
+
             new PropertyEditorWindow(Summary) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner }.ShowDialog();
             this.Save();
         }

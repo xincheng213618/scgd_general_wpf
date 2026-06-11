@@ -389,6 +389,9 @@
                 <TextBlock x:Name="AuthModeText" Text="🟢 产线" Foreground="Green" VerticalAlignment="Center" Margin="5,0"/>
             </StatusBarItem>
             <StatusBarItem>
+                <Button x:Name="ChangePasswordButton" Content="改密" Click="ChangePasswordButton_Click"/>
+            </StatusBarItem>
+            <StatusBarItem>
                 <Button x:Name="AuthButton" Content="🔐 登录" Click="AuthButton_Click"/>
             </StatusBarItem>
         </StatusBar>

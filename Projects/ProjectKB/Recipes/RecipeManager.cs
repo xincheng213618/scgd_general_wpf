@@ -32,7 +32,7 @@ namespace ProjectKB
 
         public RecipeManager()
         {
-            EditCommand = new RelayCommand(a => Edit(), a => KBAuthManager.GetInstance().IsAdmin);
+            EditCommand = new RelayCommand(a => Edit());
             EnsureRecipeDirectory();
 
             RecipeConfigs = LoadFromFile(RecipeFixPath) ?? LoadFromFile(LegacyRecipeFixPath) ?? new Dictionary<string, KBRecipeConfig>();
@@ -43,6 +43,8 @@ namespace ProjectKB
 
         public static void Edit()
         {
+            if (!KBAuthManager.GetInstance().RequireAdmin(Application.Current.GetActiveWindow())) return;
+
             EditRecipeWindow editRecipeWindow = new() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             editRecipeWindow.ShowDialog();
         }
