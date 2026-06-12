@@ -111,11 +111,15 @@ namespace ProjectARVRPro
         private int CurrentTestType = -1;
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
+        private string _flowFailureMessage = string.Empty;
+        private int _flowFailureCode;
         Random Random = new Random();
         public void InitTest(string SN)
         {
             ProjectConfig.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
+            _flowFailureMessage = string.Empty;
+            _flowFailureCode = 0;
             CurrentTestType = -1;
             if (string.IsNullOrWhiteSpace(SN))
             {
@@ -553,7 +557,9 @@ namespace ProjectARVRPro
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PictureSwitchFailed";
+                RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
+                SendProjectResultResponse(GetProjectResultCode(-1), GetProjectResultMessage("ARVR Test Fail"), CreateProjectResponseData());
                 TryCount = 0;
                 return;
             }
@@ -562,7 +568,9 @@ namespace ProjectARVRPro
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PreProcessFailed";
+                RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                SendProjectResultResponse(GetProjectResultCode(-1), GetProjectResultMessage("ARVR Test Fail"), CreateProjectResponseData());
                 TryCount = 0;
                 return;
             }
@@ -591,6 +599,83 @@ namespace ProjectARVRPro
 
 
         private FlowControl flowControl;
+
+        private bool HasFlowFailure => !string.IsNullOrWhiteSpace(_flowFailureMessage);
+
+        private void RecordFlowFailure(string? message, int code = -1)
+        {
+            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
+            if (!HasFlowFailure)
+            {
+                _flowFailureMessage = normalizedMessage;
+                _flowFailureCode = code;
+            }
+            ObjectiveTestResult.TotalResult = false;
+        }
+
+        private string GetProjectResultMessage(string defaultMessage)
+        {
+            return HasFlowFailure ? _flowFailureMessage : defaultMessage;
+        }
+
+        private int GetProjectResultCode(int defaultCode = 0)
+        {
+            return HasFlowFailure ? _flowFailureCode : defaultCode;
+        }
+
+        private string GetFlowControlMessage(FlowControlData flowControlData)
+        {
+            if (!string.IsNullOrWhiteSpace(flowControlData.Params))
+                return flowControlData.Params.Trim();
+
+            if (!string.IsNullOrWhiteSpace(flowControlData.Message))
+                return flowControlData.Message.Trim();
+
+            string eventName = string.IsNullOrWhiteSpace(flowControlData.EventName) ? "Failed" : flowControlData.EventName.Trim();
+            if (!string.IsNullOrWhiteSpace(flowControlData.ErrorNodeName))
+                return $"{flowControlData.ErrorNodeName}:{eventName}";
+
+            return string.IsNullOrWhiteSpace(FlowName) ? eventName : $"{FlowName}:{eventName}";
+        }
+
+        private object CreateProjectResponseData()
+        {
+            return ViewResultManager.Config.UseLegacyARVROutput
+                ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult)
+                : ObjectiveTestResult;
+        }
+
+        private void SendProjectResultResponse(int code, string message, object responseData)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
+            {
+                log.Info("找不到连接的Socket");
+                return;
+            }
+
+            var response = new SocketResponse
+            {
+                Version = "1.0",
+                MsgID = string.Empty,
+                EventName = "ProjectARVRResult",
+                Code = code,
+                SerialNumber = SNtextBox.Text,
+                Msg = message,
+                Data = responseData
+            };
+            string respString = JsonConvert.SerializeObject(response);
+            log.Info(respString);
+            SocketMessageManager.GetInstance().AddMessage(new SocketMessage
+            {
+                Direction = SocketMessageDirection.Sent,
+                Content = respString,
+                MessageTime = DateTime.Now,
+                EventName = response.EventName,
+                MsgID = response.MsgID,
+                ResponseCode = response.Code
+            });
+            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+        }
 
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
@@ -629,7 +714,7 @@ namespace ProjectARVRPro
             {
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
-                CurrentFlowResult.Msg = logTextBox.Text;
+                CurrentFlowResult.Msg = GetFlowControlMessage(FlowControlData);
                 ViewResultManager.Save(CurrentFlowResult);
 
                 flowEngine.LoadFromBase64(string.Empty);
@@ -649,15 +734,15 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    ObjectiveTestResult.TotalResult = false;
+                    RecordFlowFailure(CurrentFlowResult.Msg, -2);
                     var response = new SocketResponse
                     {
                         Version = "1.0",
                         MsgID = "",
                         EventName = "ProjectARVRResult",
                         Code = -2,
-                        Msg = "ARVR Test OverTime",
-                        Data = ObjectiveTestResult
+                        Msg = GetProjectResultMessage(CurrentFlowResult.Msg),
+                        Data = CreateProjectResponseData()
                     };
                     string respString = JsonConvert.SerializeObject(response);
                     log.Info(respString);
@@ -669,7 +754,8 @@ namespace ProjectARVRPro
             {
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                CurrentFlowResult.Msg = FlowControlData.Params;
+                CurrentFlowResult.Msg = GetFlowControlMessage(FlowControlData);
+                RecordFlowFailure(CurrentFlowResult.Msg);
 
                 //算法失败但是图像是有的，可以帮助用户即使发现原因
                 if (CurrentFlowResult.Msg.Contains("SDK return failed") || CurrentFlowResult.Msg.Contains("BinocularFusion calculation failed") || CurrentFlowResult.Msg.Contains("Not get cie file"))
@@ -707,15 +793,14 @@ namespace ProjectARVRPro
                 {
                     if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
                     {
-                        ObjectiveTestResult.TotalResult = false;
                         var response = new SocketResponse
                         {
                             Version = "1.0",
                             MsgID = "",
                             EventName = "ProjectARVRResult",
-                            Code = -1,
-                            Msg = "ARVR Test Fail",
-                            Data = ObjectiveTestResult
+                            Code = GetProjectResultCode(-1),
+                            Msg = GetProjectResultMessage("ARVR Test Fail"),
+                            Data = CreateProjectResponseData()
                         };
                         string respString = JsonConvert.SerializeObject(response);
                         log.Info(respString);
@@ -993,9 +1078,9 @@ namespace ProjectARVRPro
                 Version = "1.0",
                 MsgID = string.Empty,
                 EventName = "ProjectARVRResult",
-                Code = 0,
+                Code = GetProjectResultCode(),
                 SerialNumber = SNtextBox.Text,
-                Msg = "ARVR Test Completed",
+                Msg = GetProjectResultMessage("ARVR Test Completed"),
                 Data = responseData
             };
             string respString = JsonConvert.SerializeObject(response);
@@ -1343,6 +1428,7 @@ namespace ProjectARVRPro
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PictureSwitchFailed";
+                        RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
 
                         if (!ProjectARVRProConfig.Instance.AllowTestFailures)
@@ -1358,6 +1444,7 @@ namespace ProjectARVRPro
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PreProcessFailed";
+                        RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                         ViewResultManager.Save(CurrentFlowResult);
 
@@ -1395,7 +1482,12 @@ namespace ProjectARVRPro
                     {
                         flowControl.FlowCompleted -= completedHandler;
                         log.Error($"流程 {meta.Name} 执行超时(10min)");
-                        flowResult = new FlowControlData { EventName = "OverTime" };
+                        flowResult = new FlowControlData
+                        {
+                            EventName = "OverTime",
+                            ErrorNodeName = meta.Name,
+                            Params = $"{meta.Name}({meta.FlowTemplate}) OverTime 10min"
+                        };
                     }
                     else
                     {
@@ -1418,7 +1510,8 @@ namespace ProjectARVRPro
                     else
                     {
                         CurrentFlowResult.FlowStatus = flowResult.EventName == "OverTime" ? FlowStatus.OverTime : FlowStatus.Failed;
-                        CurrentFlowResult.Msg = flowResult.Params ?? flowResult.EventName;
+                        CurrentFlowResult.Msg = GetFlowControlMessage(flowResult);
+                        RecordFlowFailure(CurrentFlowResult.Msg, flowResult.EventName == "OverTime" ? -2 : -1);
                         ViewResultManager.Save(CurrentFlowResult);
 
                         if (!ProjectARVRProConfig.Instance.AllowTestFailures)
