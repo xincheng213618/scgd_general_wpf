@@ -1,10 +1,15 @@
 #pragma warning disable CS8601, CS8602
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor.Draw;
+using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
+using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.POI
 {
@@ -39,6 +44,7 @@ namespace ProjectARVRPro.Process.POI
                     {
                         var poi = new PoiResultCIExyuvData(item) { Id = id++ };
                         sourcePoixyuvDatas.Add(poi);
+                        testResult.ViewPoixyuvDatas.Add(poi);
                         testResult.PoixyuvDatas.Add(ToPoixyuvData(poi));
                     }
                 }
@@ -62,6 +68,43 @@ namespace ProjectARVRPro.Process.POI
 
         public override void Render(IProcessExecutionContext ctx)
         {
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
+
+            PoiDynamicTestResult? testResult = JsonConvert.DeserializeObject<PoiDynamicTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return;
+
+            foreach (var poiResultCIExyuvData in testResult.ViewPoixyuvDatas)
+            {
+                var item = poiResultCIExyuvData.Point;
+                switch (item.PointType)
+                {
+                    case POIPointTypes.Circle:
+                        DVCircleText circle = new DVCircleText();
+                        circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                        circle.Attribute.Radius = item.Radius;
+                        circle.Attribute.Brush = Brushes.Transparent;
+                        circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                        circle.Attribute.Id = item.Id ?? -1;
+                        circle.Attribute.Text = item.Name;
+                        circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                        circle.Render();
+                        ctx.ImageView.AddVisual(circle);
+                        break;
+                    case POIPointTypes.Rect:
+                        DVRectangleText rectangle = new DVRectangleText();
+                        rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                        rectangle.Attribute.Brush = Brushes.Transparent;
+                        rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                        rectangle.Attribute.Id = item.Id ?? -1;
+                        rectangle.Attribute.Text = item.Name;
+                        rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                        rectangle.Render();
+                        ctx.ImageView.AddVisual(rectangle);
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         public override string GenText(IProcessExecutionContext ctx)
