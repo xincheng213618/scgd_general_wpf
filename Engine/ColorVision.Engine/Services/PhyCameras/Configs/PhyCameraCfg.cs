@@ -104,6 +104,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             }
         }
 
+        [JsonIgnore]
+        [Browsable(false)]
+        public bool IsRoiConfigured => Width > 0 && Height > 0;
+
         /// <summary>
         /// FindLightArea X
         /// </summary>

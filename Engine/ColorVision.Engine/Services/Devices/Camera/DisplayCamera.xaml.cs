@@ -1056,6 +1056,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return (false, szMsg);
             }
 
+            if (Device.PhyCamera?.Config?.CameraCfg?.IsRoiConfigured == true)
+            {
+                cvCameraCSLib.CM_Close(m_hCamHandle);
+                if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+                {
+                    string szMsg = string.Empty;
+                    cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
+                    return (false, szMsg);
+                }
+            }
+
             cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
             cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
             callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);

@@ -257,18 +257,50 @@ end tell";
         }
         public static void OpenFolderAndSelectFile(string? filePath)
         {
-            if (filePath == null) return;
+            if (string.IsNullOrWhiteSpace(filePath)) return;
 
-            filePath = filePath.Replace("\\\\", "\\");
-
-            var psi = new ProcessStartInfo
+            try
             {
-                FileName = "explorer.exe",
-                Arguments = $"/select,{filePath}",
-                UseShellExecute = true
-            };
-            Process.Start(psi);
+                filePath = NormalizePath(filePath);
 
+                if (Directory.Exists(filePath))
+                {
+                    OpenFolder(filePath);
+                    return;
+                }
+
+                if (!File.Exists(filePath))
+                {
+                    var parent = Path.GetDirectoryName(filePath);
+                    if (!string.IsNullOrWhiteSpace(parent))
+                    {
+                        OpenFolder(parent);
+                    }
+                    return;
+                }
+
+                if (OperatingSystem.IsWindows())
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"/select,\"{filePath}\"",
+                        UseShellExecute = true
+                    };
+                    Process.Start(psi);
+                    return;
+                }
+
+                var folder = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrWhiteSpace(folder))
+                {
+                    OpenFolder(folder);
+                }
+            }
+            catch
+            {
+                // 忽略错误，尽量不影响主流程
+            }
         }
 
 
