@@ -364,32 +364,23 @@ public abstract class BaseStartNode : CVCommonNode
 			return;
 		}
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
-		string text = string.Empty;
+		string message = string.Empty;
+		string errorNodeName = string.Empty;
 		if (flowStatus == StatusTypeEnum.Failed || flowStatus == StatusTypeEnum.OverTime)
 		{
 			Dictionary<string, object> data = startAction.Data;
-			string text2 = GetDataString(data, "ErrorNodeName");
-			string msg = GetDataString(data, "Msg");
-			if (!string.IsNullOrWhiteSpace(text2) && data != null && data.TryGetValue(text2, out object nodeStatusObj))
+			errorNodeName = GetDataString(data, "ErrorNodeName");
+			message = GetDataString(data, "Msg");
+			if (string.IsNullOrWhiteSpace(message) && !string.IsNullOrWhiteSpace(errorNodeName) && data != null && data.TryGetValue(errorNodeName, out object nodeStatusObj))
 			{
-				string text3 = Convert.ToString(nodeStatusObj) ?? string.Empty;
-				if (!string.IsNullOrWhiteSpace(text3))
-				{
-					text = text2 + ":" + text3;
-					if (!string.IsNullOrWhiteSpace(msg))
-					{
-						text += "," + msg;
-					}
-				}
+				message = Convert.ToString(nodeStatusObj) ?? string.Empty;
 			}
-			if (string.IsNullOrEmpty(text) && !string.IsNullOrWhiteSpace(msg))
+			if (string.IsNullOrWhiteSpace(message))
 			{
-				text = string.IsNullOrWhiteSpace(text2) ? msg : text2 + ":" + msg;
+				message = flowStatus.ToString();
 			}
 		}
-		logger.InfoFormat("Fire Flow Finished Before");
-		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, text));
-		logger.InfoFormat("Fire Flow Finished End");
+		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message, errorNodeName));
 	}
 
 	private static string GetDataString(Dictionary<string, object> data, string key)

@@ -94,7 +94,7 @@ public class FlowEngineControl : FlowEngineAPI
 	{
 		BaseStartNode baseStartNode = sender as BaseStartNode;
 		_IsRunning = false;
-		this.Finished?.Invoke(sender, new FlowEngineEventArgs(baseStartNode.NodeName, e.SerialNumber, e.Status, e.TotalTime, e.Message));
+		this.Finished?.Invoke(sender, new FlowEngineEventArgs(baseStartNode.NodeName, e.SerialNumber, e.Status, e.TotalTime, e.Message, e.ErrorNodeName));
 	}
 
 	private void AddDevice(CVBaseServerNode node)
