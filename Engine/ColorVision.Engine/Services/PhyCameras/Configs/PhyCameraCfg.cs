@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Utilities;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 
@@ -11,6 +12,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     [LocalizedDisplayName(nameof(Resources.CameraParam))]
     public class PhyCameraCfg : ViewModelBase
     {
+        public const int HkRoiAlignment = 32;
+
         /// <summary>
         /// 不参与计算的区域，左
         /// </summary>
@@ -130,6 +133,23 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Height { get => _Height; set { _Height = value; OnPropertyChanged(); OnPropertyChanged(nameof(ROI)); } }
         private int _Height;
 
+        public List<string> GetRoiSizeMisalignedFields(int alignment = HkRoiAlignment)
+        {
+            List<string> fields = new();
+            AddMisalignedField(fields, "Width", Width, alignment);
+            AddMisalignedField(fields, "Height", Height, alignment);
+            return fields;
+        }
+
+        private static void AddMisalignedField(List<string> fields, string name, int value, int alignment)
+        {
+            if (alignment <= 0 || value % alignment == 0)
+            {
+                return;
+            }
+
+            fields.Add($"{name}={value}");
+        }
 
     }
 }

@@ -49,6 +49,33 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Fileversion { get => _Fileversion; set { _Fileversion = value; OnPropertyChanged(); } }
         private int _Fileversion = 2;
 
+        public bool TryGetHkRoiAlignmentWarning(out string warning)
+        {
+            warning = string.Empty;
+            if (CameraCfg == null || !RequiresHkRoiAlignment())
+            {
+                return false;
+            }
+
+            var invalidFields = CameraCfg.GetRoiSizeMisalignedFields();
+            if (invalidFields.Count == 0)
+            {
+                return false;
+            }
+
+            warning =
+                $"HK相机ROI宽高需要按{PhyCameraCfg.HkRoiAlignment}像素步进设置，不能只保证为整数。{Environment.NewLine}{Environment.NewLine}" +
+                $"当前ROI：Width={CameraCfg.Width}, Height={CameraCfg.Height}{Environment.NewLine}" +
+                $"不符合项：{string.Join("、", invalidFields)}{Environment.NewLine}{Environment.NewLine}" +
+                $"请将上述值调整为{PhyCameraCfg.HkRoiAlignment}的倍数后再保存。";
+            return true;
+        }
+
+        private bool RequiresHkRoiAlignment()
+        {
+            return CameraModel is CameraModel.HK_USB or CameraModel.HK_CARD or CameraModel.HK_FG_CARD;
+        }
+
         public void ApplyTo(ConfigCamera target, bool includeCameraId = true, bool includeCameraType = true)
         {
             ArgumentNullException.ThrowIfNull(target);
