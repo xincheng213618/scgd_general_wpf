@@ -1706,17 +1706,13 @@ namespace ColorVision.Engine.Templates.POI
                                 if (PoiConfig.FindLuminousAreaCorner.UseRotatedRect)
                                 {
                                     var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
-                                    var corners = jObj["Corners"].ToObject<List<List<float>>>();
-                                    if (corners.Count == 4)
+                                    var corners = jObj["Corners"]?.ToObject<List<List<float>>>();
+                                    if (corners?.Count == 4 && corners.All(corner => corner.Count >= 2))
                                     {
-                                        PoiConfig.Polygon1X = (int)corners[0][0];
-                                        PoiConfig.Polygon1Y = (int)corners[0][1];
-                                        PoiConfig.Polygon2X = (int)corners[1][0];
-                                        PoiConfig.Polygon2Y = (int)corners[1][1];
-                                        PoiConfig.Polygon3X = (int)corners[2][0];
-                                        PoiConfig.Polygon3Y = (int)corners[2][1];
-                                        PoiConfig.Polygon4X = (int)corners[3][0];
-                                        PoiConfig.Polygon4Y = (int)corners[3][1];
+                                        var orderedCorners = OrderQuadrilateralCorners(corners
+                                            .Select(corner => new Point(corner[0], corner[1]))
+                                            .ToList());
+                                        ApplyQuadrilateralCorners(orderedCorners);
                                     }
 
 
@@ -1746,6 +1742,52 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 ;
             }));
+        }
+
+        private static List<Point> OrderQuadrilateralCorners(List<Point> corners)
+        {
+            if (corners.Count != 4)
+                return corners.ToList();
+
+            double centerX = corners.Average(point => point.X);
+            double centerY = corners.Average(point => point.Y);
+
+            var ordered = corners
+                .OrderBy(point => Math.Atan2(point.Y - centerY, point.X - centerX))
+                .ToList();
+
+            int leftTopIndex = 0;
+            for (int i = 1; i < ordered.Count; i++)
+            {
+                double currentScore = ordered[i].X + ordered[i].Y;
+                double bestScore = ordered[leftTopIndex].X + ordered[leftTopIndex].Y;
+
+                if (currentScore < bestScore ||
+                    (Math.Abs(currentScore - bestScore) < 0.0001 && ordered[i].Y < ordered[leftTopIndex].Y))
+                {
+                    leftTopIndex = i;
+                }
+            }
+
+            return ordered
+                .Skip(leftTopIndex)
+                .Concat(ordered.Take(leftTopIndex))
+                .ToList();
+        }
+
+        private void ApplyQuadrilateralCorners(List<Point> corners)
+        {
+            if (corners.Count < 4)
+                return;
+
+            PoiConfig.Polygon1X = (int)corners[0].X;
+            PoiConfig.Polygon1Y = (int)corners[0].Y;
+            PoiConfig.Polygon2X = (int)corners[1].X;
+            PoiConfig.Polygon2Y = (int)corners[1].Y;
+            PoiConfig.Polygon3X = (int)corners[2].X;
+            PoiConfig.Polygon3Y = (int)corners[2].Y;
+            PoiConfig.Polygon4X = (int)corners[3].X;
+            PoiConfig.Polygon4Y = (int)corners[3].Y;
         }
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
