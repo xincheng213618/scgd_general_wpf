@@ -7717,15 +7717,6 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
-        ///   查找类似 PoiAnalysis 的本地化字符串。
-        /// </summary>
-        public static string PoiAnalysis {
-            get {
-                return ResourceManager.GetString("PoiAnalysis", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 POI分析模板管理 的本地化字符串。
         /// </summary>
         public static string PoiAnalysisTemplateManagement {

@@ -2274,9 +2274,6 @@
   <data name="AABuildPoints" xml:space="preserve">
     <value>AA 포인트 배치</value>
   </data>
-  <data name="PoiAnalysis" xml:space="preserve">
-    <value>PoiAnalysis</value>
-  </data>
   <data name="NodeProperty" xml:space="preserve">
     <value>노드 속성</value>
   </data>

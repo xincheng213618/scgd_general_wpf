@@ -2277,9 +2277,6 @@
   <data name="AABuildPoints" xml:space="preserve">
     <value>Points disposition AA</value>
   </data>
-  <data name="PoiAnalysis" xml:space="preserve">
-    <value>PoiAnalysis</value>
-  </data>
   <data name="NodeProperty" xml:space="preserve">
     <value>Propriété du nœud</value>
   </data>
