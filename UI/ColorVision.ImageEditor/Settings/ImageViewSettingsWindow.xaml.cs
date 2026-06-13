@@ -147,21 +147,7 @@ namespace ColorVision.ImageEditor.Settings
 
         private static StackPanel CreateEditor(object source)
         {
-            StackPanel editor = PropertyEditorHelper.GenPropertyEditorControl(source);
-            RemoveGeneratedTypeHeaders(editor, source.GetType().Name);
-            return editor;
-        }
-
-        private static void RemoveGeneratedTypeHeaders(Panel panel, string typeName)
-        {
-            foreach (Border border in panel.Children.OfType<Border>())
-            {
-                if (border.Child is StackPanel stackPanel && stackPanel.Children.Count > 0 && stackPanel.Children[0] is TextBlock header && header.Text == typeName)
-                {
-                    stackPanel.Children.RemoveAt(0);
-                    stackPanel.Margin = new Thickness(5);
-                }
-            }
+            return PropertyEditorHelper.GenPropertyEditorControl(source, showCategoryHeader: false);
         }
 
         private static void AddView(Panel panel, FrameworkElement view)

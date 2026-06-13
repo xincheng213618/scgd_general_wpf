@@ -597,13 +597,13 @@ namespace ColorVision.UI
             dockPanel.SetBinding(UIElement.VisibilityProperty, binding);
         }
 
-        public static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager = null)
+        public static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager = null, bool showCategoryHeader = true)
         {
             var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
-            return GenPropertyEditorControl(obj, resourceManager, visited);
+            return GenPropertyEditorControl(obj, resourceManager, visited, showCategoryHeader);
         }
 
-        private static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager, HashSet<object> visited)
+        private static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager, HashSet<object> visited, bool showCategoryHeader = true)
         {
             if (obj == null) return new StackPanel();
             if (!visited.Add(obj)) return new StackPanel();
@@ -663,18 +663,21 @@ namespace ColorVision.UI
                     border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
                     border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
 
-                    var stackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
+                    var stackPanel = new StackPanel { Margin = showCategoryHeader ? new Thickness(5, 5, 5, 0) : new Thickness(5) };
 
 
-                    var categoryHeader = new TextBlock
+                    if (showCategoryHeader)
                     {
-                        Text = categoryGroup.Key,
-                        FontWeight = FontWeights.Bold,
-                        Foreground = GlobalTextBrush,
-                        Margin = new Thickness(0, 0, 0, 5)
-                    };
-                    categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-                    stackPanel.Children.Add(categoryHeader);
+                        var categoryHeader = new TextBlock
+                        {
+                            Text = categoryGroup.Key,
+                            FontWeight = FontWeights.Bold,
+                            Foreground = GlobalTextBrush,
+                            Margin = new Thickness(0, 0, 0, 5)
+                        };
+                        categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                        stackPanel.Children.Add(categoryHeader);
+                    }
 
 
                     border.Child = stackPanel;
@@ -687,7 +690,7 @@ namespace ColorVision.UI
                         }
                     }
 
-                    if (stackPanel.Children.Count > 1)
+                    if (showCategoryHeader ? stackPanel.Children.Count > 1 : stackPanel.Children.Count > 0)
                     {
                         propertyPanel.Children.Add(border);
                     }
