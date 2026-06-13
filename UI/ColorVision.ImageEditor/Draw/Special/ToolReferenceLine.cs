@@ -161,14 +161,9 @@ namespace ColorVision.ImageEditor.Draw.Special
         public bool IsLocked { get; set; } = true;
         public ReferenceLineMode Mode { get => Attribute.Mode; set { Attribute.Mode = value; } }
 
-        SolidColorBrush SolidColorBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
-
         public override void Render()
         {
-
             using DrawingContext dc = RenderOpen();
-            dc.DrawRectangle(SolidColorBrush, new Pen(Brushes.Transparent, 0), new Rect(0,0,ActualWidth,ActualHeight));
-
             Pen pen = Attribute.Pen;
 
             double angle = Attribute.Angle;
@@ -488,6 +483,24 @@ namespace ColorVision.ImageEditor.Draw.Special
             return angleInDegrees;
         }
 
+        public bool ContainsReference(Point point, double tolerance)
+        {
+            Point center = RMouseDownP;
+            if ((point - center).Length <= tolerance * 2) return true;
+
+            double angle = Mode == ReferenceLineMode.DiagonalCross ? Attribute.Angle + 45 : Attribute.Angle;
+            return DistanceToLine(point, center, angle) <= tolerance
+                || DistanceToLine(point, center, angle + 90) <= tolerance;
+        }
+
+        private static double DistanceToLine(Point point, Point center, double angle)
+        {
+            double radians = angle * Math.PI / 180.0;
+            Vector line = new(Math.Cos(radians), Math.Sin(radians));
+            Vector delta = point - center;
+            return Math.Abs(delta.X * line.Y - delta.Y * line.X);
+        }
+
         private static double Det(double a, double b, double c, double d)
         {
             return a * d - b * c;
@@ -664,7 +677,7 @@ namespace ColorVision.ImageEditor.Draw.Special
     }
 
 
-    public class ToolReferenceLine: DrawEditorToggleToolBase
+    public class ToolReferenceLine : IEditorToggleToolBase, IDisposable
     {
         private Zoombox ZoomboxSub => EditorContext.Zoombox;
         private DrawCanvas Image => EditorContext.DrawCanvas;
@@ -675,8 +688,8 @@ namespace ColorVision.ImageEditor.Draw.Special
         public ToolReferenceLine(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
-            ToolBarLocal = ToolBarLocal.Draw;
-            Order = 10;
+            ToolBarLocal = ToolBarLocal.Top;
+            Order = 550;
             Icon = IEditorToolFactory.TryFindResource("ConcentricCirclesDrawImg");
 
         }
@@ -689,14 +702,9 @@ namespace ColorVision.ImageEditor.Draw.Special
             {
                 if (_IsChecked == value) return;
                 _IsChecked = value;
-                DrawVisualImageControl(_IsChecked);
 
                 if (value)
                 {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
-
-     
-
                     ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
                     ReferenceLine.ActualWidth = Image.ActualWidth;
                     ReferenceLine.ActualHeight = Image.ActualHeight;
@@ -711,6 +719,8 @@ namespace ColorVision.ImageEditor.Draw.Special
                     ReferenceLine.PointLen = new Vector();
 
                     ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, ReferenceLine.Attribute.LineWidth / ReferenceLine.Ratio);
+                    ReferenceLine.Render();
+                    DrawVisualImageControl(true);
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
@@ -719,12 +729,13 @@ namespace ColorVision.ImageEditor.Draw.Special
                 }
                 else
                 {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-
+                    DrawVisualImageControl(false);
                     Image.MouseMove -= MouseMove;
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp -= PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+                    ReferenceLine.IsRMouseDown = false;
+                    ReferenceLine.IsLMouseDown = false;
                 }
                 OnPropertyChanged();
             }
@@ -825,16 +836,20 @@ namespace ColorVision.ImageEditor.Draw.Special
             if (Control)
             {
                 if (!Image.ContainsVisual(ReferenceLine))
-                    Image.AddVisualCommand(ReferenceLine);
+                    Image.AddOverlayVisual(ReferenceLine);
             }
             else
             {
                 if (Image.ContainsVisual(ReferenceLine))
-                    Image.RemoveVisualCommand(ReferenceLine);
+                    Image.RemoveOverlayVisual(ReferenceLine);
             }
         }
 
-
+        public void Dispose()
+        {
+            IsChecked = false;
+            GC.SuppressFinalize(this);
+        }
 
     }
 }

@@ -11,7 +11,7 @@ namespace ColorVision.ImageEditor.EditorTools.Zoom
 
         public int Order { get; set; } = 3;
 
-        public object Icon { get; set; } = IEditorToolFactory.TryFindResource("DrawingImageexpend");
+        public object Icon { get; set; } = IEditorToolFactory.TryFindResource("DrawingImage1_1");
 
         public ICommand? Command { get; set; } = new RelayCommand((o) =>
         {

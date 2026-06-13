@@ -382,10 +382,15 @@ namespace ColorVision.ImageEditor
         private void HandleContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
             EditorContext.ContextMenu.Items.Clear();
+            Point mouseDownPoint = Mouse.GetPosition(ImageShow);
+
+            if (TryCreateReferenceLineContextMenu(mouseDownPoint))
+            {
+                return;
+            }
 
             if (ImageEditMode)
             {
-                Point mouseDownPoint = Mouse.GetPosition(ImageShow);
                 Visual? mouseVisual = ImageShow.GetVisual<Visual>(mouseDownPoint);
                 if (mouseVisual == null)
                 {
@@ -442,6 +447,37 @@ namespace ColorVision.ImageEditor
             {
                 CreateStandardContextMenu();
             }
+        }
+
+        private bool TryCreateReferenceLineContextMenu(Point point)
+        {
+            ToolReferenceLine? referenceTool = IEditorToolFactory.GetIEditorTool<ToolReferenceLine>();
+            if (referenceTool?.IsChecked != true)
+            {
+                return false;
+            }
+
+            ReferenceLine referenceLine = referenceTool.ReferenceLine;
+            double tolerance = 8 / Math.Max(referenceLine.Ratio, 0.0001);
+            if (!referenceLine.ContainsReference(point, tolerance))
+            {
+                return false;
+            }
+
+            foreach (var provider in IEditorToolFactory.ContextMenuProviders)
+            {
+                if (!provider.ContextType.IsAssignableFrom(referenceLine.GetType()))
+                {
+                    continue;
+                }
+
+                foreach (var item in provider.GetContextMenuItems(referenceLine))
+                {
+                    EditorContext.ContextMenu.Items.Add(item);
+                }
+            }
+
+            return EditorContext.ContextMenu.Items.Count > 0;
         }
 
         private void CreateStandardContextMenu()
