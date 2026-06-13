@@ -67,9 +67,6 @@
   <data name="ZoomOut" xml:space="preserve">
     <value>缩小</value>
   </data>
-  <data name="ZoomNone" xml:space="preserve">
-    <value>原始大小</value>
-  </data>
   <data name="ZoomUniform" xml:space="preserve">
     <value>适应屏幕</value>
   </data>
@@ -513,18 +510,6 @@
   </data>
   <data name="Graphic_ClearAll" xml:space="preserve">
     <value>清除</value>
-  </data>
-  <data name="Graphic_ExportAnnotations" xml:space="preserve">
-    <value>导出标注</value>
-  </data>
-  <data name="Graphic_ImportAnnotations" xml:space="preserve">
-    <value>导入标注</value>
-  </data>
-  <data name="Graphic_ImportAnnotationsMenu" xml:space="preserve">
-    <value>导入标注</value>
-  </data>
-  <data name="Graphic_ExportAnnotationsMenu" xml:space="preserve">
-    <value>导出标注</value>
   </data>
   <data name="Graphic_ImageViewSettings" xml:space="preserve">
     <value>图像设置</value>

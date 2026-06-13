@@ -67,9 +67,6 @@
   <data name="ZoomOut" xml:space="preserve">
     <value>уменьшить</value>
   </data>
-  <data name="ZoomNone" xml:space="preserve">
-    <value>оригинальный размер</value>
-  </data>
   <data name="ZoomUniform" xml:space="preserve">
     <value>адаптация к экрану</value>
   </data>
@@ -748,18 +745,6 @@
   </data>
   <data name="Graphic_ClearAll" xml:space="preserve">
     <value>Clear</value>
-  </data>
-  <data name="Graphic_ExportAnnotations" xml:space="preserve">
-    <value>Export Annotations</value>
-  </data>
-  <data name="Graphic_ImportAnnotations" xml:space="preserve">
-    <value>Import Annotations</value>
-  </data>
-  <data name="Graphic_ImportAnnotationsMenu" xml:space="preserve">
-    <value>Import Annotations</value>
-  </data>
-  <data name="Graphic_ExportAnnotationsMenu" xml:space="preserve">
-    <value>Export Annotations</value>
   </data>
   <data name="Graphic_ImageViewSettings" xml:space="preserve">
     <value>Image Settings</value>

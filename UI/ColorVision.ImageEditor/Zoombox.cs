@@ -11,45 +11,6 @@ namespace ColorVision.ImageEditor
 {
     
     /// <summary>
- /// A collection of commands for <see cref="Zoombox"/>.
- /// </summary>
-    public static class ZoomCommands
-    {
-        /// <summary>
-        /// Gets a command that when invoked sets the content to preserves its original size.
-        /// </summary>
-        public static RoutedUICommand None { get; } = new RoutedUICommand(nameof(None), nameof(None), typeof(ZoomCommands));
-
-        /// <summary>
-        /// Gets a command that when invoked sets the content is re-sized to fit in the destination dimensions while it preserves its native aspect ratio.
-        /// </summary>
-        public static RoutedUICommand Uniform { get; } = new RoutedUICommand(nameof(Uniform), nameof(Uniform), typeof(ZoomCommands));
-
-        /// <summary>
-        /// Gets a command that when invoked sets the content is re-sized to fill the destination dimensions while it preserves its native aspect ratio. If the aspect ratio of the destination rectangle differs from the source, the source content is clipped to fit in the destination dimensions.
-        /// </summary>
-        public static RoutedUICommand UniformToFill { get; } = new RoutedUICommand(nameof(UniformToFill), nameof(UniformToFill), typeof(ZoomCommands));
-
-        /// <summary>
-        /// Gets a command that when invoked increases the zoom.
-        /// </summary>
-        public static RoutedUICommand Increase { get; } = new RoutedUICommand(nameof(Increase), nameof(Increase), typeof(ZoomCommands));
-
-        /// <summary>
-        /// Gets a command that when invoked decreases the zoom.
-        /// </summary>
-        public static RoutedUICommand Decrease { get; } = new RoutedUICommand(nameof(Decrease), nameof(Decrease), typeof(ZoomCommands));
-    }
-
-    public static class Extensions
-    {
-        public static Point CenterPoint(this Rect rect)
-        {
-            return new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        }
-    }
-
-    /// <summary>
     /// A decorator that adds zoom and pan.
     /// </summary>
     public class Zoombox : Decorator
@@ -122,44 +83,10 @@ namespace ColorVision.ImageEditor
             CommandManager.RegisterClassCommandBinding(
                 typeof(Zoombox),
                 new CommandBinding(
-                    ZoomCommands.Increase,
-                    OnIncreaseZoom,
-                    OnCanIncreaseZoom));
-
-            CommandManager.RegisterClassCommandBinding(
-                typeof(Zoombox),
-                new CommandBinding(
                     NavigationCommands.DecreaseZoom,
                     OnDecreaseZoom,
                     OnCanDecreaseZoom));
 
-            CommandManager.RegisterClassCommandBinding(
-                typeof(Zoombox),
-                new CommandBinding(
-                    ZoomCommands.Decrease,
-                    OnDecreaseZoom,
-                    OnCanDecreaseZoom));
-
-            CommandManager.RegisterClassCommandBinding(
-                typeof(Zoombox),
-                new CommandBinding(
-                    ZoomCommands.None,
-                    OnZoomNone,
-                    OnCanZoomNone));
-
-            CommandManager.RegisterClassCommandBinding(
-                typeof(Zoombox),
-                new CommandBinding(
-                    ZoomCommands.Uniform,
-                    OnZoomUniform,
-                    OnCanZoomUniform));
-
-            CommandManager.RegisterClassCommandBinding(
-                typeof(Zoombox),
-                new CommandBinding(
-                    ZoomCommands.UniformToFill,
-                    OnZoomUniformToFill,
-                    OnCanZoomUniformToFill));
         }
 
         /// <summary>
@@ -288,7 +215,6 @@ namespace ColorVision.ImageEditor
         public void Zoom(double scale)
         {
             this.Zoom(new Vector(scale, scale));
-            ContentMatrixChanged?.Invoke(this, new EventArgs());
         }
 
         /// <summary>
@@ -297,9 +223,8 @@ namespace ColorVision.ImageEditor
         /// <param name="scale">The amount to resize as a multipliers.</param>
         public void Zoom(Vector scale)
         {
-            var point = LayoutInformation.GetLayoutClip(this)?.Bounds.CenterPoint();
-            this.Zoom(point ?? new Point(0, 0), scale);
-            ContentMatrixChanged?.Invoke(this, new EventArgs());
+            Rect? bounds = LayoutInformation.GetLayoutClip(this)?.Bounds;
+            this.Zoom(bounds is Rect rect ? new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2) : new Point(0, 0), scale);
         }
 
         /// <summary>
@@ -617,64 +542,6 @@ namespace ColorVision.ImageEditor
             var scale = GetScale(e.Parameter);
             box.Zoom(scale);
             e.Handled = true;
-        }
-
-        private static void OnCanZoomNone(object sender, CanExecuteRoutedEventArgs e)
-        {
-            var box = (Zoombox)e.Source;
-            e.CanExecute = box.InternalChild != null;
-            e.Handled = true;
-        }
-
-        private static void OnZoomNone(object sender, ExecutedRoutedEventArgs e)
-        {
-            var box = (Zoombox)e.Source;
-            box.ZoomNone();
-            e.Handled = true;
-        }
-
-        private static void OnCanZoomUniform(object sender, CanExecuteRoutedEventArgs e)
-        {
-            var box = (Zoombox)e.Source;
-            if (box.InternalChild is { } child)
-            {
-                e.CanExecute = child.DesiredSize.Width > MinScaleDelta &&
-                               child.DesiredSize.Height > MinScaleDelta;
-            }
-
-            e.Handled = true;
-        }
-
-        private static void OnZoomUniform(object sender, ExecutedRoutedEventArgs e)
-        {
-            var box = (Zoombox)e.Source;
-            if (box.InternalChild != null)
-            {
-                box.ZoomUniform();
-                e.Handled = true;
-            }
-        }
-
-        private static void OnCanZoomUniformToFill(object sender, CanExecuteRoutedEventArgs e)
-        {
-            var box = (Zoombox)e.Source;
-            if (box.InternalChild is { } child)
-            {
-                e.CanExecute = child.DesiredSize.Width > MinScaleDelta &&
-                               child.DesiredSize.Height > MinScaleDelta;
-            }
-
-            e.Handled = true;
-        }
-
-        private static void OnZoomUniformToFill(object sender, ExecutedRoutedEventArgs e)
-        {
-            var box = (Zoombox)e.Source;
-            if (box.InternalChild != null)
-            {
-                box.ZoomUniformToFill();
-                e.Handled = true;
-            }
         }
 
         private static double Clamp(double min, double value, double max)
