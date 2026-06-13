@@ -8,12 +8,10 @@ using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.ImageEditor.Layers;
-using ColorVision.ImageEditor.Properties;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using HandyControl.Controls;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -95,7 +93,6 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private readonly List<IImageViewSettingProvider> _imageViewSettingProviders = new();
         private readonly string _pixelValueOverlayRefreshDebounceKey = $"PixelValueOverlayRefresh_{Guid.NewGuid():N}";
         private Crosshair? _crosshair;
         private double _oldZoomRatio;
@@ -171,8 +168,6 @@ namespace ColorVision.ImageEditor
             this.Focus();
 
             Config.Cleared += Config_Cleared;
-            InitializeImageViewSettingProviders();
-
             foreach (var item in IEditorToolFactory.IImageComponents)
                 item.Execute(this);
 
@@ -593,30 +588,6 @@ namespace ColorVision.ImageEditor
                 _isUpdatedRender = false;
             }
         }
-        private void InitializeImageViewSettingProviders()
-        {
-            RegisterImageViewSettingProvider(new ImageViewDisplaySettingProvider());
-            RegisterImageViewSettingProvider(new ImageViewDefaultsSettingProvider());
-            RegisterImageViewSettingProvider(new ImageViewWorkspaceSettingProvider());
-        }
-
-        public void RegisterImageViewSettingProvider(IImageViewSettingProvider provider)
-        {
-            ArgumentNullException.ThrowIfNull(provider);
-
-            if (_imageViewSettingProviders.Any(existing => existing.GetType() == provider.GetType()))
-            {
-                return;
-            }
-
-            _imageViewSettingProviders.Add(provider);
-        }
-
-        public IReadOnlyList<IImageViewSettingProvider> GetImageViewSettingProviders()
-        {
-            return _imageViewSettingProviders;
-        }
-
         public void OpenSettingsWindow(string? initialGroup = null)
         {
             ImageViewSettingsWindow window = new(this, initialGroup)

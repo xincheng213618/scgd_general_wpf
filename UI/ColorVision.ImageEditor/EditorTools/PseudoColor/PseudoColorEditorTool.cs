@@ -1,14 +1,12 @@
 #pragma warning disable CA1816
 using ColorVision.ImageEditor.Abstractions;
-using ColorVision.ImageEditor.Settings;
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 {
-    public class PseudoColorEditorTool : IEditorCustomControlTool, IDisposable, IImageViewSettingProvider, IImageViewSettingPersistence
+    public class PseudoColorEditorTool : IEditorCustomControlTool, IDisposable
     {
         private readonly EditorContext _editorContext;
         private readonly PseudoColorController _controller;
@@ -31,6 +29,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         public int Order => 40;
         public object? Icon => null;
         public ICommand? Command => null;
+        internal PseudoColorToolState State => _state;
 
         public FrameworkElement CreateToolControl()
         {
@@ -39,34 +38,6 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
                 DataContext = _state,
             };
             return _toolControl;
-        }
-
-        public IEnumerable<ImageViewSettingMetadata> GetImageViewSettings(ImageView imageView)
-        {
-            yield return new ImageViewSettingMetadata
-            {
-                Group = Properties.Resources.PseudoColor_Group,
-                Order = 10,
-                Scope = ImageViewSettingScope.CurrentView,
-                Type = ImageViewSettingType.Class,
-                Name = Properties.Resources.PseudoColor_CurrentPseudoColor,
-                Source = _state,
-            };
-
-            yield return new ImageViewSettingMetadata
-            {
-                Group = Properties.Resources.PseudoColor_Group,
-                Order = 20,
-                Scope = ImageViewSettingScope.GlobalDefault,
-                Type = ImageViewSettingType.Class,
-                Name = Properties.Resources.PseudoColor_DefaultPseudoColor,
-                Source = PseudoColorDefaultConfig.Current,
-            };
-        }
-
-        public void SaveImageViewSettings(ImageView imageView)
-        {
-            PseudoColorDefaultConfig.SaveCurrent();
         }
 
         public void Dispose()

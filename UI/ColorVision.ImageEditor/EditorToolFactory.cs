@@ -100,10 +100,6 @@ namespace ColorVision.ImageEditor
                         if (CreateEditorTool(type, context) is IEditorTool instance)
                         {
                             IEditorTools.Add(instance);
-                            if (instance is IImageViewSettingProvider settingProvider)
-                            {
-                                imageView.RegisterImageViewSettingProvider(settingProvider);
-                            }
                         }
                     }
                 }

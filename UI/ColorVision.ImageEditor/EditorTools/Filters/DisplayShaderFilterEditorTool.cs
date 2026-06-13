@@ -1,8 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor.Settings;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
@@ -10,7 +8,7 @@ using System.Windows.Media.Effects;
 
 namespace ColorVision.ImageEditor.EditorTools.Filters
 {
-    internal sealed class DisplayShaderFilterEditorTool : IEditorCustomControlTool, IDisplayShaderFilterService, IDisposable, IImageViewSettingProvider, IImageViewSettingPersistence
+    internal sealed class DisplayShaderFilterEditorTool : IEditorCustomControlTool, IDisplayShaderFilterService, IDisposable
     {
         private static bool s_environmentNoticeShown;
         private readonly EditorContext _context;
@@ -195,26 +193,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
                 "Shader Filter Environment",
                 MessageBoxButton.OK,
                 environment.CanUseShaderFilter ? MessageBoxImage.Information : MessageBoxImage.Warning);
-        }
-
-        public IEnumerable<ImageViewSettingMetadata> GetImageViewSettings(ImageView imageView)
-        {
-            yield return new ImageViewSettingMetadata
-            {
-                Group = "Shader Filter",
-                Order = 10,
-                Scope = ImageViewSettingScope.CurrentView,
-                Type = ImageViewSettingType.Class,
-                Name = "Current shader filter",
-                Source = State,
-            };
-
-        }
-
-        public void SaveImageViewSettings(ImageView imageView)
-        {
-            Save();
-            DisplayShaderFilterDefaultConfig.SaveCurrent();
         }
 
         public void Dispose()

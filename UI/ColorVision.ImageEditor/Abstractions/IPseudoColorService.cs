@@ -1,10 +1,6 @@
 namespace ColorVision.ImageEditor.Abstractions
 {
-    public interface IEditorContextService
-    {
-    }
-
-    public interface IPseudoColorService : IEditorContextService
+    public interface IPseudoColorService
     {
         bool IsEnabled { get; }
         void ConfigureForImage();
