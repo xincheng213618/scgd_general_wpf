@@ -52,8 +52,8 @@ namespace ColorVision.ImageEditor
         public ImageLayerDescriptor? SelectedLayer { get; private set; }
 
 
-        private RealtimeImageViewService? _realtime;
-        public RealtimeImageViewService Realtime => _realtime ??= new RealtimeImageViewService(this);
+        private RealtimeFramePresenter? _realtime;
+        public RealtimeFramePresenter Realtime => _realtime ??= new RealtimeFramePresenter(this);
 
         public event EventHandler ClearImageEventHandler;
         public event EventHandler StatusBarItemsChanged;

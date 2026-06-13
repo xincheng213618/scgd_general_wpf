@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.ImageEditor
+namespace ColorVision.ImageEditor.Cie
 {
     public sealed class CieDiagramEditorTool : IEditorTool, IDisposable
     {

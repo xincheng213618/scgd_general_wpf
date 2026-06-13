@@ -61,55 +61,27 @@ namespace ColorVision.ImageEditor.Realtime
             return SubmitFrame(frame.pData, frame.cols, frame.rows, format, stride, stride * frame.rows);
         }
 
-        public bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, int transform = TransformNone)
+        public unsafe bool SubmitFrame(byte[] sourceBuffer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, int transform = TransformNone)
         {
             if (sourceBuffer == null) throw new ArgumentNullException(nameof(sourceBuffer));
             if (sourceBuffer.Length == 0) return false;
 
             bufferLength = bufferLength > 0 ? bufferLength : sourceBuffer.Length;
-            if (bufferLength > sourceBuffer.Length || !CanAcceptFrame(width, height, pixelFormat, ref sourceStride, ref bufferLength))
-            {
-                return false;
-            }
-
-            bool queueRender;
-            lock (_gate)
-            {
-                if (_disposed) return false;
-                if (_latestPixels == null || _latestPixels.Length < bufferLength)
-                {
-                    _latestPixels = new byte[bufferLength];
-                }
-
-                Buffer.BlockCopy(sourceBuffer, 0, _latestPixels, 0, bufferLength);
-                SaveLatestFrame(width, height, pixelFormat, sourceStride, bufferLength, transform);
-                queueRender = !_renderQueued;
-                _renderQueued = true;
-            }
-
-            if (queueRender)
-            {
-                _imageView.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
-            }
-            return true;
+            if (bufferLength > sourceBuffer.Length) return false;
+            fixed (byte* source = sourceBuffer)
+                return SubmitFrame((IntPtr)source, width, height, pixelFormat, sourceStride, bufferLength, transform);
         }
 
         public bool SubmitFrame(IntPtr sourcePointer, int width, int height, PixelFormat pixelFormat, int sourceStride = 0, int bufferLength = 0, int transform = TransformNone)
         {
             if (sourcePointer == IntPtr.Zero) return false;
-            if (!CanAcceptFrame(width, height, pixelFormat, ref sourceStride, ref bufferLength))
-            {
-                return false;
-            }
+            if (!CanAcceptFrame(width, height, pixelFormat, ref sourceStride, ref bufferLength)) return false;
 
             bool queueRender;
             lock (_gate)
             {
                 if (_disposed) return false;
-                if (_latestPixels == null || _latestPixels.Length < bufferLength)
-                {
-                    _latestPixels = new byte[bufferLength];
-                }
+                if (_latestPixels == null || _latestPixels.Length < bufferLength) _latestPixels = new byte[bufferLength];
 
                 Marshal.Copy(sourcePointer, _latestPixels, 0, bufferLength);
                 SaveLatestFrame(width, height, pixelFormat, sourceStride, bufferLength, transform);
@@ -117,10 +89,7 @@ namespace ColorVision.ImageEditor.Realtime
                 _renderQueued = true;
             }
 
-            if (queueRender)
-            {
-                _imageView.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
-            }
+            if (queueRender) _imageView.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
             return true;
         }
 
@@ -142,39 +111,22 @@ namespace ColorVision.ImageEditor.Realtime
             {
                 _imageView.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    if (_imageView.ImageShow.Source == previousBitmap)
-                    {
-                        _imageView.ImageShow.Source = null;
-                    }
+                    if (_imageView.ImageShow.Source == previousBitmap) _imageView.ImageShow.Source = null;
                 }));
             }
         }
 
         private bool CanAcceptFrame(int width, int height, PixelFormat format, ref int stride, ref int length)
         {
-            if (_disposed || !TryNormalizeLayout(width, height, format, ref stride, ref length))
-            {
-                return false;
-            }
-
-            if (Options.IsFrozen)
-            {
-                return false;
-            }
+            if (_disposed || Options.IsFrozen || !TryNormalizeLayout(width, height, format, ref stride, ref length)) return false;
 
             int maxFps = Options.MaxDisplayFps;
-            if (maxFps <= 0)
-            {
-                return true;
-            }
+            if (maxFps <= 0) return true;
 
             long now = Stopwatch.GetTimestamp();
             long minTicks = Stopwatch.Frequency / maxFps;
             long last = Interlocked.Read(ref _lastAcceptedTimestamp);
-            if (last != 0 && now - last < minTicks)
-            {
-                return false;
-            }
+            if (last != 0 && now - last < minTicks) return false;
 
             Interlocked.Exchange(ref _lastAcceptedTimestamp, now);
             return true;
@@ -195,8 +147,7 @@ namespace ColorVision.ImageEditor.Realtime
             {
                 if (_disposed || !_hasLatestFrame || _latestPixels == null)
                 {
-                    _renderQueued = false;
-                    return;
+                    _renderQueued = false; return;
                 }
 
                 (_latestPixels, _drawingPixels) = (_drawingPixels, _latestPixels);
@@ -205,10 +156,7 @@ namespace ColorVision.ImageEditor.Realtime
                 _hasLatestFrame = false;
             }
 
-            if (pixels != null)
-            {
-                RenderFrame(pixels, frame);
-            }
+            if (pixels != null) RenderFrame(pixels, frame);
 
             bool queueAgain;
             lock (_gate)
@@ -217,18 +165,12 @@ namespace ColorVision.ImageEditor.Realtime
                 _renderQueued = queueAgain;
             }
 
-            if (queueAgain)
-            {
-                _imageView.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
-            }
+            if (queueAgain) _imageView.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
         }
 
         private void RenderFrame(byte[] pixels, FrameInfo frame)
         {
-            if (frame.Length < GetRequiredBufferSize(frame.Width, frame.Height, frame.Format, frame.Stride))
-            {
-                return;
-            }
+            if (frame.Length < GetRequiredBufferSize(frame.Width, frame.Height, frame.Format, frame.Stride)) return;
 
             EnsureBitmap(frame);
 
@@ -259,10 +201,7 @@ namespace ColorVision.ImageEditor.Realtime
                 && _bitmap.PixelHeight == frame.Height
                 && _bitmap.Format == frame.Format)
             {
-                if (_imageView.ImageShow.Source != _bitmap)
-                {
-                    _imageView.ImageShow.Source = _bitmap;
-                }
+                if (_imageView.ImageShow.Source != _bitmap) _imageView.ImageShow.Source = _bitmap;
                 return;
             }
 
@@ -280,10 +219,7 @@ namespace ColorVision.ImageEditor.Realtime
 
         private unsafe bool WriteTransformedPixels(byte[] pixels, FrameInfo frame)
         {
-            if (_bitmap == null || frame.Format.BitsPerPixel % 8 != 0)
-            {
-                return false;
-            }
+            if (_bitmap == null || frame.Format.BitsPerPixel % 8 != 0) return false;
 
             int pixelBytes = frame.Format.BitsPerPixel / 8;
             int rowBytes = GetDefaultStride(frame.Width, frame.Format);
@@ -356,18 +292,12 @@ namespace ColorVision.ImageEditor.Realtime
             int rowBytes = GetDefaultStride(width, pixelFormat);
             if (rowBytes <= 0) return false;
 
-            if (sourceStride < rowBytes)
-            {
-                sourceStride = rowBytes;
-            }
+            if (sourceStride < rowBytes) sourceStride = rowBytes;
 
             int requiredBufferSize = GetRequiredBufferSize(width, height, pixelFormat, sourceStride);
             if (requiredBufferSize <= 0) return false;
 
-            if (bufferLength <= 0)
-            {
-                bufferLength = requiredBufferSize;
-            }
+            if (bufferLength <= 0) bufferLength = requiredBufferSize;
 
             return bufferLength >= requiredBufferSize;
         }

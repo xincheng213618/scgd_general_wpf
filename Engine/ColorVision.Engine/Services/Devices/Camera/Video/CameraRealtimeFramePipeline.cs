@@ -55,7 +55,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _articulation = 0;
             _fpsTimer.Restart();
             EnsureConfigSubscription();
-            _overlayVisual.Attach();
 
             imageView.Realtime.Configure(new RealtimeFrameOptions
             {
@@ -64,13 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 UpdateImageMetadata = true
             });
 
-            if (!_overlaysAdded)
-            {
-                imageView.ImageShow.AddOverlayVisual(_overlayVisual);
-                _overlaysAdded = true;
-            }
-
-            _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+            UpdateOverlayVisibility(imageView);
         }
 
         public void Stop(bool resetRealtime = false, bool clearImageSource = false)
@@ -178,16 +171,39 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool TryCreateProcessingRequest(int width, int height, out VideoFrameProcessingRequest request)
         {
             request = default;
-
-            if (!_config.IsUseCacheFile || !_config.IsCalArtculation)
-            {
-                return false;
-            }
+            if (!IsArticulationEnabled) return false;
 
             Rect rect = _overlayVisual.GetProcessingRoi(width, height);
 
             request = new VideoFrameProcessingRequest(_config.EvaFunc, new RoiRect(rect));
             return true;
+        }
+
+        private bool IsArticulationEnabled => _config.IsUseCacheFile && _config.IsCalArtculation;
+
+        private void UpdateOverlayVisibility(ImageView imageView)
+        {
+            if (IsArticulationEnabled)
+            {
+                _overlayVisual.Attach();
+                if (!_overlaysAdded)
+                {
+                    imageView.ImageShow.AddOverlayVisual(_overlayVisual);
+                    _overlaysAdded = true;
+                }
+                _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+                return;
+            }
+
+            _processor?.Dispose();
+            _processor = null;
+            _overlayVisual.ResetMetrics();
+            _overlayVisual.Detach();
+            if (_overlaysAdded)
+            {
+                imageView.ImageShow.RemoveOverlayVisual(_overlayVisual);
+                _overlaysAdded = false;
+            }
         }
 
         private VideoFrameProcessor EnsureProcessor()
@@ -208,7 +224,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
                 _articulation = result.Articulation;
 
-                _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+                if (IsArticulationEnabled) _overlayVisual.UpdateMetrics(_articulation, _lastFps);
             }));
         }
 
@@ -223,7 +239,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _lastFps = (double)_frameCount * 1000 / _fpsTimer.ElapsedMilliseconds;
             System.Threading.Interlocked.Exchange(ref _frameCount, 0);
             _fpsTimer.Restart();
-            _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+            if (IsArticulationEnabled) _overlayVisual.UpdateMetrics(_articulation, _lastFps);
         }
 
         private void EnsureConfigSubscription()
@@ -250,29 +266,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(DefaultRealtimeCameraConfig.MaxDisplayFps))
-            {
-                return;
-            }
-
             ImageView? imageView = _imageView;
-            if (imageView == null)
-            {
-                return;
-            }
+            if (imageView == null) return;
 
-            void ApplyMaxDisplayFps()
+            void ApplyConfigChange()
             {
-                imageView.Realtime.Options.MaxDisplayFps = _config.MaxDisplayFps;
+                if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DefaultRealtimeCameraConfig.MaxDisplayFps))
+                    imageView.Realtime.Options.MaxDisplayFps = _config.MaxDisplayFps;
+
+                if (string.IsNullOrEmpty(e.PropertyName)
+                    || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsUseCacheFile)
+                    || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsCalArtculation))
+                    UpdateOverlayVisibility(imageView);
             }
 
             if (imageView.Dispatcher.CheckAccess())
             {
-                ApplyMaxDisplayFps();
+                ApplyConfigChange();
             }
             else
             {
-                imageView.Dispatcher.BeginInvoke(new Action(ApplyMaxDisplayFps));
+                imageView.Dispatcher.BeginInvoke(new Action(ApplyConfigChange));
             }
         }
 
