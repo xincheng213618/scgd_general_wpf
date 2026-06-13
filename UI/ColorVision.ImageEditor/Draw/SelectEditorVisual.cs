@@ -83,7 +83,7 @@ namespace ColorVision.ImageEditor.Draw
             double halfSmallRectSize = smallRectSize / 2;
 
 
-            bool Check(ISelctRect selectVisual)
+            bool Check(SelectionHandleRect selectVisual)
             {
                 ISelectVisual = selectVisual.ISelectVisual;
 
@@ -161,7 +161,7 @@ namespace ColorVision.ImageEditor.Draw
             }
 
 
-            foreach (var item in ISelctRects)
+            foreach (var item in selectRects)
             {
                 if (Check(item))
                 {
@@ -169,7 +169,7 @@ namespace ColorVision.ImageEditor.Draw
                 }
             }
 
-            foreach (var item in ISelctRects)
+            foreach (var item in selectRects)
             {
                 if (item.rect.Contains(point))
                 {
@@ -254,7 +254,7 @@ namespace ColorVision.ImageEditor.Draw
             Render();
         }
 
-        internal class ISelctRect:IDisposable
+        internal class SelectionHandleRect:IDisposable
         {
             internal ISelectVisual ISelectVisual;
             internal Rect rect;
@@ -273,7 +273,7 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private List<ISelctRect> ISelctRects = new List<ISelctRect>();
+        private List<SelectionHandleRect> selectRects = new List<SelectionHandleRect>();
 
         SolidColorBrush SolidColorBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
         public void Render()
@@ -284,22 +284,22 @@ namespace ColorVision.ImageEditor.Draw
             Rect unionRect = SelectVisuals.Select(v => v.GetRect()).Aggregate((a, b) => Rect.Union(a, b));
             dc.DrawRectangle(SolidColorBrush, new Pen(Brushes.Transparent, 0), unionRect);
 
-            ISelctRects.Clear();
+            selectRects.Clear();
 
             //全局选中性能太差
             if (SelectVisuals.Count < 1000)
             {
                 foreach (var item in SelectVisuals)
                 {
-                    RederRecct(item.GetRect(), item);
+                    RenderRect(item.GetRect(), item);
                 }
             }
             else
             {
-                RederRecct(unionRect);
+                RenderRect(unionRect);
             }
 
-            void RederRecct(Rect rect, ISelectVisual selectVisual =null)
+            void RenderRect(Rect rect, ISelectVisual selectVisual =null)
             {
                 double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
                 double thickness1 = thickness * 1.5;
@@ -322,18 +322,18 @@ namespace ColorVision.ImageEditor.Draw
                 Rect middleLeft = new Rect(rect.Left - halfSmallRectSize, rect.Top + (rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
                 Rect middleRight = new Rect(rect.Right - halfSmallRectSize, rect.Top + (rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
 
-                ISelctRect selctRect = new ISelctRect();
-                selctRect.rect = rect;
-                selctRect.ISelectVisual = selectVisual;
-                selctRect.topLeft = topLeft;
-                selctRect.topRight = topRight;
-                selctRect.bottomLeft = bottomLeft;
-                selctRect.bottomRight = bottomRight;
-                selctRect.middleTop = middleTop;
-                selctRect.middleBottom = middleBottom;
-                selctRect.middleLeft = middleLeft;
-                selctRect.middleRight = middleRight;
-                ISelctRects.Add(selctRect);
+                SelectionHandleRect selectRect = new SelectionHandleRect();
+                selectRect.rect = rect;
+                selectRect.ISelectVisual = selectVisual;
+                selectRect.topLeft = topLeft;
+                selectRect.topRight = topRight;
+                selectRect.bottomLeft = bottomLeft;
+                selectRect.bottomRight = bottomRight;
+                selectRect.middleTop = middleTop;
+                selectRect.middleBottom = middleBottom;
+                selectRect.middleLeft = middleLeft;
+                selectRect.middleRight = middleRight;
+                selectRects.Add(selectRect);
 
                 // 绘制小矩形
 

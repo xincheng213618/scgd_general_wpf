@@ -136,18 +136,18 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             double DpiX = _config.GetProperties<double>("DpiX");
             double DpiY = _config.GetProperties<double>("DpiY");
 
-            double DpiSacleX  = DpiX / 96.0;
-            double DpiSacleY = DpiY / 96.0; // 每毫米多少像素
+            double DpiScaleX  = DpiX / 96.0;
+            double DpiScaleY = DpiY / 96.0; // 每毫米多少像素
 
             // 图像尺寸
             int imgWidth = hImage.cols;
             int imgHeight = hImage.rows;
 
             // 用户绘制的矩形
-            int x = (int)Math.Round(dvRectangle.Rect.X * DpiSacleX);
-            int y = (int)Math.Round(dvRectangle.Rect.Y * DpiSacleY);
-            int w = (int)Math.Round(dvRectangle.Rect.Width * DpiSacleX);
-            int h = (int)Math.Round(dvRectangle.Rect.Height * DpiSacleY);
+            int x = (int)Math.Round(dvRectangle.Rect.X * DpiScaleX);
+            int y = (int)Math.Round(dvRectangle.Rect.Y * DpiScaleY);
+            int w = (int)Math.Round(dvRectangle.Rect.Width * DpiScaleX);
+            int h = (int)Math.Round(dvRectangle.Rect.Height * DpiScaleY);
 
             // 先保证宽高为正
             if (w <= 0 || h <= 0)

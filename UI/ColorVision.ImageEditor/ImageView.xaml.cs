@@ -227,21 +227,6 @@ namespace ColorVision.ImageEditor
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = true; }));
 
-            var _visibilityConfig = ConfigService.Instance.GetRequiredService<EditorToolVisibilityConfig>();
-
-            // Initialize editor tools visibility list
-            var EditorTools = new ObservableCollection<EditorToolViewModel>();
-            foreach (var tool in IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
-            {
-                var guidId = tool.GuidId ?? tool.GetType().Name;
-                var toolViewModel = new EditorToolViewModel(this, tool, _visibilityConfig)
-                {
-                    DisplayName = guidId,
-                    Location = tool.ToolBarLocal.ToString(),
-                    IsVisible = _visibilityConfig.GetToolVisibility(guidId)
-                };
-                EditorTools.Add(toolViewModel);
-            }
         }
 
         private void DefaultDisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -510,7 +495,7 @@ namespace ColorVision.ImageEditor
             {
                 _oldZoomRatio = zoomRatio;
                 double scale = double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0 ? 1 : 1 / zoomRatio;
-                EditorContext.DrawEditorContext.DrawCanvas.Sacle = scale;
+                EditorContext.DrawEditorContext.DrawCanvas.Scale = scale;
                 if (EditorContext.Config.IsLayoutUpdated)
                 {
                     DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id, 20, () => ImageLayoutUpdatedRender(scale, EditorContext.DrawEditorContext.DrawingVisualLists));
@@ -528,7 +513,7 @@ namespace ColorVision.ImageEditor
             try
             {
                 _isUpdatedRender = true;
-                EditorContext.DrawEditorContext.DrawCanvas.Sacle = scale;
+                EditorContext.DrawEditorContext.DrawCanvas.Scale = scale;
                 EditorContext.DrawEditorContext.DrawCanvas.ApplyLayoutScaleToVisuals();
             }
             finally
@@ -1202,7 +1187,7 @@ namespace ColorVision.ImageEditor
 
         private void UpdateDrawingVisualScale()
         {
-            ImageShow.Sacle = GetDrawingVisualScale();
+            ImageShow.Scale = GetDrawingVisualScale();
         }
 
         private double GetDrawingVisualScale()

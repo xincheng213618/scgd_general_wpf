@@ -132,7 +132,9 @@ namespace ColorVision.ImageEditor
 
         public bool IsLayoutUpdated { get; set; } = true;
 
-        public double Sacle { get; set; } = 1;
+        public double Scale { get; set; } = 1;
+
+        public double Sacle { get => Scale; set => Scale = value; }
 
         public double TextFontSizeOverride { get; set; }
 
@@ -145,7 +147,7 @@ namespace ColorVision.ImageEditor
 
         private DrawingVisualScaleContext CreateScaleContext()
         {
-            return new DrawingVisualScaleContext(IsLayoutUpdated, Sacle, TextFontSizeOverride);
+            return new DrawingVisualScaleContext(IsLayoutUpdated, Scale, TextFontSizeOverride);
         }
 
         private static void ApplyLayoutScale(Visual visual, DrawingVisualScaleContext context)

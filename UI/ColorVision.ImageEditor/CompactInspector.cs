@@ -19,7 +19,7 @@ using System.Windows.Media;
 namespace ColorVision.ImageEditor
 {
     public interface ICompactInspectorProvider
-    {
+    {  
         IEnumerable<CompactInspectorItem> GetCompactInspectorItems();
     }
 

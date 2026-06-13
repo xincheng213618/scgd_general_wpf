@@ -113,7 +113,7 @@ namespace ColorVision.ImageEditor
             _previousEditMode = _drawContext.IsImageEditMode;
 
             // Suppress edit mode so SelectEditorVisual doesn't interfere without
-            // running the full ImageViewModel mode toggle side effects.
+            // running the full ImageView mode toggle side effects.
             if (_previousEditMode)
             {
                 _drawContext.IsImageEditMode = false;
@@ -399,7 +399,7 @@ namespace ColorVision.ImageEditor
 
             _drawCanvas.ReleaseMouseCapture();
 
-            // Restore previous state without running the full ImageViewModel mode toggle side effects.
+            // Restore previous state without running the full ImageView mode toggle side effects.
             _zoombox.Cursor = _previousCursor;
             _zoombox.ActivateOn = _previousActivateOn;
             if (_previousEditMode)
