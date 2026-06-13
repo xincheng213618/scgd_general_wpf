@@ -76,11 +76,9 @@
             </Style>
 
             <Style x:Key="HeaderIconButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
-                <Setter Property="Width" Value="28"/>
-                <Setter Property="Height" Value="26"/>
-                <Setter Property="MinHeight" Value="26"/>
+                <Setter Property="Width" Value="20"/>
                 <Setter Property="Padding" Value="0"/>
-                <Setter Property="Margin" Value="6,3,0,0"/>
+                <Setter Property="Margin" Value="6,-8,0,0"/>
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
@@ -89,16 +87,10 @@
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
 
-            <Style x:Key="HeaderTextButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
-                <Setter Property="Height" Value="26"/>
-                <Setter Property="MinHeight" Value="26"/>
-                <Setter Property="Padding" Value="0,2"/>
+            <Style x:Key="HeaderLicenseActionTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
                 <Setter Property="Margin" Value="0"/>
-                <Setter Property="FontSize" Value="12"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             </Style>
 
             <Style x:Key="CommandButtonTextStyle" TargetType="{x:Type TextBlock}">
@@ -110,7 +102,7 @@
             </Style>
 
             <Style x:Key="CompactCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CommandActionButtonStyle}">
-                <Setter Property="MinWidth" Value="138"/>
+                <Setter Property="MinWidth" Value="115"/>
                 <Setter Property="MinHeight" Value="36"/>
                 <Setter Property="Margin" Value="0,0,6,6"/>
                 <Setter Property="Padding" Value="10,6"/>
@@ -123,6 +115,7 @@
             </Style>
 
             <Style x:Key="CompactDangerCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource DangerCommandButtonStyle}">
+                <Setter Property="MinWidth" Value="138"/>
                 <Setter Property="MinHeight" Value="40"/>
                 <Setter Property="Margin" Value="0,0,8,8"/>
                 <Setter Property="Padding" Value="12,8"/>
@@ -174,15 +167,17 @@
                     <TextBlock Text="{Binding Config.CameraMode, Mode=OneWay}" Style="{StaticResource HeaderMetaTextStyle}" Margin="7,0,0,0"/>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Height="28" Margin="0,8,0,0" VerticalAlignment="Center">
-                    <Button Style="{StaticResource HeaderTextButtonStyle}"
-                            Content="{x:Static properties:Resources.Update}"
-                            Command="{Binding UploadLicenseCommand}"
-                            ToolTip="{x:Static properties:Resources.ModifyLicense}"/>
+                <StackPanel Orientation="Horizontal"  Margin="0,8,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{x:Static properties:Resources.Update}"
+                               Style="{StaticResource HeaderLicenseActionTextStyle}"
+                               ToolTip="{x:Static properties:Resources.ModifyLicense}">
+                        <TextBlock.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding UploadLicenseCommand}"/>
+                        </TextBlock.InputBindings>
+                    </TextBlock>
                     <Button Style="{StaticResource HeaderIconButtonStyle}"
                             Content="&#xE896;"
                             Command="{Binding UploadLicenseNetCommand}"
-                            Margin="6,0,0,0"
                             ToolTip="{x:Static properties:Resources.DownLicOnline}"/>
                     <TextBlock Text="{Binding LicenseStatusBadgeText}" Style="{StaticResource LicenseStatusTextStyle}" Margin="12,0,0,0"/>
                     <TextBlock Text="{Binding LicenseSummaryMetaText}"
@@ -193,12 +188,10 @@
                     <Button Style="{StaticResource HeaderIconButtonStyle}"
                             Content="&#xE8C8;"
                             Command="{Binding CopyLicenseCommand}"
-                            Margin="6,0,0,0"
                             ToolTip="{x:Static properties:Resources.CopyLicense}"/>
                     <Button Style="{StaticResource HeaderIconButtonStyle}"
                             Content="&#xEDE1;"
                             Command="{Binding ExportLicenseCommand}"
-                            Margin="6,0,0,0"
                             ToolTip="{x:Static properties:Resources.ExportLicense}"/>
                 </StackPanel>
             </StackPanel>
@@ -206,56 +199,46 @@
             <Border Grid.Row="1" Style="{StaticResource PageDividerStyle}"/>
 
             <Grid Grid.Row="2">
-                <Border Style="{StaticResource SectionPanelStyle}" Margin="0">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding EditCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.ModifyConfiguration}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                            <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding PropertyEditorEditCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                            <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CfwPortEditCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.LabelCFWConfig}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                            <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.ButtonOpenConfigFile}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                            <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding FilterWheelEditCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.EditFilterWheelConfig}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                        </StackPanel>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding EditCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.ModifyConfiguration}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding PropertyEditorEditCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.ButtonOpenConfigFile}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding FilterWheelEditCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.EditFilterWheelConfig}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadCalibrationCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.UploadCalibrationFiles}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationTemplateOpenCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.CaliTemplateSet}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationEditCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.ButtonCalibrationEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                    </StackPanel>
 
-                        <Border Style="{StaticResource SectionDividerStyle}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CreatResotreCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.CreateRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding LoadResotreCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.LoadRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding ResetCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.Reset}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
+                    </StackPanel>
 
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadCalibrationCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.UploadCalibrationFiles}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                            <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationTemplateOpenCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.CaliTemplateSet}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                            <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationEditCommand}">
-                                <TextBlock Text="{x:Static properties:Resources.ButtonCalibrationEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
-                            </Button>
-                        </StackPanel>
-                        <Border Style="{StaticResource SectionDividerStyle}"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CreatResotreCommand}">
-                                    <TextBlock Text="{x:Static properties:Resources.CreateRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
-                                </Button>
-                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding LoadResotreCommand}">
-                                    <TextBlock Text="{x:Static properties:Resources.LoadRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
-                                </Button>
-                                <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding ResetCommand}">
-                                    <TextBlock Text="{x:Static properties:Resources.Reset}" Style="{StaticResource CommandButtonTextStyle}"/>
-                                </Button>
-                            </StackPanel>
-
-                            <Border Style="{StaticResource SectionDividerStyle}"/>
-                        </StackPanel>
-                </Border>
+                </StackPanel>
             </Grid>
         </Grid>
     </Grid>

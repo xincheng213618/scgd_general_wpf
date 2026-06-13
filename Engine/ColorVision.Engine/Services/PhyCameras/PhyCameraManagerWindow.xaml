@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
         Title="{x:Static properties:Resources.PhysicalCameraManager}"
-        Height="680" Width="1080" MinHeight="600" MinWidth="920"
+        Height="680" Width="970" MinHeight="600" MinWidth="970"
         Background="{DynamicResource GlobalBackground}"
         Initialized="Window_Initialized"
         SnapsToDevicePixels="True"
