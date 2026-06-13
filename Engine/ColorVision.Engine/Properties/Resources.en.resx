@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -2585,27 +2585,6 @@
   <data name="ImportLicenseConfirm" xml:space="preserve">
     <value>Import license {0}?</value>
   </data>
-  <data name="ExpiredCameraLicensesSummary" xml:space="preserve">
-    <value>Detected {0} expired camera license(s)</value>
-  </data>
-  <data name="ExpiringCameraLicensesSummary" xml:space="preserve">
-    <value>Detected {0} camera license(s) expiring soon</value>
-  </data>
-  <data name="MixedCameraLicensesSummary" xml:space="preserve">
-    <value>Detected {0} expired and {1} expiring camera license(s)</value>
-  </data>
-  <data name="UnknownCamera" xml:space="preserve">
-    <value>Unknown camera</value>
-  </data>
-  <data name="LicenseExpiredStatusMessage" xml:space="preserve">
-    <value>License expired</value>
-  </data>
-  <data name="LicenseExpiringSoonStatusMessage" xml:space="preserve">
-    <value>License expiring soon ({0} days remaining)</value>
-  </data>
-  <data name="ExpiryDateFormat" xml:space="preserve">
-    <value>Expiry date: {0}</value>
-  </data>
   <data name="NoCalibrationTypeSpecified" xml:space="preserve">
     <value>No calibration type specified for upload</value>
   </data>
@@ -2859,9 +2838,6 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   </data>
   <data name="ChannelParamSettings" xml:space="preserve">
     <value>Channel Parameter Settings</value>
-  </data>
-  <data name="CheckBoxDoNotShowAgain" xml:space="preserve">
-    <value>Do not show this warning again</value>
   </data>
   <data name="CloseCamera" xml:space="preserve">
     <value>Close Camera</value>
@@ -3155,11 +3131,6 @@ Please check serial port settings.</value>
   </data>
 
 
-  <data name="LabelLicenseExpiredNotification" xml:space="preserve">
-    <value>License expired notification</value>
-  </data>
-
-
 
 
 
@@ -3392,9 +3363,6 @@ Please close camera or other programs using this serial port, or check device co
 
   <data name="TitleEditCameraConfig" xml:space="preserve">
     <value>TitleEditCameraConfig</value>
-  </data>
-  <data name="TitleLicenseExpiryNotification" xml:space="preserve">
-    <value>TitleLicenseExpiryNotification</value>
   </data>
   <data name="TitleSearchCameraType" xml:space="preserve">
     <value>TitleSearchCameraType</value>
@@ -4113,13 +4081,6 @@ Please close camera or other programs using this serial port, or check device co
     <value>Current</value>
   </data>
 
-  <data name="Engine_PG_WarningDays" xml:space="preserve">
-    <value>Warning Days</value>
-  </data>
-  <data name="Engine_PG_WarningDaysDesc" xml:space="preserve">
-    <value>Days before license expiry to start warning</value>
-  </data>
-
 
 
   <data name="Engine_PG_XOffset" xml:space="preserve">
@@ -4541,9 +4502,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="SaveToLicenseFolder" xml:space="preserve">
     <value>Save to license folder</value>
-  </data>
-  <data name="LicenseNotice" xml:space="preserve">
-    <value>License notice</value>
   </data>
   <data name="LicenseCountFormat" xml:space="preserve">
     <value>{0} licenses</value>
