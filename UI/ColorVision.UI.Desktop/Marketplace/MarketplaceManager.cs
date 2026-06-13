@@ -48,7 +48,6 @@ namespace ColorVision.UI.Desktop.Marketplace
         public RelayCommand EditConfigCommand { get; set; }
         public RelayCommand InstallPackageCommand { get; set; }
         public ICommand DownloadPackageCommand { get; set; }
-        public RelayCommand OpenViewDllViersionCommand { get; set; }
         public RelayCommand RestartCommand { get; set; }
         public ICommand RefreshVersionsCommand { get; set; }
 
@@ -120,7 +119,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(DownloadPackageAsync), logger: log);
             EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            OpenViewDllViersionCommand = new RelayCommand(a => OpenViewDllViersion());
             RestartCommand = new RelayCommand(a => Restart());
             RefreshVersionsCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(RefreshVersionsAsync), logger: log);
             UpdateAllCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(UpdateAllAsync), logger: log);
@@ -475,11 +473,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-c MenuPluginManager");
 
             Application.Current.Shutdown();
-        }
-
-        public void OpenViewDllViersion()
-        {
-            new ViewDllVersionsWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public string SearchName { get => _SearchName; set { _SearchName = value; OnPropertyChanged(); }}

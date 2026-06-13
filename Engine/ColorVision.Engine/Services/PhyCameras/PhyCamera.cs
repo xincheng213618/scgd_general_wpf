@@ -563,6 +563,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 OnPropertyChanged(nameof(LicenseListTagText));
                 OnPropertyChanged(nameof(LicenseListTagBrush));
                 OnPropertyChanged(nameof(DeviceModeDisplayText));
+                OnPropertyChanged(nameof(LicenseSummaryMetaText));
             }
         }
         private LicenseModel? _CameraLicenseModel;
@@ -616,6 +617,32 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 return Config.CameraModel.ToString();
             }
+        }
+
+        public string LicenseSummaryMetaText
+        {
+            get
+            {
+                string dateRange = GetLicenseDateRangeDisplayText();
+                return string.IsNullOrWhiteSpace(dateRange) ? string.Empty : $"· {dateRange}";
+            }
+        }
+
+        private string GetLicenseDateRangeDisplayText()
+        {
+            DateTime? createDate = CameraLicenseModel?.CreateDate;
+            DateTime? expiryDate = CameraLicenseModel?.ExpiryDate;
+
+            if (createDate is DateTime start && expiryDate is DateTime end)
+                return $"{start:yyyy-MM-dd} - {end:yyyy-MM-dd}";
+
+            if (createDate is DateTime onlyStart)
+                return $"{onlyStart:yyyy-MM-dd}";
+
+            if (expiryDate is DateTime onlyEnd)
+                return $"{onlyEnd:yyyy-MM-dd}";
+
+            return string.Empty;
         }
 
         public string LicenseStatusText
@@ -1061,24 +1088,17 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                         FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == item.Title);
                         uploadMeta.FilePath = FilePath;
-                        uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
-                        uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
-                        await Task.Delay(1);
-                        string md5 = Tool.CalculateMD5(FilePath);
-                        bool isExist = false;
-                        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                        db.Queryable<SysResourceModel>().Where(a => a.Pid == SysResourceModel.Id && a.Name == item.Title && a.Code != null && a.Code.Contains(md5)).ToList().ForEach(a =>
+                        if (string.IsNullOrWhiteSpace(FilePath) || !File.Exists(FilePath))
                         {
-                            keyValuePairs2.TryAdd(item.Title, CalibrationResource.EnsureInstance(a));
-                            isExist = true;
-                        });
-
-                        if (isExist)
-                        {
-                            uploadMeta.UploadStatus = UploadStatus.Completed;
+                            string missingSourceMessage = $"校正包中找不到文件：{item.Title}{Environment.NewLine}{FilePath}";
+                            uploadMeta.FileSize = "0 B";
+                            uploadMeta.UploadStatus = UploadStatus.Failed;
+                            Msg = missingSourceMessage;
+                            log.Warn(missingSourceMessage);
                             continue;
                         }
 
+                        uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
                         uploadMeta.UploadStatus = UploadStatus.Uploading;
                         Msg = string.Format(Properties.Resources.UploadingCalibrationFilePleaseWait, item.Title);
                         await Task.Delay(10);
@@ -1089,25 +1109,72 @@ namespace ColorVision.Engine.Services.PhyCameras
                             string DesFilePath = Path.Combine(DesPath, FileName);
                             File.Copy(FilePath, DesFilePath, true);
                             File.Delete(FilePath);
-                            SysResourceModel sysResourceModel = new();
-                            sysResourceModel.Name = item.Title;
-                            sysResourceModel.Code = Id + md5 + item.Title;
-                            sysResourceModel.Type = (int)item.CalibrationType.ToResouceType();
-                            sysResourceModel.Pid = SysResourceModel.Id;
-                            sysResourceModel.Value = Path.GetFileName(FileName);
-                            sysResourceModel.CreateDate = DateTime.Now;
-                            sysResourceModel.Remark = item.ToJsonN(new JsonSerializerSettings());
-                            int ret = SysResourceDao.Instance.Save(sysResourceModel);
+                            int resourceType = (int)item.CalibrationType.ToResouceType();
+                            string remark = item.ToJsonN(new JsonSerializerSettings());
 
-                            if (sysResourceModel != null)
+                            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                            SysResourceModel sysResourceModel = db.Queryable<SysResourceModel>()
+                                .Where(a => a.Pid == SysResourceModel.Id
+                                            && a.Type == resourceType
+                                            && a.Name == item.Title
+                                            && a.IsDelete == false
+                                            && a.IsEnable == true)
+                                .First();
+
+                            if (sysResourceModel == null)
                             {
-                                CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
+                                sysResourceModel = new();
+                                sysResourceModel.Name = item.Title;
+                                string resourceCode;
+                                do
+                                {
+                                    resourceCode = $"{Id}_{resourceType}_{Guid.NewGuid():N}";
+                                }
+                                while (db.Queryable<SysResourceModel>().Any(a => a.Code == resourceCode));
+
+                                sysResourceModel.Code = resourceCode;
+                                sysResourceModel.Type = resourceType;
+                                sysResourceModel.Pid = SysResourceModel.Id;
+                                sysResourceModel.TenantId = SysResourceModel.TenantId;
+                                sysResourceModel.Value = FileName;
+                                sysResourceModel.CreateDate = DateTime.Now;
+                                sysResourceModel.Remark = remark;
+                                int ret = SysResourceDao.Instance.Save(sysResourceModel);
+                            }
+                            else
+                            {
+                                if (string.IsNullOrWhiteSpace(sysResourceModel.Code))
+                                {
+                                    string resourceCode;
+                                    do
+                                    {
+                                        resourceCode = $"{Id}_{resourceType}_{Guid.NewGuid():N}";
+                                    }
+                                    while (db.Queryable<SysResourceModel>().Any(a => a.Code == resourceCode));
+
+                                    sysResourceModel.Code = resourceCode;
+                                }
+
+                                sysResourceModel.Value = FileName;
+                                sysResourceModel.Remark = remark;
+                                db.Updateable(sysResourceModel).ExecuteCommand();
+                            }
+
+                            CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
+                            calibrationResource.SysResourceModel.Code = sysResourceModel.Code;
+                            calibrationResource.SysResourceModel.Value = sysResourceModel.Value;
+                            calibrationResource.SysResourceModel.Remark = sysResourceModel.Remark;
+                            calibrationResource.Config = JsonConvert.DeserializeObject<CalibrationFileConfig>(remark) ?? new CalibrationFileConfig();
+
+                            if (!VisualChildren.OfType<CalibrationResource>().Any(resource => resource.SysResourceModel.Id == calibrationResource.SysResourceModel.Id))
+                            {
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
                                     AddChild(calibrationResource);
                                 });
-                                keyValuePairs2.TryAdd(item.Title, calibrationResource);
                             }
+
+                            keyValuePairs2.TryAdd(item.Title, calibrationResource);
                             uploadMeta.UploadStatus = UploadStatus.Completed;
                         }
                         catch (Exception ex)
