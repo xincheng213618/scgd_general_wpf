@@ -138,9 +138,6 @@
   </data>  <data name="InstallPackage" xml:space="preserve">
     <value>安装包</value>
   </data>
-  <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>DLL版本</value>
-  </data>
   <data name="Restart" xml:space="preserve">
     <value>重启</value>
   </data>
@@ -173,8 +170,6 @@
     <value>版本</value>
   </data>  <data name="Update" xml:space="preserve">
     <value>更新</value>
-  </data>  <data name="SortOptions" xml:space="preserve">
-    <value>排序选项</value>
   </data>  <data name="ru" xml:space="preserve">
     <value>Русский（俄语）</value>
   </data>  <data name="Reset" xml:space="preserve">
@@ -418,20 +413,6 @@
     <value>添加快捷脚本</value>
   </data>  <data name="Edit" xml:space="preserve">
     <value>编辑</value>
-  </data>  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>最近更新</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>下载量</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>名称</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>全部分类</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>关键字</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
     <value>作者</value>

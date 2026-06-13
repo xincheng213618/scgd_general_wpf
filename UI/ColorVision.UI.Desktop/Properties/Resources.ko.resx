@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -158,9 +158,6 @@
   </data>  <data name="InstallPackage" xml:space="preserve">
     <value>패키지 설치</value>
   </data>
-  <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>오픈뷰DllViersion</value>
-  </data>
   <data name="Restart" xml:space="preserve">
     <value>재시작</value>
   </data>
@@ -193,8 +190,6 @@
     <value>버전</value>
   </data>  <data name="Update" xml:space="preserve">
     <value>고쳐 쓰다</value>
-  </data>  <data name="SortOptions" xml:space="preserve">
-    <value>정렬 옵션</value>
   </data>  <data name="ru" xml:space="preserve">
     <value>Русский (러시아어)</value>
   </data>  <data name="Reset" xml:space="preserve">
@@ -530,20 +525,6 @@
   </data>
   <data name="SendFailed" xml:space="preserve">
     <value>Send failed: {0}</value>
-  </data>  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>업데이트순 정렬</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>다운로드순 정렬</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>이름순 정렬</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>모든 카테고리</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>키워드</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
     <value>저자</value>

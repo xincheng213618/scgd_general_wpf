@@ -31,7 +31,7 @@ namespace ColorVision.UI.Desktop.Properties {
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
-
+        
         /// <summary>
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
@@ -1096,15 +1096,6 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 全部分类 的本地化字符串。
-        /// </summary>
-        public static string MarketplaceAllCategories {
-            get {
-                return ResourceManager.GetString("MarketplaceAllCategories", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 历史 的本地化字符串。
         /// </summary>
         public static string MarketplaceArchive {
@@ -1148,7 +1139,7 @@ namespace ColorVision.UI.Desktop.Properties {
                 return ResourceManager.GetString("MarketplaceBulkUpdatePackageDownloadFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 一键更新 的本地化字符串。
         /// </summary>
@@ -1303,15 +1294,6 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关键字 的本地化字符串。
-        /// </summary>
-        public static string MarketplaceKeyword {
-            get {
-                return ResourceManager.GetString("MarketplaceKeyword", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 最新 的本地化字符串。
         /// </summary>
         public static string MarketplaceLatest {
@@ -1461,33 +1443,6 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string MarketplaceSelectUpdateFile {
             get {
                 return ResourceManager.GetString("MarketplaceSelectUpdateFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下载量 的本地化字符串。
-        /// </summary>
-        public static string MarketplaceSortDownloads {
-            get {
-                return ResourceManager.GetString("MarketplaceSortDownloads", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 名称 的本地化字符串。
-        /// </summary>
-        public static string MarketplaceSortName {
-            get {
-                return ResourceManager.GetString("MarketplaceSortName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最近更新 的本地化字符串。
-        /// </summary>
-        public static string MarketplaceSortUpdated {
-            get {
-                return ResourceManager.GetString("MarketplaceSortUpdated", resourceCulture);
             }
         }
         
@@ -1659,15 +1614,6 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string OpenFolder {
             get {
                 return ResourceManager.GetString("OpenFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 DLL版本 的本地化字符串。
-        /// </summary>
-        public static string OpenViewDllViersion {
-            get {
-                return ResourceManager.GetString("OpenViewDllViersion", resourceCulture);
             }
         }
         
@@ -1938,15 +1884,6 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string SkipIncompleteConfigPrompt {
             get {
                 return ResourceManager.GetString("SkipIncompleteConfigPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 排序选项 的本地化字符串。
-        /// </summary>
-        public static string SortOptions {
-            get {
-                return ResourceManager.GetString("SortOptions", resourceCulture);
             }
         }
         

@@ -2647,15 +2647,6 @@
     <value>Default</value>
   </data>
 
-  <data name="ButtonEditConfig" xml:space="preserve">
-    <value>Edit Configuration</value>
-  </data>
-
-
-  <data name="ButtonGoToCameraManager" xml:space="preserve">
-    <value>Go to Camera Manager</value>
-  </data>
-
 
 
   <data name="ButtonOK" xml:space="preserve">
@@ -2677,10 +2668,6 @@
   </data>
   <data name="ButtonSelectAll" xml:space="preserve">
     <value>Select All</value>
-  </data>
-
-  <data name="ButtonUpdateLicense" xml:space="preserve">
-    <value>Update License</value>
   </data>
 
   <data name="CalcAutoExposure" xml:space="preserve">
@@ -3063,10 +3050,6 @@ Please check serial port settings.</value>
     <value>Bind ND Device</value>
   </data>
 
-  <data name="LabelCFWConfig" xml:space="preserve">
-    <value>CFW Configuration</value>
-  </data>
-
 
 
 
@@ -3134,14 +3117,6 @@ Please check serial port settings.</value>
 
 
 
-  <data name="LabelResourceCount" xml:space="preserve">
-    <value>Resource Count</value>
-  </data>
-
-
-
-
-
   <data name="LimitEnd" xml:space="preserve">
     <value>End Value</value>
   </data>
@@ -3150,9 +3125,6 @@ Please check serial port settings.</value>
   </data>
   <data name="LocalCamera" xml:space="preserve">
     <value>Local Camera</value>
-  </data>
-  <data name="LocalPortOpenFailedInVideoMode" xml:space="preserve">
-    <value>Local port open failed in video mode</value>
   </data>
   <data name="LocalVideo" xml:space="preserve">
     <value>Local Video</value>
@@ -3255,11 +3227,6 @@ Please check serial port settings.</value>
   <data name="SaveFile" xml:space="preserve">
     <value>Save File</value>
   </data>
-
-
-  <data name="SectionBackupRestore" xml:space="preserve">
-    <value>BackupRestore</value>
-  </data>
   <data name="SectionBasicCalibration" xml:space="preserve">
     <value>Calibration</value>
   </data>
@@ -3270,9 +3237,6 @@ Please check serial port settings.</value>
   </data>
   <data name="SectionColorCalibration" xml:space="preserve">
     <value>SectionColorCalibration</value>
-  </data>
-  <data name="SectionDangerousOperations" xml:space="preserve">
-    <value>SectionDangerousOperations</value>
   </data>
   <data name="SectionFileService" xml:space="preserve">
     <value>SectionFileService</value>
@@ -3390,9 +3354,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="ToolTipDistortion" xml:space="preserve">
     <value>Distortion correction (Distortion): lens radial/tangential distortion correction. Configuration: JSON format (camera intrinsic matrix and distortion coefficients)</value>
-  </data>
-  <data name="ToolTipEditCameraConfig" xml:space="preserve">
-    <value>Edit current camera configuration</value>
   </data>
   <data name="ToolTipFourColor" xml:space="preserve">
     <value>Four-color correction (LumFourColor): 3×3 matrix full channel mixing color conversion.</value>
@@ -4443,29 +4404,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="PhyCamera_MvsLog" xml:space="preserve">
     <value>MVS Log</value>
   </data>
-  <data name="PhyCamera_Detail_CameraModel" xml:space="preserve">
-    <value>Camera Model</value>
-  </data>
-  <data name="PhyCamera_Detail_CameraMode" xml:space="preserve">
-    <value>Camera Mode</value>
-  </data>
-  <data name="PhyCamera_Detail_Channel" xml:space="preserve">
-    <value>Channel</value>
-  </data>
-  <data name="PhyCamera_Detail_ImageBpp" xml:space="preserve">
-    <value>Image Bit Depth</value>
-  </data>
-  <data name="PhyCamera_Detail_DeviceMode" xml:space="preserve">
-    <value>Device Mode</value>
-  </data>
-  <data name="PhyCamera_Detail_IssueDate" xml:space="preserve">
-    <value>Issue Date</value>
-  </data>
   <data name="PhyCamera_Detail_ExpiryDate" xml:space="preserve">
     <value>Expiry Date</value>
-  </data>
-  <data name="PhyCamera_Detail_Licensee" xml:space="preserve">
-    <value>Licensee</value>
   </data>
   <data name="LabelCameraCode" xml:space="preserve">
     <value>Camera Code</value>

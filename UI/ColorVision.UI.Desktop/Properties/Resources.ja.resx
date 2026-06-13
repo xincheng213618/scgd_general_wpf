@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -158,9 +158,6 @@
   </data>  <data name="InstallPackage" xml:space="preserve">
     <value>インストールパッケージ</value>
   </data>
-  <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>OpenViewDllバージョン</value>
-  </data>
   <data name="Restart" xml:space="preserve">
     <value>再起動</value>
   </data>
@@ -193,8 +190,6 @@
     <value>バージョン</value>
   </data>  <data name="Update" xml:space="preserve">
     <value>更新する</value>
-  </data>  <data name="SortOptions" xml:space="preserve">
-    <value>並び替えオプション</value>
   </data>  <data name="ru" xml:space="preserve">
     <value>Русский (ロシア語)</value>
   </data>  <data name="Reset" xml:space="preserve">
@@ -530,20 +525,6 @@
   </data>
   <data name="SendFailed" xml:space="preserve">
     <value>Send failed: {0}</value>
-  </data>  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>更新日で並べ替え</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>ダウンロード数で並べ替え</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>名前で並べ替え</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>すべてのカテゴリ</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>キーワード</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
     <value>著者</value>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -336,9 +336,6 @@
   </data>
   <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
     <value>Créer une sauvegarde</value>
-  </data>
-  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
-    <value>Inclut une mise à jour de l'application</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Inclut des mises à jour requises</value>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -158,9 +158,6 @@
   </data>  <data name="InstallPackage" xml:space="preserve">
     <value>Install Package</value>
   </data>
-  <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>OpenViewDll Version</value>
-  </data>
   <data name="Restart" xml:space="preserve">
     <value>Restart</value>
   </data>
@@ -193,8 +190,6 @@
     <value>Version</value>
   </data>  <data name="Update" xml:space="preserve">
     <value>Update</value>
-  </data>  <data name="SortOptions" xml:space="preserve">
-    <value>Sort Options</value>
   </data>  <data name="ru" xml:space="preserve">
     <value>Русский (Russian)</value>
   </data>  <data name="Reset" xml:space="preserve">
@@ -529,21 +524,7 @@
   <data name="CfgApp_PsDesc" xml:space="preserve"><value>PowerShell Script</value></data>
   <data name="CfgApp_ConfigTitle" xml:space="preserve"><value>Custom App Configuration</value></data>
   <data name="CfgApp_ListTitle" xml:space="preserve"><value>Custom App List</value></data>
-  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>Default Custom Group Name</value></data>  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>Sort by Updated</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>Sort by Downloads</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>Sort by Name</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>All Categories</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>Keyword</value>
-  </data>
+  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>Default Custom Group Name</value></data>  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>
   <data name="MarketplaceAuthor" xml:space="preserve">
     <value>Author</value>
   </data>

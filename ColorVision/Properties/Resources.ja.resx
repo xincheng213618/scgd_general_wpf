@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -336,9 +336,6 @@
   </data>
   <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
     <value>バックアップを作成</value>
-  </data>
-  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
-    <value>アプリ更新を含む</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>必須更新を含む</value>

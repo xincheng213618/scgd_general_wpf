@@ -1690,15 +1690,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 包含主程序更新 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewSelectionIncludesApplication {
-            get {
-                return ResourceManager.GetString("UpdatePreviewSelectionIncludesApplication", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 包含必选更新 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewSelectionIncludesRequired {

@@ -337,9 +337,6 @@
   <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
     <value>백업 만들기</value>
   </data>
-  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
-    <value>프로그램 업데이트 포함</value>
-  </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>필수 업데이트 포함</value>
   </data>

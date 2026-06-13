@@ -337,9 +337,6 @@
   <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
     <value>Create backup</value>
   </data>
-  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
-    <value>Includes an application update</value>
-  </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Includes required updates</value>
   </data>

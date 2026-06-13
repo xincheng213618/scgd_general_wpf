@@ -340,9 +340,6 @@
   <data name="UpdatePreviewApplicationCardSummaryFull" xml:space="preserve">
     <value>将下载完整安装包并沿用当前主程序更新流程。</value>
   </data>
-  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
-    <value>包含主程序更新</value>
-  </data>
   <data name="UpdatePreviewSelectionDefersPluginUpdates" xml:space="preserve">
     <value>本轮不合并插件更新</value>
   </data>

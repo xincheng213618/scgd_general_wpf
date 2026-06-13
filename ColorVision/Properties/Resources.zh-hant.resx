@@ -337,9 +337,6 @@
   <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
     <value>建立備份</value>
   </data>
-  <data name="UpdatePreviewSelectionIncludesApplication" xml:space="preserve">
-    <value>包含主程式更新</value>
-  </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>包含必選更新</value>
   </data>

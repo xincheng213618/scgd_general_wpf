@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -158,9 +158,6 @@
   </data>  <data name="InstallPackage" xml:space="preserve">
     <value>Установить пакет</value>
   </data>
-  <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>Версия OpenViewDll</value>
-  </data>
   <data name="Restart" xml:space="preserve">
     <value>Перезапуск</value>
   </data>
@@ -193,8 +190,6 @@
     <value>Версия</value>
   </data>  <data name="Update" xml:space="preserve">
     <value>возобновлять</value>
-  </data>  <data name="SortOptions" xml:space="preserve">
-    <value>Параметры сортировки</value>
   </data>  <data name="ru" xml:space="preserve">
     <value>Русский</value>
   </data>  <data name="Reset" xml:space="preserve">
@@ -530,20 +525,6 @@
   </data>
   <data name="SendFailed" xml:space="preserve">
     <value>Send failed: {0}</value>
-  </data>  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>Сортировать по обновлению</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>Сортировать по загрузкам</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>Сортировать по имени</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>Все категории</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>Ключевое слово</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
     <value>Автор</value>

@@ -876,23 +876,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 编辑配置 的本地化字符串。
-        /// </summary>
-        public static string ButtonEditConfig {
-            get {
-                return ResourceManager.GetString("ButtonEditConfig", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   查找类似 前往相机管理器 的本地化字符串。
-        /// </summary>
-        public static string ButtonGoToCameraManager {
-            get {
-                return ResourceManager.GetString("ButtonGoToCameraManager", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 确定 的本地化字符串。
@@ -939,14 +923,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 更新许可证 的本地化字符串。
-        /// </summary>
-        public static string ButtonUpdateLicense {
-            get {
-                return ResourceManager.GetString("ButtonUpdateLicense", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 BuzProduc模板管理 的本地化字符串。
@@ -5965,14 +5941,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 CFW 配置 的本地化字符串。
-        /// </summary>
-        public static string LabelCFWConfig {
-            get {
-                return ResourceManager.GetString("LabelCFWConfig", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 相机控制台 的本地化字符串。
@@ -6020,14 +5988,6 @@ namespace ColorVision.Engine.Properties {
         }
 
 
-        /// <summary>
-        ///   查找类似 资源数量 的本地化字符串。
-        /// </summary>
-        public static string LabelResourceCount {
-            get {
-                return ResourceManager.GetString("LabelResourceCount", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 启动成功 的本地化字符串。
@@ -6535,14 +6495,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 视频模式下，本地端口打开失败 的本地化字符串。
-        /// </summary>
-        public static string LocalPortOpenFailedInVideoMode {
-            get {
-                return ResourceManager.GetString("LocalPortOpenFailedInVideoMode", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 本地视频 的本地化字符串。
@@ -8498,14 +8450,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 备份与恢复 的本地化字符串。
-        /// </summary>
-        public static string SectionBackupRestore {
-            get {
-                return ResourceManager.GetString("SectionBackupRestore", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 基础校正 的本地化字符串。
@@ -8534,14 +8478,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 危险操作 的本地化字符串。
-        /// </summary>
-        public static string SectionDangerousOperations {
-            get {
-                return ResourceManager.GetString("SectionDangerousOperations", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 文件服务 的本地化字符串。
@@ -9813,14 +9749,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 修改当前相机配置 的本地化字符串。
-        /// </summary>
-        public static string ToolTipEditCameraConfig {
-            get {
-                return ResourceManager.GetString("ToolTipEditCameraConfig", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 四色校正（LumFourColor）：3×3 矩阵实现完整的通道混合色彩转换。 的本地化字符串。
@@ -10471,41 +10399,9 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 相机模式 的本地化字符串。
-        /// </summary>
-        public static string PhyCamera_Detail_CameraMode {
-            get {
-                return ResourceManager.GetString("PhyCamera_Detail_CameraMode", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   查找类似 相机型号 的本地化字符串。
-        /// </summary>
-        public static string PhyCamera_Detail_CameraModel {
-            get {
-                return ResourceManager.GetString("PhyCamera_Detail_CameraModel", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   查找类似 通道 的本地化字符串。
-        /// </summary>
-        public static string PhyCamera_Detail_Channel {
-            get {
-                return ResourceManager.GetString("PhyCamera_Detail_Channel", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   查找类似 设备模式 的本地化字符串。
-        /// </summary>
-        public static string PhyCamera_Detail_DeviceMode {
-            get {
-                return ResourceManager.GetString("PhyCamera_Detail_DeviceMode", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 到期日期 的本地化字符串。
@@ -10516,32 +10412,8 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 图像位深 的本地化字符串。
-        /// </summary>
-        public static string PhyCamera_Detail_ImageBpp {
-            get {
-                return ResourceManager.GetString("PhyCamera_Detail_ImageBpp", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   查找类似 签发日期 的本地化字符串。
-        /// </summary>
-        public static string PhyCamera_Detail_IssueDate {
-            get {
-                return ResourceManager.GetString("PhyCamera_Detail_IssueDate", resourceCulture);
-            }
-        }
 
-        /// <summary>
-        ///   查找类似 被许可方 的本地化字符串。
-        /// </summary>
-        public static string PhyCamera_Detail_Licensee {
-            get {
-                return ResourceManager.GetString("PhyCamera_Detail_Licensee", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   查找类似 MVS 日志 的本地化字符串。
