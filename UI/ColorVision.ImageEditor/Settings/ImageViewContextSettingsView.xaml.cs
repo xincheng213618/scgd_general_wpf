@@ -61,11 +61,6 @@ namespace ColorVision.ImageEditor.Settings
             RaisePropertyChanged(nameof(IsEmpty));
         }
 
-        private void Refresh_Click(object sender, RoutedEventArgs e)
-        {
-            ReloadSections();
-        }
-
         private void RaisePropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

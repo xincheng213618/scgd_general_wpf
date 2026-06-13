@@ -1762,15 +1762,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 刷新 的本地化字符串。
-        /// </summary>
-        public static string Settings_Refresh {
-            get {
-                return ResourceManager.GetString("Settings_Refresh", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 右侧工具栏 (ToolBarRight) 的本地化字符串。
         /// </summary>
         public static string Settings_RightToolbar {

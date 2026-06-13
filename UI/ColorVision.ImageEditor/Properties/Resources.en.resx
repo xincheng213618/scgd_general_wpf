@@ -208,9 +208,6 @@
   <data name="Settings_ImageOpeners" xml:space="preserve">
     <value>Image Openers</value>
   </data>
-  <data name="Settings_Refresh" xml:space="preserve">
-    <value>Refresh</value>
-  </data>
   <data name="Settings_EntryCount" xml:space="preserve">
     <value>{0} items</value>
   </data>

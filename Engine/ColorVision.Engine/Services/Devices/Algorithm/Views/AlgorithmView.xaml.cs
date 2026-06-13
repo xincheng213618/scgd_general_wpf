@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void AttachDisplayFilterConfig()
         {
-            if (ImageView.EditorContext.TryGetService<IDisplayShaderFilterService>(out var filterService) && filterService != null)
+            if (ImageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool filterService)
             {
                 filterService.AttachPersistence(Config.DisplayShaderFilter, SaveDisplayFilterConfig);
             }
@@ -95,14 +95,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private static void SaveDisplayFilterConfig()
         {
             ConfigService.Instance?.Save<ViewAlgorithmConfig>();
-        }
-
-        private void ShaderFilter_Click(object sender, RoutedEventArgs e)
-        {
-            if (ImageView.EditorContext.TryGetService<IDisplayShaderFilterService>(out var filterService) && filterService != null)
-            {
-                filterService.OpenSettingsWindow();
-            }
         }
 
         private void Delete()

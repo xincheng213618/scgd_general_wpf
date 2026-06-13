@@ -208,9 +208,6 @@
   <data name="Settings_ImageOpeners" xml:space="preserve">
     <value>图像打开器</value>
   </data>
-  <data name="Settings_Refresh" xml:space="preserve">
-    <value>刷新</value>
-  </data>
   <data name="Settings_EntryCount" xml:space="preserve">
     <value>{0} 项</value>
   </data>

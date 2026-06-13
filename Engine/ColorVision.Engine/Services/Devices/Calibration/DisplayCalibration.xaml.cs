@@ -10,6 +10,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using MQTTMessageLib.FileServer;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,6 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; OnPropertyChanged(); } }
         private double _ExpTimeB = 10;
 
+        [Browsable(false)]
         public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
         private DisplayShaderFilterState _DisplayShaderFilter = new DisplayShaderFilterState();
     }

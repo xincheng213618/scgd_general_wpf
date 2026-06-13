@@ -8,7 +8,7 @@ using System.Windows.Media.Effects;
 
 namespace ColorVision.ImageEditor.EditorTools.Filters
 {
-    internal sealed class DisplayShaderFilterEditorTool : IEditorCustomControlTool, IDisplayShaderFilterService, IDisposable
+    public sealed class DisplayShaderFilterEditorTool : IEditorCustomControlTool, IDisposable
     {
         private static bool s_environmentNoticeShown;
         private readonly EditorContext _context;
@@ -38,7 +38,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             }
 
             UpdateEffectAttachment();
-            _context.RegisterService<IDisplayShaderFilterService>(this);
         }
 
         public DisplayShaderFilterState State { get; }
@@ -201,7 +200,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             Save();
             State.PropertyChanged -= State_PropertyChanged;
             DetachEffect();
-            _context.UnregisterService<IDisplayShaderFilterService>();
             GC.SuppressFinalize(this);
         }
     }

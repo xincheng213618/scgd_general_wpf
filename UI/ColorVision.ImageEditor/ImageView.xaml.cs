@@ -42,6 +42,7 @@ namespace ColorVision.ImageEditor
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
+        private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -589,6 +590,17 @@ namespace ColorVision.ImageEditor
                 _isUpdatedRender = false;
             }
         }
+
+        public void RegisterSettings(Func<IEnumerable<ImageViewSettingsEntry>> getEntries)
+        {
+            _settingsEntries.Add(getEntries);
+        }
+
+        internal IEnumerable<ImageViewSettingsEntry> GetRegisteredSettings()
+        {
+            return _settingsEntries.SelectMany(getEntries => getEntries());
+        }
+
         public void OpenSettingsWindow(string? initialGroup = null)
         {
             ImageViewSettingsWindow window = new(this, initialGroup)

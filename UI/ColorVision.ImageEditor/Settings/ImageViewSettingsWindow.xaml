@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
         Title="{x:Static properties:Resources.Settings_ImageSettingsTitle}"
-        Width="760"
-        Height="560"
-        MinWidth="640"
+        Width="940"
+        Height="620"
+        MinWidth="800"
         MinHeight="480"
         Background="{DynamicResource GlobalBackground}"
         Initialized="Window_Initialized">
@@ -15,7 +15,33 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TabControl x:Name="SettingsTabControl" Grid.Row="0" />
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="{DynamicResource GlobalBorderBrush}">
+                <ListBox x:Name="SettingsList"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         DisplayMemberPath="Header"
+                         SelectionChanged="SettingsList_SelectionChanged">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="12,8" />
+                            <Setter Property="Margin" Value="0,0,0,2" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </Border>
+
+            <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <ContentControl x:Name="SettingsContent" />
+            </Border>
+        </Grid>
 
         <StackPanel Grid.Row="1" Margin="0,12,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
             <Button MinWidth="96" Margin="0,0,8,0" Click="Save_Click" Content="{x:Static properties:Resources.Settings_Save}" />

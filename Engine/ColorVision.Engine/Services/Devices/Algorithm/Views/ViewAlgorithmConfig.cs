@@ -27,6 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
+        [Browsable(false)]
         public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
         private DisplayShaderFilterState _DisplayShaderFilter = new DisplayShaderFilterState();
 

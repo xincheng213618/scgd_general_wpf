@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.EditorTools.PseudoColor;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.UI;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +18,7 @@ namespace ColorVision.ImageEditor.Settings
     {
         private readonly ImageView _imageView;
         private readonly string? _initialGroup;
+        private readonly List<SettingsPage> _pages = new();
 
         public ImageViewSettingsWindow(ImageView imageView, string? initialGroup = null)
         {
@@ -32,50 +34,67 @@ namespace ColorVision.ImageEditor.Settings
 
         private void LoadSettings()
         {
-            SettingsTabControl.Items.Clear();
+            _pages.Clear();
 
-            StackPanel display = AddTab(EditorResources.Settings_GroupDisplay);
+            StackPanel display = AddPage(EditorResources.Settings_GroupDisplay);
             AddProperty(display, _imageView.Config, nameof(ImageViewConfig.IsLayoutUpdated));
             AddProperty(display, _imageView.Config, nameof(ImageViewConfig.IsShowText));
             AddProperty(display, _imageView.Config, nameof(ImageViewConfig.IsShowMsg));
             AddProperty(display, _imageView.Config, nameof(ImageViewConfig.DrawingTextFontSize));
 
-            StackPanel context = AddTab(EditorResources.Settings_GroupContext);
+            StackPanel context = AddPage(EditorResources.Settings_GroupContext);
             AddView(context, new ImageViewContextSettingsView(_imageView));
 
-            StackPanel defaults = AddTab(EditorResources.Settings_GroupDefaults);
+            StackPanel defaults = AddPage(EditorResources.Settings_GroupDefaults);
             AddObject(defaults, EditorResources.Settings_DefaultImageScaling, DefaultBitmapScalingConfig.Current);
             AddObject(defaults, EditorResources.Settings_DefaultDisplayParams, DefaultImageViewDisplayConfig.Current);
             AddObject(defaults, EditorResources.Settings_DefaultTextStyle, DefaultTextStyleConfig.Current);
             AddObject(defaults, EditorResources.Settings_PhysicalSizeDefaults, DefalutTextAttribute.Defalut);
             AddObject(defaults, EditorResources.Settings_DefaultRealtimeCameraParams, DefaultRealtimeCameraConfig.Current);
 
-            StackPanel workspace = AddTab(EditorResources.Settings_GroupWorkspace);
+            StackPanel workspace = AddPage(EditorResources.Settings_GroupWorkspace);
             AddView(workspace, new ImageViewWorkspaceSettingsView(_imageView));
 
-            StackPanel loader = AddTab(EditorResources.Settings_GroupLoader);
+            StackPanel loader = AddPage(EditorResources.Settings_GroupLoader);
             AddObject(loader, EditorResources.Settings_TifOpener, TifOpenConfig.Current);
 
             if (_imageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool shaderFilter)
             {
-                StackPanel shader = AddTab("Shader Filter");
-                AddObject(shader, "Current shader filter", shaderFilter.State);
+                StackPanel shader = AddPage("Shader Filter");
+                AddObject(shader, "当前值", shaderFilter.State);
             }
 
             if (_imageView.IEditorToolFactory.GetIEditorTool<PseudoColorEditorTool>() is PseudoColorEditorTool pseudoColor)
             {
-                StackPanel pseudo = AddTab(EditorResources.PseudoColor_Group);
-                AddObject(pseudo, EditorResources.PseudoColor_CurrentPseudoColor, pseudoColor.State);
-                AddObject(pseudo, EditorResources.PseudoColor_DefaultPseudoColor, PseudoColorDefaultConfig.Current);
+                StackPanel pseudo = AddPage(EditorResources.PseudoColor_Group);
+                AddObjectPair(pseudo, EditorResources.PseudoColor_CurrentPseudoColor, pseudoColor.State, EditorResources.PseudoColor_DefaultPseudoColor, PseudoColorDefaultConfig.Current);
             }
 
+            foreach (IGrouping<string, ImageViewSettingsEntry> group in _imageView.GetRegisteredSettings().GroupBy(entry => entry.Group))
+            {
+                StackPanel custom = AddPage(group.Key);
+                ImageViewSettingsEntry[] entries = group.ToArray();
+                if (entries.Length == 2)
+                {
+                    AddObjectPair(custom, entries[0].Title, entries[0].Source, entries[1].Title, entries[1].Source);
+                }
+                else
+                {
+                    foreach (ImageViewSettingsEntry entry in entries)
+                    {
+                        AddObject(custom, entry.Title, entry.Source);
+                    }
+                }
+            }
+
+            SettingsList.ItemsSource = _pages;
             SelectInitialGroup();
         }
 
-        private StackPanel AddTab(string header)
+        private StackPanel AddPage(string header)
         {
             StackPanel stackPanel = new() { Margin = new Thickness(10) };
-            SettingsTabControl.Items.Add(new TabItem
+            _pages.Add(new SettingsPage
             {
                 Header = header,
                 Content = new ScrollViewer
@@ -96,10 +115,53 @@ namespace ColorVision.ImageEditor.Settings
 
         private static void AddObject(Panel panel, string title, object source)
         {
+            FrameworkElement editor = CreateEditor(source);
             StackPanel stackPanel = new();
             stackPanel.Children.Add(new TextBlock { Margin = new Thickness(0, 0, 0, 6), FontWeight = FontWeights.SemiBold, Text = title });
-            stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(source));
+            stackPanel.Children.Add(editor);
             AddSection(panel, stackPanel);
+        }
+
+        private static void AddObjectPair(Panel panel, string leftTitle, object leftSource, string rightTitle, object rightSource)
+        {
+            Grid grid = new() { Margin = new Thickness(0, 0, 0, 14) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
+
+            StackPanel left = CreateObjectPanel(leftTitle, leftSource);
+            StackPanel right = CreateObjectPanel(rightTitle, rightSource);
+            Grid.SetColumn(right, 2);
+            grid.Children.Add(left);
+            grid.Children.Add(right);
+            panel.Children.Add(grid);
+        }
+
+        private static StackPanel CreateObjectPanel(string title, object source)
+        {
+            StackPanel stackPanel = new();
+            stackPanel.Children.Add(new TextBlock { Margin = new Thickness(0, 0, 0, 6), FontWeight = FontWeights.SemiBold, Text = title });
+            stackPanel.Children.Add(CreateEditor(source));
+            return stackPanel;
+        }
+
+        private static StackPanel CreateEditor(object source)
+        {
+            StackPanel editor = PropertyEditorHelper.GenPropertyEditorControl(source);
+            RemoveGeneratedTypeHeaders(editor, source.GetType().Name);
+            return editor;
+        }
+
+        private static void RemoveGeneratedTypeHeaders(Panel panel, string typeName)
+        {
+            foreach (Border border in panel.Children.OfType<Border>())
+            {
+                if (border.Child is StackPanel stackPanel && stackPanel.Children.Count > 0 && stackPanel.Children[0] is TextBlock header && header.Text == typeName)
+                {
+                    stackPanel.Children.RemoveAt(0);
+                    stackPanel.Margin = new Thickness(5);
+                }
+            }
         }
 
         private static void AddView(Panel panel, FrameworkElement view)
@@ -109,35 +171,32 @@ namespace ColorVision.ImageEditor.Settings
 
         private static void AddSection(Panel panel, UIElement content)
         {
-            Border border = new()
+            if (content is FrameworkElement element)
             {
-                Child = content,
-                Margin = new Thickness(0, 0, 0, 12),
-                Padding = new Thickness(10),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(6),
-            };
-            border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
-            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-            panel.Children.Add(border);
+                element.Margin = new Thickness(0, 0, 0, 14);
+            }
+            panel.Children.Add(content);
         }
 
         private void SelectInitialGroup()
         {
-            if (SettingsTabControl.Items.Count == 0) return;
+            if (_pages.Count == 0) return;
             if (!string.IsNullOrWhiteSpace(_initialGroup))
             {
-                foreach (TabItem tabItem in SettingsTabControl.Items.OfType<TabItem>())
+                SettingsPage? page = _pages.FirstOrDefault(item => string.Equals(item.Header, _initialGroup, StringComparison.OrdinalIgnoreCase));
+                if (page != null)
                 {
-                    if (string.Equals(tabItem.Header?.ToString(), _initialGroup, StringComparison.OrdinalIgnoreCase))
-                    {
-                        SettingsTabControl.SelectedItem = tabItem;
-                        return;
-                    }
+                    SettingsList.SelectedItem = page;
+                    return;
                 }
             }
 
-            SettingsTabControl.SelectedIndex = 0;
+            SettingsList.SelectedIndex = 0;
+        }
+
+        private void SettingsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            SettingsContent.Content = SettingsList.SelectedItem is SettingsPage page ? page.Content : null;
         }
 
         private void SaveSettings()
@@ -150,6 +209,10 @@ namespace ColorVision.ImageEditor.Settings
             TifOpenConfig.SaveCurrent();
             PseudoColorDefaultConfig.SaveCurrent();
             _imageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()?.Save();
+            foreach (ImageViewSettingsEntry entry in _imageView.GetRegisteredSettings())
+            {
+                entry.Save?.Invoke();
+            }
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
@@ -166,6 +229,13 @@ namespace ColorVision.ImageEditor.Settings
         {
             SaveSettings();
             base.OnClosed(e);
+        }
+
+        private sealed class SettingsPage
+        {
+            public string Header { get; init; } = string.Empty;
+
+            public FrameworkElement Content { get; init; } = new Grid();
         }
     }
 }
