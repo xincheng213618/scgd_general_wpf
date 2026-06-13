@@ -396,6 +396,14 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (packagePaths.Count == 0)
             {
                 log.Warn("UpdateAllAsync: no plugin packages were downloaded successfully.");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Resources.MarketplaceBulkUpdatePackageDownloadFailed, Resources.MarketplaceBulkUpdateTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (packagePaths.Count != requests.Count)
+            {
+                log.Warn($"UpdateAllAsync aborted: expected {requests.Count} plugin packages, got {packagePaths.Count}.");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Resources.MarketplaceBulkUpdatePackageDownloadFailed, Resources.MarketplaceBulkUpdateTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 

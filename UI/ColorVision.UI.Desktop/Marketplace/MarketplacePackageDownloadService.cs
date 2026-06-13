@@ -380,9 +380,17 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             try
             {
-                IReadOnlyList<string> packagePaths = await EnsurePackagesAvailableAsync(requests, cancellationToken: cancellationToken).ConfigureAwait(false);
+                List<MarketplacePackageRequest> distinctRequests = GetDistinctRequests(requests);
+                IReadOnlyList<string> packagePaths = await EnsurePackagesAvailableAsync(distinctRequests, cancellationToken: cancellationToken).ConfigureAwait(false);
                 if (packagePaths.Count == 0)
                 {
+                    RunOnUIThread(() => onEmpty?.Invoke());
+                    return;
+                }
+
+                if (packagePaths.Count != distinctRequests.Count)
+                {
+                    log.Warn($"Marketplace background batch install aborted: expected {distinctRequests.Count} packages, got {packagePaths.Count}.");
                     RunOnUIThread(() => onEmpty?.Invoke());
                     return;
                 }
@@ -399,6 +407,15 @@ namespace ColorVision.UI.Desktop.Marketplace
                 log.Error($"StartBackgroundBatchInstallCoreAsync failed: {ex.Message}", ex);
                 RunOnUIThread(() => onEmpty?.Invoke());
             }
+        }
+
+        private static List<MarketplacePackageRequest> GetDistinctRequests(IEnumerable<MarketplacePackageRequest> requests)
+        {
+            return requests
+                .Where(item => !string.IsNullOrWhiteSpace(item.PluginId) && !string.IsNullOrWhiteSpace(item.Version))
+                .GroupBy(item => $"{item.PluginId}|{item.Version}", StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToList();
         }
 
         private async Task<string?> StartDownloadAsync(MarketplacePackageRequest request, bool showFailureDialog, CancellationToken cancellationToken)

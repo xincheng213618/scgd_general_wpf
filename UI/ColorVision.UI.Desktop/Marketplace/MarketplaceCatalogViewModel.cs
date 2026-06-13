@@ -26,6 +26,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private readonly MarketplaceClient _client = MarketplaceClient.GetInstance();
         private readonly Func<string, PluginInfoVM?> _installedPluginLookup;
         private readonly Action<MarketplaceDetailContext?> _detailChanged;
+        private CancellationTokenSource? _queuedRefreshCancellation;
         private CancellationTokenSource? _loadPageCancellation;
         private CancellationTokenSource? _loadDetailCancellation;
         private MarketplacePluginSummary? _selectedPlugin;
@@ -289,14 +290,14 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (resetPage)
                 Page = 1;
 
-            CancelAndDispose(ref _loadPageCancellation);
-            var cancellation = new CancellationTokenSource();
-            _loadPageCancellation = cancellation;
-            _ = RefreshAfterDelayAsync(debounceMilliseconds, cancellation.Token);
+            CancelAndDispose(ref _queuedRefreshCancellation);
+            _queuedRefreshCancellation = new CancellationTokenSource();
+            _ = RefreshAfterDelayAsync(debounceMilliseconds, _queuedRefreshCancellation);
         }
 
-        private async Task RefreshAfterDelayAsync(int debounceMilliseconds, CancellationToken cancellationToken)
+        private async Task RefreshAfterDelayAsync(int debounceMilliseconds, CancellationTokenSource refreshCancellation)
         {
+            CancellationToken cancellationToken = refreshCancellation.Token;
             try
             {
                 if (debounceMilliseconds > 0)
@@ -306,6 +307,14 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
             catch (OperationCanceledException)
             {
+            }
+            finally
+            {
+                if (ReferenceEquals(_queuedRefreshCancellation, refreshCancellation))
+                {
+                    _queuedRefreshCancellation = null;
+                    refreshCancellation.Dispose();
+                }
             }
         }
 
@@ -448,7 +457,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 MarketplacePluginDetail? detail = await _client.GetPluginDetailAsync(summary.PluginId, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (detail == null)
+                {
+                    SelectedDetailContext = null;
                     return;
+                }
 
                 PluginInfoVM? installedPlugin = _installedPluginLookup(summary.PluginId);
                 var detailContext = new MarketplaceDetailContext(detail, installedPlugin);
@@ -462,6 +474,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             catch (Exception ex)
             {
                 log.Debug($"LoadSelectedDetailAsync failed for {summary.PluginId}: {ex.Message}");
+                SelectedDetailContext = null;
             }
             finally
             {
@@ -484,6 +497,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return;
 
             _isDisposed = true;
+            CancelAndDispose(ref _queuedRefreshCancellation);
             CancelAndDispose(ref _loadPageCancellation);
             CancelAndDispose(ref _loadDetailCancellation);
         }

@@ -550,6 +550,9 @@
   <data name="MarketplaceBulkUpdateTitle" xml:space="preserve">
     <value>一键更新</value>
   </data>
+  <data name="MarketplaceBulkUpdatePackageDownloadFailed" xml:space="preserve">
+    <value>插件包未全部下载成功，已取消本次批量更新。</value>
+  </data>
   <data name="MarketplacePackageColumn" xml:space="preserve">
     <value>包</value>
   </data>

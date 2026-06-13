@@ -31,7 +31,7 @@ namespace ColorVision.UI.Desktop.Properties {
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
-        
+
         /// <summary>
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
@@ -1140,6 +1140,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 插件包未全部下载成功，已取消本次批量更新。 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceBulkUpdatePackageDownloadFailed {
+            get {
+                return ResourceManager.GetString("MarketplaceBulkUpdatePackageDownloadFailed", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 一键更新 的本地化字符串。
         /// </summary>
