@@ -123,10 +123,10 @@ namespace ColorVision.ImageEditor.Draw.Special
                 };
                 MenuItems.Add(resetMenuItem);
 
-                MenuItem editMenuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Edit };
+                MenuItem editMenuItem = new() { Header = "设置" };
                 editMenuItem.Click += (s, e) =>
                 {
-                    new PropertyEditorWindow(referenceLine.Attribute) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    new ReferenceLineSettingsWindow(referenceLine) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                     referenceLine.Render();
                 };
                 MenuItems.Add(editMenuItem);

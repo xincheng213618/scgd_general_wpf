@@ -1,0 +1,152 @@
+<Window x:Class="ColorVision.ImageEditor.Draw.Special.ReferenceLineSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.ImageEditor.Draw.Special"
+        Title="参考线设置"
+        Width="420"
+        Height="500"
+        MinWidth="380"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlobalBackground}">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="Row" TargetType="DockPanel">
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="Width" Value="78" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="6,3" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="MinHeight" Value="28" />
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="8" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="12">
+        <StackPanel DockPanel.Dock="Bottom"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,10,0,0">
+            <Button Width="86"
+                    Margin="0,0,8,0"
+                    Content="回中心"
+                    Click="ResetCenter_Click" />
+            <Button Width="86"
+                    Content="关闭"
+                    Click="Close_Click" />
+        </StackPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <GroupBox Header="参考线">
+                    <StackPanel>
+                        <DockPanel Style="{StaticResource Row}">
+                            <TextBlock Style="{StaticResource Label}" Text="模式" />
+                            <ComboBox x:Name="ModeComboBox" SelectionChanged="SettingChanged">
+                                <ComboBoxItem Content="十字" Tag="{x:Static local:ReferenceLineMode.SimpleCross}" />
+                                <ComboBoxItem Content="双十字" Tag="{x:Static local:ReferenceLineMode.DoubleCross}" />
+                                <ComboBoxItem Content="斜十字" Tag="{x:Static local:ReferenceLineMode.DiagonalCross}" />
+                                <ComboBoxItem Content="同心圆" Tag="{x:Static local:ReferenceLineMode.ConcentricCircles}" />
+                                <ComboBoxItem Content="遮罩" Tag="{x:Static local:ReferenceLineMode.CrossMask}" />
+                                <ComboBoxItem Content="网格" Tag="{x:Static local:ReferenceLineMode.GridLines}" />
+                            </ComboBox>
+                        </DockPanel>
+
+                        <CheckBox x:Name="LockCheckBox"
+                                  Margin="0,0,0,8"
+                                  Content="锁定"
+                                  Checked="SettingChanged"
+                                  Unchecked="SettingChanged" />
+
+                        <DockPanel x:Name="AngleRow" Style="{StaticResource Row}">
+                            <TextBlock Style="{StaticResource Label}" Text="角度" />
+                            <TextBox x:Name="AngleTextBox" LostFocus="TextBox_LostFocus" KeyDown="TextBox_KeyDown" />
+                        </DockPanel>
+
+                        <DockPanel Style="{StaticResource Row}">
+                            <TextBlock Style="{StaticResource Label}" Text="线宽" />
+                            <TextBox x:Name="LineWidthTextBox" LostFocus="TextBox_LostFocus" KeyDown="TextBox_KeyDown" />
+                        </DockPanel>
+
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource Label}" Text="颜色" />
+                            <WrapPanel>
+                                <Button Width="28" Height="24" Margin="0,0,6,0" Background="#FFFF0000" Tag="#FFFF0000" Click="ColorButton_Click" />
+                                <Button Width="28" Height="24" Margin="0,0,6,0" Background="#FFFFFF00" Tag="#FFFFFF00" Click="ColorButton_Click" />
+                                <Button Width="28" Height="24" Margin="0,0,6,0" Background="#FF00A651" Tag="#FF00A651" Click="ColorButton_Click" />
+                                <Button Width="28" Height="24" Margin="0,0,6,0" Background="#FF0078D4" Tag="#FF0078D4" Click="ColorButton_Click" />
+                                <Button Width="28" Height="24" Margin="0,0,6,0" Background="#FFFFFFFF" Tag="#FFFFFFFF" Click="ColorButton_Click" />
+                                <Button Width="28" Height="24" Margin="0,0,6,0" Background="#FF000000" Tag="#FF000000" Click="ColorButton_Click" />
+                            </WrapPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox x:Name="GridSection" Header="网格">
+                    <StackPanel>
+                        <CheckBox x:Name="UsePhysicalUnitCheckBox"
+                                  Margin="0,0,0,8"
+                                  Content="使用物理单位"
+                                  Checked="SettingChanged"
+                                  Unchecked="SettingChanged" />
+                        <DockPanel Style="{StaticResource Row}">
+                            <TextBlock Style="{StaticResource Label}" Text="比例" />
+                            <TextBox x:Name="PhysicalLengthTextBox" LostFocus="TextBox_LostFocus" KeyDown="TextBox_KeyDown" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource Label}" Text="单位" />
+                            <TextBox x:Name="PhysicalUnitTextBox" LostFocus="TextBox_LostFocus" KeyDown="TextBox_KeyDown" />
+                        </DockPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox x:Name="MaskSection" Header="遮罩">
+                    <StackPanel>
+                        <DockPanel Style="{StaticResource Row}">
+                            <TextBlock Style="{StaticResource Label}" Text="形状" />
+                            <ComboBox x:Name="MaskShapeComboBox" SelectionChanged="SettingChanged">
+                                <ComboBoxItem Content="圆形" Tag="{x:Static local:MaskShape.Circle}" />
+                                <ComboBoxItem Content="矩形" Tag="{x:Static local:MaskShape.Rectangle}" />
+                            </ComboBox>
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource Row}">
+                            <TextBlock Style="{StaticResource Label}" Text="大小" />
+                            <TextBox x:Name="MaskSizeTextBox" LostFocus="TextBox_LostFocus" KeyDown="TextBox_KeyDown" />
+                        </DockPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="88" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="48" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="透明度" />
+                            <Slider x:Name="MaskOpacitySlider"
+                                    Grid.Column="1"
+                                    Minimum="0"
+                                    Maximum="255"
+                                    TickFrequency="1"
+                                    IsSnapToTickEnabled="True"
+                                    ValueChanged="SettingChanged" />
+                            <TextBlock Grid.Column="2"
+                                       HorizontalAlignment="Right"
+                                       Text="{Binding ElementName=MaskOpacitySlider, Path=Value, StringFormat=F0}" />
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
