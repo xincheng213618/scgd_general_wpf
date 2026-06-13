@@ -8,7 +8,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.UI;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
@@ -123,13 +122,6 @@ namespace ColorVision.ImageEditor.Draw.Special
                 };
                 MenuItems.Add(resetMenuItem);
 
-                MenuItem editMenuItem = new() { Header = "设置" };
-                editMenuItem.Click += (s, e) =>
-                {
-                    new ReferenceLineSettingsWindow(referenceLine) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                    referenceLine.Render();
-                };
-                MenuItems.Add(editMenuItem);
             }
             return MenuItems;
         }
