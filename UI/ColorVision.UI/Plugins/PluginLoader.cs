@@ -26,7 +26,8 @@ namespace ColorVision.UI.Plugins
             {
                 Directory.CreateDirectory(path);
             }
-            var plugins = PluginLoaderrConfig.Instance.Plugins;
+            PluginLoaderrConfig pluginConfig = PluginLoaderrConfig.Instance;
+            var plugins = pluginConfig.Plugins;
             path = Path.GetFullPath(path); // 保证path是绝对路径
                                            // 先收集当前所有的插件目录名（通常以插件Id为key）
             var validIds = new HashSet<string>();
@@ -205,6 +206,8 @@ namespace ColorVision.UI.Plugins
                     log.Error(ex);
                 }
             }
+
+            pluginConfig.Save();
 
         }
     }

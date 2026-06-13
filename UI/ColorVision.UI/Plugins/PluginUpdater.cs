@@ -24,6 +24,7 @@ namespace ColorVision.UI.Plugins
             if (packageNames == null || packageNames.Length == 0) return;
 
             ConfigService.Instance.SaveConfigs();
+            PluginLoaderrConfig.Instance.Save();
 
             string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
             if (Directory.Exists(tempDirectory))
@@ -107,6 +108,7 @@ del ""%~f0"" & exit
             {
                 // 1. 保存配置（原逻辑）
                 ConfigService.Instance.SaveConfigs();
+                PluginLoaderrConfig.Instance.Save();
 
                 // 2. 定义临时与目标路径
                 string tempRoot = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
