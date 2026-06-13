@@ -13,27 +13,18 @@ using System.Threading.Tasks;
 
 namespace ColorVision.UI.Desktop.Marketplace
 {
-    public sealed class MarketplaceOptionItem
-    {
-        public string Key { get; init; } = string.Empty;
-        public string DisplayName { get; init; } = string.Empty;
-    }
-
     public sealed class MarketplaceCatalogViewModel : ViewModelBase, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceCatalogViewModel));
-        private const int MarketplacePageSize = 500;
+        private const int MarketplacePageSize = 100;
         private static readonly CompositeFormat MarketplacePluginCountFormat = CompositeFormat.Parse(Resources.MarketplacePluginCount);
         private readonly MarketplaceClient _client = MarketplaceClient.GetInstance();
         private readonly Func<string, PluginInfoVM?> _installedPluginLookup;
         private readonly Action<MarketplaceDetailContext?> _detailChanged;
-        private CancellationTokenSource? _queuedRefreshCancellation;
         private CancellationTokenSource? _loadPageCancellation;
         private CancellationTokenSource? _loadDetailCancellation;
         private MarketplacePluginSummary? _selectedPlugin;
         private MarketplaceDetailContext? _selectedDetailContext;
-        private MarketplaceOptionItem _selectedSortOption;
-        private string _keyword = string.Empty;
         private bool _isInitialized;
         private bool _isLoading;
         private bool _isLoadingDetail;
@@ -48,12 +39,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             _installedPluginLookup = installedPluginLookup;
             _detailChanged = detailChanged;
 
-            SortOptions = new ObservableCollection<MarketplaceOptionItem>
-            {
-                new() { Key = "updated", DisplayName = Resources.MarketplaceSortUpdated },
-                new() { Key = "downloads", DisplayName = Resources.MarketplaceSortDownloads },
-                new() { Key = "name", DisplayName = Resources.MarketplaceSortName },
-            };
             MarketplacePlugins = new ObservableCollection<MarketplacePluginSummary>();
             PackageSuggestions = new ObservableCollection<string>();
             MarketplacePlugins.CollectionChanged += (_, _) =>
@@ -61,17 +46,10 @@ namespace ColorVision.UI.Desktop.Marketplace
                 OnPropertyChanged(nameof(HasItems));
                 OnPropertyChanged(nameof(IsEmpty));
             };
-
-            _selectedSortOption = SortOptions[0];
-
-            RefreshCommand = new AsyncRelayCommand(_ => RefreshAsync(forceReload: true), logger: log);
         }
 
-        public ObservableCollection<MarketplaceOptionItem> SortOptions { get; }
         public ObservableCollection<MarketplacePluginSummary> MarketplacePlugins { get; }
         public ObservableCollection<string> PackageSuggestions { get; }
-
-        public AsyncRelayCommand RefreshCommand { get; }
 
         public MarketplacePluginSummary? SelectedPlugin
         {
@@ -92,28 +70,6 @@ namespace ColorVision.UI.Desktop.Marketplace
                 _selectedDetailContext = value;
                 OnPropertyChanged();
                 _detailChanged(value);
-            }
-        }
-
-        public MarketplaceOptionItem SelectedSortOption
-        {
-            get => _selectedSortOption;
-            set
-            {
-                _selectedSortOption = value ?? SortOptions.FirstOrDefault() ?? _selectedSortOption;
-                OnPropertyChanged();
-                QueueRefresh(debounceMilliseconds: 0);
-            }
-        }
-
-        public string Keyword
-        {
-            get => _keyword;
-            set
-            {
-                _keyword = value ?? string.Empty;
-                OnPropertyChanged();
-                QueueRefresh(debounceMilliseconds: 300);
             }
         }
 
@@ -197,39 +153,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             return LoadCatalogAsync(cancellationToken);
         }
 
-        private void QueueRefresh(int debounceMilliseconds)
-        {
-            if (!_isInitialized)
-                return;
-
-            CancelAndDispose(ref _queuedRefreshCancellation);
-            _queuedRefreshCancellation = new CancellationTokenSource();
-            _ = RefreshAfterDelayAsync(debounceMilliseconds, _queuedRefreshCancellation);
-        }
-
-        private async Task RefreshAfterDelayAsync(int debounceMilliseconds, CancellationTokenSource refreshCancellation)
-        {
-            CancellationToken cancellationToken = refreshCancellation.Token;
-            try
-            {
-                if (debounceMilliseconds > 0)
-                    await Task.Delay(debounceMilliseconds, cancellationToken);
-
-                await LoadCatalogAsync(cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            finally
-            {
-                if (ReferenceEquals(_queuedRefreshCancellation, refreshCancellation))
-                {
-                    _queuedRefreshCancellation = null;
-                    refreshCancellation.Dispose();
-                }
-            }
-        }
-
         private async Task LoadCatalogAsync(CancellationToken externalCancellationToken)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
@@ -247,11 +170,11 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 var request = new MarketplaceSearchRequest
                 {
-                    Keyword = Keyword,
+                    Keyword = string.Empty,
                     Author = string.Empty,
                     Category = string.Empty,
-                    SortBy = SelectedSortOption.Key,
-                    SortOrder = SelectedSortOption.Key == "name" ? "asc" : "desc",
+                    SortBy = "updated",
+                    SortOrder = "desc",
                     Page = 1,
                     PageSize = MarketplacePageSize,
                 };
@@ -280,7 +203,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
             catch (Exception ex)
             {
-                log.Debug($"LoadPageAsync failed: {ex.Message}");
+                log.Debug($"LoadCatalogAsync failed: {ex.Message}");
                 HasError = true;
                 IsOffline = ex is HttpRequestException || ex is TaskCanceledException;
                 ReplaceCollection(MarketplacePlugins, Array.Empty<MarketplacePluginSummary>());
@@ -356,7 +279,6 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return;
 
             _isDisposed = true;
-            CancelAndDispose(ref _queuedRefreshCancellation);
             CancelAndDispose(ref _loadPageCancellation);
             CancelAndDispose(ref _loadDetailCancellation);
         }

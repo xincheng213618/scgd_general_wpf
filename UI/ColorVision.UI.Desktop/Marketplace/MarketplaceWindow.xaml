@@ -313,19 +313,13 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <WrapPanel Margin="5,5,5,3">
-                            <TextBox Width="250" Margin="0,0,6,0" VerticalContentAlignment="Center" Text="{Binding Catalog.Keyword, UpdateSourceTrigger=PropertyChanged}" ToolTip="{x:Static properties:Resources.MarketplaceKeyword}" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" />
-                            <ComboBox Width="110" Margin="0,0,6,0" ItemsSource="{Binding Catalog.SortOptions}" SelectedItem="{Binding Catalog.SelectedSortOption, Mode=TwoWay}" DisplayMemberPath="DisplayName" />
-                            <Button Command="{Binding Catalog.RefreshCommand}" Padding="8,2" Content="{x:Static properties:Resources.Refresh}" />
-                        </WrapPanel>
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5,0,5,3">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5,5,5,3">
                             <TextBlock Text="{Binding Catalog.StatusText}" FontStyle="Italic" Foreground="{DynamicResource MarketplaceMutedTextBrush}"/>
                             <TextBlock Text="{x:Static properties:Resources.MarketplaceOffline}" Foreground="{DynamicResource MarketplaceErrorBrush}" Visibility="{Binding Catalog.IsOffline, Converter={StaticResource bool2VisibilityConverter}}"/>
                         </StackPanel>
-                        <Grid Grid.Row="2">
+                        <Grid Grid.Row="1">
                             <ListBox x:Name="ListViewMarketplace" Background="Transparent" ItemsSource="{Binding Catalog.MarketplacePlugins}" SelectedItem="{Binding Catalog.SelectedPlugin, Mode=TwoWay}" Padding="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True" Visibility="{Binding Catalog.HasItems, Converter={StaticResource bool2VisibilityConverter}}">
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListBoxItem}">
