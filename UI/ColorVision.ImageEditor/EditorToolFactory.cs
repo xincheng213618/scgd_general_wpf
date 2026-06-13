@@ -33,7 +33,6 @@ namespace ColorVision.ImageEditor
 
         private readonly ImageView _imageView;
         private readonly EditorContext _context;
-        private readonly EditorToolVisibilityConfig _visibilityConfig;
         private readonly List<IEditorTool> _imageOpenEditorTools = new();
         private readonly List<FrameworkElement> _generatedToolElements = new();
         private IImageOpen? _currentImageOpen;
@@ -55,18 +54,12 @@ namespace ColorVision.ImageEditor
         public ObservableCollection<IImageComponent> IImageComponents { get; set; } = new ObservableCollection<IImageComponent>();
         public Dictionary<string, IImageOpen> IImageOpens { get; set; } = new Dictionary<string, IImageOpen>();
         public ObservableCollection<IDVContextMenu> ContextMenuProviders { get; set; } = new ObservableCollection<IDVContextMenu>();
-        
-        /// <summary>
-        /// Maps tool GuidId to its UI element for visibility control
-        /// </summary>
-        public Dictionary<string, FrameworkElement> ToolUIElements { get; set; } = new Dictionary<string, FrameworkElement>();
 
 
         public IEditorToolFactory(ImageView imageView, EditorContext context)
         {
             _imageView = imageView;
             _context = context;
-            _visibilityConfig = ConfigService.Instance.GetRequiredService<EditorToolVisibilityConfig>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
@@ -208,8 +201,6 @@ namespace ColorVision.ImageEditor
 
         public void RefreshToolBars()
         {
-            ToolUIElements.Clear();
-
             foreach (FrameworkElement element in _generatedToolElements.ToArray())
             {
                 if (element.Parent is ToolBar parentToolBar)
@@ -238,14 +229,6 @@ namespace ColorVision.ImageEditor
                         btn.Margin = margin;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(tool.GuidId))
-                    {
-                        btn.Visibility = _visibilityConfig.GetToolVisibility(tool.GuidId)
-                            ? Visibility.Visible
-                            : Visibility.Collapsed;
-                        ToolUIElements[tool.GuidId] = btn;
-                    }
-
                     toolBar.Items.Add(btn);
                     _generatedToolElements.Add(btn);
                     hasExistingItems = true;
@@ -271,7 +254,6 @@ namespace ColorVision.ImageEditor
 
             _imageOpenEditorTools.Clear();
             _generatedToolElements.Clear();
-            ToolUIElements.Clear();
             GC.SuppressFinalize(this);
         }
 

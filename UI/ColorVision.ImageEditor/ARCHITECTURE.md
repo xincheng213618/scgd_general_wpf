@@ -160,7 +160,7 @@ ImageView
 | `ImageViewConfig.cs` | 当前视图配置与属性字典，区分 `ImageMetadata` / `ViewState` / `OpenerRuntime` / `Legacy` |
 | `DrawCanvas.cs` | 图像画布、视觉树、Undo/Redo、命中测试 |
 | `EditorToolFactory.cs` | 反射发现工具/菜单/打开器/初始化组件，维护“全局工具 + 当前 opener runtime tools”的生效视图，并重建受管工具栏 |
-| `EditorToolVisibilityConfig.cs` | 工具显示隐藏的持久化配置 |
+| `ImageViewWorkspaceSettingsView*` | 工作台设置：工具栏区域开关与打开器列表 |
 
 ### 3.2 抽象接口层
 

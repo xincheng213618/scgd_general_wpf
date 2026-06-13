@@ -144,7 +144,8 @@
   </data>
   <data name="ColormapTypes" xml:space="preserve">
     <value>伪彩色</value>
-  </data>  <data name="AutoLevelsAdjustment" xml:space="preserve">
+  </data>
+  <data name="AutoLevelsAdjustment" xml:space="preserve">
     <value>自动色阶调整</value>
   </data>
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
@@ -189,26 +190,8 @@
   <data name="Settings_Close" xml:space="preserve">
     <value>关闭</value>
   </data>
-  <data name="Settings_ScopeCurrentView" xml:space="preserve">
-    <value>作用域：当前视窗</value>
-  </data>
-  <data name="Settings_ScopeGlobalDefault" xml:space="preserve">
-    <value>作用域：全局默认值</value>
-  </data>
-  <data name="Settings_ScopeLoaderDefault" xml:space="preserve">
-    <value>作用域：打开器默认值</value>
-  </data>
-  <data name="Settings_ScopeWorkspace" xml:space="preserve">
-    <value>作用域：当前工作台</value>
-  </data>
-  <data name="Settings_ScopeUncategorized" xml:space="preserve">
-    <value>作用域：未分类</value>
-  </data>
   <data name="Settings_ToolbarVisibility" xml:space="preserve">
     <value>工具栏可见性</value>
-  </data>
-  <data name="Settings_ToolbarVisibilityDesc" xml:space="preserve">
-    <value>这些开关作用于当前 ImageView 实例，用来控制各区域工具栏是否显示。</value>
   </data>
   <data name="Settings_BottomToolbar" xml:space="preserve">
     <value>底部工具栏 (ToolBarAl)</value>
@@ -225,41 +208,11 @@
   <data name="Settings_RightToolbar" xml:space="preserve">
     <value>右侧工具栏 (ToolBarRight)</value>
   </data>
-  <data name="Settings_EditorTools" xml:space="preserve">
-    <value>编辑器工具</value>
-  </data>
-  <data name="Settings_EditorToolsDesc" xml:space="preserve">
-    <value>以下列表就是当前已加载的 IEditorTool；开关仅控制其在工具栏中的显示，不会影响程序集发现。</value>
-  </data>
-  <data name="Settings_ShowAll" xml:space="preserve">
-    <value>全部显示</value>
-  </data>
-  <data name="Settings_HideAll" xml:space="preserve">
-    <value>全部隐藏</value>
-  </data>
   <data name="Settings_ImageOpeners" xml:space="preserve">
     <value>图像打开器</value>
   </data>
-  <data name="Settings_ImageOpenersDesc" xml:space="preserve">
-    <value>当前 ImageView 已注册的 IImageOpen 打开器及其支持的扩展名。</value>
-  </data>
-  <data name="Settings_PropertySnapshot" xml:space="preserve">
-    <value>当前视窗属性快照</value>
-  </data>
   <data name="Settings_Refresh" xml:space="preserve">
     <value>刷新</value>
-  </data>
-  <data name="Settings_NoContextProperties" xml:space="preserve">
-    <value>当前视窗还没有记录可展示的上下文属性。</value>
-  </data>
-  <data name="Settings_DescriptionLabel" xml:space="preserve">
-    <value>说明</value>
-  </data>
-  <data name="Settings_NoPropertyContext" xml:space="preserve">
-    <value>当前视窗还没有写入属性上下文。打开图像或执行工具后，这里会按作用域展示实际状态。</value>
-  </data>
-  <data name="Settings_PropertyContextSummary" xml:space="preserve">
-    <value>当前视窗已记录 {0} 个属性，分布在 {1} 个作用域分组中。这里是只读快照，方便排查当前值和默认值是否串层。</value>
   </data>
   <data name="Settings_EntryCount" xml:space="preserve">
     <value>{0} 项</value>
@@ -282,53 +235,23 @@
   <data name="Settings_GroupLoader" xml:space="preserve">
     <value>加载器</value>
   </data>
-  <data name="Settings_CurrentImageContext" xml:space="preserve">
-    <value>当前图像上下文</value>
-  </data>
-  <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
-    <value>按作用域只读展示当前 ImageView 的属性字典，帮助区分图像元数据、当前视窗状态和打开器运行态。</value>
-  </data>
   <data name="Settings_DefaultImageScaling" xml:space="preserve">
     <value>默认图像缩放</value>
-  </data>
-  <data name="Settings_DefaultImageScalingDesc" xml:space="preserve">
-    <value>控制 ImageView 初始化时播种的 BitmapScalingMode。初始化之后保留当前值，只有用户显式调整或特定加载器覆盖时才会变化。</value>
   </data>
   <data name="Settings_DefaultDisplayParams" xml:space="preserve">
     <value>默认显示参数</value>
   </data>
-  <data name="Settings_DefaultDisplayParamsDesc" xml:space="preserve">
-    <value>控制 Zoombox 的全局最大/最小缩放，以及 NearestNeighbor 像素值叠层的性能阈值。</value>
-  </data>
   <data name="Settings_DefaultTextStyle" xml:space="preserve">
     <value>默认文本样式</value>
-  </data>
-  <data name="Settings_DefaultTextStyleDesc" xml:space="preserve">
-    <value>控制新建文本和带文字图元的默认字体、颜色和排版。</value>
   </data>
   <data name="Settings_PhysicalSizeDefaults" xml:space="preserve">
     <value>物理尺寸默认值</value>
   </data>
-  <data name="Settings_PhysicalSizeDefaultsDesc" xml:space="preserve">
-    <value>控制标尺、网格等物理尺寸换算的默认长度和单位。</value>
-  </data>
   <data name="Settings_DefaultRealtimeCameraParams" xml:space="preserve">
     <value>默认实时相机参数</value>
   </data>
-  <data name="Settings_DefaultRealtimeCameraParamsDesc" xml:space="preserve">
-    <value>控制 realtime 相机入口共享的显示 FPS、清晰度计算和 ROI/状态文字样式。</value>
-  </data>
-  <data name="Settings_ToolbarToolsAndOpeners" xml:space="preserve">
-    <value>工具栏、工具与打开器</value>
-  </data>
-  <data name="Settings_ToolbarToolsAndOpenersDesc" xml:space="preserve">
-    <value>统一管理当前 ImageView 的工具栏显示、已加载 IEditorTool 的可见性，以及支持的 IImageOpen 打开器。</value>
-  </data>
   <data name="Settings_TifOpener" xml:space="preserve">
     <value>TIF 打开器</value>
-  </data>
-  <data name="Settings_TifOpenerDesc" xml:space="preserve">
-    <value>控制 Gray32Float TIFF 打开时是否转换为 Gray16 等加载策略。</value>
   </data>
   <data name="ThreeD_ModelViewer" xml:space="preserve">
     <value>3D模型查看器</value>
@@ -611,7 +534,8 @@
   </data>
   <data name="Graphic_ArrayCountMin1" xml:space="preserve">
     <value>点阵数的行列不能小于1</value>
-  </data>  <data name="Sfr_FrequencyInputError" xml:space="preserve">
+  </data>
+  <data name="Sfr_FrequencyInputError" xml:space="preserve">
     <value>频率输入错误</value>
   </data>
   <data name="Sfr_MtfNotFound" xml:space="preserve">
@@ -644,15 +568,10 @@
   <data name="PseudoColor_CurrentPseudoColor" xml:space="preserve">
     <value>当前伪彩色</value>
   </data>
-  <data name="PseudoColor_CurrentDescription" xml:space="preserve">
-    <value>控制当前画布的伪彩色启用状态、当前色表和当前范围。这里的修改立即生效，不会写回默认值。</value>
-  </data>
   <data name="PseudoColor_DefaultPseudoColor" xml:space="preserve">
     <value>伪彩色默认值</value>
   </data>
-  <data name="PseudoColor_DefaultDescription" xml:space="preserve">
-    <value>控制新图像或重置后采用的默认伪彩色类型和自动范围开关，不会直接覆盖当前画布状态。</value>
-  </data>  <data name="Artculation_MenuHeader" xml:space="preserve">
+  <data name="Artculation_MenuHeader" xml:space="preserve">
     <value>清晰度评估</value>
   </data>
   <data name="Artculation_ParamSettings" xml:space="preserve">
@@ -861,12 +780,14 @@
   </data>
   <data name="Draw_ResetToImageCenter" xml:space="preserve">
     <value>重置为图像中心</value>
-  </data>  <data name="Draw_Color" xml:space="preserve">
+  </data>
+  <data name="Draw_Color" xml:space="preserve">
     <value>颜色</value>
   </data>
   <data name="Draw_LineWidth" xml:space="preserve">
     <value>线宽</value>
-  </data>  <data name="Draw_SampleSpacing" xml:space="preserve">
+  </data>
+  <data name="Draw_SampleSpacing" xml:space="preserve">
     <value>采样间距</value>
   </data>
   <data name="Draw_StrokeWidth" xml:space="preserve">
@@ -877,7 +798,8 @@
   </data>
   <data name="Draw_FontSize" xml:space="preserve">
     <value>字号</value>
-  </data>  <data name="Draw_Fill" xml:space="preserve">
+  </data>
+  <data name="Draw_Fill" xml:space="preserve">
     <value>填充</value>
   </data>
   <data name="Draw_DefaultFontSize" xml:space="preserve">
@@ -936,7 +858,8 @@
   </data>
   <data name="Ruler_ActualDistance" xml:space="preserve">
     <value>实际距离</value>
-  </data>  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
+  </data>
+  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
     <value>该图形没有足够的点来生成切面图。</value>
   </data>
   <data name="Annotation_CannotExtractData" xml:space="preserve">
@@ -966,4 +889,4 @@
   <data name="Draw_Edit" xml:space="preserve">
     <value>编辑</value>
   </data>
-<data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>算法调用</value></data></root>
+  <data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>算法调用</value></data></root>

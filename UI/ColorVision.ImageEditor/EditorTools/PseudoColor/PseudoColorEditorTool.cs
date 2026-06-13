@@ -50,7 +50,6 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
                 Scope = ImageViewSettingScope.CurrentView,
                 Type = ImageViewSettingType.Class,
                 Name = Properties.Resources.PseudoColor_CurrentPseudoColor,
-                Description = Properties.Resources.PseudoColor_CurrentDescription,
                 Source = _state,
             };
 
@@ -61,7 +60,6 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = Properties.Resources.PseudoColor_DefaultPseudoColor,
-                Description = Properties.Resources.PseudoColor_DefaultDescription,
                 Source = PseudoColorDefaultConfig.Current,
             };
         }

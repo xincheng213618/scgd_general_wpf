@@ -144,7 +144,8 @@
   </data>
   <data name="ColormapTypes" xml:space="preserve">
     <value>偽彩色</value>
-  </data>  <data name="AutoLevelsAdjustment" xml:space="preserve">
+  </data>
+  <data name="AutoLevelsAdjustment" xml:space="preserve">
     <value>自動色階調整</value>
   </data>
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
@@ -191,12 +192,14 @@
   </data>
   <data name="Draw_ResetToImageCenter" xml:space="preserve">
     <value>重置為圖像中心</value>
-  </data>  <data name="Draw_Color" xml:space="preserve">
+  </data>
+  <data name="Draw_Color" xml:space="preserve">
     <value>顏色</value>
   </data>
   <data name="Draw_LineWidth" xml:space="preserve">
     <value>線寬</value>
-  </data>  <data name="Draw_SampleSpacing" xml:space="preserve">
+  </data>
+  <data name="Draw_SampleSpacing" xml:space="preserve">
     <value>取樣間距</value>
   </data>
   <data name="Draw_StrokeWidth" xml:space="preserve">
@@ -207,7 +210,8 @@
   </data>
   <data name="Draw_FontSize" xml:space="preserve">
     <value>字號</value>
-  </data>  <data name="Draw_Fill" xml:space="preserve">
+  </data>
+  <data name="Draw_Fill" xml:space="preserve">
     <value>填充</value>
   </data>
   <data name="Draw_DefaultFontSize" xml:space="preserve">
@@ -266,7 +270,8 @@
   </data>
   <data name="Ruler_ActualDistance" xml:space="preserve">
     <value>實際距離</value>
-  </data>  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
+  </data>
+  <data name="Annotation_NotEnoughPoints" xml:space="preserve">
     <value>該圖形沒有足夠的點來生成切面圖。</value>
   </data>
   <data name="Annotation_CannotExtractData" xml:space="preserve">
@@ -413,26 +418,8 @@
   <data name="Settings_Close" xml:space="preserve">
     <value>Close</value>
   </data>
-  <data name="Settings_ScopeCurrentView" xml:space="preserve">
-    <value>Scope: Current View</value>
-  </data>
-  <data name="Settings_ScopeGlobalDefault" xml:space="preserve">
-    <value>Scope: Global Default</value>
-  </data>
-  <data name="Settings_ScopeLoaderDefault" xml:space="preserve">
-    <value>Scope: Loader Default</value>
-  </data>
-  <data name="Settings_ScopeWorkspace" xml:space="preserve">
-    <value>Scope: Workspace</value>
-  </data>
-  <data name="Settings_ScopeUncategorized" xml:space="preserve">
-    <value>Scope: Uncategorized</value>
-  </data>
   <data name="Settings_ToolbarVisibility" xml:space="preserve">
     <value>Toolbar Visibility</value>
-  </data>
-  <data name="Settings_ToolbarVisibilityDesc" xml:space="preserve">
-    <value>These switches control the visibility of toolbar areas in the current ImageView instance.</value>
   </data>
   <data name="Settings_BottomToolbar" xml:space="preserve">
     <value>Bottom Toolbar (ToolBarAl)</value>
@@ -449,41 +436,11 @@
   <data name="Settings_RightToolbar" xml:space="preserve">
     <value>Right Toolbar (ToolBarRight)</value>
   </data>
-  <data name="Settings_EditorTools" xml:space="preserve">
-    <value>Editor Tools</value>
-  </data>
-  <data name="Settings_EditorToolsDesc" xml:space="preserve">
-    <value>The following list shows currently loaded IEditorTools; toggles only control their visibility in toolbars and do not affect assembly discovery.</value>
-  </data>
-  <data name="Settings_ShowAll" xml:space="preserve">
-    <value>Show All</value>
-  </data>
-  <data name="Settings_HideAll" xml:space="preserve">
-    <value>Hide All</value>
-  </data>
   <data name="Settings_ImageOpeners" xml:space="preserve">
     <value>Image Openers</value>
   </data>
-  <data name="Settings_ImageOpenersDesc" xml:space="preserve">
-    <value>Registered IImageOpen handlers for the current ImageView and their supported extensions.</value>
-  </data>
-  <data name="Settings_PropertySnapshot" xml:space="preserve">
-    <value>Current View Property Snapshot</value>
-  </data>
   <data name="Settings_Refresh" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="Settings_NoContextProperties" xml:space="preserve">
-    <value>The current view has no context properties to display yet.</value>
-  </data>
-  <data name="Settings_DescriptionLabel" xml:space="preserve">
-    <value>Description</value>
-  </data>
-  <data name="Settings_NoPropertyContext" xml:space="preserve">
-    <value>The current view has not written any property context yet. After opening an image or running a tool, the actual state will be shown here by scope.</value>
-  </data>
-  <data name="Settings_PropertyContextSummary" xml:space="preserve">
-    <value>The current view has recorded {0} properties across {1} scope groups. This is a read-only snapshot to help diagnose whether current and default values are leaking across layers.</value>
   </data>
   <data name="Settings_EntryCount" xml:space="preserve">
     <value>{0} items</value>
@@ -506,53 +463,23 @@
   <data name="Settings_GroupLoader" xml:space="preserve">
     <value>Loader</value>
   </data>
-  <data name="Settings_CurrentImageContext" xml:space="preserve">
-    <value>Current Image Context</value>
-  </data>
-  <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
-    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, and loader runtime state.</value>
-  </data>
   <data name="Settings_DefaultImageScaling" xml:space="preserve">
     <value>Default Image Scaling</value>
-  </data>
-  <data name="Settings_DefaultImageScalingDesc" xml:space="preserve">
-    <value>Controls the BitmapScalingMode seeded during ImageView initialization. After initialization the current value is preserved and only changes when explicitly adjusted by the user or overridden by a specific loader.</value>
   </data>
   <data name="Settings_DefaultDisplayParams" xml:space="preserve">
     <value>Default Display Parameters</value>
   </data>
-  <data name="Settings_DefaultDisplayParamsDesc" xml:space="preserve">
-    <value>Controls the global max/min zoom of the Zoombox and the performance threshold for NearestNeighbor pixel value overlay.</value>
-  </data>
   <data name="Settings_DefaultTextStyle" xml:space="preserve">
     <value>Default Text Style</value>
-  </data>
-  <data name="Settings_DefaultTextStyleDesc" xml:space="preserve">
-    <value>Controls the default font, color, and layout for new text and text-bearing primitives.</value>
   </data>
   <data name="Settings_PhysicalSizeDefaults" xml:space="preserve">
     <value>Physical Size Defaults</value>
   </data>
-  <data name="Settings_PhysicalSizeDefaultsDesc" xml:space="preserve">
-    <value>Controls the default length and unit for physical size conversions such as rulers and grids.</value>
-  </data>
   <data name="Settings_DefaultRealtimeCameraParams" xml:space="preserve">
     <value>Default Realtime Camera Parameters</value>
   </data>
-  <data name="Settings_DefaultRealtimeCameraParamsDesc" xml:space="preserve">
-    <value>Controls the shared display FPS, sharpness calculation, and ROI/status text style for realtime camera entries.</value>
-  </data>
-  <data name="Settings_ToolbarToolsAndOpeners" xml:space="preserve">
-    <value>Toolbars, Tools and Openers</value>
-  </data>
-  <data name="Settings_ToolbarToolsAndOpenersDesc" xml:space="preserve">
-    <value>Unified management of toolbar display, loaded IEditorTool visibility, and supported IImageOpen handlers for the current ImageView.</value>
-  </data>
   <data name="Settings_TifOpener" xml:space="preserve">
     <value>TIF Opener</value>
-  </data>
-  <data name="Settings_TifOpenerDesc" xml:space="preserve">
-    <value>Controls loading strategies such as converting Gray32Float TIFF to Gray16 when opening.</value>
   </data>
   <data name="Draw_Delete" xml:space="preserve">
     <value>刪除</value>
@@ -560,7 +487,7 @@
   <data name="Draw_Edit" xml:space="preserve">
     <value>編輯</value>
   </data>
-<data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data>
+  <data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data>
   <data name="ThreeD_ModelViewer" xml:space="preserve">
     <value>3D模型查看器</value>
   </data>
@@ -842,7 +769,8 @@
   </data>
   <data name="Graphic_ArrayCountMin1" xml:space="preserve">
     <value>點陣數的行列不能小於1</value>
-  </data>  <data name="Sfr_FrequencyInputError" xml:space="preserve">
+  </data>
+  <data name="Sfr_FrequencyInputError" xml:space="preserve">
     <value>頻率輸入錯誤</value>
   </data>
   <data name="Sfr_MtfNotFound" xml:space="preserve">
@@ -875,15 +803,10 @@
   <data name="PseudoColor_CurrentPseudoColor" xml:space="preserve">
     <value>當前僞彩色</value>
   </data>
-  <data name="PseudoColor_CurrentDescription" xml:space="preserve">
-    <value>控制當前畫布的僞彩色啓用狀態、當前色表和當前範圍。這裏的修改立即生效，不會寫回默認值。</value>
-  </data>
   <data name="PseudoColor_DefaultPseudoColor" xml:space="preserve">
     <value>僞彩色默認值</value>
   </data>
-  <data name="PseudoColor_DefaultDescription" xml:space="preserve">
-    <value>控制新圖像或重置後採用的默認僞彩色類型和自動範圍開關，不會直接覆蓋當前畫布狀態。</value>
-  </data>  <data name="Artculation_MenuHeader" xml:space="preserve">
+  <data name="Artculation_MenuHeader" xml:space="preserve">
     <value>清晰度評估</value>
   </data>
   <data name="Artculation_ParamSettings" xml:space="preserve">

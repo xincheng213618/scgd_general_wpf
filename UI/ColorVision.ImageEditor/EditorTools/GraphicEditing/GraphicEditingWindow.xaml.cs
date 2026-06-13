@@ -1054,15 +1054,5 @@ namespace ColorVision.ImageEditor
         {
             _context.ClearAnnotations();
         }
-
-        private void ExportAnnotations_Click(object sender, RoutedEventArgs e)
-        {
-            _context.ExportAnnotations();
-        }
-
-        private void ImportAnnotations_Click(object sender, RoutedEventArgs e)
-        {
-            _context.ImportAnnotations();
-        }
     }
 }

@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.ImageEditor.Layers;
 using ColorVision.ImageEditor.Properties;
 using ColorVision.ImageEditor.Realtime;
@@ -54,6 +55,8 @@ namespace ColorVision.ImageEditor
 
         private RealtimeFramePresenter? _realtime;
         public RealtimeFramePresenter Realtime => _realtime ??= new RealtimeFramePresenter(this);
+        private ImageFullScreenMode? _fullScreenMode;
+        private WpfWindow? _shortcutWindow;
 
         public event EventHandler ClearImageEventHandler;
         public event EventHandler StatusBarItemsChanged;
@@ -153,6 +156,9 @@ namespace ColorVision.ImageEditor
             EditorContext.CompactInspectorPresenter.Refresh();
 
             ImageShow.PreviewKeyDown += HandleKeyDown;
+            PreviewKeyDown += ImageView_PreviewKeyDown;
+            Loaded += ImageView_Loaded;
+            Unloaded += ImageView_Unloaded;
             ImageShow.ContextMenuOpening += HandleContextMenuOpening;
             ImageShow.ContextMenu = EditorContext.ContextMenu;
             ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
@@ -325,6 +331,42 @@ namespace ColorVision.ImageEditor
                     e.Handled = true;
                 }
             }
+        }
+
+        private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.F11) return;
+            ToggleFullScreen();
+            e.Handled = true;
+        }
+
+        private void ImageView_Loaded(object sender, RoutedEventArgs e)
+        {
+            var window = WpfWindow.GetWindow(this);
+            if (ReferenceEquals(_shortcutWindow, window)) return;
+            if (_shortcutWindow != null) _shortcutWindow.PreviewKeyDown -= ShortcutWindow_PreviewKeyDown;
+            _shortcutWindow = window;
+            if (_shortcutWindow != null) _shortcutWindow.PreviewKeyDown += ShortcutWindow_PreviewKeyDown;
+        }
+
+        private void ImageView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (_shortcutWindow == null) return;
+            _shortcutWindow.PreviewKeyDown -= ShortcutWindow_PreviewKeyDown;
+            _shortcutWindow = null;
+        }
+
+        private void ShortcutWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.F11 || (!IsKeyboardFocusWithin && !IsMouseOver)) return;
+            ToggleFullScreen();
+            e.Handled = true;
+        }
+
+        public void ToggleFullScreen()
+        {
+            ImageContentGrid.DataContext = this;
+            (_fullScreenMode ??= new ImageFullScreenMode(ImageContentGrid)).ToggleFullScreen();
         }
 
         private void MoveView(double x, double y)
@@ -1272,6 +1314,10 @@ namespace ColorVision.ImageEditor
             EditorContext.CompactInspectorPresenter?.Dispose();
             EditorContext.DrawEditorContext.DrawingVisualLists?.Clear();
             Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
+            Loaded -= ImageView_Loaded;
+            Unloaded -= ImageView_Unloaded;
+            if (_shortcutWindow != null) _shortcutWindow.PreviewKeyDown -= ShortcutWindow_PreviewKeyDown;
+            PreviewKeyDown -= ImageView_PreviewKeyDown;
             ImageShow.PreviewKeyDown -= HandleKeyDown;
             ImageShow.ContextMenuOpening -= HandleContextMenuOpening;
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;

@@ -26,7 +26,6 @@ namespace ColorVision.Engine.Media
                 Scope = ImageViewSettingScope.CurrentView,
                 Type = ImageViewSettingType.Class,
                 Name = "当前视图",
-                Description = "控制当前 CVCIE 放大镜探针的取样形状和取样范围，修改后立即生效。",
                 Source = CvcieMouseProbeOptions.GetOrCreate(imageView),
             };
 
@@ -37,7 +36,6 @@ namespace ColorVision.Engine.Media
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = "新视图默认值",
-                Description = "控制后续新打开 CVCIE 视图时的初始放大镜探针参数。关闭设置窗口时保存。",
                 Source = CvcieMouseProbeOptions.CurrentDefaults,
             };
         }

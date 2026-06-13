@@ -206,7 +206,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
                 Scope = ImageViewSettingScope.CurrentView,
                 Type = ImageViewSettingType.Class,
                 Name = "Current shader filter",
-                Description = "Display-only shader filter state for this ImageView.",
                 Source = State,
             };
 

@@ -27,9 +27,6 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             RelayCommand askCopilotImageCommand = new RelayCommand(a => AskCopilotAboutImage());
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotAboutImage", Order = 310, Header = "问 AI 分析当前图像", Command = askCopilotImageCommand });
 
-            RelayCommand relayCommand = new RelayCommand(a => { MessageBox.Show(config.GetPropertyString()); });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 99999, Header = Properties.Resources.Property, Command = relayCommand });
-
             return MenuItemMetadatas;
         }
 
@@ -179,30 +176,15 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
         }
     }
 
-    public record class AnnotationEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
-    {
-        public List<MenuItemMetadata> GetContextMenuItems()
-        {
-            RelayCommand importAnnotationsCommand = new RelayCommand(a => context.ImportAnnotations());
-            RelayCommand exportAnnotationsCommand = new RelayCommand(a => context.ExportAnnotations());
-
-            return new List<MenuItemMetadata>
-            {
-                new MenuItemMetadata() { GuidId = "ImportAnnotations", Order = 301, Header = Properties.Resources.Graphic_ImportAnnotationsMenu, Command = importAnnotationsCommand, Icon = MenuItemIcon.TryFindResource("DIOpen") },
-                new MenuItemMetadata() { GuidId = "ExportAnnotations", Order = 302, Header = Properties.Resources.Graphic_ExportAnnotationsMenu, Command = exportAnnotationsCommand, Icon = MenuItemIcon.TryFindResource("DISave") },
-            };
-        }
-    }
-
     public record class ImageViewSettingsEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
     {
         public List<MenuItemMetadata> GetContextMenuItems()
         {
-            RelayCommand openSettingsCommand = new RelayCommand(a => context.OpenSettingsWindow());
+            RelayCommand openSettingsCommand = new RelayCommand(a => context.OpenSettingsWindow(Properties.Resources.Settings_GroupContext));
 
             return new List<MenuItemMetadata>
             {
-                new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = Properties.Resources.Graphic_ImageViewSettings, Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") },
+                new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = "设置", Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") },
             };
         }
     }

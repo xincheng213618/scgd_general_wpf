@@ -102,7 +102,6 @@ namespace ColorVision.ImageEditor.Settings
 
             DockPanel dockPanel = PropertyEditorHelper.GenProperties(setting.Source, setting.BindingName);
             dockPanel.Margin = new Thickness(0, 0, 0, 6);
-            dockPanel.ToolTip = BuildScopeText(setting.Scope);
             targetPanel.Children.Add(dockPanel);
         }
 
@@ -123,24 +122,6 @@ namespace ColorVision.ImageEditor.Settings
                     Margin = new Thickness(0, 0, 0, 6),
                     FontWeight = FontWeights.SemiBold,
                     Text = setting.Name,
-                });
-            }
-
-            stackPanel.Children.Add(new TextBlock
-            {
-                Margin = new Thickness(0, 0, 0, 6),
-                Opacity = 0.65,
-                Text = BuildScopeText(setting.Scope),
-            });
-
-            if (!string.IsNullOrWhiteSpace(setting.Description))
-            {
-                stackPanel.Children.Add(new TextBlock
-                {
-                    Margin = new Thickness(0, 0, 0, 10),
-                    Opacity = 0.75,
-                    Text = setting.Description,
-                    TextWrapping = TextWrapping.Wrap,
                 });
             }
 
@@ -180,39 +161,9 @@ namespace ColorVision.ImageEditor.Settings
                 });
             }
 
-            stackPanel.Children.Add(new TextBlock
-            {
-                Margin = new Thickness(0, 0, 0, 6),
-                Opacity = 0.65,
-                Text = BuildScopeText(setting.Scope),
-            });
-
-            if (!string.IsNullOrWhiteSpace(setting.Description))
-            {
-                stackPanel.Children.Add(new TextBlock
-                {
-                    Margin = new Thickness(0, 0, 0, 10),
-                    Opacity = 0.75,
-                    Text = setting.Description,
-                    TextWrapping = TextWrapping.Wrap,
-                });
-            }
-
             stackPanel.Children.Add(view);
             sectionBorder.Child = stackPanel;
             targetPanel.Children.Add(sectionBorder);
-        }
-
-        private static string BuildScopeText(ImageViewSettingScope scope)
-        {
-            return scope switch
-            {
-                ImageViewSettingScope.CurrentView => Properties.Resources.Settings_ScopeCurrentView,
-                ImageViewSettingScope.GlobalDefault => Properties.Resources.Settings_ScopeGlobalDefault,
-                ImageViewSettingScope.LoaderDefault => Properties.Resources.Settings_ScopeLoaderDefault,
-                ImageViewSettingScope.Workspace => Properties.Resources.Settings_ScopeWorkspace,
-                _ => Properties.Resources.Settings_ScopeUncategorized,
-            };
         }
 
         private static Border CreateSectionContainer()

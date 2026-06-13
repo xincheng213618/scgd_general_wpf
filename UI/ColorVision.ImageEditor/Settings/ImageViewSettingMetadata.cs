@@ -63,8 +63,6 @@ namespace ColorVision.ImageEditor.Settings
                 Order = 10,
                 Scope = ImageViewSettingScope.CurrentView,
                 Type = ImageViewSettingType.View,
-                Name = Properties.Resources.Settings_CurrentImageContext,
-                Description = Properties.Resources.Settings_CurrentImageContextDesc,
                 ViewFactory = () => new ImageViewContextSettingsView(imageView),
             };
         }
@@ -81,7 +79,6 @@ namespace ColorVision.ImageEditor.Settings
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = Properties.Resources.Settings_DefaultImageScaling,
-                Description = Properties.Resources.Settings_DefaultImageScalingDesc,
                 Source = DefaultBitmapScalingConfig.Current,
             };
 
@@ -92,7 +89,6 @@ namespace ColorVision.ImageEditor.Settings
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = Properties.Resources.Settings_DefaultDisplayParams,
-                Description = Properties.Resources.Settings_DefaultDisplayParamsDesc,
                 Source = DefaultImageViewDisplayConfig.Current,
             };
 
@@ -103,7 +99,6 @@ namespace ColorVision.ImageEditor.Settings
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = Properties.Resources.Settings_DefaultTextStyle,
-                Description = Properties.Resources.Settings_DefaultTextStyleDesc,
                 Source = DefaultTextStyleConfig.Current,
             };
 
@@ -114,7 +109,6 @@ namespace ColorVision.ImageEditor.Settings
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = Properties.Resources.Settings_PhysicalSizeDefaults,
-                Description = Properties.Resources.Settings_PhysicalSizeDefaultsDesc,
                 Source = DefalutTextAttribute.Defalut,
             };
 
@@ -125,7 +119,6 @@ namespace ColorVision.ImageEditor.Settings
                 Scope = ImageViewSettingScope.GlobalDefault,
                 Type = ImageViewSettingType.Class,
                 Name = Properties.Resources.Settings_DefaultRealtimeCameraParams,
-                Description = Properties.Resources.Settings_DefaultRealtimeCameraParamsDesc,
                 Source = DefaultRealtimeCameraConfig.Current,
             };
         }
@@ -150,8 +143,6 @@ namespace ColorVision.ImageEditor.Settings
                 Order = 10,
                 Scope = ImageViewSettingScope.Workspace,
                 Type = ImageViewSettingType.View,
-                Name = Properties.Resources.Settings_ToolbarToolsAndOpeners,
-                Description = Properties.Resources.Settings_ToolbarToolsAndOpenersDesc,
                 ViewFactory = () => new ImageViewWorkspaceSettingsView(imageView),
             };
 
@@ -162,21 +153,12 @@ namespace ColorVision.ImageEditor.Settings
                 Scope = ImageViewSettingScope.LoaderDefault,
                 Type = ImageViewSettingType.Class,
                 Name = Properties.Resources.Settings_TifOpener,
-                Description = Properties.Resources.Settings_TifOpenerDesc,
                 Source = TifOpenConfig.Current,
             };
         }
 
         public void SaveImageViewSettings(ImageView imageView)
         {
-            try
-            {
-                ConfigService.Instance?.Save<EditorToolVisibilityConfig>();
-            }
-            catch
-            {
-            }
-
             TifOpenConfig.SaveCurrent();
         }
     }
