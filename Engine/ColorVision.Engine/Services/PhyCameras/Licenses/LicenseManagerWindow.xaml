@@ -123,8 +123,6 @@
                             Style="{StaticResource DangerToolbarButtonStyle}"/>
                     <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"/>
-                    <Button Content="{x:Static properties:Resources.LicenseNotice}" Command="{Binding EditLicenseNotificationConfigCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}"/>
                 </WrapPanel>
             </Grid>
         </Border>

@@ -563,6 +563,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 OnPropertyChanged(nameof(LicenseListTagText));
                 OnPropertyChanged(nameof(LicenseListTagBrush));
                 OnPropertyChanged(nameof(DeviceModeDisplayText));
+                OnPropertyChanged(nameof(CameraListMetaText));
                 OnPropertyChanged(nameof(LicenseSummaryMetaText));
             }
         }
@@ -616,6 +617,32 @@ namespace ColorVision.Engine.Services.PhyCameras
                     return CameraLicenseModel.ColorVisionLicense.DeviceMode;
 
                 return Config.CameraModel.ToString();
+            }
+        }
+
+        public string CameraInfoMetaText => string.Join(" · ", new[]
+        {
+            Config.CameraModel.ToString(),
+            Config.CameraMode.ToString(),
+            Config.TakeImageMode.ToString(),
+            Config.Channel.ToString(),
+            Config.ImageBpp.ToString()
+        }.Where(item => !string.IsNullOrWhiteSpace(item)));
+
+        public string CameraListMetaText
+        {
+            get
+            {
+                List<string> parts = new()
+                {
+                    Config.CameraModel.ToString(),
+                    Config.CameraMode.ToString()
+                };
+
+                if (CameraLicenseModel?.ExpiryDate is DateTime expiryDate)
+                    parts.Add($"{expiryDate:yyyy-MM-dd}");
+
+                return string.Join(" · ", parts.Where(item => !string.IsNullOrWhiteSpace(item)));
             }
         }
 
@@ -1312,6 +1339,10 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
+
+            OnPropertyChanged(nameof(DeviceModeDisplayText));
+            OnPropertyChanged(nameof(CameraInfoMetaText));
+            OnPropertyChanged(nameof(CameraListMetaText));
 
             ConfigChanged?.Invoke(this, Config);
         }

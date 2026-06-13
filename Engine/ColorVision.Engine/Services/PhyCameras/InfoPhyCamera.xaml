@@ -162,9 +162,7 @@
                                Style="{StaticResource ConnectionStatusTextStyle}"
                                Margin="0"/>
                     <TextBlock Text="·" Style="{StaticResource HeaderMetaTextStyle}" Opacity="0.45" Margin="7,0,0,0"/>
-                    <TextBlock Text="{Binding Config.CameraModel, Mode=OneWay}" Style="{StaticResource HeaderMetaTextStyle}" Margin="7,0,0,0"/>
-                    <TextBlock Text="·" Style="{StaticResource HeaderMetaTextStyle}" Opacity="0.45" Margin="7,0,0,0"/>
-                    <TextBlock Text="{Binding Config.CameraMode, Mode=OneWay}" Style="{StaticResource HeaderMetaTextStyle}" Margin="7,0,0,0"/>
+                    <TextBlock Text="{Binding CameraInfoMetaText, Mode=OneWay}" Style="{StaticResource HeaderMetaTextStyle}" Margin="7,0,0,0"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal"  Margin="0,8,0,0" VerticalAlignment="Center">

@@ -134,10 +134,6 @@
                     <Run Text="{Binding OnlineCameraCount, Mode=OneWay}"/>
                     <Run Text=" "/>
                     <Run Text="{x:Static properties:Resources.Online}"/>
-                    <Run Text=" / "/>
-                    <Run Text="{Binding AttentionCameraCount, Mode=OneWay}"/>
-                    <Run Text=" "/>
-                    <Run Text="{x:Static properties:Resources.LicenseStatusInvalid}"/>
                 </TextBlock>
             </StackPanel>
 
@@ -189,7 +185,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Style="{StaticResource SectionPanelStyle}" Padding="10">
+            <Border Style="{StaticResource SectionPanelStyle}" Padding="10" Margin="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -257,7 +253,7 @@
 
                                                 <TextBlock Style="{StaticResource CameraListSecondaryTextStyle}">
                                                     <Run Text="{Binding Config.CameraModel}"/>
-                                                    <Run Text=" Â· "/>
+                                                    <Run Text=" ¡¤ "/>
                                                     <Run Text="{Binding Config.CameraMode}"/>
                                                 </TextBlock>
 

@@ -39,10 +39,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public RelayCommand SaveToLincenseCommand { get; set; }
 
-        public RelayCommand EditLicenseNotificationConfigCommand { get; set; }
-
-        public LicenseNotificationConfig LicenseNotificationConfig { get; set; }
-
         public string LicenseCountText => string.Format(Properties.Resources.LicenseCountFormat, Licenses.Count);
 
         public LicenseManagerViewModel()
@@ -58,20 +54,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
             SaveToLincenseCommand = new RelayCommand(a=> SaveToLincense());
 
-            LicenseNotificationConfig = ConfigService.Instance.GetRequiredService<LicenseNotificationConfig>();
-
-            EditLicenseNotificationConfigCommand = new RelayCommand(a =>
-            {
-                var window = new PropertyEditorWindow(LicenseNotificationConfig)
-                {
-                    Owner = Application.Current.GetActiveWindow(),
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                };
-                if (window.ShowDialog() == true)
-                {
-                    ConfigService.Instance.SaveConfigs();
-                }
-            });
             LoadLicenses();
         }
 
