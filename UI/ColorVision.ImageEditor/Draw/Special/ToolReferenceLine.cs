@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.UI;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
@@ -39,7 +40,12 @@ namespace ColorVision.ImageEditor.Draw.Special
         /// <summary>
         /// 十字遮罩模式 - 显示十字参考线和中心透明遮罩
         /// </summary>
-        CrossMask = 4
+        CrossMask = 4,
+
+        /// <summary>
+        /// 网格模式 - 旧版参考线
+        /// </summary>
+        GridLines = 5
     }
 
     /// <summary>
@@ -116,6 +122,14 @@ namespace ColorVision.ImageEditor.Draw.Special
                     referenceLine.Render();
                 };
                 MenuItems.Add(resetMenuItem);
+
+                MenuItem editMenuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Edit };
+                editMenuItem.Click += (s, e) =>
+                {
+                    new PropertyEditorWindow(referenceLine.Attribute) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    referenceLine.Render();
+                };
+                MenuItems.Add(editMenuItem);
             }
             return MenuItems;
         }
@@ -145,6 +159,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public double Ratio { get; set; } = 1;
         public double ActualWidth { get; set; }
         public double ActualHeight { get; set; }
+        public Rect VisibleRect { get; set; } = Rect.Empty;
 
         public bool IsRMouseDown { get; set; }
         public bool IsLMouseDown { get; set; }
@@ -405,6 +420,10 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText angleText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(angleText, RMouseDownP + new Vector(a, a));
             }
+            else if (Mode == ReferenceLineMode.GridLines)
+            {
+                DrawGridLines(dc, pen);
+            }
 
             if (Attribute.IsMapping)
             {
@@ -450,18 +469,47 @@ namespace ColorVision.ImageEditor.Draw.Special
 
             if (IsLocked && Attribute.IsShowLockedText)
             {
-                // 画一个小锁图标或者文字
                 FormattedText lockText = new(
-                    ColorVision.ImageEditor.Properties.Resources.Draw_Lock,
+                    "\uE72E",
                     CultureInfo.CurrentCulture,
                     FlowDirection.LeftToRight,
-                    new Typeface("Segoe UI"),
-                    18 / Ratio,
+                    new Typeface(new FontFamily("Segoe MDL2 Assets"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                    20 / Ratio,
                     Brushes.Red,
                     VisualTreeHelper.GetDpi(this).PixelsPerDip
                 );
-                dc.DrawText(lockText, new Point(10, 10));
+                double padding = 8 / Ratio;
+                dc.DrawText(lockText, new Point(Math.Max(padding, ActualWidth - lockText.Width - padding), padding));
+            }
+        }
 
+        private void DrawGridLines(DrawingContext dc, Pen pen)
+        {
+            if (ActualWidth <= 0 || ActualHeight <= 0) return;
+
+            double ratio = Math.Max(Ratio, 0.0001);
+            Rect visible = VisibleRect.IsEmpty ? new Rect(0, 0, ActualWidth, ActualHeight) : VisibleRect;
+            double step = Math.Max(1, 40 / ratio);
+            if (step > 1) step = (int)step;
+
+            TextAttribute textAttribute = new();
+            textAttribute.FontSize = 15 / ratio;
+            double textOffset = 4 / ratio;
+            double actualLength = DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength : 1;
+            Typeface typeface = new(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch);
+
+            for (double y = Math.Max(0, Math.Floor(visible.Top / step) * step); y <= Math.Min(ActualHeight, visible.Bottom); y += step)
+            {
+                dc.DrawLine(pen, new Point(0, y), new Point(ActualWidth, y));
+                FormattedText text = new((y * actualLength).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, typeface, textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(text, new Point(Math.Max(0, visible.Left) + textOffset, y + textOffset));
+            }
+
+            for (double x = Math.Max(0, Math.Floor(visible.Left / step) * step); x <= Math.Min(ActualWidth, visible.Right); x += step)
+            {
+                dc.DrawLine(pen, new Point(x, 0), new Point(x, ActualHeight));
+                FormattedText text = new((x * actualLength).ToString("F0"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, typeface, textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(text, new Point(x + textOffset, Math.Max(0, visible.Top) + textOffset));
             }
         }
 
@@ -481,24 +529,6 @@ namespace ColorVision.ImageEditor.Draw.Special
             //if (angleInDegrees < 0) angleInDegrees += 360;
 
             return angleInDegrees;
-        }
-
-        public bool ContainsReference(Point point, double tolerance)
-        {
-            Point center = RMouseDownP;
-            if ((point - center).Length <= tolerance * 2) return true;
-
-            double angle = Mode == ReferenceLineMode.DiagonalCross ? Attribute.Angle + 45 : Attribute.Angle;
-            return DistanceToLine(point, center, angle) <= tolerance
-                || DistanceToLine(point, center, angle + 90) <= tolerance;
-        }
-
-        private static double DistanceToLine(Point point, Point center, double angle)
-        {
-            double radians = angle * Math.PI / 180.0;
-            Vector line = new(Math.Cos(radians), Math.Sin(radians));
-            Vector delta = point - center;
-            return Math.Abs(delta.X * line.Y - delta.Y * line.X);
         }
 
         private static double Det(double a, double b, double c, double d)
@@ -681,6 +711,7 @@ namespace ColorVision.ImageEditor.Draw.Special
     {
         private Zoombox ZoomboxSub => EditorContext.Zoombox;
         private DrawCanvas Image => EditorContext.DrawCanvas;
+        private Matrix MatrixBackup;
 
         public DrawEditorContext EditorContext { get; set; }
 
@@ -705,9 +736,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
                 if (value)
                 {
-                    ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
-                    ReferenceLine.ActualWidth = Image.ActualWidth;
-                    ReferenceLine.ActualHeight = Image.ActualHeight;
+                    UpdateReferenceLineView();
                     
                     // Only reset to image center when PointX and PointY are both 0 (first time)
                     if (ReferenceLine.Attribute.PointX == 0 && ReferenceLine.Attribute.PointY == 0)
@@ -718,13 +747,13 @@ namespace ColorVision.ImageEditor.Draw.Special
                     
                     ReferenceLine.PointLen = new Vector();
 
-                    ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, ReferenceLine.Attribute.LineWidth / ReferenceLine.Ratio);
                     ReferenceLine.Render();
                     DrawVisualImageControl(true);
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
+                    DefalutTextAttribute.Defalut.PropertyChanged += Defalut_PropertyChanged;
 
                 }
                 else
@@ -734,6 +763,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp -= PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+                    DefalutTextAttribute.Defalut.PropertyChanged -= Defalut_PropertyChanged;
                     ReferenceLine.IsRMouseDown = false;
                     ReferenceLine.IsLMouseDown = false;
                 }
@@ -752,12 +782,39 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e)
         {
-            if (ReferenceLine.Ratio != ZoomboxSub.ContentMatrix.M11)
+            Matrix currentMatrix = ZoomboxSub.ContentMatrix;
+            if (MatrixBackup != currentMatrix)
             {
-                ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
-                ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, ReferenceLine.Attribute.LineWidth / ReferenceLine.Ratio);
+                MatrixBackup = currentMatrix;
+                UpdateReferenceLineView();
                 ReferenceLine.Render();
             }
+        }
+
+        private void Defalut_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!IsChecked || ReferenceLine.Mode != ReferenceLineMode.GridLines) return;
+            ReferenceLine.Render();
+        }
+
+        private void UpdateReferenceLineView()
+        {
+            Matrix matrix = ZoomboxSub.ContentMatrix;
+            double ratio = Math.Max(matrix.M11, 0.0001);
+            ReferenceLine.Ratio = ratio;
+            ReferenceLine.ActualWidth = Image.ActualWidth;
+            ReferenceLine.ActualHeight = Image.ActualHeight;
+            ReferenceLine.VisibleRect = GetVisibleRect(matrix, ratio);
+            ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, ReferenceLine.Attribute.LineWidth / ratio);
+        }
+
+        private Rect GetVisibleRect(Matrix matrix, double ratio)
+        {
+            double x = Math.Max(0, -matrix.OffsetX / ratio);
+            double y = Math.Max(0, -matrix.OffsetY / ratio);
+            double right = Math.Min(Image.ActualWidth, x + ZoomboxSub.ActualWidth / ratio);
+            double bottom = Math.Min(Image.ActualHeight, y + ZoomboxSub.ActualHeight / ratio);
+            return new Rect(x, y, Math.Max(0, right - x), Math.Max(0, bottom - y));
         }
 
 

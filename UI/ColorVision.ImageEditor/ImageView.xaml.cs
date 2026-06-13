@@ -384,7 +384,7 @@ namespace ColorVision.ImageEditor
             EditorContext.ContextMenu.Items.Clear();
             Point mouseDownPoint = Mouse.GetPosition(ImageShow);
 
-            if (TryCreateReferenceLineContextMenu(mouseDownPoint))
+            if (TryCreateReferenceLineContextMenu())
             {
                 return;
             }
@@ -449,7 +449,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private bool TryCreateReferenceLineContextMenu(Point point)
+        private bool TryCreateReferenceLineContextMenu()
         {
             ToolReferenceLine? referenceTool = IEditorToolFactory.GetIEditorTool<ToolReferenceLine>();
             if (referenceTool?.IsChecked != true)
@@ -458,12 +458,6 @@ namespace ColorVision.ImageEditor
             }
 
             ReferenceLine referenceLine = referenceTool.ReferenceLine;
-            double tolerance = 8 / Math.Max(referenceLine.Ratio, 0.0001);
-            if (!referenceLine.ContainsReference(point, tolerance))
-            {
-                return false;
-            }
-
             foreach (var provider in IEditorToolFactory.ContextMenuProviders)
             {
                 if (!provider.ContextType.IsAssignableFrom(referenceLine.GetType()))
