@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.EditorTools.PseudoColor;
 using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.ImageEditor.Layers;
 using ColorVision.ImageEditor.Realtime;
@@ -46,7 +47,7 @@ namespace ColorVision.ImageEditor
 
         public ImageViewConfig Config => EditorContext.Config;
         public IEditorToolFactory IEditorToolFactory => EditorContext.IEditorToolFactory;
-        public IPseudoColorService PseudoColorService => EditorContext.GetRequiredService<IPseudoColorService>();
+        private PseudoColorEditorTool? PseudoColorTool => IEditorToolFactory.GetIEditorTool<PseudoColorEditorTool>();
         public bool EnableEditorImageServices { get; set; } = true;
         public ImageLayerDescriptor? SelectedLayer { get; private set; }
 
@@ -249,7 +250,7 @@ namespace ColorVision.ImageEditor
 
         private void Config_Cleared(object? sender, EventArgs e)
         {
-            PseudoColorService?.Reset();
+            PseudoColorTool?.Reset();
             FunctionImage = null;
             if (_hImageCache != null)
             {
@@ -1016,7 +1017,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
-            PseudoColorService?.Reset();
+            PseudoColorTool?.Reset();
             InvalidatePseudoColorRender();
             FunctionImage = null;
             ViewBitmapSource = null;
@@ -1083,7 +1084,7 @@ namespace ColorVision.ImageEditor
                 Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_DpiY);
                 if (enableEditorImageServices)
                 {
-                    PseudoColorService?.ConfigureForImage();
+                    PseudoColorTool?.ConfigureForImage();
                 }
             }
 
@@ -1171,7 +1172,7 @@ namespace ColorVision.ImageEditor
 
         private void InvalidatePseudoColorRender()
         {
-            PseudoColorService?.Invalidate();
+            PseudoColorTool?.Invalidate();
         }
 
         public void ExtractChannel(int channel)

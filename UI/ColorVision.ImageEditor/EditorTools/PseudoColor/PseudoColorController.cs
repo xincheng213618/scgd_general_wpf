@@ -1,7 +1,6 @@
 #pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
-using ColorVision.ImageEditor.Abstractions;
 using log4net;
 using System;
 using System.ComponentModel;
@@ -28,7 +27,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
     internal readonly record struct PseudoColorPreviewRequest(int Version, bool IsEnabled, PseudoColorFrameRequest? Request);
 
-    internal sealed class PseudoColorController : IPseudoColorService, IDisposable
+    internal sealed class PseudoColorController : IDisposable
     {
         private const string RenderTaskKey = "PseudoColorRender";
 
