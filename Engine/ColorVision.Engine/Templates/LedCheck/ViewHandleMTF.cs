@@ -102,9 +102,7 @@ namespace ColorVision.Engine.Templates.LedCheck
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(ctx.ImageView.FunctionImage, hImageProcessed))
                     {
-                        var image = hImageProcessed.ToWriteableBitmap();
-
-                        hImageProcessed.Dispose();
+                        var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                         ctx.ImageView.FunctionImage = image;
                     }

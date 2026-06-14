@@ -7,7 +7,7 @@
 #endif
 
 #include <string>
-COLORVISIONCORE_API std::string UTF8ToGB(const char* str);
+std::string UTF8ToGB(const char* str);
 
 
 typedef int(__cdecl* InitialFrame)(void*, int, int, int);
@@ -16,3 +16,4 @@ typedef int(__cdecl* UpdateFrame)(void*, int, int);
 
 extern "C" COLORVISIONCORE_API void SetInitialFrame(InitialFrame fn);
 extern "C" COLORVISIONCORE_API void SetUpdateFrame(UpdateFrame fn);
+extern "C" COLORVISIONCORE_API int ReadVideoTest(const char* filePath);

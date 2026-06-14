@@ -7,7 +7,6 @@ using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,8 +26,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                 int length = OpenCVMediaHelper.M_FindLightBeads((HImage)ImageContext.HImageCache, roiRect, configJson, out IntPtr resultPtr);
                 if (length > 0)
                 {
-                    string result = Marshal.PtrToStringAnsi(resultPtr);
-                    OpenCVMediaHelper.FreeResult(resultPtr);
+                    string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {

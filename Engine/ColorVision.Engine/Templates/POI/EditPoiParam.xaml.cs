@@ -23,7 +23,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -712,9 +711,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         if (ret == 0)
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-
-                                            hImageProcessed.Dispose();
+                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
                                         }
@@ -729,8 +726,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         if (ret == 0)
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-                                            hImageProcessed.Dispose();
+                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
                                         }
@@ -860,9 +856,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         if (ret == 0)
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-
-                                            hImageProcessed.Dispose();
+                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
 
@@ -878,8 +872,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-                                            hImageProcessed.Dispose();
+                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
                                         }
@@ -1483,9 +1476,8 @@ namespace ColorVision.Engine.Templates.POI
                         int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache,new RoiRect(), FindLuminousAreajson,out IntPtr resultPtr);
                         if (length > 0)
                         {
-                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                             Console.WriteLine("Result: " + result);
-                            OpenCVMediaHelper.FreeResult(resultPtr);
                             MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
 
                             Application.Current.Dispatcher.Invoke(() =>
@@ -1538,8 +1530,7 @@ namespace ColorVision.Engine.Templates.POI
                 int length = OpenCVMediaHelper.M_DetectKeyRegions((HImage)ImageView.HImageCache, new RoiRect(), configJson, out IntPtr resultPtr);
                 if (length > 0)
                 {
-                    string result = Marshal.PtrToStringAnsi(resultPtr);
-                    OpenCVMediaHelper.FreeResult(resultPtr);
+                    string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                     log.Info("DetectKeyRegions result: " + result);
 
                     Application.Current.Dispatcher.Invoke(() =>
@@ -1697,9 +1688,8 @@ namespace ColorVision.Engine.Templates.POI
                         int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, new RoiRect(), FindLuminousAreaCornerjson, out IntPtr resultPtr);
                         if (length > 0)
                         {
-                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                             log.Info(result);
-                            OpenCVMediaHelper.FreeResult(resultPtr);
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {

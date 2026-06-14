@@ -338,10 +338,14 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels,
 ```
 
 **Parameters:**
-- `rowGrayPixels` - Output byte array pointer (must be freed by caller)
+- `rowGrayPixels` - Output byte array pointer allocated with `CoTaskMemAlloc`
 - `length` - Output array length
 - `scaleFactout` - Actual scale factor used
 - `targetPixelsX/Y` - Target display dimensions
+
+**Memory:** Caller must release `rowGrayPixels` with `M_FreeHImageData()`.
+
+**C# safe wrapper:** Prefer `OpenCVMediaHelper.ConvertImageToGrayPixels(...)`, which copies the bytes to a managed `byte[]` and releases the native buffer in `finally`.
 
 ---
 
@@ -477,6 +481,7 @@ COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HImage* outImag
 ### M_CalSFRMultiChannel
 
 Calculate SFR using slanted-edge method (ISO 12233) for multiple channels.
+For color images, luminance follows the sfrmat5 default weights: 0.213*R + 0.715*G + 0.072*B.
 
 ```cpp
 COLORVISIONCORE_API int M_CalSFRMultiChannel(
@@ -530,17 +535,9 @@ public static extern int M_CalSFRMultiChannel(
 
 ---
 
-### C++ Interface (Advanced)
+### C++ Implementation Notes
 
-```cpp
-// Slanted-edge SFR
-COLORVISIONCORE_API sfr::SFRResult CalSFR_CPP(const cv::Mat& img,
-    double del, int npol, int nbin, double vslope);
-
-// Cylinder target SFR
-COLORVISIONCORE_API sfr::CylinderSFRResult CalCylinderSFR_CPP(const cv::Mat& mat,
-    int thresh, float roi, float binsize, int n_fit);
-```
+SFR is implemented as a slanted-edge native module behind the stable C exports. Use `M_CalSFR` or `M_CalSFRMultiChannel` for cross-module calls so callers do not depend on `cv::Mat` or ColorVision C++ struct ABI.
 
 ---
 
@@ -576,7 +573,7 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 **C# Usage:**
 ```csharp
 [DllImport(LibPath, EntryPoint = "M_CalArtculation", 
-    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 public unsafe static extern double M_CalArtculation(
     HImage image, FocusAlgorithm evaFunc, RoiRect roi);
 ```
@@ -614,7 +611,7 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi,
 
 **Returns:** Result string length on success, negative on error
 
-**Memory:** Caller must free result string using `FreeResult()`
+**Memory:** Caller must free result string using `FreeResult()`. Managed code should prefer `OpenCVMediaHelper.PtrToStringAnsiAndFree(...)`.
 
 ---
 
@@ -756,15 +753,17 @@ Start video playback with callbacks.
 
 ```cpp
 // Callback types
-typedef void (*VideoFrameCallback)(int handle, HImage* frame, 
+typedef void (__stdcall *VideoFrameCallback)(int handle, HImage* frame,
     int currentFrame, int totalFrames, void* userData);
-typedef void (*VideoStatusCallback)(int handle, int status, void* userData);
+typedef void (__stdcall *VideoStatusCallback)(int handle, int status, void* userData);
 
-COLORVISIONCORE_API int M_VideoPlay(int handle, 
+COLORVISIONCORE_API int M_VideoPlay(int handle,
     VideoFrameCallback frameCallback,
-    VideoStatusCallback statusCallback, 
+    VideoStatusCallback statusCallback,
     void* userData);
 ```
+
+`frame` is an owned `HImage` buffer allocated by the DLL for the callback. Managed callers should dispose the received `HImage` after copying/rendering the frame.
 
 **Status codes:** 0=Paused, 1=Playing, 2=Ended
 
@@ -803,24 +802,25 @@ COLORVISIONCORE_API int FreeResult(char* result);
 **C# Usage:**
 ```csharp
 [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-public static extern void FreeResult(IntPtr str);
+public static extern int FreeResult(IntPtr str);
 
 // Usage
 IntPtr resultPtr;
 int len = M_FindLuminousArea(img, roi, config, out resultPtr);
-string json = Marshal.PtrToStringAnsi(resultPtr);
-FreeResult(resultPtr);  // Must free!
+string json = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
 ```
 
 ---
 
-### FreeHImageData
+### M_FreeHImageData
 
 Free image data allocated by DLL.
 
 ```cpp
-void FreeHImageData(unsigned char* data);
+void M_FreeHImageData(unsigned char* data);
 ```
+
+Use this for every buffer that the DLL returns from `CoTaskMemAlloc`, including `HImage.pData` and the `rowGrayPixels` buffer returned by `M_ConvertImage`.
 
 ---
 
@@ -869,10 +869,10 @@ enum StitchingErrorCode {
 
 ### C# Side Responsibilities
 
-1. **Allocating HImage:** Use `Marshal.AllocHGlobal()` for `pData`
-2. **Freeing HImage:** Call `HImage.Dispose()` or `Marshal.FreeHGlobal()`
-3. **Freeing Results:** Always call `FreeResult()` for JSON output strings
-4. **Freeing Byte Arrays:** Call `M_SetHImageData()` or free manually
+1. **Allocating HImage:** Use `Marshal.AllocCoTaskMem()` for `pData`
+2. **Freeing HImage:** Call `HImage.Dispose()` or `Marshal.FreeCoTaskMem()`
+3. **Freeing Results:** Always call `FreeResult()` for JSON output strings, or use `PtrToStringAnsiAndFree()`
+4. **Freeing Byte Arrays:** Use `M_FreeHImageData()` for `M_ConvertImage` buffers
 
 ### Example Memory Lifecycle
 
@@ -884,7 +884,7 @@ HImage img = new HImage
     cols = width,
     channels = 3,
     depth = 8,
-    pData = Marshal.AllocHGlobal(width * height * 3)
+    pData = Marshal.AllocCoTaskMem(width * height * 3)
 };
 
 try
@@ -897,7 +897,7 @@ try
     M_AutoLevelsAdjust(img, out outImg);
     
     // Use result...
-    FreeHImageData(outImg.pData);  // Free output
+    M_FreeHImageData(outImg.pData);  // Free output
 }
 finally
 {

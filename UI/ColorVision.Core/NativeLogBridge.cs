@@ -103,20 +103,27 @@ namespace ColorVision.Core
 
         private static void OnNativeLog(int source, int level, IntPtr messagePtr)
         {
-            if (_sink == null)
+            Action<NativeLogSource, NativeLogLevel, string>? sink = _sink;
+            if (sink == null)
             {
                 return;
             }
 
-            string message = Marshal.PtrToStringAnsi(messagePtr) ?? string.Empty;
-            NativeLogSource src = Enum.IsDefined(typeof(NativeLogSource), source)
-                ? (NativeLogSource)source
-                : NativeLogSource.Unknown;
-            NativeLogLevel lvl = Enum.IsDefined(typeof(NativeLogLevel), level)
-                ? (NativeLogLevel)level
-                : NativeLogLevel.Info;
+            try
+            {
+                string message = Marshal.PtrToStringAnsi(messagePtr) ?? string.Empty;
+                NativeLogSource src = Enum.IsDefined(typeof(NativeLogSource), source)
+                    ? (NativeLogSource)source
+                    : NativeLogSource.Unknown;
+                NativeLogLevel lvl = Enum.IsDefined(typeof(NativeLogLevel), level)
+                    ? (NativeLogLevel)level
+                    : NativeLogLevel.Info;
 
-            _sink(src, lvl, message);
+                sink(src, lvl, message);
+            }
+            catch (Exception)
+            {
+            }
         }
     }
 }

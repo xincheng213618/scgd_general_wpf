@@ -138,7 +138,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     channels = channels,
                     depth = depth,
                     stride = stride,
-                    pData = Marshal.AllocHGlobal(requiredLength)
+                    pData = Marshal.AllocCoTaskMem(requiredLength)
                 };
                 capacity = requiredLength;
             }

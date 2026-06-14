@@ -8,7 +8,6 @@ using ColorVision.UI.Menus;
 using ColorVision.Util.Draw.Rectangle;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,8 +27,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                 int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageContext.HImageCache, roiRect, FindLuminousAreajson, out IntPtr resultPtr);
                 if (length > 0)
                 {
-                    string result = Marshal.PtrToStringAnsi(resultPtr);
-                    OpenCVMediaHelper.FreeResult(resultPtr);
+                    string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {

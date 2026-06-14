@@ -48,7 +48,10 @@ extern "C" COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage*
 
 extern "C" COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage, int radius, int* point, int pointCount, int thickness);
 
+// rowGrayPixels is allocated by the DLL with CoTaskMemAlloc; release with M_FreeHImageData.
 extern "C" COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactor, int targetPixelsX = 512, int targetPixelsY = 512);
+
+extern "C" COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data);
 
 extern "C" COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, RoiRect roi);
 
@@ -104,7 +107,7 @@ extern "C" COLORVISIONCORE_API int M_CalSFR(
 // Multi-channel SFR calculation for RGB + L channels
 // For 3-channel images: outputs R, G, B, L (4 channels)
 // For single-channel images: outputs only L (1 channel)
-// L is calculated as: Y = 0.213*R + 0.715*G + 0.072*B
+// L is calculated with sfrmat5-compatible weights: 0.213*R + 0.715*G + 0.072*B.
 extern "C" COLORVISIONCORE_API int M_CalSFRMultiChannel(
     HImage img,
     double del,

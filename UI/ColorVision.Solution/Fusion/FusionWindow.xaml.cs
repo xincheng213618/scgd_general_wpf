@@ -203,6 +203,7 @@ namespace ColorVision.Solution.Fusion
 
                 if (result != 0)
                 {
+                    hImage.Dispose();
                     StatusText.Text = string.Format(Properties.Resources.Sol_Fusion_Failed, result);
                     MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_CalcFailed, result), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
@@ -211,8 +212,15 @@ namespace ColorVision.Solution.Fusion
                 StatusText.Text = Properties.Resources.Sol_Fusion_Converting;
 
                 var swConvert = Stopwatch.StartNew();
-                WriteableBitmap bitmap = hImage.ToWriteableBitmap();
-                hImage.Dispose();
+                WriteableBitmap bitmap;
+                try
+                {
+                    bitmap = hImage.ToWriteableBitmap();
+                }
+                finally
+                {
+                    hImage.Dispose();
+                }
                 swConvert.Stop();
                 convertMs = swConvert.ElapsedMilliseconds;
 

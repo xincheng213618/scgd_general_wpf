@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
@@ -432,9 +431,8 @@ namespace ColorVision.ImageEditor
                     int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageContext.HImageCache, new RoiRect(), FindLuminousAreajson, out IntPtr resultPtr);
                     if (length > 0)
                     {
-                        string result = Marshal.PtrToStringAnsi(resultPtr);
+                        string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                         Console.WriteLine("Result: " + result);
-                        OpenCVMediaHelper.FreeResult(resultPtr);
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {

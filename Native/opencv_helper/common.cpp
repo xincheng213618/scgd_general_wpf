@@ -1,30 +1,44 @@
 #include "pch.h"
 #include "common.h"
-#include "custom_file.h"
-#include <atltime.h>
-#include <memory>
+#include <Windows.h>
+#include <opencv2/opencv.hpp>
+#include <atomic>
+#include <cstring>
+#include <exception>
 #include <string>
+#include <vector>
 
-InitialFrame initialFrame = NULL;
-UpdateFrame updateFrame = NULL;
-
-COLORVISIONCORE_API void SetInitialFrame(InitialFrame fn)
+namespace
 {
-    initialFrame = fn;
-}
+std::atomic<InitialFrame> g_initialFrame{ nullptr };
+std::atomic<UpdateFrame> g_updateFrame{ nullptr };
 
-COLORVISIONCORE_API void SetUpdateFrame(UpdateFrame fn)
+template <typename Func>
+int GuardCommonExport(Func func) noexcept
 {
-    updateFrame = fn;
-}
-
-COLORVISIONCORE_API int ReadCVFile(char* FilePath)
-{
-    cv::Mat mat = CVRead(FilePath);
-    if (!mat.empty()) {
-        return initialFrame(mat.data, mat.rows, mat.cols, mat.channels());
+    try {
+        return func();
     }
-    return -1;
+    catch (const cv::Exception&) {
+        return -4;
+    }
+    catch (const std::exception&) {
+        return -5;
+    }
+    catch (...) {
+        return -6;
+    }
+}
+}
+
+extern "C" COLORVISIONCORE_API void SetInitialFrame(InitialFrame fn)
+{
+    g_initialFrame.store(fn, std::memory_order_release);
+}
+
+extern "C" COLORVISIONCORE_API void SetUpdateFrame(UpdateFrame fn)
+{
+    g_updateFrame.store(fn, std::memory_order_release);
 }
 
 // Optimized UTF8ToGB using RAII and std::vector for automatic memory management
@@ -61,22 +75,32 @@ std::string UTF8ToGB(const char* str)
     return std::string(multiByteBuffer.data());
 }
 
-COLORVISIONCORE_API int ReadVideoTest(char* FilePath)
+extern "C" COLORVISIONCORE_API int ReadVideoTest(const char* filePath)
 {
-    cv::Mat frame;
-    cv::VideoCapture cap = cv::VideoCapture("D:\\1.mp4");
-
-    if (!cap.isOpened()) {
-        return -1;
-    }
-
-    for (;;) {
-        cap >> frame;
-        if (frame.empty()) {
-            break;
+    return GuardCommonExport([&]() -> int {
+        InitialFrame callback = g_initialFrame.load(std::memory_order_acquire);
+        if (filePath == nullptr || filePath[0] == '\0' || callback == nullptr) {
+            return -1;
         }
-        initialFrame(frame.data, frame.rows, frame.cols, frame.channels());
-        cv::waitKey(30);
-    }
-    return 0;
+
+        cv::Mat frame;
+        cv::VideoCapture cap = cv::VideoCapture(filePath);
+
+        if (!cap.isOpened()) {
+            return -2;
+        }
+
+        for (;;) {
+            cap >> frame;
+            if (frame.empty()) {
+                break;
+            }
+            const int callbackResult = callback(frame.data, frame.rows, frame.cols, frame.channels());
+            if (callbackResult != 0) {
+                return callbackResult;
+            }
+            cv::waitKey(30);
+        }
+        return 0;
+        });
 }

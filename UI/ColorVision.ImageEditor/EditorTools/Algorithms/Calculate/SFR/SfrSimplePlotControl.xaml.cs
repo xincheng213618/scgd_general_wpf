@@ -3,7 +3,6 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
@@ -35,10 +34,26 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             plt.Legend.Alignment = Alignment.UpperRight;
         }
 
+        private static double[] TrimToLength(double[] values, int length)
+        {
+            if (values == null || length <= 0)
+            {
+                return Array.Empty<double>();
+            }
+
+            int copyLength = Math.Min(values.Length, length);
+            if (copyLength == values.Length)
+            {
+                return values;
+            }
+
+            double[] trimmed = new double[copyLength];
+            Array.Copy(values, trimmed, copyLength);
+            return trimmed;
+        }
+
         public void SetData(double[] frequencies, double[] sfrValues, string label = "SFR")
         {
-            _frequencies = frequencies;
-            _sfrValues = sfrValues;
             _multiChannelData = null;
 
             var plt = WpfPlot.Plot;
@@ -46,13 +61,17 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
 
             if (frequencies == null || sfrValues == null || frequencies.Length == 0 || sfrValues.Length == 0)
             {
+                _frequencies = Array.Empty<double>();
+                _sfrValues = Array.Empty<double>();
                 WpfPlot.Refresh();
                 return;
             }
 
             int n = Math.Min(frequencies.Length, sfrValues.Length);
-            double[] freqData = frequencies.Take(n).ToArray();
-            double[] sfrData = sfrValues.Take(n).ToArray();
+            double[] freqData = TrimToLength(frequencies, n);
+            double[] sfrData = TrimToLength(sfrValues, n);
+            _frequencies = freqData;
+            _sfrValues = sfrData;
 
             var scatter = plt.Add.Scatter(freqData, sfrData);
             scatter.LegendText = label;
@@ -68,16 +87,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         public void SetMultiChannelData(double[] frequencies, 
             double[] sfrR, double[] sfrG, double[] sfrB, double[] sfrL)
         {
-            _frequencies = frequencies;
-            _sfrValues = sfrL; // Default to L channel for queries
             _queryChannel = "L";
-            _multiChannelData = new Dictionary<string, double[]>
-            {
-                { "R", sfrR },
-                { "G", sfrG },
-                { "B", sfrB },
-                { "L", sfrL }
-            };
 
             var plt = WpfPlot.Plot;
             plt.Clear();
@@ -88,54 +98,60 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             _scatterB = null;
             _scatterL = null;
 
-            if (frequencies == null || frequencies.Length == 0)
+            if (frequencies == null || sfrR == null || sfrG == null || sfrB == null || sfrL == null ||
+                frequencies.Length == 0 || sfrR.Length == 0 || sfrG.Length == 0 || sfrB.Length == 0 || sfrL.Length == 0)
             {
+                _frequencies = Array.Empty<double>();
+                _sfrValues = Array.Empty<double>();
+                _multiChannelData = null;
                 WpfPlot.Refresh();
                 return;
             }
 
-            int n = frequencies.Length;
-            double[] freqData = frequencies.Take(n).ToArray();
+            int n = Math.Min(frequencies.Length, Math.Min(Math.Min(sfrR.Length, sfrG.Length), Math.Min(sfrB.Length, sfrL.Length)));
+            double[] freqData = TrimToLength(frequencies, n);
+            double[] sfrDataR = TrimToLength(sfrR, n);
+            double[] sfrDataG = TrimToLength(sfrG, n);
+            double[] sfrDataB = TrimToLength(sfrB, n);
+            double[] sfrDataL = TrimToLength(sfrL, n);
+
+            _frequencies = freqData;
+            _sfrValues = sfrDataL;
+            _multiChannelData = new Dictionary<string, double[]>
+            {
+                { "R", sfrDataR },
+                { "G", sfrDataG },
+                { "B", sfrDataB },
+                { "L", sfrDataL }
+            };
 
             // Add R channel - Red
-            if (sfrR != null && sfrR.Length >= n)
-            {
-                _scatterR = plt.Add.Scatter(freqData, sfrR.Take(n).ToArray());
-                _scatterR.LegendText = "R";
-                _scatterR.LineWidth = 2;
-                _scatterR.MarkerSize = 0;
-                _scatterR.Color = ScottPlot.Color.FromHex("#FF0000");
-            }
+            _scatterR = plt.Add.Scatter(freqData, sfrDataR);
+            _scatterR.LegendText = "R";
+            _scatterR.LineWidth = 2;
+            _scatterR.MarkerSize = 0;
+            _scatterR.Color = ScottPlot.Color.FromHex("#FF0000");
 
             // Add G channel - Green
-            if (sfrG != null && sfrG.Length >= n)
-            {
-                _scatterG = plt.Add.Scatter(freqData, sfrG.Take(n).ToArray());
-                _scatterG.LegendText = "G";
-                _scatterG.LineWidth = 2;
-                _scatterG.MarkerSize = 0;
-                _scatterG.Color = ScottPlot.Color.FromHex("#00FF00");
-            }
+            _scatterG = plt.Add.Scatter(freqData, sfrDataG);
+            _scatterG.LegendText = "G";
+            _scatterG.LineWidth = 2;
+            _scatterG.MarkerSize = 0;
+            _scatterG.Color = ScottPlot.Color.FromHex("#00FF00");
 
             // Add B channel - Blue
-            if (sfrB != null && sfrB.Length >= n)
-            {
-                _scatterB = plt.Add.Scatter(freqData, sfrB.Take(n).ToArray());
-                _scatterB.LegendText = "B";
-                _scatterB.LineWidth = 2;
-                _scatterB.MarkerSize = 0;
-                _scatterB.Color = ScottPlot.Color.FromHex("#0000FF");
-            }
+            _scatterB = plt.Add.Scatter(freqData, sfrDataB);
+            _scatterB.LegendText = "B";
+            _scatterB.LineWidth = 2;
+            _scatterB.MarkerSize = 0;
+            _scatterB.Color = ScottPlot.Color.FromHex("#0000FF");
 
             // Add L channel - Gray/Black
-            if (sfrL != null && sfrL.Length >= n)
-            {
-                _scatterL = plt.Add.Scatter(freqData, sfrL.Take(n).ToArray());
-                _scatterL.LegendText = "L (Luminance)";
-                _scatterL.LineWidth = 2.5f;
-                _scatterL.MarkerSize = 0;
-                _scatterL.Color = ScottPlot.Color.FromHex("#000000");
-            }
+            _scatterL = plt.Add.Scatter(freqData, sfrDataL);
+            _scatterL.LegendText = "L (Luminance)";
+            _scatterL.LineWidth = 2.5f;
+            _scatterL.MarkerSize = 0;
+            _scatterL.Color = ScottPlot.Color.FromHex("#000000");
 
             // Set default axis limits: MTF (0-1) and Freq (0-1)
             plt.Axes.SetLimits(0, 1, 0, 1);

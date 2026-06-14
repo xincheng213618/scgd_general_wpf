@@ -6,6 +6,9 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <condition_variable>
+#include <exception>
+#include <memory>
 
 struct VideoContext {
 	cv::VideoCapture cap;
@@ -13,30 +16,31 @@ struct VideoContext {
 	double fps;
 	int width;
 	int height;
-	std::atomic<bool> threadRunning; // 控制线程生命周期 (Close 时设为 false)
-	std::atomic<bool> isPaused;      // 控制播放状态 (Pause/Play 切换)
-	std::thread playThread;          // 解码线程 (生产者)
-	std::thread consumerThread;      // 消费者线程 (回调UI)
+	std::atomic<bool> threadRunning; // Cleared by Close to stop worker threads.
+	std::atomic<bool> isPaused;      // Playback state toggled by Pause/Play.
+	std::thread playThread;          // Decode producer thread.
+	std::thread consumerThread;      // Callback consumer thread.
 	std::atomic<bool> stopRequested;
-	double playbackSpeed;
+	std::atomic<double> playbackSpeed;
 	std::mutex capMutex;
-	std::condition_variable cvPause; //用于暂停时挂起线程，避免空转占用CPU
+	std::condition_variable cvPause; // Suspends the producer while paused.
 	std::mutex pauseMutex;
 	VideoFrameCallback frameCallback;
 	VideoStatusCallback statusCallback;
 	void* userData;
+	std::mutex callbackMutex;
 	std::mutex seekMutex;
-	std::atomic<int> seekRequestFrame; // -1 表示无请求，>=0 表示目标帧
+	std::atomic<int> seekRequestFrame; // -1 means no request; >=0 is target frame.
 
 	// Resize scale: 1.0 = original, 0.5 = 1/2, 0.25 = 1/4, 0.125 = 1/8
 	std::atomic<double> resizeScale;
 
-	// "最新帧槽位" (Latest Frame Slot) — 生产者直接覆盖，消费者取走最新帧
+	// Latest frame slot: producer overwrites it, consumer takes the newest frame.
 	cv::Mat latestFrame;
 	int latestFrameIndex;
 	bool latestFrameValid;
-	std::mutex slotMutex;              // 保护槽位读写
-	std::condition_variable slotReady; // 通知消费者有新帧
+	std::mutex slotMutex;              // Protects latest frame slot reads/writes.
+	std::condition_variable slotReady; // Notifies the consumer when a frame is ready.
 
 	VideoContext() : totalFrames(0), fps(0), width(0), height(0),
 		stopRequested(false), playbackSpeed(1.0),
@@ -45,51 +49,142 @@ struct VideoContext {
 		resizeScale(1.0), latestFrameIndex(0), latestFrameValid(false) {}
 };
 
-static std::unordered_map<int, VideoContext*> g_videos;
+using VideoContextPtr = std::shared_ptr<VideoContext>;
+
+static std::unordered_map<int, VideoContextPtr> g_videos;
 static std::mutex g_mapMutex;
 static int g_nextHandle = 1;
 
-COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
+template <typename Func>
+static int GuardVideoExport(Func func) noexcept
 {
-	if (!filePath || !info) return -1;
+	try {
+		return func();
+	}
+	catch (const cv::Exception&) {
+		return -2;
+	}
+	catch (const std::exception&) {
+		return -3;
+	}
+	catch (...) {
+		return -4;
+	}
+}
 
-	// Convert wchar_t to UTF-8 for OpenCV
-	int len = WideCharToMultiByte(CP_UTF8, 0, filePath, -1, NULL, 0, NULL, NULL);
-	std::string path(len - 1, '\0');
-	WideCharToMultiByte(CP_UTF8, 0, filePath, -1, &path[0], len, NULL, NULL);
-
-	auto ctx = new VideoContext();
-	std::string gbkPath = UTF8ToGB(path.c_str());
-	ctx->cap.open(gbkPath);
-	if (!ctx->cap.isOpened()) {
-		delete ctx;
-		return -1;
+static void StopVideoWorkers(const VideoContextPtr& ctx) noexcept
+{
+	if (!ctx) {
+		return;
 	}
 
-	ctx->totalFrames = (int)ctx->cap.get(cv::CAP_PROP_FRAME_COUNT);
-	ctx->fps = ctx->cap.get(cv::CAP_PROP_FPS);
-	ctx->width = (int)ctx->cap.get(cv::CAP_PROP_FRAME_WIDTH);
-	ctx->height = (int)ctx->cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-	ctx->playbackSpeed = 1.0;
+	try {
+		{
+			std::lock_guard<std::mutex> lock(ctx->pauseMutex);
+			ctx->threadRunning = false;
+			ctx->isPaused = false;
+		}
+		{
+			std::lock_guard<std::mutex> lock(ctx->slotMutex);
+			ctx->threadRunning = false;
+			ctx->latestFrameValid = false;
+		}
 
-	info->totalFrames = ctx->totalFrames;
-	info->fps = ctx->fps;
-	info->width = ctx->width;
-	info->height = ctx->height;
+		ctx->cvPause.notify_all();
+		ctx->slotReady.notify_all();
 
+		const auto currentThreadId = std::this_thread::get_id();
+		if (ctx->playThread.joinable()) {
+			if (ctx->playThread.get_id() == currentThreadId) {
+				ctx->playThread.detach();
+			}
+			else {
+				ctx->playThread.join();
+			}
+		}
+		if (ctx->consumerThread.joinable()) {
+			if (ctx->consumerThread.get_id() == currentThreadId) {
+				ctx->consumerThread.detach();
+			}
+			else {
+				ctx->consumerThread.join();
+			}
+		}
+	}
+	catch (...) {
+	}
+}
+
+static bool IsImageSequencePattern(const std::string& path)
+{
+	for (size_t pos = path.find('%'); pos != std::string::npos; pos = path.find('%', pos + 1)) {
+		size_t index = pos + 1;
+		if (index < path.size() && path[index] == '0') {
+			++index;
+		}
+		while (index < path.size() && path[index] >= '0' && path[index] <= '9') {
+			++index;
+		}
+		if (index < path.size() && path[index] == 'd') {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static VideoContextPtr GetVideoContext(int handle)
+{
 	std::lock_guard<std::mutex> lock(g_mapMutex);
-	int handle = g_nextHandle++;
-	g_videos[handle] = ctx;
+	auto it = g_videos.find(handle);
+	return it != g_videos.end() ? it->second : nullptr;
+}
 
-	ctx->threadRunning = true;
-	ctx->isPaused = true; // 初始状态是暂停
+static void InvokeStatus(VideoContext& ctx, int handle, int status)
+{
+	VideoStatusCallback callback = nullptr;
+	void* userData = nullptr;
+	{
+		std::lock_guard<std::mutex> lock(ctx.callbackMutex);
+		callback = ctx.statusCallback;
+		userData = ctx.userData;
+	}
 
-	// 生产者线程 (Producer): 按视频帧率解码，写入"最新帧槽位"，不等待消费者
-	ctx->playThread = std::thread([ctx, handle]() {
+	if (callback) {
+		callback(handle, status, userData);
+	}
+}
+
+static int InvokeFrame(VideoContext& ctx, int handle, const cv::Mat& frame, int frameIndex)
+{
+	VideoFrameCallback callback = nullptr;
+	void* userData = nullptr;
+	{
+		std::lock_guard<std::mutex> lock(ctx.callbackMutex);
+		callback = ctx.frameCallback;
+		userData = ctx.userData;
+	}
+
+	if (!callback) {
+		return 0;
+	}
+
+	HImage hImage{};
+	int convertResult = MatToHImage(frame, &hImage);
+	if (convertResult != 0) {
+		return convertResult;
+	}
+
+	callback(handle, &hImage, frameIndex, ctx.totalFrames, userData);
+	return 0;
+}
+
+static void VideoProducerLoop(VideoContextPtr ctx, int handle)
+{
+	try {
 		while (ctx->threadRunning) {
 			auto frameStartTime = std::chrono::steady_clock::now();
 
-			// 1. 处理暂停逻辑 (核心!)
 			{
 				std::unique_lock<std::mutex> lock(ctx->pauseMutex);
 				ctx->cvPause.wait(lock, [ctx] {
@@ -99,7 +194,6 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 
 			if (!ctx->threadRunning) break;
 
-			// 2. 处理 Seek (即使在暂停状态也能 Seek!)
 			bool justSeeked = false;
 			int seekTo = ctx->seekRequestFrame.exchange(-1);
 			if (seekTo >= 0) {
@@ -110,32 +204,34 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 				}
 			}
 
-			// 3. 读取帧
 			if (!ctx->isPaused || justSeeked) {
 				cv::Mat frame;
-				int currentFrame;
+				int currentFrame = 0;
 				bool readSuccess = false;
+				bool reachedEnd = false;
 
 				{
 					std::lock_guard<std::mutex> lock(ctx->capMutex);
 					currentFrame = (int)ctx->cap.get(cv::CAP_PROP_POS_FRAMES);
-					if (ctx->cap.read(frame) && !frame.empty()) {
+					if (ctx->totalFrames > 0 && currentFrame >= ctx->totalFrames) {
+						reachedEnd = true;
+					}
+					else if (ctx->cap.read(frame) && !frame.empty()) {
 						readSuccess = true;
 					}
 					else {
-						if (!ctx->isPaused) {
-							ctx->isPaused = true;
-							if (ctx->statusCallback) ctx->statusCallback(handle, 2, ctx->userData);
-						}
+						reachedEnd = true;
 					}
 				}
 
-				// 4. Resize + 写入最新帧槽位 (直接覆盖，不等待)
+				if (reachedEnd && !ctx->isPaused) {
+					ctx->isPaused = true;
+					InvokeStatus(*ctx, handle, 2);
+				}
+
 				if (readSuccess) {
 					double scale = ctx->resizeScale.load();
 					if (scale > 0.0 && scale < 1.0) {
-						// pyrDown 比 cv::resize 快很多 (SIMD优化，无逐像素插值)
-						// 直接对 frame 做 in-place pyrDown 链，避免中间变量分配
 						if (scale == 0.5) {
 							cv::pyrDown(frame, frame);
 						}
@@ -149,40 +245,28 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 							cv::pyrDown(frame, frame);
 						}
 						else {
-							// 非2的幂次缩放：INTER_NEAREST最快，但会有锯齿
 							cv::Mat resized;
 							cv::resize(frame, resized, cv::Size(), scale, scale, cv::INTER_NEAREST);
 							frame = resized;
 						}
 					}
 
-					// 写入槽位 — 直接覆盖，生产者永不阻塞
 					{
 						std::lock_guard<std::mutex> slotLock(ctx->slotMutex);
-						ctx->latestFrame = frame;       // cv::Mat 引用计数赋值，共享数据指针
+						ctx->latestFrame = frame;
 						ctx->latestFrameIndex = currentFrame;
 						ctx->latestFrameValid = true;
 					}
 					ctx->slotReady.notify_one();
 
-					// Seek while paused: 直接回调显示一帧
-					if (justSeeked && ctx->isPaused && ctx->frameCallback) {
-						HImage hImage;
-						hImage.rows = frame.rows;
-						hImage.cols = frame.cols;
-						hImage.channels = frame.channels();
-						hImage.stride = static_cast<int>(frame.step);
-						hImage.depth = static_cast<int>(frame.elemSize1()) * 8;
-						hImage.pData = frame.data;
-						hImage.isDispose = true;
-						ctx->frameCallback(handle, &hImage, currentFrame, ctx->totalFrames, ctx->userData);
+					if (justSeeked && ctx->isPaused) {
+						InvokeFrame(*ctx, handle, frame, currentFrame);
 					}
 				}
 			}
 
-			// 5. 帧率控制 — 扣除已用时间，保持稳定帧率
 			if (!ctx->isPaused) {
-				double effectiveFps = ctx->fps * ctx->playbackSpeed;
+				double effectiveFps = ctx->fps * ctx->playbackSpeed.load();
 				if (effectiveFps <= 0) effectiveFps = 30.0;
 				int targetDelayMs = (int)(1000.0 / effectiveFps);
 				auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -193,10 +277,18 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 				}
 			}
 		}
-		});
+	}
+	catch (...) {
+		ctx->threadRunning = false;
+		ctx->isPaused = true;
+		ctx->slotReady.notify_all();
+		ctx->cvPause.notify_all();
+	}
+}
 
-	// 消费者线程 (Consumer): 从槽位取最新帧，调用C#回调
-	ctx->consumerThread = std::thread([ctx, handle]() {
+static void VideoConsumerLoop(VideoContextPtr ctx, int handle)
+{
+	try {
 		while (ctx->threadRunning) {
 			cv::Mat frameCopy;
 			int frameIndex = 0;
@@ -204,7 +296,6 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 
 			{
 				std::unique_lock<std::mutex> slotLock(ctx->slotMutex);
-				// 等待新帧，超时50ms避免死锁
 				ctx->slotReady.wait_for(slotLock, std::chrono::milliseconds(50), [ctx] {
 					return ctx->latestFrameValid || !ctx->threadRunning;
 					});
@@ -212,160 +303,233 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 				if (!ctx->threadRunning) break;
 
 				if (ctx->latestFrameValid) {
-					frameCopy = ctx->latestFrame;  // cv::Mat 引用计数，快速
+					frameCopy = ctx->latestFrame;
 					frameIndex = ctx->latestFrameIndex;
-					ctx->latestFrameValid = false; // 标记已取走
+					ctx->latestFrameValid = false;
 					gotFrame = true;
 				}
 			}
 
-			// 调用回调 (在锁外，不阻塞生产者)
-			if (gotFrame && ctx->frameCallback && !ctx->isPaused) {
-				HImage hImage;
-				hImage.rows = frameCopy.rows;
-				hImage.cols = frameCopy.cols;
-				hImage.channels = frameCopy.channels();
-				hImage.stride = static_cast<int>(frameCopy.step);
-				hImage.depth = static_cast<int>(frameCopy.elemSize1()) * 8;
-				hImage.pData = frameCopy.data;
-				hImage.isDispose = true;
-				ctx->frameCallback(handle, &hImage, frameIndex, ctx->totalFrames, ctx->userData);
+			if (gotFrame && !ctx->isPaused) {
+				InvokeFrame(*ctx, handle, frameCopy, frameIndex);
 			}
 		}
-		});
+	}
+	catch (...) {
+		ctx->threadRunning = false;
+		ctx->isPaused = true;
+		ctx->slotReady.notify_all();
+		ctx->cvPause.notify_all();
+	}
+}
 
-	return handle;
+COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
+{
+	return GuardVideoExport([&]() -> int {
+		if (!info) return -1;
+		*info = VideoInfo{};
+		if (!filePath) return -1;
+
+		// Convert wchar_t to UTF-8 for OpenCV
+		int len = WideCharToMultiByte(CP_UTF8, 0, filePath, -1, NULL, 0, NULL, NULL);
+		if (len <= 1) {
+			return -1;
+		}
+
+		std::string path(len, '\0');
+		WideCharToMultiByte(CP_UTF8, 0, filePath, -1, path.data(), len, NULL, NULL);
+		path.resize(len - 1);
+
+		auto ctx = std::make_shared<VideoContext>();
+		std::string gbkPath = UTF8ToGB(path.c_str());
+		bool isOpened = false;
+		if (IsImageSequencePattern(gbkPath)) {
+			isOpened = ctx->cap.open(gbkPath, cv::CAP_IMAGES);
+		}
+		else {
+			isOpened = ctx->cap.open(gbkPath);
+		}
+		if (!isOpened || !ctx->cap.isOpened()) {
+			return -1;
+		}
+
+		ctx->totalFrames = (int)ctx->cap.get(cv::CAP_PROP_FRAME_COUNT);
+		ctx->fps = ctx->cap.get(cv::CAP_PROP_FPS);
+		ctx->width = (int)ctx->cap.get(cv::CAP_PROP_FRAME_WIDTH);
+		ctx->height = (int)ctx->cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+		ctx->playbackSpeed = 1.0;
+
+		info->totalFrames = ctx->totalFrames;
+		info->fps = ctx->fps;
+		info->width = ctx->width;
+		info->height = ctx->height;
+
+		int handle;
+		{
+			std::lock_guard<std::mutex> lock(g_mapMutex);
+			handle = g_nextHandle++;
+		}
+
+		ctx->threadRunning = true;
+		ctx->isPaused = true; // Starts paused.
+
+		try {
+			ctx->playThread = std::thread(VideoProducerLoop, ctx, handle);
+			ctx->consumerThread = std::thread(VideoConsumerLoop, ctx, handle);
+
+			std::lock_guard<std::mutex> lock(g_mapMutex);
+			g_videos[handle] = ctx;
+		}
+		catch (...) {
+			StopVideoWorkers(ctx);
+			throw;
+		}
+
+		return handle;
+		});
 }
 
 COLORVISIONCORE_API int M_VideoReadFrame(int handle, HImage* outImage)
 {
-	std::lock_guard<std::mutex> lock(g_mapMutex);
-	auto it = g_videos.find(handle);
-	if (it == g_videos.end() || !outImage) return -1;
+	return GuardVideoExport([&]() -> int {
+		if (!outImage) return -1;
+		*outImage = HImage{};
 
-	VideoContext* ctx = it->second;
-	std::lock_guard<std::mutex> seekLock(ctx->seekMutex);
+		auto ctx = GetVideoContext(handle);
+		if (!ctx) return -1;
 
-	cv::Mat frame; 
-	if (!ctx->cap.read(frame) || frame.empty()) return -2;
+		cv::Mat frame;
+		{
+			std::lock_guard<std::mutex> lock(ctx->capMutex);
+			int currentFrame = (int)ctx->cap.get(cv::CAP_PROP_POS_FRAMES);
+			if (ctx->totalFrames > 0 && currentFrame >= ctx->totalFrames) return -3;
+			if (!ctx->cap.read(frame) || frame.empty()) return -2;
+		}
 
-	// Convert to BGR if needed (OpenCV reads as BGR by default)
-	return MatToHImage(frame, outImage);
+		// Convert to BGR if needed (OpenCV reads as BGR by default)
+		return MatToHImage(frame, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex)
 {
-	VideoContext* ctx = nullptr;
-	{
-		std::lock_guard<std::mutex> lock(g_mapMutex); // 保护 map 查找
-		auto it = g_videos.find(handle);
-		if (it == g_videos.end()) return -1;
-		ctx = it->second;
-	}
-	if (frameIndex >= 0 && frameIndex < ctx->totalFrames) {
-		ctx->seekRequestFrame = frameIndex;
-		ctx->cvPause.notify_one();
-	}
-	return 0;
+	return GuardVideoExport([&]() -> int {
+		auto ctx = GetVideoContext(handle);
+		if (!ctx) return -1;
+
+		if (frameIndex >= 0 && frameIndex < ctx->totalFrames) {
+			{
+				std::lock_guard<std::mutex> lock(ctx->pauseMutex);
+				ctx->seekRequestFrame = frameIndex;
+			}
+			ctx->cvPause.notify_one();
+			return 0;
+		}
+		return -2;
+		});
 }
 
 COLORVISIONCORE_API int M_VideoGetCurrentFrame(int handle)
 {
-	std::lock_guard<std::mutex> lock(g_mapMutex);
-	auto it = g_videos.find(handle);
-	if (it == g_videos.end()) return -1;
+	return GuardVideoExport([&]() -> int {
+		auto ctx = GetVideoContext(handle);
+		if (!ctx) return -1;
 
-	return (int)it->second->cap.get(cv::CAP_PROP_POS_FRAMES);
+		std::lock_guard<std::mutex> lock(ctx->capMutex);
+		return (int)ctx->cap.get(cv::CAP_PROP_POS_FRAMES);
+		});
 }
 
 COLORVISIONCORE_API int M_VideoSetPlaybackSpeed(int handle, double speed)
 {
-	std::lock_guard<std::mutex> lock(g_mapMutex);
-	auto it = g_videos.find(handle);
-	if (it == g_videos.end()) return -1;
+	return GuardVideoExport([&]() -> int {
+		auto ctx = GetVideoContext(handle);
+		if (!ctx) return -1;
 
-	it->second->playbackSpeed = speed;
-	return 0;
+		if (speed <= 0.0) speed = 1.0;
+		ctx->playbackSpeed.store(speed);
+		return 0;
+		});
 }
 
 COLORVISIONCORE_API int M_VideoSetResizeScale(int handle, double scale)
 {
-	std::lock_guard<std::mutex> lock(g_mapMutex);
-	auto it = g_videos.find(handle);
-	if (it == g_videos.end()) return -1;
+	return GuardVideoExport([&]() -> int {
+		auto ctx = GetVideoContext(handle);
+		if (!ctx) return -1;
 
-	// Clamp to valid values
-	if (scale <= 0.0) scale = 0.125;
-	if (scale > 1.0) scale = 1.0;
-	it->second->resizeScale = scale;
-	return 0;
+		// Clamp to valid values
+		if (scale <= 0.0) scale = 0.125;
+		if (scale > 1.0) scale = 1.0;
+		ctx->resizeScale = scale;
+		return 0;
+		});
 }
 
 COLORVISIONCORE_API int M_VideoPlay(int handle, VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, void* userData)
 {
-	VideoContext* ctx = nullptr;
-	{
-		std::lock_guard<std::mutex> lock(g_mapMutex);
-		auto it = g_videos.find(handle);
-		if (it == g_videos.end()) return -1;
-		ctx = it->second;
-	}
+	return GuardVideoExport([&]() -> int {
+		auto ctx = GetVideoContext(handle);
+		if (!ctx) return -1;
+		if (!frameCallback) return -2;
 
-	ctx->frameCallback = frameCallback;
-	ctx->statusCallback = statusCallback;
-	ctx->userData = userData;
+		{
+			std::lock_guard<std::mutex> callbackLock(ctx->callbackMutex);
+			ctx->frameCallback = frameCallback;
+			ctx->statusCallback = statusCallback;
+			ctx->userData = userData;
+		}
 
-	// 切换状态
-	ctx->isPaused = false;
-	ctx->cvPause.notify_one(); // 唤醒沉睡的线程
+		{
+			std::lock_guard<std::mutex> pauseLock(ctx->pauseMutex);
+			ctx->isPaused = false;
+		}
 
-	if (ctx->statusCallback) ctx->statusCallback(handle, 1, ctx->userData);
-
-	return 0;
+		ctx->cvPause.notify_one();
+		InvokeStatus(*ctx, handle, 1);
+		return 0;
+		});
 }
 
 COLORVISIONCORE_API int M_VideoPause(int handle)
 {
-	VideoContext* ctx = nullptr;
-	{
-		std::lock_guard<std::mutex> lock(g_mapMutex);
-		auto it = g_videos.find(handle);
-		if (it == g_videos.end()) return -1;
-		ctx = it->second;
-	}
+	return GuardVideoExport([&]() -> int {
+		auto ctx = GetVideoContext(handle);
+		if (!ctx) return -1;
 
-	ctx->isPaused = true;
+		{
+			std::lock_guard<std::mutex> pauseLock(ctx->pauseMutex);
+			ctx->isPaused = true;
+		}
 
-	if (ctx->statusCallback) ctx->statusCallback(handle, 0, ctx->userData);
-	return 0;
+		InvokeStatus(*ctx, handle, 0);
+		return 0;
+		});
 }
 
 COLORVISIONCORE_API int M_VideoClose(int handle)
 {
-	VideoContext* ctx = nullptr;
-	{
-		std::lock_guard<std::mutex> lock(g_mapMutex);
-		auto it = g_videos.find(handle);
-		if (it == g_videos.end()) return -1;
-		ctx = it->second;
-		g_videos.erase(it); // 先从全局表中移除，防止其他线程再次获取
-	}
+	return GuardVideoExport([&]() -> int {
+		VideoContextPtr ctx;
+		{
+			std::lock_guard<std::mutex> lock(g_mapMutex);
+			auto it = g_videos.find(handle);
+			if (it == g_videos.end()) return -1;
+			ctx = it->second;
+			g_videos.erase(it); // Remove first so no new API call can obtain it.
+		}
 
-	ctx->threadRunning = false;
-	ctx->isPaused = false; // 确保它不卡在 wait 里
-	ctx->cvPause.notify_all();   // 唤醒生产者
-	ctx->slotReady.notify_all(); // 唤醒消费者
+		{
+			std::lock_guard<std::mutex> lock(ctx->callbackMutex);
+			ctx->frameCallback = nullptr;
+			ctx->statusCallback = nullptr;
+			ctx->userData = nullptr;
+		}
 
-	// 等待线程结束
-	if (ctx->playThread.joinable()) {
-		ctx->playThread.join();
-	}
-	if (ctx->consumerThread.joinable()) {
-		ctx->consumerThread.join();
-	}
+		StopVideoWorkers(ctx);
 
-	// 释放资源
-	ctx->cap.release();
-	delete ctx;
-	return 0;
+		// Release capture resources.
+		ctx->cap.release();
+		return 0;
+		});
 }

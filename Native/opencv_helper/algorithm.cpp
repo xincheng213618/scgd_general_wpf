@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <cmath>
 #include <ctime>
 #include <numeric>
 using namespace cv;
@@ -442,6 +443,13 @@ int findLuminousAreaLocalContrast(cv::Mat& src, std::vector<cv::Point2f>& points
 
 int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointCount,int thickness)
 {
+    if (src.empty() || radius <= 0 || thickness < -1 || pointCount < 0 || (pointCount % 2) != 0) {
+        return -1;
+    }
+    if (pointCount > 0 && points == nullptr) {
+        return -1;
+    }
+
     int depth = src.depth();
     int lutSize = (depth == CV_8U) ? 255 : 65535;
     // ��������ͼ���cv::Mat
@@ -714,6 +722,34 @@ void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, dou
 
 
 
+static void BuildAutoLevelTable(int minValue, int maxValue, int table[256])
+{
+    if (table == nullptr) {
+        return;
+    }
+
+    if (maxValue <= minValue) {
+        for (int i = 0; i < 256; ++i) {
+            table[i] = i;
+        }
+        return;
+    }
+
+    const float scale = 255.0f / static_cast<float>(maxValue - minValue);
+    for (int i = 0; i < 256; ++i)
+    {
+        if (i <= minValue) {
+            table[i] = 0;
+        }
+        else if (i < maxValue) {
+            table[i] = cvRound(static_cast<float>(i - minValue) * scale);
+        }
+        else {
+            table[i] = 255;
+        }
+    }
+}
+
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 {
     CV_Assert(!src.empty() && src.channels() >= 3);
@@ -810,42 +846,12 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         }
     }
 
-    //��ÿ��ͨ�������ֶ����Բ��ұ�
-    //B�������ұ�
     int BTable[256] = { 0 };
-    for (int i = 0; i < 256; i++)
-    {
-        if (i <= BMin)
-            BTable[i] = 0;
-        else if (i > BMin && i < BMax)
-            BTable[i] = cvRound((float)(i - BMin) / (BMax - BMin) * 255);
-        else
-            BTable[i] = 255;
-    }
-
-    //G�������ұ�
     int GTable[256] = { 0 };
-    for (int i = 0; i < 256; i++)
-    {
-        if (i <= GMin)
-            GTable[i] = 0;
-        else if (i > GMin && i < GMax)
-            GTable[i] = cvRound((float)(i - GMin) / (GMax - GMin) * 255);
-        else
-            GTable[i] = 255;
-    }
-
-    //R�������ұ�
     int RTable[256] = { 0 };
-    for (int i = 0; i < 256; i++)
-    {
-        if (i <= RMin)
-            RTable[i] = 0;
-        else if (i > RMin && i < RMax)
-            RTable[i] = cvRound((float)(i - RMin) / (RMax - RMin) * 255);
-        else
-            RTable[i] = 255;
-    }
+    BuildAutoLevelTable(BMin, BMax, BTable);
+    BuildAutoLevelTable(GMin, GMax, GTable);
+    BuildAutoLevelTable(RMin, RMax, RTable);
 
     //��ÿ��ͨ������Ӧ�Ĳ��ұ����зֶ���������
     cv::Mat dst_ = src.clone();
@@ -897,17 +903,24 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
     }
 
     float max_value = accumulator.back();
+    if (max_value <= 0.0f) {
+        return;
+    }
+
     clip_hist_percent *= (max_value / 100.0);
     clip_hist_percent /= 2.0;
 
     int min_gray = 0;
-    while (accumulator[min_gray] < clip_hist_percent) {
+    while (min_gray < hist_size - 1 && accumulator[min_gray] < clip_hist_percent) {
         min_gray++;
     }
 
     int max_gray = hist_size - 1;
-    while (accumulator[max_gray] >= (max_value - clip_hist_percent)) {
+    while (max_gray > 0 && accumulator[max_gray] >= (max_value - clip_hist_percent)) {
         max_gray--;
+    }
+    if (max_gray <= min_gray) {
+        return;
     }
 
     double alpha = 255.0 / (max_gray - min_gray);
@@ -923,7 +936,7 @@ void AdjustBrightnessContrast(const cv::Mat& src, cv::Mat& dst, double alpha, do
 
 void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma)
 {
-    CV_Assert(gamma >= 0);
+    CV_Assert(std::isfinite(gamma) && gamma > 0.0);
 
     double adjustedGamma = 1.0 / gamma;
 

@@ -1206,8 +1206,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
-                            var image = hImageProcessed.ToWriteableBitmap();
-                            hImageProcessed.Dispose();
+                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
