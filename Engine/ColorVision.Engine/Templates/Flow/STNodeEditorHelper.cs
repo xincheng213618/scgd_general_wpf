@@ -561,7 +561,11 @@ namespace ColorVision.Engine.Templates.Flow
             signPanel.Children.Add(StackPanel);
             StackPanel.Children.Clear();
 
-            StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
+            var resourceManager = PropertyEditorHelper.GetResourceManager(STNodeEditor.ActiveNode);
+            StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
+                STNodeEditor.ActiveNode,
+                resourceManager,
+                metadataProvider: FlowNodePropertyMetadataProvider.Instance));
             signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
         public StackPanel StackPanel { get; set; } = new StackPanel();

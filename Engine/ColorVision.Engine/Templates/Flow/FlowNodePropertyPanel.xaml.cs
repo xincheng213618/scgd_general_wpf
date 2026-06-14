@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Templates.Flow
         public STNodePropertyGrid NodePropertyGrid => STNodePropertyGrid1;
         public StackPanel SignStackPanel => SignStackPanelContainer;
 
-        private bool _isPropertyGridMode = true;
+        private bool _isPropertyGridMode;
 
         private void TogglePropertyEditorMode_Click(object sender, RoutedEventArgs e)
         {

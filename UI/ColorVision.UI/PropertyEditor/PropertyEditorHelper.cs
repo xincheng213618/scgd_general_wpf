@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -17,6 +18,15 @@ using System.Windows.Media.Animation;
 
 namespace ColorVision.UI
 {
+    public interface IPropertyEditorMetadataProvider
+    {
+        bool IsPropertyManaged(PropertyInfo propertyInfo);
+        bool IsBrowsable(PropertyInfo propertyInfo);
+        string? GetDisplayName(PropertyInfo propertyInfo);
+        string? GetDescription(PropertyInfo propertyInfo);
+        string? GetCategory(PropertyInfo propertyInfo);
+    }
+
     public static class PropertyEditorHelper
     {
         // Constants
@@ -29,6 +39,7 @@ namespace ColorVision.UI
         public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache { get; } = new();
         private static readonly Dictionary<Type, Type> EditorTypeRegistry = new();
         private static readonly List<(Func<Type, bool> Predicate, Type EditorType)> TypePredicateRegistry = new();
+        private static readonly AsyncLocal<IPropertyEditorMetadataProvider?> MetadataProviderContext = new();
 
         static PropertyEditorHelper()
         {
@@ -118,6 +129,7 @@ namespace ColorVision.UI
         }
 
         private static readonly Lazy<ResourceCache> Resources = new(() => new ResourceCache());
+
         private class ResourceCache
         {
             public Brush GlobalTextBrush { get; set; }
@@ -297,7 +309,6 @@ namespace ColorVision.UI
 
         public static ComboBox GenEnumPropertiesComboBox(PropertyInfo property, object obj)
         {
-            var rm = GetResourceManager(obj);
             var comboBox = new ComboBox
             {
                 Margin = new Thickness(5, 0, 0, 0),
@@ -597,10 +608,31 @@ namespace ColorVision.UI
             dockPanel.SetBinding(UIElement.VisibilityProperty, binding);
         }
 
-        public static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager = null, bool showCategoryHeader = true)
+        public static StackPanel GenPropertyEditorControl(
+            object obj,
+            ResourceManager? resourceManager = null,
+            bool showCategoryHeader = true,
+            IPropertyEditorMetadataProvider? metadataProvider = null)
         {
             var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
-            return GenPropertyEditorControl(obj, resourceManager, visited, showCategoryHeader);
+            var previousProvider = MetadataProviderContext.Value;
+
+            if (metadataProvider != null)
+            {
+                MetadataProviderContext.Value = metadataProvider;
+            }
+
+            try
+            {
+                return GenPropertyEditorControl(obj, resourceManager, visited, showCategoryHeader);
+            }
+            finally
+            {
+                if (metadataProvider != null)
+                {
+                    MetadataProviderContext.Value = previousProvider;
+                }
+            }
         }
 
         private static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager, HashSet<object> visited, bool showCategoryHeader = true)
@@ -622,11 +654,19 @@ namespace ColorVision.UI
                 void CollectProperties(object source)
                 {
                     var type = source.GetType();
+                    var metadataProvider = MetadataProviderContext.Value;
 
                     // 1. 获取属性
                     var allProps = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                    .Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0);
+                                    .Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0)
+                                    .ToList();
 
+                    if (metadataProvider != null && allProps.Any(metadataProvider.IsPropertyManaged))
+                    {
+                        allProps = allProps
+                            .Where(p => metadataProvider.IsPropertyManaged(p) && metadataProvider.IsBrowsable(p))
+                            .ToList();
+                    }
 
                     var sortedProps = orderBy ? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType ?? type)) : allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType ?? type));
 
@@ -637,7 +677,9 @@ namespace ColorVision.UI
                             continue;
 
                         var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
-                        string category = categoryAttr?.Category ?? type.Name;
+                        string category = metadataProvider?.IsPropertyManaged(prop) == true
+                            ? metadataProvider.GetCategory(prop) ?? categoryAttr?.Category ?? type.Name
+                            : categoryAttr?.Category ?? type.Name;
 
                         if (!categoryGroups.TryGetValue(category, out var list))
                         {
@@ -711,7 +753,22 @@ namespace ColorVision.UI
         public static string GetDisplayName(ResourceManager? rm, PropertyInfo prop, string? overrideName = null)
         {
             var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
-            var raw = overrideName ?? displayNameAttr?.DisplayName ?? prop.Name;
+            var metadataProvider = MetadataProviderContext.Value;
+            var metadataName = metadataProvider?.IsPropertyManaged(prop) == true
+                ? metadataProvider.GetDisplayName(prop)
+                : null;
+            var raw = overrideName ?? metadataName ?? displayNameAttr?.DisplayName ?? prop.Name;
+            return GetLocalizedString(rm, raw);
+        }
+
+        public static string GetDescription(ResourceManager? rm, PropertyInfo prop)
+        {
+            var metadataProvider = MetadataProviderContext.Value;
+            var metadataDescription = metadataProvider?.IsPropertyManaged(prop) == true
+                ? metadataProvider.GetDescription(prop)
+                : null;
+            var raw = metadataDescription ?? prop.GetCustomAttribute<DescriptionAttribute>()?.Description;
+
             return GetLocalizedString(rm, raw);
         }
 
@@ -738,7 +795,7 @@ namespace ColorVision.UI
 
         public static TextBlock CreateLabel(PropertyInfo property, ResourceManager? rm)
         {
-            var desc = GetLocalizedString(rm, property.GetCustomAttribute<DescriptionAttribute>()?.Description);
+            var desc = GetDescription(rm, property);
             var tb = new TextBlock
             {
                 Text = GetDisplayName(rm, property),

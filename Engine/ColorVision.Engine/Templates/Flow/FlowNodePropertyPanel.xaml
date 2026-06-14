@@ -20,7 +20,7 @@
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
             <ScrollViewer x:Name="SignStackScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Visibility="Visible">
-                <StackPanel x:Name="SignStackPanelContainer" Orientation="Vertical"/>
+                <StackPanel x:Name="SignStackPanelContainer" Orientation="Vertical" Margin="5"/>
             </ScrollViewer>
         </Grid>
     </Grid>
