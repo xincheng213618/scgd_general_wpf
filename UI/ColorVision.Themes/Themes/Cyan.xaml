@@ -4,13 +4,13 @@
     <Color x:Key="defaultgreyColor">#212121</Color>
 
     <!-- Global colors -->
-    <Color x:Key="GlobalBackgroundColor">#CAE0E4</Color>
-    <Color x:Key="GlobalBroderBrushColor">#B4D4D8</Color>
+    <Color x:Key="GlobalBackgroundColor">#FAFEFF</Color>
+    <Color x:Key="GlobalBroderBrushColor">#C8DEE2</Color>
     <Color x:Key="GlobalTextColor">Black</Color>
-    <Color x:Key="UpdateDialogBackgroundColor">#CAE0E4</Color>
-    <Color x:Key="UpdateDialogSurfaceColor">#B2EBF2</Color>
-    <Color x:Key="UpdateDialogSurfaceHoverColor">#B4D4D8</Color>
-    <Color x:Key="UpdateDialogBorderColor">#00ACC1</Color>
+    <Color x:Key="UpdateDialogBackgroundColor">#FAFEFF</Color>
+    <Color x:Key="UpdateDialogSurfaceColor">#F0FAFC</Color>
+    <Color x:Key="UpdateDialogSurfaceHoverColor">#DDF0F4</Color>
+    <Color x:Key="UpdateDialogBorderColor">#B7D6DC</Color>
     <Color x:Key="UpdateDialogTextPrimaryColor">Black</Color>
     <Color x:Key="UpdateDialogTextSecondaryColor">Black</Color>
     <Color x:Key="UpdateDialogAccentColor">#00ACC1</Color>
@@ -37,24 +37,24 @@
     <!-- 次要背景色 -->
 
     <!-- Border colors -->
-    <SolidColorBrush x:Key="BordrBrush" Color="#CAE0E4"/>
+    <SolidColorBrush x:Key="BordrBrush" Color="#B7D6DC"/>
     <!-- 主背景色 -->
     <SolidColorBrush x:Key="Background" Color="#80DEEA"/>
     <!-- 浅青色 -->
 
     <!-- Button colors -->
-    <SolidColorBrush x:Key="ButtonBackground" Color="#B2EBF2"/>
-    <!-- 浅青色 -->
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#00ACC1"/>
-    <!-- 深青色 -->
+    <SolidColorBrush x:Key="ButtonBackground" Color="#F0FAFC"/>
+    <!-- 控件面 -->
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#B7D6DC"/>
+    <!-- 结构边框 -->
 
     <!-- Global background and border -->
     <SolidColorBrush x:Key="GlobalBackground" Color="{StaticResource GlobalBackgroundColor}" />
     <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
 
     <!-- More global colors -->
-    <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#B2EBF2"/>
-    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#E7F1F3"/>
+    <!-- 页面底色 -->
 
     <!-- Text colors -->
     <SolidColorBrush x:Key="GlobalTextBrush" Color="{StaticResource GlobalTextColor}" />

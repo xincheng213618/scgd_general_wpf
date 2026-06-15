@@ -15,7 +15,11 @@ namespace ColorVision.UI
     {
         private const string BackupFolderName = "Backup";
         private const int MaxBackupCount = 10;
-        private const string ObsoleteConfigOptionsName = "ConfigOptions";
+        private static readonly string[] ObsoleteConfigSectionNames =
+        {
+            "ConfigOptions",
+            "MarketplaceServiceConfig"
+        };
 
         private static readonly ILog log = LogManager.GetLogger(typeof(ConfigHandler));
         private static ConfigHandler? _instance;
@@ -243,7 +247,10 @@ namespace ColorVision.UI
 
         private static void RemoveObsoleteConfigSections(JObject jObject)
         {
-            jObject.Remove(ObsoleteConfigOptionsName);
+            foreach (string sectionName in ObsoleteConfigSectionNames)
+            {
+                jObject.Remove(sectionName);
+            }
         }
 
         private static bool TryReadConfigFile(string fileName, out JObject jObject, Action<Exception> logException)

@@ -235,7 +235,7 @@
   </data>  <data name="MenuRedo" xml:space="preserve">
     <value>重做(_R)</value>
   </data>  <data name="GeneralSettings" xml:space="preserve">
-    <value>通用设置</value>
+    <value>常规</value>
   </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>控制应用写入日志的详细程度。</value>
   </data>

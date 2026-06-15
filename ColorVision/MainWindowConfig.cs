@@ -124,6 +124,7 @@ namespace ColorVision
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override string Header => ColorVision.Properties.Resources.FullScreen;
+        public override Visibility Visibility => Visibility.Collapsed;
 
         public override void Execute()
         {

@@ -58,7 +58,7 @@ namespace ColorVision.UI.Languages
         /// <summary>
         /// 语言
         /// </summary>
-        [ConfigSetting]
+        [ConfigSetting(Order = -30, Section = ConfigSettingConstants.SectionBasic)]
         [DisplayName("Language"), Description("LanguageDescription"), PropertyEditorType(typeof(LanguagePropertiesEditor))]
         public string UICulture
         {

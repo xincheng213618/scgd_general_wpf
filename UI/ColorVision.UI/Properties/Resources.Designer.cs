@@ -601,7 +601,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 通用设置 的本地化字符串。
+        ///   查找类似 常规 的本地化字符串。
         /// </summary>
         public static string GeneralSettings {
             get {

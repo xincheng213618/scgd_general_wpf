@@ -74,11 +74,16 @@ namespace ColorVision.UI.Desktop.Settings
             var visibleEntries = GetVisibleEntries().ToList();
             _navigationEntries = visibleEntries
                 .GroupBy(entry => entry.Group)
-                .Select(group => new NavigationEntry
+                .Select(group =>
                 {
-                    Group = group.Key,
-                    DisplayName = group.First().GroupDisplayName,
-                    Order = GetNavigationOrder(group.Key, group.Min(entry => entry.Metadata.Order))
+                    string displayName = group.First().GroupDisplayName;
+                    return new NavigationEntry
+                    {
+                        Group = group.Key,
+                        DisplayName = displayName,
+                        IconGlyph = ResolveNavigationIcon(group.Key, displayName),
+                        Order = GetNavigationOrder(group.Key, group.Min(entry => entry.Metadata.Order))
+                    };
                 })
                 .OrderBy(entry => entry.Order)
                 .ThenBy(entry => entry.DisplayName)
@@ -276,6 +281,23 @@ namespace ColorVision.UI.Desktop.Settings
         private static int GetNavigationOrder(string group, int order)
         {
             return string.Equals(group, ConfigSettingConstants.Universal, StringComparison.OrdinalIgnoreCase) ? int.MinValue : order;
+        }
+
+        private static string ResolveNavigationIcon(string group, string displayName)
+        {
+            if (string.Equals(group, ConfigSettingConstants.Universal, StringComparison.OrdinalIgnoreCase))
+                return "\uE713";
+
+            string text = $"{group} {displayName}".ToLowerInvariant();
+            if (text.Contains("mcp")) return "\uE968";
+            if (text.Contains("communication") || text.Contains("protocol") || text.Contains("通信")) return "\uE968";
+            if (text.Contains("hot") || text.Contains("key") || text.Contains("快捷")) return "\uE765";
+            if (text.Contains("monitor") || text.Contains("performance") || text.Contains("监控")) return "\uE9D9";
+            if (text.Contains("import") || text.Contains("export") || text.Contains("导入") || text.Contains("导出")) return "\uE8AB";
+            if (text.Contains("plugin") || text.Contains("插件")) return "\uECAA";
+            if (text.Contains("desktop") || text.Contains("pet") || text.Contains("桌面")) return "\uE77B";
+
+            return "\uE713";
         }
 
         private static string GetPageDescription(List<SettingEntry> groupEntries)

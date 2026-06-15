@@ -122,7 +122,8 @@ namespace ColorVision
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
             // 加载已保存的布局
-            layoutManager.LoadLayout();
+            if (!layoutManager.LoadLayout())
+                layoutManager.ResetLayout();
 
             // 重新应用主题以修复 AvalonDock 问题，确保所有切换元素使用正确的主题
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);

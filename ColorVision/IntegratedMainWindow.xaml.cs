@@ -243,7 +243,8 @@ namespace ColorVision
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
-            layoutManager.LoadLayout();
+            if (!layoutManager.LoadLayout())
+                layoutManager.ResetLayout();
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
             DockViewManager.ShowAllViews();
             HookAcquirePanelActivation();

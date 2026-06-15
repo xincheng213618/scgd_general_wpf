@@ -23,7 +23,7 @@ using ColorVision.Engine.Services;
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
 
-    public class BlackMuraConfig : ViewModelBase, IConfig,IConfigSettingProvider
+    public class BlackMuraConfig : ViewModelBase, IConfig
     {
 
         public static BlackMuraConfig Instance =>  ConfigService.Instance.GetRequiredService<BlackMuraConfig>();
@@ -47,22 +47,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         public double BZaRelMaxScale { get => _BZaRelMaxScale; set { _BZaRelMaxScale = value; OnPropertyChanged(); } }
         private double _BZaRelMaxScale = 1;
 
-
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata> {
-                new ConfigSettingMetadata
-                {
-                    Name = "BlackMura",
-                    Description = "BlackMura",
-                    Order = 8,
-                    Type = ConfigSettingType.Class,
-                    BindingName =nameof(WLvMaxScale),
-                    Source = Instance,
-                },
-            };
-        }
     }
 
 

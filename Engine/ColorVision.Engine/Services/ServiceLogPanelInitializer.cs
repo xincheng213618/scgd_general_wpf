@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Services
                     }
 
                     var logOutput = new LogLocalOutput(logPath, ServiceLogEncoding);
-                    layoutManager.RegisterPanel(panelId, logOutput, title, PanelPosition.Bottom);
+                    layoutManager.RegisterPanel(panelId, logOutput, title, PanelPosition.Bottom, isDefaultVisible: false);
                     log.Info($"Registered service log panel: {title} -> {logPath}");
                 }
                 catch (Exception ex)
