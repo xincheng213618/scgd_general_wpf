@@ -1,4 +1,3 @@
-﻿using ColorVision.Adorners;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
