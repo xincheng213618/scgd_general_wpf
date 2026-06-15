@@ -690,12 +690,6 @@
   <data name="DictEditor_ConfirmDeleteAllTitle" xml:space="preserve">
     <value>Confirm Delete All</value>
   </data>
-  <data name="Config_Parameters" xml:space="preserve">
-    <value>Configuration Parameters</value>
-  </data>
-  <data name="Config_EnableBackup" xml:space="preserve">
-    <value>Enable scheduled backup</value>
-  </data>
   <data name="HotKey_RestoreDefault" xml:space="preserve">
     <value>Restore Default</value>
   </data>

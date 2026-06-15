@@ -196,24 +196,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 是否启用定时备份 的本地化字符串。
-        /// </summary>
-        public static string Config_EnableBackup {
-            get {
-                return ResourceManager.GetString("Config_EnableBackup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置相关参数 的本地化字符串。
-        /// </summary>
-        public static string Config_Parameters {
-            get {
-                return ResourceManager.GetString("Config_Parameters", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
         public static string Delete {

@@ -729,12 +729,6 @@
   <data name="DictEditor_ConfirmDeleteAllTitle" xml:space="preserve">
     <value>确认全部删除</value>
   </data>
-  <data name="Config_Parameters" xml:space="preserve">
-    <value>配置相关参数</value>
-  </data>
-  <data name="Config_EnableBackup" xml:space="preserve">
-    <value>是否启用定时备份</value>
-  </data>
   <data name="HotKey_RestoreDefault" xml:space="preserve">
     <value>恢复默认</value>
   </data>

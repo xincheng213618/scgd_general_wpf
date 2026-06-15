@@ -508,8 +508,6 @@
   <data name="DictEditor_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
   <data name="DictEditor_ConfirmDeleteAll" xml:space="preserve"><value>Are you sure you want to delete all {0} items?</value></data>
   <data name="DictEditor_ConfirmDeleteAllTitle" xml:space="preserve"><value>Confirm Delete All</value></data>
-  <data name="Config_Parameters" xml:space="preserve"><value>Configuration Parameters</value></data>
-  <data name="Config_EnableBackup" xml:space="preserve"><value>Enable scheduled backup</value></data>
   <data name="HotKey_RestoreDefault" xml:space="preserve"><value>Restore Default</value></data>
   <data name="HotKey_SaveHotkey" xml:space="preserve"><value>Save Hotkey</value></data>
   <data name="HotKey_LoadHotkey" xml:space="preserve"><value>Load Hotkey</value></data>

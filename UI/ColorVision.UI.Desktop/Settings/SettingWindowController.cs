@@ -1,6 +1,5 @@
 using ColorVision.UI.Properties;
 using log4net;
-using System.Globalization;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -79,8 +78,7 @@ namespace ColorVision.UI.Desktop.Settings
                 {
                     Group = group.Key,
                     DisplayName = group.First().GroupDisplayName,
-                    Count = group.Count(),
-                    Order = group.Min(entry => entry.Metadata.Order)
+                    Order = GetNavigationOrder(group.Key, group.Min(entry => entry.Metadata.Order))
                 })
                 .OrderBy(entry => entry.Order)
                 .ThenBy(entry => entry.DisplayName)
@@ -270,16 +268,14 @@ namespace ColorVision.UI.Desktop.Settings
             _currentGroupDescription.Visibility = string.IsNullOrWhiteSpace(description) ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        private string BuildGroupDescription(List<SettingEntry> groupEntries)
+        private static string BuildGroupDescription(List<SettingEntry> groupEntries)
         {
-            string query = _searchTextBox.Text?.Trim() ?? string.Empty;
-            string format = string.IsNullOrWhiteSpace(query) ? SettingResources.CountFormat : SettingResources.MatchingCountFormat;
-            string countText = string.Format(CultureInfo.CurrentCulture, format, groupEntries.Count);
-            string pageDescription = GetPageDescription(groupEntries);
+            return GetPageDescription(groupEntries);
+        }
 
-            return string.IsNullOrWhiteSpace(pageDescription)
-                ? countText
-                : string.Format(CultureInfo.CurrentCulture, "{0} - {1}", pageDescription, countText);
+        private static int GetNavigationOrder(string group, int order)
+        {
+            return string.Equals(group, ConfigSettingConstants.Universal, StringComparison.OrdinalIgnoreCase) ? int.MinValue : order;
         }
 
         private static string GetPageDescription(List<SettingEntry> groupEntries)

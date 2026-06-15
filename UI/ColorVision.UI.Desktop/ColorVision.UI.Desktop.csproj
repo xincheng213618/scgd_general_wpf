@@ -39,9 +39,6 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-	  <Compile Update="ConfigManagerWindow.xaml.cs">
-	    <SubType>Code</SubType>
-	  </Compile>
 	  <Compile Update="Marketplace\ViewDllVersionsWindow.xaml.cs">
 	    <SubType>Code</SubType>
 	  </Compile>

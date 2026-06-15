@@ -125,24 +125,10 @@
                          SelectionChanged="NavigationListBox_SelectionChanged">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <DockPanel LastChildFill="True">
-                                <Border DockPanel.Dock="Right"
-                                        MinWidth="24"
-                                        Height="20"
-                                        Margin="8,0,0,0"
-                                        CornerRadius="10"
-                                        Background="{DynamicResource GlobalBackground}">
-                                    <TextBlock Text="{Binding Count}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               FontSize="11"
-                                               Foreground="{DynamicResource GlobalTextBrush}"/>
-                                </Border>
-                                <TextBlock Text="{Binding DisplayName}"
-                                           VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"
-                                           Foreground="{DynamicResource GlobalTextBrush}"/>
-                            </DockPanel>
+                            <TextBlock Text="{Binding DisplayName}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource GlobalTextBrush}"/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
