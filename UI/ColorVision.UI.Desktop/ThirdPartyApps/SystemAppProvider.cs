@@ -68,13 +68,6 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 },
                 new ThirdPartyAppInfo
                 {
-                    Name = "Services",
-                    Group = group,
-                    LaunchPath = "mmc.exe",
-                    LaunchArguments = "services.msc",
-                },
-                new ThirdPartyAppInfo
-                {
                     Name = "Network Connections",
                     Group = group,
                     LaunchPath = "control.exe",

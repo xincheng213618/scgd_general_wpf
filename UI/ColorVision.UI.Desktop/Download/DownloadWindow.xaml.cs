@@ -37,6 +37,7 @@ namespace ColorVision.UI.Desktop.Download
             {
                 _instance = new DownloadWindow();
                 _instance.Owner = Application.Current.GetActiveWindow();
+                _instance.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 _instance.Show();
             }
             else

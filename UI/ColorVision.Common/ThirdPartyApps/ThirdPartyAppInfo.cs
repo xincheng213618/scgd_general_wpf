@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1865
 using ColorVision.Common.MVVM;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -76,6 +77,8 @@ namespace ColorVision.Common.ThirdPartyApps
         /// Returns the path to an executable that can be used to extract the application icon.
         /// </summary>
         public Func<string?>? GetIconPath { get; set; }
+
+        private static readonly ConcurrentDictionary<string, BitmapSource> IconSourceCache = new(StringComparer.OrdinalIgnoreCase);
 
         public bool IsInstalled
         {
@@ -188,13 +191,10 @@ namespace ColorVision.Common.ThirdPartyApps
                     string? iconPath = GetIconPath();
                     if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
                     {
-                        using var icon = System.Drawing.Icon.ExtractAssociatedIcon(iconPath);
-                        if (icon != null)
+                        ImageSource? iconSource = CreateIconSource(iconPath);
+                        if (iconSource != null)
                         {
-                            IconSource = Imaging.CreateBitmapSourceFromHIcon(
-                                icon.Handle,
-                                Int32Rect.Empty,
-                                BitmapSizeOptions.FromEmptyOptions());
+                            IconSource = iconSource;
                             return;
                         }
                     }
@@ -209,14 +209,7 @@ namespace ColorVision.Common.ThirdPartyApps
                     string? resolvedPath = ResolveSystemPath(LaunchPath);
                     if (!string.IsNullOrEmpty(resolvedPath) && File.Exists(resolvedPath))
                     {
-                        using var icon = System.Drawing.Icon.ExtractAssociatedIcon(resolvedPath);
-                        if (icon != null)
-                        {
-                            IconSource = Imaging.CreateBitmapSourceFromHIcon(
-                                icon.Handle,
-                                Int32Rect.Empty,
-                                BitmapSizeOptions.FromEmptyOptions());
-                        }
+                        IconSource = CreateIconSource(resolvedPath);
                     }
                 }
                 catch { }
@@ -226,14 +219,7 @@ namespace ColorVision.Common.ThirdPartyApps
             {
                 try
                 {
-                    using var icon = System.Drawing.Icon.ExtractAssociatedIcon(InstalledExePath);
-                    if (icon != null)
-                    {
-                        IconSource = Imaging.CreateBitmapSourceFromHIcon(
-                            icon.Handle,
-                            Int32Rect.Empty,
-                            BitmapSizeOptions.FromEmptyOptions());
-                    }
+                    IconSource = CreateIconSource(InstalledExePath);
                 }
                 catch { }
             }
@@ -242,16 +228,35 @@ namespace ColorVision.Common.ThirdPartyApps
             {
                 try
                 {
-                    using var icon = System.Drawing.Icon.ExtractAssociatedIcon(InstallerPath);
-                    if (icon != null)
-                    {
-                        IconSource = Imaging.CreateBitmapSourceFromHIcon(
-                            icon.Handle,
-                            Int32Rect.Empty,
-                            BitmapSizeOptions.FromEmptyOptions());
-                    }
+                    IconSource = CreateIconSource(InstallerPath);
                 }
                 catch { }
+            }
+        }
+
+        private static BitmapSource? CreateIconSource(string path)
+        {
+            if (IconSourceCache.TryGetValue(path, out var cachedSource))
+                return cachedSource;
+
+            try
+            {
+                using var icon = System.Drawing.Icon.ExtractAssociatedIcon(path);
+                if (icon == null)
+                    return null;
+
+                var source = Imaging.CreateBitmapSourceFromHIcon(
+                    icon.Handle,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromEmptyOptions());
+                if (source.CanFreeze)
+                    source.Freeze();
+                IconSourceCache.TryAdd(path, source);
+                return source;
+            }
+            catch
+            {
+                return null;
             }
         }
 

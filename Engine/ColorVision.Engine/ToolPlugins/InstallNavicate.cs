@@ -24,8 +24,8 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 new ThirdPartyAppInfo
                 {
                     Name = "Navicat",
-                    Group = Properties.Resources.InstallTools,
-                    Order = 50,
+                    Group = ThirdPartyAppGroupNames.CommonTools,
+                    Order = -897,
                     ExecutableFileName = NavicatExeFileName,
                     InstallAction = DownloadAndInstall,
                     KnownExePaths = new[]
