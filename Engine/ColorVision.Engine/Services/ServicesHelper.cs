@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.UI;
 using ColorVision.Themes.Controls;
+using MQTTMessageLib.FileServer;
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -23,6 +24,17 @@ namespace ColorVision.Engine.Services
                 return false;
             }
             return true;
+        }
+
+        public static FileExtType ResolveFileExtType(string fileName)
+        {
+            return System.IO.Path.GetExtension(fileName).ToLowerInvariant() switch
+            {
+                ".cvraw" => FileExtType.Raw,
+                ".cvcie" => FileExtType.CIE,
+                ".tif" or ".tiff" => FileExtType.Tif,
+                _ => FileExtType.Src
+            };
         }
 
         public static async void SelectAndFocusFirstNode(TreeView treeView)

@@ -53,11 +53,8 @@ namespace ColorVision.Engine.Templates.JND
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(JNDParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(JNDParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
@@ -68,7 +65,7 @@ namespace ColorVision.Engine.Templates.JND
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_OLED_JND_CalVas_GetData,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

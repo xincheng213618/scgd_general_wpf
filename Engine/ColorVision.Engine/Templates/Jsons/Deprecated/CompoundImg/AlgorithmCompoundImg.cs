@@ -123,8 +123,6 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
 
         public MsgRecord SendCommand(ParamBase param)
         {
-            string sn = null;
-            sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
             string fileName = UpdateFilePath(FilePath,FilePath1);
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
@@ -133,7 +131,7 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
             MsgSend msg = new()
             {
                 EventName = "CompoundImg",
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
             return DService.PublishAsyncClient(msg);

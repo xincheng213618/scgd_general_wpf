@@ -43,11 +43,8 @@ namespace ColorVision.Engine.Templates.FocusPoints
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(FocusPointsParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(FocusPointsParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
@@ -56,7 +53,7 @@ namespace ColorVision.Engine.Templates.FocusPoints
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_LightArea_GetData,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

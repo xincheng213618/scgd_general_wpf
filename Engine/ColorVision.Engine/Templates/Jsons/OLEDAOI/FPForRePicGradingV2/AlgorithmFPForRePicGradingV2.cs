@@ -1,4 +1,4 @@
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -50,11 +50,8 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2
         }
         public UserControl UserControl { get; set; }
 
-        public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
 
@@ -71,7 +68,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2
             MsgSend msg = new()
             {
                 EventName = "FPForRePicGradingV2",
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
             return DService.PublishAsyncClient(msg);

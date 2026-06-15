@@ -47,11 +47,8 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
         private bool _IsInversion;
 
 
-        public MsgRecord SendCommand(LEDStripDetectionParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(LEDStripDetectionParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
@@ -61,7 +58,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_LED_StripDetection,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

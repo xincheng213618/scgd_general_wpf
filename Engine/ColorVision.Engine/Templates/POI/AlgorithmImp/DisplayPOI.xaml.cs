@@ -4,6 +4,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
+using ColorVision.Themes.Controls;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
@@ -66,7 +67,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (ComboxPoiOutput.SelectedValue is not PoiOutputParam poiOutputParam) return;
 
 
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
+            if (TryGetImageInput(out string imgFileName))
             {
                 string type = string.Empty;
                 string code = string.Empty;
@@ -75,36 +76,22 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, poiOutputParam, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, poiOutputParam);
                 ServicesHelper.SendCommand(sender, msg);
             }
 
         }
 
-        private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
+        private bool TryGetImageInput(out string imgFileName)
         {
-            sn = string.Empty;
-            fileExtType = FileExtType.Tif;
-            imgFileName = string.Empty;
-
-            if (LoaclFileTabItem.IsSelected)
+            imgFileName = LoaclFileTabItem.IsSelected ? ImageFile.Text : CB_CIEImageFiles.Text;
+            if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                imgFileName = ImageFile.Text;
-                fileExtType = FileExtType.CIE;
-                return true;
+                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                return false;
             }
 
-            if (BatchSelect.IsChecked == true)
-            {
-                sn = BatchCode.Text;
-                return true;
-            }
-            else
-            {
-                imgFileName = CB_CIEImageFiles.Text;
-                fileExtType = FileExtType.CIE;
-                return true;
-            }
+            return true;
         }
 
 

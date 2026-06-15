@@ -108,9 +108,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         }
         public UserControl UserControl { get; set; }
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, PoiParam poiParam, PoiFilterParam filter, PoiReviseParam revise, PoiOutputParam output, string sn)
+        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, PoiParam poiParam, PoiFilterParam filter, PoiReviseParam revise, PoiOutputParam output)
         {
-            sn = string.IsNullOrWhiteSpace(sn) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : sn;
 
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
@@ -154,7 +153,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_POI_GetData,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
             return DService.PublishAsyncClient(msg);

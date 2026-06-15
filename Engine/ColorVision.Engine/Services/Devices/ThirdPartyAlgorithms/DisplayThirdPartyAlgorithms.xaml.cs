@@ -138,67 +138,31 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             if (CB_Templates.SelectedValue is not TemplateJsonParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
-            if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
+            if (!TryGetImageInput(out string imgFileName, out FileExtType fileExtType)) return;
 
             string type = deviceService.ServiceTypes.ToString();
             string code = deviceService.Code;
 
-            DService.CallFunction(findDotsArrayParam, sn, imgFileName, fileExtType, code, type);
+            DService.CallFunction(findDotsArrayParam, imgFileName, fileExtType, code, type);
         }
 
 
-        private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
+        private bool TryGetImageInput(out string imgFileName, out FileExtType fileExtType)
         {
-            sn = string.Empty;
             fileExtType = FileExtType.Tif;
-            imgFileName = string.Empty;
+            imgFileName = AlgRawSelect.IsSelected == true ? CB_RawImageFiles.Text : ImageFile.Text;
 
-            bool? isSN = AlgBatchSelect.IsSelected;
-            bool? isRaw = AlgRawSelect.IsSelected;
-
-            if (isSN == true)
-            {
-                if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.BatchNumberCannotBeEmpty, "ColorVision");
-                    return false;
-                }
-                sn = AlgBatchCode.Text;
-            }
-            else if (isRaw == true)
-            {
-                imgFileName = CB_RawImageFiles.Text;
-                fileExtType = FileExtType.Raw;
-            }
-            else
-            {
-                imgFileName = ImageFile.Text;
-            }
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
             }
 
-            if (Path.GetExtension(imgFileName).Contains("cvraw"))
-            {
-                fileExtType = FileExtType.Raw;
-            }
-            else if (Path.GetExtension(imgFileName).Contains("cvcie"))
-            {
-                fileExtType = FileExtType.CIE;
-            }
-            else if (Path.GetExtension(imgFileName).Contains("tif"))
-            {
-                fileExtType = FileExtType.Tif;
-            }
-            else
-            {
-                fileExtType = FileExtType.Src;
-            }
-
+            fileExtType = ServicesHelper.ResolveFileExtType(imgFileName);
             return true;
         }
+
+
 
 
         private void Open_File(object sender, RoutedEventArgs e)

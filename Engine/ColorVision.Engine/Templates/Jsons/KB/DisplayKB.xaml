@@ -61,14 +61,6 @@
                     </StackPanel>
 
                 </TabItem>
-                <TabItem  Background="Transparent" Header="{x:Static properties:Resources.BatchNumber}" x:Name="AlgBatchSelect" >
-                    <StackPanel>
-                        <DockPanel Margin="0,2">
-                            <TextBlock Text="{x:Static properties:Resources.BatchNumber}" Margin="0,0,10,0" Width="40"/>
-                            <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}"  Width="150" HorizontalAlignment="Left" />
-                        </DockPanel>
-                    </StackPanel>
-                </TabItem>
             </TabControl>
         </StackPanel>
     </Grid>
