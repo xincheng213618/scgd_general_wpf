@@ -712,4 +712,139 @@
   <data name="CfgApp_PsDesc" xml:space="preserve"><value>PowerShell 脚本</value></data>
   <data name="CfgApp_ConfigTitle" xml:space="preserve"><value>自定义应用配置</value></data>
   <data name="CfgApp_ListTitle" xml:space="preserve"><value>自定义应用列表</value></data>
-  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>默认自定义分组名</value></data>  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>默认脚本分组名</value></data></root>
+  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>默认自定义分组名</value></data>  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>默认脚本分组名</value></data>
+  <data name="Treemap_Title" xml:space="preserve">
+    <value>磁盘空间分析 - Treemap Viewer</value>
+  </data>
+  <data name="Treemap_DriveLabel" xml:space="preserve">
+    <value>盘符：</value>
+  </data>
+  <data name="Treemap_BrowseDirectory" xml:space="preserve">
+    <value>浏览目录…</value>
+  </data>
+  <data name="Treemap_BrowseDirectoryTooltip" xml:space="preserve">
+    <value>选择要扫描的目录</value>
+  </data>
+  <data name="Treemap_Scan" xml:space="preserve">
+    <value>扫 描</value>
+  </data>
+  <data name="Treemap_ScanTooltip" xml:space="preserve">
+    <value>扫描选定目录并显示树图</value>
+  </data>
+  <data name="Treemap_Cancel" xml:space="preserve">
+    <value>取 消</value>
+  </data>
+  <data name="Treemap_CancelTooltip" xml:space="preserve">
+    <value>中止当前扫描</value>
+  </data>
+  <data name="Treemap_Save" xml:space="preserve">
+    <value>保 存</value>
+  </data>
+  <data name="Treemap_SaveTooltip" xml:space="preserve">
+    <value>将当前扫描结果保存为 JSON 文件</value>
+  </data>
+  <data name="Treemap_Load" xml:space="preserve">
+    <value>加 载</value>
+  </data>
+  <data name="Treemap_LoadTooltip" xml:space="preserve">
+    <value>从已保存的 JSON 文件加载扫描结果</value>
+  </data>
+  <data name="Treemap_Up" xml:space="preserve">
+    <value>↑ 上级</value>
+  </data>
+  <data name="Treemap_UpTooltip" xml:space="preserve">
+    <value>返回父目录节点</value>
+  </data>
+  <data name="Treemap_ShowLabels" xml:space="preserve">
+    <value>显示标签</value>
+  </data>
+  <data name="Treemap_NodeCount" xml:space="preserve">
+    <value>节点数：</value>
+  </data>
+  <data name="Treemap_File" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="Treemap_Folder" xml:space="preserve">
+    <value>文件夹</value>
+  </data>
+  <data name="Treemap_SelectDirPrompt" xml:space="preserve">
+    <value>请选择目录并点击"扫描"，或点击"加载"读取已保存的扫描结果。</value>
+  </data>
+  <data name="Treemap_Scanning" xml:space="preserve">
+    <value>扫描中…</value>
+  </data>
+  <data name="Treemap_ScannedFiles" xml:space="preserve">
+    <value>已扫描 {0:N0} 个文件…</value>
+  </data>
+  <data name="Treemap_Cancelled" xml:space="preserve">
+    <value>已取消。</value>
+  </data>
+  <data name="Treemap_Complete" xml:space="preserve">
+    <value>完成。共 {0:N0} 个文件。</value>
+  </data>
+  <data name="Treemap_ScanError" xml:space="preserve">
+    <value>扫描出错：{0}</value>
+  </data>
+  <data name="Treemap_SaveDialogTitle" xml:space="preserve">
+    <value>保存扫描结果</value>
+  </data>
+  <data name="Treemap_Saved" xml:space="preserve">
+    <value>已保存：{0}</value>
+  </data>
+  <data name="Treemap_SaveFailed" xml:space="preserve">
+    <value>保存失败：{0}</value>
+  </data>
+  <data name="Treemap_LoadDialogTitle" xml:space="preserve">
+    <value>加载扫描结果</value>
+  </data>
+  <data name="Treemap_InvalidFormat" xml:space="preserve">
+    <value>文件格式无效或为空。</value>
+  </data>
+  <data name="Treemap_Loaded" xml:space="preserve">
+    <value>已加载：{0}</value>
+  </data>
+  <data name="Treemap_LoadFailed" xml:space="preserve">
+    <value>加载失败：{0}</value>
+  </data>
+  <data name="Treemap_OpenFile" xml:space="preserve">
+    <value>打开文件</value>
+  </data>
+  <data name="Treemap_OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="Treemap_OpenInExplorer" xml:space="preserve">
+    <value>在资源管理器中打开</value>
+  </data>
+  <data name="Treemap_ShowInExplorer" xml:space="preserve">
+    <value>在资源管理器中显示</value>
+  </data>
+  <data name="Treemap_CopyPath" xml:space="preserve">
+    <value>复制路径</value>
+  </data>
+  <data name="Treemap_DrillDown" xml:space="preserve">
+    <value>向下钻取（以此为根）</value>
+  </data>
+  <data name="Treemap_GoUp" xml:space="preserve">
+    <value>返回上级</value>
+  </data>
+  <data name="Treemap_DeleteFile" xml:space="preserve">
+    <value>删除文件{0}</value>
+  </data>
+  <data name="Treemap_ConfirmDelete" xml:space="preserve">
+    <value>确认删除文件：\n{0}</value>
+  </data>
+  <data name="Treemap_ConfirmDeleteTitle" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="Treemap_DeleteFailed" xml:space="preserve">
+    <value>删除失败：{0}</value>
+  </data>
+  <data name="Treemap_Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Treemap_Prompt" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="Treemap_SelectValidDir" xml:space="preserve">
+    <value>请先选择有效的目录。</value>
+  </data></root>

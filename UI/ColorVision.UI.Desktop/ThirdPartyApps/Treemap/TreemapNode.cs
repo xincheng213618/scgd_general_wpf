@@ -1,8 +1,8 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.IO;
 using System.Windows.Media;
 
-namespace ColorVision.UI.Controls
+namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
 {
     /// <summary>
     /// Represents a node in the treemap hierarchy (e.g. a file or folder).

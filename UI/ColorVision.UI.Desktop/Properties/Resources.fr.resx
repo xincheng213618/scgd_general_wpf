@@ -658,4 +658,49 @@
   <data name="MarketplaceSelectUpdateFile" xml:space="preserve">
     <value>Sélectionner le fichier de mise à jour</value>
   </data>
+  <data name="Treemap_Title" xml:space="preserve"><value>Disk Space Analyzer - Treemap Viewer</value></data>
+  <data name="Treemap_DriveLabel" xml:space="preserve"><value>Drive:</value></data>
+  <data name="Treemap_BrowseDirectory" xml:space="preserve"><value>Browse...</value></data>
+  <data name="Treemap_BrowseDirectoryTooltip" xml:space="preserve"><value>Select directory to scan</value></data>
+  <data name="Treemap_Scan" xml:space="preserve"><value>Scan</value></data>
+  <data name="Treemap_ScanTooltip" xml:space="preserve"><value>Scan selected directory and display treemap</value></data>
+  <data name="Treemap_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Treemap_CancelTooltip" xml:space="preserve"><value>Abort current scan</value></data>
+  <data name="Treemap_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Treemap_SaveTooltip" xml:space="preserve"><value>Save current scan results as JSON file</value></data>
+  <data name="Treemap_Load" xml:space="preserve"><value>Load</value></data>
+  <data name="Treemap_LoadTooltip" xml:space="preserve"><value>Load scan results from saved JSON file</value></data>
+  <data name="Treemap_Up" xml:space="preserve"><value>↑ Up</value></data>
+  <data name="Treemap_UpTooltip" xml:space="preserve"><value>Return to parent directory node</value></data>
+  <data name="Treemap_ShowLabels" xml:space="preserve"><value>Show Labels</value></data>
+  <data name="Treemap_NodeCount" xml:space="preserve"><value>Nodes:</value></data>
+  <data name="Treemap_File" xml:space="preserve"><value>File</value></data>
+  <data name="Treemap_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="Treemap_SelectDirPrompt" xml:space="preserve"><value>Select a directory and click "Scan", or click "Load" to read saved scan results.</value></data>
+  <data name="Treemap_Scanning" xml:space="preserve"><value>Scanning...</value></data>
+  <data name="Treemap_ScannedFiles" xml:space="preserve"><value>Scanned {0:N0} files...</value></data>
+  <data name="Treemap_Cancelled" xml:space="preserve"><value>Cancelled.</value></data>
+  <data name="Treemap_Complete" xml:space="preserve"><value>Done. {0:N0} files total.</value></data>
+  <data name="Treemap_ScanError" xml:space="preserve"><value>Scan error: {0}</value></data>
+  <data name="Treemap_SaveDialogTitle" xml:space="preserve"><value>Save Scan Results</value></data>
+  <data name="Treemap_Saved" xml:space="preserve"><value>Saved: {0}</value></data>
+  <data name="Treemap_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="Treemap_LoadDialogTitle" xml:space="preserve"><value>Load Scan Results</value></data>
+  <data name="Treemap_InvalidFormat" xml:space="preserve"><value>Invalid or empty file format.</value></data>
+  <data name="Treemap_Loaded" xml:space="preserve"><value>Loaded: {0}</value></data>
+  <data name="Treemap_LoadFailed" xml:space="preserve"><value>Load failed: {0}</value></data>
+  <data name="Treemap_OpenFile" xml:space="preserve"><value>Open File</value></data>
+  <data name="Treemap_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
+  <data name="Treemap_OpenInExplorer" xml:space="preserve"><value>Open in Explorer</value></data>
+  <data name="Treemap_ShowInExplorer" xml:space="preserve"><value>Show in Explorer</value></data>
+  <data name="Treemap_CopyPath" xml:space="preserve"><value>Copy Path</value></data>
+  <data name="Treemap_DrillDown" xml:space="preserve"><value>Drill Down (set as root)</value></data>
+  <data name="Treemap_GoUp" xml:space="preserve"><value>Go Up</value></data>
+  <data name="Treemap_DeleteFile" xml:space="preserve"><value>Delete file {0}</value></data>
+  <data name="Treemap_ConfirmDelete" xml:space="preserve"><value>Confirm delete file:\n{0}</value></data>
+  <data name="Treemap_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
+  <data name="Treemap_DeleteFailed" xml:space="preserve"><value>Delete failed: {0}</value></data>
+  <data name="Treemap_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Treemap_Prompt" xml:space="preserve"><value>Prompt</value></data>
+  <data name="Treemap_SelectValidDir" xml:space="preserve"><value>Please select a valid directory first.</value></data>
 </root>

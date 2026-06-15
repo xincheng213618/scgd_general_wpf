@@ -1,6 +1,6 @@
-using System.Windows;
+﻿using System.Windows;
 
-namespace ColorVision.UI.Controls
+namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
 {
     /// <summary>
     /// Calculates squarified treemap layout.

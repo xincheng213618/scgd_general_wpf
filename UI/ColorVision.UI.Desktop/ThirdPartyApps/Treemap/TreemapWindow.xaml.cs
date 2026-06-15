@@ -1,11 +1,10 @@
 ﻿#pragma warning disable CA1001,CA1068,CA1863
-using ColorVision.UI.Controls;
 using Microsoft.Win32;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using TreemapResources = ColorVision.UI.Properties.Resources;
+using TreemapResources = ColorVision.UI.Desktop.Properties.Resources;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
 {

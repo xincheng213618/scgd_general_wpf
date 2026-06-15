@@ -1,12 +1,12 @@
-using ColorVision.UI.Properties;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using TreemapResources = ColorVision.UI.Desktop.Properties.Resources;
 
-namespace ColorVision.UI.Controls
+namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
 {
     /// <summary>Event args carrying the node that was clicked plus the mouse position.</summary>
     public class TreemapNodeEventArgs : EventArgs
@@ -407,7 +407,7 @@ namespace ColorVision.UI.Controls
                     _hoverPopup.HorizontalOffset = screenPos.X + 15;
                     _hoverPopup.VerticalOffset = screenPos.Y + 15;
 
-                    string typeStr = hit.IsLeaf ? Properties.Resources.Treemap_File : Properties.Resources.Treemap_Folder;
+                    string typeStr = hit.IsLeaf ? TreemapResources.Treemap_File : TreemapResources.Treemap_Folder;
                     string sizeStr = FormatSize(hit.Size);
                     string pathLine = hit.FullPath != null ? $"\n{hit.FullPath}" : string.Empty;
                     _hoverText.Text = $"{hit.Name}\n{typeStr}  {sizeStr}{pathLine}";
