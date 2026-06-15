@@ -1,23 +1,15 @@
-#pragma warning disable CA1001,CA1068,CA1863
-using ColorVision.UI.Menus;
-using ColorVision.UI.Properties;
+﻿#pragma warning disable CA1001,CA1068,CA1863
+using ColorVision.UI.Controls;
 using Microsoft.Win32;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using TreemapResources = ColorVision.UI.Properties.Resources;
 
-namespace ColorVision.UI.Controls
+namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
 {
-    public class MenuLogWindow : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override int Order => 10005;
-        public override string Header => Resources.MenuTreemapViewer;
-        public override void Execute() => new TreemapDemoWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-    }
-
-    public partial class TreemapDemoWindow : Window
+    public partial class TreemapWindow : Window
     {
         // ─── Navigation stack (for drill-down / go-up) ───────────────────────
 
@@ -30,7 +22,7 @@ namespace ColorVision.UI.Controls
 
         // ─── Construction / loading ──────────────────────────────────────────
 
-        public TreemapDemoWindow()
+        public TreemapWindow()
         {
             InitializeComponent();
             Loaded += OnLoaded;
@@ -39,7 +31,7 @@ namespace ColorVision.UI.Controls
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             PopulateDrives();
-            TxtProgress.Text = Properties.Resources.Treemap_SelectDirPrompt;
+            TxtProgress.Text = TreemapResources.Treemap_SelectDirPrompt;
         }
 
         // ─── Drive picker ─────────────────────────────────────────────────────
@@ -72,7 +64,7 @@ namespace ColorVision.UI.Controls
             // OpenFolderDialog is available in .NET 8+ WPF
             var dlg = new OpenFolderDialog
             {
-                Title = Properties.Resources.Treemap_BrowseDirectoryTooltip,
+                Title = TreemapResources.Treemap_BrowseDirectoryTooltip,
                 Multiselect = false
             };
             if (dlg.ShowDialog(this) == true)
@@ -92,7 +84,7 @@ namespace ColorVision.UI.Controls
             string path = TxtPath.Text;
             if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
             {
-                MessageBox.Show(Properties.Resources.Treemap_SelectValidDir, Properties.Resources.Treemap_Prompt, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(TreemapResources.Treemap_SelectValidDir, TreemapResources.Treemap_Prompt, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -102,14 +94,14 @@ namespace ColorVision.UI.Controls
             var ct = _cts.Token;
 
             SetScanningState(true);
-            TxtProgress.Text = Properties.Resources.Treemap_Scanning;
+            TxtProgress.Text = TreemapResources.Treemap_Scanning;
             TxtNodeCount.Text = "—";
 
             try
             {
                 var progress = new Progress<int>(count =>
                 {
-                    TxtProgress.Text = string.Format(Properties.Resources.Treemap_ScannedFiles, count);
+                    TxtProgress.Text = string.Format(TreemapResources.Treemap_ScannedFiles, count);
                 });
 
                 var (root, fileCount) = await Task.Run(
@@ -117,7 +109,7 @@ namespace ColorVision.UI.Controls
 
                 if (ct.IsCancellationRequested)
                 {
-                    TxtProgress.Text = Properties.Resources.Treemap_Cancelled;
+                    TxtProgress.Text = TreemapResources.Treemap_Cancelled;
                     return;
                 }
 
@@ -127,16 +119,16 @@ namespace ColorVision.UI.Controls
                     _fullRoot = root;
                     _navStack.Clear();
                     SetDisplayRoot(root);
-                    TxtProgress.Text = string.Format(Properties.Resources.Treemap_Complete, fileCount);
+                    TxtProgress.Text = string.Format(TreemapResources.Treemap_Complete, fileCount);
                 }
             }
             catch (OperationCanceledException)
             {
-                TxtProgress.Text = Properties.Resources.Treemap_Cancelled;
+                TxtProgress.Text = TreemapResources.Treemap_Cancelled;
             }
             catch (Exception ex)
             {
-                TxtProgress.Text = string.Format(Properties.Resources.Treemap_ScanError, ex.Message);
+                TxtProgress.Text = string.Format(TreemapResources.Treemap_ScanError, ex.Message);
             }
             finally
             {
@@ -261,7 +253,7 @@ namespace ColorVision.UI.Controls
 
             var dlg = new SaveFileDialog
             {
-                Title = Properties.Resources.Treemap_SaveDialogTitle,
+                Title = TreemapResources.Treemap_SaveDialogTitle,
                 Filter = "Treemap JSON (*.treemap.json)|*.treemap.json|All Files (*.*)|*.*",
                 DefaultExt = ".treemap.json",
                 FileName = $"{safeName}_scan"
@@ -270,11 +262,11 @@ namespace ColorVision.UI.Controls
             try
             {
                 _fullRoot.SaveToJson(dlg.FileName);
-                TxtProgress.Text = string.Format(Properties.Resources.Treemap_Saved, dlg.FileName);
+                TxtProgress.Text = string.Format(TreemapResources.Treemap_Saved, dlg.FileName);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(Properties.Resources.Treemap_SaveFailed, ex.Message), Properties.Resources.Treemap_Error,
+                MessageBox.Show(string.Format(TreemapResources.Treemap_SaveFailed, ex.Message), TreemapResources.Treemap_Error,
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -283,7 +275,7 @@ namespace ColorVision.UI.Controls
         {
             var dlg = new OpenFileDialog
             {
-                Title = Properties.Resources.Treemap_LoadDialogTitle,
+                Title = TreemapResources.Treemap_LoadDialogTitle,
                 Filter = "Treemap JSON (*.treemap.json)|*.treemap.json|All Files (*.*)|*.*",
                 DefaultExt = ".treemap.json"
             };
@@ -293,7 +285,7 @@ namespace ColorVision.UI.Controls
                 var root = TreemapNode.LoadFromJson(dlg.FileName);
                 if (root == null)
                 {
-                    MessageBox.Show(Properties.Resources.Treemap_InvalidFormat, Properties.Resources.Treemap_Error,
+                    MessageBox.Show(TreemapResources.Treemap_InvalidFormat, TreemapResources.Treemap_Error,
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -301,11 +293,11 @@ namespace ColorVision.UI.Controls
                 _fullRoot = root;
                 SetDisplayRoot(root);
                 TxtPath.Text = root.FullPath ?? root.Name;
-                TxtProgress.Text = string.Format(Properties.Resources.Treemap_Loaded, dlg.FileName);
+                TxtProgress.Text = string.Format(TreemapResources.Treemap_Loaded, dlg.FileName);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(Properties.Resources.Treemap_LoadFailed, ex.Message), Properties.Resources.Treemap_Error,
+                MessageBox.Show(string.Format(TreemapResources.Treemap_LoadFailed, ex.Message), TreemapResources.Treemap_Error,
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -333,7 +325,7 @@ namespace ColorVision.UI.Controls
             {
                 var miOpenFile = new MenuItem
                 {
-                    Header = Properties.Resources.Treemap_OpenFile,
+                    Header = TreemapResources.Treemap_OpenFile,
                     Icon = new TextBlock { Text = "📄", FontSize = 13 }
                 };
                 miOpenFile.Click += (_, _) =>
@@ -354,7 +346,7 @@ namespace ColorVision.UI.Controls
             {
                 var miOpenDir = new MenuItem
                 {
-                    Header = Properties.Resources.Treemap_OpenFolder,
+                    Header = TreemapResources.Treemap_OpenFolder,
                     Icon = new TextBlock { Text = "📁", FontSize = 13 }
                 };
                 miOpenDir.Click += (_, _) =>
@@ -377,7 +369,7 @@ namespace ColorVision.UI.Controls
             {
                 var miOpen = new MenuItem
                 {
-                    Header = isDir ? Properties.Resources.Treemap_OpenInExplorer : Properties.Resources.Treemap_ShowInExplorer,
+                    Header = isDir ? TreemapResources.Treemap_OpenInExplorer : TreemapResources.Treemap_ShowInExplorer,
                     Icon = new TextBlock { Text = "📂", FontSize = 13 }
                 };
                 miOpen.Click += (_, _) =>
@@ -412,7 +404,7 @@ namespace ColorVision.UI.Controls
             {
                 var miCopy = new MenuItem
                 {
-                    Header = Properties.Resources.Treemap_CopyPath,
+                    Header = TreemapResources.Treemap_CopyPath,
                     Icon = new TextBlock { Text = "📋", FontSize = 13 }
                 };
                 miCopy.Click += (_, _) =>
@@ -428,7 +420,7 @@ namespace ColorVision.UI.Controls
             {
                 var miDrill = new MenuItem
                 {
-                    Header = Properties.Resources.Treemap_DrillDown,
+                    Header = TreemapResources.Treemap_DrillDown,
                     Icon = new TextBlock { Text = "🔍", FontSize = 13 }
                 };
                 miDrill.Click += (_, _) =>
@@ -445,7 +437,7 @@ namespace ColorVision.UI.Controls
             {
                 var miUp = new MenuItem
                 {
-                    Header = Properties.Resources.Treemap_GoUp,
+                    Header = TreemapResources.Treemap_GoUp,
                     Icon = new TextBlock { Text = "⬆", FontSize = 13 }
                 };
                 miUp.Click += (_, _) => SetDisplayRoot(_navStack.Pop());
@@ -458,15 +450,15 @@ namespace ColorVision.UI.Controls
                 cm.Items.Add(new Separator());
                 var miDel = new MenuItem
                 {
-                    Header = string.Format(Properties.Resources.Treemap_DeleteFile, node.Name),
+                    Header = string.Format(TreemapResources.Treemap_DeleteFile, node.Name),
                     Icon = new TextBlock { Text = "🗑", FontSize = 13 },
                     Foreground = System.Windows.Media.Brushes.OrangeRed
                 };
                 miDel.Click += (_, _) =>
                 {
                     var res = MessageBox.Show(
-                        string.Format(Properties.Resources.Treemap_ConfirmDelete, node.FullPath),
-                        Properties.Resources.Treemap_ConfirmDeleteTitle, MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                        string.Format(TreemapResources.Treemap_ConfirmDelete, node.FullPath),
+                        TreemapResources.Treemap_ConfirmDeleteTitle, MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (res == MessageBoxResult.Yes)
                     {
                         try
@@ -482,7 +474,7 @@ namespace ColorVision.UI.Controls
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show(string.Format(Properties.Resources.Treemap_DeleteFailed, ex.Message), Properties.Resources.Treemap_Error,
+                            MessageBox.Show(string.Format(TreemapResources.Treemap_DeleteFailed, ex.Message), TreemapResources.Treemap_Error,
                                 MessageBoxButton.OK, MessageBoxImage.Error);
                         }
                     }

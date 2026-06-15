@@ -6,7 +6,6 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
-        xmlns:treemap="clr-namespace:ColorVision.UI.Controls;assembly=ColorVision.UI"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.TemplateManagementWindow}" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
@@ -68,13 +67,8 @@
             </StackPanel>
         </Grid>
 
-        <!-- Main content area: TabControl with Template Grid and Treemap views -->
-        <TabControl Grid.Row="1" Margin="5,0,5,5" x:Name="MainTabControl"
-                    SelectionChanged="MainTabControl_SelectionChanged">
-
-            <!-- Tab 1: Template Grid + Editor -->
-            <TabItem Header="{x:Static properties:Resources.TemplateList}">
-                <Grid>
+        <!-- Main content area: Template Grid + Editor -->
+        <Grid Grid.Row="1" Margin="5,0,5,5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="400" MinWidth="350"/>
                         <ColumnDefinition Width="5"/>
@@ -123,18 +117,7 @@
                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
                         </Grid>
                     </Grid>
-                </Grid>
-            </TabItem>
-
-            <!-- Tab 2: Treemap visualization of template counts -->
-            <TabItem Header="Treemap">
-                <Border Background="#1e1e1e" Padding="4">
-                    <treemap:TreemapControl x:Name="TemplateTreemapCtrl" ShowLabels="True"
-                                           NodeRightClicked="TemplateTreemap_NodeRightClicked"/>
-                </Border>
-            </TabItem>
-
-        </TabControl>
+        </Grid>
 
         <!-- Bottom status bar -->
         <DockPanel Grid.Row="2" Margin="10,0,10,5">
