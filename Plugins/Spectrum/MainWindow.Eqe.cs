@@ -7,7 +7,6 @@ using Spectrum.TimedButtons;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace Spectrum
 {
@@ -19,42 +18,24 @@ namespace Spectrum
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(SpectrumTimedButtonHost.BuildOperationKey);
 
-            if (!operations.Contains(SmuConnectButton))
+            operations.Register(SmuConnectButton, options =>
             {
-                operations.Register(
-                    SmuConnectButton,
-                    "smu-connect-toggle",
-                    SpectrumResources.ConnectSourceMeter,
-                    SpectrumResources.ConnectSourceMeter,
-                    Brushes.Red,
-                    contentFactory: _ => Manager.SmuController.ConnectButtonText,
-                    tooltipFactory: stats => Manager.SmuController.IsOpen
-                        ? SpectrumResources.DisconnectSourceMeter
-                        : TimedButtonOperationTextFormatter.BuildTooltip(SpectrumResources.ConnectSourceMeter, stats),
-                    minimumExpectedDurationMs: 2000);
-            }
+                options.ContentFactory = _ => Manager.SmuController.ConnectButtonText;
+                options.ToolTipFactory = stats => Manager.SmuController.IsOpen
+                    ? SpectrumResources.DisconnectSourceMeter
+                    : TimedButtonOperationTextFormatter.BuildTooltip(SpectrumResources.ConnectSourceMeter, stats);
+                options.MinimumExpectedDurationMs = 2000;
+            });
 
-            if (!operations.Contains(SmuMeasureButton))
+            operations.Register(SmuMeasureButton, options =>
             {
-                operations.Register(
-                    SmuMeasureButton,
-                    "smu-measure",
-                    SpectrumResources.SmuMeasureOrSet,
-                    SpectrumResources.MeasureAndReadSourceMeter,
-                    Brushes.Red,
-                    minimumExpectedDurationMs: 1000);
-            }
+                options.MinimumExpectedDurationMs = 1000;
+            });
 
-            if (!operations.Contains(SmuCloseOutputButton))
+            operations.Register(SmuCloseOutputButton, options =>
             {
-                operations.Register(
-                    SmuCloseOutputButton,
-                    "smu-close-output",
-                    SpectrumResources.CloseOutput,
-                    SpectrumResources.CloseSourceMeterOutput,
-                    Brushes.Red,
-                    minimumExpectedDurationMs: 600);
-            }
+                options.MinimumExpectedDurationMs = 600;
+            });
 
             return operations;
         }

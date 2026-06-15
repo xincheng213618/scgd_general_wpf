@@ -6,7 +6,6 @@ using System.IO.Ports;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace Spectrum.Configs
 {
@@ -74,30 +73,21 @@ namespace Spectrum.Configs
                 _ => !IsConnected,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
-                "filter-wheel-connect",
-                "连接",
-                "连接滤色轮",
-                Brushes.Red);
+                "filter-wheel-connect");
 
             DisconnectCommand = new TimedButtonCommand(
                 async _ => await Task.FromResult(Disconnect()),
                 _ => IsConnected,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
-                "filter-wheel-disconnect",
-                "断开",
-                "断开滤色轮",
-                Brushes.Red);
+                "filter-wheel-disconnect");
 
             QueryPositionCommand = new TimedButtonCommand(
                 async _ => await QueryPositionAsync() >= 0,
                 _ => IsConnected,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
-                "filter-wheel-query",
-                "查询",
-                "查询滤色轮位置",
-                Brushes.Red);
+                "filter-wheel-query");
 
             SetPositionCommand = new TimedButtonCommand(
                 async p =>
@@ -117,10 +107,7 @@ namespace Spectrum.Configs
                 _ => IsConnected,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
-                "filter-wheel-set-position",
-                "切换位置",
-                "切换滤色轮位置",
-                Brushes.Red);
+                "filter-wheel-set-position");
         }
 
         public bool Connect()

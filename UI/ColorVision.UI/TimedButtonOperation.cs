@@ -2,6 +2,7 @@
 using ColorVision.UI.Properties;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -94,8 +95,8 @@ namespace ColorVision.UI
         public Func<double>? ExpectedDurationProvider { get; set; }
         public Action<double>? OnSuccessfulCompletion { get; set; }
         public string? RunningText { get; set; }
-        public Brush? ProgressForeground { get; set; }
-        public bool TreatFirstSuccessAsWarmup { get; set; }
+        public Brush? ProgressForeground { get; set; } = Brushes.Red;
+        public bool TreatFirstSuccessAsWarmup { get; set; } = true;
         public bool DisableButtonWhileRunning { get; set; } = true;
         public bool PersistStatsImmediately { get; set; } = true;
         public double MinimumExpectedDurationMs { get; set; } = 500;
@@ -415,40 +416,34 @@ namespace ColorVision.UI
 
         internal bool IsDisposed => _isDisposed;
 
-        public TimedButtonOperation Register(
-            Button button,
-            string actionKey,
-            string buttonLabel,
-            string tooltipLabel,
-            Brush progressForeground,
-            Func<double>? expectedDurationProvider = null,
-            Action<double>? onSuccessfulCompletion = null,
-            Func<TimedButtonOperationStats?, object>? contentFactory = null,
-            Func<TimedButtonOperationStats?, string?>? tooltipFactory = null,
-            bool persistStatsImmediately = true,
-            bool treatFirstSuccessAsWarmup = true,
-            bool disableButtonWhileRunning = true,
-            double minimumExpectedDurationMs = 500)
+        public TimedButtonOperation Register(Button button, Action<TimedButtonOperationOptions>? configure = null)
         {
-            Func<TimedButtonOperationStats?, object> resolvedContentFactory = contentFactory
-                ?? new Func<TimedButtonOperationStats?, object>(stats => TimedButtonOperationTextFormatter.BuildCompactContent(buttonLabel, stats));
-            Func<TimedButtonOperationStats?, string?> resolvedTooltipFactory = tooltipFactory
-                ?? new Func<TimedButtonOperationStats?, string?>(stats => TimedButtonOperationTextFormatter.BuildTooltip(tooltipLabel, stats));
+            return Register(button, TimedButtonOperationDefaults.BuildActionKey(button), configure);
+        }
 
-            return Register(button, new TimedButtonOperationOptions
+        public TimedButtonOperation Register(Button button, string actionKey, Action<TimedButtonOperationOptions>? configure = null)
+        {
+            ArgumentNullException.ThrowIfNull(button);
+            ThrowIfDisposed();
+
+            if (_operations.TryGetValue(button, out TimedButtonOperation? existingOperation))
             {
-                OperationKey = _operationKeyBuilder(actionKey),
-                RunningText = buttonLabel,
-                ProgressForeground = progressForeground,
-                TreatFirstSuccessAsWarmup = treatFirstSuccessAsWarmup,
-                ExpectedDurationProvider = expectedDurationProvider,
-                OnSuccessfulCompletion = onSuccessfulCompletion,
-                ContentFactory = resolvedContentFactory,
-                ToolTipFactory = resolvedTooltipFactory,
-                PersistStatsImmediately = persistStatsImmediately,
-                DisableButtonWhileRunning = disableButtonWhileRunning,
-                MinimumExpectedDurationMs = minimumExpectedDurationMs
-            });
+                return existingOperation;
+            }
+
+            TimedButtonOperationOptions options = new TimedButtonOperationOptions
+            {
+                OperationKey = _operationKeyBuilder(actionKey)
+            };
+            if (string.IsNullOrWhiteSpace(options.OperationKey))
+            {
+                options.OperationKey = _operationKeyBuilder(TimedButtonOperationDefaults.BuildActionKey(button));
+            }
+
+            TimedButtonOperationDefaults.ApplyButtonDefaults(button, options);
+            configure?.Invoke(options);
+            TimedButtonOperationDefaults.ApplyButtonDefaults(button, options);
+            return Register(button, options);
         }
 
         public TimedButtonOperation Register(Button button, TimedButtonOperationOptions options)
@@ -462,6 +457,12 @@ namespace ColorVision.UI
                 return existingOperation;
             }
 
+            if (string.IsNullOrWhiteSpace(options.OperationKey))
+            {
+                options.OperationKey = _operationKeyBuilder(TimedButtonOperationDefaults.BuildActionKey(button));
+            }
+
+            TimedButtonOperationDefaults.ApplyButtonDefaults(button, options);
             TimedButtonOperation operation = new TimedButtonOperation(button, options);
             _operations.Add(button, operation);
             return operation;
@@ -487,7 +488,9 @@ namespace ColorVision.UI
 
         public TimedButtonOperationScope? Begin(Button button, double? expectedDurationMs = null, string? runningText = null)
         {
-            return Get(button)?.Begin(expectedDurationMs, runningText);
+            ArgumentNullException.ThrowIfNull(button);
+            TimedButtonOperation operation = Get(button) ?? Register(button);
+            return operation.Begin(expectedDurationMs, runningText);
         }
 
         public void RefreshIdleState(Button? button = null)
@@ -574,12 +577,9 @@ namespace ColorVision.UI
                 return existingRegistry;
             }
 
-            if (operationKeyBuilder == null)
-            {
-                throw new InvalidOperationException("TimedButtonOperationRegistry has not been initialized for the current owner.");
-            }
-
-            TimedButtonOperationRegistry registry = new TimedButtonOperationRegistry(owner, operationKeyBuilder);
+            TimedButtonOperationRegistry registry = new TimedButtonOperationRegistry(
+                owner,
+                operationKeyBuilder ?? (actionKey => TimedButtonOperationDefaults.BuildOperationKey(owner, actionKey)));
             Registries.Add(owner, registry);
             return registry;
         }
@@ -596,6 +596,147 @@ namespace ColorVision.UI
 
             registry.Dispose();
             Registries.Remove(owner);
+        }
+    }
+
+    internal static class TimedButtonOperationDefaults
+    {
+        private const double DefaultMinimumExpectedDurationMs = 500;
+
+        public static string BuildOperationKey(FrameworkElement owner, string actionKey)
+        {
+            string ownerKey = ToKebabCase(owner.GetType().FullName ?? owner.GetType().Name);
+            return $"{ownerKey}:{NormalizeActionKey(actionKey)}";
+        }
+
+        public static string BuildActionKey(Button button)
+        {
+            string? actionKey = NormalizeText(button.Name)
+                ?? ExtractText(button.Content)
+                ?? ExtractText(button.ToolTip);
+
+            if (string.IsNullOrWhiteSpace(actionKey))
+            {
+                throw new InvalidOperationException("Timed button operation needs a named button or an explicit action key.");
+            }
+
+            return NormalizeActionKey(actionKey);
+        }
+
+        public static void ApplyButtonDefaults(Button button, TimedButtonOperationOptions options)
+        {
+            object? originalContent = button.Content;
+            string buttonLabel = ResolveButtonLabel(button, originalContent);
+            string tooltipLabel = ExtractText(button.ToolTip) ?? buttonLabel;
+
+            if (string.IsNullOrWhiteSpace(options.OperationKey))
+            {
+                options.OperationKey = BuildOperationKey(button, BuildActionKey(button));
+            }
+
+            options.RunningText ??= buttonLabel;
+            options.ProgressForeground ??= Brushes.Red;
+            options.ContentFactory ??= _ => originalContent ?? buttonLabel;
+            options.ToolTipFactory ??= stats => TimedButtonOperationTextFormatter.BuildTooltip(tooltipLabel, stats);
+
+            if (options.MinimumExpectedDurationMs <= 0)
+            {
+                options.MinimumExpectedDurationMs = DefaultMinimumExpectedDurationMs;
+            }
+        }
+
+        private static string ResolveButtonLabel(Button button, object? originalContent)
+        {
+            return ExtractText(originalContent)
+                ?? ExtractText(button.ToolTip)
+                ?? NormalizeText(button.Name)
+                ?? "Operation";
+        }
+
+        private static string NormalizeActionKey(string value)
+        {
+            string text = NormalizeText(value) ?? string.Empty;
+            text = RemoveSuffix(text, "Button");
+            text = RemoveSuffix(text, "Btn");
+            return ToKebabCase(text);
+        }
+
+        private static string RemoveSuffix(string text, string suffix)
+        {
+            return text.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                ? text[..^suffix.Length]
+                : text;
+        }
+
+        private static string ToKebabCase(string value)
+        {
+            string text = NormalizeText(value) ?? string.Empty;
+            var builder = new StringBuilder(text.Length + 8);
+            bool pendingSeparator = false;
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                char current = text[i];
+                if (!char.IsLetterOrDigit(current))
+                {
+                    pendingSeparator = builder.Length > 0;
+                    continue;
+                }
+
+                char previous = i > 0 ? text[i - 1] : '\0';
+                char next = i + 1 < text.Length ? text[i + 1] : '\0';
+                bool wordBoundary = i > 0
+                    && char.IsUpper(current)
+                    && (char.IsLower(previous) || char.IsDigit(previous) || (char.IsUpper(previous) && char.IsLower(next)));
+
+                if ((pendingSeparator || wordBoundary) && builder.Length > 0 && builder[^1] != '-')
+                {
+                    builder.Append('-');
+                }
+
+                builder.Append(char.ToLowerInvariant(current));
+                pendingSeparator = false;
+            }
+
+            return builder.Length == 0 ? "operation" : builder.ToString();
+        }
+
+        private static string? ExtractText(object? value)
+        {
+            switch (value)
+            {
+                case null:
+                    return null;
+                case string text:
+                    return NormalizeText(text);
+                case TextBlock textBlock:
+                    return NormalizeText(textBlock.Text);
+                case AccessText accessText:
+                    return NormalizeText(accessText.Text);
+                case ContentControl contentControl when !ReferenceEquals(contentControl.Content, value):
+                    return ExtractText(contentControl.Content);
+                case HeaderedContentControl headeredContentControl:
+                    return ExtractText(headeredContentControl.Header);
+                case HeaderedItemsControl headeredItemsControl:
+                    return ExtractText(headeredItemsControl.Header);
+                case DependencyObject dependencyObject:
+                    foreach (object child in LogicalTreeHelper.GetChildren(dependencyObject))
+                    {
+                        string? childText = ExtractText(child);
+                        if (!string.IsNullOrWhiteSpace(childText))
+                        {
+                            return childText;
+                        }
+                    }
+                    return null;
+                default:
+                    return NormalizeText(value.ToString());
+            }
+        }
+
+        private static string? NormalizeText(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
     }
 

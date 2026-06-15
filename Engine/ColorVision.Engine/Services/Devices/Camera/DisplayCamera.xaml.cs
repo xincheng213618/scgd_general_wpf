@@ -861,67 +861,50 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
-            operations.Register(
-                TakePhotoButton,
-                "take-photo",
-                Properties.Resources.Capture,
-                Properties.Resources.Capture,
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay),
-                onSuccessfulCompletion: elapsed => DisplayCameraConfig.TakePictureDelay = Math.Max(0, elapsed - Device.DisplayConfig.ExpTime),
-                persistStatsImmediately: false);
+            operations.Register(TakePhotoButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay);
+                options.OnSuccessfulCompletion = elapsed => DisplayCameraConfig.TakePictureDelay = Math.Max(0, elapsed - Device.DisplayConfig.ExpTime);
+                options.PersistStatsImmediately = false;
+            });
 
-            operations.Register(
-                OpenButton,
-                "open",
-                Properties.Resources.Open,
-                Properties.Resources.OpenCamera,
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.OpenTime),
-                onSuccessfulCompletion: elapsed =>
+            operations.Register(OpenButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, DisplayCameraConfig.OpenTime);
+                options.OnSuccessfulCompletion = elapsed =>
                 {
                     DisplayCameraConfig.OpenTime = elapsed;
                     SaveDisplayConfig();
-                });
+                };
+            });
 
-            operations.Register(
-                VideoButton,
-                "video-open",
-                Properties.Resources.Video,
-                Properties.Resources.VideoCaptureMode,
-                Brushes.Red);
+            operations.Register(VideoButton);
 
-            operations.Register(
-                CloseButton,
-                "close",
-                Properties.Resources.Close,
-                Properties.Resources.CloseCamera,
-                Brushes.Green,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.CloseTime),
-                onSuccessfulCompletion: elapsed =>
+            operations.Register(CloseButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, DisplayCameraConfig.CloseTime);
+                options.OnSuccessfulCompletion = elapsed =>
                 {
                     DisplayCameraConfig.CloseTime = elapsed;
                     SaveDisplayConfig();
-                });
+                };
+            });
 
-            operations.Register(
-                LocalVideoButton,
-                "local-video-open",
-                "LocalVideo",
-                Properties.Resources.LocalVideo,
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.LocalVideoOpenTime),
-                onSuccessfulCompletion: elapsed =>
+            operations.Register(LocalVideoButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, DisplayCameraConfig.LocalVideoOpenTime);
+                options.OnSuccessfulCompletion = elapsed =>
                 {
                     DisplayCameraConfig.LocalVideoOpenTime = elapsed;
                     SaveDisplayConfig();
-                },
-                contentFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                };
+                options.ContentFactory = stats => Device.DisplayConfig.IsLocalVideoOpen
                     ? "Close Video"
-                    : TimedButtonOperationTextFormatter.BuildCompactContent("LocalVideo", stats),
-                tooltipFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                    : TimedButtonOperationTextFormatter.BuildCompactContent("LocalVideo", stats);
+                options.ToolTipFactory = stats => Device.DisplayConfig.IsLocalVideoOpen
                     ? Properties.Resources.CloseLocalVideo
-                    : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.LocalVideo, stats));
+                    : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.LocalVideo, stats);
+            });
 
             return operations;
         }

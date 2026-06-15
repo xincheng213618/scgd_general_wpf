@@ -15,7 +15,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
@@ -165,13 +164,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
-            operations.Register(
-                CalibrationButton,
-                "calibration",
-                Properties.Resources.Calculate,
-                Properties.Resources.Calibration,
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTimeR + Device.DisplayConfig.ExpTimeG + Device.DisplayConfig.ExpTimeB));
+            operations.Register(CalibrationButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, Device.DisplayConfig.ExpTimeR + Device.DisplayConfig.ExpTimeG + Device.DisplayConfig.ExpTimeB);
+            });
             return operations;
         }
 
