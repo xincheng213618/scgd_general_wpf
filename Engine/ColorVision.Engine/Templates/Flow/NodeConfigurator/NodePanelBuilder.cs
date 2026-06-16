@@ -166,13 +166,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                 IsChecked = true,
                 IsEnabled = false
             };
-            var binding = new Binding("DService.IsAlive")
-            {
-                Mode = BindingMode.OneWay,
-                FallbackValue = true,
-                TargetNullValue = true
-            };
-            toggleButton.SetBinding(ToggleButton.IsCheckedProperty, binding);
             var image = new Image
             {
                 Source = (ImageSource)Application.Current.FindResource("DrawingImageProperty"),
