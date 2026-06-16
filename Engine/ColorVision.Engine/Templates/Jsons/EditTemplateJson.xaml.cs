@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -51,6 +52,7 @@ namespace ColorVision.Engine.Templates.Jsons
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
         private const int MaxCopilotJsonChars = 16000;
+        private const string SchemaIndexResourceName = "Templates/Jsons/Schemas/schema-index.json";
         private static readonly object CopilotEditorSyncRoot = new();
         private static readonly Dictionary<string, WeakReference<EditTemplateJson>> CopilotEditors = new(StringComparer.OrdinalIgnoreCase);
         private readonly string _copilotContextSourceId = $"template-json-editor:{Guid.NewGuid():N}";
@@ -181,6 +183,10 @@ namespace ColorVision.Engine.Templates.Jsons
             if (string.IsNullOrWhiteSpace(templateCode))
                 return null;
 
+            var embeddedSchema = TryLoadEmbeddedTemplateSchema(templateCode);
+            if (embeddedSchema != null)
+                return embeddedSchema;
+
             foreach (var indexPath in EnumerateSchemaIndexPaths())
             {
                 try
@@ -230,6 +236,64 @@ namespace ColorVision.Engine.Templates.Jsons
             }
 
             return null;
+        }
+
+        private static TemplateJsonSchemaInfo? TryLoadEmbeddedTemplateSchema(string templateCode)
+        {
+            try
+            {
+                var assembly = typeof(EditTemplateJson).Assembly;
+                var indexJson = ReadEmbeddedResourceText(assembly, SchemaIndexResourceName);
+                if (string.IsNullOrWhiteSpace(indexJson))
+                    return null;
+
+                using var indexDocument = JsonDocument.Parse(indexJson);
+                if (!indexDocument.RootElement.TryGetProperty("schemas", out var schemas) ||
+                    schemas.ValueKind != JsonValueKind.Array)
+                    return null;
+
+                foreach (var schemaItem in schemas.EnumerateArray())
+                {
+                    if (!TryGetString(schemaItem, "code", out var code) ||
+                        !string.Equals(code, templateCode, StringComparison.OrdinalIgnoreCase) ||
+                        !TryGetString(schemaItem, "file", out var relativeFile))
+                        continue;
+
+                    string resourceName = "Templates/Jsons/" + relativeFile.Replace('\\', '/');
+                    string windowsResourceName = "Templates/Jsons/" + relativeFile.Replace('/', '\\');
+                    var schemaJson = ReadEmbeddedResourceText(assembly, resourceName)
+                        ?? ReadEmbeddedResourceText(assembly, windowsResourceName)
+                        ?? ReadEmbeddedResourceText(assembly, resourceName.Replace('/', '\\'));
+                    if (string.IsNullOrWhiteSpace(schemaJson))
+                        continue;
+
+                    var title = TryGetString(schemaItem, "name", out var itemName) ? itemName : code;
+
+                    return new TemplateJsonSchemaInfo
+                    {
+                        Code = code,
+                        Title = title,
+                        SchemaJson = schemaJson,
+                        SchemaPath = "resource://" + resourceName
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Load embedded JSON schema failed: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        private static string? ReadEmbeddedResourceText(Assembly assembly, string resourceName)
+        {
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+                return null;
+
+            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            return reader.ReadToEnd();
         }
 
         private static IEnumerable<string> EnumerateSchemaIndexPaths()

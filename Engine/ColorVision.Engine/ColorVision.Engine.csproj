@@ -42,6 +42,8 @@
 		<None Remove="Assets\Image\归档查询.png" />
 		<None Remove="Assets\Image\综合查询.png" />
 		<None Remove="Assets\png\PowerToy.png" />
+		<None Remove="Templates\Jsons\**\*.schema.json" />
+		<None Remove="Templates\Jsons\Schemas\schema-index.json" />
 		<None Remove="ToolPlugins\UsbTreeView.exe" />
 	</ItemGroup>
 
@@ -169,12 +171,12 @@
 		<None Update="Assets\Tool\UsbTreeView.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Templates\Jsons\**\*.schema.json">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Templates\Jsons\Schemas\schema-index.json">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
+		<EmbeddedResource Include="Templates\Jsons\**\*.schema.json">
+		  <LogicalName>Templates/Jsons/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Templates\Jsons\Schemas\schema-index.json">
+		  <LogicalName>Templates/Jsons/Schemas/schema-index.json</LogicalName>
+		</EmbeddedResource>
 		<None Update="Properties\Settings.settings">
 			<Generator>PublicSettingsSingleFileGenerator</Generator>
 			<LastGenOutput>Settings.Designer.cs</LastGenOutput>

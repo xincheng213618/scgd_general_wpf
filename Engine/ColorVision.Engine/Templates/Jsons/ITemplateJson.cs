@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.UI.Utilities;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
@@ -84,6 +85,57 @@ namespace ColorVision.Engine.Templates.Jsons
                     var item = TemplateParams[index];
                     Db.Updateable(item.Value.TemplateJsonModel).ExecuteCommand();
                 }
+            }
+        }
+
+        public override bool CanSetJsonAsDefault => true;
+
+        public override bool SetJsonAsDefault(int selectedIndex, out string message)
+        {
+            if (selectedIndex < 0 || selectedIndex >= TemplateParams.Count)
+            {
+                message = "请先选择需要设置为默认参数的模板";
+                return false;
+            }
+
+            var template = TemplateParams[selectedIndex];
+            string defaultJson = template.Value.JsonValue;
+            if (!JsonHelper.IsValidJson(defaultJson))
+            {
+                message = $"模板“{template.Key}”的 JSON 无效，无法设置为默认参数";
+                return false;
+            }
+
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            try
+            {
+                Db.Ado.BeginTran();
+
+                SysDictionaryModModel? dictemplate = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateDicId).First();
+                if (dictemplate == null)
+                {
+                    Db.Ado.RollbackTran();
+                    message = $"模板字典未找到，ID={TemplateDicId}";
+                    return false;
+                }
+
+                dictemplate.JsonVal = defaultJson;
+                Db.Updateable(dictemplate).ExecuteCommand();
+
+                template.Value.TemplateJsonModel.JsonVal = defaultJson;
+                Db.Updateable(template.Value.TemplateJsonModel).ExecuteCommand();
+                template.Value.Check();
+
+                Db.Ado.CommitTran();
+                message = $"已将模板“{template.Key}”设置为默认参数";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Db.Ado.RollbackTran();
+                log.Error("设置默认参数失败：" + ex.Message, ex);
+                message = "设置默认参数失败：" + ex.Message;
+                return false;
             }
         }
 

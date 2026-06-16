@@ -102,6 +102,15 @@ namespace ColorVision.Engine.Templates
         {
 
         }
+
+        public virtual bool CanSetJsonAsDefault => false;
+
+        public virtual bool SetJsonAsDefault(int selectedIndex, out string message)
+        {
+            message = "当前模板不支持设置默认参数";
+            return false;
+        }
+
         public virtual Type GetTemplateType { get; }
 
         public virtual void Export(int index)
