@@ -32,7 +32,12 @@
     "dRatio": 0.1,
     "pattern": 1,
     "CalcMethod": 0,
-    "PercentageDisplay": true
+    "PercentageDisplay": true,
+    "NoiseRatio": {
+      "white": 0.01,
+      "black": 0.01
+    },
+    "sensorRatio": 1.0
   },
   "properties": {
     "debugCfg": {
@@ -409,6 +414,68 @@
       "$comment": "Provider note: keep JSON path '$.PercentageDisplay' compatible with the C++ JSON interface; update default/type only with the provider contract.",
       "x-provider": {
         "jsonPath": "$.PercentageDisplay",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "NoiseRatio": {
+      "type": "object",
+      "title": "Noise Ratio",
+      "x-ui": {
+        "order": 90
+      },
+      "default": {
+        "white": 0.01,
+        "black": 0.01
+      },
+      "description": "噪点消除比例配置。",
+      "additionalProperties": true,
+      "properties": {
+        "white": {
+          "type": "number",
+          "title": "White",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 0.01,
+          "description": "噪点消除，最亮部分消除的比例。",
+          "$comment": "Provider note: keep JSON path '$.NoiseRatio.white' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.NoiseRatio.white",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "black": {
+          "type": "number",
+          "title": "Black",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0.01,
+          "description": "噪点消除，最暗部分消除的比例。",
+          "$comment": "Provider note: keep JSON path '$.NoiseRatio.black' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.NoiseRatio.black",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.NoiseRatio' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.NoiseRatio",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "sensorRatio": {
+      "type": "number",
+      "title": "Sensor Ratio",
+      "x-ui": {
+        "order": 100
+      },
+      "default": 1.0,
+      "description": "传感器比例系数。",
+      "$comment": "Provider note: keep JSON path '$.sensorRatio' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.sensorRatio",
         "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
       }
     }
