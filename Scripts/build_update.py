@@ -12,6 +12,7 @@ ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
     'runtimes/win-x64/',
 )
+SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
 
 # ----------------------
 # 动态路径计算（去除用户名硬编码）
@@ -41,6 +42,10 @@ def should_keep_runtime_path(path_value: str) -> bool:
         return True
 
     return normalized.startswith(ALLOWED_RUNTIME_PREFIXES)
+
+
+def is_shell_extension_file(path_value: str) -> bool:
+    return os.path.basename(path_value).lower().startswith(SHELL_EXTENSION_FILE_PREFIX)
 
 def upload_file(file_path, folder_name):
     return file_manager.upload_file(file_path, folder_name)
@@ -219,7 +224,7 @@ def get_file_version(file_path):
     version_info = get_file_version_from_windows_resource(file_path)
     return version_info
 
-def get_all_files(directory):
+def get_all_files(directory, include_shell_extension=True):
     """获取目录下的所有文件路径"""
     file_paths = []
     for root, dirs, files in os.walk(directory):
@@ -230,6 +235,9 @@ def get_all_files(directory):
 
             absolute_path = os.path.join(root, file)
             relative_path = os.path.relpath(absolute_path, directory)
+            if not include_shell_extension and is_shell_extension_file(relative_path):
+                continue
+
             if not should_keep_runtime_path(relative_path):
                 continue
 
@@ -284,8 +292,8 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
         zipf.extractall(old_version_dir)
 
     # 获取文件列表
-    old_files = get_all_files(old_version_dir)
-    new_files = get_all_files(new_version_dir)
+    old_files = get_all_files(old_version_dir, include_shell_extension=False)
+    new_files = get_all_files(new_version_dir, include_shell_extension=False)
 
     # 创建一个相对路径的字典
     old_files_dict = {os.path.relpath(file, old_version_dir): file for file in old_files}

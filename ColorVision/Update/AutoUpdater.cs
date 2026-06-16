@@ -720,6 +720,12 @@ namespace ColorVision.Update
                 if (!hasAnyPackage)
                     throw new InvalidOperationException("Unable to locate incremental update package.");
 
+                int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(tempDirectory);
+                if (skippedShellExtensionFiles > 0)
+                {
+                    log.Info($"Skipped {skippedShellExtensionFiles} shell extension file(s) during incremental update.");
+                }
+
                 // 创建批处理文件内容
                 string batchFilePath = Path.Combine(tempDirectory, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
@@ -784,6 +790,27 @@ namespace ColorVision.Update
             }
         }
 
+        private static int RemoveShellExtensionFilesFromUpdateStage(string stageDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(stageDirectory) || !Directory.Exists(stageDirectory))
+                return 0;
+
+            int removedCount = 0;
+            foreach (string filePath in Directory.EnumerateFiles(stageDirectory, "ColorVision.ShellExtension*", SearchOption.AllDirectories))
+            {
+                FileAttributes attributes = File.GetAttributes(filePath);
+                if (attributes.HasFlag(FileAttributes.ReadOnly))
+                {
+                    File.SetAttributes(filePath, attributes & ~FileAttributes.ReadOnly);
+                }
+
+                File.Delete(filePath);
+                removedCount++;
+            }
+
+            return removedCount;
+        }
+
         private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName, UpdateBackupPrepareResult? backupPrepareResult)
         {
             string executablePath = Path.Combine(programDirectory, executableName);
@@ -811,19 +838,14 @@ namespace ColorVision.Update
                 sb.AppendLine("set \"STATE_FAILED=\"");
                 sb.AppendLine("set \"BACKUP=\"");
             }
-            sb.AppendLine("set \"NEED_RESTART_EXPLORER=0\"");
             sb.AppendLine();
             sb.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");
             sb.AppendLine("timeout /t 2 /nobreak >nul");
             sb.AppendLine("call :mark_state \"%STATE_APPLYING%\"");
             sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine();
-            sb.AppendLine("dir /b /s \"%STAGE%\\ColorVision.ShellExtension*\" >nul 2>nul");
-            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
-            sb.AppendLine("  call :release_shell_hosts");
-            sb.AppendLine("  call :copy_shell_extension");
-            sb.AppendLine("  if !ERRORLEVEL! NEQ 0 goto fail");
-            sb.AppendLine(")");
+            sb.AppendLine("call :skip_shell_extension_files");
+            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine();
             sb.AppendLine("call :copy_application_files");
             sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
@@ -836,23 +858,12 @@ namespace ColorVision.Update
             sb.AppendLine("copy /y \"%~1\" \"%UPDATE_STATE_PATH%\" >nul");
             sb.AppendLine("exit /b !ERRORLEVEL!");
             sb.AppendLine();
-            sb.AppendLine(":release_shell_hosts");
-            sb.AppendLine("taskkill /f /im explorer.exe >nul 2>nul");
-            sb.AppendLine("taskkill /f /im dllhost.exe >nul 2>nul");
-            sb.AppendLine("set \"NEED_RESTART_EXPLORER=1\"");
-            sb.AppendLine("timeout /t 2 /nobreak >nul");
-            sb.AppendLine("exit /b 0");
-            sb.AppendLine();
-            sb.AppendLine(":copy_shell_extension");
-            sb.AppendLine("where robocopy >nul 2>nul");
-            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
-            sb.AppendLine("  robocopy \"%STAGE%\" \"%TARGET%\" ColorVision.ShellExtension* /E /NFL /NDL /NP /NJH /NJS /R:5 /W:1");
-            sb.AppendLine("  set \"RC=!ERRORLEVEL!\"");
-            sb.AppendLine("  if !RC! LSS 8 exit /b 0");
-            sb.AppendLine("  exit /b !RC!");
+            sb.AppendLine(":skip_shell_extension_files");
+            sb.AppendLine("for /r \"%STAGE%\" %%F in (ColorVision.ShellExtension*) do (");
+            sb.AppendLine("  del /f /q \"%%F\" >nul 2>nul");
+            sb.AppendLine("  if exist \"%%F\" exit /b 1");
             sb.AppendLine(")");
-            sb.AppendLine("copy /y \"%STAGE%\\ColorVision.ShellExtension*\" \"%TARGET%\\\" >nul");
-            sb.AppendLine("exit /b !ERRORLEVEL!");
+            sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":copy_application_files");
             sb.AppendLine("where robocopy >nul 2>nul");
@@ -880,7 +891,6 @@ namespace ColorVision.Update
             sb.AppendLine(":success");
             sb.AppendLine("call :mark_state \"%STATE_APPLIED%\"");
             sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
-            sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
             sb.AppendLine("start \"\" \"%EXEPATH%\"");
             sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%STAGE%\\\" 2>nul\"");
             sb.AppendLine("exit /b 0");
@@ -888,7 +898,6 @@ namespace ColorVision.Update
             sb.AppendLine(":fail");
             sb.AppendLine("call :mark_state \"%STATE_FAILED%\"");
             sb.AppendLine("call :rollback");
-            sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
             sb.AppendLine("start \"\" \"%EXEPATH%\"");
             sb.AppendLine("exit /b 1");
             return sb.ToString();
