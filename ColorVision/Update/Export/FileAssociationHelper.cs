@@ -17,6 +17,8 @@ namespace ColorVision.Update.Export
         public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 1000;
         public override string Header => Resources.MenuFileAssociation;
+        public override Visibility Visibility => Visibility.Collapsed;
+
         public override void Execute()
         {
             FileAssociationHelper.RegisterAssociations();
