@@ -500,6 +500,11 @@ namespace ColorVision.Engine.Templates.Flow
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
         {
+            RefreshActiveNodePropertyPanel();
+        }
+
+        public void RefreshActiveNodePropertyPanel()
+        {
             STNodePropertyGrid propertyGrid;
             StackPanel signPanel;
 
@@ -507,6 +512,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 var dockPanel = FlowNodePropertyPanel.Instance;
                 if (dockPanel == null) return;
+                dockPanel.EditorHelper = this;
                 propertyGrid = dockPanel.NodePropertyGrid;
                 signPanel = dockPanel.SignStackPanel;
             }
@@ -553,7 +559,7 @@ namespace ColorVision.Engine.Templates.Flow
                     STNodePropertyGrid = propertyGrid,
                     STNodeEditor = STNodeEditor,
                     PropertyStackPanel = StackPanel,
-                    OnActiveChanged = () => STNodeEditorMain_ActiveChanged(this, new EventArgs())
+                    OnActiveChanged = RefreshActiveNodePropertyPanel
                 };
                 configurator.Configure(context);
             }

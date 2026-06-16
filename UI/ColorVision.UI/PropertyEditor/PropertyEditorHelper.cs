@@ -661,10 +661,11 @@ namespace ColorVision.UI
                                     .Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0)
                                     .ToList();
 
-                    if (metadataProvider != null && allProps.Any(metadataProvider.IsPropertyManaged))
+                    if (metadataProvider != null)
                     {
+                        bool hasManagedProperties = allProps.Any(metadataProvider.IsPropertyManaged);
                         allProps = allProps
-                            .Where(p => metadataProvider.IsPropertyManaged(p) && metadataProvider.IsBrowsable(p))
+                            .Where(p => (!hasManagedProperties || metadataProvider.IsPropertyManaged(p)) && metadataProvider.IsBrowsable(p))
                             .ToList();
                     }
 

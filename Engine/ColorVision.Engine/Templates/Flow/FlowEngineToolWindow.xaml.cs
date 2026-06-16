@@ -419,7 +419,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
+            if (!STNodeEditorMain.EnableBlankLeftDragCanvas && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
             {        // 计算鼠标移动的距离
                 int deltaX = e.X - lastMousePosition.X;
                 int deltaY = e.Y - lastMousePosition.Y;
