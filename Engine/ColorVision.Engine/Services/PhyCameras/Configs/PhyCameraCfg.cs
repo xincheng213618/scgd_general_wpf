@@ -91,6 +91,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         [JsonIgnore]
         [Browsable(true)]
+        [DisplayName("ROI")]
+        [PropertyEditorType(typeof(RoiPropertiesEditor))]
         public Int32Rect ROI
         {
             get => new(PointX, PointY, Width, Height);
@@ -107,6 +109,32 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [JsonIgnore]
         [Browsable(false)]
         public bool IsRoiConfigured => Width > 0 && Height > 0;
+
+        [JsonProperty("sensorWidth")]
+        [Browsable(false)]
+        public int SensorWidth
+        {
+            get => _SensorWidth;
+            set
+            {
+                _SensorWidth = value <= 0 ? 1 : value;
+                OnPropertyChanged();
+            }
+        }
+        private int _SensorWidth = 9568;
+
+        [JsonProperty("sensorHeight")]
+        [Browsable(false)]
+        public int SensorHeight
+        {
+            get => _SensorHeight;
+            set
+            {
+                _SensorHeight = value <= 0 ? 1 : value;
+                OnPropertyChanged();
+            }
+        }
+        private int _SensorHeight = 6380;
 
         /// <summary>
         /// FindLightArea X
