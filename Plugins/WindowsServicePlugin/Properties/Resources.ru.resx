@@ -116,7 +116,35 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>  <data name="ServiceManager" xml:space="preserve">
+  </resheader>
+  <data name="x86ServiceLog" xml:space="preserve">
+    <value>журнал обслуживания x86</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>журнал обслуживания x64</value>
+  </data>
+  <data name="ServiceLog" xml:space="preserve">
+    <value>Журнал обслуживания</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>Журнал спектрометра</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>Журнал камеры</value>
+  </data>
+  <data name="RCServiceLog" xml:space="preserve">
+    <value>Журнал обслуживания RC</value>
+  </data>
+  <data name="ManagementService" xml:space="preserve">
+    <value>Управленческие услуги</value>
+  </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>Прочитать конфигурацию службы</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>Заменить CFG службы</value>
+  </data>
+  <data name="ServiceManager" xml:space="preserve">
     <value>Диспетчер служб</value>
   </data>
   <data name="CVWinSMSPath" xml:space="preserve">
@@ -124,6 +152,12 @@
   </data>
   <data name="CVWinSMSPathDescription" xml:space="preserve">
     <value>Путь к исполняемому файлу служебного инструмента CVWinSMS.</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
+    <value>Автообновление CVWinSMS</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
+    <value>Разрешает инструменту CVWinSMS автоматически находить и применять обновления.</value>
   </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>Корневая папка установки служб</value>
@@ -136,6 +170,18 @@
   </data>
   <data name="ServiceManagerMySqlPortDescription" xml:space="preserve">
     <value>Порт прослушивания службы MySQL.</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrl" xml:space="preserve">
+    <value>URL обновления служб</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrlDescription" xml:space="preserve">
+    <value>URL сервера для онлайн-обновления и загрузки пакетов служб.</value>
+  </data>
+  <data name="ServiceManagerDownloadLocation" xml:space="preserve">
+    <value>Папка загрузок</value>
+  </data>
+  <data name="ServiceManagerDownloadLocationDescription" xml:space="preserve">
+    <value>Папка для сохранения онлайн-загрузок пакетов служб, MySQL, MQTT и связанных файлов.</value>
   </data>
   <data name="ServiceManagerInstallServiceChecked" xml:space="preserve">
     <value>Выбирать пакет службы по умолчанию</value>
@@ -154,4 +200,38 @@
   </data>
   <data name="ServiceManagerInstallMqttCheckedDescription" xml:space="preserve">
     <value>Выбирает установку MQTT по умолчанию при открытии мастера установки.</value>
-  </data></root>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>Услуга</value>
+  </data>
+  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
+    <value>BCompare не найден, хотите его скачать?</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>Скачать BeyondCompare</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>Открыть BeyondCompare</value>
+  </data>
+  <data name="InstallMqtt" xml:space="preserve">
+    <value>Установить MQTT</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Настройки файла дампа</value>
+  </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>Активировать Windows</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Перезапустить службу</value>
+  </data>
+  <data name="RestartServiceSucess" xml:space="preserve">
+    <value>Перезапуск службы успешен</value>
+  </data>
+  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
+    <value>Если перезапуск службы не удался, перезапустите ее вручную.</value>
+  </data>
+  <data name="UpdateService" xml:space="preserve">
+    <value>Обновление сервиса</value>
+  </data>
+</root>

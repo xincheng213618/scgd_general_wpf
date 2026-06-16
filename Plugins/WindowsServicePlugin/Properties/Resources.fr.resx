@@ -116,7 +116,35 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>  <data name="ServiceManager" xml:space="preserve">
+  </resheader>
+  <data name="x86ServiceLog" xml:space="preserve">
+    <value>journal des services x86</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>journal des services x64</value>
+  </data>
+  <data name="ServiceLog" xml:space="preserve">
+    <value>Journal de service</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>Journal du spectromètre</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>Journal de la caméra</value>
+  </data>
+  <data name="RCServiceLog" xml:space="preserve">
+    <value>Journal de service RC</value>
+  </data>
+  <data name="ManagementService" xml:space="preserve">
+    <value>Services de gestion</value>
+  </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>Lire la configuration du service</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>Remplacer le CFG du service</value>
+  </data>
+  <data name="ServiceManager" xml:space="preserve">
     <value>Gestionnaire de services</value>
   </data>
   <data name="CVWinSMSPath" xml:space="preserve">
@@ -124,6 +152,12 @@
   </data>
   <data name="CVWinSMSPathDescription" xml:space="preserve">
     <value>Chemin de l'exécutable de l'outil de service CVWinSMS.</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
+    <value>Mise à jour automatique CVWinSMS</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
+    <value>Autorise l'outil de service CVWinSMS à détecter et appliquer automatiquement les mises à jour.</value>
   </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>Racine d'installation du service</value>
@@ -136,6 +170,18 @@
   </data>
   <data name="ServiceManagerMySqlPortDescription" xml:space="preserve">
     <value>Port d'écoute du service MySQL.</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrl" xml:space="preserve">
+    <value>URL de mise à jour du service</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrlDescription" xml:space="preserve">
+    <value>URL du serveur utilisée pour mettre à jour et télécharger les packages de service en ligne.</value>
+  </data>
+  <data name="ServiceManagerDownloadLocation" xml:space="preserve">
+    <value>Dossier de téléchargement</value>
+  </data>
+  <data name="ServiceManagerDownloadLocationDescription" xml:space="preserve">
+    <value>Dossier utilisé pour enregistrer les téléchargements en ligne des packages de service, MySQL, MQTT et fichiers associés.</value>
   </data>
   <data name="ServiceManagerInstallServiceChecked" xml:space="preserve">
     <value>Sélectionner le package de service par défaut</value>
@@ -154,4 +200,38 @@
   </data>
   <data name="ServiceManagerInstallMqttCheckedDescription" xml:space="preserve">
     <value>Sélectionne par défaut l'installation de MQTT à l'ouverture de l'assistant.</value>
-  </data></root>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
+    <value>BCompare introuvable, voulez-vous le télécharger ?</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>Télécharger BeyondCompare</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>Ouvrir BeyondCompare</value>
+  </data>
+  <data name="InstallMqtt" xml:space="preserve">
+    <value>Installer MQTT</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Paramètres du fichier de sauvegarde</value>
+  </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>Activer Windows</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Redémarrer le service</value>
+  </data>
+  <data name="RestartServiceSucess" xml:space="preserve">
+    <value>Redémarrage du service réussi</value>
+  </data>
+  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
+    <value>Si le redémarrage du service échoue, veuillez le redémarrer manuellement.</value>
+  </data>
+  <data name="UpdateService" xml:space="preserve">
+    <value>Service de mise à jour</value>
+  </data>
+</root>

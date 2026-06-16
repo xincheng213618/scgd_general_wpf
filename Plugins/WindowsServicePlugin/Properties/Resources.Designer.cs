@@ -61,6 +61,51 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 激活Windows 的本地化字符串。
+        /// </summary>
+        public static string ActivateWindows {
+            get {
+                return ResourceManager.GetString("ActivateWindows", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 找不到BCompare，是否下载 的本地化字符串。
+        /// </summary>
+        public static string BCompareNotFound_DownloadPrompt {
+            get {
+                return ResourceManager.GetString("BCompareNotFound_DownloadPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相机日志 的本地化字符串。
+        /// </summary>
+        public static string CameraLog {
+            get {
+                return ResourceManager.GetString("CameraLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 CVWinSMS 自动更新 的本地化字符串。
+        /// </summary>
+        public static string CVWinSMSIsAutoUpdate {
+            get {
+                return ResourceManager.GetString("CVWinSMSIsAutoUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 允许 CVWinSMS 服务工具自动检测并应用更新。 的本地化字符串。
+        /// </summary>
+        public static string CVWinSMSIsAutoUpdateDescription {
+            get {
+                return ResourceManager.GetString("CVWinSMSIsAutoUpdateDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 CVWinSMS 路径 的本地化字符串。
         /// </summary>
         public static string CVWinSMSPath {
@@ -75,6 +120,114 @@ namespace WindowsServicePlugin.Properties {
         public static string CVWinSMSPathDescription {
             get {
                 return ResourceManager.GetString("CVWinSMSPathDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载BeyondCompare 的本地化字符串。
+        /// </summary>
+        public static string DownLoadBeyondCompare {
+            get {
+                return ResourceManager.GetString("DownLoadBeyondCompare", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 转储文件设置 的本地化字符串。
+        /// </summary>
+        public static string DumpFileSettings {
+            get {
+                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 安装MQTT 的本地化字符串。
+        /// </summary>
+        public static string InstallMqtt {
+            get {
+                return ResourceManager.GetString("InstallMqtt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 管理服务 的本地化字符串。
+        /// </summary>
+        public static string ManagementService {
+            get {
+                return ResourceManager.GetString("ManagementService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开BeyondCompare 的本地化字符串。
+        /// </summary>
+        public static string OpenBeyondCompare {
+            get {
+                return ResourceManager.GetString("OpenBeyondCompare", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 RC服务日志 的本地化字符串。
+        /// </summary>
+        public static string RCServiceLog {
+            get {
+                return ResourceManager.GetString("RCServiceLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 读取服务的配置 的本地化字符串。
+        /// </summary>
+        public static string ReadServiceConfig {
+            get {
+                return ResourceManager.GetString("ReadServiceConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 替换服务的CFG 的本地化字符串。
+        /// </summary>
+        public static string ReplaceServiceCfg {
+            get {
+                return ResourceManager.GetString("ReplaceServiceCfg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重启服务 的本地化字符串。
+        /// </summary>
+        public static string RestartService {
+            get {
+                return ResourceManager.GetString("RestartService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重启服务成功 的本地化字符串。
+        /// </summary>
+        public static string RestartServiceSucess {
+            get {
+                return ResourceManager.GetString("RestartServiceSucess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务 的本地化字符串。
+        /// </summary>
+        public static string Service {
+            get {
+                return ResourceManager.GetString("Service", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务日志 的本地化字符串。
+        /// </summary>
+        public static string ServiceLog {
+            get {
+                return ResourceManager.GetString("ServiceLog", resourceCulture);
             }
         }
         
@@ -102,6 +255,24 @@ namespace WindowsServicePlugin.Properties {
         public static string ServiceManagerBaseLocationDescription {
             get {
                 return ResourceManager.GetString("ServiceManagerBaseLocationDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载目录 的本地化字符串。
+        /// </summary>
+        public static string ServiceManagerDownloadLocation {
+            get {
+                return ResourceManager.GetString("ServiceManagerDownloadLocation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务包、MySQL、MQTT 等在线下载的保存目录。 的本地化字符串。
+        /// </summary>
+        public static string ServiceManagerDownloadLocationDescription {
+            get {
+                return ResourceManager.GetString("ServiceManagerDownloadLocationDescription", resourceCulture);
             }
         }
         
@@ -174,6 +345,69 @@ namespace WindowsServicePlugin.Properties {
         public static string ServiceManagerMySqlPortDescription {
             get {
                 return ResourceManager.GetString("ServiceManagerMySqlPortDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务更新地址 的本地化字符串。
+        /// </summary>
+        public static string ServiceManagerUpdateServerUrl {
+            get {
+                return ResourceManager.GetString("ServiceManagerUpdateServerUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务包在线更新和下载使用的服务器地址。 的本地化字符串。
+        /// </summary>
+        public static string ServiceManagerUpdateServerUrlDescription {
+            get {
+                return ResourceManager.GetString("ServiceManagerUpdateServerUrlDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重启服务失败请手动重启服务 的本地化字符串。
+        /// </summary>
+        public static string ServiceRestartFailed_PleaseRestartManually {
+            get {
+                return ResourceManager.GetString("ServiceRestartFailed_PleaseRestartManually", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光谱仪日志 的本地化字符串。
+        /// </summary>
+        public static string SpectrometerLog {
+            get {
+                return ResourceManager.GetString("SpectrometerLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新服务 的本地化字符串。
+        /// </summary>
+        public static string UpdateService {
+            get {
+                return ResourceManager.GetString("UpdateService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 x64服务日志 的本地化字符串。
+        /// </summary>
+        public static string x64ServiceLog {
+            get {
+                return ResourceManager.GetString("x64ServiceLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 x86服务日志 的本地化字符串。
+        /// </summary>
+        public static string x86ServiceLog {
+            get {
+                return ResourceManager.GetString("x86ServiceLog", resourceCulture);
             }
         }
     }

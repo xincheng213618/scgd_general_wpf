@@ -116,7 +116,35 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>  <data name="ServiceManager" xml:space="preserve">
+  </resheader>
+  <data name="x86ServiceLog" xml:space="preserve">
+    <value>x86服務日誌</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>x64服務日誌</value>
+  </data>
+  <data name="ServiceLog" xml:space="preserve">
+    <value>服務日誌</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>光譜儀日誌</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>相機日誌</value>
+  </data>
+  <data name="RCServiceLog" xml:space="preserve">
+    <value>RC服務日誌</value>
+  </data>
+  <data name="ManagementService" xml:space="preserve">
+    <value>管理服務</value>
+  </data>
+  <data name="ReadServiceConfig" xml:space="preserve">
+    <value>讀取服務設定</value>
+  </data>
+  <data name="ReplaceServiceCfg" xml:space="preserve">
+    <value>替換服務CFG</value>
+  </data>
+  <data name="ServiceManager" xml:space="preserve">
     <value>服務管理器</value>
   </data>
   <data name="CVWinSMSPath" xml:space="preserve">
@@ -124,6 +152,12 @@
   </data>
   <data name="CVWinSMSPathDescription" xml:space="preserve">
     <value>CVWinSMS 服務程式的可執行檔路徑。</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
+    <value>CVWinSMS 自動更新</value>
+  </data>
+  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
+    <value>允許 CVWinSMS 服務工具自動偵測並套用更新。</value>
   </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>服務安裝根目錄</value>
@@ -136,6 +170,18 @@
   </data>
   <data name="ServiceManagerMySqlPortDescription" xml:space="preserve">
     <value>MySQL 服務監聽連接埠。</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrl" xml:space="preserve">
+    <value>服務更新地址</value>
+  </data>
+  <data name="ServiceManagerUpdateServerUrlDescription" xml:space="preserve">
+    <value>服務套件線上更新和下載使用的伺服器地址。</value>
+  </data>
+  <data name="ServiceManagerDownloadLocation" xml:space="preserve">
+    <value>下載目錄</value>
+  </data>
+  <data name="ServiceManagerDownloadLocationDescription" xml:space="preserve">
+    <value>服務套件、MySQL、MQTT 等線上下載的儲存目錄。</value>
   </data>
   <data name="ServiceManagerInstallServiceChecked" xml:space="preserve">
     <value>預設勾選安裝服務套件</value>
@@ -154,4 +200,38 @@
   </data>
   <data name="ServiceManagerInstallMqttCheckedDescription" xml:space="preserve">
     <value>開啟服務安裝精靈時預設勾選 MQTT 安裝項。</value>
-  </data></root>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>服務</value>
+  </data>
+  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
+    <value>找不到BCompare，是否下載</value>
+  </data>
+  <data name="DownLoadBeyondCompare" xml:space="preserve">
+    <value>下載BeyondCompare</value>
+  </data>
+  <data name="OpenBeyondCompare" xml:space="preserve">
+    <value>打開BeyondCompare</value>
+  </data>
+  <data name="InstallMqtt" xml:space="preserve">
+    <value>安裝MQTT</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>轉儲文件設定</value>
+  </data>
+  <data name="ActivateWindows" xml:space="preserve">
+    <value>啟動Windows</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>重啟服務</value>
+  </data>
+  <data name="RestartServiceSucess" xml:space="preserve">
+    <value>重啟服務成功</value>
+  </data>
+  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
+    <value>重啟服務失敗請手動重啟服務</value>
+  </data>
+  <data name="UpdateService" xml:space="preserve">
+    <value>更新服務</value>
+  </data>
+</root>
