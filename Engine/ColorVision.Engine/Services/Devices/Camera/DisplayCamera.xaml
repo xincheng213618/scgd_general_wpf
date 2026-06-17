@@ -339,6 +339,11 @@
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Flip}" />
                             <ComboBox x:Name="CBFilp2" DisplayMemberPath="Value" SelectedValue="{Binding DisplayConfig.LocalVideoTransform}" SelectedValuePath="Key" SelectionChanged="CBFilp2_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
                         </DockPanel>
+                        <StackPanel x:Name="LocalVideoRoiEditorHost" Margin="0,0,0,3" />
+                        <UniformGrid Margin="0,0,0,3" Columns="2">
+                            <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="默认区域" />
+                            <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="全幅" />
+                        </UniformGrid>
                         <DockPanel Margin="0,0,0,3">
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Gain}" />
                             <TextBox MinWidth="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2}" />

@@ -52,6 +52,7 @@ public class LogicalANDNode : STNodeInHub
 					CVStartCFC data = new CVStartCFC(cVStartCFC);
 					sender.Data = data;
 					int num = 0;
+					masterId = -1;
 					StatusTypeEnum statusType = StatusTypeEnum.Runing;
 					CVStartCFC stoppedInput = null;
 					for (int i = 0; i < base.InputOptionsCount; i++)
@@ -68,7 +69,7 @@ public class LogicalANDNode : STNodeInHub
 								stoppedInput ??= cVStartCFC2;
 							}
 							num++;
-							if (cVStartCFC.IsRunning && i == 0 && cVStartCFC2.Data.ContainsKey("MasterId"))
+							if (cVStartCFC.IsRunning && masterId < 0 && cVStartCFC2.Data.ContainsKey("MasterId"))
 							{
 								masterId = Convert.ToInt32(cVStartCFC2.Data["MasterId"]);
 							}

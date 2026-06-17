@@ -11,9 +11,12 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Realtime;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -50,6 +53,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public double OpenTime { get; set; } = 10;
         public double CloseTime { get; set; } = 10;
         public double LocalVideoOpenTime { get; set; } = 3000;
+
+        [DisplayName("清晰度区域")]
+        public Rect LocalVideoRoi
+        {
+            get => _LocalVideoRoi;
+            set
+            {
+                Rect normalized = NormalizeLocalVideoRoi(value);
+                if (_LocalVideoRoi == normalized) return;
+                _LocalVideoRoi = normalized;
+                OnPropertyChanged();
+            }
+        }
+        private Rect _LocalVideoRoi = new(50, 50, 100, 100);
 
         public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
         private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
@@ -104,6 +121,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [JsonIgnore]
         public bool IsLocalVideoOpen { get => _IsLocalVideoOpen; set { _IsLocalVideoOpen = value; OnPropertyChanged(); } }
         private bool _IsLocalVideoOpen;
+
+        private static Rect NormalizeLocalVideoRoi(Rect value)
+        {
+            if (value.IsEmpty) return new Rect(0, 0, 0, 0);
+
+            return new Rect(
+                Math.Max(0, value.X),
+                Math.Max(0, value.Y),
+                Math.Max(0, value.Width),
+                Math.Max(0, value.Height));
+        }
     }
 
 
@@ -123,6 +151,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         // Video display related fields
         private readonly CameraRealtimeFramePipeline _localRealtimePipeline;
         private bool _isOpeningLocalVideo;
+        private DVRectangleText? _localVideoRoiVisual;
+        private bool _isSyncingLocalVideoRoi;
+        private bool _hasLocalVideoImageEditModeSnapshot;
+        private bool _localVideoImageEditModeSnapshot;
+        private bool _isLocalVideoRoiVisualRemoveSubscribed;
 
         public DisplayCamera(DeviceCamera device)
         {
@@ -168,6 +201,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboBoxHDRTemplate.SelectedIndex = 0;
             ComboBoxHDRTemplate.DataContext = Device.DisplayConfig;
 
+            InitializeLocalVideoRoiEditor();
+            DisplayCameraConfig.PropertyChanged += DisplayCameraConfig_PropertyChanged;
+            ApplyLocalVideoRoiToRealtimeConfig();
+
             CBFilp.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
                                  select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
@@ -195,6 +232,251 @@ namespace ColorVision.Engine.Services.Devices.Camera
             vb.ConverterParameter = DeviceStatusType.Closed;
             LocalVideo.SetBinding(StackPanel.VisibilityProperty, vb);
 
+        }
+
+        private void InitializeLocalVideoRoiEditor()
+        {
+            LocalVideoRoiEditorHost.Children.Clear();
+            LocalVideoRoiEditorHost.Children.Add(PropertyEditorHelper.GenProperties(DisplayCameraConfig, nameof(DisplayCameraConfig.LocalVideoRoi)));
+        }
+
+        private void DisplayCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_isSyncingLocalVideoRoi) return;
+
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DisplayCameraConfig.LocalVideoRoi))
+            {
+                ApplyLocalVideoRoiToRealtimeConfig();
+                RefreshLocalVideoRoiVisual(selectNewVisual: true);
+                SaveDisplayConfig();
+            }
+        }
+
+        private void ApplyLocalVideoRoiToRealtimeConfig()
+        {
+            DefaultRealtimeCameraConfig.Current.RectangleTextProperties.Rect = DisplayCameraConfig.LocalVideoRoi;
+        }
+
+        private static bool IsVisibleLocalVideoRoi(Rect rect) => rect.Width > 0 && rect.Height > 0;
+
+        private static RectangleTextProperties CreateLocalVideoRoiVisualProperties(Rect rect)
+        {
+            return new RectangleTextProperties
+            {
+                Rect = rect,
+                Brush = Brushes.Transparent,
+                Pen = new Pen(Brushes.LimeGreen, 1),
+                Foreground = Brushes.LimeGreen,
+                Text = "清晰度区域",
+                Position = RectangleTextPosition.Top,
+                IsShowText = true
+            };
+        }
+
+        private void RefreshLocalVideoRoiVisual(bool selectNewVisual = false)
+        {
+            if (!Device.DisplayConfig.IsLocalVideoOpen)
+            {
+                SyncLocalVideoRoiVisualFromConfig();
+                return;
+            }
+
+            if (IsVisibleLocalVideoRoi(DisplayCameraConfig.LocalVideoRoi))
+            {
+                EnsureLocalVideoRoiVisual(selectNewVisual && _localVideoRoiVisual == null);
+            }
+            else
+            {
+                RemoveLocalVideoRoiVisual(restoreImageEditMode: false);
+            }
+        }
+
+        private void EnsureLocalVideoRoiVisual(bool select = true)
+        {
+            var imageView = Device.View.ImageView;
+            if (!imageView.Dispatcher.CheckAccess())
+            {
+                imageView.Dispatcher.Invoke(() => EnsureLocalVideoRoiVisual(select));
+                return;
+            }
+
+            Rect roi = DisplayCameraConfig.LocalVideoRoi;
+            if (!IsVisibleLocalVideoRoi(roi))
+            {
+                RemoveLocalVideoRoiVisual(restoreImageEditMode: false);
+                return;
+            }
+
+            if (_localVideoRoiVisual == null)
+            {
+                RectangleTextProperties properties = CreateLocalVideoRoiVisualProperties(roi);
+                _localVideoRoiVisual = new DVRectangleText(properties);
+                _localVideoRoiVisual.TextAttribute.FontSize = Math.Max(_localVideoRoiVisual.Pen.Thickness * 10, 12);
+                _localVideoRoiVisual.Render();
+                properties.PropertyChanged += LocalVideoRoiVisual_PropertyChanged;
+            }
+
+            SyncLocalVideoRoiVisualFromConfig();
+
+            if (!imageView.ImageShow.ContainsVisual(_localVideoRoiVisual))
+            {
+                imageView.ImageShow.AddVisual(_localVideoRoiVisual);
+                SubscribeLocalVideoRoiRemoveEvent();
+            }
+
+            imageView.ImageShow.TopVisual(_localVideoRoiVisual);
+
+            if (select)
+            {
+                CaptureLocalVideoImageEditMode(imageView);
+                if (!imageView.ImageEditMode)
+                {
+                    imageView.ImageEditMode = true;
+                }
+                imageView.EditorContext.DrawEditorContext.SelectionVisual.SetRender(_localVideoRoiVisual);
+            }
+        }
+
+        private void SyncLocalVideoRoiVisualFromConfig()
+        {
+            if (_localVideoRoiVisual == null) return;
+
+            Rect roi = DisplayCameraConfig.LocalVideoRoi;
+            if (_localVideoRoiVisual.Rect == roi) return;
+
+            try
+            {
+                _isSyncingLocalVideoRoi = true;
+                _localVideoRoiVisual.Rect = roi;
+                _localVideoRoiVisual.Render();
+            }
+            finally
+            {
+                _isSyncingLocalVideoRoi = false;
+            }
+        }
+
+        private void LocalVideoRoiVisual_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_isSyncingLocalVideoRoi || _localVideoRoiVisual == null) return;
+            if (!string.IsNullOrEmpty(e.PropertyName) && e.PropertyName != nameof(RectangleProperties.Rect)) return;
+
+            try
+            {
+                _isSyncingLocalVideoRoi = true;
+                DisplayCameraConfig.LocalVideoRoi = _localVideoRoiVisual.Rect;
+            }
+            finally
+            {
+                _isSyncingLocalVideoRoi = false;
+            }
+
+            ApplyLocalVideoRoiToRealtimeConfig();
+            SyncLocalVideoRoiVisualFromConfig();
+            SaveDisplayConfig();
+        }
+
+        private void CaptureLocalVideoImageEditMode(ColorVision.ImageEditor.ImageView imageView)
+        {
+            if (_hasLocalVideoImageEditModeSnapshot) return;
+
+            _localVideoImageEditModeSnapshot = imageView.ImageEditMode;
+            _hasLocalVideoImageEditModeSnapshot = true;
+        }
+
+        private void RestoreLocalVideoImageEditMode(ColorVision.ImageEditor.ImageView imageView)
+        {
+            if (!_hasLocalVideoImageEditModeSnapshot) return;
+
+            imageView.ImageEditMode = _localVideoImageEditModeSnapshot;
+            _hasLocalVideoImageEditModeSnapshot = false;
+        }
+
+        private void SubscribeLocalVideoRoiRemoveEvent()
+        {
+            if (_isLocalVideoRoiVisualRemoveSubscribed) return;
+
+            Device.View.ImageView.ImageShow.VisualsRemove += ImageShow_VisualsRemoveLocalVideoRoi;
+            _isLocalVideoRoiVisualRemoveSubscribed = true;
+        }
+
+        private void UnsubscribeLocalVideoRoiRemoveEvent()
+        {
+            if (!_isLocalVideoRoiVisualRemoveSubscribed) return;
+
+            Device.View.ImageView.ImageShow.VisualsRemove -= ImageShow_VisualsRemoveLocalVideoRoi;
+            _isLocalVideoRoiVisualRemoveSubscribed = false;
+        }
+
+        private void ImageShow_VisualsRemoveLocalVideoRoi(object? sender, VisualChangedEventArgs e)
+        {
+            if (!ReferenceEquals(e.Visual, _localVideoRoiVisual) || _localVideoRoiVisual == null) return;
+
+            _localVideoRoiVisual.Attribute.PropertyChanged -= LocalVideoRoiVisual_PropertyChanged;
+            _localVideoRoiVisual = null;
+            UnsubscribeLocalVideoRoiRemoveEvent();
+
+            if (_isSyncingLocalVideoRoi) return;
+
+            try
+            {
+                _isSyncingLocalVideoRoi = true;
+                DisplayCameraConfig.LocalVideoRoi = new Rect(0, 0, 0, 0);
+            }
+            finally
+            {
+                _isSyncingLocalVideoRoi = false;
+            }
+
+            ApplyLocalVideoRoiToRealtimeConfig();
+            SaveDisplayConfig();
+        }
+
+        private void RemoveLocalVideoRoiVisual(bool restoreImageEditMode)
+        {
+            var imageView = Device.View.ImageView;
+            if (!imageView.Dispatcher.CheckAccess())
+            {
+                imageView.Dispatcher.Invoke(() => RemoveLocalVideoRoiVisual(restoreImageEditMode));
+                return;
+            }
+
+            DVRectangleText? visual = _localVideoRoiVisual;
+            _localVideoRoiVisual = null;
+            UnsubscribeLocalVideoRoiRemoveEvent();
+
+            if (visual != null)
+            {
+                visual.Attribute.PropertyChanged -= LocalVideoRoiVisual_PropertyChanged;
+                if (ReferenceEquals(imageView.EditorContext.DrawEditorContext.SelectionVisual.PrimarySelectedVisual, visual))
+                {
+                    imageView.EditorContext.DrawEditorContext.SelectionVisual.ClearRender();
+                }
+                if (imageView.ImageShow.ContainsVisual(visual))
+                {
+                    imageView.ImageShow.RemoveVisual(visual);
+                }
+            }
+
+            if (restoreImageEditMode)
+            {
+                RestoreLocalVideoImageEditMode(imageView);
+            }
+        }
+
+        private void LocalVideoRoiDefault_Click(object sender, RoutedEventArgs e)
+        {
+            DisplayCameraConfig.LocalVideoRoi = new Rect(50, 50, 100, 100);
+            if (Device.DisplayConfig.IsLocalVideoOpen)
+            {
+                EnsureLocalVideoRoiVisual();
+            }
+        }
+
+        private void LocalVideoRoiFull_Click(object sender, RoutedEventArgs e)
+        {
+            DisplayCameraConfig.LocalVideoRoi = new Rect(0, 0, 0, 0);
+            RemoveLocalVideoRoiVisual(restoreImageEditMode: false);
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
@@ -815,6 +1097,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            DisplayCameraConfig.PropertyChanged -= DisplayCameraConfig_PropertyChanged;
+            RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
 
             // Clean up video display resources
             _localRealtimePipeline.Dispose();
@@ -950,6 +1234,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     Device.DisplayConfig.IsLocalVideoOpen = false;
                     SetLocalVideoPoiTemplateSupported(false);
+                    RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
                     _localRealtimePipeline.Stop(resetRealtime: true);
 
                     (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync();
@@ -991,7 +1276,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
 
                 button.Content = "Close Video";
+                ApplyLocalVideoRoiToRealtimeConfig();
                 _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform);
+                EnsureLocalVideoRoiVisual();
                 SetLocalVideoPoiTemplateSupported(true);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
                 localVideoOpened = true;

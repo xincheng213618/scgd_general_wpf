@@ -54,6 +54,13 @@ namespace ColorVision.Engine.Templates.Flow
         }
         private List<PortEdge> _portEdges;
 
+        private sealed class SharedFanOutPlacement
+        {
+            public STNode Node { get; init; }
+            public int TargetColumn { get; init; }
+            public List<STNode> AnchorTargets { get; init; } = new();
+        }
+
         /// <summary>
         /// Number of forward+backward sweeps for crossing reduction.
         /// More iterations give better results at the cost of time.
@@ -87,6 +94,7 @@ namespace ColorVision.Engine.Templates.Flow
             ReduceCrossings();
             AssignCoordinates();
             FoldIfNeeded();
+            ReorderCommutativeMergeInputsForLayout();
         }
 
         /// <summary>
@@ -671,10 +679,7 @@ namespace ColorVision.Engine.Templates.Flow
                     continue;
                 }
 
-                current = candidates
-                    .OrderByDescending(child => PrimaryDistanceToTarget(child, mergeNode, new HashSet<STNode>()))
-                    .ThenBy(child => GetOriginalPortOrder(current, child))
-                    .FirstOrDefault();
+                current = ChooseSerialContinuationChild(current, candidates, mergeNode);
             }
 
             if (currentRow.Count > 0)
@@ -683,6 +688,50 @@ namespace ColorVision.Engine.Templates.Flow
             return rows
                 .Where(row => row.Count > 0)
                 .ToList();
+        }
+
+        private STNode? ChooseSerialContinuationChild(STNode current, List<STNode> candidates, STNode mergeNode)
+        {
+            var continuationCandidates = candidates
+                .Where(child => child == mergeNode || !IsMultiInputMergeLikeNode(child))
+                .ToList();
+            var pool = continuationCandidates.Count > 0 ? continuationCandidates : candidates;
+
+            return pool
+                .OrderBy(child => GetContinuationInputPriority(current, child))
+                .ThenByDescending(child => PrimaryDistanceToTarget(child, mergeNode, new HashSet<STNode>()))
+                .ThenBy(child => GetOriginalPortOrder(current, child))
+                .FirstOrDefault();
+        }
+
+        private bool IsMultiInputMergeLikeNode(STNode node)
+        {
+            if (node.InputOptionsCount >= 4)
+                return true;
+
+            return _layoutParents.TryGetValue(node, out var parents) && parents.Count >= 2;
+        }
+
+        private int GetContinuationInputPriority(STNode from, STNode to)
+        {
+            var inputTexts = _connections
+                .Where(conn => conn.Output.Owner == from && conn.Input.Owner == to)
+                .Select(conn => NormalizePortText(conn.Input.Text))
+                .ToList();
+
+            if (inputTexts.Any(text => text == "IN_IMG"))
+                return 0;
+
+            if (inputTexts.Any(text => text == "IN"))
+                return 1;
+
+            if (inputTexts.Any(text => text == "--" || text == "NODEIN"))
+                return 2;
+
+            if (inputTexts.Any(text => text.StartsWith("IMG", StringComparison.Ordinal)))
+                return 3;
+
+            return 4;
         }
 
         private List<STNode> GetPrimaryChildrenToward(STNode node, STNode target)
@@ -757,8 +806,10 @@ namespace ColorVision.Engine.Templates.Flow
                 .DefaultIfEmpty()
                 .Max(node => node?.Height ?? 90);
             int[] columnWidths = BuildColumnWidths(layoutRows, maxColumns);
-            int[] columnXs = BuildColumnXs(columnWidths, placeRootSeparately ? _rootNode.Width + columnGap : 0, columnGap);
             var mainRowNodes = new HashSet<STNode>(layoutRows.SelectMany(row => row));
+            var sharedFanOuts = FindSharedFanOutPlacements(layoutRows, mainRowNodes, mergeNode);
+            int[] extraBeforeColumns = BuildExtraBeforeColumns(maxColumns, sharedFanOuts, columnGap);
+            int[] columnXs = BuildColumnXs(columnWidths, placeRootSeparately ? _rootNode.Width + columnGap : 0, columnGap, extraBeforeColumns);
             var rowCenters = new List<int>();
             var placed = new HashSet<STNode>();
 
@@ -798,7 +849,56 @@ namespace ColorVision.Engine.Templates.Flow
             placed.Add(mergeNode);
 
             PlacePrimaryDownstreamChain(mergeNode, foldedCenterY, placed);
+            PlaceSharedFanOuts(sharedFanOuts, layoutRows, columnXs, columnGap, placed);
             PlaceSerialSatellites(mergeNode, mergeX, placed);
+            SeparateColocatedSharedTargets(sharedFanOuts, mergeNode, placed);
+        }
+
+        private static bool IsCommutativeMergeNode(STNode node)
+        {
+            string typeName = node.GetType().FullName ?? node.GetType().Name;
+            if (typeName == "FlowEngineLib.Logical.LogicalANDNode")
+                return true;
+
+            string title = node.OnGetDrawTitle() ?? node.Title ?? string.Empty;
+            return title.Contains("逻辑与", StringComparison.OrdinalIgnoreCase)
+                || title.Contains("LogicalAND", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ReorderCommutativeMergeInputsForLayout()
+        {
+            foreach (var mergeNode in _reachable.Where(IsCommutativeMergeNode))
+            {
+                var inputOptions = mergeNode.GetAllInputOptions()?.ToList();
+                if (inputOptions == null || inputOptions.Count <= 2)
+                    continue;
+
+                var connectedInputs = _connections
+                    .Where(conn => conn.Input.Owner == mergeNode
+                        && conn.Input != STNodeOption.Empty
+                        && IsFlowControlType(conn.Input.DataType))
+                    .GroupBy(conn => conn.Input)
+                    .Select(group => new
+                    {
+                        Input = group.Key,
+                        SourceCenterY = group.Average(conn => conn.Output.Owner.Top + conn.Output.Owner.Height / 2.0),
+                        SourceLeft = group.Min(conn => conn.Output.Owner.Left)
+                    })
+                    .OrderBy(item => item.SourceCenterY)
+                    .ThenBy(item => item.SourceLeft)
+                    .Select(item => item.Input)
+                    .ToList();
+
+                if (connectedInputs.Count <= 1)
+                    continue;
+
+                var connectedSet = new HashSet<STNodeOption>(connectedInputs);
+                var reordered = connectedInputs
+                    .Concat(inputOptions.Where(option => !connectedSet.Contains(option)))
+                    .ToList();
+
+                mergeNode.ReorderInputOptions(reordered);
+            }
         }
 
         private int GetHorizontalNodeGap()
@@ -826,16 +926,138 @@ namespace ColorVision.Engine.Templates.Flow
             return widths;
         }
 
-        private int[] BuildColumnXs(int[] columnWidths, int startOffset, int columnGap)
+        private int[] BuildColumnXs(int[] columnWidths, int startOffset, int columnGap, int[]? extraBeforeColumns = null)
         {
             var xs = new int[columnWidths.Length];
             xs[0] = _startX + startOffset;
             for (int column = 1; column < columnWidths.Length; column++)
             {
-                xs[column] = xs[column - 1] + columnWidths[column - 1] + columnGap;
+                int extraBefore = extraBeforeColumns != null && column < extraBeforeColumns.Length
+                    ? extraBeforeColumns[column]
+                    : 0;
+                xs[column] = xs[column - 1] + columnWidths[column - 1] + columnGap + extraBefore;
             }
 
             return xs;
+        }
+
+        private List<SharedFanOutPlacement> FindSharedFanOutPlacements(
+            List<List<STNode>> rows,
+            HashSet<STNode> mainRowNodes,
+            STNode mergeNode)
+        {
+            var columnMap = BuildColumnMap(rows);
+            var placements = new List<SharedFanOutPlacement>();
+
+            foreach (var node in _reachable)
+            {
+                if (node == _rootNode || node == mergeNode)
+                    continue;
+
+                if (!_layoutParents.TryGetValue(node, out var primaryParents)
+                    || !primaryParents.Any(mainRowNodes.Contains))
+                {
+                    continue;
+                }
+
+                if (!_children.TryGetValue(node, out var children))
+                    continue;
+
+                var allMainTargets = children
+                    .Where(mainRowNodes.Contains)
+                    .Where(columnMap.ContainsKey)
+                    .ToList();
+                if (allMainTargets.Count == 0)
+                    continue;
+
+                var targetColumns = allMainTargets
+                    .GroupBy(child => columnMap[child])
+                    .Where(group => group.Count() >= 2)
+                    .OrderByDescending(group => group.Count())
+                    .ThenBy(group => group.Key)
+                    .ToList();
+
+                if (targetColumns.Count == 0)
+                    continue;
+
+                int targetColumn = allMainTargets.Min(child => columnMap[child]);
+                if (targetColumn <= 0)
+                    continue;
+
+                placements.Add(new SharedFanOutPlacement
+                {
+                    Node = node,
+                    TargetColumn = targetColumn,
+                    AnchorTargets = targetColumns[0].ToList()
+                });
+            }
+
+            return placements
+                .OrderBy(item => item.TargetColumn)
+                .ThenBy(item => _layerMap.TryGetValue(item.Node, out int layer) ? layer : int.MaxValue)
+                .ToList();
+        }
+
+        private static Dictionary<STNode, int> BuildColumnMap(List<List<STNode>> rows)
+        {
+            var map = new Dictionary<STNode, int>();
+            for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+            {
+                var row = rows[rowIndex];
+                for (int column = 0; column < row.Count; column++)
+                    map[row[column]] = column;
+            }
+
+            return map;
+        }
+
+        private static int[] BuildExtraBeforeColumns(int maxColumns, List<SharedFanOutPlacement> sharedFanOuts, int columnGap)
+        {
+            var extra = new int[maxColumns];
+            foreach (var placement in sharedFanOuts)
+            {
+                if (placement.TargetColumn <= 0 || placement.TargetColumn >= maxColumns)
+                    continue;
+
+                extra[placement.TargetColumn] = Math.Max(
+                    extra[placement.TargetColumn],
+                    placement.Node.Width + columnGap);
+            }
+
+            return extra;
+        }
+
+        private void PlaceSharedFanOuts(
+            List<SharedFanOutPlacement> sharedFanOuts,
+            List<List<STNode>> rows,
+            int[] columnXs,
+            int columnGap,
+            HashSet<STNode> placed)
+        {
+            if (sharedFanOuts.Count == 0)
+                return;
+
+            foreach (var placement in sharedFanOuts)
+            {
+                if (placement.TargetColumn >= columnXs.Length)
+                    continue;
+
+                bool wasPlaced = placed.Remove(placement.Node);
+
+                var targets = placement.AnchorTargets
+                    .Where(placed.Contains)
+                    .ToList();
+                if (targets.Count == 0)
+                {
+                    if (wasPlaced)
+                        placed.Add(placement.Node);
+                    continue;
+                }
+
+                int x = columnXs[placement.TargetColumn] - placement.Node.Width - columnGap;
+                int y = AverageCenterY(targets) - placement.Node.Height / 2;
+                PlaceNodeAvoiding(placement.Node, x, y, placed);
+            }
         }
 
         private int EstimatePreMergeSatelliteColumns(HashSet<STNode> mainRowNodes, STNode mergeNode)
@@ -916,7 +1138,14 @@ namespace ColorVision.Engine.Templates.Flow
 
                     int x;
                     int y;
-                    if (isDirectMergeParent)
+                    if (IsInlineContinuationSatellite(node, mergeNode, placedPrimaryParents))
+                    {
+                        int columnGap = GetHorizontalNodeGap();
+                        var parent = placedPrimaryParents[0];
+                        x = parent.Left + parent.Width + columnGap;
+                        y = parent.Top + (parent.Height - node.Height) / 2;
+                    }
+                    else if (isDirectMergeParent)
                     {
                         var parents = placedPrimaryParents.Count > 0 ? placedPrimaryParents : placedParents;
                         int columnGap = GetHorizontalNodeGap();
@@ -946,13 +1175,81 @@ namespace ColorVision.Engine.Templates.Flow
             while (moved && pass < _reachable.Count);
         }
 
-        private bool HasMultipleDataChildren(STNode node)
+        private void SeparateColocatedSharedTargets(
+            List<SharedFanOutPlacement> sharedFanOuts,
+            STNode mergeNode,
+            HashSet<STNode> placed)
         {
-            if (!_children.TryGetValue(node, out var children) || children.Count < 2)
+            if (sharedFanOuts.Count == 0)
+                return;
+
+            int columnGap = GetHorizontalNodeGap();
+            int shiftX = sharedFanOuts
+                .Select(placement => placement.Node.Width + columnGap)
+                .DefaultIfEmpty(columnGap)
+                .Max();
+
+            foreach (var placement in sharedFanOuts)
+            {
+                if (!_children.TryGetValue(placement.Node, out var children))
+                    continue;
+
+                var anchorSet = new HashSet<STNode>(placement.AnchorTargets);
+                var shifted = new HashSet<STNode>();
+                foreach (var child in children.Where(placed.Contains).Where(child => !anchorSet.Contains(child)))
+                {
+                    int sourceCenterY = placement.Node.Top + placement.Node.Height / 2;
+                    int childCenterY = child.Top + child.Height / 2;
+                    bool sameColumn = Math.Abs(child.Left - placement.Node.Left) <= columnGap / 2;
+                    bool farApart = Math.Abs(childCenterY - sourceCenterY) > placement.Node.Height + GetVerticalLaneGap();
+                    if (!sameColumn || !farApart)
+                        continue;
+
+                    ShiftPrimaryChainRight(child, shiftX, mergeNode, shifted);
+                }
+            }
+        }
+
+        private void ShiftPrimaryChainRight(STNode node, int deltaX, STNode stopNode, HashSet<STNode> visited)
+        {
+            if (node == stopNode || !visited.Add(node))
+                return;
+
+            node.Left += deltaX;
+
+            if (!_layoutChildren.TryGetValue(node, out var children))
+                return;
+
+            foreach (var child in children)
+                ShiftPrimaryChainRight(child, deltaX, stopNode, visited);
+        }
+
+        private bool IsInlineContinuationSatellite(STNode node, STNode mergeNode, List<STNode> placedPrimaryParents)
+        {
+            if (placedPrimaryParents.Count != 1 || IsLaneStartNode(node) || IsMultiInputMergeLikeNode(node))
                 return false;
 
+            if (!_layoutChildren.TryGetValue(node, out var primaryChildren) || primaryChildren.Count == 0)
+                return false;
+
+            return primaryChildren.Any(child =>
+                child == mergeNode || PrimaryDistanceToTarget(child, mergeNode, new HashSet<STNode>()) >= 0);
+        }
+
+        private bool HasMultipleDataChildren(STNode node)
+        {
+            return GetNonPrimaryChildren(node).Count >= 2;
+        }
+
+        private List<STNode> GetNonPrimaryChildren(STNode node)
+        {
+            if (!_children.TryGetValue(node, out var children) || children.Count == 0)
+                return new List<STNode>();
+
             _layoutChildren.TryGetValue(node, out var primaryChildren);
-            return children.Count(child => primaryChildren == null || !primaryChildren.Contains(child)) >= 2;
+            return children
+                .Where(child => primaryChildren == null || !primaryChildren.Contains(child))
+                .ToList();
         }
 
         private static int AverageCenterY(List<STNode> nodes)

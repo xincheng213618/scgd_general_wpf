@@ -1296,6 +1296,20 @@ public abstract class STNode
 		return array;
 	}
 
+	public bool ReorderInputOptions(IReadOnlyList<STNodeOption> orderedOptions)
+	{
+		if (!_InputOptions.Reorder(orderedOptions))
+		{
+			return false;
+		}
+
+		SetOptionsLocation();
+		BuildSize(bBuildNode: true, bBuildMark: true, bRedraw: false);
+		_Owner?.BuildLinePath();
+		Invalidate();
+		return true;
+	}
+
 	/// <summary>
 	/// Returns all output options regardless of LetGetOptions setting.
 	/// Used for serialization/copy-paste operations.

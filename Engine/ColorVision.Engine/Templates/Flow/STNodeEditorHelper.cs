@@ -890,13 +890,44 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void ApplyTreeLayout(int startX, int startY, int horizontalSpacing, int verticalSpacing)
         {
-            ConnectionInfo = STNodeEditor.GetConnectionInfo();
+            ConnectionInfo = GetLiveConnectionInfo();
             STNode rootNode = GetRootNode();
             if (rootNode == null) return;
 
             var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, horizontalSpacing, verticalSpacing,
                 STNodeEditor.Width, STNodeEditor.Height);
             layout.Execute(rootNode);
+        }
+
+        private ConnectionInfo[] GetLiveConnectionInfo()
+        {
+            var connections = new List<ConnectionInfo>();
+            foreach (var item in STNodeEditor.Nodes)
+            {
+                if (item is not STNode node)
+                    continue;
+
+                var outputOptions = node.GetAllOutputOptions();
+                foreach (var output in outputOptions)
+                {
+                    if (output == null || output == STNodeOption.Empty || output.ConnectedOption == null)
+                        continue;
+
+                    foreach (var input in output.ConnectedOption)
+                    {
+                        if (input == null || input == STNodeOption.Empty)
+                            continue;
+
+                        connections.Add(new ConnectionInfo
+                        {
+                            Output = output,
+                            Input = input
+                        });
+                    }
+                }
+            }
+
+            return connections.ToArray();
         }
 
         List<STNode> GetChildren(STNode node)
