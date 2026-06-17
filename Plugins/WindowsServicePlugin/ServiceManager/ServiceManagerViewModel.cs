@@ -82,6 +82,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         // MySQL commands
         public RelayCommand MySqlInstallZipCommand { get; }
+        public RelayCommand MySqlRepairServiceCommand { get; }
         public RelayCommand MySqlRegisterExistingCommand { get; }
         public RelayCommand MySqlStartCommand { get; }
         public RelayCommand MySqlStopCommand { get; }
@@ -119,6 +120,7 @@ namespace WindowsServicePlugin.ServiceManager
             MqttStopCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Stop(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsRunning);
 
             MySqlInstallZipCommand = new RelayCommand(a => _ = MySqlInstallZipAsync(), a => !IsBusy);
+            MySqlRepairServiceCommand = new RelayCommand(a => _ = RepairMySqlServicePreferServiceHostAsync(), a => !IsBusy);
             MySqlRegisterExistingCommand = new RelayCommand(a => _ = RegisterExistingMySqlServiceAsync(), a => !IsBusy);
             MySqlStartCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Start(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
             MySqlStopCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Stop(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsRunning);

@@ -76,6 +76,53 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
+        private async Task RepairMySqlServicePreferServiceHostAsync()
+        {
+            bool handledByServiceHost = false;
+
+            SetBusy(true, "正在通过后台服务修复 MySQL...");
+            try
+            {
+                handledByServiceHost = await MySqlManager.RepairOrRestartViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                if (handledByServiceHost)
+                {
+                    AddLog("MySQL 后台修复/重启完成");
+                    SyncLegacyAppConfig();
+                    RefreshAll();
+                    return;
+                }
+
+                AddLog("后台服务未完成 MySQL 修复，准备回退到管理员直接安装流程");
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+
+            if (!EnsureElevatedOrRestart("修复 MySQL 服务"))
+                return;
+
+            SetBusy(true, "正在修复 MySQL 服务...");
+            try
+            {
+                bool ok = await Task.Run(() => MySqlManager.RegisterExistingService(AddLog)).ConfigureAwait(true);
+                if (ok)
+                {
+                    AddLog("MySQL 服务修复完成");
+                    SyncLegacyAppConfig();
+                }
+                else
+                {
+                    AddLog("MySQL 服务修复失败");
+                }
+            }
+            finally
+            {
+                SetBusy(false);
+                RefreshAll();
+            }
+        }
+
         private void DoMySqlRestore()
         {
             string? filePath = null;

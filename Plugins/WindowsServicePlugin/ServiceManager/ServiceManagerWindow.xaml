@@ -200,6 +200,8 @@
                     <!-- MySQL 操作按钮 -->
                     <WrapPanel Grid.Row="1" Margin="0,0,0,8">
                         <Button Content="Zip全安装" Command="{Binding MySqlInstallZipCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="后台修复" Command="{Binding MySqlRepairServiceCommand}" Margin="0,0,8,0" Padding="12,6"
+                                ToolTip="优先通过 ColorVisionServiceHost 修复或重启 MySQL 服务；后台服务不可用时回退到管理员直接安装"/>
                         <Button Content="直接安装" Command="{Binding MySqlRegisterExistingCommand}" Margin="0,0,8,0" Padding="12,6"
                                 ToolTip="使用上次保存的 MySQL 路径直接安装服务，不重新初始化数据"/>
                         <Button Content="启动" Command="{Binding MySqlStartCommand}" Margin="0,0,8,0" Padding="12,6"/>

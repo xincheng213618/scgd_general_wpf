@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Microsoft.Win32;
 using System.Security.Principal;
+using System.ServiceProcess;
 
 namespace ColorVisionServiceHost;
 
@@ -34,6 +36,7 @@ internal sealed class ServiceHostCommandHandler
                 "status" => ServiceHostResponse.FromObject(request.RequestId, true, "running", BuildStatus(_startedAt)),
                 "write-demo-marker" => WriteDemoMarker(request.RequestId),
                 "register-file-associations" => RegisterFileAssociations(request),
+                "repair-mysql-service" => RepairMySqlService(request),
                 "register-thumbnail" => RegisterThumbnail(request),
                 "unregister-thumbnail" => UnregisterThumbnail(request),
                 _ => ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported command: {command}"),
@@ -191,6 +194,92 @@ internal sealed class ServiceHostCommandHandler
         }
     }
 
+    private static ServiceHostResponse RepairMySqlService(ServiceHostRequest request)
+    {
+        string serviceName = GetOptionalDataValue(request, "serviceName", "MySQL").Trim();
+        if (!IsAllowedMySqlServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported MySQL service name: {serviceName}");
+
+        string mysqldExePath = Path.GetFullPath(GetRequiredDataValue(request, "mysqldExePath"));
+        if (!File.Exists(mysqldExePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"mysqld.exe was not found: {mysqldExePath}");
+
+        if (!string.Equals(Path.GetFileName(mysqldExePath), "mysqld.exe", StringComparison.OrdinalIgnoreCase))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unexpected MySQL executable: {mysqldExePath}");
+
+        if (!LooksLikeMySqlServerExecutable(mysqldExePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Executable does not look like MySQL Server: {mysqldExePath}");
+
+        int timeoutSeconds = GetOptionalDataInt(request, "timeoutSeconds", 45);
+        timeoutSeconds = Math.Clamp(timeoutSeconds, 5, 180);
+
+        string binDirectory = Path.GetDirectoryName(mysqldExePath) ?? throw new InvalidOperationException("Unable to resolve mysqld.exe directory.");
+        List<string> steps = [];
+        List<ProcessResult> processResults = [];
+
+        bool exists = ServiceExists(serviceName);
+        string? registeredPath = exists ? GetServiceInstallPath(serviceName) : null;
+        bool samePath = exists && IsSamePath(registeredPath, mysqldExePath);
+        string action;
+
+        if (exists && !samePath)
+        {
+            steps.Add($"Service path changed: {registeredPath ?? "(unknown)"} -> {mysqldExePath}");
+            StopServiceIfExists(serviceName, timeoutSeconds, steps);
+
+            ProcessResult removeResult = RunProcess(mysqldExePath, $"--remove {serviceName}", binDirectory, timeoutSeconds * 1000);
+            processResults.Add(removeResult);
+
+            ProcessResult deleteResult = RunProcess("sc.exe", $"delete \"{serviceName}\"", null, timeoutSeconds * 1000);
+            processResults.Add(deleteResult);
+
+            WaitForServiceDeleted(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
+            exists = ServiceExists(serviceName);
+            samePath = false;
+        }
+
+        if (!exists || !samePath)
+        {
+            action = exists ? "reinstalled" : "installed";
+            steps.Add($"Installing MySQL service: {serviceName}");
+            ProcessResult installResult = RunProcess(mysqldExePath, $"--install {serviceName}", binDirectory, timeoutSeconds * 1000);
+            processResults.Add(installResult);
+            if (installResult.ExitCode != 0)
+                return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL service install failed: {installResult.ExitCode}", new { steps, processResults });
+
+            WaitForServiceExists(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
+            if (!ServiceExists(serviceName))
+                return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL service was not created: {serviceName}", new { steps, processResults });
+
+            ProcessResult configResult = RunProcess("sc.exe", $"config \"{serviceName}\" start= auto", null, timeoutSeconds * 1000);
+            processResults.Add(configResult);
+        }
+        else
+        {
+            action = "restarted";
+            steps.Add($"Restarting MySQL service: {serviceName}");
+            StopServiceIfExists(serviceName, timeoutSeconds, steps);
+        }
+
+        bool started = StartServiceAndWait(serviceName, timeoutSeconds, steps);
+        if (!started)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL service start failed: {serviceName}", new { action, steps, processResults });
+
+        string? finalPath = GetServiceInstallPath(serviceName);
+        bool running = IsServiceRunning(serviceName);
+        ServiceHostLog.Write($"MySQL service {action}: {serviceName}, path={finalPath}");
+        return ServiceHostResponse.FromObject(request.RequestId, true, $"MySQL service {action}", new
+        {
+            action,
+            serviceName,
+            mysqldExePath,
+            registeredPath = finalPath,
+            running,
+            steps,
+            processResults,
+        });
+    }
+
     private static string BuildFileAssociationRegistryContent(string appPath, string appDirectory)
     {
         string iconPath = Path.Combine(appDirectory, "ColorVisionIcons64.dll");
@@ -299,6 +388,192 @@ internal sealed class ServiceHostCommandHandler
         return value;
     }
 
+    private static string GetOptionalDataValue(ServiceHostRequest request, string name, string defaultValue)
+    {
+        string? value = request.Data?[name]?.ToString();
+        return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
+    }
+
+    private static int GetOptionalDataInt(ServiceHostRequest request, string name, int defaultValue)
+    {
+        string? value = request.Data?[name]?.ToString();
+        return int.TryParse(value, out int result) ? result : defaultValue;
+    }
+
+    private static bool IsAllowedMySqlServiceName(string serviceName)
+    {
+        return serviceName is "MySQL" or "MySQL57" or "MySQL80";
+    }
+
+    private static bool LooksLikeMySqlServerExecutable(string filePath)
+    {
+        try
+        {
+            FileVersionInfo info = FileVersionInfo.GetVersionInfo(filePath);
+            string combined = string.Join(" ", info.CompanyName, info.ProductName, info.FileDescription, info.OriginalFilename);
+            if (combined.Contains("MySQL", StringComparison.OrdinalIgnoreCase)
+                || combined.Contains("Oracle", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        catch
+        {
+        }
+
+        string fullPath = Path.GetFullPath(filePath);
+        return fullPath.Contains($"{Path.DirectorySeparatorChar}mysql", StringComparison.OrdinalIgnoreCase)
+            || fullPath.Contains($"{Path.AltDirectorySeparatorChar}mysql", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ServiceExists(string serviceName)
+    {
+        try
+        {
+            return ServiceController.GetServices().Any(service => string.Equals(service.ServiceName, serviceName, StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsServiceRunning(string serviceName)
+    {
+        try
+        {
+            using ServiceController controller = new(serviceName);
+            return controller.Status == ServiceControllerStatus.Running;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool StopServiceIfExists(string serviceName, int timeoutSeconds, List<string> steps)
+    {
+        try
+        {
+            using ServiceController controller = new(serviceName);
+            if (controller.Status == ServiceControllerStatus.Stopped)
+            {
+                steps.Add($"Service already stopped: {serviceName}");
+                return true;
+            }
+
+            if (controller.CanStop)
+            {
+                controller.Stop();
+            }
+
+            controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(timeoutSeconds));
+            steps.Add($"Service stopped: {serviceName}");
+            return controller.Status == ServiceControllerStatus.Stopped;
+        }
+        catch (Exception ex)
+        {
+            steps.Add($"Service stop skipped or failed: {serviceName}, {ex.Message}");
+            return false;
+        }
+    }
+
+    private static bool StartServiceAndWait(string serviceName, int timeoutSeconds, List<string> steps)
+    {
+        try
+        {
+            using ServiceController controller = new(serviceName);
+            if (controller.Status == ServiceControllerStatus.Running)
+            {
+                steps.Add($"Service already running: {serviceName}");
+                return true;
+            }
+
+            if (controller.Status == ServiceControllerStatus.Paused)
+                controller.Continue();
+            else if (controller.Status == ServiceControllerStatus.Stopped)
+                controller.Start();
+
+            controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(timeoutSeconds));
+            steps.Add($"Service started: {serviceName}");
+            return controller.Status == ServiceControllerStatus.Running;
+        }
+        catch (Exception ex)
+        {
+            steps.Add($"Service start failed: {serviceName}, {ex.Message}");
+            return false;
+        }
+    }
+
+    private static void WaitForServiceExists(string serviceName, TimeSpan timeout)
+    {
+        DateTime deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            if (ServiceExists(serviceName))
+                return;
+
+            Thread.Sleep(500);
+        }
+    }
+
+    private static void WaitForServiceDeleted(string serviceName, TimeSpan timeout)
+    {
+        DateTime deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            if (!ServiceExists(serviceName))
+                return;
+
+            Thread.Sleep(500);
+        }
+    }
+
+    private static string? GetServiceInstallPath(string serviceName)
+    {
+        try
+        {
+            using RegistryKey? key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{serviceName}");
+            string? imagePath = key?.GetValue("ImagePath")?.ToString();
+            return ExtractExecutablePath(imagePath);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? ExtractExecutablePath(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return null;
+
+        string expanded = Environment.ExpandEnvironmentVariables(imagePath.Trim());
+        if (expanded.StartsWith('"'))
+        {
+            int closingQuote = expanded.IndexOf('"', 1);
+            return closingQuote > 1 ? expanded[1..closingQuote] : expanded.Trim('"');
+        }
+
+        int exeIndex = expanded.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+        return exeIndex >= 0 ? expanded[..(exeIndex + 4)] : expanded.Split(' ')[0].Trim('"');
+    }
+
+    private static bool IsSamePath(string? left, string right)
+    {
+        if (string.IsNullOrWhiteSpace(left))
+            return false;
+
+        try
+        {
+            return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return string.Equals(left.Trim('"'), right.Trim('"'), StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private static void ClearThumbnailCache(ServiceHostRequest request)
     {
         string? thumbnailCacheDirectory = request.Data?["thumbnailCacheDirectory"]?.ToString();
@@ -321,7 +596,7 @@ internal sealed class ServiceHostCommandHandler
         }
     }
 
-    private static ProcessResult RunProcess(string fileName, string arguments)
+    private static ProcessResult RunProcess(string fileName, string arguments, string? workingDirectory = null, int timeoutMilliseconds = 30000)
     {
         using Process process = new()
         {
@@ -329,6 +604,7 @@ internal sealed class ServiceHostCommandHandler
             {
                 FileName = fileName,
                 Arguments = arguments,
+                WorkingDirectory = workingDirectory ?? string.Empty,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -339,7 +615,7 @@ internal sealed class ServiceHostCommandHandler
         process.Start();
         string output = process.StandardOutput.ReadToEnd();
         string error = process.StandardError.ReadToEnd();
-        if (!process.WaitForExit(30000))
+        if (!process.WaitForExit(timeoutMilliseconds))
         {
             process.Kill(entireProcessTree: true);
             return new ProcessResult(fileName, arguments, -1, output, "Process timed out.");

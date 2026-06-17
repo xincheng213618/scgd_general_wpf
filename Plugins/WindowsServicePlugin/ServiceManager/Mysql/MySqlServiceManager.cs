@@ -125,6 +125,8 @@ namespace WindowsServicePlugin.ServiceManager
             Config.Version = Config.IsInstalled && !string.IsNullOrWhiteSpace(exePath)
                 ? WinServiceHelper.GetFileVersion(exePath)?.ToString() ?? string.Empty
                 : string.Empty;
+
+            RememberInstallBasePath(exePath);
         }
 
         public bool Start(Action<string> logCallback)
@@ -152,6 +154,57 @@ namespace WindowsServicePlugin.ServiceManager
                 SaveConfig();
             }
             return ok;
+        }
+
+        public async Task<bool> RepairOrRestartViaServiceHostAsync(Action<string> logCallback)
+        {
+            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            if (!ResolveSavedMySqlBasePath(logCallback))
+            {
+                return false;
+            }
+
+            string mysqldExePath = Helper.MysqldExePath;
+            if (!File.Exists(mysqldExePath))
+            {
+                logCallback($"mysqld.exe 不存在: {mysqldExePath}");
+                return false;
+            }
+
+            try
+            {
+                logCallback("正在通过 ColorVisionServiceHost 后台修复/重启 MySQL 服务...");
+                ColorVisionServiceHostResponse response = await ColorVisionServiceHostPipeClient.SendAsync(
+                    "repair-mysql-service",
+                    new
+                    {
+                        serviceName = Helper.ServiceName,
+                        mysqldExePath,
+                        timeoutSeconds = 60,
+                    },
+                    TimeSpan.FromSeconds(90));
+
+                if (!response.Success)
+                {
+                    logCallback($"后台服务执行失败: {response.Message}");
+                    return false;
+                }
+
+                logCallback($"后台服务执行成功: {response.Message}");
+                Config.ServiceName = Helper.ServiceName;
+                Config.InstallBasePath = Helper.BasePath;
+                Config.ExePath = mysqldExePath;
+                Config.IsInstalled = Helper.IsInstalled;
+                Config.IsRunning = Helper.IsRunning;
+                Config.Status = Config.IsRunning ? "运行中" : (Config.IsInstalled ? "已停止" : "未安装");
+                SaveConfig();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
+                return false;
+            }
         }
 
         public bool Stop(Action<string> logCallback)
@@ -354,6 +407,53 @@ namespace WindowsServicePlugin.ServiceManager
 
             logCallback("未找到已有 MySQL 文件，请先浏览选择 mysqld.exe 或检查安装目录");
             return false;
+        }
+
+        private bool ResolveSavedMySqlBasePath(Action<string> logCallback)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.InstallBasePath)
+                && File.Exists(Path.Combine(Config.InstallBasePath, "bin", "mysqld.exe")))
+            {
+                Helper.BasePath = Config.InstallBasePath;
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(Config.ExePath) && File.Exists(Config.ExePath))
+            {
+                RememberInstallBasePath(Config.ExePath);
+                Helper.BasePath = Directory.GetParent(Config.ExePath)?.Parent?.FullName ?? Helper.BasePath;
+                return true;
+            }
+
+            if (Helper.DetectFromRegistry())
+            {
+                RememberInstallBasePath(Helper.MysqldExePath);
+                return true;
+            }
+
+            logCallback("未找到已保存的 MySQL 路径，请在 MySQL 页先浏览选择 mysqld.exe。");
+            return false;
+        }
+
+        private void RememberInstallBasePath(string? mysqldExePath)
+        {
+            if (string.IsNullOrWhiteSpace(mysqldExePath) || !File.Exists(mysqldExePath))
+            {
+                return;
+            }
+
+            string? basePath = Directory.GetParent(mysqldExePath)?.Parent?.FullName;
+            if (string.IsNullOrWhiteSpace(basePath))
+            {
+                return;
+            }
+
+            Helper.BasePath = basePath;
+            if (!string.Equals(Config.InstallBasePath, basePath, StringComparison.OrdinalIgnoreCase))
+            {
+                Config.InstallBasePath = basePath;
+                SaveConfig();
+            }
         }
 
         public bool ExecuteColorVisionAllSql(string basePath, Action<string> logCallback)
