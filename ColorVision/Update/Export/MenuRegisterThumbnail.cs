@@ -1,7 +1,7 @@
 #pragma warning disable CA1863
 using ColorVision.Properties;
-using ColorVision.ServiceHost;
 using ColorVision.UI.Menus;
+using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
 using System.IO;
@@ -70,10 +70,18 @@ namespace ColorVision.Update.Export
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Microsoft", "Windows", "Explorer");
 
-                ServiceHostResponse response = await ServiceHostPipeClient.SendAsync(
-                    command,
-                    new { appDirectory, thumbnailCacheDirectory },
-                    TimeSpan.FromSeconds(30)).ConfigureAwait(true);
+                ServiceHostResponse response = command switch
+                {
+                    "register-thumbnail" => await ColorVisionServiceHostClient.Default
+                        .RegisterThumbnailAsync(appDirectory, thumbnailCacheDirectory)
+                        .ConfigureAwait(true),
+                    "unregister-thumbnail" => await ColorVisionServiceHostClient.Default
+                        .UnregisterThumbnailAsync(appDirectory, thumbnailCacheDirectory)
+                        .ConfigureAwait(true),
+                    _ => await ColorVisionServiceHostClient.Default
+                        .SendAsync(command, new { appDirectory, thumbnailCacheDirectory }, TimeSpan.FromSeconds(30))
+                        .ConfigureAwait(true),
+                };
 
                 if (response.Success)
                 {

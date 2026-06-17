@@ -1,5 +1,6 @@
 using ColorVision.Database;
 using ColorVision.UI;
+using ColorVision.UI.ServiceHost;
 using System.IO;
 
 namespace WindowsServicePlugin.ServiceManager
@@ -174,15 +175,9 @@ namespace WindowsServicePlugin.ServiceManager
             try
             {
                 logCallback("正在通过 ColorVisionServiceHost 后台修复/重启 MySQL 服务...");
-                ColorVisionServiceHostResponse response = await ColorVisionServiceHostPipeClient.SendAsync(
-                    "repair-mysql-service",
-                    new
-                    {
-                        serviceName = Helper.ServiceName,
-                        mysqldExePath,
-                        timeoutSeconds = 60,
-                    },
-                    TimeSpan.FromSeconds(90));
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .RepairMySqlServiceAsync(Helper.ServiceName, mysqldExePath)
+                    .ConfigureAwait(true);
 
                 if (!response.Success)
                 {

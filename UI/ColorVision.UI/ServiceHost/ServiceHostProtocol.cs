@@ -1,14 +1,10 @@
-using System;
-using System.IO;
-using System.IO.Pipes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+using System.IO;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace ColorVision.ServiceHost
+namespace ColorVision.UI.ServiceHost
 {
     public static class ServiceHostProtocol
     {
@@ -111,49 +107,6 @@ namespace ColorVision.ServiceHost
         {
             string dataText = Data?.ToString(Formatting.None) ?? "{}";
             return $"{(Success ? "OK" : "FAILED")}: {Message}{Environment.NewLine}{dataText}";
-        }
-    }
-
-    public static class ServiceHostPipeClient
-    {
-        public static async Task<ServiceHostResponse> SendAsync(string command, TimeSpan timeout, CancellationToken cancellationToken = default)
-        {
-            return await SendAsync(command, null, timeout, cancellationToken).ConfigureAwait(false);
-        }
-
-        public static async Task<ServiceHostResponse> SendAsync(string command, object? data, TimeSpan timeout, CancellationToken cancellationToken = default)
-        {
-            return await Task.Run(() =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                return Send(command, data, timeout);
-            }, cancellationToken).ConfigureAwait(false);
-        }
-
-        private static ServiceHostResponse Send(string command, object? data, TimeSpan timeout)
-        {
-            int timeoutMilliseconds = Math.Max(1, (int)timeout.TotalMilliseconds);
-            using NamedPipeClientStream pipe = new(".", ServiceHostProtocol.PipeName, PipeDirection.InOut);
-            pipe.Connect(timeoutMilliseconds);
-            pipe.ReadMode = PipeTransmissionMode.Byte;
-
-            ServiceHostRequest request = new()
-            {
-                Command = command,
-                Data = data == null ? null : JToken.FromObject(data),
-            };
-            string requestJson = JsonConvert.SerializeObject(request, ServiceHostProtocol.JsonSettings);
-
-            using StreamWriter writer = new(pipe, ServiceHostProtocol.Encoding, leaveOpen: true) { AutoFlush = true };
-            using StreamReader reader = new(pipe, ServiceHostProtocol.Encoding, false, leaveOpen: true);
-
-            writer.WriteLine(requestJson);
-            string? responseJson = reader.ReadLine();
-            if (string.IsNullOrWhiteSpace(responseJson))
-                throw new InvalidOperationException("ColorVisionServiceHost returned an empty response.");
-
-            return JsonConvert.DeserializeObject<ServiceHostResponse>(responseJson, ServiceHostProtocol.JsonSettings)
-                ?? throw new InvalidOperationException("ColorVisionServiceHost returned an invalid response.");
         }
     }
 }

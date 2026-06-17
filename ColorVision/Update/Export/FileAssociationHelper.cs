@@ -1,8 +1,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Properties;
-using ColorVision.ServiceHost;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
 using System.Threading.Tasks;
@@ -75,10 +75,9 @@ namespace ColorVision.Update.Export
             try
             {
                 string appPath = Environment.ProcessPath ?? throw new InvalidOperationException("Unable to resolve executable path.");
-                ServiceHostResponse response = await ServiceHostPipeClient.SendAsync(
-                    "register-file-associations",
-                    new { appPath },
-                    TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .RegisterFileAssociationsAsync(appPath)
+                    .ConfigureAwait(false);
 
                 if (!response.Success)
                 {

@@ -1,3 +1,4 @@
+using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
 using System.Diagnostics;

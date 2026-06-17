@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using ColorVision.UI.ServiceHost;
 using ColorVision.Update.Export;
 using log4net;
 using AppResources = ColorVision.Properties.Resources;
