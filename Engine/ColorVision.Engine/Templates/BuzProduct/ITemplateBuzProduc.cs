@@ -22,6 +22,18 @@ namespace ColorVision.Engine.Templates.BuzProduct
         private static readonly ILog log = LogManager.GetLogger(typeof(ITemplate));
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
 
+        public override int GetTemplateIndex(string templateName)
+        {
+            return TemplateParams
+                    .Select((template, index) => new { template, index })
+                    .FirstOrDefault(t => t.template.Key == templateName)?.index ?? -1;
+        }
+
+        public override List<string> GetTemplateNames()
+        {
+            return TemplateParams.Select(a => a.Key).ToList();
+        }
+
         public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
 
         public override Type GetTemplateType => typeof(T);

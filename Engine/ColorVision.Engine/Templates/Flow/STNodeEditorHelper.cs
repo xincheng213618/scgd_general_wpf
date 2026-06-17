@@ -897,7 +897,6 @@ namespace ColorVision.Engine.Templates.Flow
             var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, horizontalSpacing, verticalSpacing,
                 STNodeEditor.Width, STNodeEditor.Height);
             layout.Execute(rootNode);
-            AutoSize();
         }
 
         List<STNode> GetChildren(STNode node)

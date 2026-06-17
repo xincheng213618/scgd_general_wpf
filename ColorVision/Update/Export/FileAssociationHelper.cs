@@ -1,12 +1,10 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Properties;
+using ColorVision.ServiceHost;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -19,369 +17,82 @@ namespace ColorVision.Update.Export
         public override string Header => Resources.MenuFileAssociation;
         public override Visibility Visibility => Visibility.Collapsed;
 
-        public override void Execute()
+        public override async void Execute()
         {
-            FileAssociationHelper.RegisterAssociations();
-            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resources.RegistryAppliedSuccess,"ColorVision");
+            bool success = await FileAssociationHelper.RegisterAssociationsAsync().ConfigureAwait(true);
+            MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                success ? Resources.RegistryAppliedSuccess : Resources.ComRegistrationFailed,
+                "ColorVision",
+                MessageBoxButton.OK,
+                success ? MessageBoxImage.Information : MessageBoxImage.Warning);
         }
     }
+
     public class RegConfig : ViewModelBase, IConfig
     {
         public Version Version { get => _Version; set { _Version = value; OnPropertyChanged(); } }
-        private Version _Version = new Version(0, 0, 0);
+        private Version _Version = new(0, 0, 0);
     }
-
 
     public class RegInitialized : MainWindowInitializedBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(RegInitialized));
 
-        public static Version Version { get; set; } = new Version(1, 0, 3, 0);
+        public static Version Version { get; set; } = new(1, 0, 3, 0);
 
         public override Task Initialize()
         {
-            RegConfig sqlConfig = ConfigService.Instance.GetRequiredService<RegConfig>();
-            if (sqlConfig.Version < Version)
+            RegConfig regConfig = ConfigService.Instance.GetRequiredService<RegConfig>();
+            if (regConfig.Version < Version)
             {
-                bool success = FileAssociationHelper.RegisterAssociations();
-                if (success)
-                {
-                    sqlConfig.Version = Version;
-                    ConfigService.Instance.SaveConfigs();
-                    log.Info($"RegInitialized 版本更新到 {Version}");
-
-                }
+                regConfig.Version = Version;
+                ConfigService.Instance.SaveConfigs();
+                log.Info("File association auto registration is disabled; use ColorVisionServiceHost from the update menu.");
             }
+
             return Task.CompletedTask;
         }
     }
 
-
     public static class FileAssociationHelper
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FileAssociationHelper));
+
         [System.Runtime.InteropServices.DllImport("shell32.dll")]
         private static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
 
         private const int SHCNE_ASSOCCHANGED = 0x08000000;
         private const uint SHCNF_IDLIST = 0x0000;
-        /// <summary>
-        /// 生成注册表文件并请求管理员权限导入
-        /// </summary>
+
         public static bool RegisterAssociations()
+        {
+            return RegisterAssociationsAsync().GetAwaiter().GetResult();
+        }
+
+        public static async Task<bool> RegisterAssociationsAsync()
         {
             try
             {
-                // 1. 获取当前程序所在目录和exe路径
                 string appPath = Environment.ProcessPath ?? throw new InvalidOperationException("Unable to resolve executable path.");
-                string appDir = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
-                string iconPath = Path.Combine(appDir, "ColorVisionIcons64.dll");
+                ServiceHostResponse response = await ServiceHostPipeClient.SendAsync(
+                    "register-file-associations",
+                    new { appPath },
+                    TimeSpan.FromSeconds(30)).ConfigureAwait(false);
 
-                // 2. 为了写入 .reg 文件，路径中的反斜杠需要转义 (例如 C:\Program 变成 C:\\Program)
-                string escapedAppPath = appPath.Replace("\\", "\\\\");
-                string escapedIconPath = iconPath.Replace("\\", "\\\\");
-
-                // Thumbnail handler COM class GUIDs
-                string cvrawThumbnailClsid = "{7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C}"; // CVRawShellThumbnailProvider
-                string cvcieThumbnailClsid = "{8C6F3B4D-9E2A-5F7B-C3D4-2E4F6A8B9C0D}"; // CVCieShellThumbnailProvider
-                string comHostPath = Path.Combine(appDir, "ColorVision.ShellExtension.comhost.dll");
-                string escapedComHostPath = comHostPath.Replace("\\", "\\\\");
-
-                // 3. 构建 .reg 文件内容
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("Windows Registry Editor Version 5.00");
-                sb.AppendLine();
-
-                // ------------------------------------------------------
-                //  1. 注册 .cvx 
-                // ------------------------------------------------------
-
-
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvx]");
-                sb.AppendLine($"@=\"ColorVision.Launcher.cvx\""); // 指向 ProgID
-                sb.AppendLine($"\"PerceivedType\"=\"compressed\"");
-                sb.AppendLine($"\"Content Type\"=\"application/x-zip-compressed\"");
-                sb.AppendLine();
-
-                // 新增：注册关联系统压缩文件夹能力
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvx\\OpenWithProgids]");
-                sb.AppendLine($"\"CompressedFolder\"=\"\"");
-                sb.AppendLine();
-
-
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvx]");
-                sb.AppendLine($"@=\"ColorVision Core Update Package\""); // 文件类型描述
-                sb.AppendLine();
-
-                // 图标 (使用 index 0)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvx\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},4\"");
-                sb.AppendLine();
-
-                // 双击打开行为 (Open) -> 传入 -i 参数
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvx\\shell\\open\\command]");
-                sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvx\\shell\\preview]");
-                sb.AppendLine($"@=\"Preview as Winrar\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvx\\shell\\preview\\command]");
-                // 注意：路径中的反斜杠需要转义。C:\\Program Files\\WinRAR\\WinRAR.exe
-                // 写入 .reg 文件时需要变成 C:\\Program Files\\WinRAR\\WinRAR.exe
-                // 所以 C# 字符串里要写成 C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe
-                sb.AppendLine($"@=\"\\\"C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe\\\" \\\"%1\\\"\"");
-                sb.AppendLine();
-
-
-                // ------------------------------------------------------
-                //  2. 注册 .cvxp 
-                // ------------------------------------------------------
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvxp]");
-                sb.AppendLine($"@=\"ColorVision.Launcher.cvxp\"");
-                sb.AppendLine($"\"PerceivedType\"=\"compressed\"");
-                sb.AppendLine($"\"Content Type\"=\"application/x-zip-compressed\"");
-                sb.AppendLine();
-
-                // 新增：注册关联系统压缩文件夹能力
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvxp\\OpenWithProgids]");
-                sb.AppendLine($"\"CompressedFolder\"=\"\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvxp]");
-                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
-                sb.AppendLine();
-
-                // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvxp\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},5\"");
-                sb.AppendLine();
-
-                // 双击打开行为 (Open) -> 传入 -i 参数
-                // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvxp\\shell\\open\\command]");
-                sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
-                sb.AppendLine();
-
-
-                // 新增：Preview 行为 -> 使用 DelegateExecute 调用资源管理器内部Zip浏览
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvxp\\shell\\preview]");
-                sb.AppendLine($"@=\"Preview as Winrar\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvxp\\shell\\preview\\command]");
-                // 注意：路径中的反斜杠需要转义。C:\\Program Files\\WinRAR\\WinRAR.exe
-                // 写入 .reg 文件时需要变成 C:\\Program Files\\WinRAR\\WinRAR.exe
-                // 所以 C# 字符串里要写成 C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe
-                sb.AppendLine($"@=\"\\\"C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe\\\" \\\"%1\\\"\"");
-                sb.AppendLine();
-
-                // ------------------------------------------------------
-                //  3. 注册 .lic 
-                // ------------------------------------------------------
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.lic]");
-                sb.AppendLine($"@=\"ColorVision.Launcher.lic\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.lic]");
-                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
-                sb.AppendLine();
-
-                // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.lic\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},6\"");
-                sb.AppendLine();
-
-                // 双击打开行为 (Open) -> 传入 -i 参数
-                // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.lic\\shell\\open\\command]");
-                sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
-                sb.AppendLine();
-
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcal]");
-                sb.AppendLine($"@=\"ColorVision.Launcher.cvcal\"");
-                sb.AppendLine($"\"PerceivedType\"=\"compressed\"");
-                sb.AppendLine($"\"Content Type\"=\"application/x-zip-compressed\"");
-                sb.AppendLine();
-
-                // 新增：注册关联系统压缩文件夹能力
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcal\\OpenWithProgids]");
-                sb.AppendLine($"\"CompressedFolder\"=\"\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal]");
-                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
-                sb.AppendLine();
-
-                // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},7\"");
-                sb.AppendLine();
-
-                // 双击打开行为 (Open) -> 传入 -i 参数
-                // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\shell\\open\\command]");
-                sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
-                sb.AppendLine();
-
-                // 新增：Preview 行为 -> 使用 DelegateExecute 调用资源管理器内部Zip浏览
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\shell\\preview]");
-                sb.AppendLine($"@=\"Preview as Winrar\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\shell\\preview\\command]");
-                // 注意：路径中的反斜杠需要转义。C:\\Program Files\\WinRAR\\WinRAR.exe
-                // 写入 .reg 文件时需要变成 C:\\Program Files\\WinRAR\\WinRAR.exe
-                // 所以 C# 字符串里要写成 C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe
-                sb.AppendLine($"@=\"\\\"C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe\\\" \\\"%1\\\"\"");
-                sb.AppendLine();
-
-
-
-
-                // ------------------------------------------------------
-                //  Register COM Thumbnail Handlers for .cvraw/.cvcie
-                //  This enables Windows Explorer to show dynamic thumbnails
-                // ------------------------------------------------------
-
-                // CVRaw Thumbnail Provider
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{cvrawThumbnailClsid}]");
-                sb.AppendLine($"@=\"ColorVision CVRaw Thumbnail Handler\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{cvrawThumbnailClsid}\\InprocServer32]");
-                sb.AppendLine($"@=\"{escapedComHostPath}\"");
-                sb.AppendLine($"\"ThreadingModel\"=\"Both\"");
-                sb.AppendLine();
-
-                // CVCie Thumbnail Provider
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{cvcieThumbnailClsid}]");
-                sb.AppendLine($"@=\"ColorVision CVCie Thumbnail Handler\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{cvcieThumbnailClsid}\\InprocServer32]");
-                sb.AppendLine($"@=\"{escapedComHostPath}\"");
-                sb.AppendLine($"\"ThreadingModel\"=\"Both\"");
-                sb.AppendLine();
-
-                // ------------------------------------------------------
-                //  4. 注册 .cvraw 
-                // ------------------------------------------------------
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw]");
-                sb.AppendLine($"@=\"ColorVision.Launcher.cvraw\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvraw]");
-                sb.AppendLine($"@=\"ColorVision Raw Image File\"");
-                sb.AppendLine();
-
-                // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvraw\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},1\"");
-                sb.AppendLine();
-
-                // 双击打开行为 (Open) -> 传入 -i 参数
-                // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvraw\\shell\\open\\command]");
-                sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
-                sb.AppendLine();
-
-                // Register thumbnail handler for .cvraw (Shell extension GUID for IThumbnailProvider)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw\\ShellEx\\{{e357fccd-a995-4576-b01f-234630154e96}}]");
-                sb.AppendLine($"@=\"{cvrawThumbnailClsid}\"");
-                sb.AppendLine();
-
-                // ------------------------------------------------------
-                //  5. 注册 .cvcie 
-                // ------------------------------------------------------
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcie]");
-                sb.AppendLine($"@=\"ColorVision.Launcher.cvcie\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcie]");
-                sb.AppendLine($"@=\"ColorVision CIE Image File\"");
-                sb.AppendLine();
-
-                // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcie\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},2\"");
-                sb.AppendLine();
-
-                // 双击打开行为 (Open) -> 传入 -i 参数
-                // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcie\\shell\\open\\command]");
-                sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
-                sb.AppendLine();
-
-                // Register thumbnail handler for .cvcie (Shell extension GUID for IThumbnailProvider)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcie\\ShellEx\\{{e357fccd-a995-4576-b01f-234630154e96}}]");
-                sb.AppendLine($"@=\"{cvcieThumbnailClsid}\"");
-                sb.AppendLine();
-
-                // ------------------------------------------------------
-                //  6. 注册 .cvflow 
-                // ------------------------------------------------------
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvflow]");
-                sb.AppendLine($"@=\"ColorVision.Launcher.cvflow\"");
-                sb.AppendLine();
-
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvflow]");
-                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
-                sb.AppendLine();
-
-                // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvflow\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},3\"");
-                sb.AppendLine();
-
-                // 双击打开行为 (Open) -> 传入 -i 参数
-                // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvflow\\shell\\open\\command]");
-                sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
-                sb.AppendLine();
-
-                // 4. 保存为临时 .reg 文件
-                string tempRegFile = Path.Combine(Path.GetTempPath(), $"CV_Register_{Guid.NewGuid()}.reg");
-                File.WriteAllText(tempRegFile, sb.ToString(), Encoding.Unicode); // 注册表文件通常推荐 Unicode
-                log.Info($"RegisterAssociations: .reg file saved to {tempRegFile}");
-
-                // 5. 调用 regedit.exe 以管理员权限运行 (/s 为静默模式，不弹成功提示框)
-                ProcessStartInfo psi = new ProcessStartInfo();
-                psi.FileName = "regedit.exe";
-                psi.Arguments = $"/s \"{tempRegFile}\""; // /s 代表 silent，只弹UAC，不弹完成提示
-                psi.UseShellExecute = true;
-                psi.Verb = "runas"; // 关键：这会触发 UAC 提权提示
-
-                Process process = Process.Start(psi);
-                process?.WaitForExit();
-
-                int exitCode = process?.ExitCode ?? -1;
-                log.Info($"RegisterAssociations: regedit.exe exited with code {exitCode}");
-
-                if (exitCode != 0)
+                if (!response.Success)
                 {
-                    log.Warn($"RegisterAssociations: regedit.exe returned non-zero exit code {exitCode}, registration may have failed");
+                    log.Warn($"RegisterAssociations failed: {response.ToDisplayText()}");
+                    return false;
                 }
-                else
-                {
-                    log.Info("RegisterAssociations: file associations registered successfully");
 
-                    // 在 RegisterAssociations 成功后调用：
-                    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
-                    log.Info("Sent SHChangeNotify to refresh file associations.");
-
-                }
-                return exitCode == 0;
-
-                // 可选：稍后删除临时文件（由于 regedit 是异步的，立即删除可能导致未读取，实际中可以不删或延迟删除）
+                SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
+                log.Info("RegisterAssociations completed through ColorVisionServiceHost.");
+                return true;
             }
             catch (Exception ex)
             {
-                log.Error($"RegisterAssociations: failed with exception: {ex}");
+                log.Error("RegisterAssociations failed.", ex);
                 return false;
             }
         }

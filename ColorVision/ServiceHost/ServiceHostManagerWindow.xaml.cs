@@ -42,13 +42,13 @@ namespace ColorVision.ServiceHost
             await RunPipeCommandAsync("ping").ConfigureAwait(true);
         }
 
-        private void FileAssociationButton_Click(object sender, RoutedEventArgs e)
+        private async void FileAssociationButton_Click(object sender, RoutedEventArgs e)
         {
             SetBusy(true);
             AppendLog("> file association");
             try
             {
-                bool success = FileAssociationHelper.RegisterAssociations();
+                bool success = await FileAssociationHelper.RegisterAssociationsAsync().ConfigureAwait(true);
                 AppendLog(success ? "OK: file association registered" : "FAILED: file association registration failed");
                 MessageBox.Show(this,
                     success ? AppResources.RegistryAppliedSuccess : AppResources.ComRegistrationFailed,

@@ -603,7 +603,20 @@ namespace ColorVision.Engine.Templates.Flow
         {
             foreach (var kvp in TemplateControl.ITemplateNames)
             {
-                int templateIndex = kvp.Value.GetTemplateIndex(templateName);
+                int templateIndex;
+                try
+                {
+                    templateIndex = kvp.Value.GetTemplateIndex(templateName);
+                }
+                catch (NotImplementedException)
+                {
+                    continue;
+                }
+                catch (NotSupportedException)
+                {
+                    continue;
+                }
+
                 if (templateIndex >= 0)
                 {
                     templateCode = kvp.Key;
