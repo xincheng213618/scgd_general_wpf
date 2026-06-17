@@ -159,4 +159,32 @@
     <Copy SourceFiles="@(ShellExtensionRuntimeFiles)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="'@(ShellExtensionRuntimeFiles)' != ''" />
   </Target>
 
+  <Target Name="CopyServiceHostRuntimeFiles" AfterTargets="Build">
+    <PropertyGroup>
+      <ServiceHostOutputPath>..\src\ColorVisionServiceHost\bin\$(Platform)\$(Configuration)\$(TargetFramework)\</ServiceHostOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ServiceHostRuntimeFiles Include="$(ServiceHostOutputPath)**\*.*"
+                               Exclude="$(ServiceHostOutputPath)**\*.pdb"
+                               Condition="Exists('$(ServiceHostOutputPath)ColorVisionServiceHost.exe')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ServiceHostRuntimeFiles)"
+          DestinationFiles="@(ServiceHostRuntimeFiles->'$(OutputPath)ServiceHost\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(ServiceHostRuntimeFiles)' != ''" />
+  </Target>
+
+  <Target Name="AddServiceHostRuntimeFilesToPublish" AfterTargets="ComputeFilesToPublish" DependsOnTargets="CopyServiceHostRuntimeFiles">
+    <ItemGroup>
+      <ServiceHostPublishFiles Include="$(OutputPath)ServiceHost\**\*.*" Condition="Exists('$(OutputPath)ServiceHost\ColorVisionServiceHost.exe')" />
+      <ResolvedFileToPublish Include="@(ServiceHostPublishFiles)">
+        <RelativePath>ServiceHost\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
 </Project>
