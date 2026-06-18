@@ -23,7 +23,7 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         public ObjectiveTestItem MTF_HV_V_Center_0F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_Center_0F", Unit = "%" };
 
         /// <summary>
-        /// MTF058_H 左上_0.3F 水平方向
+        /// MTF058_H 左上_0.5F 水平方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_LeftUp_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftUp_0_5F", Unit = "%" };
 
