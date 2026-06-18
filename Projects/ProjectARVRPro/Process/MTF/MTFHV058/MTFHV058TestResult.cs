@@ -18,6 +18,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_Center_0F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_Center_0F", Unit = "%" };
         /// <summary>
+        /// MTF058 中心_0F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_Center_0F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_Center_0F", Unit = "%" };
+        /// <summary>
         /// MTF058_V 中心_0F 垂直方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_V_Center_0F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_Center_0F", Unit = "%" };
@@ -27,41 +31,59 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_LeftUp_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftUp_0_5F", Unit = "%" };
 
+        /// <summary>
+        /// MTF058 左上_0.5F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_LeftUp_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_LeftUp_0_5F", Unit = "%" };
 
         /// <summary>
-        /// MTF058_V 左上_0.3F 垂直方向
+        /// MTF058_V 左上_0.5F 垂直方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_V_LeftUp_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftUp_0_5F", Unit = "%" };
 
         /// <summary>
-        /// MTF058_H 右上_0.3F 水平方向
+        /// MTF058_H 右上_0.5F 水平方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_RightUp_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightUp_0_5F", Unit = "%" };
 
         /// <summary>
-        /// MTF058_V 右上_0.3F 垂直方向
+        /// MTF058 右上_0.5F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_RightUp_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_RightUp_0_5F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_V 右上_0.5F 垂直方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_V_RightUp_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_RightUp_0_5F", Unit = "%" };
 
 
         /// <summary>
-        /// MTF058_H 右下_0.3F 水平方向
+        /// MTF058_H 右下_0.5F 水平方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_RightDown_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightDown_0_5F", Unit = "%" };
 
         /// <summary>
-        /// MTF058_V 右下_0.3F 垂直方向
+        /// MTF058 右下_0.5F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_RightDown_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_RightDown_0_5F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_V 右下_0.5F 垂直方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_V_RightDown_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_RightDown_0_5F", Unit = "%" };
 
         /// <summary>
-        /// MTF058_H 左下_0.3F 水平方向
+        /// MTF058_H 左下_0.5F 水平方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_LeftDown_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftDown_0_5F", Unit = "%" };
 
+        /// <summary>
+        /// MTF058 左下_0.5F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_LeftDown_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_LeftDown_0_5F", Unit = "%" };
 
         /// <summary>
-        /// MTF058_V 左下_0.3F 垂直方向
+        /// MTF058_V 左下_0.5F 垂直方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_V_LeftDown_0_5F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftDown_0_5F", Unit = "%" };
 
@@ -69,6 +91,11 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         /// MTF058_H 左上_0.8F 水平方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_LeftUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftUp_0_8F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058 左上_0.8F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_LeftUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_LeftUp_0_8F", Unit = "%" };
 
         /// <summary>
         /// MTF058_V 左上_0.8F 垂直方向
@@ -80,6 +107,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_RightUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightUp_0_8F", Unit = "%" };
 
+        /// <summary>
+        /// MTF058 右上_0.8F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_RightUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_RightUp_0_8F", Unit = "%" };
 
         /// <summary>
         /// MTF058_V 右上_0.8F 垂直方向
@@ -91,6 +122,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_RightDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightDown_0_8F", Unit = "%" };
 
+        /// <summary>
+        /// MTF058 右下_0.8F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_RightDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_RightDown_0_8F", Unit = "%" };
 
         /// <summary>
         /// MTF058_V 右下_0.8F 垂直方向
@@ -101,6 +136,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         /// MTF058_H 左下_0.8F 水平方向
         /// </summary>
         public ObjectiveTestItem MTF_HV_H_LeftDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftDown_0_8F", Unit = "%" };
+        /// <summary>
+        /// MTF058 左下_0.8F 平均值
+        /// </summary>
+        public ObjectiveTestItem MTF_HV_LeftDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_LeftDown_0_8F", Unit = "%" };
         /// <summary>
         /// MTF058_V 左下_0.8F 垂直方向
         /// </summary>

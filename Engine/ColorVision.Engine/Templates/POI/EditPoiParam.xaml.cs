@@ -1223,7 +1223,7 @@ namespace ColorVision.Engine.Templates.POI
 
             var recentItems = Db.Queryable<MeasureResultImgModel>()
                    .OrderBy(it => it.CreateDate, OrderByType.Desc)
-                   .Take(6)
+                   .Take(20)
                    .ToList();
 
             if (recentItems.Count == 0)
@@ -1235,11 +1235,8 @@ namespace ColorVision.Engine.Templates.POI
             {
                 foreach (var item in recentItems)
                 {
-                    if (File.Exists(item.FileUrl))
-                    {
-                        ImageView.OpenImage(item.FileUrl);
+                    if (TryOpenMeasureImage(item, allowCieFile: true))
                         return;
-                    }
                 }
                 MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
             }
@@ -1247,6 +1244,42 @@ namespace ColorVision.Engine.Templates.POI
             {
                 MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
             }
+        }
+
+        private bool TryOpenMeasureImage(MeasureResultImgModel model, bool allowCieFile)
+        {
+            if (!TryResolveMeasureImagePath(model, allowCieFile, out string filePath))
+                return false;
+
+            ImageView.OpenImage(filePath);
+            PoiConfig.BackgroundFilePath = filePath;
+            return true;
+        }
+
+        private static bool TryResolveMeasureImagePath(MeasureResultImgModel model, bool allowCieFile, out string filePath)
+        {
+            filePath = string.Empty;
+            foreach (string? path in new[] { model.FileUrl, model.RawFile })
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                    continue;
+
+                if (!allowCieFile && IsCieFile(path))
+                    continue;
+
+                if (File.Exists(path))
+                {
+                    filePath = path;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsCieFile(string path)
+        {
+            return string.Equals(Path.GetExtension(path), ".cvcie", StringComparison.OrdinalIgnoreCase);
         }
 
 
@@ -1258,11 +1291,12 @@ namespace ColorVision.Engine.Templates.POI
             imgs.Reverse();
             foreach (var item in imgs)
             {
-                if (!string.IsNullOrWhiteSpace(item.RawFile) &&!item.RawFile.Contains(".cvcie",StringComparison.OrdinalIgnoreCase))
+                if (TryResolveMeasureImagePath(item, allowCieFile: false, out _))
                     MeasureImgResultModels.Add(item);
             }
             ComboBoxImg.ItemsSource = MeasureImgResultModels;
             ComboBoxImg.DisplayMemberPath = "RawFile";
+            ComboBoxImg.SelectedIndex = MeasureImgResultModels.Count > 0 ? 0 : -1;
         }
 
         private void Button_Service_Click(object sender, RoutedEventArgs e)
@@ -1271,22 +1305,21 @@ namespace ColorVision.Engine.Templates.POI
             {
                 try
                 {
-                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureResultImgModel model && model.FileUrl != null)
+                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureResultImgModel model && TryOpenMeasureImage(model, allowCieFile: false))
                     {
-                        ImageView.OpenImage(model.FileUrl);
-                        PoiConfig.BackgroundFilePath = model.FileUrl;
+                        return;
                     }
-                    else
-                    {
-                        MessageBox.Show("打开最近服务拍摄的图像失败");
-                    }
+                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
                 }
             }
-           
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SelectDataFirst, "ColorVision");
+            }
         }
 
         private void ButtonImportMarin_Click(object sender, RoutedEventArgs e)

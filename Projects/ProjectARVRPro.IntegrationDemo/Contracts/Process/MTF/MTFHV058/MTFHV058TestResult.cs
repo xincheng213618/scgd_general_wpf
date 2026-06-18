@@ -8,22 +8,31 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
     public class MTFHV058TestResult : ViewModelBase
     {
         public ObjectiveTestItem MTF_HV_H_Center_0F { get; set; } = Item("MTF_HV_H_Center_0F");
+        public ObjectiveTestItem MTF_HV_Center_0F { get; set; } = Item("MTF_HV_Center_0F");
         public ObjectiveTestItem MTF_HV_V_Center_0F { get; set; } = Item("MTF_HV_V_Center_0F");
         public ObjectiveTestItem MTF_HV_H_LeftUp_0_5F { get; set; } = Item("MTF_HV_H_LeftUp_0_5F");
+        public ObjectiveTestItem MTF_HV_LeftUp_0_5F { get; set; } = Item("MTF_HV_LeftUp_0_5F");
         public ObjectiveTestItem MTF_HV_V_LeftUp_0_5F { get; set; } = Item("MTF_HV_V_LeftUp_0_5F");
         public ObjectiveTestItem MTF_HV_H_RightUp_0_5F { get; set; } = Item("MTF_HV_H_RightUp_0_5F");
+        public ObjectiveTestItem MTF_HV_RightUp_0_5F { get; set; } = Item("MTF_HV_RightUp_0_5F");
         public ObjectiveTestItem MTF_HV_V_RightUp_0_5F { get; set; } = Item("MTF_HV_V_RightUp_0_5F");
         public ObjectiveTestItem MTF_HV_H_RightDown_0_5F { get; set; } = Item("MTF_HV_H_RightDown_0_5F");
+        public ObjectiveTestItem MTF_HV_RightDown_0_5F { get; set; } = Item("MTF_HV_RightDown_0_5F");
         public ObjectiveTestItem MTF_HV_V_RightDown_0_5F { get; set; } = Item("MTF_HV_V_RightDown_0_5F");
         public ObjectiveTestItem MTF_HV_H_LeftDown_0_5F { get; set; } = Item("MTF_HV_H_LeftDown_0_5F");
+        public ObjectiveTestItem MTF_HV_LeftDown_0_5F { get; set; } = Item("MTF_HV_LeftDown_0_5F");
         public ObjectiveTestItem MTF_HV_V_LeftDown_0_5F { get; set; } = Item("MTF_HV_V_LeftDown_0_5F");
         public ObjectiveTestItem MTF_HV_H_LeftUp_0_8F { get; set; } = Item("MTF_HV_H_LeftUp_0_8F");
+        public ObjectiveTestItem MTF_HV_LeftUp_0_8F { get; set; } = Item("MTF_HV_LeftUp_0_8F");
         public ObjectiveTestItem MTF_HV_V_LeftUp_0_8F { get; set; } = Item("MTF_HV_V_LeftUp_0_8F");
         public ObjectiveTestItem MTF_HV_H_RightUp_0_8F { get; set; } = Item("MTF_HV_H_RightUp_0_8F");
+        public ObjectiveTestItem MTF_HV_RightUp_0_8F { get; set; } = Item("MTF_HV_RightUp_0_8F");
         public ObjectiveTestItem MTF_HV_V_RightUp_0_8F { get; set; } = Item("MTF_HV_V_RightUp_0_8F");
         public ObjectiveTestItem MTF_HV_H_RightDown_0_8F { get; set; } = Item("MTF_HV_H_RightDown_0_8F");
+        public ObjectiveTestItem MTF_HV_RightDown_0_8F { get; set; } = Item("MTF_HV_RightDown_0_8F");
         public ObjectiveTestItem MTF_HV_V_RightDown_0_8F { get; set; } = Item("MTF_HV_V_RightDown_0_8F");
         public ObjectiveTestItem MTF_HV_H_LeftDown_0_8F { get; set; } = Item("MTF_HV_H_LeftDown_0_8F");
+        public ObjectiveTestItem MTF_HV_LeftDown_0_8F { get; set; } = Item("MTF_HV_LeftDown_0_8F");
         public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; } = Item("MTF_HV_V_LeftDown_0_8F");
 
         private static ObjectiveTestItem Item(string name)
