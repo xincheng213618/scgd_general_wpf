@@ -127,7 +127,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-    <ProjectReference Include="..\Engine\ColorVision.ShellExtension\ColorVision.ShellExtension.csproj" />
+    <ProjectReference Include="..\Engine\ColorVision.ShellExtension\ColorVision.ShellExtension.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\src\ColorVisionServiceHost\ColorVisionServiceHost.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
@@ -151,12 +151,22 @@
 
   <Target Name="CopyShellExtensionRuntimeFiles" AfterTargets="Build">
     <ItemGroup>
-      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll')" />
-      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.deps.json" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.deps.json')" />
-      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.runtimeconfig.json" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.runtimeconfig.json')" />
+      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.*"
+                                  Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ShellExtensionRuntimeFiles)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="'@(ShellExtensionRuntimeFiles)' != ''" />
+  </Target>
+
+  <Target Name="AddShellExtensionRuntimeFilesToPublish" AfterTargets="ComputeFilesToPublish" DependsOnTargets="CopyShellExtensionRuntimeFiles">
+    <ItemGroup>
+      <ShellExtensionPublishFiles Include="$(OutputPath)ColorVision.ShellExtension.*" Condition="Exists('$(OutputPath)ColorVision.ShellExtension.comhost.dll')" />
+      <ResolvedFileToPublish Include="@(ShellExtensionPublishFiles)">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
   </Target>
 
   <Target Name="CopyColorVisionIconsRuntimeFile" AfterTargets="Build">
