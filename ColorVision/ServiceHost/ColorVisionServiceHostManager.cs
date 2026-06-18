@@ -1,8 +1,10 @@
 using ColorVision.UI.ServiceHost;
 using log4net;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Principal;
 using System.ServiceProcess;
 using System.Text;
@@ -25,13 +27,40 @@ namespace ColorVision.ServiceHost
 
         public string RawOutput { get; init; } = string.Empty;
 
+        public string PackageExecutablePath { get; init; } = string.Empty;
+
+        public string InstalledExecutablePath { get; init; } = string.Empty;
+
+        public Version? PackageVersion { get; init; }
+
+        public Version? InstalledVersion { get; init; }
+
+        public Version? RunningVersion { get; init; }
+
+        public string RunningProcessPath { get; init; } = string.Empty;
+
+        public bool IsPackageAvailable => File.Exists(PackageExecutablePath);
+
+        public bool NeedsInstall => State == ServiceHostInstallState.NotInstalled;
+
+        public bool NeedsUpdate => IsPackageAvailable
+            && PackageVersion != null
+            && (InstalledVersion == null || PackageVersion > InstalledVersion || (RunningVersion != null && PackageVersion > RunningVersion));
+
+        public bool CanSelfUpdate => State == ServiceHostInstallState.Running && NeedsUpdate;
+
         public string DisplayText => State switch
         {
-            ServiceHostInstallState.NotInstalled => "Not installed",
-            ServiceHostInstallState.Stopped => "Stopped",
-            ServiceHostInstallState.Running => "Running",
-            _ => "Unknown",
+            ServiceHostInstallState.NotInstalled => $"Not installed, package {FormatVersion(PackageVersion)}",
+            ServiceHostInstallState.Stopped => $"Stopped, installed {FormatVersion(InstalledVersion)}, package {FormatVersion(PackageVersion)}",
+            ServiceHostInstallState.Running => $"Running, installed {FormatVersion(InstalledVersion)}, running {FormatVersion(RunningVersion)}, package {FormatVersion(PackageVersion)}",
+            _ => $"Unknown, installed {FormatVersion(InstalledVersion)}, package {FormatVersion(PackageVersion)}",
         };
+
+        private static string FormatVersion(Version? version)
+        {
+            return version?.ToString() ?? "unknown";
+        }
     }
 
     public sealed class ServiceHostOperationResult
@@ -97,42 +126,130 @@ namespace ColorVision.ServiceHost
             return RunPowerShellScriptAsync(CreateUninstallScript(), requireAdministrator: true, cancellationToken);
         }
 
-        public static Task<ServiceHostStatus> QueryStatusAsync(CancellationToken cancellationToken = default)
+        public static async Task<ServiceHostOperationResult> SelfUpdateAsync(CancellationToken cancellationToken = default)
+        {
+            if (!File.Exists(ServiceHostProtocol.PackageExecutablePath))
+            {
+                return new ServiceHostOperationResult
+                {
+                    Success = false,
+                    ExitCode = -1,
+                    Error = $"Service host executable was not found: {ServiceHostProtocol.PackageExecutablePath}",
+                };
+            }
+
+            try
+            {
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .SelfUpdateAsync(ServiceHostProtocol.PackageDirectory, cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+
+                return new ServiceHostOperationResult
+                {
+                    Success = response.Success,
+                    ExitCode = response.Success ? 0 : 1,
+                    Output = response.ToDisplayText(),
+                    Error = response.Success ? string.Empty : response.Message,
+                };
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to request service host self update.", ex);
+                return new ServiceHostOperationResult
+                {
+                    Success = false,
+                    ExitCode = -1,
+                    Error = ex.Message,
+                };
+            }
+        }
+
+        public static async Task<ServiceHostStatus> QueryStatusAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            Version? packageVersion = GetExecutableVersion(ServiceHostProtocol.PackageExecutablePath);
+            Version? installedVersion = GetExecutableVersion(ServiceHostProtocol.InstalledExecutablePath);
 
             try
             {
                 using ServiceController controller = new(ServiceHostProtocol.ServiceName);
                 ServiceControllerStatus status = controller.Status;
-                return Task.FromResult(new ServiceHostStatus
+                ServiceHostInstallState state = status switch
                 {
-                    State = status switch
-                    {
-                        ServiceControllerStatus.Running => ServiceHostInstallState.Running,
-                        ServiceControllerStatus.Stopped => ServiceHostInstallState.Stopped,
-                        _ => ServiceHostInstallState.Unknown,
-                    },
+                    ServiceControllerStatus.Running => ServiceHostInstallState.Running,
+                    ServiceControllerStatus.Stopped => ServiceHostInstallState.Stopped,
+                    _ => ServiceHostInstallState.Unknown,
+                };
+
+                Version? runningVersion = null;
+                string runningProcessPath = string.Empty;
+                if (state == ServiceHostInstallState.Running)
+                {
+                    (runningVersion, runningProcessPath) = await QueryRunningVersionAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                return new ServiceHostStatus
+                {
+                    State = state,
                     RawOutput = status.ToString(),
-                });
+                    PackageExecutablePath = ServiceHostProtocol.PackageExecutablePath,
+                    InstalledExecutablePath = ServiceHostProtocol.InstalledExecutablePath,
+                    PackageVersion = packageVersion,
+                    InstalledVersion = installedVersion,
+                    RunningVersion = runningVersion,
+                    RunningProcessPath = runningProcessPath,
+                };
             }
             catch (InvalidOperationException ex)
             {
                 log.Warn($"Service query failed: {ServiceHostProtocol.ServiceName}", ex);
-                return Task.FromResult(new ServiceHostStatus
+                return new ServiceHostStatus
                 {
                     State = ServiceHostInstallState.NotInstalled,
                     RawOutput = ex.Message,
-                });
+                    PackageExecutablePath = ServiceHostProtocol.PackageExecutablePath,
+                    InstalledExecutablePath = ServiceHostProtocol.InstalledExecutablePath,
+                    PackageVersion = packageVersion,
+                    InstalledVersion = installedVersion,
+                };
             }
             catch (Exception ex)
             {
                 log.Warn($"Service query failed: {ServiceHostProtocol.ServiceName}", ex);
-                return Task.FromResult(new ServiceHostStatus
+                return new ServiceHostStatus
                 {
                     State = ServiceHostInstallState.Unknown,
                     RawOutput = ex.Message,
-                });
+                    PackageExecutablePath = ServiceHostProtocol.PackageExecutablePath,
+                    InstalledExecutablePath = ServiceHostProtocol.InstalledExecutablePath,
+                    PackageVersion = packageVersion,
+                    InstalledVersion = installedVersion,
+                };
+            }
+        }
+
+        private static async Task<(Version? Version, string ProcessPath)> QueryRunningVersionAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .StatusAsync(TimeSpan.FromSeconds(2), cancellationToken)
+                    .ConfigureAwait(false);
+                if (!response.Success || response.Data == null)
+                    return (null, string.Empty);
+
+                JToken data = response.Data;
+                string? versionText = data["fileVersion"]?.ToString()
+                    ?? data["productVersion"]?.ToString()
+                    ?? data["assemblyVersion"]?.ToString();
+                string processPath = data["processPath"]?.ToString() ?? string.Empty;
+                return (TryParseVersion(versionText), processPath);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Failed to query running service host version.", ex);
+                return (null, string.Empty);
             }
         }
 
@@ -287,6 +404,24 @@ namespace ColorVision.ServiceHost
         private static string PsQuote(string value)
         {
             return $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
+        }
+
+        private static Version? GetExecutableVersion(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                return null;
+
+            FileVersionInfo info = FileVersionInfo.GetVersionInfo(filePath);
+            return TryParseVersion(info.FileVersion) ?? TryParseVersion(info.ProductVersion);
+        }
+
+        private static Version? TryParseVersion(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            string versionText = new(value.TakeWhile(ch => char.IsDigit(ch) || ch == '.').ToArray());
+            return Version.TryParse(versionText.Trim('.'), out Version? version) ? version : null;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.ServiceHost;
 using ColorVision.UI.Shell;
 using ColorVision.UI.LogImp;
 using Dm.util;
@@ -466,12 +467,14 @@ namespace ColorVision
                         log.Info($"Feature '{feature}' not found, starting configured main window.");
                         Window mainWindow = CreatePrimaryMainWindow();
                         mainWindow.Show();
+                        ScheduleServiceHostStartupCheck(mainWindow);
                     }
                 }
                 else
                 {
                     Window mainWindow = CreatePrimaryMainWindow();
                     mainWindow.Show();
+                    ScheduleServiceHostStartupCheck(mainWindow);
                 }
                 Close();
             }
@@ -487,6 +490,14 @@ namespace ColorVision
             return MainWindowConfig.Instance.UseIntegratedMainWindowChrome
                 ? new IntegratedMainWindow()
                 : new MainWindow();
+        }
+
+        private static void ScheduleServiceHostStartupCheck(Window mainWindow)
+        {
+            _ = mainWindow.Dispatcher.BeginInvoke(async () =>
+            {
+                await ServiceHostStartupUpdateChecker.CheckAndPromptAsync(mainWindow).ConfigureAwait(true);
+            }, DispatcherPriority.ApplicationIdle);
         }
 
         private void TextBoxMsg_TextChanged(object sender, TextChangedEventArgs e)

@@ -1,4 +1,3 @@
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.UI;
 using System.Diagnostics;
@@ -33,18 +32,26 @@ namespace WindowsServicePlugin.ServiceManager
 
         public bool Start(Action<string> logCallback)
         {
-            logCallback($"正在启动 MQTT 服务 ({Config.ServiceName})...");
-            bool result = Tool.ExecuteCommandAsAdmin($"net start {Config.ServiceName}");
-            logCallback(result ? "MQTT 服务已启动" : "MQTT 服务启动失败");
-            return result;
+            return StartViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
         }
 
         public bool Stop(Action<string> logCallback)
         {
-            logCallback($"正在停止 MQTT 服务 ({Config.ServiceName})...");
-            bool result = Tool.ExecuteCommandAsAdmin($"net stop {Config.ServiceName}");
-            logCallback(result ? "MQTT 服务已停止" : "MQTT 服务停止失败");
-            return result;
+            return StopViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
+        }
+
+        public async Task<bool> StartViaServiceHostAsync(Action<string> logCallback)
+        {
+            return await ServiceHostWindowsServiceController
+                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MQTT")
+                .ConfigureAwait(true);
+        }
+
+        public async Task<bool> StopViaServiceHostAsync(Action<string> logCallback)
+        {
+            return await ServiceHostWindowsServiceController
+                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MQTT")
+                .ConfigureAwait(true);
         }
 
         public void InstallFromExe(string exeFile, Action<string> logCallback)
@@ -97,5 +104,6 @@ namespace WindowsServicePlugin.ServiceManager
         {
             ConfigHandler.GetInstance().Save<MqttServiceConfig>();
         }
+
     }
 }

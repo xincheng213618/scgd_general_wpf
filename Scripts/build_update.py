@@ -47,6 +47,10 @@ def should_keep_runtime_path(path_value: str) -> bool:
 def is_shell_extension_file(path_value: str) -> bool:
     return os.path.basename(path_value).lower().startswith(SHELL_EXTENSION_FILE_PREFIX)
 
+def is_root_service_host_file(path_value: str) -> bool:
+    normalized = normalize_archive_relative_path(path_value).lower()
+    return '/' not in normalized and os.path.basename(normalized).startswith('colorvisionservicehost.')
+
 def upload_file(file_path, folder_name):
     return file_manager.upload_file(file_path, folder_name)
 
@@ -236,6 +240,8 @@ def get_all_files(directory, include_shell_extension=True):
             absolute_path = os.path.join(root, file)
             relative_path = os.path.relpath(absolute_path, directory)
             if not include_shell_extension and is_shell_extension_file(relative_path):
+                continue
+            if is_root_service_host_file(relative_path):
                 continue
 
             if not should_keep_runtime_path(relative_path):

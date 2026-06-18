@@ -8,92 +8,102 @@ namespace WindowsServicePlugin.ServiceManager
         private async Task OneKeyStartAsync()
         {
             SetBusy(true, "正在启动所有服务...");
-            await Task.Run(() =>
+            try
             {
-                try
+                RefreshAll();
+
+                if (MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning)
                 {
-                    List<string> commands = [];
-
-                    if (MySqlHelper.IsInstalled && !MySqlHelper.IsRunning)
-                    {
-                        AddLog("启动 MySQL 服务...");
-                        commands.Add($"net start {MySqlHelper.ServiceName}");
-                    }
-
-                    var rcService = Services.FirstOrDefault(s => s.ServiceName == "RegistrationCenterService");
-                    if (rcService != null && rcService.IsInstalled && !rcService.IsRunning)
-                    {
-                        AddLog($"启动 {rcService.DisplayName}...");
-                        commands.Add($"net start {rcService.ServiceName}");
-                    }
-
-                    foreach (var svc in Services)
-                    {
-                        if (svc.ServiceName == "RegistrationCenterService") continue;
-                        if (svc.IsInstalled && !svc.IsRunning)
-                        {
-                            AddLog($"启动 {svc.DisplayName}...");
-                            commands.Add($"net start {svc.ServiceName}");
-                        }
-                    }
-
-                    if (commands.Count > 0)
-                    {
-                        ExecuteShellCommand(string.Join(" && ", commands), true);
-                    }
-
-                    AddLog("所有服务启动完成");
-                    System.Windows.Application.Current?.Dispatcher.Invoke(() => RefreshAll());
+                    await MySqlManager.StartViaServiceHostAsync(AddLog).ConfigureAwait(true);
                 }
-                catch (Exception ex)
+
+                if (MqttManager.Config.IsInstalled && !MqttManager.Config.IsRunning)
                 {
-                    AddLog($"一键启动失败: {ex.Message}");
+                    await MqttManager.StartViaServiceHostAsync(AddLog).ConfigureAwait(true);
                 }
-            });
-            SetBusy(false);
+
+                var rcService = Services.FirstOrDefault(s => s.ServiceName == "RegistrationCenterService");
+                if (rcService != null && rcService.IsInstalled && !rcService.IsRunning)
+                {
+                    await ServiceHostWindowsServiceController
+                        .ExecuteAsync(rcService.ServiceName, ServiceHostServiceOperation.Start, AddLog, rcService.DisplayName, rcService.ExePath)
+                        .ConfigureAwait(true);
+                }
+
+                foreach (var svc in Services)
+                {
+                    if (svc.ServiceName == "RegistrationCenterService")
+                        continue;
+
+                    if (svc.IsInstalled && !svc.IsRunning)
+                    {
+                        await ServiceHostWindowsServiceController
+                            .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Start, AddLog, svc.DisplayName, svc.ExePath)
+                            .ConfigureAwait(true);
+                    }
+                }
+
+                AddLog("所有服务启动完成");
+            }
+            catch (Exception ex)
+            {
+                AddLog($"一键启动失败: {ex.Message}");
+            }
+            finally
+            {
+                RefreshAll();
+                SetBusy(false);
+            }
         }
 
         private async Task OneKeyStopAsync()
         {
             SetBusy(true, "正在停止所有服务...");
-            await Task.Run(() =>
+            try
             {
-                try
+                RefreshAll();
+
+                foreach (var svc in Services.Reverse())
                 {
-                    List<string> commands = [];
+                    if (!svc.IsInstalled || !svc.IsRunning)
+                        continue;
 
-                    foreach (var svc in Services.Reverse())
-                    {
-                        if (svc.IsInstalled && svc.IsRunning)
-                        {
-                            AddLog($"停止 {svc.DisplayName}...");
-                            commands.Add($"net stop {svc.ServiceName}");
-                        }
-                    }
-                    if (commands.Count > 0)
-                    {
-                        ExecuteShellCommand(string.Join(" && ", commands), true);
-                    }
-
-                    foreach (var svc in Services.Reverse())
-                    {
-                        if (WinServiceHelper.IsServiceRunning(svc.ServiceName))
-                        {
-                            string processName = System.IO.Path.GetFileNameWithoutExtension(svc.ExePath);
-                            if (!string.IsNullOrEmpty(processName))
-                                WinServiceHelper.KillProcessByName(processName);
-                        }
-                    }
-
-                    AddLog("所有服务已停止");
-                    System.Windows.Application.Current?.Dispatcher.Invoke(() => RefreshAll());
+                    await ServiceHostWindowsServiceController
+                        .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Stop, AddLog, svc.DisplayName, svc.ExePath)
+                        .ConfigureAwait(true);
                 }
-                catch (Exception ex)
+
+                if (MqttManager.Config.IsRunning)
                 {
-                    AddLog($"一键停止失败: {ex.Message}");
+                    await MqttManager.StopViaServiceHostAsync(AddLog).ConfigureAwait(true);
                 }
-            });
-            SetBusy(false);
+
+                if (MySqlManager.Config.IsRunning)
+                {
+                    await MySqlManager.StopViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                }
+
+                foreach (var svc in Services.Reverse())
+                {
+                    if (WinServiceHelper.IsServiceRunning(svc.ServiceName))
+                    {
+                        await ServiceHostWindowsServiceController
+                            .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Terminate, AddLog, svc.DisplayName, svc.ExePath)
+                            .ConfigureAwait(true);
+                    }
+                }
+
+                AddLog("所有服务已停止");
+            }
+            catch (Exception ex)
+            {
+                AddLog($"一键停止失败: {ex.Message}");
+            }
+            finally
+            {
+                RefreshAll();
+                SetBusy(false);
+            }
         }
     }
 }

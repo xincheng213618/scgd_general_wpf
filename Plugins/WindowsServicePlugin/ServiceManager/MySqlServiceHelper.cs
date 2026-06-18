@@ -99,7 +99,7 @@ namespace WindowsServicePlugin.ServiceManager
 
                 if (shouldInstall)
                 {
-                    logCallback($"正在直接安装 MySQL 服务 ({ServiceName})...");
+                    logCallback($"正在注册 MySQL 服务 ({ServiceName})...");
                     if (!RunProcessAdmin(MysqldExePath, $"--install {ServiceName}", Path.GetDirectoryName(MysqldExePath)!))
                     {
                         logCallback("MySQL 服务安装失败");
@@ -116,8 +116,8 @@ namespace WindowsServicePlugin.ServiceManager
             }
             catch (Exception ex)
             {
-                logCallback($"直接安装 MySQL 服务失败: {ex.Message}");
-                log.Error("直接安装 MySQL 服务失败", ex);
+                logCallback($"注册 MySQL 服务失败: {ex.Message}");
+                log.Error("注册 MySQL 服务失败", ex);
                 return false;
             }
         }

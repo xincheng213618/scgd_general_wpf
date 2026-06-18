@@ -61,6 +61,58 @@ namespace WindowsServicePlugin.ServiceManager
             return true;
         }
 
+        public async Task<bool> InstallFromZipViaServiceHostAsync(string zipFilePath, string baseLocation, Action<string> logCallback)
+        {
+            string targetDir = Directory.GetParent(baseLocation)?.FullName ?? baseLocation;
+            var credentials = CreateFreshInstallCredentials();
+            int port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            Helper.Port = port;
+
+            try
+            {
+                logCallback("正在通过 ColorVisionServiceHost 后台 ZIP 全安装 MySQL...");
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .InstallMySqlFromZipAsync(
+                        Helper.ServiceName,
+                        zipFilePath,
+                        targetDir,
+                        port,
+                        credentials.RootPassword,
+                        credentials.AppUser,
+                        credentials.AppPassword,
+                        credentials.Database)
+                    .ConfigureAwait(true);
+
+                if (!response.Success)
+                {
+                    LogServiceHostFailure(response, logCallback);
+                    return false;
+                }
+
+                string installedBasePath = response.Data?["installBasePath"]?.ToString() ?? Helper.BasePath;
+                ApplyInstalledCredentials(
+                    credentials.RootPassword,
+                    credentials.AppUser,
+                    credentials.AppPassword,
+                    credentials.Database,
+                    installedBasePath);
+
+                RefreshConfigFromHelper();
+                logCallback($"后台服务执行成功: {response.Message}");
+                logCallback($"MySQL root 密码: {credentials.RootPassword}");
+                logCallback($"MySQL 业务账号: {credentials.AppUser}");
+                logCallback($"MySQL 业务密码: {credentials.AppPassword}");
+                logCallback("MySQL 账号信息已保存到 MySqlServiceConfig");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
+                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
+                return false;
+            }
+        }
+
         public (string RootPassword, string AppUser, string AppPassword, string Database) CreateFreshInstallCredentials()
         {
             string database = string.IsNullOrWhiteSpace(Config.Database) ? "color_vision_4xx" : Config.Database.Trim();
@@ -132,7 +184,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public bool Start(Action<string> logCallback)
         {
-            return Helper.Start(logCallback);
+            return StartViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
         }
 
         public bool RegisterExistingService(Action<string> logCallback)
@@ -155,6 +207,46 @@ namespace WindowsServicePlugin.ServiceManager
                 SaveConfig();
             }
             return ok;
+        }
+
+        public async Task<bool> RegisterExistingServiceViaServiceHostAsync(Action<string> logCallback)
+        {
+            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            if (!ResolveSavedMySqlBasePath(logCallback))
+            {
+                return false;
+            }
+
+            string mysqldExePath = Helper.MysqldExePath;
+            if (!File.Exists(mysqldExePath))
+            {
+                logCallback($"mysqld.exe 不存在: {mysqldExePath}");
+                return false;
+            }
+
+            try
+            {
+                logCallback("正在通过 ColorVisionServiceHost 后台注册 MySQL 服务...");
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .RepairMySqlServiceAsync(Helper.ServiceName, mysqldExePath)
+                    .ConfigureAwait(true);
+
+                if (!response.Success)
+                {
+                    LogServiceHostFailure(response, logCallback);
+                    return false;
+                }
+
+                logCallback($"后台服务执行成功: {response.Message}");
+                RefreshConfigFromHelper();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
+                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
+                return false;
+            }
         }
 
         public async Task<bool> RepairOrRestartViaServiceHostAsync(Action<string> logCallback)
@@ -181,30 +273,84 @@ namespace WindowsServicePlugin.ServiceManager
 
                 if (!response.Success)
                 {
-                    logCallback($"后台服务执行失败: {response.Message}");
+                    LogServiceHostFailure(response, logCallback);
                     return false;
                 }
 
                 logCallback($"后台服务执行成功: {response.Message}");
-                Config.ServiceName = Helper.ServiceName;
-                Config.InstallBasePath = Helper.BasePath;
-                Config.ExePath = mysqldExePath;
-                Config.IsInstalled = Helper.IsInstalled;
-                Config.IsRunning = Helper.IsRunning;
-                Config.Status = Config.IsRunning ? "运行中" : (Config.IsInstalled ? "已停止" : "未安装");
+                RefreshConfigFromHelper();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
+                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
+                return false;
+            }
+        }
+
+        public async Task<bool> StartViaServiceHostAsync(Action<string> logCallback)
+        {
+            bool ok = await ServiceHostWindowsServiceController
+                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MySQL")
+                .ConfigureAwait(true);
+            if (ok)
+                RefreshConfigFromHelper();
+
+            return ok;
+        }
+
+        public async Task<bool> StopViaServiceHostAsync(Action<string> logCallback)
+        {
+            bool ok = await ServiceHostWindowsServiceController
+                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MySQL")
+                .ConfigureAwait(true);
+            if (ok)
+                RefreshConfigFromHelper();
+
+            return ok;
+        }
+
+        public async Task<bool> UninstallViaServiceHostAsync(Action<string> logCallback)
+        {
+            string? mysqldExePath = File.Exists(Helper.MysqldExePath)
+                ? Helper.MysqldExePath
+                : !string.IsNullOrWhiteSpace(Config.ExePath) && File.Exists(Config.ExePath)
+                    ? Config.ExePath
+                    : null;
+
+            try
+            {
+                logCallback("正在通过 ColorVisionServiceHost 后台卸载 MySQL 服务...");
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .UninstallMySqlServiceAsync(Config.ServiceName, mysqldExePath)
+                    .ConfigureAwait(true);
+                if (!response.Success)
+                {
+                    LogServiceHostFailure(response, logCallback);
+                    return false;
+                }
+
+                logCallback($"后台服务执行成功: {response.Message}");
+                Config.IsInstalled = false;
+                Config.IsRunning = false;
+                Config.Status = "未安装";
+                Config.ExePath = string.Empty;
+                Config.Version = string.Empty;
                 SaveConfig();
                 return true;
             }
             catch (Exception ex)
             {
                 logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
+                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
                 return false;
             }
         }
 
         public bool Stop(Action<string> logCallback)
         {
-            return Helper.Stop(logCallback);
+            return StopViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
         }
 
         public bool Uninstall(Action<string> logCallback)
@@ -615,6 +761,39 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             return basePath;
+        }
+
+        private void RefreshConfigFromHelper()
+        {
+            if (!Helper.DetectFromRegistry() && !string.IsNullOrWhiteSpace(Config.InstallBasePath))
+            {
+                Helper.BasePath = Config.InstallBasePath;
+            }
+
+            Config.ServiceName = Helper.ServiceName;
+            Config.IsInstalled = Helper.IsInstalled;
+            Config.IsRunning = Helper.IsRunning;
+            Config.Status = Config.IsRunning ? "运行中" : (Config.IsInstalled ? "已停止" : "未安装");
+
+            string exePath = File.Exists(Helper.MysqldExePath)
+                ? Helper.MysqldExePath
+                : WinServiceHelper.GetServiceInstallPath(Config.ServiceName) ?? string.Empty;
+            Config.ExePath = exePath;
+            Config.Version = Config.IsInstalled && !string.IsNullOrWhiteSpace(exePath)
+                ? WinServiceHelper.GetFileVersion(exePath)?.ToString() ?? string.Empty
+                : string.Empty;
+
+            RememberInstallBasePath(exePath);
+            SaveConfig();
+        }
+
+        private static void LogServiceHostFailure(ServiceHostResponse response, Action<string> logCallback)
+        {
+            logCallback($"后台服务执行失败: {response.Message}");
+            if (response.Message.Contains("Unsupported command", StringComparison.OrdinalIgnoreCase))
+            {
+                logCallback("当前已安装的 ColorVisionServiceHost 版本过旧，请先在“更新 -> ColorVision Service Host”中重新安装/更新后台服务。");
+            }
         }
 
         private static void SaveConfig()

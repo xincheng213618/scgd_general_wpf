@@ -53,6 +53,33 @@ class BuildUpdateTests(unittest.TestCase):
         self.assertIn("ColorVision.exe", incremental)
         self.assertIn("runtimes/win-x64/native.dll", incremental)
 
+    def test_get_all_files_skips_root_service_host_but_keeps_service_host_folder(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            files = [
+                "ColorVision.exe",
+                "ColorVisionServiceHost.exe",
+                "ColorVisionServiceHost.deps.json",
+                os.path.join("ServiceHost", "ColorVisionServiceHost.exe"),
+                os.path.join("ServiceHost", "Tasks", "RegisterFileAssociations.ps1"),
+            ]
+
+            for relative_path in files:
+                file_path = os.path.join(temp_dir, relative_path)
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                with open(file_path, "w", encoding="utf-8") as file:
+                    file.write(relative_path)
+
+            included = {
+                os.path.relpath(file_path, temp_dir).replace("\\", "/")
+                for file_path in build_update.get_all_files(temp_dir)
+            }
+
+        self.assertIn("ColorVision.exe", included)
+        self.assertNotIn("ColorVisionServiceHost.exe", included)
+        self.assertNotIn("ColorVisionServiceHost.deps.json", included)
+        self.assertIn("ServiceHost/ColorVisionServiceHost.exe", included)
+        self.assertIn("ServiceHost/Tasks/RegisterFileAssociations.ps1", included)
+
 
 if __name__ == "__main__":
     unittest.main()

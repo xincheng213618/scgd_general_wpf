@@ -29,10 +29,13 @@ namespace WindowsServicePlugin.ServiceManager
 
                 if (MessageBox.Show("配置已更新，是否重启注册中心服务？", "更新配置", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
-                    Task.Run(() =>
+                    _ = Task.Run(async () =>
                     {
-                        ExecuteShellCommand("net stop RegistrationCenterService & net start RegistrationCenterService", true);
-                        AddLog("注册中心服务已重启");
+                        bool restarted = await ServiceHostWindowsServiceController
+                            .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, AddLog, "注册中心服务")
+                            .ConfigureAwait(true);
+                        if (restarted)
+                            AddLog("注册中心服务已重启");
                         Application.Current?.Dispatcher.Invoke(() => RefreshAll());
                     });
                 }
@@ -87,6 +90,51 @@ namespace WindowsServicePlugin.ServiceManager
                 UpdateMqttCfgFile(Path.Combine(svcDir, "cfg", "MQTT.config"));
                 UpdateWinServiceCfgFile(Path.Combine(svcDir, "cfg", "WinService.config"), isRC: false);
             }
+        }
+
+        private string? ResolveManagedServiceInstallRoot()
+        {
+            var candidates = new List<string>();
+
+            void AddCandidate(string? path)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                    return;
+
+                try
+                {
+                    string fullPath = Path.GetFullPath(path);
+                    if (Directory.Exists(fullPath) && !candidates.Contains(fullPath, StringComparer.OrdinalIgnoreCase))
+                    {
+                        candidates.Add(fullPath);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            AddCandidate(Config.BaseLocation);
+            if (!string.IsNullOrWhiteSpace(Config.BaseLocation))
+            {
+                AddCandidate(Path.Combine(Config.BaseLocation, "CVWindowsService"));
+            }
+
+            foreach (string serviceName in new[] { "RegistrationCenterService", "CVMainService_x64", "CVMainService_dev" })
+            {
+                string? exePath = WinServiceHelper.GetServiceInstallPath(serviceName);
+                string? root = string.IsNullOrWhiteSpace(exePath) ? null : Directory.GetParent(exePath)?.Parent?.FullName;
+                AddCandidate(root);
+            }
+
+            return candidates.FirstOrDefault(IsManagedServiceRoot);
+        }
+
+        private static bool IsManagedServiceRoot(string path)
+        {
+            return Directory.Exists(Path.Combine(path, "RegWindowsService"))
+                || Directory.Exists(Path.Combine(path, "CVMainWindowsService_x64"))
+                || Directory.Exists(Path.Combine(path, "CVMainWindowsService_dev"));
         }
 
         private void UpdateMysqlCfgFile(string configPath)
@@ -218,7 +266,10 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (restartRegistrationCenter)
             {
-                ExecuteShellCommand("net stop RegistrationCenterService && net start RegistrationCenterService", true);
+                ServiceHostWindowsServiceController
+                    .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, AddLog, "注册中心服务")
+                    .GetAwaiter()
+                    .GetResult();
             }
         }
 

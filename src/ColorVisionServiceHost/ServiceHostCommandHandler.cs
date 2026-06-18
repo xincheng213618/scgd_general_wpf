@@ -7,14 +7,21 @@ namespace ColorVisionServiceHost;
 
 internal sealed class ServiceHostCommandHandler
 {
-    private const string CvRawThumbnailClsid = "{7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C}";
-    private const string CvCieThumbnailClsid = "{8C6F3B4D-9E2A-5F7B-C3D4-2E4F6A8B9C0D}";
-    private const string ThumbnailProviderIid = "{E357FCCD-A995-4576-B01F-234630154E96}";
-    private const string ApprovedShellExtensionsKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved";
-    private static readonly IReadOnlyDictionary<string, string> ThumbnailHandlers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> MaintenanceTaskScripts = new(StringComparer.OrdinalIgnoreCase)
     {
-        [".cvraw"] = CvRawThumbnailClsid,
-        [".cvcie"] = CvCieThumbnailClsid,
+        ["register-file-associations"] = "RegisterFileAssociations.ps1",
+        ["register-thumbnail"] = "RegisterThumbnail.ps1",
+        ["unregister-thumbnail"] = "UnregisterThumbnail.ps1",
+    };
+    private static readonly Dictionary<string, string[]> ServiceProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["RegistrationCenterService"] = ["RegWindowsService"],
+        ["CVMainService_x64"] = ["CVMainWindowsService_x64"],
+        ["CVMainService_dev"] = ["CVMainWindowsService_dev"],
+        ["MySQL"] = ["mysqld"],
+        ["MySQL57"] = ["mysqld"],
+        ["MySQL80"] = ["mysqld"],
+        ["mosquitto"] = ["mosquitto"],
     };
 
     private readonly DateTimeOffset _startedAt = DateTimeOffset.Now;
@@ -35,10 +42,21 @@ internal sealed class ServiceHostCommandHandler
                 }),
                 "status" => ServiceHostResponse.FromObject(request.RequestId, true, "running", BuildStatus(_startedAt)),
                 "write-demo-marker" => WriteDemoMarker(request.RequestId),
-                "register-file-associations" => RegisterFileAssociations(request),
+                "self-update" => SelfUpdate(request),
+                "run-maintenance-task" => RunMaintenanceTask(request, GetRequiredDataValue(request, "taskId")),
+                "register-file-associations" => RunMaintenanceTask(request, "register-file-associations"),
+                "install-mysql-from-zip" => InstallMySqlFromZip(request),
+                "install-existing-mysql-service" => RepairMySqlService(request),
                 "repair-mysql-service" => RepairMySqlService(request),
-                "register-thumbnail" => RegisterThumbnail(request),
-                "unregister-thumbnail" => UnregisterThumbnail(request),
+                "service-start" => StartWindowsService(request),
+                "service-stop" => StopWindowsService(request),
+                "service-restart" => RestartWindowsService(request),
+                "service-terminate" => TerminateWindowsService(request),
+                "start-mysql-service" => StartWindowsService(request, "MySQL"),
+                "stop-mysql-service" => StopWindowsService(request, "MySQL"),
+                "uninstall-mysql-service" => UninstallMySqlService(request),
+                "register-thumbnail" => RunMaintenanceTask(request, "register-thumbnail"),
+                "unregister-thumbnail" => RunMaintenanceTask(request, "unregister-thumbnail"),
                 _ => ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported command: {command}"),
             };
 
@@ -59,6 +77,10 @@ internal sealed class ServiceHostCommandHandler
             pipe = ServiceHostConstants.PipeName,
             startedAt,
             processId = Environment.ProcessId,
+            processPath = Environment.ProcessPath,
+            assemblyVersion = typeof(ServiceHostCommandHandler).Assembly.GetName().Version?.ToString(),
+            fileVersion = GetFileVersion(Environment.ProcessPath),
+            productVersion = GetProductVersion(Environment.ProcessPath),
             machineName = Environment.MachineName,
             identity = WindowsIdentity.GetCurrent().Name,
             isElevated = IsElevated(),
@@ -90,103 +112,103 @@ internal sealed class ServiceHostCommandHandler
         return ServiceHostResponse.FromObject(requestId, true, "demo marker written", new { filePath });
     }
 
-    private static ServiceHostResponse RegisterThumbnail(ServiceHostRequest request)
+    private static ServiceHostResponse SelfUpdate(ServiceHostRequest request)
     {
-        string appDirectory = GetRequiredDataValue(request, "appDirectory");
-        string comHostDll = Path.Combine(appDirectory, "ColorVision.ShellExtension.comhost.dll");
-        if (!File.Exists(comHostDll))
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"Shell extension was not found: {comHostDll}");
+        string packageDirectory = Path.GetFullPath(GetRequiredDataValue(request, "packageDirectory"));
+        string sourceExe = Path.Combine(packageDirectory, ServiceHostConstants.ExecutableName);
+        if (!File.Exists(sourceExe))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service host package executable was not found: {sourceExe}");
 
-        ProcessResult registerResult = RunProcess("regsvr32.exe", $"/s \"{comHostDll}\"");
-        if (registerResult.ExitCode != 0)
+        if (!LooksLikeServiceHostExecutable(sourceExe))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Executable does not look like ColorVisionServiceHost: {sourceExe}");
+
+        string? currentExe = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(currentExe) || !File.Exists(currentExe))
+            return ServiceHostResponse.FromObject(request.RequestId, false, "Unable to resolve current service host executable.");
+
+        Version? sourceVersion = GetExecutableVersion(sourceExe);
+        Version? currentVersion = GetExecutableVersion(currentExe);
+        if (sourceVersion != null && currentVersion != null && sourceVersion < currentVersion)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Refusing to downgrade service host: {currentVersion} -> {sourceVersion}");
+
+        string updateDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "ColorVision",
+            "ServiceHost",
+            "Updates");
+        Directory.CreateDirectory(updateDirectory);
+
+        string scriptPath = Path.Combine(updateDirectory, $"self-update-{Guid.NewGuid():N}.ps1");
+        string logPath = Path.Combine(updateDirectory, "self-update.log");
+        string script = CreateSelfUpdateScript(packageDirectory, ServiceHostProtocolCompatibleInstallDirectory(), scriptPath, logPath);
+        File.WriteAllText(scriptPath, script, System.Text.Encoding.UTF8);
+
+        ProcessStartInfo startInfo = new()
         {
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"regsvr32 failed: {registerResult.ExitCode}", registerResult);
-        }
+            FileName = "powershell.exe",
+            Arguments = $"-NoProfile -ExecutionPolicy Bypass -File {QuoteForCommandLine(scriptPath)}",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = updateDirectory,
+        };
+        Process.Start(startInfo)?.Dispose();
 
-        foreach ((string extension, string clsid) in ThumbnailHandlers)
+        ServiceHostLog.Write($"Self update scheduled. Source={packageDirectory}, Script={scriptPath}");
+        return ServiceHostResponse.FromObject(request.RequestId, true, "self update scheduled", new
         {
-            ProcessResult regResult = RunProcess(
-                "reg.exe",
-                $"add \"HKCR\\{extension}\\ShellEx\\{ThumbnailProviderIid}\" /ve /d \"{clsid}\" /f");
-            if (regResult.ExitCode != 0)
-            {
-                return ServiceHostResponse.FromObject(request.RequestId, false, $"reg add failed for {extension}: {regResult.ExitCode}", regResult);
-            }
-        }
-
-        foreach ((_, string clsid) in ThumbnailHandlers)
-        {
-            ProcessResult approvedResult = RunProcess(
-                "reg.exe",
-                $"add \"{ApprovedShellExtensionsKey}\" /v \"{clsid}\" /t REG_SZ /d \"ColorVision Thumbnail Handler\" /f");
-            if (approvedResult.ExitCode != 0)
-            {
-                return ServiceHostResponse.FromObject(request.RequestId, false, $"reg approved add failed for {clsid}: {approvedResult.ExitCode}", approvedResult);
-            }
-        }
-
-        ClearThumbnailCache(request);
-        ServiceHostLog.Write($"Thumbnail shell extension registered: {comHostDll}");
-        return ServiceHostResponse.FromObject(request.RequestId, true, "thumbnail shell extension registered", new { comHostDll });
+            packageDirectory,
+            installedDirectory = ServiceHostProtocolCompatibleInstallDirectory(),
+            sourceVersion = sourceVersion?.ToString(),
+            currentVersion = currentVersion?.ToString(),
+            scriptPath,
+            logPath,
+        });
     }
 
-    private static ServiceHostResponse UnregisterThumbnail(ServiceHostRequest request)
+    private static ServiceHostResponse RunMaintenanceTask(ServiceHostRequest request, string taskId)
     {
-        string appDirectory = GetRequiredDataValue(request, "appDirectory");
-        string comHostDll = Path.Combine(appDirectory, "ColorVision.ShellExtension.comhost.dll");
+        if (!MaintenanceTaskScripts.TryGetValue(taskId, out string? scriptName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported maintenance task: {taskId}");
 
-        foreach (string extension in ThumbnailHandlers.Keys)
-        {
-            RunProcess("reg.exe", $"delete \"HKCR\\{extension}\\ShellEx\\{ThumbnailProviderIid}\" /f");
-        }
+        string taskDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Tasks"));
+        string scriptPath = Path.GetFullPath(Path.Combine(taskDirectory, scriptName));
+        if (!scriptPath.StartsWith(taskDirectory, StringComparison.OrdinalIgnoreCase))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Invalid maintenance task path: {scriptPath}");
+        if (!File.Exists(scriptPath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Maintenance task script was not found: {scriptPath}");
 
-        foreach ((_, string clsid) in ThumbnailHandlers)
-        {
-            RunProcess("reg.exe", $"delete \"{ApprovedShellExtensionsKey}\" /v \"{clsid}\" /f");
-        }
-
-        if (File.Exists(comHostDll))
-        {
-            ProcessResult unregisterResult = RunProcess("regsvr32.exe", $"/s /u \"{comHostDll}\"");
-            if (unregisterResult.ExitCode != 0)
-            {
-                return ServiceHostResponse.FromObject(request.RequestId, false, $"regsvr32 unregister failed: {unregisterResult.ExitCode}", unregisterResult);
-            }
-        }
-
-        ClearThumbnailCache(request);
-        ServiceHostLog.Write($"Thumbnail shell extension unregistered: {comHostDll}");
-        return ServiceHostResponse.FromObject(request.RequestId, true, "thumbnail shell extension unregistered", new { comHostDll });
-    }
-
-    private static ServiceHostResponse RegisterFileAssociations(ServiceHostRequest request)
-    {
-        string appPath = GetRequiredDataValue(request, "appPath");
-        if (!File.Exists(appPath))
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"ColorVision executable was not found: {appPath}");
-
-        if (!string.Equals(Path.GetFileName(appPath), "ColorVision.exe", StringComparison.OrdinalIgnoreCase))
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unexpected executable name: {appPath}");
-
-        string appDirectory = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
-        string regContent = BuildFileAssociationRegistryContent(appPath, appDirectory);
-        string tempRegFile = Path.Combine(Path.GetTempPath(), $"CV_Register_{Guid.NewGuid():N}.reg");
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
+        string inputDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "ColorVision",
+            "ServiceHost",
+            "TaskInput");
+        Directory.CreateDirectory(inputDirectory);
+        string inputPath = Path.Combine(inputDirectory, $"{Guid.NewGuid():N}.json");
+        File.WriteAllText(inputPath, request.Data?.ToString(Newtonsoft.Json.Formatting.None) ?? "{}", System.Text.Encoding.UTF8);
 
         try
         {
-            File.WriteAllText(tempRegFile, regContent, System.Text.Encoding.Unicode);
-            ProcessResult importResult = RunProcess("reg.exe", $"import \"{tempRegFile}\"");
-            if (importResult.ExitCode != 0)
-                return ServiceHostResponse.FromObject(request.RequestId, false, $"reg import failed: {importResult.ExitCode}", importResult);
+            ProcessResult result = RunProcess(
+                "powershell.exe",
+                ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-InputJsonPath", inputPath],
+                null,
+                timeoutSeconds * 1000);
 
-            ServiceHostLog.Write($"File associations registered for: {appPath}");
-            return ServiceHostResponse.FromObject(request.RequestId, true, "file associations registered", new { appPath });
+            bool success = result.ExitCode == 0;
+            ServiceHostLog.Write($"Maintenance task {taskId} completed. ExitCode={result.ExitCode}");
+            return ServiceHostResponse.FromObject(request.RequestId, success, success ? "maintenance task completed" : $"maintenance task failed: {result.ExitCode}", new
+            {
+                taskId,
+                scriptPath,
+                result,
+            });
         }
         finally
         {
             try
             {
-                File.Delete(tempRegFile);
+                File.Delete(inputPath);
             }
             catch
             {
@@ -280,103 +302,528 @@ internal sealed class ServiceHostCommandHandler
         });
     }
 
-    private static string BuildFileAssociationRegistryContent(string appPath, string appDirectory)
+    private static ServiceHostResponse InstallMySqlFromZip(ServiceHostRequest request)
     {
-        string iconPath = Path.Combine(appDirectory, "ColorVisionIcons64.dll");
-        string comHostPath = Path.Combine(appDirectory, "ColorVision.ShellExtension.comhost.dll");
-        string escapedAppPath = EscapeRegistryValue(appPath);
-        string escapedIconPath = EscapeRegistryValue(iconPath);
-        string escapedComHostPath = EscapeRegistryValue(comHostPath);
+        string serviceName = GetOptionalDataValue(request, "serviceName", "MySQL").Trim();
+        if (!IsAllowedMySqlServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported MySQL service name: {serviceName}");
 
-        System.Text.StringBuilder sb = new();
-        sb.AppendLine("Windows Registry Editor Version 5.00");
-        sb.AppendLine();
+        string zipFilePath = Path.GetFullPath(GetRequiredDataValue(request, "zipFilePath"));
+        if (!File.Exists(zipFilePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL zip was not found: {zipFilePath}");
 
-        AppendPackageExtension(sb, ".cvx", "ColorVision.Launcher.cvx", "ColorVision Core Update Package", escapedAppPath, escapedIconPath, 4, compressed: true, preview: true);
-        AppendPackageExtension(sb, ".cvxp", "ColorVision.Launcher.cvxp", "ColorVision Launcher Package", escapedAppPath, escapedIconPath, 5, compressed: true, preview: true);
-        AppendPackageExtension(sb, ".lic", "ColorVision.Launcher.lic", "ColorVision Launcher Package", escapedAppPath, escapedIconPath, 6, compressed: false, preview: false);
-        AppendPackageExtension(sb, ".cvcal", "ColorVision.Launcher.cvcal", "ColorVision Launcher Package", escapedAppPath, escapedIconPath, 7, compressed: true, preview: true);
+        string targetDirectory = Path.GetFullPath(GetRequiredDataValue(request, "targetDirectory"));
+        string rootPassword = GetRequiredDataValue(request, "rootPassword");
+        string appUser = GetOptionalDataValue(request, "appUser", "cv").Trim();
+        string appPassword = GetRequiredDataValue(request, "appPassword");
+        string database = GetOptionalDataValue(request, "database", "color_vision_4xx").Trim();
+        int port = Math.Clamp(GetOptionalDataInt(request, "port", 3306), 1, 65535);
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 120), 10, 300);
 
-        AppendThumbnailComClass(sb, CvRawThumbnailClsid, "ColorVision CVRaw Thumbnail Handler", escapedComHostPath);
-        AppendThumbnailComClass(sb, CvCieThumbnailClsid, "ColorVision CVCie Thumbnail Handler", escapedComHostPath);
-        AppendApprovedShellExtension(sb, CvRawThumbnailClsid, "ColorVision CVRaw Thumbnail Handler");
-        AppendApprovedShellExtension(sb, CvCieThumbnailClsid, "ColorVision CVCie Thumbnail Handler");
+        if (string.IsNullOrWhiteSpace(appUser))
+            appUser = "cv";
+        if (string.IsNullOrWhiteSpace(database))
+            database = "color_vision_4xx";
 
-        AppendImageExtension(sb, ".cvraw", "ColorVision.Launcher.cvraw", "ColorVision Raw Image File", escapedAppPath, escapedIconPath, 1, CvRawThumbnailClsid);
-        AppendImageExtension(sb, ".cvcie", "ColorVision.Launcher.cvcie", "ColorVision CIE Image File", escapedAppPath, escapedIconPath, 2, CvCieThumbnailClsid);
-        AppendPackageExtension(sb, ".cvflow", "ColorVision.Launcher.cvflow", "ColorVision Launcher Package", escapedAppPath, escapedIconPath, 3, compressed: false, preview: false);
+        List<string> steps = [];
+        List<ProcessResult> processResults = [];
 
-        return sb.ToString();
-    }
+        Directory.CreateDirectory(targetDirectory);
+        string? registeredPath = ServiceExists(serviceName) ? GetServiceInstallPath(serviceName) : null;
+        RemoveMySqlServiceRegistration(serviceName, registeredPath, timeoutSeconds, steps, processResults);
+        KillProcessesByName(["mysqld", "mysql"], steps);
 
-    private static void AppendPackageExtension(System.Text.StringBuilder sb, string extension, string progId, string description, string escapedAppPath, string escapedIconPath, int iconIndex, bool compressed, bool preview)
-    {
-        sb.AppendLine($"[HKEY_CLASSES_ROOT\\{extension}]");
-        sb.AppendLine($"@=\"{progId}\"");
-        if (compressed)
+        CleanupMySqlPackageDirectories(zipFilePath, targetDirectory, steps);
+        steps.Add($"Extracting MySQL zip: {zipFilePath}");
+        System.IO.Compression.ZipFile.ExtractToDirectory(zipFilePath, targetDirectory, overwriteFiles: true);
+
+        string? installBasePath = ResolveExtractedMySqlBasePath(zipFilePath, targetDirectory);
+        if (string.IsNullOrWhiteSpace(installBasePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, "MySQL directory was not found after extraction.", new { steps, processResults });
+
+        string binDirectory = Path.Combine(installBasePath, "bin");
+        string mysqldExePath = Path.Combine(binDirectory, "mysqld.exe");
+        string mysqlExePath = Path.Combine(binDirectory, "mysql.exe");
+        string mysqladminExePath = Path.Combine(binDirectory, "mysqladmin.exe");
+
+        if (!File.Exists(mysqldExePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"mysqld.exe was not found: {mysqldExePath}", new { steps, processResults });
+        if (!LooksLikeMySqlServerExecutable(mysqldExePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Executable does not look like MySQL Server: {mysqldExePath}", new { steps, processResults });
+        if (!File.Exists(mysqlExePath) || !File.Exists(mysqladminExePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL client tools were not found under: {binDirectory}", new { steps, processResults });
+
+        steps.Add("Initializing MySQL data directory.");
+        ProcessResult initResult = RunProcess(mysqldExePath, "--initialize-insecure", binDirectory, timeoutSeconds * 1000);
+        processResults.Add(initResult);
+        if (initResult.ExitCode != 0)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL initialization failed: {initResult.ExitCode}", new { steps, processResults, installBasePath });
+
+        steps.Add($"Installing MySQL service: {serviceName}");
+        ProcessResult installResult = RunProcess(mysqldExePath, $"--install {serviceName}", binDirectory, timeoutSeconds * 1000);
+        processResults.Add(installResult);
+        if (installResult.ExitCode != 0)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL service install failed: {installResult.ExitCode}", new { steps, processResults, installBasePath });
+
+        WaitForServiceExists(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
+        ProcessResult configResult = RunProcess("sc.exe", $"config \"{serviceName}\" start= auto", null, timeoutSeconds * 1000);
+        processResults.Add(configResult);
+
+        bool started = StartServiceAndWait(serviceName, timeoutSeconds, steps);
+        if (!started)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL service start failed: {serviceName}", new { steps, processResults, installBasePath });
+
+        if (!WaitForMySqlReady(mysqlExePath, port, timeoutSeconds, steps, processResults))
+            return ServiceHostResponse.FromObject(request.RequestId, false, "MySQL did not become ready after service start.", new { steps, processResults, installBasePath });
+
+        steps.Add("Setting MySQL root password.");
+        ProcessResult rootPasswordResult = RunProcess(
+            mysqladminExePath,
+            ["-P", port.ToString(), "-u", "root", "password", rootPassword],
+            binDirectory,
+            timeoutSeconds * 1000);
+        processResults.Add(rootPasswordResult with { Arguments = $"-P {port} -u root password ********" });
+        if (rootPasswordResult.ExitCode != 0)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL root password setup failed: {rootPasswordResult.ExitCode}", new { steps, processResults, installBasePath });
+
+        if (!string.IsNullOrWhiteSpace(appUser))
         {
-            sb.AppendLine("\"PerceivedType\"=\"compressed\"");
-            sb.AppendLine("\"Content Type\"=\"application/x-zip-compressed\"");
+            steps.Add($"Creating MySQL app user: {appUser}");
+            string sql = BuildCreateMySqlUserSql(appUser, appPassword, database);
+            ProcessResult userResult = RunProcess(
+                mysqlExePath,
+                ["-P", port.ToString(), "-u", "root", $"-p{rootPassword}", "-e", sql],
+                binDirectory,
+                timeoutSeconds * 1000);
+            processResults.Add(userResult with { Arguments = $"-P {port} -u root -p******** -e ********" });
+            if (userResult.ExitCode != 0)
+                return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL app user setup failed: {userResult.ExitCode}", new { steps, processResults, installBasePath });
         }
-        sb.AppendLine();
 
-        if (compressed)
+        string? registeredFinalPath = GetServiceInstallPath(serviceName);
+        ServiceHostLog.Write($"MySQL installed from zip: {serviceName}, path={registeredFinalPath}");
+        return ServiceHostResponse.FromObject(request.RequestId, true, "MySQL installed from zip", new
         {
-            sb.AppendLine($"[HKEY_CLASSES_ROOT\\{extension}\\OpenWithProgids]");
-            sb.AppendLine("\"CompressedFolder\"=\"\"");
-            sb.AppendLine();
-        }
+            serviceName,
+            installBasePath,
+            mysqldExePath,
+            registeredPath = registeredFinalPath,
+            running = IsServiceRunning(serviceName),
+            port,
+            appUser,
+            database,
+            steps,
+            processResults,
+        });
+    }
 
-        sb.AppendLine($"[HKEY_CLASSES_ROOT\\{progId}]");
-        sb.AppendLine($"@=\"{description}\"");
-        sb.AppendLine();
-        sb.AppendLine($"[HKEY_CLASSES_ROOT\\{progId}\\DefaultIcon]");
-        sb.AppendLine($"@=\"{escapedIconPath},{iconIndex}\"");
-        sb.AppendLine();
-        sb.AppendLine($"[HKEY_CLASSES_ROOT\\{progId}\\shell\\open\\command]");
-        sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
-        sb.AppendLine();
+    private static ServiceHostResponse StartWindowsService(ServiceHostRequest request, string? defaultServiceName = null)
+    {
+        string serviceName = ResolveRequestedServiceName(request, defaultServiceName);
+        if (!IsAllowedServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
 
-        if (preview)
+        if (!ServiceExists(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service was not found: {serviceName}");
+
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
+        List<string> steps = [];
+        bool started = StartServiceAndWait(serviceName, timeoutSeconds, steps);
+        return ServiceHostResponse.FromObject(request.RequestId, started, started ? "service started" : "service start failed", new
         {
-            sb.AppendLine($"[HKEY_CLASSES_ROOT\\{progId}\\shell\\preview]");
-            sb.AppendLine("@=\"Preview as Winrar\"");
-            sb.AppendLine();
-            sb.AppendLine($"[HKEY_CLASSES_ROOT\\{progId}\\shell\\preview\\command]");
-            sb.AppendLine("@=\"\\\"C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe\\\" \\\"%1\\\"\"");
-            sb.AppendLine();
+            serviceName,
+            running = IsServiceRunning(serviceName),
+            steps,
+        });
+    }
+
+    private static ServiceHostResponse StopWindowsService(ServiceHostRequest request, string? defaultServiceName = null)
+    {
+        string serviceName = ResolveRequestedServiceName(request, defaultServiceName);
+        if (!IsAllowedServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
+
+        if (!ServiceExists(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service was not found: {serviceName}");
+
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
+        List<string> steps = [];
+        bool stopped = StopServiceIfExists(serviceName, timeoutSeconds, steps);
+        return ServiceHostResponse.FromObject(request.RequestId, stopped, stopped ? "service stopped" : "service stop failed", new
+        {
+            serviceName,
+            running = IsServiceRunning(serviceName),
+            steps,
+        });
+    }
+
+    private static ServiceHostResponse RestartWindowsService(ServiceHostRequest request)
+    {
+        string serviceName = ResolveRequestedServiceName(request);
+        if (!IsAllowedServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
+
+        if (!ServiceExists(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service was not found: {serviceName}");
+
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 60), 5, 180);
+        List<string> steps = [];
+        bool stopped = StopServiceIfExists(serviceName, timeoutSeconds, steps);
+        bool started = stopped && StartServiceAndWait(serviceName, timeoutSeconds, steps);
+
+        return ServiceHostResponse.FromObject(request.RequestId, started, started ? "service restarted" : "service restart failed", new
+        {
+            serviceName,
+            running = IsServiceRunning(serviceName),
+            steps,
+        });
+    }
+
+    private static ServiceHostResponse TerminateWindowsService(ServiceHostRequest request)
+    {
+        string serviceName = ResolveRequestedServiceName(request);
+        if (!IsAllowedServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
+
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 20), 5, 180);
+        List<string> steps = [];
+
+        if (ServiceExists(serviceName))
+            StopServiceIfExists(serviceName, Math.Min(timeoutSeconds, 30), steps);
+        else
+            steps.Add($"Service not installed: {serviceName}");
+
+        string? executablePath = request.Data?["executablePath"]?.ToString();
+        HashSet<string> processNames = ResolveAllowedProcessNames(serviceName, executablePath);
+        if (processNames.Count == 0)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"No allowed process name was found for service: {serviceName}", new { serviceName, steps });
+
+        int killed = KillProcessesByName(processNames, steps);
+        bool running = IsServiceRunning(serviceName);
+        bool processStillExists = AnyProcessExists(processNames);
+        bool success = !running && !processStillExists;
+
+        return ServiceHostResponse.FromObject(request.RequestId, success, success ? "service terminated" : "service terminate incomplete", new
+        {
+            serviceName,
+            processNames,
+            killed,
+            running,
+            processStillExists,
+            steps,
+        });
+    }
+
+    private static ServiceHostResponse UninstallMySqlService(ServiceHostRequest request)
+    {
+        string serviceName = GetOptionalDataValue(request, "serviceName", "MySQL").Trim();
+        if (!IsAllowedMySqlServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported MySQL service name: {serviceName}");
+
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
+        string? mysqldExePath = request.Data?["mysqldExePath"]?.ToString();
+        if (!string.IsNullOrWhiteSpace(mysqldExePath))
+            mysqldExePath = Path.GetFullPath(mysqldExePath);
+
+        List<string> steps = [];
+        List<ProcessResult> processResults = [];
+        RemoveMySqlServiceRegistration(serviceName, mysqldExePath, timeoutSeconds, steps, processResults);
+
+        bool exists = ServiceExists(serviceName);
+        return ServiceHostResponse.FromObject(request.RequestId, !exists, exists ? "MySQL service uninstall failed" : "MySQL service uninstalled", new
+        {
+            serviceName,
+            exists,
+            steps,
+            processResults,
+        });
+    }
+
+    private static void RemoveMySqlServiceRegistration(string serviceName, string? mysqldExePath, int timeoutSeconds, List<string> steps, List<ProcessResult> processResults)
+    {
+        if (!ServiceExists(serviceName))
+        {
+            steps.Add($"Service not installed: {serviceName}");
+            return;
+        }
+
+        StopServiceIfExists(serviceName, timeoutSeconds, steps);
+
+        string? registeredPath = GetServiceInstallPath(serviceName);
+        string? removeExePath = !string.IsNullOrWhiteSpace(mysqldExePath) && File.Exists(mysqldExePath)
+            ? mysqldExePath
+            : registeredPath;
+
+        if (!string.IsNullOrWhiteSpace(removeExePath) && File.Exists(removeExePath))
+        {
+            string workingDirectory = Path.GetDirectoryName(removeExePath) ?? string.Empty;
+            steps.Add($"Removing MySQL service through mysqld.exe: {removeExePath}");
+            processResults.Add(RunProcess(removeExePath, $"--remove {serviceName}", workingDirectory, timeoutSeconds * 1000));
+        }
+
+        if (ServiceExists(serviceName))
+        {
+            steps.Add($"Deleting service through sc.exe: {serviceName}");
+            processResults.Add(RunProcess("sc.exe", $"delete \"{serviceName}\"", null, timeoutSeconds * 1000));
+            WaitForServiceDeleted(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
         }
     }
 
-    private static void AppendThumbnailComClass(System.Text.StringBuilder sb, string clsid, string description, string escapedComHostPath)
+    private static int KillProcessesByName(IEnumerable<string> processNames, List<string> steps)
     {
-        sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{clsid}]");
-        sb.AppendLine($"@=\"{description}\"");
-        sb.AppendLine();
-        sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{clsid}\\InprocServer32]");
-        sb.AppendLine($"@=\"{escapedComHostPath}\"");
-        sb.AppendLine("\"ThreadingModel\"=\"Both\"");
-        sb.AppendLine();
+        int killed = 0;
+        foreach (string processName in processNames)
+        {
+            foreach (Process process in Process.GetProcessesByName(processName))
+            {
+                try
+                {
+                    steps.Add($"Killing process: {process.ProcessName} ({process.Id})");
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(3000);
+                    killed++;
+                }
+                catch (Exception ex)
+                {
+                    steps.Add($"Failed to kill process {processName}: {ex.Message}");
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            }
+        }
+
+        return killed;
     }
 
-    private static void AppendApprovedShellExtension(System.Text.StringBuilder sb, string clsid, string description)
+    private static void CleanupMySqlPackageDirectories(string zipFilePath, string targetDirectory, List<string> steps)
     {
-        sb.AppendLine("[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Shell Extensions\\Approved]");
-        sb.AppendLine($"\"{clsid}\"=\"{description}\"");
-        sb.AppendLine();
+        foreach (string directoryName in GetMySqlPackageTopLevelDirectoryNames(zipFilePath))
+        {
+            string directory = Path.Combine(targetDirectory, directoryName);
+            if (!Directory.Exists(directory))
+                continue;
+
+            steps.Add($"Deleting existing MySQL directory: {directory}");
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
-    private static void AppendImageExtension(System.Text.StringBuilder sb, string extension, string progId, string description, string escapedAppPath, string escapedIconPath, int iconIndex, string thumbnailClsid)
+    private static string? ResolveExtractedMySqlBasePath(string zipFilePath, string targetDirectory)
     {
-        AppendPackageExtension(sb, extension, progId, description, escapedAppPath, escapedIconPath, iconIndex, compressed: false, preview: false);
-        sb.AppendLine($"[HKEY_CLASSES_ROOT\\{extension}\\ShellEx\\{ThumbnailProviderIid}]");
-        sb.AppendLine($"@=\"{thumbnailClsid}\"");
-        sb.AppendLine();
+        string[] packageDirectories = GetMySqlPackageTopLevelDirectoryNames(zipFilePath)
+            .Select(name => Path.Combine(targetDirectory, name))
+            .Where(path => File.Exists(Path.Combine(path, "bin", "mysqld.exe")))
+            .ToArray();
+
+        if (packageDirectories.Length > 0)
+            return packageDirectories[0];
+
+        return Directory.Exists(targetDirectory)
+            ? Directory.GetDirectories(targetDirectory, "mysql-*", SearchOption.TopDirectoryOnly)
+                .Where(path => File.Exists(Path.Combine(path, "bin", "mysqld.exe")))
+                .OrderByDescending(path => path)
+                .FirstOrDefault()
+            : null;
     }
 
-    private static string EscapeRegistryValue(string value)
+    private static string[] GetMySqlPackageTopLevelDirectoryNames(string zipFilePath)
     {
-        return value.Replace("\\", "\\\\", StringComparison.Ordinal);
+        try
+        {
+            using System.IO.Compression.ZipArchive archive = System.IO.Compression.ZipFile.OpenRead(zipFilePath);
+            return archive.Entries
+                .Select(entry => GetTopLevelEntryName(entry.FullName))
+                .Where(name => name.StartsWith("mysql-", StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private static string GetTopLevelEntryName(string entryName)
+    {
+        string normalized = entryName.Replace('\\', '/').TrimStart('/');
+        if (string.IsNullOrWhiteSpace(normalized))
+            return string.Empty;
+
+        string top = normalized.Split('/')[0].Trim();
+        return top is "." or ".." ? string.Empty : top;
+    }
+
+    private static bool WaitForMySqlReady(string mysqlExePath, int port, int timeoutSeconds, List<string> steps, List<ProcessResult> processResults)
+    {
+        string workingDirectory = Path.GetDirectoryName(mysqlExePath) ?? string.Empty;
+        DateTime deadline = DateTime.UtcNow + TimeSpan.FromSeconds(timeoutSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            ProcessResult result = RunProcess(
+                mysqlExePath,
+                ["-P", port.ToString(), "-u", "root", "-e", "SELECT 1;"],
+                workingDirectory,
+                timeoutMilliseconds: 5000);
+            processResults.Add(result);
+            if (result.ExitCode == 0)
+            {
+                steps.Add("MySQL is ready.");
+                return true;
+            }
+
+            Thread.Sleep(1000);
+        }
+
+        steps.Add("Timed out waiting for MySQL readiness.");
+        return false;
+    }
+
+    private static string BuildCreateMySqlUserSql(string userName, string password, string database)
+    {
+        string safeDb = EscapeSqlIdentifier(database);
+        string safeUser = EscapeSqlLiteral(userName);
+        string safePassword = EscapeSqlLiteral(password);
+        return $"CREATE DATABASE IF NOT EXISTS `{safeDb}` CHARACTER SET utf8mb4; " +
+            $"CREATE USER IF NOT EXISTS '{safeUser}'@'localhost' IDENTIFIED BY '{safePassword}'; " +
+            $"ALTER USER '{safeUser}'@'localhost' IDENTIFIED BY '{safePassword}'; " +
+            $"GRANT ALL PRIVILEGES ON `{safeDb}`.* TO '{safeUser}'@'localhost'; " +
+            $"CREATE USER IF NOT EXISTS '{safeUser}'@'%' IDENTIFIED BY '{safePassword}'; " +
+            $"ALTER USER '{safeUser}'@'%' IDENTIFIED BY '{safePassword}'; " +
+            $"GRANT ALL PRIVILEGES ON `{safeDb}`.* TO '{safeUser}'@'%'; " +
+            "FLUSH PRIVILEGES;";
+    }
+
+    private static string EscapeSqlLiteral(string value)
+    {
+        return value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("'", "''", StringComparison.Ordinal);
+    }
+
+    private static string EscapeSqlIdentifier(string value)
+    {
+        return value.Replace("`", "``", StringComparison.Ordinal);
+    }
+
+    private static string CreateSelfUpdateScript(string packageDirectory, string installDirectory, string scriptPath, string logPath)
+    {
+        return string.Join(Environment.NewLine, new[]
+        {
+            "$ErrorActionPreference = 'Stop'",
+            $"$serviceName = {PsQuote(ServiceHostConstants.ServiceName)}",
+            $"$displayName = {PsQuote(ServiceHostConstants.DisplayName)}",
+            $"$description = {PsQuote(ServiceHostConstants.Description)}",
+            $"$source = {PsQuote(packageDirectory)}",
+            $"$destination = {PsQuote(installDirectory)}",
+            $"$executableName = {PsQuote(ServiceHostConstants.ExecutableName)}",
+            $"$scriptPath = {PsQuote(scriptPath)}",
+            $"$logPath = {PsQuote(logPath)}",
+            "function Write-Step([string]$message) {",
+            "    $line = \"$(Get-Date -Format o) $message\"",
+            "    Add-Content -LiteralPath $logPath -Value $line",
+            "}",
+            "try {",
+            "    Write-Step \"Self update started. Source=$source Destination=$destination\"",
+            "    $sourceExe = Join-Path $source $executableName",
+            "    if (-not (Test-Path -LiteralPath $sourceExe)) { throw \"Service host executable was not found: $sourceExe\" }",
+            "    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue",
+            "    if ($service -and $service.Status -ne 'Stopped') {",
+            "        Write-Step \"Stopping service $serviceName\"",
+            "        Stop-Service -Name $serviceName -Force -ErrorAction Stop",
+            "        $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(30))",
+            "    }",
+            "    New-Item -ItemType Directory -Force -Path $destination | Out-Null",
+            "    Write-Step \"Copying service host files\"",
+            "    Copy-Item -Path (Join-Path $source '*') -Destination $destination -Recurse -Force",
+            "    $exe = Join-Path $destination $executableName",
+            "    if (-not (Test-Path -LiteralPath $exe)) { throw \"Updated service host executable was not found: $exe\" }",
+            "    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue",
+            "    if ($service) {",
+            "        & sc.exe config $serviceName binPath= ('\"' + $exe + '\"') start= auto DisplayName= $displayName | Out-Null",
+            "    } else {",
+            "        & sc.exe create $serviceName binPath= ('\"' + $exe + '\"') start= auto DisplayName= $displayName | Out-Null",
+            "    }",
+            "    if ($LASTEXITCODE -ne 0) { throw \"Failed to create or configure service: $LASTEXITCODE\" }",
+            "    & sc.exe description $serviceName $description | Out-Null",
+            "    if ($LASTEXITCODE -ne 0) { throw \"Failed to set service description: $LASTEXITCODE\" }",
+            "    Write-Step \"Starting service $serviceName\"",
+            "    Start-Service -Name $serviceName -ErrorAction Stop",
+            "    (Get-Service -Name $serviceName).WaitForStatus('Running', [TimeSpan]::FromSeconds(30))",
+            "    Write-Step \"Self update completed.\"",
+            "    Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue",
+            "    exit 0",
+            "} catch {",
+            "    Write-Step (\"Self update failed: \" + $_.Exception.Message)",
+            "    exit 1",
+            "}",
+            string.Empty,
+        });
+    }
+
+    private static string ServiceHostProtocolCompatibleInstallDirectory()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "ColorVision",
+            "ServiceHost");
+    }
+
+    private static string QuoteForCommandLine(string value)
+    {
+        return $"\"{value.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
+    }
+
+    private static string PsQuote(string value)
+    {
+        return $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
+    }
+
+    private static string? GetFileVersion(string? filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            return null;
+
+        return FileVersionInfo.GetVersionInfo(filePath).FileVersion;
+    }
+
+    private static string? GetProductVersion(string? filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            return null;
+
+        return FileVersionInfo.GetVersionInfo(filePath).ProductVersion;
+    }
+
+    private static Version? GetExecutableVersion(string filePath)
+    {
+        return TryParseVersion(GetFileVersion(filePath)) ?? TryParseVersion(GetProductVersion(filePath));
+    }
+
+    private static Version? TryParseVersion(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        string versionText = new(value.TakeWhile(ch => char.IsDigit(ch) || ch == '.').ToArray());
+        return Version.TryParse(versionText.Trim('.'), out Version? version) ? version : null;
+    }
+
+    private static bool LooksLikeServiceHostExecutable(string filePath)
+    {
+        if (!string.Equals(Path.GetFileName(filePath), ServiceHostConstants.ExecutableName, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        try
+        {
+            FileVersionInfo info = FileVersionInfo.GetVersionInfo(filePath);
+            string combined = string.Join(" ", info.ProductName, info.FileDescription, info.OriginalFilename);
+            return combined.Contains("ColorVision", StringComparison.OrdinalIgnoreCase)
+                || combined.Contains("ColorVisionServiceHost", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return true;
+        }
     }
 
     private static string GetRequiredDataValue(ServiceHostRequest request, string name)
@@ -400,9 +847,86 @@ internal sealed class ServiceHostCommandHandler
         return int.TryParse(value, out int result) ? result : defaultValue;
     }
 
+    private static string ResolveRequestedServiceName(ServiceHostRequest request, string? defaultServiceName = null)
+    {
+        string serviceName = GetOptionalDataValue(request, "serviceName", defaultServiceName ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(serviceName))
+            throw new InvalidOperationException("Missing request data: serviceName");
+
+        return serviceName;
+    }
+
+    private static bool IsAllowedServiceName(string serviceName)
+    {
+        if (string.IsNullOrWhiteSpace(serviceName) || serviceName.Length > 256)
+            return false;
+
+        return serviceName.IndexOfAny(['\\', '/', '"']) < 0
+            && !serviceName.Any(char.IsControl);
+    }
+
     private static bool IsAllowedMySqlServiceName(string serviceName)
     {
         return serviceName is "MySQL" or "MySQL57" or "MySQL80";
+    }
+
+    private static HashSet<string> ResolveAllowedProcessNames(string serviceName, string? executablePath)
+    {
+        HashSet<string> processNames = new(StringComparer.OrdinalIgnoreCase);
+
+        TryAddProcessNameFromPath(processNames, GetServiceInstallPath(serviceName));
+        TryAddProcessNameFromPath(processNames, executablePath);
+
+        if (ServiceProcessNames.TryGetValue(serviceName, out string[]? knownNames))
+        {
+            foreach (string knownName in knownNames)
+            {
+                if (IsSafeProcessName(knownName))
+                    processNames.Add(knownName);
+            }
+        }
+
+        return processNames;
+    }
+
+    private static void TryAddProcessNameFromPath(HashSet<string> processNames, string? executablePath)
+    {
+        if (string.IsNullOrWhiteSpace(executablePath))
+            return;
+
+        string processName = Path.GetFileNameWithoutExtension(ExtractExecutablePath(executablePath) ?? executablePath.Trim());
+        if (IsSafeProcessName(processName))
+            processNames.Add(processName);
+    }
+
+    private static bool IsSafeProcessName(string processName)
+    {
+        return !string.IsNullOrWhiteSpace(processName)
+            && processName.Length <= 128
+            && processName.IndexOfAny(['\\', '/', '"', ':']) < 0
+            && !processName.Any(char.IsControl);
+    }
+
+    private static bool AnyProcessExists(IEnumerable<string> processNames)
+    {
+        foreach (string processName in processNames)
+        {
+            Process[] processes = Process.GetProcessesByName(processName);
+            try
+            {
+                if (processes.Length > 0)
+                    return true;
+            }
+            finally
+            {
+                foreach (Process process in processes)
+                {
+                    process.Dispose();
+                }
+            }
+        }
+
+        return false;
     }
 
     private static bool LooksLikeMySqlServerExecutable(string filePath)
@@ -574,26 +1098,40 @@ internal sealed class ServiceHostCommandHandler
         }
     }
 
-    private static void ClearThumbnailCache(ServiceHostRequest request)
+    private static ProcessResult RunProcess(string fileName, IReadOnlyList<string> arguments, string? workingDirectory = null, int timeoutMilliseconds = 30000)
     {
-        string? thumbnailCacheDirectory = request.Data?["thumbnailCacheDirectory"]?.ToString();
-        if (string.IsNullOrWhiteSpace(thumbnailCacheDirectory) || !Directory.Exists(thumbnailCacheDirectory))
-            return;
-
-        foreach (string pattern in new[] { "thumbcache_*.db", "iconcache_*.db" })
+        using Process process = new()
         {
-            foreach (string file in Directory.GetFiles(thumbnailCacheDirectory, pattern))
+            StartInfo = new ProcessStartInfo
             {
-                try
-                {
-                    File.Delete(file);
-                }
-                catch (Exception ex)
-                {
-                    ServiceHostLog.Write($"Failed to delete cache file {file}: {ex.Message}");
-                }
-            }
+                FileName = fileName,
+                WorkingDirectory = workingDirectory ?? string.Empty,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            },
+        };
+
+        foreach (string argument in arguments)
+        {
+            process.StartInfo.ArgumentList.Add(argument);
         }
+
+        process.Start();
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
+        if (!process.WaitForExit(timeoutMilliseconds))
+        {
+            KillProcessTree(process);
+            string timeoutOutput = ReadCompletedOutput(outputTask);
+            string timeoutError = AppendProcessError(ReadCompletedOutput(errorTask), "Process timed out.");
+            return new ProcessResult(fileName, FormatArgumentsForLog(arguments), -1, timeoutOutput, timeoutError);
+        }
+
+        string output = ReadCompletedOutput(outputTask);
+        string error = ReadCompletedOutput(errorTask);
+        return new ProcessResult(fileName, FormatArgumentsForLog(arguments), process.ExitCode, output, error);
     }
 
     private static ProcessResult RunProcess(string fileName, string arguments, string? workingDirectory = null, int timeoutMilliseconds = 30000)
@@ -613,15 +1151,59 @@ internal sealed class ServiceHostCommandHandler
         };
 
         process.Start();
-        string output = process.StandardOutput.ReadToEnd();
-        string error = process.StandardError.ReadToEnd();
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
         if (!process.WaitForExit(timeoutMilliseconds))
         {
-            process.Kill(entireProcessTree: true);
-            return new ProcessResult(fileName, arguments, -1, output, "Process timed out.");
+            KillProcessTree(process);
+            string timeoutOutput = ReadCompletedOutput(outputTask);
+            string timeoutError = AppendProcessError(ReadCompletedOutput(errorTask), "Process timed out.");
+            return new ProcessResult(fileName, arguments, -1, timeoutOutput, timeoutError);
         }
 
+        string output = ReadCompletedOutput(outputTask);
+        string error = ReadCompletedOutput(errorTask);
         return new ProcessResult(fileName, arguments, process.ExitCode, output, error);
+    }
+
+    private static void KillProcessTree(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+        }
+        catch (Exception ex)
+        {
+            ServiceHostLog.Write($"Failed to kill timed out process {process.StartInfo.FileName}: {ex.Message}");
+        }
+    }
+
+    private static string ReadCompletedOutput(Task<string> outputTask)
+    {
+        try
+        {
+            return outputTask.Wait(1000) ? outputTask.GetAwaiter().GetResult() : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            return $"Failed to read process output: {ex.Message}";
+        }
+    }
+
+    private static string AppendProcessError(string currentError, string message)
+    {
+        return string.IsNullOrWhiteSpace(currentError)
+            ? message
+            : currentError.TrimEnd() + Environment.NewLine + message;
+    }
+
+    private static string FormatArgumentsForLog(IEnumerable<string> arguments)
+    {
+        return string.Join(" ", arguments.Select(argument =>
+            argument.Any(char.IsWhiteSpace) || argument.Contains('"', StringComparison.Ordinal)
+                ? $"\"{argument.Replace("\"", "\\\"", StringComparison.Ordinal)}\""
+                : argument));
     }
 
     private static bool IsElevated()

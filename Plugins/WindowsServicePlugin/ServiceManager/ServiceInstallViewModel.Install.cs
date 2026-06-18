@@ -26,9 +26,10 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
             }
 
-            if (!ColorVision.Common.Utilities.Tool.IsAdministrator())
+            bool requiresAdministrator = InstallServiceChecked || InstallMqttChecked;
+            if (requiresAdministrator && !ColorVision.Common.Utilities.Tool.IsAdministrator())
             {
-                MessageBox.Show("安装或更新 Windows 服务需要管理员权限，请先以管理员模式打开服务管理器。", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("安装或更新 CVWindowsService/MQTT 需要管理员权限；MySQL 会优先通过 ColorVisionServiceHost 处理。", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -68,7 +69,7 @@ namespace WindowsServicePlugin.ServiceManager
 
                             SetProgress(progress += 15, "安装 MySQL...");
                             var serviceManager = ServiceManagerViewModel.Instance;
-                            bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipAsync(MySqlPackagePath, basePath, AddLog).GetAwaiter().GetResult();
+                            bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipViaServiceHostAsync(MySqlPackagePath, basePath, AddLog).GetAwaiter().GetResult();
                             if (!mysqlInstalled)
                             {
                                 throw new InvalidOperationException("MySQL 安装失败");
@@ -394,14 +395,14 @@ namespace WindowsServicePlugin.ServiceManager
             if (serviceManager.MySqlManager.Config.IsInstalled && !serviceManager.MySqlManager.Config.IsRunning)
             {
                 AddLog($"启动 MySQL 服务: {serviceManager.MySqlManager.Helper.ServiceName}");
-                serviceManager.MySqlManager.Start(AddLog);
+                serviceManager.MySqlManager.StartViaServiceHostAsync(AddLog).GetAwaiter().GetResult();
             }
 
             serviceManager.MqttManager.RefreshStatus(serviceManager.Services);
             if (serviceManager.MqttManager.Config.IsInstalled && !serviceManager.MqttManager.Config.IsRunning)
             {
                 AddLog($"启动 MQTT 服务: {serviceManager.MqttManager.Config.ServiceName}");
-                serviceManager.MqttManager.Start(AddLog);
+                serviceManager.MqttManager.StartViaServiceHostAsync(AddLog).GetAwaiter().GetResult();
             }
 
             StartPackagedServices();

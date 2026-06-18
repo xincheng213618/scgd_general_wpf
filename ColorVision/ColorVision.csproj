@@ -159,6 +159,18 @@
     <Copy SourceFiles="@(ShellExtensionRuntimeFiles)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="'@(ShellExtensionRuntimeFiles)' != ''" />
   </Target>
 
+  <Target Name="CopyColorVisionIconsRuntimeFile" AfterTargets="Build">
+    <PropertyGroup>
+      <ColorVisionIconsSource Condition="Exists('..\x64\$(Configuration)\ColorVisionIcons64.dll')">..\x64\$(Configuration)\ColorVisionIcons64.dll</ColorVisionIconsSource>
+      <ColorVisionIconsSource Condition="'$(ColorVisionIconsSource)' == '' and Exists('..\Native\ColorVisionIcons64\x64\$(Configuration)\ColorVisionIcons64.dll')">..\Native\ColorVisionIcons64\x64\$(Configuration)\ColorVisionIcons64.dll</ColorVisionIconsSource>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(ColorVisionIconsSource)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true"
+          Condition="'$(ColorVisionIconsSource)' != ''" />
+  </Target>
+
   <Target Name="CopyServiceHostRuntimeFiles" AfterTargets="Build">
     <PropertyGroup>
       <ServiceHostOutputPath>..\src\ColorVisionServiceHost\bin\$(Platform)\$(Configuration)\$(TargetFramework)\</ServiceHostOutputPath>
@@ -181,6 +193,16 @@
       <ServiceHostPublishFiles Include="$(OutputPath)ServiceHost\**\*.*" Condition="Exists('$(OutputPath)ServiceHost\ColorVisionServiceHost.exe')" />
       <ResolvedFileToPublish Include="@(ServiceHostPublishFiles)">
         <RelativePath>ServiceHost\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddColorVisionIconsRuntimeFileToPublish" AfterTargets="ComputeFilesToPublish" DependsOnTargets="CopyColorVisionIconsRuntimeFile">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(OutputPath)ColorVisionIcons64.dll" Condition="Exists('$(OutputPath)ColorVisionIcons64.dll')">
+        <RelativePath>ColorVisionIcons64.dll</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       </ResolvedFileToPublish>
