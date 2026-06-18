@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
 
-        [LocalizedDisplayName(nameof(Resources.DataColumSavePath)), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [LocalizedDisplayName(nameof(Resources.DataColumSavePath)), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; OnPropertyChanged(); } }
         private string _SaveSideDataDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
