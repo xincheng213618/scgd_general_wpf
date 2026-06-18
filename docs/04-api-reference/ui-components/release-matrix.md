@@ -15,7 +15,7 @@
 | `ColorVision.Database` | `UI/ColorVision.Database/ColorVision.Database.csproj` | `net8.0-windows7.0;net10.0-windows7.0` | `1.5.5.3` | DLL + `.nupkg` + `.snupkg` | `ColorVision.UI`、`SqlSugarCore`、`log4net`、`Newtonsoft.Json` |
 | `ColorVision.SocketProtocol` | `UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj` | `net8.0-windows7.0;net10.0-windows7.0` | `1.5.5.2` | DLL + `.nupkg` + `.snupkg` | `ColorVision.UI`、`ColorVision.Database` |
 | `ColorVision.Scheduler` | `UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj` | `net8.0-windows7.0;net10.0-windows7.0` | `1.5.5.2` | DLL + `.nupkg` + `.snupkg` | `ColorVision.UI`、`Quartz`、`SqlSugarCore` |
-| `ColorVision.ImageEditor` | `UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj` | `net10.0-windows7.0` | `1.5.5.5` | DLL + `.nupkg` + `.snupkg` + embedded resources | `ColorVision.Core`、`ColorVision.UI`、OpenCvSharp、HelixToolkit、ScottPlot |
+| `ColorVision.ImageEditor` | `UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj` | `net10.0-windows7.0` | `1.5.5.7` | DLL + `.nupkg` + `.snupkg` + embedded resources | `ColorVision.Core`、`ColorVision.UI`、OpenCvSharp、HelixToolkit、ScottPlot |
 | `ColorVision.UI.Desktop` | `UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj` | `net10.0-windows7.0` | `1.5.5.3` | `WinExe` + `.nupkg` + `.snupkg` | `ColorVision.Database`、`ColorVision.UI`、WebView2、Markdig |
 | `ColorVision.Solution` | `UI/ColorVision.Solution/ColorVision.Solution.csproj` | `net10.0-windows7.0` | `1.5.5.2` | DLL + `.nupkg` + `.snupkg` | `ColorVision.ImageEditor`、`ColorVision.UI.Desktop`、AvalonDock、AvalonEdit、WebView2、WPFHexaEditor |
 
