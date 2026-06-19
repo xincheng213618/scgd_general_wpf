@@ -59,7 +59,7 @@ export COLORVISION_UPLOAD_PASSWORD="xincheng"
 
 ### 主程序正式发布流程
 
-正式发布优先使用仓库已有整合脚本：
+正式发布只有一个入口：
 
 ```powershell
 Scripts\release.bat
@@ -67,100 +67,32 @@ Scripts\release.bat
 
 它会依次执行 `py Scripts\build.py` 和 `py Scripts\build_update.py`，完成主安装包构建上传、`LATEST_RELEASE` 更新、增量更新包构建上传和全量 zip 生成。
 
-发布前只需要确认版本号已经提升。正常情况不要拆开手工跑；下面步骤只用于版本调整、排查或需要补传时参考。
-
-#### 1. 提升版本号
-
-修改仓库根目录 `Directory.Build.props`：
+发布前只需要确认仓库根目录 `Directory.Build.props` 里的版本号已经提升：
 
 ```xml
 <VersionPrefix>1.4.10.5</VersionPrefix>
 ```
 
-#### 2. 必要时同步 Advanced Installer 版本
+`release.bat` 正常发布时本来就会生成本地文件，这不是“只本地打包”。判断是否真的发布，看输出里是否出现：
 
-如果安装包文件名或产品版本没有跟随 `ColorVision.exe` 更新，再同步 Advanced Installer 项目版本。不要手改 `.aip`，使用 Advanced Installer 命令：
+- `Uploading primary release package`
+- `File uploaded successfully`
+- `Uploaded LATEST_RELEASE successfully`
+- 更新包上传的 `File uploaded successfully`
 
-```powershell
-$version = "1.4.10.5"
-& "C:\Users\17917\Desktop\AdvancedInstaller v19.7.1\App\ProgramFiles\bin\x86\AdvancedInstaller.com" `
-  /edit "$env:USERPROFILE\Documents\Advanced Installer\Projects\ColorVision\ColorVision.aip" `
-  /SetVersion $version
-```
+正式发布不要拆开手工执行 `build.py` 或 `build_update.py`，也不要使用任何跳过构建、跳过上传的调试参数。
 
-#### 3. 构建并上传主安装包
+发布成功后会有这些本地产物：
 
-整合脚本已经包含这一步。需要单独排查主安装包时再运行：
-
-```powershell
-py Scripts\build.py
-```
-
-脚本会执行：
-
-1. 编译 `build.sln`
-2. 使用 Advanced Installer 重新生成安装包
-3. 上传 `ColorVision-{version}.exe`
-4. 上传 `CHANGELOG.md`
-5. 更新远程 `LATEST_RELEASE`
-
-::: warning
-正式发布不要加 `--skip-remote-upload`。上传账号密码有脚本默认值，也可以用环境变量覆盖；不能只因为当前 PowerShell 没有 `COLORVISION_UPLOAD_USERNAME` / `COLORVISION_UPLOAD_PASSWORD` 就跳过远程上传。
-:::
-
-如果安装包已经构建完成，只需要补上传，使用：
-
-```powershell
-$version = "1.4.10.5"
-py Scripts\build.py --skip-build --latest-file "$env:USERPROFILE\Documents\Advanced Installer\Projects\ColorVision\Setup Files\ColorVision-$version.exe"
-```
-
-#### 4. 生成并上传更新包
-
-整合脚本已经包含这一步。需要单独补生成更新包时再运行：
-
-```powershell
-py Scripts\build_update.py
-```
-
-脚本会读取 `ColorVision\bin\x64\Release\net10.0-windows\ColorVision.exe` 的文件版本，生成：
-
-- `$env:USERPROFILE\Desktop\History\ColorVision-[{version}].zip`
-- `$env:USERPROFILE\Desktop\History\update\ColorVision-Update-[{version}].cvx`
-
-增量包上传到 `ColorVision/Update`。
-
-#### 5. 发布后验证
-
-```powershell
-$version = "1.4.10.5"
-(Get-Item "ColorVision\bin\x64\Release\net10.0-windows\ColorVision.exe").VersionInfo |
-  Select-Object FileVersion,ProductVersion
-Get-Item "$env:USERPROFILE\Documents\Advanced Installer\Projects\ColorVision\Setup Files\ColorVision-$version.exe"
-Get-Item "$env:USERPROFILE\Desktop\History\ColorVision-[$version].zip"
-Get-Item "$env:USERPROFILE\Desktop\History\update\ColorVision-Update-[$version].cvx"
-```
-
-确认命令输出中的版本号和文件名都是同一个版本。
-
-#### 常见错误
-
-- 只改 `Directory.Build.props`，忘记 `/SetVersion`：安装包文件名或产品版本可能仍是旧版本。
-- 用 `--skip-remote-upload` 做正式发布：本地安装包生成了，但远程 `LATEST_RELEASE` 不会更新。
-- 先跑 `build_update.py` 再跑 `build.py`：更新包可能基于旧的 `ColorVision.exe`。
-- 只看安装包文件名，不检查 `ColorVision.exe` 文件版本：更新脚本读取的是 exe 文件版本。
+- `%USERPROFILE%\Documents\Advanced Installer\Projects\ColorVision\Setup Files\ColorVision-{version}.exe`
+- `%USERPROFILE%\Desktop\History\ColorVision-[{version}].zip`
+- `%USERPROFILE%\Desktop\History\update\ColorVision-Update-[{version}].cvx`
 
 ### 用法
 
 ```powershell
-# 完整构建（编译 + 打包 + 上传）
+# release.bat 的内部步骤；正式发布不要绕过 release.bat 直接运行
 py Scripts\build.py
-
-# 跳过构建，仅上传最新安装包
-py Scripts\build.py --skip-build
-
-# 跳过远程上传
-py Scripts\build.py --skip-remote-upload
 ```
 
 ### 功能说明
