@@ -2,6 +2,7 @@
 #include "Windows.h"
 #include "opencv_media_export.h"
 #include "algorithm.h"
+#include "algorithm/distortion/distortion_p9.h"
 #include "algorithm/sfr/sfr_bmw4.h"
 #include <opencv2/opencv.hpp>
 #include <nlohmann\json.hpp>
@@ -166,6 +167,120 @@ cvcore::sfr::BmwSfr4Config ParseBmwSfr4Config(const json& root)
 		ReadBmwSfr4ConfigFields(root.at("sfrAutoPoi1"), config);
 	}
 	return config;
+}
+
+void ReadDistortionP9ConfigFields(const json& j, cvcore::distortion::DistortionP9Config& config)
+{
+	if (!j.is_object()) {
+		return;
+	}
+
+	config.expectedRows = j.value("expectedRows", j.value("brightNumY", config.expectedRows));
+	config.expectedCols = j.value("expectedCols", j.value("brightNumX", config.expectedCols));
+	config.threshold = j.value("threshold", j.value("Threshold", config.threshold));
+	config.brightTarget = j.value("brightTarget", j.value("BrightTarget", config.brightTarget));
+	config.minRectSize = j.value("minRectSize", j.value("outRectSizeMin", j.value("MinRectSize", config.minRectSize)));
+	config.maxRectSize = j.value("maxRectSize", j.value("outRectSizeMax", j.value("MaxRectSize", config.maxRectSize)));
+	config.minArea = j.value("minArea", j.value("MinArea", config.minArea));
+	config.maxArea = j.value("maxArea", j.value("MaxArea", config.maxArea));
+	config.erodeKernel = j.value("erodeKernel", j.value("ErodeKernel", config.erodeKernel));
+	config.erodeIterations = j.value("erodeIterations", j.value("erodeTime", j.value("ErodeIterations", config.erodeIterations)));
+	config.dilateIterations = j.value("dilateIterations", j.value("DilateIterations", config.dilateIterations));
+	config.maxCandidates = j.value("maxCandidates", j.value("MaxCandidates", config.maxCandidates));
+	config.tvCalcWay = j.value("tvCalcWay", j.value("TvCaclWay", config.tvCalcWay));
+	config.sortWithPca = j.value("sortWithPca", j.value("SortWithPca", config.sortWithPca));
+}
+
+cvcore::distortion::DistortionP9Config ParseDistortionP9Config(const json& root)
+{
+	cvcore::distortion::DistortionP9Config config;
+	ReadDistortionP9ConfigFields(root, config);
+	if (root.contains("CommonParams")) {
+		ReadDistortionP9ConfigFields(root.at("CommonParams"), config);
+	}
+	if (root.contains("Point9Params")) {
+		ReadDistortionP9ConfigFields(root.at("Point9Params"), config);
+	}
+	if (root.contains("caclDistorType")) {
+		ReadDistortionP9ConfigFields(root.at("caclDistorType"), config);
+	}
+	return config;
+}
+
+json DistortionP9ConfigToJson(const cvcore::distortion::DistortionP9Config& config)
+{
+	return json{
+		{ "expectedRows", config.expectedRows },
+		{ "expectedCols", config.expectedCols },
+		{ "threshold", config.threshold },
+		{ "brightTarget", config.brightTarget },
+		{ "minRectSize", config.minRectSize },
+		{ "maxRectSize", config.maxRectSize },
+		{ "minArea", config.minArea },
+		{ "maxArea", config.maxArea },
+		{ "erodeKernel", config.erodeKernel },
+		{ "erodeIterations", config.erodeIterations },
+		{ "dilateIterations", config.dilateIterations },
+		{ "maxCandidates", config.maxCandidates },
+		{ "tvCalcWay", config.tvCalcWay },
+		{ "sortWithPca", config.sortWithPca }
+	};
+}
+
+json DistortionP9MetricsToJson(const cvcore::distortion::DistortionP9Metric& metrics)
+{
+	return json{
+		{ "horizontalTvPercent", metrics.horizontalTvPercent },
+		{ "verticalTvPercent", metrics.verticalTvPercent },
+		{ "topPercent", metrics.topPercent },
+		{ "bottomPercent", metrics.bottomPercent },
+		{ "leftPercent", metrics.leftPercent },
+		{ "rightPercent", metrics.rightPercent },
+		{ "keystoneHorizontalPercent", metrics.keystoneHorizontalPercent },
+		{ "keystoneVerticalPercent", metrics.keystoneVerticalPercent },
+		{ "topWidth", metrics.topWidth },
+		{ "middleWidth", metrics.middleWidth },
+		{ "bottomWidth", metrics.bottomWidth },
+		{ "leftHeight", metrics.leftHeight },
+		{ "centerHeight", metrics.centerHeight },
+		{ "rightHeight", metrics.rightHeight },
+		{ "gridWidth", metrics.gridWidth },
+		{ "gridHeight", metrics.gridHeight }
+	};
+}
+
+json RectToJson(const cv::Rect& rect, const cv::Point& origin);
+
+json DistortionP9PointToJson(const cvcore::distortion::DistortionP9Point& point, const cv::Point& origin)
+{
+	return json{
+		{ "id", point.id },
+		{ "row", point.row },
+		{ "col", point.col },
+		{ "name", point.name },
+		{ "x", point.center.x + origin.x },
+		{ "y", point.center.y + origin.y },
+		{ "area", point.area },
+		{ "boundingRect", RectToJson(point.boundingRect, origin) }
+	};
+}
+
+cv::Rect TryGetConfigMaskRect(const json& root)
+{
+	if (!root.contains("MaskRect") || !root.at("MaskRect").is_object()) {
+		return cv::Rect();
+	}
+
+	const json& mask = root.at("MaskRect");
+	if (!mask.value("enable", false)) {
+		return cv::Rect();
+	}
+
+	return cv::Rect(
+		mask.value("x", 0),
+		mask.value("y", 0),
+		mask.value("w", 0),
+		mask.value("h", 0));
 }
 
 json RectToJson(const cv::Rect& rect, const cv::Point& origin)
@@ -1183,6 +1298,83 @@ COLORVISIONCORE_API int M_CalSFRBmw4In1(HImage img, RoiRect roi, const char* con
 			}
 
 			outputJson["result"].push_back(std::move(pointJson));
+		}
+
+		return CopyJsonResult(outputJson, result);
+	});
+}
+
+COLORVISIONCORE_API int M_CalDistortionP9(HImage img, RoiRect roi, const char* config, char** result)
+{
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
+
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || result == nullptr) {
+			return ExportInvalidArgument;
+		}
+
+		json j = json::object();
+		if (config != nullptr && config[0] != '\0') {
+			if (!TryParseJson(config, j)) {
+				return ExportInvalidJson;
+			}
+		}
+
+		cv::Point origin(0, 0);
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		if (mroi.width <= 0 || mroi.height <= 0) {
+			mroi = TryGetConfigMaskRect(j);
+		}
+
+		const cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+		const bool useRoi = (mroi.width > 0 && mroi.height > 0 && (mroi & imageRect) == mroi);
+		if (useRoi) {
+			mat = mat(mroi);
+			origin = cv::Point(mroi.x, mroi.y);
+		}
+
+		cvcore::distortion::DistortionP9Config distortionConfig = ParseDistortionP9Config(j);
+		cvcore::distortion::DistortionP9Result calcResult = cvcore::distortion::calculateDistortionP9(mat, distortionConfig);
+		if (!calcResult.success) {
+			return ExportAlgorithmFailed;
+		}
+
+		json outputJson;
+		outputJson["algorithm"] = "DistortionP9";
+		outputJson["version"] = "1.0";
+		outputJson["success"] = calcResult.success;
+		outputJson["message"] = calcResult.message;
+		outputJson["count"] = calcResult.points.size();
+		outputJson["candidateCount"] = calcResult.candidateCount;
+		outputJson["image"] = {
+			{ "width", img.cols },
+			{ "height", img.rows },
+			{ "roi", RectToJson(useRoi ? mroi : cv::Rect(0, 0, mat.cols, mat.rows), cv::Point(0, 0)) }
+		};
+		outputJson["configUsed"] = DistortionP9ConfigToJson(distortionConfig);
+		outputJson["metrics"] = DistortionP9MetricsToJson(calcResult.metrics);
+		outputJson["method"] = {
+			{ "pointOrder", "TL,TC,TR,ML,C,MR,BL,BC,BR" },
+			{ "tvFormula", "((edge1 + edge2) / 2 - center) / center * 100; TvCaclWay=1 halves the percentage" },
+			{ "edgeFormula", "signed middle-point bow relative to the edge chord, normalized by average grid span" }
+		};
+
+		outputJson["points"] = json::array();
+		for (const auto& point : calcResult.points) {
+			outputJson["points"].push_back(DistortionP9PointToJson(point, origin));
+		}
+
+		outputJson["grid"] = json::array();
+		for (int row = 0; row < distortionConfig.expectedRows; ++row) {
+			json rowJson = json::array();
+			for (int col = 0; col < distortionConfig.expectedCols; ++col) {
+				const int id = row * distortionConfig.expectedCols + col;
+				rowJson.push_back(id);
+			}
+			outputJson["grid"].push_back(std::move(rowJson));
 		}
 
 		return CopyJsonResult(outputJson, result);

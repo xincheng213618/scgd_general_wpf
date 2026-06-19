@@ -135,6 +135,14 @@ extern "C" COLORVISIONCORE_API int M_CalSFRBmw4In1(
     const char* config,
     char** result);
 
+// 9-point distortion measurement.
+// Returns JSON with detected 3x3 points and horizontal/vertical TV + point9 metrics.
+extern "C" COLORVISIONCORE_API int M_CalDistortionP9(
+    HImage img,
+    RoiRect roi,
+    const char* config,
+    char** result);
+
 typedef void(__stdcall* CVNativeLogCallback)(int source, int level, const char* message);
 
 extern "C" COLORVISIONCORE_API void M_SetLogCallback(CVNativeLogCallback callback);

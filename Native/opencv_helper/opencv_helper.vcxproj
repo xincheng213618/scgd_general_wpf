@@ -191,6 +191,7 @@
     <ClInclude Include="..\include\custom_structs.h" />
     <ClInclude Include="..\include\opencv_media_export.h" />
     <ClInclude Include="..\include\video_export.h" />
+    <ClInclude Include="algorithm\distortion\distortion_p9.h" />
     <ClInclude Include="algorithm\sfr\sfr_bmw4.h" />
     <ClInclude Include="algorithm\sfr\sfr_slanted.h" />
     <ClInclude Include="framework.h" />
@@ -201,6 +202,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="algorithm.cpp" />
+    <ClCompile Include="algorithm\distortion\distortion_p9.cpp" />
     <ClCompile Include="algorithm\sfr\sfr_bmw4.cpp" />
     <ClCompile Include="algorithm\sfr\sfr_slanted.cpp" />
     <ClCompile Include="common.cpp" />

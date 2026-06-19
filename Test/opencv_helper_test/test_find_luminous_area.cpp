@@ -7,12 +7,14 @@
 #include "../../Native/include/opencv_media_export.h"
 #include "../../Native/include/video_export.h"
 #include <atomic>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <combaseapi.h>
 #include <cstddef>
 #include <cstdio>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <limits>
 #include <string>
@@ -692,6 +694,133 @@ bool smokeSfrBmw4In1SyntheticTarget()
                     break;
                 }
             }
+        }
+    }
+
+    FreeResult(result);
+    return ok;
+}
+
+cv::Mat makeSyntheticDistortionP9Image()
+{
+    cv::Mat image(560, 560, CV_8UC1, cv::Scalar(12));
+    const std::array<cv::Point, 9> points = {
+        cv::Point(120, 98), cv::Point(280, 116), cv::Point(440, 96),
+        cv::Point(136, 280), cv::Point(280, 280), cv::Point(424, 280),
+        cv::Point(118, 444), cv::Point(280, 424), cv::Point(442, 446)
+    };
+
+    for (const cv::Point& point : points) {
+        cv::circle(image, point, 24, cv::Scalar(230), cv::FILLED, cv::LINE_AA);
+    }
+
+    cv::GaussianBlur(image, image, cv::Size(3, 3), 0.6);
+    return image;
+}
+
+bool validateDistortionP9Json(const json& output)
+{
+    if (output.is_discarded()
+        || !output.value("success", false)
+        || !output.contains("points")
+        || !output["points"].is_array()
+        || output["points"].size() != 9
+        || !output.contains("metrics")
+        || !output["metrics"].is_object()) {
+        return false;
+    }
+
+    const json& metrics = output["metrics"];
+    const double h = metrics.value("horizontalTvPercent", std::numeric_limits<double>::quiet_NaN());
+    const double v = metrics.value("verticalTvPercent", std::numeric_limits<double>::quiet_NaN());
+    return std::isfinite(h) && std::isfinite(v);
+}
+
+bool smokeDistortionP9SyntheticTarget()
+{
+    cv::Mat image = makeSyntheticDistortionP9Image();
+    HImage hImage = createHImageFromMat(image);
+
+    json config;
+    config["threshold"] = 100;
+    config["minRectSize"] = 30;
+    config["maxRectSize"] = 80;
+
+    char* result = nullptr;
+    const int ret = M_CalDistortionP9(hImage, { 0, 0, 0, 0 }, config.dump().c_str(), &result);
+
+    bool ok = false;
+    if (ret > 0 && result != nullptr) {
+        json output = json::parse(result, nullptr, false);
+        ok = validateDistortionP9Json(output);
+        if (ok) {
+            ok = output["points"][0].value("name", "") == "TL"
+                && output["points"][4].value("name", "") == "C"
+                && output["points"][8].value("name", "") == "BR"
+                && output["metrics"].value("horizontalTvPercent", 0.0) > 10.0
+                && output["metrics"].value("verticalTvPercent", 0.0) > 10.0;
+        }
+    }
+
+    FreeResult(result);
+    return ok;
+}
+
+std::filesystem::path findDesktopDistortionP9Fixture()
+{
+    char* userProfile = nullptr;
+    size_t userProfileLength = 0;
+    if (_dupenv_s(&userProfile, &userProfileLength, "USERPROFILE") != 0 || userProfile == nullptr || userProfile[0] == '\0') {
+        std::free(userProfile);
+        return {};
+    }
+
+    std::filesystem::path path = std::filesystem::path(userProfile) / "Desktop" / "DistortionP9" / "DistortionP9.tiff";
+    std::free(userProfile);
+    return std::filesystem::exists(path) ? path : std::filesystem::path();
+}
+
+bool smokeDistortionP9DesktopFixtureIfPresent()
+{
+    namespace fs = std::filesystem;
+    fs::path imagePath = findDesktopDistortionP9Fixture();
+    if (imagePath.empty()) {
+        std::cout << "DistortionP9 desktop fixture not present; skipped" << std::endl;
+        return true;
+    }
+
+    cv::Mat image = cv::imread(imagePath.string(), cv::IMREAD_UNCHANGED);
+    if (image.empty()) {
+        std::cerr << "Unable to read DistortionP9 fixture: " << imagePath.string() << std::endl;
+        return false;
+    }
+
+    HImage hImage = createHImageFromMat(image);
+
+    json config;
+    config["CommonParams"] = { { "brightNumX", 3 }, { "brightNumY", 3 } };
+    config["Point9Params"] = {
+        { "threshold", 20000 },
+        { "outRectSizeMin", 40 },
+        { "outRectSizeMax", 400 },
+        { "erodeKernel", 3 },
+        { "erodeTime", 0 }
+    };
+
+    char* result = nullptr;
+    const int ret = M_CalDistortionP9(hImage, { 0, 0, 0, 0 }, config.dump().c_str(), &result);
+
+    bool ok = false;
+    if (ret > 0 && result != nullptr) {
+        json output = json::parse(result, nullptr, false);
+        ok = validateDistortionP9Json(output);
+        if (ok) {
+            const json& center = output["points"][4];
+            const json& metrics = output["metrics"];
+            ok = nearlyEqual(center.value("x", 0.0), 4798.57, 5.0)
+                && nearlyEqual(center.value("y", 0.0), 3217.30, 5.0)
+                && nearlyEqual(metrics.value("horizontalTvPercent", 0.0), 9.58, 0.5)
+                && nearlyEqual(metrics.value("verticalTvPercent", 0.0), 9.58, 0.5);
         }
     }
 
@@ -1530,6 +1659,16 @@ int main(int argc, char* argv[])
 
     if (!smokeSfrBmw4In1SyntheticTarget()) {
         std::cerr << "M_CalSFRBmw4In1 synthetic BMW target test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeDistortionP9SyntheticTarget()) {
+        std::cerr << "M_CalDistortionP9 synthetic point9 test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeDistortionP9DesktopFixtureIfPresent()) {
+        std::cerr << "M_CalDistortionP9 desktop fixture test failed" << std::endl;
         return 1;
     }
 
