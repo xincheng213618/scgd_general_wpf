@@ -18,7 +18,6 @@ Shared helper module:
 - Optional overrides:
   - `COLORVISION_UPLOAD_URL`
   - `COLORVISION_UPLOAD_FOLDER`
-  - `COLORVISION_REMOTE_UPLOAD=0` to disable remote upload in `build.py`
 
 ## Script index
 
@@ -30,9 +29,7 @@ Before a remote upload, it now probes:
 - `GET /api/health`
 - `GET /api/ready`
 
-```powershell
-py Scripts\build.py --skip-build
-```
+Use `Scripts\release.bat` for normal releases. It calls this script and then builds/uploads the update package.
 
 ### `build_update.py`
 
@@ -122,12 +119,6 @@ $env:COLORVISION_UPLOAD_PASSWORD = "xincheng"
 ```
 
 If you do not set these two environment variables, the scripts now also fall back to `xincheng / xincheng` by default.
-
-## Local fallback without backend upload
-
-```powershell
-py Scripts\build.py --skip-remote-upload
-```
 
 ## Validation
 

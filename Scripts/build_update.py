@@ -374,7 +374,9 @@ def main() -> int:
     if old_zip:
         print(f"创建增量包: {incremental_zip}")
         make_incremental_zip(old_zip, new_version_dir, incremental_zip)
-        upload_file(incremental_zip, "ColorVision/Update")
+        if not upload_file(incremental_zip, "ColorVision/Update"):
+            print("增量包上传失败，终止发布。")
+            return 1
         # copy_with_progress(incremental_zip,"H:\\ColorVision\\Update")
 
     print("创建全量包")

@@ -55,7 +55,6 @@ export COLORVISION_UPLOAD_PASSWORD="xincheng"
 | `COLORVISION_UPLOAD_FOLDER` |アップロードフォルダー | `ColorVision` |
 | `COLORVISION_UPLOAD_USERNAME` |ユーザー名をアップロード | `xincheng` |
 | `COLORVISION_UPLOAD_PASSWORD` |アップロードパスワード | `xincheng` |
-| `COLORVISION_REMOTE_UPLOAD` |リモートアップロードを有効にするかどうか | `1` (有効) |
 
 ## build.py - メインプログラムのビルド
 
@@ -68,11 +67,6 @@ export COLORVISION_UPLOAD_PASSWORD="xincheng"
 # 完整构建（编译 + 打包 + 上传）
 py Scripts\build.py
 
-# 跳过构建，仅上传最新安装包
-py Scripts\build.py --skip-build
-
-# 跳过远程上传
-py Scripts\build.py --skip-remote-upload
 ```
 
 

@@ -80,11 +80,8 @@ dotnet run --project ColorVision/ColorVision.csproj
 Located in `Scripts/` directory:
 
 ```powershell
-# Build main installer and upload
-py Scripts\build.py
-
-# Build main installer without remote upload
-py Scripts\build.py --skip-remote-upload
+# Build, package, and publish main installer/update packages
+Scripts\release.bat
 
 # Build update packages
 py Scripts\build_update.py

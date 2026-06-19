@@ -307,13 +307,6 @@ def compare_and_write_version_weixin(
     )
 
 
-def env_flag(name: str, default: bool) -> bool:
-    value = os.environ.get(name)
-    if value is None:
-        return default
-    return value.strip().lower() not in {"0", "false", "no", "off"}
-
-
 def resolve_msbuild_path() -> Path:
     configured_path = os.environ.get("COLORVISION_MSBUILD_PATH")
     if configured_path:
@@ -348,8 +341,6 @@ def build_projects(base_path: Path) -> dict[str, ProjectConfig]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build and publish the ColorVision installer")
     parser.add_argument("--project", default=DEFAULT_PROJECT_NAME, help="Project name to build")
-    parser.add_argument("--skip-build", action="store_true", help="Skip MSBuild and Advanced Installer rebuild")
-    parser.add_argument("--skip-remote-upload", action="store_true", help="Do not upload the installer through the backend /upload API")
     parser.add_argument("--upload-url", default=None, help="Backend base URL for remote uploads")
     parser.add_argument("--upload-folder", default=os.environ.get("COLORVISION_UPLOAD_FOLDER", DEFAULT_UPLOAD_FOLDER), help="Remote folder path used by the backend upload endpoint")
     parser.add_argument("--upload-user", default=None, help="Backend upload username (prefer env var or shared default)")
@@ -358,8 +349,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--connect-timeout", type=int, default=DEFAULT_CONNECT_TIMEOUT, help="HTTP connect timeout in seconds")
     parser.add_argument("--read-timeout", type=int, default=DEFAULT_READ_TIMEOUT, help="HTTP read timeout in seconds")
     parser.add_argument("--upload-retries", type=int, default=DEFAULT_UPLOAD_RETRIES, help="Number of remote upload attempts")
-    parser.add_argument("--latest-file", help="Explicit installer file to publish")
-    parser.add_argument("--setup-files-dir", help="Override the Advanced Installer Setup Files directory")
     return parser.parse_args()
 
 
@@ -375,11 +364,10 @@ def main() -> int:
         return 2
 
     project = projects[args.project]
-    setup_files_dir = Path(args.setup_files_dir) if args.setup_files_dir else project.setup_files_dir
+    setup_files_dir = project.setup_files_dir
     if getattr(args, "upload_use_system_proxy", False):
         os.environ["COLORVISION_UPLOAD_USE_SYSTEM_PROXY"] = "1"
 
-    remote_upload_enabled = env_flag("COLORVISION_REMOTE_UPLOAD", True) and not args.skip_remote_upload
     upload_url = resolve_upload_base_url(args.upload_url)
     upload_username, upload_password = resolve_upload_credentials(
         args.upload_user,
@@ -390,37 +378,32 @@ def main() -> int:
         folder_name=args.upload_folder,
         username=upload_username,
         password=upload_password,
-        enabled=remote_upload_enabled,
+        enabled=True,
         connect_timeout=max(args.connect_timeout, 1),
         read_timeout=max(args.read_timeout, 1),
         max_retries=max(args.upload_retries, 1),
     )
 
-    if remote_upload_enabled and (not remote_settings.username or not remote_settings.password):
+    if not remote_settings.username or not remote_settings.password:
         print(
             "Remote upload requires Basic Auth credentials. "
-            "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD, "
-            "or pass --skip-remote-upload to only publish local copies."
+            "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD."
         )
         return 2
 
-    if not remote_upload_enabled:
-        print("Remote upload is disabled; primary release will be skipped (local WeChat/Baidu copies only).")
-
-    if remote_upload_enabled and not preflight_remote_upload(remote_settings):
+    if not preflight_remote_upload(remote_settings):
         print("Remote upload preflight failed; aborting before build/upload.")
         return 2
 
-    if not args.skip_build:
-        if not rebuild_project(
-            project.msbuild_path,
-            project.solution_path,
-            project.advanced_installer_path,
-            project.aip_path,
-        ):
-            return 1
+    if not rebuild_project(
+        project.msbuild_path,
+        project.solution_path,
+        project.advanced_installer_path,
+        project.aip_path,
+    ):
+        return 1
 
-    latest_file = Path(args.latest_file) if args.latest_file else get_latest_file(setup_files_dir)
+    latest_file = get_latest_file(setup_files_dir)
     print(setup_files_dir)
     print(f"latest_file: {latest_file}")
 
@@ -441,12 +424,13 @@ def main() -> int:
         project.changelog_src,
         project.wechat_target_directory / "CHANGELOG.md",
     )
-    compare_and_write_version(
+    if not compare_and_write_version(
         latest_version,
         latest_file,
         project.changelog_src,
         remote_settings=remote_settings,
-    )
+    ):
+        return 1
     return 0
 
 

@@ -51,7 +51,6 @@ export COLORVISION_UPLOAD_PASSWORD="xincheng"
 | `COLORVISION_UPLOAD_FOLDER` | 上传文件夹 | `ColorVision` |
 | `COLORVISION_UPLOAD_USERNAME` | 上传用户名 | `xincheng` |
 | `COLORVISION_UPLOAD_PASSWORD` | 上传密码 | `xincheng` |
-| `COLORVISION_REMOTE_UPLOAD` | 是否启用远程上传 | `1` (启用) |
 
 ## build.py - 主程序构建
 

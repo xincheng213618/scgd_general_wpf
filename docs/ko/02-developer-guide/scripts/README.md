@@ -49,7 +49,6 @@ COLORVISION_UPLOAD_PASSWORD="xincheng" 내보내기
 | `COLORVISION_UPLOAD_FOLDER` | 폴더 업로드 | '컬러비전' |
 | `COLORVISION_UPLOAD_USERNAME` | 사용자 이름 업로드 | `신청` |
 | `COLORVISION_UPLOAD_PASSWORD` | 비밀번호 업로드 | `신청` |
-| `COLORVISION_REMOTE_UPLOAD` | 원격 업로드 활성화 여부 | `1`(활성화) |
 
 ## build.py - 메인 프로그램 빌드
 
@@ -61,11 +60,6 @@ COLORVISION_UPLOAD_PASSWORD="xincheng" 내보내기
 # 빌드 완료(컴파일 + 패키지 + 업로드)
 pyScripts\build.py
 
-# 빌드를 건너뛰고 최신 설치 패키지만 업로드하세요.
-py 스크립트\build.py --skip-build
-
-# 원격 업로드 건너뛰기
-py 스크립트\build.py --skip-remote-upload
 ```
 ### 기능 설명
 
