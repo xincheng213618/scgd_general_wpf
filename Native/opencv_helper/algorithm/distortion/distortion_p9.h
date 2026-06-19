@@ -57,9 +57,12 @@ struct DistortionP9Metric {
 
 struct DistortionP9Result {
     bool success = false;
+    std::string statusCode;
     std::string message;
     cv::Size imageSize;
     int candidateCount = 0;
+    std::vector<std::string> warnings;
+    std::vector<DistortionP9Point> candidatePoints;
     std::vector<DistortionP9Point> points;
     DistortionP9Metric metrics;
 };

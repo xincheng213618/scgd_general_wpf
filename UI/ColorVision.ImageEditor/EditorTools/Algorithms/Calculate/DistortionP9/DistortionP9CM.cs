@@ -68,7 +68,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
                     string json = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                     resultPtr = IntPtr.Zero;
                     DistortionP9NativeResult? result = JsonConvert.DeserializeObject<DistortionP9NativeResult>(json);
-                    if (result == null || result.Metrics == null || result.Points.Count == 0)
+                    if (result == null)
                     {
                         Application.Current.Dispatcher.BeginInvoke(() =>
                             MessageBox.Show("9点畸变结果解析失败。", "9点畸变", MessageBoxButton.OK, MessageBoxImage.Error));
@@ -144,30 +144,57 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
             double radius = Math.Max(20.0 / zoom, 4.0);
             Pen linePen = new(Brushes.DeepSkyBlue, stroke);
             Pen circlePen = new(Brushes.OrangeRed, stroke * 1.5);
+            Pen candidatePen = new(Brushes.Gold, stroke * 1.2);
 
-            DistortionP9Point?[,] grid = BuildGrid(result.Points);
-            for (int row = 0; row < 3; ++row)
+            foreach (DistortionP9Point point in result.CandidatePoints)
             {
-                AddLine(drawContext, linePen, grid[row, 0], grid[row, 1], grid[row, 2]);
+                if (IsSelectedPoint(point, result.Points))
+                {
+                    continue;
+                }
+
+                AddCircle(drawContext, point, radius * 0.75, candidatePen, Brushes.Gold);
             }
 
-            for (int col = 0; col < 3; ++col)
+            if (result.Success)
             {
-                AddLine(drawContext, linePen, grid[0, col], grid[1, col], grid[2, col]);
+                DistortionP9Point?[,] grid = BuildGrid(result.Points);
+                for (int row = 0; row < 3; ++row)
+                {
+                    AddLine(drawContext, linePen, grid[row, 0], grid[row, 1], grid[row, 2]);
+                }
+
+                for (int col = 0; col < 3; ++col)
+                {
+                    AddLine(drawContext, linePen, grid[0, col], grid[1, col], grid[2, col]);
+                }
             }
 
             foreach (DistortionP9Point point in result.Points.OrderBy(p => p.Id))
             {
-                DVCircleText circle = new();
-                circle.Attribute.Center = new Point(point.X, point.Y);
-                circle.Attribute.Radius = radius;
-                circle.Attribute.Brush = Brushes.Transparent;
-                circle.Attribute.Pen = circlePen;
-                circle.Attribute.Text = point.Name ?? point.Id.ToString();
-                circle.Attribute.Foreground = Brushes.OrangeRed;
-                circle.Render();
-                drawContext.DrawCanvas.AddVisualCommand(circle);
+                AddCircle(drawContext, point, radius, circlePen, Brushes.OrangeRed);
             }
+        }
+
+        private static bool IsSelectedPoint(DistortionP9Point candidate, IReadOnlyCollection<DistortionP9Point> selectedPoints)
+        {
+            const double tolerance = 1.0;
+            return selectedPoints.Any(point =>
+                Math.Abs(point.X - candidate.X) <= tolerance &&
+                Math.Abs(point.Y - candidate.Y) <= tolerance);
+        }
+
+        private static void AddCircle(DrawEditorContext drawContext, DistortionP9Point point, double radius, Pen pen, Brush textBrush)
+        {
+            DVCircleText circle = new();
+            circle.Attribute.Center = new Point(point.X, point.Y);
+            circle.Attribute.Radius = radius;
+            circle.Attribute.Brush = Brushes.Transparent;
+            circle.Attribute.Pen = pen;
+            circle.Attribute.Text = point.Name ?? point.Id.ToString();
+            circle.Attribute.Foreground = textBrush;
+            circle.Render();
+            drawContext.DrawCanvas.AddVisualCommand(circle);
         }
 
         private static DistortionP9Point?[,] BuildGrid(IEnumerable<DistortionP9Point> points)
@@ -314,11 +341,26 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
         [JsonProperty("message")]
         public string? Message { get; set; }
 
+        [JsonProperty("statusCode")]
+        public string? StatusCode { get; set; }
+
         [JsonProperty("count")]
         public int Count { get; set; }
 
+        [JsonProperty("expectedCount")]
+        public int ExpectedCount { get; set; }
+
+        [JsonProperty("selectedCount")]
+        public int SelectedCount { get; set; }
+
         [JsonProperty("candidateCount")]
         public int CandidateCount { get; set; }
+
+        [JsonProperty("warnings")]
+        public List<string> Warnings { get; set; } = new();
+
+        [JsonProperty("diagnostics")]
+        public DistortionP9Diagnostics? Diagnostics { get; set; }
 
         [JsonProperty("metrics")]
         public DistortionP9Metrics? Metrics { get; set; }
@@ -326,8 +368,32 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
         [JsonProperty("points")]
         public List<DistortionP9Point> Points { get; set; } = new();
 
+        [JsonProperty("candidatePoints")]
+        public List<DistortionP9Point> CandidatePoints { get; set; } = new();
+
         [JsonIgnore]
         public string RawJson { get; set; } = string.Empty;
+    }
+
+    public sealed class DistortionP9Diagnostics
+    {
+        [JsonProperty("expectedPointCount")]
+        public int ExpectedPointCount { get; set; }
+
+        [JsonProperty("candidateCount")]
+        public int CandidateCount { get; set; }
+
+        [JsonProperty("missingCount")]
+        public int MissingCount { get; set; }
+
+        [JsonProperty("extraCount")]
+        public int ExtraCount { get; set; }
+
+        [JsonProperty("roiUsed")]
+        public bool RoiUsed { get; set; }
+
+        [JsonProperty("canCalculateMetrics")]
+        public bool CanCalculateMetrics { get; set; }
     }
 
     public sealed class DistortionP9Metrics

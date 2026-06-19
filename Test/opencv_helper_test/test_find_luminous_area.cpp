@@ -766,6 +766,71 @@ bool smokeDistortionP9SyntheticTarget()
     return ok;
 }
 
+bool smokeDistortionP9ReportsMissingPoint()
+{
+    cv::Mat image = makeSyntheticDistortionP9Image();
+    cv::circle(image, cv::Point(442, 446), 36, cv::Scalar(12), cv::FILLED, cv::LINE_AA);
+    HImage hImage = createHImageFromMat(image);
+
+    json config;
+    config["threshold"] = 100;
+    config["minRectSize"] = 30;
+    config["maxRectSize"] = 80;
+
+    char* result = nullptr;
+    const int ret = M_CalDistortionP9(hImage, { 0, 0, 0, 0 }, config.dump().c_str(), &result);
+
+    bool ok = false;
+    if (ret > 0 && result != nullptr) {
+        json output = json::parse(result, nullptr, false);
+        ok = !output.is_discarded()
+            && output.value("success", true) == false
+            && output.value("statusCode", "") == "too_few_candidates"
+            && output.value("candidateCount", 0) == 8
+            && output.contains("candidatePoints")
+            && output["candidatePoints"].is_array()
+            && output["candidatePoints"].size() == 8
+            && output.contains("diagnostics")
+            && output["diagnostics"].value("missingCount", 0) == 1;
+    }
+
+    FreeResult(result);
+    return ok;
+}
+
+bool smokeDistortionP9ReportsExtraCandidateWarning()
+{
+    cv::Mat image = makeSyntheticDistortionP9Image();
+    cv::circle(image, cv::Point(52, 52), 20, cv::Scalar(230), cv::FILLED, cv::LINE_AA);
+    HImage hImage = createHImageFromMat(image);
+
+    json config;
+    config["threshold"] = 100;
+    config["minRectSize"] = 30;
+    config["maxRectSize"] = 80;
+
+    char* result = nullptr;
+    const int ret = M_CalDistortionP9(hImage, { 0, 0, 0, 0 }, config.dump().c_str(), &result);
+
+    bool ok = false;
+    if (ret > 0 && result != nullptr) {
+        json output = json::parse(result, nullptr, false);
+        ok = validateDistortionP9Json(output)
+            && output.value("statusCode", "") == "ok_with_warnings"
+            && output.value("candidateCount", 0) == 10
+            && output.contains("warnings")
+            && output["warnings"].is_array()
+            && !output["warnings"].empty()
+            && output.contains("candidatePoints")
+            && output["candidatePoints"].is_array()
+            && output["candidatePoints"].size() == 10
+            && output["diagnostics"].value("extraCount", 0) == 1;
+    }
+
+    FreeResult(result);
+    return ok;
+}
+
 std::filesystem::path findDesktopDistortionP9Fixture()
 {
     char* userProfile = nullptr;
@@ -1664,6 +1729,16 @@ int main(int argc, char* argv[])
 
     if (!smokeDistortionP9SyntheticTarget()) {
         std::cerr << "M_CalDistortionP9 synthetic point9 test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeDistortionP9ReportsMissingPoint()) {
+        std::cerr << "M_CalDistortionP9 missing-point diagnostic test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeDistortionP9ReportsExtraCandidateWarning()) {
+        std::cerr << "M_CalDistortionP9 extra-candidate warning test failed" << std::endl;
         return 1;
     }
 

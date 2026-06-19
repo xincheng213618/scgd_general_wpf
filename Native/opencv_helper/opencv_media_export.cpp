@@ -249,6 +249,15 @@ json DistortionP9MetricsToJson(const cvcore::distortion::DistortionP9Metric& met
 	};
 }
 
+json StringArrayToJson(const std::vector<std::string>& values)
+{
+	json output = json::array();
+	for (const auto& value : values) {
+		output.push_back(value);
+	}
+	return output;
+}
+
 json RectToJson(const cv::Rect& rect, const cv::Point& origin);
 
 json DistortionP9PointToJson(const cvcore::distortion::DistortionP9Point& point, const cv::Point& origin)
@@ -1338,16 +1347,17 @@ COLORVISIONCORE_API int M_CalDistortionP9(HImage img, RoiRect roi, const char* c
 
 		cvcore::distortion::DistortionP9Config distortionConfig = ParseDistortionP9Config(j);
 		cvcore::distortion::DistortionP9Result calcResult = cvcore::distortion::calculateDistortionP9(mat, distortionConfig);
-		if (!calcResult.success) {
-			return ExportAlgorithmFailed;
-		}
+		const int expectedCount = distortionConfig.expectedRows * distortionConfig.expectedCols;
 
 		json outputJson;
 		outputJson["algorithm"] = "DistortionP9";
 		outputJson["version"] = "1.0";
 		outputJson["success"] = calcResult.success;
+		outputJson["statusCode"] = calcResult.statusCode;
 		outputJson["message"] = calcResult.message;
 		outputJson["count"] = calcResult.points.size();
+		outputJson["selectedCount"] = calcResult.points.size();
+		outputJson["expectedCount"] = expectedCount;
 		outputJson["candidateCount"] = calcResult.candidateCount;
 		outputJson["image"] = {
 			{ "width", img.cols },
@@ -1355,7 +1365,16 @@ COLORVISIONCORE_API int M_CalDistortionP9(HImage img, RoiRect roi, const char* c
 			{ "roi", RectToJson(useRoi ? mroi : cv::Rect(0, 0, mat.cols, mat.rows), cv::Point(0, 0)) }
 		};
 		outputJson["configUsed"] = DistortionP9ConfigToJson(distortionConfig);
-		outputJson["metrics"] = DistortionP9MetricsToJson(calcResult.metrics);
+		outputJson["metrics"] = calcResult.success ? DistortionP9MetricsToJson(calcResult.metrics) : json(nullptr);
+		outputJson["warnings"] = StringArrayToJson(calcResult.warnings);
+		outputJson["diagnostics"] = {
+			{ "expectedPointCount", expectedCount },
+			{ "candidateCount", calcResult.candidateCount },
+			{ "missingCount", std::max(0, expectedCount - calcResult.candidateCount) },
+			{ "extraCount", std::max(0, calcResult.candidateCount - expectedCount) },
+			{ "roiUsed", useRoi },
+			{ "canCalculateMetrics", calcResult.success }
+		};
 		outputJson["method"] = {
 			{ "pointOrder", "TL,TC,TR,ML,C,MR,BL,BC,BR" },
 			{ "tvFormula", "((edge1 + edge2) / 2 - center) / center * 100; TvCaclWay=1 halves the percentage" },
@@ -1365,6 +1384,11 @@ COLORVISIONCORE_API int M_CalDistortionP9(HImage img, RoiRect roi, const char* c
 		outputJson["points"] = json::array();
 		for (const auto& point : calcResult.points) {
 			outputJson["points"].push_back(DistortionP9PointToJson(point, origin));
+		}
+
+		outputJson["candidatePoints"] = json::array();
+		for (const auto& point : calcResult.candidatePoints) {
+			outputJson["candidatePoints"].push_back(DistortionP9PointToJson(point, origin));
 		}
 
 		outputJson["grid"] = json::array();

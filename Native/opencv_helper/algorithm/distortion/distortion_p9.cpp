@@ -155,6 +155,22 @@ std::vector<DistortionP9Point> findCandidates(const cv::Mat& gray, const Distort
     return candidates;
 }
 
+void assignCandidateNames(std::vector<DistortionP9Point>& candidates)
+{
+    std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
+        const double rowTolerance = std::max(a.boundingRect.height, b.boundingRect.height) * 0.8;
+        if (std::abs(a.center.y - b.center.y) > rowTolerance) {
+            return a.center.y < b.center.y;
+        }
+        return a.center.x < b.center.x;
+    });
+
+    for (int i = 0; i < static_cast<int>(candidates.size()); ++i) {
+        candidates[static_cast<size_t>(i)].id = i;
+        candidates[static_cast<size_t>(i)].name = "Candidate_" + std::to_string(i + 1);
+    }
+}
+
 cv::Point2d normalizeAxis(cv::Point2d axis)
 {
     const double length = std::hypot(axis.x, axis.y);
@@ -324,6 +340,7 @@ DistortionP9Result calculateDistortionP9(const cv::Mat& img, const DistortionP9C
 
     cv::Mat gray = toGrayPreserveDepth(img);
     if (gray.empty()) {
+        result.statusCode = "invalid_image";
         result.message = "Invalid image or unsupported channel count.";
         return result;
     }
@@ -334,16 +351,42 @@ DistortionP9Result calculateDistortionP9(const cv::Mat& img, const DistortionP9C
 
     std::vector<DistortionP9Point> candidates = findCandidates(gray, effectiveConfig);
     result.candidateCount = static_cast<int>(candidates.size());
+    result.candidatePoints = candidates;
+    assignCandidateNames(result.candidatePoints);
+
+    const int expectedCount = effectiveConfig.expectedRows * effectiveConfig.expectedCols;
+    if (expectedCount <= 0) {
+        result.statusCode = "invalid_grid_size";
+        result.message = "Invalid grid size.";
+        return result;
+    }
+
+    if (result.candidateCount == 0) {
+        result.statusCode = "no_candidates";
+        result.message = "No valid point candidates were detected. Check ROI, threshold, target polarity, or point size limits.";
+        return result;
+    }
+
+    if (result.candidateCount < expectedCount) {
+        result.statusCode = "too_few_candidates";
+        result.message = "Detected fewer candidates than the expected point grid. Some points may be too dim, missing, outside ROI, or filtered by size.";
+        return result;
+    }
+
+    if (result.candidateCount > expectedCount) {
+        result.warnings.push_back("Detected more candidates than expected. The algorithm selected the largest grid-sized set; check light leakage, reflections, or false bright regions.");
+    }
 
     result.points = selectAndSortGrid(std::move(candidates), effectiveConfig);
-    const int expectedCount = effectiveConfig.expectedRows * effectiveConfig.expectedCols;
     if (static_cast<int>(result.points.size()) != expectedCount) {
-        result.message = "Unable to locate the expected 3x3 point grid.";
+        result.statusCode = "grid_sort_failed";
+        result.message = "Unable to sort candidates into the expected point grid. Check false positives, grid rotation, or ROI coverage.";
         return result;
     }
 
     result.metrics = calculateMetrics(result.points, effectiveConfig.tvCalcWay);
     result.success = true;
+    result.statusCode = result.warnings.empty() ? "ok" : "ok_with_warnings";
     result.message = "ok";
     return result;
 }
