@@ -15,6 +15,8 @@ downloads, and storage/index services.
 Common commands:
 
 ```powershell
+.\Web\Run-Web.bat
+
 cd Web/Frontend
 npm install
 npm run build

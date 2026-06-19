@@ -11,7 +11,7 @@ import {
   ToolOutlined,
 } from '@ant-design/icons'
 import { Button, Layout, Menu, Segmented, Space, Typography } from 'antd'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { ThemeMode } from '../types/admin'
 import type { AuthSession } from '../types/site'
@@ -45,47 +45,66 @@ export function PublicLayout({
 }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const isHome = location.pathname === '/'
+  const [homeScrolled, setHomeScrolled] = useState(false)
+
+  useEffect(() => {
+    if (!isHome) {
+      return
+    }
+    const syncScrollState = () => setHomeScrolled(window.scrollY > 12)
+    const frame = window.requestAnimationFrame(syncScrollState)
+    window.addEventListener('scroll', syncScrollState, { passive: true })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', syncScrollState)
+    }
+  }, [isHome])
 
   return (
     <Layout className="site-shell">
-      <Header className="site-header">
-        <Link to="/" className="site-brand">
-          <span className="pro-brand-mark">CV</span>
-          <span>
-            <Typography.Text strong>ColorVision</Typography.Text>
-            <Typography.Text type="secondary">发布中心</Typography.Text>
-          </span>
-        </Link>
-        <Menu
-          mode="horizontal"
-          selectedKeys={[selectedKey(location.pathname)]}
-          items={menuItems}
-          onClick={(item) => navigate(item.key)}
-          className="site-menu"
-        />
-        <Space className="site-actions">
-          <Segmented
-            size="small"
-            value={mode}
-            onChange={(value) => setMode(value as ThemeMode)}
-            options={[
-              { label: '跟随', value: 'system' },
-              { label: <SunOutlined />, value: 'light' },
-              { label: <MoonOutlined />, value: 'dark' },
-            ]}
+      <Header className={isHome ? `site-header home-header${homeScrolled ? ' is-scrolled' : ''}` : 'site-header'}>
+        <div className="site-header-inner">
+          <Link to="/" className="site-brand">
+            <span className="pro-brand-mark">
+              <img src="/brand/colorvision-icon.png" alt="" />
+            </span>
+            <span className="site-brand-copy">
+              <span className="brand-eyebrow">INTERNAL PORTAL</span>
+              <Typography.Text strong>ColorVision</Typography.Text>
+            </span>
+          </Link>
+          <Menu
+            mode="horizontal"
+            selectedKeys={[selectedKey(location.pathname)]}
+            items={menuItems}
+            onClick={(item) => navigate(item.key)}
+            className="site-menu"
           />
-          {session?.authenticated ? (
-            <Button type="primary" icon={<DashboardOutlined />} onClick={() => navigate('/admin')}>
-              后台
-            </Button>
-          ) : (
-            <Button icon={<LoginOutlined />} onClick={() => navigate('/login?next=/admin')}>
-              登录
-            </Button>
-          )}
-        </Space>
+          <Space className="site-actions">
+            <Segmented
+              size="small"
+              value={mode}
+              onChange={(value) => setMode(value as ThemeMode)}
+              options={[
+                { label: '跟随', value: 'system' },
+                { label: <SunOutlined />, value: 'light' },
+                { label: <MoonOutlined />, value: 'dark' },
+              ]}
+            />
+            {session?.authenticated ? (
+              <Button type="primary" icon={<DashboardOutlined />} onClick={() => navigate('/admin')}>
+                发布管理
+              </Button>
+            ) : (
+              <Button icon={<LoginOutlined />} onClick={() => navigate('/login?next=/admin')}>
+                登录后台
+              </Button>
+            )}
+          </Space>
+        </div>
       </Header>
-      <Content className="site-content">{children}</Content>
+      <Content className={isHome ? 'site-content home-site-content' : 'site-content'}>{children}</Content>
     </Layout>
   )
 }

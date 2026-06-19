@@ -69,9 +69,24 @@ def assets(asset_path: str):
     return _serve_asset(f"assets/{asset_path}")
 
 
+@frontend_spa.route("/brand/<path:asset_path>")
+def brand_assets(asset_path: str):
+    return _serve_asset(f"brand/{asset_path}")
+
+
+@frontend_spa.route("/media/<path:asset_path>")
+def media_assets(asset_path: str):
+    return _serve_asset(f"media/{asset_path}")
+
+
 @frontend_spa.route("/favicon.svg")
 def favicon():
     return _serve_asset("favicon.svg")
+
+
+@frontend_spa.route("/favicon.ico")
+def favicon_ico():
+    return _serve_asset("brand/colorvision.ico")
 
 
 @frontend_spa.route("/admin")

@@ -69,8 +69,10 @@ function App() {
     () => ({
       algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
       token: {
-        colorPrimary: '#1677ff',
-        borderRadius: 6,
+        colorPrimary: '#2563eb',
+        colorInfo: '#2563eb',
+        colorBgLayout: dark ? '#0f1117' : '#eef3f8',
+        borderRadius: 8,
         fontFamily:
           '"Segoe UI", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif',
       },
