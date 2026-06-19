@@ -2,6 +2,7 @@
 #include "Windows.h"
 #include "opencv_media_export.h"
 #include "algorithm.h"
+#include "algorithm/sfr/sfr_bmw4.h"
 #include <opencv2/opencv.hpp>
 #include <nlohmann\json.hpp>
 #include <string>
@@ -123,6 +124,93 @@ int CopyJsonResult(const json& outputJson, char** result)
 	std::memcpy(buffer, output.c_str(), length);
 	*result = buffer;
 	return static_cast<int>(length);
+}
+
+void ReadBmwSfr4ConfigFields(const json& j, cvcore::sfr::BmwSfr4Config& config)
+{
+	if (!j.is_object()) {
+		return;
+	}
+
+	config.pixelPitch = j.value("PixelPitch", j.value("pixelPitch", config.pixelPitch));
+	config.polynomialDegree = j.value("PolynomialDegree", j.value("polynomialDegree", config.polynomialDegree));
+	config.binning = j.value("Binning", j.value("binning", config.binning));
+	config.threshold = j.value("Threshold", j.value("threshold", config.threshold));
+	config.minTargetArea = j.value("MinArea", j.value("minTargetArea", config.minTargetArea));
+	config.maxTargetArea = j.value("MaxArea", j.value("maxTargetArea", config.maxTargetArea));
+	config.maxTargets = j.value("MaxTargets", j.value("maxTargets", config.maxTargets));
+	config.roiWidth = j.value("RoiWidth", j.value("roi_w", j.value("dst_roi_w", config.roiWidth)));
+	config.roiHeight = j.value("RoiHeight", j.value("roi_h", j.value("dst_roi_h", config.roiHeight)));
+	config.maxCurveLength = j.value("MaxCurveLength", j.value("maxCurveLength", config.maxCurveLength));
+	config.edgeOffsetRatio = j.value("EdgeOffsetRatio", j.value("edgeOffsetRatio", config.edgeOffsetRatio));
+	config.minAspectRatio = j.value("MinAspectRatio", j.value("minAspectRatio", config.minAspectRatio));
+	config.maxAspectRatio = j.value("MaxAspectRatio", j.value("maxAspectRatio", config.maxAspectRatio));
+	config.closeKernel = j.value("CloseKernel", j.value("closeKernel", config.closeKernel));
+	config.openKernel = j.value("OpenKernel", j.value("openKernel", config.openKernel));
+	config.borderMargin = j.value("BorderMargin", j.value("borderMargin", config.borderMargin));
+	config.requireFullTarget = j.value("RequireFullTarget", j.value("requireFullTarget", config.requireFullTarget));
+	config.requireFourCurves = j.value("RequireFourCurves", j.value("requireFourCurves", config.requireFourCurves));
+	config.usePcaAngle = j.value("UsePcaAngle", j.value("usePcaAngle", config.usePcaAngle));
+
+	config.activeEdges[0] = j.value("ActiveLeft", j.value("active_Left", config.activeEdges[0]));
+	config.activeEdges[1] = j.value("ActiveTop", j.value("active_Top", config.activeEdges[1]));
+	config.activeEdges[2] = j.value("ActiveRight", j.value("active_Right", config.activeEdges[2]));
+	config.activeEdges[3] = j.value("ActiveBottom", j.value("active_Bottom", config.activeEdges[3]));
+}
+
+cvcore::sfr::BmwSfr4Config ParseBmwSfr4Config(const json& root)
+{
+	cvcore::sfr::BmwSfr4Config config;
+	ReadBmwSfr4ConfigFields(root, config);
+	if (root.contains("sfrAutoPoi1")) {
+		ReadBmwSfr4ConfigFields(root.at("sfrAutoPoi1"), config);
+	}
+	return config;
+}
+
+json RectToJson(const cv::Rect& rect, const cv::Point& origin)
+{
+	return json{
+		{ "x", rect.x + origin.x },
+		{ "y", rect.y + origin.y },
+		{ "w", rect.width },
+		{ "h", rect.height }
+	};
+}
+
+json PointToJson(const cv::Point2d& point, const cv::Point& origin)
+{
+	return json{
+		{ "x", point.x + origin.x },
+		{ "y", point.y + origin.y }
+	};
+}
+
+json SfrCurveToJson(const cvcore::sfr::BmwSfr4Curve& curve, const cv::Point& origin, int maxCurveLength)
+{
+	json curveJson;
+	curveJson["id"] = curve.id;
+	curveJson["name"] = curve.name;
+	curveJson["roi"] = RectToJson(curve.roi, origin);
+	curveJson["edgeSlope"] = curve.sfr.edgeSlope;
+	curveJson["mtf10_norm"] = curve.sfr.mtf10_norm;
+	curveJson["mtf50_norm"] = curve.sfr.mtf50_norm;
+	curveJson["mtf10_cypix"] = curve.sfr.mtf10_cypix;
+	curveJson["mtf50_cypix"] = curve.sfr.mtf50_cypix;
+
+	int length = static_cast<int>(std::min(curve.sfr.freq.size(), curve.sfr.sfr.size()));
+	if (maxCurveLength > 0) {
+		length = std::min(length, maxCurveLength);
+	}
+
+	curveJson["frequency"] = json::array();
+	curveJson["domainSamplingData"] = json::array();
+	for (int i = 0; i < length; ++i) {
+		curveJson["frequency"].push_back(curve.sfr.freq[static_cast<size_t>(i)]);
+		curveJson["domainSamplingData"].push_back(curve.sfr.sfr[static_cast<size_t>(i)]);
+	}
+
+	return curveJson;
 }
 
 struct CoTaskMemBufferDeleter
@@ -1039,6 +1127,63 @@ COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* 
 		}
 		outputJson["KeyRegions"] = rectsArray;
 		outputJson["Count"] = keyRects.size();
+
+		return CopyJsonResult(outputJson, result);
+	});
+}
+
+COLORVISIONCORE_API int M_CalSFRBmw4In1(HImage img, RoiRect roi, const char* config, char** result)
+{
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
+
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || result == nullptr) {
+			return ExportInvalidArgument;
+		}
+
+		json j = json::object();
+		if (config != nullptr && config[0] != '\0') {
+			if (!TryParseJson(config, j)) {
+				return ExportInvalidJson;
+			}
+		}
+
+		cv::Point origin(0, 0);
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		const cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+		const bool useRoi = (mroi.width > 0 && mroi.height > 0 && (mroi & imageRect) == mroi);
+		if (useRoi) {
+			mat = mat(mroi);
+			origin = cv::Point(mroi.x, mroi.y);
+		}
+
+		cvcore::sfr::BmwSfr4Config sfrConfig = ParseBmwSfr4Config(j);
+		cvcore::sfr::BmwSfr4Result calcResult = cvcore::sfr::calculateBmwSfr4In1(mat, sfrConfig);
+		if (calcResult.points.empty()) {
+			return ExportAlgorithmFailed;
+		}
+
+		json outputJson;
+		outputJson["count"] = calcResult.points.size();
+		outputJson["result"] = json::array();
+
+		for (const auto& point : calcResult.points) {
+			json pointJson;
+			pointJson["name"] = point.name;
+			pointJson["center"] = PointToJson(point.center, origin);
+			pointJson["angle"] = point.angleRadians;
+			pointJson["targetRect"] = RectToJson(point.targetRect, origin);
+			pointJson["data"] = json::array();
+
+			for (const auto& curve : point.curves) {
+				pointJson["data"].push_back(SfrCurveToJson(curve, origin, sfrConfig.maxCurveLength));
+			}
+
+			outputJson["result"].push_back(std::move(pointJson));
+		}
 
 		return CopyJsonResult(outputJson, result);
 	});

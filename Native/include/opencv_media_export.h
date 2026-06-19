@@ -125,6 +125,16 @@ extern "C" COLORVISIONCORE_API int M_CalSFRMultiChannel(
     double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
     double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l);
 
+// BMW target SFR 4-in-1.
+// Returns JSON compatible with SFR2 result shape:
+// { "result": [ { "name": "Point_1", "data": [
+//   { "id": 0, "frequency": [...], "domainSamplingData": [...] }, ... ] } ] }
+extern "C" COLORVISIONCORE_API int M_CalSFRBmw4In1(
+    HImage img,
+    RoiRect roi,
+    const char* config,
+    char** result);
+
 typedef void(__stdcall* CVNativeLogCallback)(int source, int level, const char* message);
 
 extern "C" COLORVISIONCORE_API void M_SetLogCallback(CVNativeLogCallback callback);

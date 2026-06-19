@@ -60,6 +60,9 @@
     <ClInclude Include="algorithm\sfr\sfr_slanted.h">
       <Filter>算法\SFR</Filter>
     </ClInclude>
+    <ClInclude Include="algorithm\sfr\sfr_bmw4.h">
+      <Filter>算法\SFR</Filter>
+    </ClInclude>
     <ClInclude Include="include\cvcore\sfr.h">
       <Filter>接口</Filter>
     </ClInclude>
@@ -90,6 +93,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="algorithm\sfr\sfr_slanted.cpp">
+      <Filter>算法\SFR</Filter>
+    </ClCompile>
+    <ClCompile Include="algorithm\sfr\sfr_bmw4.cpp">
       <Filter>算法\SFR</Filter>
     </ClCompile>
     <ClCompile Include="exports\sfr_export.cpp">

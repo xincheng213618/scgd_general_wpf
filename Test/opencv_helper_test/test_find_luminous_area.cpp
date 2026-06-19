@@ -627,6 +627,78 @@ bool smokeSfrMatchesSfrmat5ColorFixture()
         && nearlyEqual(mtf50L, mtf50CyL / 0.5, 1e-9);
 }
 
+cv::Mat makeSyntheticBmwTargetImage()
+{
+    const int size = 720;
+    const cv::Scalar background(95, 145, 82);
+    cv::Mat image(size, size, CV_8UC3, background);
+
+    cv::Point center(size / 2, size / 2);
+    cv::Size radius(165, 165);
+    cv::Scalar black(8, 8, 8);
+
+    cv::ellipse(image, center, radius, 0.0, 270.0, 360.0, black, cv::FILLED, cv::LINE_AA);
+    cv::ellipse(image, center, radius, 0.0, 90.0, 180.0, black, cv::FILLED, cv::LINE_AA);
+    cv::GaussianBlur(image, image, cv::Size(5, 5), 0.9);
+
+    cv::Mat rotated;
+    cv::Mat transform = cv::getRotationMatrix2D(center, 4.0, 1.0);
+    cv::warpAffine(image, rotated, transform, image.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, background);
+    return rotated;
+}
+
+bool smokeSfrBmw4In1SyntheticTarget()
+{
+    cv::Mat image = makeSyntheticBmwTargetImage();
+    HImage hImage = createHImageFromMat(image);
+
+    json config;
+    config["MinArea"] = 2000;
+    config["MaxTargets"] = 1;
+    config["RoiWidth"] = 72;
+    config["RoiHeight"] = 72;
+    config["CloseKernel"] = 17;
+    config["EdgeOffsetRatio"] = 0.42;
+    config["MaxCurveLength"] = 128;
+
+    char* result = nullptr;
+    const int ret = M_CalSFRBmw4In1(hImage, { 0, 0, 0, 0 }, config.dump().c_str(), &result);
+
+    bool ok = false;
+    if (ret > 0 && result != nullptr) {
+        json output = json::parse(result, nullptr, false);
+        ok = !output.is_discarded()
+            && output.contains("result")
+            && output["result"].is_array()
+            && !output["result"].empty();
+
+        if (ok) {
+            const json& point = output["result"][0];
+            ok = point.contains("data")
+                && point["data"].is_array()
+                && point["data"].size() == 4;
+        }
+
+        if (ok) {
+            for (const auto& curve : output["result"][0]["data"]) {
+                ok = curve.contains("id")
+                    && curve.contains("frequency")
+                    && curve.contains("domainSamplingData")
+                    && curve["frequency"].is_array()
+                    && curve["domainSamplingData"].is_array()
+                    && curve["frequency"].size() >= 8
+                    && curve["domainSamplingData"].size() == curve["frequency"].size();
+                if (!ok) {
+                    break;
+                }
+            }
+        }
+    }
+
+    FreeResult(result);
+    return ok;
+}
+
 bool smokeConvertImageHandlesStrideAndOwnedBuffer()
 {
     const int width = 7;
@@ -1453,6 +1525,11 @@ int main(int argc, char* argv[])
 
     if (!smokeSfrMatchesSfrmat5ColorFixture()) {
         std::cerr << "M_CalSFRMultiChannel sfrmat5 color fixture regression test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeSfrBmw4In1SyntheticTarget()) {
+        std::cerr << "M_CalSFRBmw4In1 synthetic BMW target test failed" << std::endl;
         return 1;
     }
 
