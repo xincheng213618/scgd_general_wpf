@@ -12,7 +12,7 @@
 | `Engine/` | 핵심 엔진, 디바이스 서비스, 템플릿 시스템, 프로세스 실행 | [엔진 개발 가이드](../../02-developer-guide/engine-development/README.md) / [엔진 컴포넌트 개요](../../04-api-reference/engine-components/README.md) |
 | `Plugins/` | 런타임 플러그인 및 확장 기능 | [플러그인 개발 개요](../../02-developer-guide/plugin-development/overview.md) |
 | `Projects/` | 고객 프로젝트 패키지, 업무 맞춤 구현, 연동 데모 | [프로젝트 설명](../../00-projects/README.md) / [프로젝트 패키지 개요](../../04-api-reference/projects/README.md) |
-| `Backend/marketplace/` | 플러그인 마켓 백엔드 서비스 | [플러그인 마켓 백엔드](../../02-developer-guide/backend/README.md) |
+| `Web/Backend/` | 플러그인 마켓 백엔드 서비스 | [플러그인 마켓 백엔드](../../02-developer-guide/backend/README.md) |
 | `Scripts/` | 빌드, 패키지, 릴리스 스크립트 | [빌드 및 릴리스 스크립트](../../02-developer-guide/scripts/README.md) |
 | `ColorVisionSetup/` | 설치 프로그램 및 업데이트 프로그램 | [자동 업데이트 시스템](../../02-developer-guide/deployment/auto-update.md) |
 | `Test/` | xUnit, native helper, 백엔드, 스크립트 검증 | [테스트 및 검증 인수인계](../../02-developer-guide/testing.md) |

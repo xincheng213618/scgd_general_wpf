@@ -12,7 +12,7 @@
 | `Engine/` |コアエンジン、デバイスサービス、テンプレートシステム、プロセス実行 | [エンジン開発ガイド](../../02-developer-guide/engine-development/README.md) / [エンジン コンポーネントの概要](../../04-api-reference/engine-components/README.md) |
 | `Plugins/` |ランタイム プラグインと拡張機能 | [プラグイン開発の概要](../../02-developer-guide/plugin-development/overview.md) |
 | `Projects/` | 顧客プロジェクトパッケージ、業務カスタマイズ、連携デモ | [プロジェクト説明](../../00-projects/README.md) / [プロジェクトパッケージ概要](../../04-api-reference/projects/README.md) |
-| `Backend/marketplace/` |プラグインマーケットバックエンドサービス | [プラグイン マーケット バックエンド](../../02-developer-guide/backend/README.md) |
+| `Web/Backend/` |プラグインマーケットバックエンドサービス | [プラグイン マーケット バックエンド](../../02-developer-guide/backend/README.md) |
 | `Scripts/` |スクリプトのビルド、パッケージ化、リリース | [スクリプトのビルドとリリース](../../02-developer-guide/scripts/README.md) |
 | `ColorVisionSetup/` |インストーラーと更新プログラム | [自動更新システム](../../02-developer-guide/deployment/auto-update.md) |
 | `Test/` | xUnit、native helper、バックエンド、スクリプト検証 | [テストと検証の引き継ぎ](../../02-developer-guide/testing.md) |

@@ -6,16 +6,15 @@ The ColorVision Plugin Marketplace Backend is a lightweight service based on Pyt
 
 The backend service provides the following core features:
 
-- **Web Management Interface** - Browse, search, download, and upload plugins
+- **React Web Portal** - Browse, search, download, publish, and operate the service
 - **REST API** - Provides interfaces for the WPF desktop client
-- **Legacy Compatibility** - Supports compatibility routes for older client versions
 - **Download Statistics** - SQLite-based download statistics
 
 ## Project Structure
 
 ```
-Backend/marketplace/
-├── app.py              # Flask app main entry (Web UI + API + legacy compatibility)
+Web/Backend/
+├── app.py              # Flask app main entry (React SPA + API + file serving)
 ├── app_changelog.py    # Changelog management module
 ├── app_releases.py     # App version release management
 ├── catalog_view_models.py  # Plugin catalog view models
@@ -34,14 +33,8 @@ Backend/marketplace/
 ├── storage_paths.py    # Storage path management
 ├── storage_uploads.py  # Upload processing
 ├── update_retention.py # Update package retention policy
-├── static/             # Static assets
-└── templates/          # Jinja2 template files
-    ├── base.html
-    ├── index.html
-    ├── plugins.html
-    ├── plugin_detail.html
-    ├── upload.html
-    └── browse.html
+├── routes/             # Flask blueprints for site data, auth, admin APIs, files
+└── services/           # Indexing, auth, scheduler, and storage event services
 ```
 
 ## Installation and Running
@@ -54,7 +47,7 @@ Backend/marketplace/
 ### Install Dependencies
 
 ```bash
-cd Backend/marketplace
+cd Web/Backend
 pip install -r requirements.txt
 ```
 
@@ -104,19 +97,18 @@ python app.py --port 9999
 
 ## API Interfaces
 
-### Web UI Routes
+### React Web Routes
 
 | Route | Function |
 |------|------|
 | `GET /` | Home — Storage overview, quick links |
 | `GET /plugins` | Plugin marketplace — Search, categories, sorting |
 | `GET /plugins/{id}` | Plugin details — Version list, README, download |
-| `GET /upload` | Upload page |
-| `POST /upload` | Process upload |
 | `GET /browse[/path]` | File browser |
 | `GET /releases` | Release version list |
 | `GET /updates` | Update package list |
 | `GET /tools` | Tool download list |
+| `GET /admin[/path]` | Management system |
 
 ### REST API
 
@@ -133,12 +125,12 @@ python app.py --port 9999
 | GET | `/api/health` | Health check endpoint |
 | GET | `/api/ready` | Readiness check endpoint |
 
-### Legacy Compatibility Routes
+### Build Script and Client Download Routes
 
 | Route Pattern | Description |
 |----------|------|
-| `PUT /upload/{path}` | Compatible with old build script uploads |
-| `/D%3A/ColorVision/Plugins/{path}` | Compatible with old client version check and download |
+| `PUT /upload/{path}` | Direct artifact upload for build scripts |
+| `/D%3A/ColorVision/Plugins/{path}` | Desktop client version check and download |
 
 ## Authentication
 
@@ -204,8 +196,7 @@ The backend integrates with build scripts in the `Scripts/` directory:
 |------|------|------|
 | Language | Python | 3.9+ |
 | Framework | Flask | >=3.0 |
-| Template Engine | Jinja2 | Built-in |
-| CSS Framework | Bootstrap 5 | 5.x |
+| Frontend | React + TypeScript + Ant Design | See `Web/Frontend` |
 | Database | SQLite | Built-in |
 | Markdown Rendering | markdown | >=3.8 |
 

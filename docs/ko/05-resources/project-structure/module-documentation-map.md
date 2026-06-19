@@ -17,7 +17,7 @@
 | `Plugins/` | 런타임 플러그인 및 확장 기능 | [기존 플러그인 기능](../../04-api-reference/plugins/README.md) | [현재 플러그인 문서 커버리지](../../04-api-reference/plugins/current-plugin-coverage.md), [플러그인 기능 및 인수인계 매트릭스](../../04-api-reference/plugins/plugin-capability-matrix.md), [플러그인 개발 개요](../../02-developer-guide/plugin-development/overview.md) |
 | `Projects/` | 고객 프로젝트, 업무 맞춤 구현, 연동 데모 | [프로젝트 설명](../../00-projects/README.md) | [프로젝트 패키지 개요](../../04-api-reference/projects/README.md), [현재 프로젝트 문서 커버리지](../../04-api-reference/projects/current-project-coverage.md), [프로젝트 기능 및 인수인계 매트릭스](../../04-api-reference/projects/project-capability-matrix.md), [프로젝트 실행 및 인수인계 플레이북](../../04-api-reference/projects/project-package-playbook.md) |
 | `ColorVisionSetup/` | 설치 프로그램 및 업데이트 프로세스 | [배포 개요](../../02-developer-guide/deployment/overview.md) | [자동 업데이트 시스템](../../02-developer-guide/deployment/auto-update.md) |
-| `Backend/marketplace/` | 플러그인 마켓 백엔드 | [플러그인 마켓 백엔드](../../02-developer-guide/backend/README.md) | [개발 가이드](../../02-developer-guide/README.md) |
+| `Web/Backend/` | 플러그인 마켓 백엔드 | [플러그인 마켓 백엔드](../../02-developer-guide/backend/README.md) | [개발 가이드](../../02-developer-guide/README.md) |
 | `Scripts/` | 빌드, 패키지, 릴리스 스크립트 | [빌드 및 릴리스 스크립트](../../02-developer-guide/scripts/README.md) | [배포 개요](../../02-developer-guide/deployment/overview.md) |
 | `Test/` | xUnit, native helper, 백엔드, 스크립트 검증 | [테스트 및 검증 인수인계](../../02-developer-guide/testing.md) | [개발 가이드](../../02-developer-guide/README.md) |
 | `docs/` | 현재 문서 사이트 소스 코드 | [부록 및 자료](../README.md) | 현재 문서 |

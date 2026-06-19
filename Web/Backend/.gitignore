@@ -1,0 +1,4 @@
+marketplace.db
+storage/
+__pycache__/
+*.pyc

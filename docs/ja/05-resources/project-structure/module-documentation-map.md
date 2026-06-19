@@ -17,7 +17,7 @@
 | `Plugins/` | ランタイムプラグインと拡張機能 | [既存プラグイン機能](../../04-api-reference/plugins/README.md) | [現在のプラグイン文書カバレッジ](../../04-api-reference/plugins/current-plugin-coverage.md)、[プラグイン機能と引き継ぎマトリクス](../../04-api-reference/plugins/plugin-capability-matrix.md)、[プラグイン開発の概要](../../02-developer-guide/plugin-development/overview.md) |
 | `Projects/` | 顧客プロジェクト、業務カスタマイズ、連携デモ | [プロジェクト説明](../../00-projects/README.md) | [プロジェクトパッケージ概要](../../04-api-reference/projects/README.md)、[現在のプロジェクト文書カバレッジ](../../04-api-reference/projects/current-project-coverage.md)、[プロジェクト能力と引き継ぎマトリクス](../../04-api-reference/projects/project-capability-matrix.md)、[プロジェクト実行と引き継ぎプレイブック](../../04-api-reference/projects/project-package-playbook.md) |
 | `ColorVisionSetup/` |インストーラーとアップデートのプロセス | [展開の概要](../../02-developer-guide/deployment/overview.md) | [自動更新システム](../../02-developer-guide/deployment/auto-update.md) |
-| `Backend/marketplace/` |プラグイン マーケット バックエンド | [プラグイン マーケット バックエンド](../../02-developer-guide/backend/README.md) | [開発ガイド](../../02-developer-guide/README.md) |
+| `Web/Backend/` |プラグイン マーケット バックエンド | [プラグイン マーケット バックエンド](../../02-developer-guide/backend/README.md) | [開発ガイド](../../02-developer-guide/README.md) |
 | `Scripts/` |スクリプトのビルド、パッケージ化、リリース | [スクリプトのビルドとリリース](../../02-developer-guide/scripts/README.md) | [展開の概要](../../02-developer-guide/deployment/overview.md) |
 | `Test/` | xUnit、native helper、バックエンド、スクリプト検証 | [テストと検証の引き継ぎ](../../02-developer-guide/testing.md) | [開発ガイド](../../02-developer-guide/README.md) |
 | `docs/` |現在のドキュメント サイトのソース コード | [付録とリソース](../README.md) |現在のドキュメント |

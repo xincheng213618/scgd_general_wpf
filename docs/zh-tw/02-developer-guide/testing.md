@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | UI 與主程式邏輯測試 | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI 基礎設施、Copilot/MCP、日誌、Marketplace、PropertyGrid、終端緩衝、STNode、排序和編輯器輔助邏輯 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | native OpenCV helper 驗證 | `Test/opencv_helper_test/` | Visual C++、OpenCV、x64 | `opencv_helper` 側函式，例如 `M_FindLuminousArea` | Visual Studio 2022 或 `msbuild opencv_helper_test.vcxproj` |
-| 外掛市場後端測試 | `Backend/marketplace/` | Python/Flask | Marketplace API、release 記錄、上傳下載和儲存行為 | `python test_app.py`、`python test_app_releases.py` |
+| 外掛市場後端測試 | `Web/Backend/` | Python/Flask | Marketplace API、release 記錄、上傳下載和儲存行為 | `python test_app.py`、`python test_app_releases.py` |
 | 建置腳本測試 | `Scripts/` | Python | 建置、打包、發布腳本局部邏輯 | `pytest Scripts/test_*.py -v` |
 | 文件站驗證 | `docs/` | VitePress | 導航、Markdown、搜尋索引、靜態頁生成 | `npm run docs:build` |
 
@@ -54,7 +54,7 @@ Test/opencv_helper_test/build_test_find_luminous.bat
 ## 後端和腳本測試
 
 ```powershell
-cd Backend/marketplace
+cd Web/Backend
 python test_app.py
 python test_app_releases.py
 
@@ -72,7 +72,7 @@ pytest Scripts/test_*.py -v
 | Marketplace 下載或包校驗 | `MarketplacePackageDownloadServiceTests` 和外掛現場驗收 |
 | Flow/STNode 複製貼上 | `STNodeCopyPasteTests` 和 [模板與 Flow 鏈路](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test` 和 runtime DLL 輸出 |
-| 外掛市場後端 | `Backend/marketplace/test_app*.py` |
+| 外掛市場後端 | `Web/Backend/test_app*.py` |
 | 打包腳本 | `Scripts/test_*.py` 和目標打包腳本 |
 | 文件站 | `npm run docs:build`，必要時檢查路由 |
 

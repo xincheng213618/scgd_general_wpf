@@ -99,7 +99,7 @@ Scripts\package_project.bat ProjectARVR --no-upload
 ### Backend (Flask)
 
 ```bash
-cd Backend/marketplace
+cd Web/Backend
 pip install -r requirements.txt
 python app.py                    # Default: http://localhost:9998
 python app.py --storage H:\ColorVision --port 9999
@@ -136,7 +136,7 @@ Remove-Item -Recurse -Force **/bin, **/obj
 dotnet test Test/ColorVision.UI.Tests/
 
 # Backend tests
-cd Backend/marketplace
+cd Web/Backend
 python test_app.py
 python test_app_releases.py
 
@@ -156,7 +156,7 @@ $env:PYTHONPATH='Scripts'; python -m unittest Scripts.test.test_backend_client S
 
 - `Directory.Build.props`: Global MSBuild properties (signing, versions, TFMs)
 - `ColorVision.snk`: Strong-name key (optional - signing disabled if missing)
-- `Backend/marketplace/config.json`: Flask backend configuration
+- `Web/Backend/config.json`: Flask backend configuration
 - `ColorVision/log4net.config`: Logging configuration (PreserveNewest)
 
 ## External Dependencies

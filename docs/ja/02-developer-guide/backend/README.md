@@ -6,17 +6,16 @@ ColorVision プラグイン マーケット バックエンドは、プラグイ
 
 バックエンド サービスは、次のコア機能を提供します。
 
-- **Web 管理インターフェイス** - プラグインの参照、検索、ダウンロード、アップロード
+- **React Web ポータル** - 参照、検索、ダウンロード、公開、運用管理
 - **REST API** - WPF デスクトップ クライアント用のインターフェイスを提供します
-- **レガシー互換性** - 古いバージョンのクライアントとの互換性のあるルーティングをサポートします。
 - **ダウンロード統計** - SQLite ベースのダウンロード統計
 
 ## プロジェクトの構造
 
 
 ```
-Backend/marketplace/
-├── app.py              # Flask 应用主入口 (Web UI + API + 旧版兼容)
+Web/Backend/
+├── app.py              # Flask 应用主入口 (React SPA + API + 文件服务)
 ├── app_changelog.py    # 更新日志管理模块
 ├── app_releases.py     # 应用版本发布管理
 ├── catalog_view_models.py  # 插件目录视图模型
@@ -35,14 +34,8 @@ Backend/marketplace/
 ├── storage_paths.py    # 存储路径管理
 ├── storage_uploads.py  # 上传处理
 ├── update_retention.py # 更新包保留策略
-├── static/             # 静态资源
-└── templates/          # Jinja2 模板文件
-    ├── base.html
-    ├── index.html
-    ├── plugins.html
-    ├── plugin_detail.html
-    ├── upload.html
-    └── browse.html
+├── routes/             # Flask 蓝图：站点数据、认证、后台 API、文件服务
+└── services/           # 索引、鉴权、任务调度和存储事件服务
 ```
 
 
@@ -57,7 +50,7 @@ Backend/marketplace/
 
 
 ```bash
-cd Backend/marketplace
+cd Web/Backend
 pip install -r requirements.txt
 ```
 
@@ -112,19 +105,18 @@ python app.py --port 9999
 
 ## APIインターフェース
 
-### Web UI ルーティング
+### React Web ルーティング
 
 |ルーティング |機能 |
 |------|------|
 | `GET /` |ホーム — ストレージの概要、クイック リンク |
 | `GET /plugins` |プラグイン市場 - 検索、分類、並べ替え |
 | `GET /plugins/{id}` |プラグインの詳細 — バージョン リスト、README、ダウンロード |
-| `GET /upload` |アップロードページ |
-| `POST /upload` |アップロードの処理中 |
 | `GET /browse[/path]` |ファイルブラウザ |
 | `GET /releases` |リリースバージョンリスト |
 | `GET /updates` |パッケージリストを更新 |
 | `GET /tools` |ツールダウンロードリスト |
+| `GET /admin[/path]` |管理システム |
 
 ### REST API
 
@@ -141,12 +133,12 @@ python app.py --port 9999
 |入手 | `/api/health` |ヘルスチェックエンドポイント |
 |入手 | `/api/ready` |準備状況チェックエンドポイント |
 
-### 旧バージョン互換ルーティング
+### ビルド スクリプトとクライアント ダウンロード ルーティング
 
 |ルーティングモード |説明 |
 |----------|------|
-| `PUT /upload/{path}` |古いビルド スクリプトのアップロードとの互換性 |
-| `/D%3A/ColorVision/Plugins/{path}` |古いクライアントのバージョン確認とダウンロードに対応 |
+| `PUT /upload/{path}` |ビルド スクリプトの直接成果物アップロード |
+| `/D%3A/ColorVision/Plugins/{path}` |デスクトップ クライアントのバージョン確認とダウンロード |
 
 ## 認証
 
@@ -218,8 +210,7 @@ python test_upload_services.py
 |------|------|------|
 |言語 |パイソン | 3.9+ |
 |フレームワーク |フラスコ | >=3.0 |
-|テンプレートエンジン |ジンジャ2 |内蔵 |
-| CSSフレームワーク |ブートストラップ 5 | 5.x |
+|フロントエンド |React + TypeScript + Ant Design | `Web/Frontend` を参照 |
 |データベース | SQLite |内蔵 |
 |マークダウンレンダリング |値下げ | >=3.8 |
 

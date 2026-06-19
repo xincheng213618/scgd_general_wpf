@@ -14,7 +14,7 @@
 | 选择测试和验收命令 | [测试与验证交接手册](./testing.md) | `Test/ColorVision.UI.Tests/`、`Test/opencv_helper_test/`、后端和脚本测试 |
 | 修改 Flow 节点 | [FlowEngineLib 节点扩展](../04-api-reference/extensions/flow-node.md) | [FlowEngineLib 架构](../03-architecture/components/engine/flow-engine.md) |
 | 构建安装包或更新包 | [部署概览](./deployment/overview.md) | [构建与发布脚本](./scripts/README.md) |
-| 维护插件市场后端 | [插件市场后端](./backend/README.md) | `Backend/marketplace/README` 和测试脚本 |
+| 维护插件市场后端 | [插件市场后端](./backend/README.md) | `Web/Backend/README` 和测试脚本 |
 
 ## 开发前必须确认
 

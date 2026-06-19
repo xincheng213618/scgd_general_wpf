@@ -11,7 +11,7 @@
 | `Engine/` | 设备服务、模板系统、流程执行、MQTT、结果处理 | [Engine 组件与业务交接](../../04-api-reference/engine-components/README.md) |
 | `Plugins/` | 当前通用插件 | [现有插件能力说明](../../04-api-reference/plugins/README.md) |
 | `Projects/` | 客户项目包、业务定制和对接示例 | [项目说明](../../00-projects/README.md) |
-| `Backend/marketplace/` | 插件市场后端服务 | [插件市场后端](../../02-developer-guide/backend/README.md) |
+| `Web/Backend/` | 插件市场后端服务 | [插件市场后端](../../02-developer-guide/backend/README.md) |
 | `Scripts/` | 构建、打包、发布脚本 | [构建与发布脚本](../../02-developer-guide/scripts/README.md) |
 | `src/ColorVisionSetup/` | 安装器与更新程序 | [自动更新系统](../../02-developer-guide/deployment/auto-update.md) |
 | `Test/` | xUnit、native helper、后端和脚本验证 | [测试与验证交接手册](../../02-developer-guide/testing.md) |

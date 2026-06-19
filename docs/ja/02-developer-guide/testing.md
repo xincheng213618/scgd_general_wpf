@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | UI と host logic | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI infrastructure、Copilot/MCP、log、marketplace、PropertyGrid、terminal buffer、STNode、sorting | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | native OpenCV helper | `Test/opencv_helper_test/` | Visual C++、OpenCV、x64 | `opencv_helper` functions、例: `M_FindLuminousArea` | Visual Studio 2022 または `msbuild opencv_helper_test.vcxproj` |
-| marketplace backend | `Backend/marketplace/` | Python/Flask | Marketplace API、release record、upload/download、storage | `python test_app.py`、`python test_app_releases.py` |
+| marketplace backend | `Web/Backend/` | Python/Flask | Marketplace API、release record、upload/download、storage | `python test_app.py`、`python test_app_releases.py` |
 | build scripts | `Scripts/` | Python | build/package/publish helper logic | `pytest Scripts/test_*.py -v` |
 | docs site | `docs/` | VitePress | navigation、Markdown、search index、static pages | `npm run docs:build` |
 
@@ -52,7 +52,7 @@ Test/opencv_helper_test/build_test_find_luminous.bat
 ## backend と scripts
 
 ```powershell
-cd Backend/marketplace
+cd Web/Backend
 python test_app.py
 python test_app_releases.py
 
@@ -70,7 +70,7 @@ pytest Scripts/test_*.py -v
 | marketplace download/package check | `MarketplacePackageDownloadServiceTests` と plugin field acceptance |
 | Flow/STNode copy paste | `STNodeCopyPasteTests` と [Templates and Flow Chain](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test` と runtime DLL output |
-| marketplace backend | `Backend/marketplace/test_app*.py` |
+| marketplace backend | `Web/Backend/test_app*.py` |
 | packaging scripts | `Scripts/test_*.py` と対象 package script |
 | docs site | `npm run docs:build` と必要な route check |
 
