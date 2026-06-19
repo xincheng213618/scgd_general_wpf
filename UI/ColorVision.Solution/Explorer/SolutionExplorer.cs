@@ -60,7 +60,7 @@ namespace ColorVision.Solution.Explorer
         public SolutionExplorer(SolutionEnvironments solutionEnvironments)
         {
             SolutionEnvironments = solutionEnvironments ?? throw new ArgumentNullException(nameof(solutionEnvironments));
-            CopyFullPathCommand = new RelayCommand(_ => Common.NativeMethods.Clipboard.SetText(SolutionEnvironments.SolutionPath));
+            CopyFullPathCommand = new RelayCommand(_ => Common.Clipboard.SetText(SolutionEnvironments.SolutionPath));
             OpenFileInExplorerCommand = new RelayCommand(_ => Process.Start("explorer.exe", DirectoryInfo.FullName), _ => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(_ => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
             SaveCommand = new RelayCommand(_ => SaveConfig());

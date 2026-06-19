@@ -112,7 +112,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             PropertyEditorEditCommand = new RelayCommand(a => OpenPropertyEditor());
 
-            CopyConfigCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Config.ToJsonN()));
+            CopyConfigCommand = new RelayCommand(a => Common.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
@@ -934,7 +934,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             try
             {
-                Common.NativeMethods.Clipboard.SetText(CameraLicenseModel.LicenseValue);
+                Common.Clipboard.SetText(CameraLicenseModel.LicenseValue);
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, Properties.Resources.CopyLicense);
             }
             catch (Exception ex)

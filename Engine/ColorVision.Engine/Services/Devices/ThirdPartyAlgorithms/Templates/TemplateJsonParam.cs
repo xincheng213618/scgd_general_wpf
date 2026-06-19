@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 
         public void OpenEditTool()
         {
-            Common.NativeMethods.Clipboard.SetText(JsonValue);
+            Common.Clipboard.SetText(JsonValue);
             // 获取程序运行路径
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
 

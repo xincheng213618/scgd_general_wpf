@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Messages
                         Formatting = Formatting.Indented
                     }; 
                     string text = JsonConvert.SerializeObject(msgReturn, settings);
-                    Common.NativeMethods.Clipboard.SetText(text);
+                    Common.Clipboard.SetText(text);
                     MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
                 }
                 else if (stackPanel.Tag is MsgSend msgSend)
@@ -95,7 +95,7 @@ namespace ColorVision.Engine.Messages
                         Formatting = Formatting.Indented
                     };
                     string text = JsonConvert.SerializeObject(msgSend, settings);
-                    Common.NativeMethods.Clipboard.SetText(text);
+                    Common.Clipboard.SetText(text);
                     MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
 
                 }
@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Messages
                     Formatting = Formatting.Indented
                 };
                 string text = JsonConvert.SerializeObject(msgRecord.MsgSend, settings);
-                Common.NativeMethods.Clipboard.SetText(text);
+                Common.Clipboard.SetText(text);
                 MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
             }
 
@@ -144,7 +144,7 @@ namespace ColorVision.Engine.Messages
                     Formatting = Formatting.Indented
                 };
                 string text = JsonConvert.SerializeObject(msgRecord.MsgReturn, settings);
-                Common.NativeMethods.Clipboard.SetText(text);
+                Common.Clipboard.SetText(text);
                 MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
             }
         }
@@ -178,13 +178,13 @@ namespace ColorVision.Engine.Messages
                 Formatting = Formatting.Indented
             };
             string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgSend, settings);
-            Common.NativeMethods.Clipboard.SetText(text);
+            Common.Clipboard.SetText(text);
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgSend);
-            Common.NativeMethods.Clipboard.SetText(text);
+            Common.Clipboard.SetText(text);
         }
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
@@ -194,13 +194,13 @@ namespace ColorVision.Engine.Messages
                 Formatting = Formatting.Indented
             };
             string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgReturn, settings);
-            Common.NativeMethods.Clipboard.SetText(text);
+            Common.Clipboard.SetText(text);
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
             string text = JsonConvert.SerializeObject(MsgRecords[ListView1.SelectedIndex].MsgReturn);
-            Common.NativeMethods.Clipboard.SetText(text);
+            Common.Clipboard.SetText(text);
         }
 
         private void StateFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -257,7 +257,7 @@ namespace ColorVision.Engine.Messages
                 Content = ColorVision.Engine.Properties.Resources.Copy,
                 MinWidth = 72
             };
-            copyButton.Click += (_, _) => Common.NativeMethods.Clipboard.SetText(textBox.Text);
+            copyButton.Click += (_, _) => Common.Clipboard.SetText(textBox.Text);
 
             StackPanel buttonPanel = new()
             {

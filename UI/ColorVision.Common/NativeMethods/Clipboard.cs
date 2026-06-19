@@ -1,9 +1,9 @@
-﻿#pragma warning disable CA1806
+#pragma warning disable CA1806
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Common.NativeMethods
+namespace ColorVision.Common
 {
 
     /// <summary>

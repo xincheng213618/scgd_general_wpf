@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Templates
             this.Value = Value;
             this.Key = Key;
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
-            CopyNameCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Key));
+            CopyNameCommand = new RelayCommand(a => Common.Clipboard.SetText(Key));
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "复制名称", Command = CopyNameCommand });

@@ -221,7 +221,7 @@ namespace ColorVision.Solution
 
         public SolutionInfo()
         {
-            CopyCommand = new RelayCommand(a => { if (FullName != null) Common.NativeMethods.Clipboard.SetText(FullName); } , a => FullName!=null);
+            CopyCommand = new RelayCommand(a => { if (FullName != null) Common.Clipboard.SetText(FullName); } , a => FullName!=null);
 
             MenuItem menuItem = new MenuItem() { Header =ColorVision.Solution.Properties.Resources.CopyPath ,Command = CopyCommand };
             ContextMenu = new ContextMenu();

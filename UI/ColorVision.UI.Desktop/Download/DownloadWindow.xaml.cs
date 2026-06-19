@@ -302,7 +302,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             if (DownloadListView.SelectedItem is DownloadTask task)
             {
-                Common.NativeMethods.Clipboard.SetText(task.Url);
+                Common.Clipboard.SetText(task.Url);
             }
         }
 

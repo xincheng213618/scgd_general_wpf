@@ -339,7 +339,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 FileName = "https://www.json.cn/",
                 UseShellExecute = true
             });
-            Common.NativeMethods.Clipboard.SetText(IEditTemplateJson.JsonValue);
+            Common.Clipboard.SetText(IEditTemplateJson.JsonValue);
         }
 
         private void EditorModeToggle_Click(object sender, RoutedEventArgs e)

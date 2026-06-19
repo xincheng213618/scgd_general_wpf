@@ -225,7 +225,7 @@ namespace ColorVision.Solution.Explorer
         {
             if (!string.IsNullOrEmpty(FullPath))
             {
-                Common.NativeMethods.Clipboard.SetText(FullPath);
+                Common.Clipboard.SetText(FullPath);
             }
         }
 

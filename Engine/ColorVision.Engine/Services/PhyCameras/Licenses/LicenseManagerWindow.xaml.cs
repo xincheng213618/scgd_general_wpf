@@ -326,7 +326,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
             try
             {
-                Common.NativeMethods.Clipboard.SetText(SelectedLicense.Model.LicenseValue);
+                Common.Clipboard.SetText(SelectedLicense.Model.LicenseValue);
                 MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, Properties.Resources.CopyLicense);
             }
             catch (Exception ex)
