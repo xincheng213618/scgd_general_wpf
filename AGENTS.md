@@ -30,6 +30,7 @@ Engine/                   # Core engine layer
 ├── FlowEngineLib/        # Visual flow engine primitives
 ├── cvColorVision/        # OpenCV integration (C# wrapper)
 └── ColorVision.FileIO/   # File I/O processing
+Native/                   # C++ OpenCV helper DLL and exported algorithms
 Plugins/                  # Runtime-discovered plugins
 ├── EventVWR/, Spectrum/, SystemMonitor/, Pattern/, etc.
 Projects/                 # Customer-specific project bundles
@@ -37,7 +38,8 @@ Projects/                 # Customer-specific project bundles
 Backend/                  # Python Flask backend for plugin marketplace
 └── marketplace/          # Plugin distribution server
 Scripts/                  # Python build and publish scripts
-├── build.py, build_update.py, build_plugin.py, publish_plugin.py
+├── release.bat, build.py, build_update.py, package_cvxp.py, package_plugin.bat
+Test/                     # Native/OpenCV helper tests and other test projects
 docs/                     # VitePress documentation site
 ```
 
@@ -48,6 +50,8 @@ docs/                     # VitePress documentation site
 3. **Result Overlays**: Implement `IViewResult` + `IResultHandleBase`; visuals in `UI/ColorVision.ImageEditor/Draw/**`
 4. **PropertyGrid**: Use `[Category]`, `[DisplayName]`, `[Description]`, custom `PropertyEditorType`, `PropertyVisibility` attributes
 5. **Plugin Entry**: Implement `IPlugin`/`IPluginBase`; post-build copy to `ColorVision/bin/<Config>/net8.0-windows/Plugins/<Name>/`
+6. **Native OpenCV Algorithms**: Implement under `Native/opencv_helper/**`; export through `Native/include/opencv_media_export.h`; expose to .NET through `UI/ColorVision.Core/OpenCVMediaHelper.cs`; cover with `Test/opencv_helper_test/`
+7. **BMW 4-in-1 SFR**: Native entry point is `M_CalSFRBmw4In1`; implementation lives in `Native/opencv_helper/algorithm/sfr/sfr_bmw4.*`
 
 ## Build Commands
 
@@ -80,20 +84,16 @@ dotnet run --project ColorVision/ColorVision.csproj
 Located in `Scripts/` directory:
 
 ```powershell
-# Build, package, and publish main installer/update packages
+# Official release: build, package, upload installer, update LATEST_RELEASE,
+# upload incremental update package, and create full zip.
+# Bump Directory.Build.props <VersionPrefix> before running.
 Scripts\release.bat
-
-# Build update packages
-py Scripts\build_update.py
 
 # Build plugin package
 Scripts\package_plugin.bat Pattern --no-upload
 
 # Build project package
 Scripts\package_project.bat ProjectARVR --no-upload
-
-# Publish plugin to marketplace
-py Scripts\publish_plugin.py -p PluginId -v 1.0.0.1 -f Package-1.0.0.1.cvxp
 ```
 
 ### Backend (Flask)
@@ -139,7 +139,18 @@ dotnet test Test/ColorVision.UI.Tests/
 cd Backend/marketplace
 python test_app.py
 python test_app_releases.py
+
+# Release/script tests
+$env:PYTHONPATH='Scripts'; python -m unittest Scripts.test.test_backend_client Scripts.test.test_build Scripts.test.test_build_update Scripts.test.test_file_manager
 ```
+
+## Release Rules
+
+- `Scripts\release.bat` is the only normal release entry point.
+- `Scripts\build.py` is an internal release step; it always runs remote preflight, builds with MSBuild/Advanced Installer, uploads the main installer, uploads `CHANGELOG.md`, and updates remote `LATEST_RELEASE`.
+- Do not add or use local-only release shortcuts for the main installer.
+- `Scripts\build_update.py` uploads the incremental update package and returns a failure code if upload fails.
+- Local installer/zip/cvx files are expected release artifacts, not evidence of a local-only release.
 
 ## Key Configuration
 
