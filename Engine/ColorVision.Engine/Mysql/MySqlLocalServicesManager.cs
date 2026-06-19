@@ -23,7 +23,7 @@ namespace ColorVision.Database
     public class MySqlLocalConfig : IConfig
     {
         public static MySqlLocalConfig Instance => ConfigService.Instance.GetRequiredService<MySqlLocalConfig>();
-        public string ServiceName { get; set; } = "MySql80";
+        public string ServiceName { get; set; } = "MySQL";
 
         public string ImagePath { get; set; }
         public string MysqldPath { get; set; }

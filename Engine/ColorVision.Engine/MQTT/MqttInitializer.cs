@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
 using System.ServiceProcess;
@@ -9,6 +10,7 @@ namespace ColorVision.Engine.MQTT
 {
     public class MqttInitializer : InitializerBase
     {
+        private const string MosquittoServiceName = "mosquitto";
         private static readonly ILog log = LogManager.GetLogger(typeof(MqttInitializer));
 
         public MqttInitializer() { }
@@ -27,7 +29,7 @@ namespace ColorVision.Engine.MQTT
                 log.Info("检测到配置本机服务，正在尝试查找本机服务mosquitto");
                 try
                 {
-                    ServiceController serviceController = new ServiceController("Mosquitto Broker");
+                    ServiceController serviceController = new ServiceController(MosquittoServiceName);
                     try
                     {
                         var status = serviceController.Status;
@@ -35,17 +37,15 @@ namespace ColorVision.Engine.MQTT
 
                         if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
                         {
-                            if (Tool.IsAdministrator())
+                            ServiceHostResponse response = await ColorVisionServiceHostClient.Default.StartServiceAsync(
+                                MosquittoServiceName,
+                                timeoutSeconds: 45,
+                                timeout: TimeSpan.FromSeconds(60));
+
+                            if (!response.Success)
                             {
-                                serviceController.Start();
-                            }
-                            else
-                            {
-                                if (!Tool.ExecuteCommandAsAdmin("net start mosquitto"))
-                                {
-                                    log.Info("以管理员权限启动 mosquitto 服务失败。");
-                                    return;
-                                }
+                                log.Info($"ColorVisionServiceHost 启动 mosquitto 服务失败：{response.Message}");
+                                return;
                             }
                         }
                         else if (status == ServiceControllerStatus.Running)
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.MQTT
                     }
                     catch (InvalidOperationException)
                     {
-                        log.Info("未检测到 Mosquitto Broker 服务，请确认已正确安装。");
+                        log.Info("未检测到 mosquitto 服务，请确认已正确安装。");
                     }
                 }
                 catch (Exception ex)
