@@ -1,19 +1,12 @@
 #pragma warning disable CA1822,CA1863
 using log4net;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
 using ColorVision.UI;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.NetworkInformation;
 using System.Text;
 using System.Windows;
 
@@ -25,8 +18,6 @@ namespace ColorVision.UI.Desktop.Download
         private static readonly ILog log = LogManager.GetLogger(nameof(Aria2cDownloadManager));
         private static readonly string[] TellStatusKeys = { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage", "bittorrent", "files" };
         private const int PollIntervalMs = 300;
-        private const int LocalCopyBufferSize = 1024 * 1024;
-        private static readonly TimeSpan LocalCopyProgressInterval = TimeSpan.FromMilliseconds(150);
 
         private static Aria2cDownloadManager? _instance;
         private static readonly object _locker = new();
@@ -58,23 +49,16 @@ namespace ColorVision.UI.Desktop.Download
         public ObservableCollection<DownloadTask> Tasks { get; } = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _activeTasks = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _localCopyTasks = new();
-        private readonly string _aria2cPath;
+        private readonly DownloadTaskStore _store;
+        private readonly Aria2Daemon _daemon;
+        private readonly Aria2RpcClient _rpcClient;
+        private readonly DownloadReuseService _reuseService;
 
-        // JSON-RPC state
-        private Process? _aria2cProcess;
-        private readonly object _processLock = new();
-        private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(3) };
         private int _rpcPort = 6800;
         private const string RpcSecret = "ColorVisionDL";
-        private string RpcUrl => $"http://127.0.0.1:{_rpcPort}/jsonrpc";
-        private int _rpcRequestId;
         private Timer? _pollTimer;
         private int _disposeState;
         private int _isPollCallback;
-        /// <summary>
-        /// Tracks whether we are connected to a reused (orphan) aria2c process
-        /// </summary>
-        private bool _reusingExistingAria2c;
 
         /// <summary>
         /// Current RPC port used by the aria2c daemon
@@ -160,11 +144,14 @@ namespace ColorVision.UI.Desktop.Download
         private Aria2cDownloadManager()
         {
             Directory.CreateDirectory(DirectoryPath);
-            _aria2cPath = FindAria2c();
-            InitializeDatabase();
+            _store = new DownloadTaskStore(DbPath);
+            _store.Initialize();
 
             // Use configured port
             _rpcPort = Config.RpcPort;
+            _daemon = new Aria2Daemon();
+            _rpcClient = new Aria2RpcClient(() => _rpcPort, RpcSecret);
+            _reuseService = new DownloadReuseService();
 
             // Subscribe to config changes for live updates
             Config.PropertyChanged += OnConfigPropertyChanged;
@@ -207,7 +194,9 @@ namespace ColorVision.UI.Desktop.Download
             catch { }
 
             StopAria2cDaemon();
-            _httpClient.Dispose();
+            _daemon.Dispose();
+            _rpcClient.Dispose();
+            _reuseService.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -236,7 +225,7 @@ namespace ColorVision.UI.Desktop.Download
                 if (!IsAria2cRunning) return;
                 string limit = Config.EnableSpeedLimit ? $"{Config.SpeedLimitMB}M" : "0";
                 var options = new Dictionary<string, string> { ["max-overall-download-limit"] = limit };
-                await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options }).ConfigureAwait(false);
+                await _rpcClient.CallAsync("aria2.changeGlobalOption", options).ConfigureAwait(false);
                 PostToDispatcher(() => StatusMessage = Properties.Resources.ConfigApplied);
                 log.Info($"Speed limit applied: {limit}");
             }, "Failed to apply speed limit.");
@@ -249,7 +238,7 @@ namespace ColorVision.UI.Desktop.Download
                 if (IsDisposingOrDisposed) return;
                 if (!IsAria2cRunning) return;
                 var options = new Dictionary<string, string> { ["max-concurrent-downloads"] = Config.MaxConcurrentTasks.ToString() };
-                await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options }).ConfigureAwait(false);
+                await _rpcClient.CallAsync("aria2.changeGlobalOption", options).ConfigureAwait(false);
                 PostToDispatcher(() => StatusMessage = Properties.Resources.ConfigApplied);
                 log.Info($"Max concurrent tasks applied: {Config.MaxConcurrentTasks}");
             }, "Failed to apply max concurrent tasks.");
@@ -262,12 +251,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             get
             {
-                lock (_processLock)
-                {
-                    if (_aria2cProcess != null && !_aria2cProcess.HasExited)
-                        return true;
-                }
-                return _reusingExistingAria2c;
+                return _daemon.IsRunning;
             }
         }
 
@@ -287,40 +271,9 @@ namespace ColorVision.UI.Desktop.Download
             }, "Preload aria2c failed.");
         }
 
-        private string FindAria2c()
-        {
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string aria2cInTool = Path.Combine(appDir, "Assets", "Tool", "aria2c.exe");
-            if (File.Exists(aria2cInTool)) return aria2cInTool;
-
-            string aria2cInRoot = Path.Combine(appDir, "aria2c.exe");
-            if (File.Exists(aria2cInRoot)) return aria2cInRoot;
-
-            return "aria2c";
-        }
-
-        private void InitializeDatabase()
-        {
-            using var db = CreateDbClient();
-            db.CodeFirst.InitTables<DownloadEntry>();
-        }
-
         public static SqlSugarClient CreateDbClient()
         {
-            return new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = $"Data Source={DbPath}",
-                DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true,
-                InitKeyType = InitKeyType.Attribute
-            });
-        }
-
-        private sealed class RemoteFileValidationInfo
-        {
-            public long? ContentLength { get; init; }
-            public string? ETag { get; init; }
-            public DateTimeOffset? LastModified { get; init; }
+            return DownloadTaskStore.CreateDbClient(DbPath);
         }
 
         #region aria2c RPC Daemon
@@ -330,14 +283,8 @@ namespace ColorVision.UI.Desktop.Download
             if (IsDisposingOrDisposed)
                 return;
 
-            if (_reusingExistingAria2c)
+            if (_daemon.IsRunning)
                 return;
-
-            lock (_processLock)
-            {
-                if (_aria2cProcess != null && !_aria2cProcess.HasExited)
-                    return;
-            }
 
             await StartAria2cDaemonAsync();
         }
@@ -347,69 +294,22 @@ namespace ColorVision.UI.Desktop.Download
             if (IsDisposingOrDisposed)
                 return;
 
-            lock (_processLock)
+            if (_daemon.IsRunning)
+                return;
+
+            int requestedPort = _rpcPort;
+            int preparedPort = _daemon.PreparePort(_rpcPort);
+            if (preparedPort != _rpcPort)
             {
-                if (_aria2cProcess != null && !_aria2cProcess.HasExited)
-                    return;
+                log.Warn($"Port {_rpcPort} is in use, switching to port {preparedPort}");
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    StatusMessage = string.Format(Properties.Resources.PortSwitched, requestedPort, preparedPort);
+                });
+                _rpcPort = preparedPort;
             }
 
-            // If the configured port is in use, try to connect to an existing aria2c (orphan from previous session)
-            if (IsPortInUse(_rpcPort))
-            {
-                //bool reused = await TryReuseExistingAria2cAsync();
-                //if (reused)
-                //{
-                //    _reusingExistingAria2c = true;
-                //    log.Info($"Reusing existing aria2c on port {_rpcPort}");
-                //    UpdateServiceStatus();
-                //    StartPolling();
-                //    return;
-                //}
-
-                // Could not reuse - kill any orphan aria2c processes on our port range, then find a new port
-                KillOrphanAria2cProcesses();
-                if (IsPortInUse(_rpcPort))
-                {
-                    int newPort = FindAvailablePort(_rpcPort + 1);
-                    log.Warn($"Port {_rpcPort} is in use, switching to port {newPort}");
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
-                    {
-                        StatusMessage = string.Format(Properties.Resources.PortSwitched, _rpcPort, newPort);
-                    });
-                    _rpcPort = newPort;
-                }
-            }
-
-            lock (_processLock)
-            {
-                if (_aria2cProcess != null && !_aria2cProcess.HasExited)
-                    return;
-
-                string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=true --allow-overwrite=false --summary-interval=0 -j {Config.MaxConcurrentTasks}" +
-                    $" --enable-dht=true --bt-enable-lpd=true --enable-peer-exchange=true --follow-torrent=mem --seed-time=0 --bt-save-metadata=true --stop-with-process={Environment.ProcessId}";
-
-                if (Config.EnableSpeedLimit)
-                {
-                    args += $" --max-overall-download-limit={Config.SpeedLimitMB}M";
-                }
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = _aria2cPath,
-                    Arguments = args,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
-                _aria2cProcess = new Process { StartInfo = psi };
-                _aria2cProcess.Start();
-
-                // Discard output to prevent buffer deadlock
-                _aria2cProcess.StandardOutput.ReadToEndAsync();
-                _aria2cProcess.StandardError.ReadToEndAsync();
-            }
+            _daemon.Start(_rpcPort, RpcSecret, Config);
 
             // Wait for RPC to be ready
             for (int i = 0; i < 30; i++)
@@ -420,7 +320,7 @@ namespace ColorVision.UI.Desktop.Download
                 await Task.Delay(100).ConfigureAwait(false);
                 try
                 {
-                    var response = await RpcCallAsync("aria2.getVersion", new object[] { $"token:{RpcSecret}" }).ConfigureAwait(false);
+                    var response = await _rpcClient.CallAsync("aria2.getVersion").ConfigureAwait(false);
                     if (response?["result"] != null)
                     {
                         log.Info("aria2c RPC daemon started successfully");
@@ -437,134 +337,17 @@ namespace ColorVision.UI.Desktop.Download
             throw new Exception("Failed to start aria2c RPC daemon");
         }
 
-        /// <summary>
-        /// Try to connect to an existing aria2c instance on the current port.
-        /// Returns true if we can reuse it (responds to our RPC secret).
-        /// </summary>
-        private async Task<bool> TryReuseExistingAria2cAsync()
-        {
-            try
-            {
-                var response = await RpcCallAsync("aria2.getVersion", new object[] { $"token:{RpcSecret}" });
-                return response?["result"] != null;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Kill orphan aria2c processes that may have been left from a previous session.
-        /// Only kills processes whose executable path matches our bundled aria2c.
-        /// </summary>
-        private void KillOrphanAria2cProcesses()
-        {
-            try
-            {
-                string? ourAria2cDir = Path.GetDirectoryName(_aria2cPath);
-                var aria2cProcesses = Process.GetProcessesByName("aria2c");
-                foreach (var proc in aria2cProcesses)
-                {
-                    try
-                    {
-                        // Only kill if it's our bundled aria2c (same directory)
-                        string? procPath = null;
-                        try { procPath = proc.MainModule?.FileName; } catch { }
-
-                        if (procPath != null && ourAria2cDir != null &&
-                            Path.GetDirectoryName(procPath)?.Equals(ourAria2cDir, StringComparison.OrdinalIgnoreCase) == true)
-                        {
-                            proc.Kill();
-                            proc.WaitForExit(2000);
-                            log.Info($"Killed orphan aria2c process (PID: {proc.Id})");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Debug($"Failed to kill aria2c process {proc.Id}: {ex.Message}");
-                    }
-                    finally
-                    {
-                        proc.Dispose();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Debug($"KillOrphanAria2cProcesses failed: {ex.Message}");
-            }
-        }
-
-        private static bool IsPortInUse(int port)
-        {
-            try
-            {
-                var ipProperties = IPGlobalProperties.GetIPGlobalProperties();
-                var listeners = ipProperties.GetActiveTcpListeners();
-                return listeners.Any(ep => ep.Port == port);
-            }
-            catch (Exception ex) { log.Debug($"Port check failed: {ex.Message}"); return false; }
-        }
-
-        private static int FindAvailablePort(int startPort)
-        {
-            for (int port = startPort; port < startPort + 100; port++)
-            {
-                if (!IsPortInUse(port))
-                    return port;
-            }
-            return startPort;
-        }
-
         private void StopAria2cDaemon()
         {
-            bool reusedExistingAria2c = _reusingExistingAria2c;
-            _reusingExistingAria2c = false;
             StopPolling();
 
-            Process? processToStop;
-            lock (_processLock)
+            _daemon.Stop(() =>
             {
-                processToStop = _aria2cProcess;
-                _aria2cProcess = null;
-            }
-
-            try
-            {
-                if (reusedExistingAria2c || processToStop != null)
-                {
-                    try
-                    {
-                        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
-                        RpcCallAsync("aria2.forceShutdown", new object[] { $"token:{RpcSecret}" }, cancellationTokenSource.Token)
-                            .GetAwaiter()
-                            .GetResult();
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Debug($"RPC force shutdown failed: {ex.Message}");
-                    }
-                }
-
-                if (processToStop != null && !processToStop.HasExited)
-                {
-                    if (!processToStop.WaitForExit(2000))
-                    {
-                        processToStop.Kill(entireProcessTree: true);
-                        processToStop.WaitForExit(2000);
-                    }
-                }
-            }
-            catch (InvalidOperationException) { }
-            catch (Exception ex)
-            {
-                log.Debug($"Stop aria2c daemon failed: {ex.Message}");
-            }
-            finally
-            {
-                processToStop?.Dispose();
-            }
+                using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
+                _rpcClient.CallAsync("aria2.forceShutdown", cancellationTokenSource.Token)
+                    .GetAwaiter()
+                    .GetResult();
+            });
 
             UpdateServiceStatus();
         }
@@ -623,7 +406,7 @@ namespace ColorVision.UI.Desktop.Download
                 long globalSpeed = 0;
                 try
                 {
-                    var globalStat = await RpcCallAsync("aria2.getGlobalStat", new object[] { $"token:{RpcSecret}" });
+                    var globalStat = await _rpcClient.CallAsync("aria2.getGlobalStat");
                     if (globalStat != null)
                     {
                         globalSpeed = ParseLong(globalStat["result"]?["downloadSpeed"]);
@@ -641,8 +424,7 @@ namespace ColorVision.UI.Desktop.Download
 
                     try
                     {
-                        var status = await RpcCallAsync("aria2.tellStatus",
-                            new object[] { $"token:{RpcSecret}", task.Gid, TellStatusKeys });
+                        var status = await _rpcClient.CallAsync("aria2.tellStatus", task.Gid, TellStatusKeys);
 
                         if (status == null) continue;
 
@@ -733,25 +515,6 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
-        private async Task<JObject?> RpcCallAsync(string method, object[] parameters, CancellationToken cancellationToken = default)
-        {
-            int id = Interlocked.Increment(ref _rpcRequestId);
-            var request = new JObject
-            {
-                ["jsonrpc"] = "2.0",
-                ["id"] = id.ToString(),
-                ["method"] = method,
-                ["params"] = JToken.FromObject(parameters)
-            };
-
-            string json = request.ToString(Formatting.None);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            using var response = await _httpClient.PostAsync(RpcUrl, content, cancellationToken).ConfigureAwait(false);
-            string responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            return JObject.Parse(responseBody);
-        }
-
         private static long ParseLong(JToken? token)
         {
             return long.TryParse(token?.ToString(), out long value) ? value : 0;
@@ -777,10 +540,7 @@ namespace ColorVision.UI.Desktop.Download
                 if (IsDisposingOrDisposed)
                     return;
 
-                using var db = CreateDbClient();
-                var incompleteEntries = db.Queryable<DownloadEntry>()
-                    .Where(x => x.Status == (int)DownloadStatus.Waiting || x.Status == (int)DownloadStatus.Downloading || x.Status == (int)DownloadStatus.Paused)
-                    .ToList();
+                var incompleteEntries = _store.GetIncompleteEntries();
 
                 if (incompleteEntries.Count == 0) return;
 
@@ -819,9 +579,9 @@ namespace ColorVision.UI.Desktop.Download
             string targetDir = savePath ?? Config.DefaultDownloadPath;
             Directory.CreateDirectory(targetDir);
 
-            fileName ??= GetFileNameFromUrl(url);
+            fileName ??= DownloadPathResolver.GetFileNameFromUrl(url);
             string preferredPath = Path.Combine(targetDir, fileName);
-            string filePath = GetUniqueFilePath(targetDir, fileName);
+            string filePath = DownloadPathResolver.GetUniqueFilePath(targetDir, fileName);
             fileName = Path.GetFileName(filePath);
             DownloadEntry? reusableEntry = null;
 
@@ -840,10 +600,7 @@ namespace ColorVision.UI.Desktop.Download
                 Authorization = EncodeAuth(authorization)
             };
 
-            using (var db = CreateDbClient())
-            {
-                entry.Id = db.Insertable(entry).ExecuteReturnIdentity();
-            }
+            entry.Id = _store.Insert(entry);
 
             var task = new DownloadTask
             {
@@ -877,29 +634,25 @@ namespace ColorVision.UI.Desktop.Download
 
         private DownloadEntry? FindReusableCompletedEntry(string url, string targetDirectory, string destinationPath, string preferredSourcePath)
         {
-            using var db = CreateDbClient();
-            var completedEntries = db.Queryable<DownloadEntry>()
-                .Where(x => x.Status == (int)DownloadStatus.Completed && x.Url == url)
-                .OrderByDescending(x => x.CompleteTime)
-                .ToList();
+            var completedEntries = _store.GetCompletedEntriesByUrl(url);
 
             var preferredEntry = completedEntries.FirstOrDefault(entry =>
                 string.Equals(entry.SavePath, preferredSourcePath, StringComparison.OrdinalIgnoreCase) &&
-                CanReuseCompletedEntry(entry, targetDirectory, destinationPath));
+                DownloadReuseService.CanReuseCompletedEntry(entry, targetDirectory, destinationPath));
 
             return preferredEntry ?? completedEntries.FirstOrDefault(entry =>
-                CanReuseCompletedEntry(entry, targetDirectory, destinationPath));
+                DownloadReuseService.CanReuseCompletedEntry(entry, targetDirectory, destinationPath));
         }
 
         private bool TryStartReuseCompletedDownload(DownloadTask task, DownloadEntry sourceEntry)
         {
             string targetDirectory = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
-            if (!CanReuseCompletedEntry(sourceEntry, targetDirectory, task.SavePath))
+            if (!DownloadReuseService.CanReuseCompletedEntry(sourceEntry, targetDirectory, task.SavePath))
                 return false;
 
             task.LocalReuseSourcePath = sourceEntry.SavePath;
             task.LocalReuseRequiresRemoteValidation = false;
-            long expectedBytes = GetReusableSourceLength(sourceEntry);
+            long expectedBytes = DownloadReuseService.GetReusableSourceLength(sourceEntry);
             _ = StartLocalReuseCopyAsync(task, sourceEntry.SavePath, expectedBytes, task.Authorization, fallbackToRemoteOnFailure: true);
 
             return true;
@@ -907,21 +660,7 @@ namespace ColorVision.UI.Desktop.Download
 
         private bool TryStartRemoteValidatedLocalReuse(DownloadTask task, string sourcePath, string? authorization)
         {
-            if (!CanAttemptRemoteValidation(task.Url))
-                return false;
-
-            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath) || File.Exists(sourcePath + ".aria2"))
-                return false;
-
-            if (string.Equals(sourcePath, task.SavePath, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            long expectedBytes;
-            try
-            {
-                expectedBytes = new FileInfo(sourcePath).Length;
-            }
-            catch
+            if (!DownloadReuseService.TryGetRemoteValidatedCandidate(task.Url, sourcePath, task.SavePath, out long expectedBytes))
             {
                 return false;
             }
@@ -950,7 +689,7 @@ namespace ColorVision.UI.Desktop.Download
 
                 if (task.LocalReuseRequiresRemoteValidation)
                 {
-                    var validationInfo = await TryValidateLocalFileAgainstRemoteAsync(task.Url, sourcePath, authorization, cancellationTokenSource.Token).ConfigureAwait(false);
+                    var validationInfo = await _reuseService.TryValidateLocalFileAgainstRemoteAsync(task.Url, sourcePath, authorization, cancellationTokenSource.Token).ConfigureAwait(false);
                     if (validationInfo == null)
                     {
                         log.Info($"Remote validation did not match local duplicate, fallback to remote download. Source: {sourcePath}");
@@ -965,9 +704,6 @@ namespace ColorVision.UI.Desktop.Download
                     log.Info($"Validated local duplicate against remote. Source: {sourcePath}, ETag: {validationInfo.ETag ?? "-"}, LastModified: {validationInfo.LastModified?.ToString("O") ?? "-"}");
                 }
 
-                string targetDirectory = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
-                Directory.CreateDirectory(targetDirectory);
-
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     task.Status = DownloadStatus.Downloading;
@@ -979,72 +715,23 @@ namespace ColorVision.UI.Desktop.Download
                 });
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
 
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(LocalCopyBufferSize);
-                try
-                {
-                    using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, LocalCopyBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
-                    if (expectedBytes <= 0)
-                        expectedBytes = sourceStream.Length;
-
-                    using var destinationStream = new FileStream(task.SavePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, LocalCopyBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
-
-                    long copiedBytes = 0;
-                    long intervalBytes = 0;
-                    var intervalStopwatch = Stopwatch.StartNew();
-                    var uiStopwatch = Stopwatch.StartNew();
-
-                    while (true)
+                var copyResult = await LocalFileCopyService.CopyAsync(
+                    sourcePath,
+                    task.SavePath,
+                    expectedBytes,
+                    progress =>
                     {
-                        int bytesRead = await sourceStream.ReadAsync(buffer.AsMemory(0, LocalCopyBufferSize), cancellationTokenSource.Token).ConfigureAwait(false);
-                        if (bytesRead <= 0)
-                            break;
-
-                        await destinationStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationTokenSource.Token).ConfigureAwait(false);
-
-                        copiedBytes += bytesRead;
-                        intervalBytes += bytesRead;
-
-                        if (uiStopwatch.Elapsed >= LocalCopyProgressInterval || (expectedBytes > 0 && copiedBytes >= expectedBytes))
+                        Application.Current?.Dispatcher.BeginInvoke(() =>
                         {
-                            long speed = intervalStopwatch.ElapsedMilliseconds > 0
-                                ? intervalBytes * 1000 / intervalStopwatch.ElapsedMilliseconds
-                                : 0;
+                            task.TotalBytes = progress.TotalBytes;
+                            task.DownloadedBytes = progress.CopiedBytes;
+                            task.ProgressValue = progress.Progress;
+                            task.SpeedText = DownloadTask.FormatSpeed(progress.BytesPerSecond);
+                        });
+                    },
+                    cancellationTokenSource.Token).ConfigureAwait(false);
 
-                            long currentCopiedBytes = copiedBytes;
-                            long currentTotalBytes = expectedBytes > 0 ? expectedBytes : copiedBytes;
-                            int progress = currentTotalBytes > 0 ? (int)Math.Min(100, currentCopiedBytes * 100 / currentTotalBytes) : 0;
-
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
-                            {
-                                task.TotalBytes = currentTotalBytes;
-                                task.DownloadedBytes = currentCopiedBytes;
-                                task.ProgressValue = progress;
-                                task.SpeedText = DownloadTask.FormatSpeed(speed);
-                            });
-
-                            intervalBytes = 0;
-                            intervalStopwatch.Restart();
-                            uiStopwatch.Restart();
-                        }
-                    }
-
-                    await destinationStream.FlushAsync(cancellationTokenSource.Token).ConfigureAwait(false);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
-
-                long completedBytes = new FileInfo(task.SavePath).Length;
-                long totalBytes = expectedBytes > 0 ? expectedBytes : completedBytes;
-
-                if (completedBytes <= 0)
-                    throw new InvalidDataException("Downloaded file is empty.");
-
-                if (totalBytes > 0 && completedBytes < totalBytes)
-                    throw new InvalidDataException($"Downloaded file is incomplete: {completedBytes}/{totalBytes} bytes.");
-
-                CompleteTask(task, Math.Max(totalBytes, completedBytes), completedBytes);
+                CompleteTask(task, copyResult.TotalBytes, copyResult.CompletedBytes);
                 log.Info($"Reused completed download by streamed local copy. Source: {sourcePath}, Target: {task.SavePath}");
             }
             catch (OperationCanceledException)
@@ -1091,75 +778,6 @@ namespace ColorVision.UI.Desktop.Download
                     task.CancellationTokenSource = null;
                 cancellationTokenSource?.Dispose();
             }
-        }
-
-        private async Task<RemoteFileValidationInfo?> TryValidateLocalFileAgainstRemoteAsync(string url, string sourcePath, string? authorization, CancellationToken cancellationToken)
-        {
-            if (!CanAttemptRemoteValidation(url))
-                return null;
-
-            if (!File.Exists(sourcePath) || File.Exists(sourcePath + ".aria2"))
-                return null;
-
-            long localFileLength = new FileInfo(sourcePath).Length;
-            var validationInfo = await TryGetRemoteFileValidationInfoAsync(url, authorization, cancellationToken).ConfigureAwait(false);
-            if (validationInfo?.ContentLength is not long remoteLength || remoteLength <= 0)
-                return null;
-
-            return remoteLength == localFileLength ? validationInfo : null;
-        }
-
-        private async Task<RemoteFileValidationInfo?> TryGetRemoteFileValidationInfoAsync(string url, string? authorization, CancellationToken cancellationToken)
-        {
-            using var headRequest = CreateRemoteValidationRequest(HttpMethod.Head, url, authorization);
-            try
-            {
-                using var response = await _httpClient.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                if (response.IsSuccessStatusCode)
-                    return CreateRemoteFileValidationInfo(response);
-
-                if (response.StatusCode != HttpStatusCode.MethodNotAllowed && response.StatusCode != HttpStatusCode.NotImplemented)
-                    return null;
-            }
-            catch (HttpRequestException)
-            {
-                return null;
-            }
-
-            using var rangeRequest = CreateRemoteValidationRequest(HttpMethod.Get, url, authorization);
-            rangeRequest.Headers.Range = new RangeHeaderValue(0, 0);
-            using var rangeResponse = await _httpClient.SendAsync(rangeRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            if (!rangeResponse.IsSuccessStatusCode && rangeResponse.StatusCode != HttpStatusCode.PartialContent)
-                return null;
-
-            return CreateRemoteFileValidationInfo(rangeResponse);
-        }
-
-        private static RemoteFileValidationInfo CreateRemoteFileValidationInfo(HttpResponseMessage response)
-        {
-            return new RemoteFileValidationInfo
-            {
-                ContentLength = response.Content.Headers.ContentRange?.Length ?? response.Content.Headers.ContentLength,
-                ETag = response.Headers.ETag?.Tag,
-                LastModified = response.Content.Headers.LastModified
-            };
-        }
-
-        private static HttpRequestMessage CreateRemoteValidationRequest(HttpMethod method, string url, string? authorization)
-        {
-            var request = new HttpRequestMessage(method, url);
-            if (!string.IsNullOrWhiteSpace(authorization) && authorization.Contains(':'))
-            {
-                string encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(authorization));
-                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", encoded);
-            }
-            return request;
-        }
-
-        private static bool CanAttemptRemoteValidation(string url)
-        {
-            return Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) &&
-                   (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
         }
 
         private static bool TryGetCompletedFileMetrics(DownloadTask task, long rpcTotalLength, long rpcCompletedLength, out long totalBytes, out long downloadedBytes, out string? errorMessage)
@@ -1284,56 +902,6 @@ namespace ColorVision.UI.Desktop.Download
             UpdateEntryStatus(task.Id, DownloadStatus.Waiting);
         }
 
-        private static long GetReusableSourceLength(DownloadEntry entry)
-        {
-            if (entry.TotalBytes > 0)
-                return entry.TotalBytes;
-
-            return File.Exists(entry.SavePath) ? new FileInfo(entry.SavePath).Length : 0;
-        }
-
-        private static bool CanRetryLocalReuse(DownloadTask task)
-        {
-            return !string.IsNullOrWhiteSpace(task.LocalReuseSourcePath) && File.Exists(task.LocalReuseSourcePath);
-        }
-
-        private static bool CanReuseCompletedEntry(DownloadEntry entry, string targetDirectory, string destinationPath)
-        {
-            if (string.IsNullOrWhiteSpace(entry.SavePath))
-                return false;
-
-            if (string.Equals(entry.SavePath, destinationPath, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            string? sourceDirectory = Path.GetDirectoryName(entry.SavePath);
-            if (!string.Equals(sourceDirectory, targetDirectory, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return IsEntryBackedByCompleteFile(entry);
-        }
-
-        private static bool IsEntryBackedByCompleteFile(DownloadEntry entry)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(entry.SavePath) || !File.Exists(entry.SavePath))
-                    return false;
-
-                if (File.Exists(entry.SavePath + ".aria2"))
-                    return false;
-
-                long fileLength = new FileInfo(entry.SavePath).Length;
-                if (entry.TotalBytes > 0)
-                    return fileLength > 0 && entry.DownloadedBytes >= entry.TotalBytes && fileLength == entry.TotalBytes;
-
-                return fileLength > 0 && entry.CompleteTime != null;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         private static void TryDeleteFile(string path)
         {
             try
@@ -1389,8 +957,7 @@ namespace ColorVision.UI.Desktop.Download
                 }
 
                 // Call aria2.addUri via JSON-RPC
-                var response = await RpcCallAsync("aria2.addUri",
-                    new object[] { $"token:{RpcSecret}", new[] { task.Url }, options });
+                var response = await _rpcClient.CallAsync("aria2.addUri", new[] { task.Url }, options);
 
                 if (response != null)
                 {
@@ -1467,7 +1034,7 @@ namespace ColorVision.UI.Desktop.Download
             {
                 RunFireAndForget(async () =>
                 {
-                    try { await RpcCallAsync("aria2.pause", new object[] { $"token:{RpcSecret}", task.Gid }); }
+                    try { await _rpcClient.CallAsync("aria2.pause", task.Gid); }
                     catch (Exception ex) { log.Debug($"RPC pause failed for GID {task.Gid}: {ex.Message}"); }
                 }, $"RPC pause task failed for GID {task.Gid}.");
             }
@@ -1482,7 +1049,7 @@ namespace ColorVision.UI.Desktop.Download
 
         public void ResumeDownload(DownloadTask task)
         {
-            if (CanRetryLocalReuse(task))
+            if (DownloadReuseService.CanRetryLocalReuse(task))
             {
                 _ = StartLocalReuseCopyAsync(task, task.LocalReuseSourcePath!, task.TotalBytes, task.Authorization, fallbackToRemoteOnFailure: true);
                 return;
@@ -1503,7 +1070,7 @@ namespace ColorVision.UI.Desktop.Download
                     {
                         await EnsureAria2cRunningAsync();
                         StartPolling();
-                        await RpcCallAsync("aria2.unpause", new object[] { $"token:{RpcSecret}", task.Gid });
+                        await _rpcClient.CallAsync("aria2.unpause", task.Gid);
                     }
                     catch (Exception ex)
                     {
@@ -1541,7 +1108,7 @@ namespace ColorVision.UI.Desktop.Download
 
             UpdateEntryStatus(task.Id, DownloadStatus.Waiting);
 
-            if (CanRetryLocalReuse(task))
+            if (DownloadReuseService.CanRetryLocalReuse(task))
             {
                 _ = StartLocalReuseCopyAsync(task, task.LocalReuseSourcePath!, task.TotalBytes, task.Authorization, fallbackToRemoteOnFailure: true);
                 return;
@@ -1552,8 +1119,7 @@ namespace ColorVision.UI.Desktop.Download
 
         public void DeleteRecord(int id)
         {
-            using var db = CreateDbClient();
-            db.Deleteable<DownloadEntry>().In(id).ExecuteCommand();
+            _store.Delete(id);
             var task = Tasks.FirstOrDefault(t => t.Id == id);
             if (task != null)
             {
@@ -1583,8 +1149,7 @@ namespace ColorVision.UI.Desktop.Download
                 });
             }
 
-            using var db = CreateDbClient();
-            db.Deleteable<DownloadEntry>().In(ids).ExecuteCommand();
+            _store.DeleteMany(ids);
 
             RunOnDispatcher(() =>
             {
@@ -1621,8 +1186,7 @@ namespace ColorVision.UI.Desktop.Download
 
         public void ClearAllRecords()
         {
-            using var db = CreateDbClient();
-            db.Deleteable<DownloadEntry>().ExecuteCommand();
+            _store.Clear();
 
             foreach (var task in _localCopyTasks.Values)
             {
@@ -1646,25 +1210,14 @@ namespace ColorVision.UI.Desktop.Download
         {
             RunFireAndForget(async () =>
             {
-                try { await RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", gid }); }
+                try { await _rpcClient.CallAsync("aria2.remove", gid); }
                 catch (Exception ex) { log.Debug($"RPC remove failed for GID {gid}: {ex.Message}"); }
             }, $"RPC remove task failed for GID {gid}.");
         }
 
         public void LoadRecords(string? searchKeyword = null, int pageSize = 20, int page = 1)
         {
-            using var db = CreateDbClient();
-            var query = db.Queryable<DownloadEntry>();
-
-            if (!string.IsNullOrWhiteSpace(searchKeyword))
-            {
-                query = query.Where(x => x.FileName.Contains(searchKeyword) || x.Url.Contains(searchKeyword));
-            }
-
-            var entries = query.OrderByDescending(x => x.CreateTime)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            var entries = _store.LoadRecords(searchKeyword, pageSize, page);
 
             RunOnDispatcher(() =>
             {
@@ -1697,7 +1250,7 @@ namespace ColorVision.UI.Desktop.Download
                         UpdateEntryStatus(entry.Id, DownloadStatus.Failed, errorMessage);
                     }
 
-                    // �������޸���������������ڻ�Ծ�ֵ��У�ֱ�����ø�ʵ�������� UI �� DataBinding ���ò��Ͽ�
+                    // Reuse live task instances so UI bindings stay connected while paging or refreshing.
                     if (_activeTasks.TryGetValue(entry.Id, out var activeTask))
                     {
                         Tasks.Add(activeTask);
@@ -1729,54 +1282,27 @@ namespace ColorVision.UI.Desktop.Download
 
         public int GetTotalCount(string? searchKeyword = null)
         {
-            using var db = CreateDbClient();
-            var query = db.Queryable<DownloadEntry>();
-            if (!string.IsNullOrWhiteSpace(searchKeyword))
-            {
-                query = query.Where(x => x.FileName.Contains(searchKeyword) || x.Url.Contains(searchKeyword));
-            }
-            return query.Count();
+            return _store.GetTotalCount(searchKeyword);
         }
 
         private void UpdateEntryStatus(int id, DownloadStatus status, string? errorMessage = null)
         {
-            using var db = CreateDbClient();
-            db.Updateable<DownloadEntry>()
-                .SetColumns(x => x.Status == (int)status)
-                .SetColumns(x => x.ErrorMessage == errorMessage)
-                .Where(x => x.Id == id)
-                .ExecuteCommand();
+            _store.UpdateStatus(id, status, errorMessage);
         }
 
         private void UpdateEntryBytes(int id, long totalBytes, long downloadedBytes)
         {
-            using var db = CreateDbClient();
-            db.Updateable<DownloadEntry>()
-                .SetColumns(x => x.TotalBytes == totalBytes)
-                .SetColumns(x => x.DownloadedBytes == downloadedBytes)
-                .Where(x => x.Id == id)
-                .ExecuteCommand();
+            _store.UpdateBytes(id, totalBytes, downloadedBytes);
         }
 
         private void UpdateEntryFileName(int id, string fileName)
         {
-            using var db = CreateDbClient();
-            db.Updateable<DownloadEntry>()
-                .SetColumns(x => x.FileName == fileName)
-                .Where(x => x.Id == id)
-                .ExecuteCommand();
+            _store.UpdateFileName(id, fileName);
         }
 
         private void UpdateEntryCompleted(DownloadTask task)
         {
-            using var db = CreateDbClient();
-            db.Updateable<DownloadEntry>()
-                .SetColumns(x => x.Status == (int)DownloadStatus.Completed)
-                .SetColumns(x => x.TotalBytes == task.TotalBytes)
-                .SetColumns(x => x.DownloadedBytes == task.DownloadedBytes)
-                .SetColumns(x => x.CompleteTime == DateTime.Now)
-                .Where(x => x.Id == task.Id)
-                .ExecuteCommand();
+            _store.MarkCompleted(task.Id, task.TotalBytes, task.DownloadedBytes, DateTime.Now);
         }
 
         private static bool TryGetUsableCompletedFileLength(string? filePath, out long fileLength)
@@ -1830,60 +1356,6 @@ namespace ColorVision.UI.Desktop.Download
                 log.Debug($"Failed to clear stale cache for {savePath}: {ex.Message}");
                 return false;
             }
-        }
-
-        private static string GetFileNameFromUrl(string url)
-        {
-            // Handle magnet links: extract display name from dn= parameter
-            if (url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    int dnIndex = url.IndexOf("dn=", StringComparison.OrdinalIgnoreCase);
-                    if (dnIndex >= 0)
-                    {
-                        string dn = url.Substring(dnIndex + 3);
-                        int endIndex = dn.IndexOf('&');
-                        if (endIndex >= 0) dn = dn.Substring(0, endIndex);
-                        dn = Uri.UnescapeDataString(dn).Trim();
-                        if (!string.IsNullOrWhiteSpace(dn)) return dn;
-                    }
-                }
-                catch { }
-                return $"magnet_{DateTime.Now:yyyyMMddHHmmss}";
-            }
-
-            try
-            {
-                var uri = new Uri(url);
-                string fileName = Path.GetFileName(uri.LocalPath);
-                if (!string.IsNullOrWhiteSpace(fileName) && fileName != "/")
-                    return fileName;
-            }
-            catch { }
-            return $"download_{DateTime.Now:yyyyMMddHHmmss}";
-        }
-
-        /// <summary>
-        /// Generate a unique file path by appending (1), (2), etc. if the file or its .aria2 cache already exists.
-        /// </summary>
-        private static string GetUniqueFilePath(string directory, string fileName)
-        {
-            string filePath = Path.Combine(directory, fileName);
-            if (!File.Exists(filePath) && !File.Exists(filePath + ".aria2"))
-                return filePath;
-
-            string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
-            string ext = Path.GetExtension(fileName);
-
-            for (int i = 1; i < 1000; i++)
-            {
-                string candidate = Path.Combine(directory, $"{nameWithoutExt}({i}){ext}");
-                if (!File.Exists(candidate) && !File.Exists(candidate + ".aria2"))
-                    return candidate;
-            }
-            // Fallback: use timestamp
-            return Path.Combine(directory, $"{nameWithoutExt}_{DateTime.Now:yyyyMMddHHmmss}{ext}");
         }
 
         /// <summary>

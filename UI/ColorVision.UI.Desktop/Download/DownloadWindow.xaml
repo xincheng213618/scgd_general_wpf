@@ -55,20 +55,21 @@
         <ListBox x:Name="DownloadListView" Grid.Row="1" Margin="0"
                  SelectionMode="Extended" HorizontalContentAlignment="Stretch"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled" BorderThickness="0"
-                 MouseDoubleClick="DownloadListView_MouseDoubleClick" Cursor="" >
+                 MouseDoubleClick="DownloadListView_MouseDoubleClick"
+                 PreviewMouseRightButtonDown="DownloadListView_PreviewMouseRightButtonDown">
             <ListBox.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="{x:Static properties:Resources.OpenFile}" Click="ContextMenu_OpenFile_Click"/>
-                    <MenuItem Header="{x:Static properties:Resources.OpenFolder}" Click="ContextMenu_OpenFolder_Click"/>
+                <ContextMenu x:Name="DownloadContextMenu" Opened="DownloadContextMenu_Opened">
+                    <MenuItem x:Name="MenuOpenFile" Header="{x:Static properties:Resources.OpenFile}" Click="ContextMenu_OpenFile_Click"/>
+                    <MenuItem x:Name="MenuOpenFolder" Header="{x:Static properties:Resources.OpenFolder}" Click="ContextMenu_OpenFolder_Click"/>
                     <Separator/>
-                    <MenuItem Header="{x:Static properties:Resources.CopyUrl}" Click="ContextMenu_CopyUrl_Click"/>
+                    <MenuItem x:Name="MenuCopyUrl" Header="{x:Static properties:Resources.CopyUrl}" Click="ContextMenu_CopyUrl_Click"/>
                     <Separator/>
-                    <MenuItem Header="{x:Static properties:Resources.PauseDownload}" Click="ContextMenu_Pause_Click"/>
-                    <MenuItem Header="{x:Static properties:Resources.ResumeDownload}" Click="ContextMenu_Resume_Click"/>
-                    <MenuItem Header="{x:Static properties:Resources.RetryDownload}" Click="ContextMenu_Retry_Click"/>
-                    <MenuItem Header="{x:Static properties:Resources.CancelDownload}" Click="ContextMenu_Cancel_Click"/>
+                    <MenuItem x:Name="MenuPause" Header="{x:Static properties:Resources.PauseDownload}" Click="ContextMenu_Pause_Click"/>
+                    <MenuItem x:Name="MenuResume" Header="{x:Static properties:Resources.ResumeDownload}" Click="ContextMenu_Resume_Click"/>
+                    <MenuItem x:Name="MenuRetry" Header="{x:Static properties:Resources.RetryDownload}" Click="ContextMenu_Retry_Click"/>
+                    <MenuItem x:Name="MenuCancel" Header="{x:Static properties:Resources.CancelDownload}" Click="ContextMenu_Cancel_Click"/>
                     <Separator/>
-                    <MenuItem Header="{x:Static properties:Resources.DeleteRecord}" Click="ContextMenu_Delete_Click"/>
+                    <MenuItem x:Name="MenuDelete" Header="{x:Static properties:Resources.DeleteRecord}" Click="ContextMenu_Delete_Click"/>
                 </ContextMenu>
             </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
