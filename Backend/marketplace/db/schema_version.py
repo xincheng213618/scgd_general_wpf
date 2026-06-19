@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 3
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -49,6 +49,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v1(db)
     if from_version < 2:
         _migration_v2(db)
+    if from_version < 3:
+        _migration_v3(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -60,6 +62,14 @@ def _migration_v2(db: sqlite3.Connection):
     """v2: Add extended fields to job_runs for observability."""
     _add_column_if_missing(db, "job_runs", "scanned_count INTEGER DEFAULT 0")
     _add_column_if_missing(db, "job_runs", "changed_count INTEGER DEFAULT 0")
+
+
+def _migration_v3(db: sqlite3.Connection):
+    """v3: Align plugin_index with the current plugin detail read-model."""
+    _add_column_if_missing(db, "plugin_index", "readme TEXT DEFAULT ''")
+    _add_column_if_missing(db, "plugin_index", "changelog TEXT DEFAULT ''")
+    _add_column_if_missing(db, "plugin_index", "source_manifest_path TEXT")
+    _add_column_if_missing(db, "plugin_index", "source_archive_path TEXT")
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):

@@ -1045,6 +1045,55 @@ class SchemaVersionTests(unittest.TestCase):
         db.close()
         temp_dir.cleanup()
 
+    def test_schema_migration_v3_adds_plugin_detail_columns(self):
+        """Existing v2 databases should gain plugin detail columns used by plugin_index."""
+        from db.schema_version import ensure_schema_version, CURRENT_SCHEMA_VERSION
+        import sqlite3
+
+        temp_dir = tempfile.TemporaryDirectory()
+        db_path = Path(temp_dir.name) / "test.db"
+        db = sqlite3.connect(str(db_path))
+        db.row_factory = sqlite3.Row
+
+        db.execute(
+            """
+            CREATE TABLE plugin_index (
+                plugin_id TEXT PRIMARY KEY,
+                name TEXT,
+                latest_version TEXT,
+                is_deleted INTEGER DEFAULT 0
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE TABLE schema_version (
+                key TEXT PRIMARY KEY,
+                value INTEGER NOT NULL
+            )
+            """
+        )
+        db.execute("INSERT INTO schema_version (key, value) VALUES ('version', 2)")
+        db.commit()
+
+        version = ensure_schema_version(db)
+        self.assertEqual(version, CURRENT_SCHEMA_VERSION)
+
+        columns = {
+            row["name"]
+            for row in db.execute("PRAGMA table_info(plugin_index)").fetchall()
+        }
+        self.assertIn("readme", columns)
+        self.assertIn("changelog", columns)
+        self.assertIn("source_manifest_path", columns)
+        self.assertIn("source_archive_path", columns)
+
+        row = db.execute("SELECT value FROM schema_version WHERE key = 'version'").fetchone()
+        self.assertEqual(row["value"], CURRENT_SCHEMA_VERSION)
+
+        db.close()
+        temp_dir.cleanup()
+
     def test_schema_migration_reraises_non_duplicate_errors(self):
         """Non-duplicate-column, non-missing-table errors should propagate."""
         from db.schema_version import _add_column_if_missing
