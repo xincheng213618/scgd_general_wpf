@@ -129,7 +129,7 @@ py Scripts\build_plugin.py -t Projects -p ProjectARVR --no-upload
 
 ### 推奨される代替手段
 
-- ウェアハウスのプラグイン: `Scripts\package_plugin.bat Pattern --no-upload`
+- ウェアハウスのプラグイン: `Scripts\package_plugin.bat Spectrum --no-upload`
 - 倉庫内のアイテム: `Scripts\package_project.bat ProjectARVR --no-upload`
 - 倉庫の外: `py Scripts\package_cvxp.py --src-dir C:\src\MyPlugin\bin\x64\Release\net10.0-windows --no-upload`
 
@@ -169,12 +169,12 @@ py Scripts\generate_shared_files.py `
 
 ```powershell
 # 仅本地打包
-py Scripts\package_cvxp.py --project-file Plugins\Pattern\Pattern.csproj --build --no-upload
+py Scripts\package_cvxp.py --project-file Plugins\Spectrum\Spectrum.csproj --build --no-upload
 
 # 指定编译输出目录
 py Scripts\package_cvxp.py `
-    --src-dir Plugins\Pattern\bin\x64\Release\net10.0-windows `
-    --plugin-root Plugins\Pattern
+    --src-dir Plugins\Spectrum\bin\x64\Release\net10.0-windows `
+    --plugin-root Plugins\Spectrum
 
 # 仅传编译输出目录，自动推断插件根目录
 py Scripts\package_cvxp.py `
@@ -220,7 +220,7 @@ py Scripts\package_cvxp.py `
 
 
 ```powershell
-Scripts\package_plugin.bat Pattern --no-upload
+Scripts\package_plugin.bat Spectrum --no-upload
 ```
 
 

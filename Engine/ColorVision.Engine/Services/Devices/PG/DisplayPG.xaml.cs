@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes.Controls;
+﻿#pragma warning disable CA1816
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System;
 using System.Windows;
@@ -126,11 +127,6 @@ namespace ColorVision.Engine.Services.Devices.PG
         private void PGSendCmd(object sender, RoutedEventArgs e)
         {
             PGService.CustomPG(PGCmdMsg.Text);
-        }
-
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
 
         public void Dispose()

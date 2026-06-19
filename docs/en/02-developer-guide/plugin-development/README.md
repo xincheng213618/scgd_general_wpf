@@ -1,6 +1,8 @@
-# Plugin Development Overview
+# Plugin Development Manual
 
-This chapter is intended for developers who need to extend ColorVision functionality, prioritizing plugin development paths that are still effective.
+This chapter explains how to develop, load, debug, and package a runtime plugin. Existing plugin capabilities live in [Existing Plugin Capabilities](../../04-api-reference/plugins/README.md); customer project package workflows live in [Project Guide](../../00-projects/README.md).
+
+If you are choosing an existing plugin as a reference, start with [Plugin Capability & Handoff Matrix](../../04-api-reference/plugins/plugin-capability-matrix.md). To confirm that every current plugin has a matching documentation entry, use [Current Plugin Documentation Coverage](../../04-api-reference/plugins/current-plugin-coverage.md). For release or handoff acceptance, use [Existing Plugin Field Acceptance And Handoff Checklist](../../04-api-reference/plugins/plugin-field-acceptance.md).
 
 ## Plugin Location in the Repository
 
@@ -23,11 +25,16 @@ This chapter is intended for developers who need to extend ColorVision functiona
 
 ## Suggested Existing Plugins to Reference
 
-- [Pattern Plugin](../../04-api-reference/plugins/standard-plugins/pattern.md)
-- [Spectrum Plugin](../../04-api-reference/plugins/standard-plugins/spectrum.md)
-- [SystemMonitor Plugin](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
+- [Plugin Capability & Handoff Matrix](../../04-api-reference/plugins/plugin-capability-matrix.md): compare current plugin extension points, dependencies, and release risks.
+- [Current Plugin Documentation Coverage](../../04-api-reference/plugins/current-plugin-coverage.md): map real `Plugins/` directories to manifests, single-plugin pages, and acceptance entries.
+- [Existing Plugin Field Acceptance And Handoff Checklist](../../04-api-reference/plugins/plugin-field-acceptance.md): accept entries, smoke tests, external dependencies, and rollback material for current plugins.
+- [Conoscope](../../04-api-reference/plugins/standard-plugins/conoscope.md): image viewing, focus points, color gamut, and contrast analysis.
+- [Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md): spectrometer connection, calibration, measurement, and result storage.
+- [SystemMonitor](../../04-api-reference/plugins/standard-plugins/system-monitor.md): system performance and status monitoring.
+- [WindowsServicePlugin](../../04-api-reference/plugins/standard-plugins/windows-service.md): Windows service installation and runtime configuration.
 
 ## Notes
 
-- This page only provides an entry point and does not expand on overly detailed historical design details.
+- This page provides the development entry and does not replace current plugin capability pages.
+- Adding, deleting, or restoring a plugin must update [Current Plugin Documentation Coverage](../../04-api-reference/plugins/current-plugin-coverage.md), the matrix, acceptance checklist, and navigation.
 - If a plugin depends on project-level custom logic, also check the corresponding implementation under `Projects/`.

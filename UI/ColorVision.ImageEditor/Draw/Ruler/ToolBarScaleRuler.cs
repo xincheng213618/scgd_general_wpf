@@ -9,18 +9,18 @@ namespace ColorVision.ImageEditor.Draw.Ruler
     {
         public override ToolBarLocal ToolBarLocal => ToolBarLocal.ScaleRuler;
 
-        private FrameworkElement Parent { get; set; }
+        private FrameworkElement Parent { get; }
         private Grid GridEx { get; set; }
 
-        public EditorContext EditorContext { get; set; }
+        private DrawEditorContext DrawContext { get; }
 
-        public ToolBarScaleRuler(EditorContext editorContext)
+        public ToolBarScaleRuler(DrawEditorContext drawContext, ImageViewConfig config)
         {
-            EditorContext = editorContext;
-            this.Parent = editorContext.ImageView;
+            DrawContext = drawContext;
+            Parent = drawContext.Zoombox;
 
-            ScalRuler = new DrawingVisualScaleHost(editorContext);
-            if (editorContext.Zoombox.Parent is Grid grid)
+            ScalRuler = new DrawingVisualScaleHost(config);
+            if (drawContext.Zoombox.Parent is Grid grid)
             {
                 GridEx = grid;
                 ScalRuler.PreviewMouseDown += (s, e) =>
@@ -47,12 +47,12 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 
         public void Render()
         {
-            if (EditorContext.DrawCanvas.Source is BitmapSource bitmapSource)
+            if (DrawContext.DrawCanvas.Source is BitmapSource bitmapSource)
             {
                 ScalRuler.ParentWidth = GridEx.ActualWidth;
                 ScalRuler.ParentHeight = GridEx.ActualHeight;
                 ///未知原因
-                double X = 1 / EditorContext.ZoomRatio * bitmapSource.PixelWidth / 100 ;
+                double X = 1 / DrawContext.ZoomRatio * bitmapSource.PixelWidth / 100 ;
 
                 ScalRuler.Render(X);
             }
@@ -88,7 +88,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             GridEx.Children.Add(ScalRuler);
             ScalRuler.ParentWidth = GridEx.ActualWidth;
             ScalRuler.ParentHeight = GridEx.ActualHeight;
-            EditorContext.DrawCanvas.MouseWheel += DrawCanvas_MouseWheel;
+            DrawContext.DrawCanvas.MouseWheel += DrawCanvas_MouseWheel;
             GridEx.SizeChanged += GridEx_SizeChanged;
 
             if (Window.GetWindow(Parent) is Window window)
@@ -102,7 +102,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
         public void UnLoad()
         {
             GridEx.Children.Remove(ScalRuler);
-            EditorContext.DrawCanvas.MouseWheel -= DrawCanvas_MouseWheel;
+            DrawContext.DrawCanvas.MouseWheel -= DrawCanvas_MouseWheel;
             GridEx.SizeChanged -= GridEx_SizeChanged;
 
             if (Window.GetWindow(Parent) is Window window)

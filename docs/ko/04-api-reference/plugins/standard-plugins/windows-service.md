@@ -186,6 +186,6 @@ CVWinSMS를 열거나 찾기 위한 메뉴 항목으로 사용할 수 있으며,
 
 ## 계속 읽기
 
-- [플러그인/README.md](../../../../플러그인/README.md)
+- [Plugins/README.md](../../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
 - [docs/04-api-reference/plugins/standard-plugins/eventvwr.md](./eventvwr.md)

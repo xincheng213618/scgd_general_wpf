@@ -15,7 +15,7 @@ This document provides a quick explanation of the main directory division of the
 | `Backend/marketplace/` | Plugin marketplace backend service | [Plugin Marketplace Backend](../../02-developer-guide/backend/README.md) |
 | `Scripts/` | Build, packaging, and release scripts | [Build and Release Scripts](../../02-developer-guide/scripts/README.md) |
 | `ColorVisionSetup/` | Installer and updater | [Auto Update System](../../02-developer-guide/deployment/auto-update.md) |
-| `Test/` | Test projects | [Development Guide](../../02-developer-guide/README.md) |
+| `Test/` | xUnit, native helper, backend, and script validation | [Testing And Validation Handoff](../../02-developer-guide/testing.md) |
 | `docs/` | VitePress documentation source | Current documentation / [Module and Documentation Map](./module-documentation-map.md) |
 
 ## Reading by Role
@@ -36,7 +36,8 @@ This document provides a quick explanation of the main directory division of the
 
 1. [Extensibility Overview](../../02-developer-guide/core-concepts/extensibility.md)
 2. [Plugin Development Overview](../../02-developer-guide/plugin-development/overview.md)
-3. [Standard Plugins Topic](../../04-api-reference/plugins/standard-plugins/pattern.md)
+3. [Existing Plugin Capabilities](../../04-api-reference/plugins/README.md)
+4. [Current Plugin Documentation Coverage](../../04-api-reference/plugins/current-plugin-coverage.md)
 
 ### Documentation Maintenance
 

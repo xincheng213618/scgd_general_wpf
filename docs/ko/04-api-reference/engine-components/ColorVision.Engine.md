@@ -16,17 +16,17 @@
 
 ## 현재 가장 중요한 파일
 
-- `엔진/ColorVision.Engine/템플릿/TemplateContorl.cs`
+- `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
 - `Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs`
 - `Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs`
-- `엔진/ColorVision.Engine/템플릿/Flow/FlowEngineManager.cs`
-- `엔진/ColorVision.Engine/템플릿/Flow/DisplayFlow.xaml.cs`
-- `엔진/ColorVision.Engine/Services/DeviceService.cs`
-- `엔진/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs`
-- `엔진/ColorVision.Engine/Services/Core/MQTTServiceBase.cs`
-- `엔진/ColorVision.Engine/Services/RC/MQTTRCService.cs`
-- `엔진/ColorVision.Engine/템플릿/POI/AlgorithmImp/AlgorithmPOI.cs`
-- `엔진/ColorVision.Engine/템플릿/ARVR/MTF/AlgorithmMTF.cs`
+- `Engine/ColorVision.Engine/Templates/Flow/FlowEngineManager.cs`
+- `Engine/ColorVision.Engine/Templates/Flow/DisplayFlow.xaml.cs`
+- `Engine/ColorVision.Engine/Services/DeviceService.cs`
+- `Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs`
+- `Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs`
+- `Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs`
+- `Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs`
+- `Engine/ColorVision.Engine/Templates/ARVR/MTF/AlgorithmMTF.cs`
 
 메인 엔진이 템플릿, 장치, 메시지 체인 및 프로세스를 구성하는 방법을 알고 싶다면 이 코드가 이미 백본을 다루었습니다.
 
@@ -134,19 +134,21 @@
 
 `DeviceServiceFactoryRegistry`는 이미 현재 실제 인스턴스화 항목입니다. 이전 문서의 분산 구조 설명을 계속 사용하면 확장 지점이 편향됩니다.
 
-## 추천읽기순서1. `엔진/ColorVision.Engine/템플릿/TemplateContorl.cs`
-2. `엔진/ColorVision.Engine/템플릿/Jsons/ITemplateJson.cs`
-3. `엔진/ColorVision.Engine/Services/DeviceService.cs`
-4. `엔진/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs`
-5. `엔진/ColorVision.Engine/Services/Core/MQTTServiceBase.cs`
-6. `엔진/ColorVision.Engine/Services/RC/MQTTRCService.cs`
-7. `엔진/ColorVision.Engine/템플릿/Flow/FlowEngineManager.cs`
-8. `엔진/ColorVision.Engine/템플릿/Flow/DisplayFlow.xaml.cs`
+## 추천 읽기 순서
+
+1. `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
+2. `Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs`
+3. `Engine/ColorVision.Engine/Services/DeviceService.cs`
+4. `Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs`
+5. `Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs`
+6. `Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs`
+7. `Engine/ColorVision.Engine/Templates/Flow/FlowEngineManager.cs`
+8. `Engine/ColorVision.Engine/Templates/Flow/DisplayFlow.xaml.cs`
 
 이런 방식으로 먼저 템플릿과 서비스 호스트 계층을 확인한 다음 메시지 체인과 프로세스 브리징 계층을 연결할 수 있습니다.
 
 ## 계속 읽기
 
-- [docs/04-api-reference/engine-comComponents/FlowEngineLib.md](./FlowEngineLib.md)
-- [문서/03-아키텍처/컴포넌트/템플릿/분석.md](../../03-아키텍처/컴포넌트/템플릿/분석.md)
+- [docs/04-api-reference/engine-components/FlowEngineLib.md](./FlowEngineLib.md)
+- [docs/03-architecture/components/templates/analysis.md](../../03-architecture/components/templates/analysis.md)
 - [docs/04-api-reference/algorithms/overview.md](../algorithms/overview.md)

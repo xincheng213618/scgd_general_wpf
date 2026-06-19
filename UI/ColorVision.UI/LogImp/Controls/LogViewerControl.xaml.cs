@@ -365,7 +365,7 @@ namespace ColorVision.UI.LogImp.Controls
             {
                 if (PlainTextBox.SelectionLength > 0)
                 {
-                    Clipboard.SetText(PlainTextBox.SelectedText);
+                    Common.Clipboard.SetText(PlainTextBox.SelectedText);
                 }
 
                 return;

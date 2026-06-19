@@ -3,9 +3,12 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using MQTTMessageLib.Calibration;
@@ -45,6 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
+            AttachDisplayFilterConfig();
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)
@@ -60,6 +64,20 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
+
+        private void AttachDisplayFilterConfig()
+        {
+            if (ImageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool filterService)
+            {
+                filterService.AttachPersistence(Device.DisplayConfig.DisplayShaderFilter, SaveDisplayFilterConfig);
+            }
+        }
+
+        private static void SaveDisplayFilterConfig()
+        {
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+        }
+
         private void Delete()
         {
             if (listView1.SelectedItems.Count == listView1.Items.Count)

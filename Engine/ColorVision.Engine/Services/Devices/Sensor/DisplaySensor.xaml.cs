@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Messages;
+﻿#pragma warning disable CA1816,CA1863
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
@@ -157,10 +158,54 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             }
 
             MsgRecord msgRecord = DeviceService.Open();
-            msgRecord.MsgRecordStateChanged += (s,e) =>
+            bool resultHandled = false;
+            void OnMsgRecordStateChanged(object? s, MsgRecordState state)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.OpenSuccess);
-            };
+                if (resultHandled || !IsTerminalMsgRecordState(state))
+                {
+                    return;
+                }
+
+                resultHandled = true;
+                msgRecord.MsgRecordStateChanged -= OnMsgRecordStateChanged;
+
+                if (state == MsgRecordState.Success)
+                {
+                    MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        Properties.Resources.OpenSuccess,
+                        "ColorVision",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information
+                    );
+                    return;
+                }
+
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    BuildOpenFailureMessage(msgRecord, state),
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+            }
+
+            msgRecord.MsgRecordStateChanged += OnMsgRecordStateChanged;
+            OnMsgRecordStateChanged(msgRecord, msgRecord.MsgRecordState);
+        }
+
+        private static bool IsTerminalMsgRecordState(MsgRecordState state)
+        {
+            return state == MsgRecordState.Success || state == MsgRecordState.Fail || state == MsgRecordState.Timeout;
+        }
+
+        private static string BuildOpenFailureMessage(MsgRecord msgRecord, MsgRecordState state)
+        {
+            string status = state == MsgRecordState.Timeout ? Properties.Resources.Timeout : Properties.Resources.Failure;
+            string message = msgRecord.MsgReturn?.Message;
+            string openFailure = $"{Properties.Resources.Open} {status}";
+
+            return string.IsNullOrWhiteSpace(message) ? openFailure : $"{openFailure}: {message}";
         }
 
 
@@ -213,11 +258,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             new TemplateEditorWindow(new TemplateSensor(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
 
         public void Dispose()

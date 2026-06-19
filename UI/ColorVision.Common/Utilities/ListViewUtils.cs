@@ -28,7 +28,7 @@ namespace ColorVision.Common.Utilities
                         sb.Append(value?.ToString());
                         sb.Append('\t'); // 用Tab分隔
                     }
-                    NativeMethods.Clipboard.SetText(sb.ToString().TrimEnd('\t'));
+                    ColorVision.Common.Clipboard.SetText(sb.ToString().TrimEnd('\t'));
                 }
             }
 

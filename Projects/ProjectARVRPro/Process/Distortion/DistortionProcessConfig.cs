@@ -1,3 +1,4 @@
+#pragma warning disable CS8603
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using System.Collections.Generic;
 using System.ComponentModel;

@@ -98,6 +98,41 @@
 
 所以文档不应该把它写成和业务同一层的“流程系统”，它是流程系统下面的 UI 基础库。
 
+## 交接验收表
+
+接手这个模块时，重点不是验证某个业务流程，而是验证节点编辑器基础能力是否仍然完整：
+
+| 验收项 | 要看哪里 | 通过标准 |
+| --- | --- | --- |
+| 节点类型加载 | `STNodeTypeRegistry`、`CVNodeContainer.LoadAssembly(...)` | 当前程序集和外部节点程序集能被注册，节点树能看到对应类型 |
+| 画布加载 | `STNodeEditor.LoadCanvas(...)`、`CVNodeContainer.LoadCanvas(...)` | 文件、byte[]、Stream 三类入口能恢复节点、位置、属性和连线 |
+| 缺失类型处理 | `CVNodeContainer.LoadCanvas(...)` | 缺少节点类型或程序集时能明确抛出/提示，而不是静默生成坏画布 |
+| 节点编辑 | `STNodeEditor`、`STNode` | 新增、移动、选中、删除、活动态切换和重绘正常 |
+| 端口连接 | `STNodeOption`、`OptionConnecting`、`OptionConnected`、`OptionDisConnecting`、`OptionDisConnected` | 连接限制、断开、事件顺序和数据传递不乱 |
+| 属性编辑 | `STNodePropertyGrid`、`FrmSTNodePropertyInput`、`FrmSTNodePropertySelect` | 文本、枚举、布尔、只读属性能按节点定义编辑或禁用 |
+| 画布交互 | `CanvasMoved`、`CanvasScaled` | 拖动画布、缩放、缩放提示和连接状态提示正常 |
+| WPF 宿主嵌入 | 上层 Flow 编辑窗口 | WinForms 控件嵌入 WPF 后鼠标、键盘、焦点和缩放没有明显失效 |
+
+## 变更边界
+
+| 变更类型 | 应该改这里吗 | 说明 |
+| --- | --- | --- |
+| 节点画布、端口连接、节点树、节点属性面板交互变化 | 是 | 这是 `ST.Library.UI` 的基础职责 |
+| 流程节点的业务执行逻辑变化 | 通常不是 | 先看 `FlowEngineLib`、`NodeConfigurator`、Engine 模板或具体项目节点 |
+| WPF 外层页面布局变化 | 通常不是 | 先看 UI 宿主页面；这里最多处理 WinForms 控件自身行为 |
+| 节点配置保存格式变化 | 可能是 | 如果影响 `LoadCanvas(...)` 和连接恢复，要同步这里；如果只是业务配置字段，优先看上层节点 |
+| 新增业务节点类型 | 通常不是 | 在上层节点程序集实现并注册类型，不要把客户业务写进基础 UI 库 |
+
+## 故障首查
+
+| 现象 | 第一检查点 |
+| --- | --- |
+| 画布打开后节点丢失 | 检查 `STNodeTypeRegistry` 是否加载了对应程序集，缺失类型是否被 `CVNodeContainer` 抛出 |
+| 连线没有恢复 | 检查保存数据中的输入/输出端口 key、`LoadCanvas(...)` 连线恢复顺序和事件是否被拦截 |
+| 属性面板改了但节点没生效 | 检查 `STNodePropertyGrid` 的属性描述符、只读标记和输入窗体回写 |
+| WPF 窗口里鼠标或键盘异常 | 先查 WinFormsHost 嵌入、焦点转移和快捷键处理，不要先改业务节点 |
+| 拖动或缩放卡顿 | 先看 `STNodeEditor` 重绘、缓存图、节点数量和连线数量 |
+
 ## 当前几个最容易写错的点
 
 ### 它是 WinForms 库，不是 WPF 流程框架

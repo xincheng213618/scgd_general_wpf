@@ -48,10 +48,16 @@ public class CVBaseServerNodeHub : CVBaseServerNode
 	}
     private static bool ShouldEndFlowImmediately(CVStartCFC start)
     {
-        return start.FlowStatus == StatusTypeEnum.Failed
-            || start.FlowStatus == StatusTypeEnum.Canceled
-            || start.FlowStatus == StatusTypeEnum.OverTime;
+        return start.TryGetStopStatus(out _);
     }
+
+	private static void FinishFlow(CVStartCFC start)
+	{
+		if (start.TryDoFinishing())
+		{
+			start.FireFinished();
+		}
+	}
 
 
     private void DoInputDataTransfer(STNodeOption sender, STNodeOptionEventArgs e)
@@ -62,17 +68,19 @@ public class CVBaseServerNodeHub : CVBaseServerNode
 		}
 		if (HasData(e))
 		{
-			bool flag = true;
+			bool allInputsRunning = true;
 			if (e.TargetOption.DataType == typeof(CVStartCFC))
 			{
 				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
+				cVStartCFC.NormalizeStopStatus();
 				if (cVStartCFC.IsPaused)
 				{
 					DoTransferToServer(cVStartCFC, e);
 					return;
-				}
+                }
                 if (ShouldEndFlowImmediately(cVStartCFC))
                 {
+                    FinishFlow(cVStartCFC);
                     clearData();
                     clearInCFC();
                     DoNodeEndedTransferData(cVStartCFC);
@@ -90,14 +98,11 @@ public class CVBaseServerNodeHub : CVBaseServerNode
 						CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
 						if (cVStartCFC2 != null)
 						{
-							if (cVStartCFC2.IsRunning)
-							{
-								flag = flag;
-							}
-							else
+							cVStartCFC2.NormalizeStopStatus();
+							if (!cVStartCFC2.IsRunning)
 							{
 								statusType = cVStartCFC2.FlowStatus;
-								flag = !flag && false;
+								allInputsRunning = false;
 							}
 							masterInput[i] = cVStartCFC2;
 							num++;
@@ -115,13 +120,14 @@ public class CVBaseServerNodeHub : CVBaseServerNode
 				if (num == base.InputOptionsCount)
 				{
 					clearData();
-					if (flag)
+					if (allInputsRunning)
 					{
 						DoTransferToServer(cVStartCFC, e);
 					}
 					else
 					{
 						cVStartCFC.SetStatusType(statusType);
+						FinishFlow(cVStartCFC);
 						DoNodeEndedTransferData(cVStartCFC);
 					}
 					clearInCFC();

@@ -61,15 +61,6 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
-        ///   查找类似 命令 的本地化字符串。
-        /// </summary>
-        public static string Command {
-            get {
-                return ResourceManager.GetString("Command", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 创建 的本地化字符串。
         /// </summary>
         public static string Create {
@@ -93,15 +84,6 @@ namespace ColorVision.Scheduler.Properties {
         public static string CronExpression {
             get {
                 return ResourceManager.GetString("CronExpression", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 删除 的本地化字符串。
-        /// </summary>
-        public static string Delete {
-            get {
-                return ResourceManager.GetString("Delete", resourceCulture);
             }
         }
         
@@ -147,15 +129,6 @@ namespace ColorVision.Scheduler.Properties {
         public static string PreviousFireTime {
             get {
                 return ResourceManager.GetString("PreviousFireTime", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 恢复 的本地化字符串。
-        /// </summary>
-        public static string Resume {
-            get {
-                return ResourceManager.GetString("Resume", resourceCulture);
             }
         }
         
@@ -984,15 +957,6 @@ namespace ColorVision.Scheduler.Properties {
         public static string Status {
             get {
                 return ResourceManager.GetString("Status", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 停止 的本地化字符串。
-        /// </summary>
-        public static string Stop {
-            get {
-                return ResourceManager.GetString("Stop", resourceCulture);
             }
         }
         

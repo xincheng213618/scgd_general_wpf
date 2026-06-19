@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
+﻿#pragma warning disable CS8604,CS8625
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
 using log4net;

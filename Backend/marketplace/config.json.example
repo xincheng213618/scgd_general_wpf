@@ -6,6 +6,7 @@
     "secret_key": "change-this-to-a-random-string",
     "app_release_keep_count": 5,
     "plugin_package_keep_count": 3,
+    "transfer_upload_dir": "Transfer",
     "upload_auth": {
         "username": "admin",
         "password": "change-this-password"

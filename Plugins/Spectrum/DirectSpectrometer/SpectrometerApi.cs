@@ -1,3 +1,4 @@
+#pragma warning disable CS0169
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;

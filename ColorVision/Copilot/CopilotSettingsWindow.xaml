@@ -6,200 +6,377 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         Title="{x:Static properties:Resources.CopilotLanguageModel}"
-        Width="960"
-        Height="700"
+        Width="980"
+        Height="680"
         MinWidth="860"
-        MinHeight="620"
+        MinHeight="600"
         Background="{DynamicResource GlobalBackground}"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
         <Style x:Key="SettingsSurfaceBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+
+        <Style x:Key="SettingsPanelTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style x:Key="SettingsHintTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Opacity" Value="0.66" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="TextTrimming" Value="None" />
+        </Style>
+
+        <Style x:Key="SettingsSummaryLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style x:Key="SettingsSummaryValueStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style x:Key="SettingsFieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,8,12,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Opacity" Value="0.82" />
+        </Style>
+
+        <Style x:Key="SettingsDividerStyle" TargetType="Border">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Margin" Value="0,14,0,14" />
+            <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="Opacity" Value="0.72" />
+        </Style>
+
+        <Style x:Key="SettingsQuickAddPreviewBorderStyle" TargetType="Border">
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Background" Value="{DynamicResource GlobalBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+
+        <Style x:Key="SettingsUsageBandBorderStyle" TargetType="Border">
+            <Setter Property="Margin" Value="0,0,0,14" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="Background" Value="{DynamicResource GlobalBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+
+        <Style x:Key="SettingsFooterStatusTextStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Opacity" Value="0.62" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasUnsavedSettings}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                    <Setter Property="Opacity" Value="0.92" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="PrimaryActionButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style x:Key="ProfileStatusPillBorderStyle" TargetType="Border">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Opacity" Value="0.68" />
+        </Style>
+
+        <Style x:Key="ProfileStatusTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsConfigured}" Value="False">
+                    <Setter Property="Opacity" Value="0.74" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Margin="16,16,16,0" Padding="14,10" Style="{StaticResource SettingsSurfaceBorderStyle}">
-            <StackPanel>
-                <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotLanguageModel}" />
-                <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{x:Static properties:Resources.CopilotModelConfigDescription}" TextWrapping="Wrap" />
-            </StackPanel>
-        </Border>
-
-        <Grid Grid.Row="1" Margin="16,12,16,12">
+        <Grid Grid.Row="0" Margin="16,16,16,12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300" />
-                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="320" />
+                <ColumnDefinition Width="14" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource SettingsSurfaceBorderStyle}">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Top" Margin="12,12,12,10">
-                        <WrapPanel>
-                            <ComboBox Width="132"
-                                      ItemsSource="{Binding VendorOptions}"
-                                      DisplayMemberPath="Label"
-                                      SelectedValuePath="Value"
-                                      SelectedValue="{Binding NewProfileVendorType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                            <Button Margin="8,0,0,0" Padding="10,4" Command="{Binding AddProfileCommand}" Content="{x:Static properties:Resources.CopilotAddModel}" />
-                            <Button Margin="8,0,0,0" Padding="10,4" Command="{Binding DuplicateProfileCommand}" Content="{x:Static properties:Resources.Copy}" IsEnabled="{Binding CanEditSelectedProfile}" />
-                            <Button Margin="8,0,0,0" Padding="10,4" Command="{Binding DeleteProfileCommand}" Content="{x:Static properties:Resources.Delete}" IsEnabled="{Binding CanEditSelectedProfile}" />
-                        </WrapPanel>
-                        <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.62" Text="{x:Static properties:Resources.CopilotVendorHint}" TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <ListBox Margin="8,0,8,8" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate DataType="{x:Type local:CopilotProfileConfig}">
-                                <Border Padding="10,8">
-                                    <StackPanel>
-                                        <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding DisplayLabel}" />
-                                        <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding SecondaryLabel}" />
-                                        <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.55" Text="{Binding BaseUrl}" TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </DockPanel>
-            </Border>
-
-            <Border Grid.Column="2" Style="{StaticResource SettingsSurfaceBorderStyle}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                <Grid Margin="14" IsEnabled="{Binding CanEditSelectedProfile}">
+                <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="100" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotName}" />
-                    <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.Name, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Grid.Row="1" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotVendor}" />
-                    <ComboBox Grid.Row="1"
-                              Grid.Column="1"
-                              Margin="0,0,0,10"
-                              ItemsSource="{Binding VendorOptions}"
-                              DisplayMemberPath="Label"
-                              SelectedValuePath="Value"
-                              SelectedValue="{Binding SelectedProfile.VendorType, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Grid.Row="2" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotProtocol}" />
-                    <ComboBox Grid.Row="2"
-                              Grid.Column="1"
-                              Margin="0,0,0,10"
-                              ItemsSource="{Binding ProviderOptions}"
-                              DisplayMemberPath="Label"
-                              SelectedValuePath="Value"
-                              SelectedValue="{Binding SelectedProfile.ProviderType, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Grid.Row="3" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Base URL" />
-                    <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Grid.Row="4" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="API Key" />
-                    <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.ApiKey, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Grid.Row="5" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotModel}" />
-                    <ComboBox Grid.Row="5"
-                              Grid.Column="1"
-                              Margin="0,0,0,10"
-                              IsEditable="True"
-                              IsTextSearchEnabled="False"
-                              ItemsSource="{Binding AvailableModelPresets}"
-                              Text="{Binding SelectedProfile.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <Grid Grid.Row="6" Grid.ColumnSpan="2" Margin="0,0,0,10">
+                    <Grid Grid.Row="0" Margin="14,14,14,12">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="12" />
-                            <ColumnDefinition Width="100" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotMaxToken}" />
-                        <TextBox Grid.Column="1" Text="{Binding SelectedProfile.MaxTokens, UpdateSourceTrigger=PropertyChanged}" />
-
-                        <TextBlock Grid.Column="3" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotTemperature}" />
-                        <TextBox Grid.Column="4" Text="{Binding SelectedProfile.Temperature, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock VerticalAlignment="Center"
+                                   Style="{StaticResource SettingsPanelTitleStyle}"
+                                   Text="Models" />
+                        <Button Grid.Column="1"
+                                Padding="12,5"
+                                Click="OpenAddModelButton_Click"
+                                Content="+ Add Model"
+                                Style="{StaticResource PrimaryActionButtonStyle}" />
                     </Grid>
 
-                    <TextBlock Grid.Row="7" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotToolRounds}" />
-                    <TextBox Grid.Row="7" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.MaxToolRounds, UpdateSourceTrigger=PropertyChanged}" />
+                    <DockPanel Grid.Row="1" Margin="12,0,12,12">
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button Margin="0,0,8,0" Padding="10,4" Command="{Binding DuplicateProfileCommand}" Content="{x:Static properties:Resources.Copy}" IsEnabled="{Binding CanEditSelectedProfile}" />
+                                <Button Padding="10,4" Command="{Binding DeleteProfileCommand}" Content="{x:Static properties:Resources.Delete}" IsEnabled="{Binding CanEditSelectedProfile}" />
+                            </StackPanel>
+                        </DockPanel>
 
-                    <Border Grid.Row="8" Grid.ColumnSpan="2" Margin="0,4,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" />
+                        <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type local:CopilotProfileConfig}">
+                                    <Border Padding="10,8">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="9" Grid.ColumnSpan="2" Margin="0,0,0,8" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="Local MCP" />
-
-                    <CheckBox Grid.Row="10" Grid.ColumnSpan="2" Margin="0,0,0,10" Content="Enable local MCP server" Foreground="{DynamicResource GlobalTextBrush}" IsChecked="{Binding McpEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Grid.Row="11" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Port" />
-                    <TextBox Grid.Row="11" Grid.Column="1" Margin="0,0,0,10" Text="{Binding McpPort, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Grid.Row="12" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Endpoint" />
-                    <TextBox Grid.Row="12" Grid.Column="1" Margin="0,0,0,10" IsReadOnly="True" Text="{Binding McpEndpoint, Mode=OneWay}" />
-
-                    <TextBlock Grid.Row="13" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Bearer token" />
-                    <DockPanel Grid.Row="13" Grid.Column="1" Margin="0,0,0,10">
-                        <Button DockPanel.Dock="Right" Margin="8,0,0,0" Padding="10,4" Command="{Binding RegenerateMcpTokenCommand}" Content="Regenerate token" />
-                        <Button DockPanel.Dock="Right" Margin="8,0,0,0" Padding="10,4" Command="{Binding CopyMcpTokenCommand}" Content="Copy" />
-                        <TextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" Text="{Binding McpBearerToken, Mode=OneWay}" />
+                                                <TextBlock Grid.Column="0"
+                                                           Margin="0,0,8,0"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Text="{Binding DisplayLabel}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <Border Grid.Column="1"
+                                                        Style="{StaticResource ProfileStatusPillBorderStyle}"
+                                                        ToolTip="{Binding ConfigurationStatusToolTip}">
+                                                    <TextBlock Style="{StaticResource ProfileStatusTextStyle}"
+                                                               Text="{Binding ConfigurationStatusText}" />
+                                                </Border>
+                                            </Grid>
+                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding SecondaryLabel}" />
+                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.55" Text="{Binding BaseUrl}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </DockPanel>
-
-                    <TextBlock Grid.Row="14" Margin="0,8,12,0" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Text="Status" />
-                    <DockPanel Grid.Row="14" Grid.Column="1" Margin="0,0,0,10">
-                        <Button DockPanel.Dock="Right" Margin="8,0,0,0" Padding="10,4" Command="{Binding TestMcpConnectionCommand}" Content="Test Connection" IsEnabled="{Binding CanTestMcpConnection}" />
-                        <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding McpStatusText}" TextWrapping="Wrap" />
-                    </DockPanel>
-
-                    <TextBlock Grid.Row="15" Grid.Column="1" Margin="0,0,0,10" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding McpConnectionTestText}" TextWrapping="Wrap" />
-
-                    <TextBlock Grid.Row="16" Margin="0,8,12,0" VerticalAlignment="Top" Foreground="{DynamicResource GlobalTextBrush}" Text="{x:Static properties:Resources.CopilotSystemPrompt}" />
-                    <TextBox Grid.Row="16"
-                             Grid.Column="1"
-                             AcceptsReturn="True"
-                             VerticalScrollBarVisibility="Auto"
-                             TextWrapping="Wrap"
-                             Text="{Binding SelectedProfile.SystemPrompt, UpdateSourceTrigger=PropertyChanged}" />
                 </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource SettingsSurfaceBorderStyle}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="16">
+                        <StackPanel IsEnabled="{Binding CanEditSelectedProfile}">
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                    <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="Connection" />
+                                    <TextBlock Margin="0,6,0,0" Style="{StaticResource SettingsHintTextStyle}" Text="{Binding SelectedProfile.SecondaryLabel}" />
+                                </StackPanel>
+
+                                <Button Grid.Column="1"
+                                        MinWidth="96"
+                                        Padding="12,5"
+                                        VerticalAlignment="Top"
+                                        Command="{Binding UseSelectedProfileInChatCommand}"
+                                        Content="{Binding SelectedProfileUsageActionText}"
+                                        IsEnabled="{Binding CanUseSelectedProfileInChat}" />
+                            </Grid>
+
+                            <Border Style="{StaticResource SettingsUsageBandBorderStyle}">
+                                <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                                           Opacity="0.76"
+                                           Text="{Binding SelectedProfileUsageText}"
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotName}" />
+                                <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.Name, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotVendor}" />
+                                <ComboBox Grid.Row="1"
+                                          Grid.Column="1"
+                                          Margin="0,0,0,10"
+                                          ItemsSource="{Binding VendorOptions}"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding SelectedProfile.VendorType, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotApiKey}" />
+                                <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <PasswordBox Grid.Column="0"
+                                                 local:PasswordBoxBinding.BindPassword="True"
+                                                 local:PasswordBoxBinding.BoundPassword="{Binding SelectedProfile.ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Visibility="{Binding IsSelectedProfileApiKeyHidden, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding SelectedProfile.ApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                             Visibility="{Binding IsSelectedProfileApiKeyVisible, Converter={StaticResource BoolToVisibility}}" />
+                                    <Button Grid.Column="2"
+                                            Width="48"
+                                            Padding="6,2"
+                                            Command="{Binding ToggleSelectedProfileApiKeyVisibilityCommand}"
+                                            Content="{Binding SelectedProfileApiKeyVisibilityText}" />
+                                </Grid>
+
+                                <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotModel}" />
+                                <ComboBox Grid.Row="3"
+                                          Grid.Column="1"
+                                          Margin="0,0,0,10"
+                                          IsEditable="True"
+                                          IsTextSearchEnabled="False"
+                                          ItemsSource="{Binding AvailableModelPresets}"
+                                          Text="{Binding SelectedProfile.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="Test" />
+                                <DockPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,10">
+                                    <Button DockPanel.Dock="Right"
+                                            Margin="8,0,0,0"
+                                            Padding="10,4"
+                                            Command="{Binding TestSelectedProfileCommand}"
+                                            Content="Test Model"
+                                            IsEnabled="{Binding CanTestSelectedProfile}" />
+                                    <TextBlock Margin="0,4,0,0"
+                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                               Opacity="0.72"
+                                               Text="{Binding SelectedProfileConnectionTestText}"
+                                               TextWrapping="Wrap" />
+                                </DockPanel>
+                            </Grid>
+
+                            <Expander Margin="0,4,0,0" Header="Advanced model settings" IsExpanded="False" Foreground="{DynamicResource GlobalTextBrush}">
+                                <StackPanel Margin="0,10,0,0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotProtocol}" />
+                                        <ComboBox Grid.Row="0"
+                                                  Grid.Column="1"
+                                                  Margin="0,0,0,10"
+                                                  ItemsSource="{Binding ProviderOptions}"
+                                                  DisplayMemberPath="Label"
+                                                  SelectedValuePath="Value"
+                                                  SelectedValue="{Binding SelectedProfile.ProviderType, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Base URL" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="14" />
+                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotMaxToken}" />
+                                            <TextBox Grid.Column="1" Text="{Binding SelectedProfile.MaxTokens, UpdateSourceTrigger=PropertyChanged}" />
+
+                                            <TextBlock Grid.Column="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotTemperature}" />
+                                            <TextBox Grid.Column="4" Text="{Binding SelectedProfile.Temperature, UpdateSourceTrigger=PropertyChanged}" />
+                                        </Grid>
+
+                                        <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotToolRounds}" />
+                                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.MaxToolRounds, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" VerticalAlignment="Top" Text="{x:Static properties:Resources.CopilotSystemPrompt}" />
+                                        <TextBox Grid.Row="4"
+                                                 Grid.Column="1"
+                                                 Height="140"
+                                                 AcceptsReturn="True"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 TextWrapping="Wrap"
+                                                 Text="{Binding SelectedProfile.SystemPrompt, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Expander>
+                        </StackPanel>
+
+                    </StackPanel>
                 </ScrollViewer>
             </Border>
         </Grid>
 
-        <Border Grid.Row="2" Margin="16,0,16,16" Padding="12,10" Style="{StaticResource SettingsSurfaceBorderStyle}">
+        <Border Grid.Row="1" Margin="16,0,16,16" Padding="12,10" Style="{StaticResource SettingsSurfaceBorderStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -208,10 +385,21 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{x:Static properties:Resources.CopilotSettingsHint}" TextWrapping="Wrap" />
-                <Button Grid.Column="1" Margin="0,0,8,0" Padding="14,6" Click="CancelButton_Click" Content="{x:Static properties:Resources.Cancel}" />
-                <Button Grid.Column="2" Margin="0,0,8,0" Padding="14,6" Click="ApplyButton_Click" Content="Apply" />
-                <Button Grid.Column="3" Padding="14,6" Click="SaveButton_Click" Content="{x:Static properties:Resources.Save}" />
+                <TextBlock VerticalAlignment="Center"
+                           Style="{StaticResource SettingsFooterStatusTextStyle}"
+                           Text="{Binding SettingsStatusText}" />
+                <Button Grid.Column="1" Margin="0,0,8,0" Padding="14,6" Click="CancelButton_Click" Content="{Binding SettingsCancelButtonText}" />
+                <Button Grid.Column="2"
+                        Margin="0,0,8,0"
+                        Padding="14,6"
+                        Click="ApplyButton_Click"
+                        Content="Apply"
+                        IsEnabled="{Binding CanApplySettings}" />
+                <Button Grid.Column="3"
+                        Padding="14,6"
+                        Click="SaveButton_Click"
+                        Content="{x:Static properties:Resources.Save}"
+                        IsEnabled="{Binding CanSaveSettings}" />
             </Grid>
         </Border>
     </Grid>

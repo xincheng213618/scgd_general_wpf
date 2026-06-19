@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.ThirdPartyApps;
+﻿#pragma warning disable CA1051,CA1711
+using ColorVision.Common.ThirdPartyApps;
 using Microsoft.Win32;
 using OpenCvSharp;
 using System;

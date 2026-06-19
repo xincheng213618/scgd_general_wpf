@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using Microsoft.Win32;

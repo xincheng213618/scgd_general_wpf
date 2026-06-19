@@ -85,6 +85,43 @@
 
 したがって、単にプロセス テンプレートを「単なるノード グラフ ファイル」として記述すると、現在のパッケージをエクスポートする機能が失われます。
 
+### 保存先はデータベースとローカルファイルを分けて見る
+
+`FlowEngineToolWindow.Save()` には現在 2 つの明確な保存経路があります。
+
+| 場面 | 現在の動作 | 引き継ぎ時の注意 |
+| --- | --- | --- |
+| ローカル `.stn` ファイル | `SaveToFile(FileFlow)` がキャンバス bytes をファイルへ直接書き戻す | ディスクだけを更新し、テンプレート DB は更新しない |
+| `FlowParam` テンプレート | `CheckFlow()` -> `GetCanvasData()` -> Base64 -> `TemplateFlow.Save2DB(...)` | `ModMasterModel`、詳細テーブル、`SysResourceModel` に保存する |
+
+つまり、フローエディタは単なるファイルエディタではありません。テンプレート管理から開いた場合の主データソースはデータベースで、ファイルから開いた場合だけ保存先がローカル `.stn` になります。
+
+### `.cvflow` パッケージ構造
+
+単一フローを `.cvflow` としてエクスポートすると、`FlowPackageHelper` は ZIP パッケージを作成します。
+
+| ファイル | 役割 |
+| --- | --- |
+| `flow.stn` | ノードキャンバスのバイナリ内容 |
+| `manifest.json` | `FlowPackageManifest`。フロー名、バージョン、関連テンプレートを記録する |
+
+関連テンプレートは手入力のリストではなく、ノードプロパティから `TempName`、`TemplateName`、`CalibTempName`、`POITempName`、`FilterTemplateName`、`ReviseTemplateName`、`XRTempName`、`CamTempName`、`AlgTempName`、`LayoutROITemplate` などの参照を走査して集めます。インポート時に名前が衝突すると、フロー名を使って新しいテンプレート名を作り、フロー内の参照も置き換えます。
+
+複数選択エクスポートは引き続き旧式の `.zip` で、複数の `.stn` を含みますが、`manifest.json` はなく、関連テンプレートの再帰収集もしません。引き継ぎ文書ではこの 2 種類のエクスポートを分けて説明する必要があります。
+
+## 実行とスケジューリングの流れ
+
+フローテンプレートは編集されるだけでなく、正式な実行対象にもなります。
+
+1. ユーザーまたは呼び出し元が `DisplayFlow.TemplateCombox` のフローテンプレートを選択する。
+2. `DisplayFlow.RunFlow(sn)` が `MeasureBatchModel` を作成し、`TId` には `TemplateFlow.Params[selectedIndex].Id` を入れる。
+3. `FlowControl.Start(sn)` がノードグラフを開始する。
+4. `FlowControl_FlowCompleted(...)` がバッチ状態、総時間、結果を更新し、`FlowExecutionCompleted` を発火する。
+5. `RunFlowAndWaitAsync()` がこのイベントを await 可能なタスクに包む。
+6. `FlowJob` が Quartz ジョブ内で WPF Dispatcher に戻り、`DisplayFlow.RunFlowAndWaitAsync()` を呼んで `FlowJobResult` を作る。
+
+「定時ジョブがなぜフローを実行できるのか」を追うときは、Quartz だけでなく、`DisplayFlow` と `FlowExecutionCompleted` も一緒に読む必要があります。
+
 ## 現在、最もよくある間違いのいくつかが犯されています
 
 ### このページは FlowEngineLib の複製ページではありません
@@ -102,6 +139,17 @@
 ### ウィンドウの動作は一般的なテンプレート エディタとは異なります
 
 通常のテンプレートは主に `TemplateEditorWindow` の右側で編集されます。プロセス テンプレートは現在、「リスト ウィンドウ + 独立したプロセス エディター ウィンドウ」のパスを採用しています。一般的なテンプレートの物語に従い続けると、読者を誤解させることになります。
+
+### インポートとエクスポートには 2 つの互換経路がある
+
+`.cvflow` はパッケージインポートとして扱われ、`manifest.json` を読み、関連テンプレートを取り込みます。それ以外のファイルは bytes を読み取り、Base64 に変換して `FlowParam` を作る経路へフォールバックします。`.stn` だけをテストすると、テンプレート参照の置換という重要な引き継ぎポイントを見落とします。
+
+## 受け入れ確認
+
+- テンプレート管理からフローを新規作成し、保存後に `ModMasterModel` と `SysResourceModel` の記録を確認する。
+- 単一フローを `.cvflow` としてエクスポートし、ZIP 内に `flow.stn` と `manifest.json` があることを確認する。
+- 同名のフローパッケージをインポートし、衝突した関連テンプレート名とフロー内参照が置き換わることを確認する。
+- `DisplayFlow.RunFlowAndWaitAsync()` または `FlowJob` で一度実行し、バッチ状態と結果が更新されることを確認する。
 
 ## 推奨される読む順序
 

@@ -547,15 +547,6 @@ namespace SystemMonitor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 已用 的本地化字符串。
-        /// </summary>
-        public static string Used {
-            get {
-                return ResourceManager.GetString("Used", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 用户名 的本地化字符串。
         /// </summary>
         public static string UserName {

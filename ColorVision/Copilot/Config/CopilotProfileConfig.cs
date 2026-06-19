@@ -1,7 +1,9 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -12,6 +14,13 @@ namespace ColorVision.Copilot
         public const double DefaultTemperature = 0.2;
 
         public const string DefaultSystemPrompt = "You are ColorVision Copilot, the general-purpose assistant built into ColorVision. You can help with general knowledge, writing, programming, analysis, translation, and ColorVision usage. For ColorVision software, project code, devices, flows, algorithms, plugins, WPF/C# engineering, or app-provided context, prioritize the provided ColorVision context. Rules: 1. Treat local files, web pages, logs, devices, or execution results as known facts only when the app explicitly provides them. 2. If required context is missing, clearly say what is needed. 3. For device control, file deletion, configuration mutation, or flow execution, explain the risk and impact first. 4. Answer general questions normally, and use ColorVision context for ColorVision-related questions. 5. Do not claim that you performed an operation unless the app context explicitly shows that it happened.";
+
+        private static readonly string[] LegacyDefaultSystemPromptMarkers =
+        {
+            "\u4f60\u662f ColorVision Copilot",
+            "ColorVision \u8f6f\u4ef6\u5185\u7f6e",
+            "\u4e0d\u8981\u58f0\u79f0\u81ea\u5df1\u5df2\u7ecf\u6267\u884c",
+        };
 
         public string Id
         {
@@ -74,7 +83,10 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _apiKey, NormalizeText(value)))
+                {
                     OnPropertyChanged(nameof(IsConfigured));
+                    OnConfigurationStateChanged();
+                }
             }
         }
         private string _apiKey = string.Empty;
@@ -87,7 +99,10 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _baseUrl, NormalizeText(value)))
+                {
                     OnPropertyChanged(nameof(IsConfigured));
+                    OnConfigurationStateChanged();
+                }
             }
         }
         private string _baseUrl = "https://api.deepseek.com/anthropic";
@@ -104,6 +119,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(DisplayLabel));
                     OnPropertyChanged(nameof(IsConfigured));
                     OnPropertyChanged(nameof(SecondaryLabel));
+                    OnConfigurationStateChanged();
                 }
             }
         }
@@ -150,6 +166,21 @@ namespace ColorVision.Copilot
             !string.IsNullOrWhiteSpace(ApiKey) &&
             !string.IsNullOrWhiteSpace(BaseUrl) &&
             !string.IsNullOrWhiteSpace(Model);
+
+        [JsonIgnore]
+        public string ConfigurationStatusText => IsConfigured ? "Ready" : "Incomplete";
+
+        [JsonIgnore]
+        public string ConfigurationStatusToolTip
+        {
+            get
+            {
+                var missing = BuildMissingConfigurationParts();
+                return missing.Length == 0
+                    ? "This profile has API key, endpoint, and model."
+                    : "Missing " + string.Join(", ", missing) + ".";
+            }
+        }
 
         [JsonIgnore]
         public string VendorLabel => CopilotVendorCatalog.GetLabel(VendorType);
@@ -203,7 +234,7 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
-            if (string.IsNullOrWhiteSpace(SystemPrompt))
+            if (string.IsNullOrWhiteSpace(SystemPrompt) || IsLegacyDefaultSystemPrompt(SystemPrompt))
             {
                 SystemPrompt = DefaultSystemPrompt;
                 changed = true;
@@ -263,5 +294,34 @@ namespace ColorVision.Copilot
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
+
+        private static bool IsLegacyDefaultSystemPrompt(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            return LegacyDefaultSystemPromptMarkers.All(marker => value.Contains(marker, StringComparison.Ordinal));
+        }
+
+        private void OnConfigurationStateChanged()
+        {
+            OnPropertyChanged(nameof(ConfigurationStatusText));
+            OnPropertyChanged(nameof(ConfigurationStatusToolTip));
+        }
+
+        private string[] BuildMissingConfigurationParts()
+        {
+            var missing = new List<string>(3);
+            if (string.IsNullOrWhiteSpace(ApiKey))
+                missing.Add("API key");
+
+            if (string.IsNullOrWhiteSpace(BaseUrl))
+                missing.Add("endpoint");
+
+            if (string.IsNullOrWhiteSpace(Model))
+                missing.Add("model");
+
+            return missing.ToArray();
+        }
     }
 }

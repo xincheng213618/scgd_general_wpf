@@ -1,3 +1,4 @@
+#pragma warning disable CA2016,CA2024
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,9 +23,9 @@ namespace ColorVision.Copilot
         private const int BinaryPreviewBytes = 4096;
         public const int MaxReadCharacters = 20000;
 
-        private static readonly Regex QuotedWindowsPathRegex = new(@"[""“](?<path>[A-Za-z]:\\[^""”\r\n]+)[""”]", RegexOptions.Compiled);
-        private static readonly Regex BareWindowsPathRegex = new(@"(?<path>[A-Za-z]:\\[^\s""“”<>|]+)", RegexOptions.Compiled);
-        private static readonly char[] PathTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '，', '。', '；', '：', '！', '？', '）', '】', '》', '、' };
+        private static readonly Regex QuotedWindowsPathRegex = new("[\"\\u201C](?<path>[A-Za-z]:\\\\[^\"\\u201D\r\n]+)[\"\\u201D]", RegexOptions.Compiled);
+        private static readonly Regex BareWindowsPathRegex = new(@"(?<path>[A-Za-z]:\\[^\s""\u201C\u201D<>|]+)", RegexOptions.Compiled);
+        private static readonly char[] PathTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '\uFF0C', '\u3002', '\uFF1B', '\uFF1A', '\uFF01', '\uFF1F', '\uFF09', '\u3011', '\u300B', '\u3001' };
 
         public static IReadOnlyList<string> ExtractExplicitLocalFilePaths(string text)
         {
@@ -55,7 +56,7 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    "文件路径为空。",
+                    "File path is empty.",
                     0,
                     0);
             }
@@ -72,7 +73,7 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    $"路径格式无效：{ex.Message}",
+                    $"Invalid path format: {ex.Message}",
                     0,
                     0);
             }
@@ -84,7 +85,7 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    "目标路径是文件夹，不是文件。",
+                    "The target path is a directory, not a file.",
                     0,
                     0);
             }
@@ -96,7 +97,7 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    "文件不存在。",
+                    "File does not exist.",
                     0,
                     0);
             }
@@ -115,7 +116,7 @@ namespace ColorVision.Copilot
                         false,
                         false,
                         string.Empty,
-                        "目标文件看起来不是可直接读取的文本文件。",
+                        "The target file does not appear to be a directly readable text file.",
                         0,
                         0);
                 }
@@ -168,7 +169,7 @@ namespace ColorVision.Copilot
                         false,
                         false,
                         string.Empty,
-                        $"请求的起始行 {normalizedStartLine} 超出了文件总行数。",
+                        $"Requested start line {normalizedStartLine} is beyond the total file line count.",
                         0,
                         0);
                 }
@@ -177,7 +178,7 @@ namespace ColorVision.Copilot
 
                 if (wasTruncated)
                 {
-                    content += Environment.NewLine + $"...<内容已截断，仅保留前 {MaxReadCharacters} 字符。>";
+                    content += Environment.NewLine + $"...<content truncated; kept the first {MaxReadCharacters} characters.>";
                 }
 
                 return new CopilotLocalFileReadResult(
@@ -200,7 +201,7 @@ namespace ColorVision.Copilot
                     false,
                     false,
                     string.Empty,
-                    $"读取失败：{ex.Message}",
+                    $"Read failed: {ex.Message}",
                     0,
                     0);
             }

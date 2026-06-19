@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1725,CS8601
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;

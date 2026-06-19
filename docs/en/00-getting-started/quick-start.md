@@ -63,7 +63,7 @@ Continue to [User Guide](../01-user-guide/README.md).
 
 ### I Want to Do Secondary Development or Locate Code
 
-First read [Developer Guide](../02-developer-guide/README.md), then enter [Architecture Design](../03-architecture/README.md) or [API Reference](../04-api-reference/README.md) as needed.
+First read [Developer Guide](../02-developer-guide/README.md), then enter [Architecture Design](../03-architecture/README.md) or [Module Handbook](../04-api-reference/README.md) as needed.
 
 ### I Just Want to Know Where the Main Modules Are in the Repository
 

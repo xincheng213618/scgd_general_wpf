@@ -1,3 +1,4 @@
+#pragma warning disable CS8601
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons;
@@ -40,7 +41,7 @@ namespace ProjectARVRPro.Process.Distortion
 
                             if (distortionResult.OpticDistortion != null)
                             {
-                                distortionResult.OpticDistortion.OpticRatio *= recipeConfig.OpticDistortion.Fix;
+                                distortionResult.OpticDistortion.OpticRatio = recipeConfig.OpticDistortion.Apply(distortionResult.OpticDistortion.OpticRatio);
 
                                 testResult.OpticDistortion = Build(
                                     "Optic_Distortion",
@@ -51,8 +52,8 @@ namespace ProjectARVRPro.Process.Distortion
 
                             if (distortionResult.TVDistortion != null)
                             {
-                                distortionResult.TVDistortion.HorizontalRatio *= recipeConfig.HorizontalTVDistortion.Fix;
-                                distortionResult.TVDistortion.VerticalRatio *= recipeConfig.VerticalTVDistortion.Fix;
+                                distortionResult.TVDistortion.HorizontalRatio = recipeConfig.HorizontalTVDistortion.Apply(distortionResult.TVDistortion.HorizontalRatio);
+                                distortionResult.TVDistortion.VerticalRatio = recipeConfig.VerticalTVDistortion.Apply(distortionResult.TVDistortion.VerticalRatio);
 
                                 testResult.HorizontalTVDistortion = Build(
                                     "HorizontalTVDistortion",
@@ -68,12 +69,12 @@ namespace ProjectARVRPro.Process.Distortion
 
                             if (distortionResult.Point9Distortion != null)
                             {
-                                distortionResult.Point9Distortion.TopRatio *= recipeConfig.DistortionTop.Fix;
-                                distortionResult.Point9Distortion.BottomRatio *= recipeConfig.DistortionBottom.Fix;
-                                distortionResult.Point9Distortion.LeftRatio *= recipeConfig.DistortionLeft.Fix;
-                                distortionResult.Point9Distortion.RightRatio *= recipeConfig.DistortionRight.Fix;
-                                distortionResult.Point9Distortion.KeyStoneHoriRatio *= recipeConfig.KeystoneHoriz.Fix;
-                                distortionResult.Point9Distortion.KeyStoneVercRatio *= recipeConfig.KeystoneVert.Fix;
+                                distortionResult.Point9Distortion.TopRatio = recipeConfig.DistortionTop.Apply(distortionResult.Point9Distortion.TopRatio);
+                                distortionResult.Point9Distortion.BottomRatio = recipeConfig.DistortionBottom.Apply(distortionResult.Point9Distortion.BottomRatio);
+                                distortionResult.Point9Distortion.LeftRatio = recipeConfig.DistortionLeft.Apply(distortionResult.Point9Distortion.LeftRatio);
+                                distortionResult.Point9Distortion.RightRatio = recipeConfig.DistortionRight.Apply(distortionResult.Point9Distortion.RightRatio);
+                                distortionResult.Point9Distortion.KeyStoneHoriRatio = recipeConfig.KeystoneHoriz.Apply(distortionResult.Point9Distortion.KeyStoneHoriRatio);
+                                distortionResult.Point9Distortion.KeyStoneVercRatio = recipeConfig.KeystoneVert.Apply(distortionResult.Point9Distortion.KeyStoneVercRatio);
 
                                 testResult.DistortionTop = Build(
                                     "DistortionTop",

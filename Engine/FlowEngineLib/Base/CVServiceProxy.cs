@@ -258,15 +258,7 @@ public class CVServiceProxy
 		}
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
-			trans.trans_action.SetStatusType(StatusTypeEnum.Failed);
-			if (!trans.trans_action.Data.ContainsKey("Msg"))
-			{
-				trans.trans_action.Data.Add("Msg", cmd.resp.Message);
-			}
-			else
-			{
-				trans.trans_action.Data["Msg"] = cmd.resp.Message;
-			}
+			trans.NodeFailed(cmd.resp.Message, GetFullNodeName());
 		}
 		if (_IsPublishStatus)
 		{

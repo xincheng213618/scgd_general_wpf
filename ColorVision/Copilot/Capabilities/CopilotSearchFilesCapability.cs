@@ -1,3 +1,4 @@
+#pragma warning disable CA1859
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -59,13 +60,13 @@ namespace ColorVision.Copilot
 
         private static readonly string[] FileSearchKeywords =
         {
-            "文件",
+            "\u6587\u4ef6",
             "file",
             "filename",
-            "路径",
+            "\u8def\u5f84",
             "path",
-            "目录",
-            "定位",
+            "\u76ee\u5f55",
+            "\u5b9a\u4f4d",
         };
 
         private static readonly Regex FileNameRegex = new(@"(?<term>[A-Za-z0-9_][A-Za-z0-9_.\-]{1,80}\.[A-Za-z0-9]{1,12})", RegexOptions.Compiled);
@@ -87,8 +88,8 @@ namespace ColorVision.Copilot
                     Success = false,
                     SearchRoots = searchRoots,
                     Terms = terms,
-                    Summary = "缺少可搜索的根目录或文件名关键字。",
-                    ErrorMessage = "当前没有可用的搜索根，或未能从消息中提取文件名关键字。",
+                    Summary = "Missing searchable roots or file-name keywords.",
+                    ErrorMessage = "No search root is available, or no file-name keyword could be extracted from the message.",
                 };
             }
 
@@ -128,15 +129,15 @@ namespace ColorVision.Copilot
                     Terms = terms,
                     ScannedFileCount = scannedFiles,
                     Matches = topMatches,
-                    Summary = $"扫描了 {scannedFiles} 个文件，但没有找到候选文件。",
-                    ErrorMessage = $"搜索关键字：{string.Join(", ", terms)}",
+                    Summary = $"Scanned {scannedFiles} files, but no candidate files were found.",
+                    ErrorMessage = $"Search terms: {string.Join(", ", terms)}",
                 };
             }
 
             var builder = new StringBuilder();
-            builder.AppendLine($"[搜索关键字] {string.Join(", ", terms)}");
-            builder.AppendLine($"[搜索根] {string.Join("；", searchRoots)}");
-            builder.AppendLine($"[扫描文件数] {scannedFiles}");
+            builder.AppendLine($"[Search Terms] {string.Join(", ", terms)}");
+            builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
+            builder.AppendLine($"[Scanned Files] {scannedFiles}");
             builder.AppendLine();
 
             for (var index = 0; index < topMatches.Length; index++)
@@ -153,7 +154,7 @@ namespace ColorVision.Copilot
                 Terms = terms,
                 ScannedFileCount = scannedFiles,
                 Matches = topMatches,
-                Summary = $"扫描 {scannedFiles} 个文件，找到 {topMatches.Length} 个候选文件。",
+                Summary = $"Scanned {scannedFiles} files and found {topMatches.Length} candidate files.",
                 Content = builder.ToString().TrimEnd(),
                 SuggestedReadableLocalFilePaths = topMatches
                     .Select(item => item.FullPath)

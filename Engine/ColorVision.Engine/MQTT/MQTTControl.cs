@@ -1,17 +1,35 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1822,CS8603
+using ColorVision.Common.MVVM;
 using log4net;
 using MQTTnet;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.MQTT
 {
+    public sealed class MqttMessageTraceEntry
+    {
+        public DateTime Time { get; set; }
+
+        public string Direction { get; set; }
+
+        public string Topic { get; set; }
+
+        public string Payload { get; set; }
+
+        public string QualityOfServiceLevel { get; set; }
+
+        public bool Retain { get; set; }
+    }
+
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
+        private const int MaxMessageTraceCount = 200;
 
         private static MQTTControl _instance;
         private static readonly object _locker = new();
@@ -29,9 +47,58 @@ namespace ColorVision.Engine.MQTT
 
         public event EventHandler MQTTConnectChanged;
 
+        private readonly object _messageTraceLocker = new();
+        private readonly List<MqttMessageTraceEntry> _messageTraces = new();
+
         private MQTTControl()
         {
             MQTTClient = new MqttClientFactory().CreateMqttClient();
+        }
+
+        public IReadOnlyList<string> GetSubscribeTopicSnapshot()
+        {
+            lock (_subscribeTopicLocker)
+            {
+                return SubscribeTopic.ToList();
+            }
+        }
+
+        public IReadOnlyList<MqttMessageTraceEntry> GetMessageTraceSnapshot()
+        {
+            lock (_messageTraceLocker)
+            {
+                return _messageTraces.ToList();
+            }
+        }
+
+        private void AddMessageTrace(string direction, string topic, string payload, string qualityOfServiceLevel, bool retain)
+        {
+            lock (_messageTraceLocker)
+            {
+                _messageTraces.Add(new MqttMessageTraceEntry
+                {
+                    Time = DateTime.Now,
+                    Direction = direction,
+                    Topic = topic,
+                    Payload = TrimTracePayload(payload),
+                    QualityOfServiceLevel = qualityOfServiceLevel,
+                    Retain = retain
+                });
+
+                if (_messageTraces.Count > MaxMessageTraceCount)
+                {
+                    _messageTraces.RemoveRange(0, _messageTraces.Count - MaxMessageTraceCount);
+                }
+            }
+        }
+
+        private static string TrimTracePayload(string payload)
+        {
+            const int maxPayloadLength = 8000;
+            if (string.IsNullOrEmpty(payload) || payload.Length <= maxPayloadLength)
+                return payload;
+
+            return payload[..maxPayloadLength] + "...";
         }
 
         private static string NormalizeHost(string host)
@@ -85,8 +152,14 @@ namespace ColorVision.Engine.MQTT
 
         private async Task MQTTClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
         {
-            _subscribeTopicCache.AddRange(SubscribeTopic);
-            SubscribeTopic.Clear();
+            lock (_subscribeTopicLocker)
+            {
+                foreach (var topic in SubscribeTopic)
+                {
+                    AddSubscribeTopicCache(topic);
+                }
+                SubscribeTopic.Clear();
+            }
 
             log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT connected");
             IsConnect = true;
@@ -95,9 +168,12 @@ namespace ColorVision.Engine.MQTT
 
         private async Task MQTTClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
+            string payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+            AddMessageTrace("RECV", e.ApplicationMessage.Topic, payload, e.ApplicationMessage.QualityOfServiceLevel.ToString(), e.ApplicationMessage.Retain);
+
              if (log.IsDebugEnabled)
             {
-                var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {Encoding.UTF8.GetString(e.ApplicationMessage.Payload)}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
+                var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {payload}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
                 log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Trace, message, null);
             }
             if (ApplicationMessageReceivedAsync != null)
@@ -137,18 +213,30 @@ namespace ColorVision.Engine.MQTT
             return isConnected;
         }
 
+        private readonly object _subscribeTopicLocker = new();
         private  List<string> _subscribeTopicCache = new();
         public void SubscribeCache(string subscribeTopic)
         {
             if (string.IsNullOrEmpty(subscribeTopic)) return;
 
+            lock (_subscribeTopicLocker)
+            {
+                AddSubscribeTopicCache(subscribeTopic);
+            }
+
             if (IsConnect)
             {
-                Task.Run(() => SubscribeAsyncClientAsync(subscribeTopic));
-            }
-            else
-            {
-                _subscribeTopicCache.Add(subscribeTopic);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await SubscribeAsyncClientAsync(subscribeTopic);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Warn(ex);
+                    }
+                });
             }
         }
 
@@ -165,25 +253,47 @@ namespace ColorVision.Engine.MQTT
 
         private async Task ResubscribeTopics()
         {
-            foreach (var topic in _subscribeTopicCache)
+            List<string> topics;
+            lock (_subscribeTopicLocker)
+            {
+                topics = _subscribeTopicCache.ToList();
+            }
+
+            foreach (var topic in topics)
             {
                 await SubscribeAsyncClientAsync(topic);
             }
         }
         public async Task SubscribeAsyncClientAsync(string topic)
         {
-            if (IsConnect && !SubscribeTopic.Contains(topic))
+            if (string.IsNullOrEmpty(topic)) return;
+
+            try
             {
-                SubscribeTopic.Add(topic);
-                try
+                bool isSubscribed;
+                lock (_subscribeTopicLocker)
                 {
-                    var topicFilter = new MqttTopicFilterBuilder().WithTopic(topic).Build();
-                    await MQTTClient.SubscribeAsync(topicFilter);
+                    AddSubscribeTopicCache(topic);
+                    isSubscribed = SubscribeTopic.Contains(topic);
                 }
-                catch (Exception ex)
+
+                if (!IsConnect || isSubscribed)
+                    return;
+
+                var topicFilter = new MqttTopicFilterBuilder().WithTopic(topic).Build();
+                await MQTTClient.SubscribeAsync(topicFilter);
+
+                lock (_subscribeTopicLocker)
                 {
-                    log.Warn(ex);
+                    if (!SubscribeTopic.Contains(topic))
+                    {
+                        SubscribeTopic.Add(topic);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                log.Warn(ex);
             }
         }
 
@@ -194,7 +304,11 @@ namespace ColorVision.Engine.MQTT
                 try
                 {
                     await MQTTClient.UnsubscribeAsync(topic);
-                    SubscribeTopic.Remove(topic);
+                    lock (_subscribeTopicLocker)
+                    {
+                        SubscribeTopic.Remove(topic);
+                        _subscribeTopicCache.Remove(topic);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -203,6 +317,14 @@ namespace ColorVision.Engine.MQTT
             }
             else
             {
+            }
+        }
+
+        private void AddSubscribeTopicCache(string topic)
+        {
+            if (!string.IsNullOrEmpty(topic) && !_subscribeTopicCache.Contains(topic))
+            {
+                _subscribeTopicCache.Add(topic);
             }
         }
 
@@ -218,6 +340,7 @@ namespace ColorVision.Engine.MQTT
                     .Build();
 
                 await MQTTClient.PublishAsync(message);
+                AddMessageTrace("SEND", topic, msg, message.QualityOfServiceLevel.ToString(), message.Retain);
                 log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Debug, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
             }
             return;

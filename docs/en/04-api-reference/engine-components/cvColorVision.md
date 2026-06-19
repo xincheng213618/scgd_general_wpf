@@ -87,6 +87,43 @@ Files like `Algorithms.cs` demonstrate another characteristic of the module: som
 
 So the responsibility of this layer is not to uniformly design all API styles, but to map low-level capabilities as completely as possible.
 
+## Handoff Acceptance
+
+When taking over this module, the main task is to verify that managed declarations, native DLLs, and device workflows still agree:
+
+| Check | Where to Look | Passing Standard |
+| --- | --- | --- |
+| Native DLLs are present | `cvCamera.dll`, `cvOled.dll`, and dependencies | Release/x64 output can load the DLLs without `DllNotFoundException` |
+| Platform bitness matches | Project platform, DLL bitness, `DllImport` declarations | The x64 main path avoids `BadImageFormatException`, and calling conventions/entry names match |
+| Camera baseline chain | `cvCameraCSLib.cs` | Initialization, enumeration/open, frame capture, close, and release run through the real device flow |
+| XYZ sampling chain | `ConvertXYZ.cs` | `CM_InitXYZ`, `CM_SetBufferXYZ`, sampling calls, `CM_ReleaseBuffer`, and `CM_UnInitXYZ` are used in a clear order |
+| OLED algorithm chain | `CvOledDLL.cs` | `CvOledInit`, `CvLoadParam`, image load/point search/rebuild, and `CvOledRealse` are verified with one parameter set |
+| PG chart-card chain | `PG.cs` | Initialization, connection, Start/Stop/Reset, up/down switch, or specific-frame switch can be called by device services |
+| Source meter/power chain | `PassSx.cs` | Open, set source mode, read voltage/current, step/sweep, and close have an explicit call order |
+| Spectrometer chain | `Spectrometer.cs` | `CM_CreateEmission`, initialization, wavelength/calibration file loading, data read, and release are verified as paired operations |
+| Error-code translation | `CM_GetErrorMessage(...)` | Native return codes are not swallowed; logs or upper-level exceptions contain diagnosable information |
+
+## Change Boundary
+
+| Change Type | Should This Module Change | Notes |
+| --- | --- | --- |
+| DLL entry names, parameters, calling conventions, or struct layouts change | Yes | This is the module's core boundary; device or minimal native smoke testing is required |
+| Template judgment or OK/NG business rules after capture change | Usually no | Start with `ColorVision.Engine/Templates`, project bundles, and flow nodes |
+| CVCIE/CVRAW file-format changes | Usually no | Start with `ColorVision.FileIO`; this module only exposes native capabilities |
+| WPF buttons, menus, or image overlay display changes | Usually no | Start with UI, ImageEditor, and result display chains |
+| A new customer project needs existing native capability | Maybe | Reuse existing declarations first; extend here only when the DLL adds entries or signature changes |
+
+## First Checks
+
+| Symptom | First Check |
+| --- | --- |
+| Startup or call fails with `DllNotFoundException` | Check whether the DLL and all dependencies are published to the x64 output directory |
+| `EntryPointNotFoundException` occurs | Check `EntryPoint`, DLL version, and vendor-exported symbols |
+| `BadImageFormatException` occurs | Check x86/x64 mixing first, then AnyCPU configuration |
+| Call crashes or raises `AccessViolationException` | Check `DllImport` parameter types, array lengths, pointer lifetimes, and release order |
+| XYZ, CCT, xy/uv values are clearly wrong | Check whether `CM_SetBufferXYZ` rows/cols/bpp/channels match the sampling area |
+| PG or source meter does not respond | Check connection mode, port/IP, Start/Stop order, and whether device services swallow native return codes |
+
 ## Most Common Mistakes to Avoid
 
 ### It Is Not a Pure C# Algorithm Center

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602,CS8603,CS8601
+﻿#pragma warning disable CS4014,CS8601,CS8602,CS8603,CS8625
 using ColorVision.Database;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.Services.Flow;
@@ -331,7 +331,9 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
-            string lastNodes = _runningNodeNames.IsEmpty ? Msg1 : string.Join(", ", _runningNodeNames.Values);
+            string lastNodes = string.IsNullOrWhiteSpace(FlowControlData.ErrorNodeName)
+                ? (_runningNodeNames.IsEmpty ? Msg1 : string.Join(", ", _runningNodeNames.Values))
+                : FlowControlData.ErrorNodeName;
             _runningNodeNames.Clear();
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;

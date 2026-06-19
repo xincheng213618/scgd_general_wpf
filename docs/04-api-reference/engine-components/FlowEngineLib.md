@@ -144,6 +144,35 @@ FlowEngineLib 本身只负责节点执行内核。真正把它接进 ColorVision
 
 因此如果只读 FlowEngineLib 而不看模板层，会知道“怎么跑”，但不知道“谁在主程序里触发它跑”。
 
+## 流程交接验收表
+
+接手 `FlowEngineLib` 时，重点不是背节点类名，而是证明“画布加载、服务绑定、开始、节点转发、结束事件”这条链能闭合。
+
+| 验收项 | 要看哪里 | 通过标准 |
+| --- | --- | --- |
+| 目标框架与依赖 | `FlowEngineLib.csproj`、`ST.Library.UI`、`MQTTnet`、`Newtonsoft.Json`、`CsvHelper` | net8/net10 都能构建，节点编辑器和 MQTT/JSON 依赖能加载 |
+| 画布加载 | `FlowEngineControl.LoadFromBase64`、`LoadFromFile`、`loadedCanvas` | Base64 或文件能加载节点；相同画布不会被重复加载 |
+| 节点发现 | `NodeEditor_NodeAdded`、`BaseStartNode`、`CVBaseServerNode` | 开始节点进入 `startNodeNames`，服务节点进入 `services` 并同步到 `FlowNodeManager` |
+| 服务绑定 | `FlowNodeManager.UpdateDevice`、`FlowServiceManager.AddMQTTService` | 外部传入的 `MQTTServiceInfo` 能绑定到服务节点 |
+| 启动链 | `StartNode(...)`、`BaseStartNode.Start`、`CVStartCFC` | 输入 SN 后能从正确开始节点发起流程，`IsRunning` 状态正确 |
+| 节点参数 | `CVBaseServerNode`、`AlgorithmNode.getBaseEventData(...)` | 模板、图像、颜色、POI、SMU 等参数能进入请求数据 |
+| 完成链 | `CVEndNode`、`CVStartCFC.FireFinished()`、`BaseStartNode.Finished`、`FlowEngineControl.Finished` | 流程结束时能抛出 SN、状态、耗时和消息 |
+| 停止与清理 | `StopNode(...)`、`FlowClear()`、事件解绑 | 停止后 `_IsRunning` 复位，重新加载不会叠加旧事件 |
+| 宿主桥接 | `ColorVision.Engine/Templates/Flow/DisplayFlow.xaml.cs` | 主程序能把模板、服务列表和运行按钮接到 FlowEngineLib |
+
+## 现场故障首查
+
+| 现象 | 先查哪里 | 判断要点 |
+| --- | --- | --- |
+| Base64 流程加载后没有节点 | Base64 是否为空、`NodeEditor.LoadCanvas(rawData)`、节点类型是否可用 | 先确认画布数据和节点程序集，不要直接怀疑业务参数 |
+| 重复打开同一流程没有变化 | `loadedCanvas` 的 MD5 缓存 | 相同 rawData 会直接返回，这是当前去重逻辑 |
+| 开始按钮点了但流程没跑 | `GetStartNodeName()`、`startNodeNames`、`BaseStartNode.Ready` | 没有开始节点或 `Ready=false` 时不会真正启动 |
+| 服务节点没有设备 | `FlowNodeManager.UpdateDevice`、传入的 `MQTTServiceInfo`、节点 `NodeType` | 节点类型必须和服务列表里的类型对应 |
+| 节点执行了但流程不结束 | `CVEndNode` 是否连接、`CVStartCFC.IsFinished`、`FireFinished()` | 任意节点结束不等于流程结束，必须进入 End 节点链 |
+| `Finished` 事件重复触发 | `clear()` 是否解绑 `BaseStartNode.Finished`、重复 Attach NodeEditor | 检查旧画布和旧事件是否残留 |
+| 项目包收不到 Flow 结果 | `FlowEngineControl.Finished`、宿主 `FlowCompleted` 订阅 | FlowEngineLib 只抛通用事件，项目映射在宿主或项目包 |
+| 节点参数和 UI 选择不一致 | `Templates/Flow/NodeConfigurator/`、节点属性对象 | FlowEngineLib 节点只保存执行字段，主程序配置器负责把 UI 选择写进去 |
+
 ## 当前几个最容易写错的点
 
 ### 它不是宿主级完整工作流系统的全部代码

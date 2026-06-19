@@ -82,12 +82,9 @@ namespace ColorVision.Engine.Templates.Matching
         }
         public UserControl UserControl { get; set; }
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType ,string serialNumber)
+        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType )
         {
             MatchParam Param = TemplateMatch.Params[TemplateSelectedIndex].Value;
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
 
@@ -98,7 +95,7 @@ namespace ColorVision.Engine.Templates.Matching
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_MatchTemplate,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

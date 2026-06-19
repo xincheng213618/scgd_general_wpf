@@ -1,17 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -155,15 +155,8 @@
   </data>
   <data name="ImportSettings" xml:space="preserve">
     <value>가져오기 설정</value>
-  </data>
-  <data name="OpenStore" xml:space="preserve">
-    <value>오픈스토어</value>
-  </data>
-  <data name="InstallPackage" xml:space="preserve">
+  </data>  <data name="InstallPackage" xml:space="preserve">
     <value>패키지 설치</value>
-  </data>
-  <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>오픈뷰DllViersion</value>
   </data>
   <data name="Restart" xml:space="preserve">
     <value>재시작</value>
@@ -188,248 +181,37 @@
   </data>
   <data name="Install" xml:space="preserve">
     <value>설치하다</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>{0}(으)로 정렬</value>
-  </data>
-  <data name="zh-Hant" xml:space="preserve">
+  </data>  <data name="zh-Hant" xml:space="preserve">
     <value>중국어 번체</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
     <value>중국어 간체</value>
-  </data>
-  <data name="WriteConfigFileFailed" xml:space="preserve">
-    <value>구성 파일 {0} 쓰기 실패</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>독립 창</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>숨기기</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>보기 모드 9</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>보기 모드 4</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>보기 모드 2</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>보기 모드 1</value>
-  </data>
-  <data name="Version" xml:space="preserve">
+  </data>  <data name="Version" xml:space="preserve">
     <value>버전</value>
-  </data>
-  <data name="UseSystem" xml:space="preserve">
-    <value>시스템 테마 사용</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
-    <value>Log4Net 로그 수준 업데이트 중:</value>
-  </data>
-  <data name="Update" xml:space="preserve">
+  </data>  <data name="Update" xml:space="preserve">
     <value>고쳐 쓰다</value>
-  </data>
-  <data name="UnsupportedFileFormat" xml:space="preserve">
-    <value>지원되지 않는 파일 형식</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>남은 시간:</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>정렬 옵션</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>정렬기본값</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>이름순 정렬</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>카테고리별 정렬</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>소켓 관리 창</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>버퍼 크기</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>스마트 정렬 (내림차순)</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>스마트 정렬 (오름차순)</value>
-  </data>
-  <data name="SaveSingleConfigFailed" xml:space="preserve">
-    <value>단일 구성 {0} 저장 실패</value>
-  </data>
-  <data name="ru" xml:space="preserve">
+  </data>  <data name="ru" xml:space="preserve">
     <value>Русский (러시아어)</value>
-  </data>
-  <data name="RestoreConfigFileFailed" xml:space="preserve">
-    <value>구성 파일 복원 실패</value>
-  </data>
-  <data name="Reset" xml:space="preserve">
+  </data>  <data name="Reset" xml:space="preserve">
     <value>다시 놓기</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
-    <value>이름 바꾸기</value>
-  </data>
-  <data name="RemStagePointsToTemp" xml:space="preserve">
-    <value>rem STAGE는 임시 디렉터리의 ColorVision 콘텐츠 루트를 가리킵니다</value>
-  </data>
-  <data name="RemRobocopySuccess" xml:space="preserve">
-    <value>  rem Robocopy 0-7은 성공으로 간주됩니다</value>
-  </data>
-  <data name="ProjectSolution_P" xml:space="preserve">
-    <value>프로젝트/솔루션(P)...</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>프로젝트 {0}을(를) 찾을 수 없습니다</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>플러그인 이름</value>
-  </data>
-  <data name="PluginMissingId" xml:space="preserve">
-    <value>플러그인 {0}에 고유 ID가 없습니다. 건너뛰었습니다</value>
-  </data>
-  <data name="PluginLoadError" xml:space="preserve">
-    <value>플러그인 또는 매니페스트 로드 오류: {0}</value>
-  </data>
-  <data name="PluginDllNotFound" xml:space="preserve">
-    <value>플러그인 DLL을 찾을 수 없습니다: {0}</value>
-  </data>
-  <data name="Options" xml:space="preserve">
+  </data>  <data name="Options" xml:space="preserve">
     <value>옵션</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>로그 폴더 열기</value>
-  </data>
-  <data name="OpenContainingFolder" xml:space="preserve">
-    <value>포함 폴더 열기</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>구성 파일 열기</value>
-  </data>
-  <data name="OnlineCronGenerator" xml:space="preserve">
-    <value>온라인 Cron 표현식 생성기</value>
-  </data>
-  <data name="NoLocalLog4Output" xml:space="preserve">
+  </data>  <data name="NoLocalLog4Output" xml:space="preserve">
     <value>로컬 log4 출력이 구성되지 않았습니다</value>
-  </data>
-  <data name="MysqlTool" xml:space="preserve">
-    <value>MySQL 도구</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>메시지 로그 창</value>
-  </data>
-  <data name="LoadingPlugin" xml:space="preserve">
-    <value>플러그인 로드 중: {0}</value>
-  </data>
-  <data name="LoadedPluginWithoutManifest" xml:space="preserve">
-    <value>매니페스트 없이 플러그인을 로드했습니다: {0}</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>새로운 언어 설정을 적용하려면 재시작해야 합니다</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>자동 선택 여부</value>
-  </data>
-  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
+  </data>  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>프로젝트 {0}, {1}을(를) 찾았습니다. 다운로드하시겠습니까?</value>
-  </data>
-  <data name="FilterSupportsRegex" xml:space="preserve">
-    <value>필터는 정규식을 지원합니다</value>
-  </data>
-  <data name="ExeNameCannotBeEmpty" xml:space="preserve">
-    <value>exeName은 비워 둘 수 없습니다</value>
-  </data>
-  <data name="Execute" xml:space="preserve">
-    <value>실행</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>에러 발생됨</value>
-  </data>
-  <data name="EchoXCOPYFailed" xml:space="preserve">
-    <value>  echo XCOPY 복사 실패, 업데이트 중단됨.</value>
-  </data>
-  <data name="EchoUsingXCOPY" xml:space="preserve">
-    <value>echo XCOPY 대체 복사 사용 중...</value>
-  </data>
-  <data name="EchoUpdateComplete" xml:space="preserve">
-    <value>echo 업데이트 완료. (백그라운드에서 정리 실행 중)</value>
-  </data>
-  <data name="EchoTerminatingProcess" xml:space="preserve">
-    <value>echo 프로세스 종료 중: {0}</value>
-  </data>
-  <data name="EchoTargetDirNotExist" xml:space="preserve">
-    <value>  echo 대상 디렉터리가 존재하지 않습니다. 백업을 건너뜁니다.</value>
-  </data>
-  <data name="EchoStartCopyingFiles" xml:space="preserve">
-    <value>echo 새 버전 파일 복사 시작...</value>
-  </data>
-  <data name="EchoSchedulingCleanup" xml:space="preserve">
-    <value>echo 임시 디렉터리 및 스크립트의 지연된 정리 예약 중...</value>
-  </data>
-  <data name="EchoRobocopyNotFound" xml:space="preserve">
-    <value>  echo Robocopy를 찾을 수 없습니다. XCOPY로 대체...</value>
-  </data>
-  <data name="EchoRobocopyFailed" xml:space="preserve">
-    <value>     echo Robocopy 실패, 오류 코드 !RC!, XCOPY 대체 시도 중...</value>
-  </data>
-  <data name="EchoRestartingProgram" xml:space="preserve">
-    <value>echo 프로그램 다시 시작 중...</value>
-  </data>
-  <data name="EchoCopyComplete" xml:space="preserve">
-    <value>echo 복사 완료.</value>
-  </data>
-  <data name="EchoBackupTo" xml:space="preserve">
-    <value>  echo 백업 위치: %BKDIR%</value>
-  </data>
-  <data name="EchoBackupComplete" xml:space="preserve">
-    <value>  echo 백업 완료.</value>
-  </data>
-  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
-    <value>echo 현재 버전 백업 중...</value>
-  </data>
-  <data name="Download" xml:space="preserve">
+  </data>  <data name="Download" xml:space="preserve">
     <value>다운로드</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>내림차순</value>
-  </data>
-  <data name="DependencyVersionInsufficient" xml:space="preserve">
-    <value>종속성 {0} 버전이 부족합니다. 필요: {1}, 실제: {2}</value>
-  </data>
-  <data name="DependencyDllNotFound" xml:space="preserve">
-    <value>종속성 {0} DLL을 찾을 수 없습니다: {1}</value>
-  </data>
-  <data name="DependencyCheckException" xml:space="preserve">
-    <value>종속성 {0} 버전 확인 중 예외 발생: {1}</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>삭제</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>현재 속도:</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
+  </data>  <data name="ConfirmUpdate" xml:space="preserve">
     <value>업데이트</value>
   </data>
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>플러그인 {0}을(를) 삭제하시겠습니까?</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>폐쇄</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>분명한</value>
-  </data>
-  <data name="CleanupBackupFailed" xml:space="preserve">
-    <value>백업 파일 정리 실패</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
+  </data>  <data name="CheckPluginUpdates" xml:space="preserve">
     <value>플러그인 업데이트 확인</value>
   </data>
   <data name="CheckPluginUpdatesDescription" xml:space="preserve">
@@ -437,26 +219,7 @@
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>추가 프로젝트 확인 중</value>
-  </data>
-  <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
-    <value>bool2VisibilityConverter 리소스를 찾을 수 없습니다</value>
-  </data>
-  <data name="BatchFilePathCannotBeEmpty" xml:space="preserve">
-    <value>batchFilePath는 비워 둘 수 없습니다</value>
-  </data>
-  <data name="BaseDirCannotBeEmpty" xml:space="preserve">
-    <value>baseDir는 비워 둘 수 없습니다</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>오름차순</value>
-  </data>
-  <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
-    <value>Application.Current가 초기화되지 않았습니다</value>
-  </data>
-  <data name="AllFiles" xml:space="preserve">
-    <value>모든 파일 (*.*)|*.*</value>
-  </data>
-  <data name="Loading" xml:space="preserve">
+  </data>  <data name="Loading" xml:space="preserve">
     <value>짐</value>
   </data>
   <data name="ThirdPartyApps" xml:space="preserve">
@@ -470,11 +233,7 @@
   </data>
   <data name="SystemTools" xml:space="preserve">
     <value>시스템 도구</value>
-  </data>
-  <data name="NotInstalled" xml:space="preserve">
-    <value>설치되지 않음</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
+  </data>  <data name="Refresh" xml:space="preserve">
     <value>새로 고치다</value>
   </data>
   <data name="Password" xml:space="preserve">
@@ -497,35 +256,9 @@
   </data>
   <data name="ClearRecords" xml:space="preserve">
     <value>모든 기록 삭제</value>
-  </data>
-  <data name="DeleteSelected" xml:space="preserve">
-    <value>선택한 항목 삭제</value>
-  </data>
-  <data name="SearchButton" xml:space="preserve">
-    <value>찾다</value>
-  </data>
-  <data name="OpenDownloadFolder" xml:space="preserve">
-    <value>다운로드 디렉토리를 엽니다.</value>
-  </data>
-  <data name="FileName" xml:space="preserve">
+  </data>  <data name="FileName" xml:space="preserve">
     <value>파일 이름</value>
-  </data>
-  <data name="Progress" xml:space="preserve">
-    <value>일정</value>
-  </data>
-  <data name="StatusHeader" xml:space="preserve">
-    <value>상태</value>
-  </data>
-  <data name="Speed" xml:space="preserve">
-    <value>속도</value>
-  </data>
-  <data name="FileSize" xml:space="preserve">
-    <value>파일 크기</value>
-  </data>
-  <data name="CreateTimeHeader" xml:space="preserve">
-    <value>창조 시간</value>
-  </data>
-  <data name="OpenFile" xml:space="preserve">
+  </data>  <data name="OpenFile" xml:space="preserve">
     <value>파일 열기</value>
   </data>
   <data name="CopyUrl" xml:space="preserve">
@@ -596,11 +329,7 @@
   </data>
   <data name="AdvancedOptions" xml:space="preserve">
     <value>고급 옵션</value>
-  </data>
-  <data name="UrlSeparatorHint" xml:space="preserve">
-    <value>여러 링크는 세미콜론(;)으로 구분됩니다.</value>
-  </data>
-  <data name="PauseDownload" xml:space="preserve">
+  </data>  <data name="PauseDownload" xml:space="preserve">
     <value>다운로드 일시정지</value>
   </data>
   <data name="ResumeDownload" xml:space="preserve">
@@ -614,11 +343,7 @@
   </data>
   <data name="Aria2cStartFailed" xml:space="preserve">
     <value>aria2c 시작 실패</value>
-  </data>
-  <data name="Aria2cReady" xml:space="preserve">
-    <value>다운로드 서비스 준비 완료</value>
-  </data>
-  <data name="ActiveDownloads" xml:space="preserve">
+  </data>  <data name="ActiveDownloads" xml:space="preserve">
     <value>다운로드 중: {0}</value>
   </data>
   <data name="Aria2cServiceStatus" xml:space="preserve">
@@ -632,11 +357,7 @@
   </data>
   <data name="ConfigApplied" xml:space="preserve">
     <value>설정이 적용되었습니다</value>
-  </data>
-  <data name="MagnetDownload" xml:space="preserve">
-    <value>마그넷 링크 다운로드</value>
-  </data>
-  <data name="RpcPort" xml:space="preserve">
+  </data>  <data name="RpcPort" xml:space="preserve">
     <value>RPC 포트</value>
   </data>
   <data name="UrlOrMagnetHint" xml:space="preserve">
@@ -653,26 +374,11 @@
   </data>
   <data name="ThirdPartyAppsCountFormat" xml:space="preserve">
     <value>{0}개 앱</value>
-  </data>
-  <data name="ThirdPartyAppsAddCustomApp" xml:space="preserve">
-    <value>사용자 지정 앱 추가</value>
-  </data>
-  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
+  </data>  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
     <value>빠른 스크립트 추가</value>
-  </data>
-  <data name="ThirdPartyAppsGroups" xml:space="preserve">
-    <value>분류</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
+  </data>  <data name="Edit" xml:space="preserve">
     <value>편집</value>
-  </data>
-  <data name="ConfirmDelete" xml:space="preserve">
-    <value>삭제 확인</value>
-  </data>
-  <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
-    <value>사용자 지정 앱 "{0}"을(를) 삭제하시겠습니까?</value>
-  </data>
-  <data name="MenuMenuItemManager" xml:space="preserve">
+  </data>  <data name="MenuMenuItemManager" xml:space="preserve">
     <value>메뉴 관리자</value>
   </data>
   <data name="MenuTimedButtonOperationStats" xml:space="preserve">
@@ -763,11 +469,7 @@
   <data name="CfgApp_PsDesc" xml:space="preserve"><value>PowerShell Script</value></data>
   <data name="CfgApp_ConfigTitle" xml:space="preserve"><value>Custom App Configuration</value></data>
   <data name="CfgApp_ListTitle" xml:space="preserve"><value>Custom App List</value></data>
-  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>Default Custom Group Name</value></data>
-  <data name="CfgApp_Custom" xml:space="preserve"><value>Custom</value></data>
-  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>
-  <data name="CfgApp_QuickScript" xml:space="preserve"><value>Quick Script</value></data>
-  <data name="Installed" xml:space="preserve">
+  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>Default Custom Group Name</value></data>  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>  <data name="Installed" xml:space="preserve">
     <value>Installed</value>
   </data>
   <data name="Marketplace" xml:space="preserve">
@@ -823,27 +525,6 @@
   </data>
   <data name="SendFailed" xml:space="preserve">
     <value>Send failed: {0}</value>
-  </data>
-  <data name="ServerAddressNotConfigured" xml:space="preserve">
-    <value>Server address not configured</value>
-  </data>
-  <data name="ThirdPartyAppsLocalApps" xml:space="preserve">
-    <value>Local apps</value>
-  </data>
-  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>업데이트순 정렬</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>다운로드순 정렬</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>이름순 정렬</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>모든 카테고리</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>키워드</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
     <value>저자</value>
@@ -977,4 +658,49 @@
   <data name="MarketplaceSelectUpdateFile" xml:space="preserve">
     <value>업데이트 파일 선택</value>
   </data>
+  <data name="Treemap_Title" xml:space="preserve"><value>Disk Space Analyzer - Treemap Viewer</value></data>
+  <data name="Treemap_DriveLabel" xml:space="preserve"><value>Drive:</value></data>
+  <data name="Treemap_BrowseDirectory" xml:space="preserve"><value>Browse...</value></data>
+  <data name="Treemap_BrowseDirectoryTooltip" xml:space="preserve"><value>Select directory to scan</value></data>
+  <data name="Treemap_Scan" xml:space="preserve"><value>Scan</value></data>
+  <data name="Treemap_ScanTooltip" xml:space="preserve"><value>Scan selected directory and display treemap</value></data>
+  <data name="Treemap_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Treemap_CancelTooltip" xml:space="preserve"><value>Abort current scan</value></data>
+  <data name="Treemap_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Treemap_SaveTooltip" xml:space="preserve"><value>Save current scan results as JSON file</value></data>
+  <data name="Treemap_Load" xml:space="preserve"><value>Load</value></data>
+  <data name="Treemap_LoadTooltip" xml:space="preserve"><value>Load scan results from saved JSON file</value></data>
+  <data name="Treemap_Up" xml:space="preserve"><value>↑ Up</value></data>
+  <data name="Treemap_UpTooltip" xml:space="preserve"><value>Return to parent directory node</value></data>
+  <data name="Treemap_ShowLabels" xml:space="preserve"><value>Show Labels</value></data>
+  <data name="Treemap_NodeCount" xml:space="preserve"><value>Nodes:</value></data>
+  <data name="Treemap_File" xml:space="preserve"><value>File</value></data>
+  <data name="Treemap_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="Treemap_SelectDirPrompt" xml:space="preserve"><value>Select a directory and click "Scan", or click "Load" to read saved scan results.</value></data>
+  <data name="Treemap_Scanning" xml:space="preserve"><value>Scanning...</value></data>
+  <data name="Treemap_ScannedFiles" xml:space="preserve"><value>Scanned {0:N0} files...</value></data>
+  <data name="Treemap_Cancelled" xml:space="preserve"><value>Cancelled.</value></data>
+  <data name="Treemap_Complete" xml:space="preserve"><value>Done. {0:N0} files total.</value></data>
+  <data name="Treemap_ScanError" xml:space="preserve"><value>Scan error: {0}</value></data>
+  <data name="Treemap_SaveDialogTitle" xml:space="preserve"><value>Save Scan Results</value></data>
+  <data name="Treemap_Saved" xml:space="preserve"><value>Saved: {0}</value></data>
+  <data name="Treemap_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="Treemap_LoadDialogTitle" xml:space="preserve"><value>Load Scan Results</value></data>
+  <data name="Treemap_InvalidFormat" xml:space="preserve"><value>Invalid or empty file format.</value></data>
+  <data name="Treemap_Loaded" xml:space="preserve"><value>Loaded: {0}</value></data>
+  <data name="Treemap_LoadFailed" xml:space="preserve"><value>Load failed: {0}</value></data>
+  <data name="Treemap_OpenFile" xml:space="preserve"><value>Open File</value></data>
+  <data name="Treemap_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
+  <data name="Treemap_OpenInExplorer" xml:space="preserve"><value>Open in Explorer</value></data>
+  <data name="Treemap_ShowInExplorer" xml:space="preserve"><value>Show in Explorer</value></data>
+  <data name="Treemap_CopyPath" xml:space="preserve"><value>Copy Path</value></data>
+  <data name="Treemap_DrillDown" xml:space="preserve"><value>Drill Down (set as root)</value></data>
+  <data name="Treemap_GoUp" xml:space="preserve"><value>Go Up</value></data>
+  <data name="Treemap_DeleteFile" xml:space="preserve"><value>Delete file {0}</value></data>
+  <data name="Treemap_ConfirmDelete" xml:space="preserve"><value>Confirm delete file:\n{0}</value></data>
+  <data name="Treemap_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
+  <data name="Treemap_DeleteFailed" xml:space="preserve"><value>Delete failed: {0}</value></data>
+  <data name="Treemap_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Treemap_Prompt" xml:space="preserve"><value>Prompt</value></data>
+  <data name="Treemap_SelectValidDir" xml:space="preserve"><value>Please select a valid directory first.</value></data>
 </root>

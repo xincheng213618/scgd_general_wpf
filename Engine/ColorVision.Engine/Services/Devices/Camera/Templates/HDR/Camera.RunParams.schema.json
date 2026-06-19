@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/Camera.RunParams.schema.json",
+  "title": "相机HDR参数",
+  "description": "Auto-generated from t_scgd_sys_dictionary_mod_master.cfg_json. Providers may maintain titles, descriptions, ranges, units, groups, and UI hints without changing the C++ JSON interface.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "Gain": 10,
+    "ThLow": 50,
+    "ThHigh": 150,
+    "AvgCount": 1,
+    "ExpTimes": [
+      10,
+      50,
+      100
+    ],
+    "HDRExpTime": 100
+  },
+  "properties": {
+    "Gain": {
+      "type": "integer",
+      "title": "Gain",
+      "x-ui": {
+        "order": 10
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.Gain' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.Gain",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "ThLow": {
+      "type": "integer",
+      "title": "Th Low",
+      "x-ui": {
+        "order": 20
+      },
+      "default": 50,
+      "$comment": "Provider/AI note: keep JSON path '$.ThLow' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.ThLow",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "ThHigh": {
+      "type": "integer",
+      "title": "Th High",
+      "x-ui": {
+        "order": 30
+      },
+      "default": 150,
+      "$comment": "Provider/AI note: keep JSON path '$.ThHigh' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.ThHigh",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "AvgCount": {
+      "type": "integer",
+      "title": "Avg Count",
+      "x-ui": {
+        "order": 40
+      },
+      "default": 1,
+      "$comment": "Provider/AI note: keep JSON path '$.AvgCount' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.AvgCount",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "ExpTimes": {
+      "type": "array",
+      "title": "Exp Times",
+      "x-ui": {
+        "order": 50
+      },
+      "default": [
+        10,
+        50,
+        100
+      ],
+      "items": {
+        "type": "integer",
+        "$comment": "Provider/AI note: keep JSON path '$.ExpTimes[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+        "x-provider": {
+          "jsonPath": "$.ExpTimes[]",
+          "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.ExpTimes' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.ExpTimes",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "HDRExpTime": {
+      "type": "integer",
+      "title": "HDR Exp Time",
+      "x-ui": {
+        "order": 60
+      },
+      "default": 100,
+      "$comment": "Provider/AI note: keep JSON path '$.HDRExpTime' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.HDRExpTime",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": false,
+    "generatedAt": "2026-06-04T07:32:58+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 43,
+      "code": "Camera.RunParams",
+      "name": "相机HDR参数",
+      "version": "HDR"
+    },
+    "notes": [
+      "The default value mirrors the current database cfg_json at generation time.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys unchanged; C++ receives the JSON string by key.",
+        "Do not remove existing fields from default unless the database default and algorithm contract are updated together.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "type",
+        "default",
+        "additionalProperties"
+      ]
+    }
+  }
+}

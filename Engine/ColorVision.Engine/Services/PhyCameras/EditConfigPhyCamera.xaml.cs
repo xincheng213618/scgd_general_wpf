@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.PhyCameras.Configs;
@@ -306,6 +307,13 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
+            if (EditConfig.TryGetHkRoiAlignmentWarning(out string warning))
+            {
+                ConfigTabs.SelectedItem = CameraTab;
+                MessageBox1.Show(this, warning, Properties.Resources.TitleEditCameraConfig, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             EditConfig.CFW.NormalizeChannelCfgsForSave();
             HandleFileServerPathChanged();
             EditConfig.CopyTo(PhyCamera.Config);

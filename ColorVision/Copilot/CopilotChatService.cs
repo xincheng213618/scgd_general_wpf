@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1861
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -70,7 +71,7 @@ namespace ColorVision.Copilot
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
             if (!reply.Delta.HasAny)
-                throw new InvalidOperationException("接口返回成功，但没有可显示的文本内容。");
+                throw new InvalidOperationException("The API returned successfully, but no displayable text was found.");
 
             onDelta(reply.Delta);
             return reply.Usage;
@@ -144,7 +145,7 @@ namespace ColorVision.Copilot
         {
             var baseUrl = (config.BaseUrl ?? string.Empty).Trim().TrimEnd('/');
             if (string.IsNullOrWhiteSpace(baseUrl))
-                throw new InvalidOperationException("Base URL 不能为空。");
+                throw new InvalidOperationException("Base URL is required.");
 
             if (config.ProviderType == CopilotProviderType.AnthropicCompatible)
             {
@@ -599,7 +600,7 @@ namespace ColorVision.Copilot
                 return $"{statusCode}: {errorBody.Trim()}";
             }
 
-            return $"请求失败，HTTP {statusCode}";
+            return $"Request failed, HTTP {statusCode}";
         }
     }
 }

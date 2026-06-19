@@ -21,7 +21,7 @@ typedef struct VideoInfo {
 
 // Callback: called on each frame during playback
 // handle: video handle
-// frame: the frame image (caller must free with HImage dispose)
+// frame: owned frame image allocated by the DLL; callback must release pData with HImage disposal
 // currentFrame: current frame index
 // totalFrames: total frame count
 // userData: user-provided context pointer

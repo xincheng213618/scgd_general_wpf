@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Cie;
 using ColorVision.ImageEditor.Draw.Special;
 using cvColorVision;
 using System;

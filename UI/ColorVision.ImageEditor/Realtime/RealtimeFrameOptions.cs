@@ -8,11 +8,7 @@ namespace ColorVision.ImageEditor.Realtime
         public void ApplyFrom(RealtimeFrameOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
-
-            if (ReferenceEquals(this, options))
-            {
-                return;
-            }
+            if (ReferenceEquals(this, options)) return;
 
             MaxDisplayFps = options.MaxDisplayFps;
             AutoZoomOnFirstFrame = options.AutoZoomOnFirstFrame;
@@ -27,8 +23,7 @@ namespace ColorVision.ImageEditor.Realtime
             {
                 int normalized = value < 0 ? 0 : value;
                 if (_maxDisplayFps == normalized) return;
-                _maxDisplayFps = normalized;
-                OnPropertyChanged();
+                _maxDisplayFps = normalized; OnPropertyChanged();
             }
         }
         private int _maxDisplayFps = 60;
@@ -39,8 +34,7 @@ namespace ColorVision.ImageEditor.Realtime
             set
             {
                 if (_autoZoomOnFirstFrame == value) return;
-                _autoZoomOnFirstFrame = value;
-                OnPropertyChanged();
+                _autoZoomOnFirstFrame = value; OnPropertyChanged();
             }
         }
         private bool _autoZoomOnFirstFrame = true;
@@ -51,8 +45,7 @@ namespace ColorVision.ImageEditor.Realtime
             set
             {
                 if (_updateImageMetadata == value) return;
-                _updateImageMetadata = value;
-                OnPropertyChanged();
+                _updateImageMetadata = value; OnPropertyChanged();
             }
         }
         private bool _updateImageMetadata = true;
@@ -63,8 +56,7 @@ namespace ColorVision.ImageEditor.Realtime
             set
             {
                 if (_isFrozen == value) return;
-                _isFrozen = value;
-                OnPropertyChanged();
+                _isFrozen = value; OnPropertyChanged();
             }
         }
         private bool _isFrozen;

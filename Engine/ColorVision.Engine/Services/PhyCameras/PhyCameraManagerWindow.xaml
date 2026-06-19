@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
         Title="{x:Static properties:Resources.PhysicalCameraManager}"
-        Height="720" Width="1180" MinHeight="620" MinWidth="1000"
+        Height="680" Width="970" MinHeight="600" MinWidth="970"
         Background="{DynamicResource GlobalBackground}"
         Initialized="Window_Initialized"
         SnapsToDevicePixels="True"
@@ -134,10 +134,6 @@
                     <Run Text="{Binding OnlineCameraCount, Mode=OneWay}"/>
                     <Run Text=" "/>
                     <Run Text="{x:Static properties:Resources.Online}"/>
-                    <Run Text=" / "/>
-                    <Run Text="{Binding AttentionCameraCount, Mode=OneWay}"/>
-                    <Run Text=" "/>
-                    <Run Text="{x:Static properties:Resources.LicenseStatusInvalid}"/>
                 </TextBlock>
             </StackPanel>
 
@@ -164,7 +160,6 @@
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"/>
                             <MenuItem Header="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}"/>
-                            <MenuItem Header="{x:Static properties:Resources.LabelLicenseExpiredNotification}" Command="{Binding EditLicenseNotificationConfigCommand}"/>
                             <Separator/>
                             <MenuItem Header="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}"/>
                             <MenuItem Header="{x:Static properties:Resources.PhyCamera_MvsLog}" Command="{Binding OpenMVSLogViewerCommand}"/>
@@ -189,18 +184,18 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Style="{StaticResource SectionPanelStyle}" Padding="10">
+            <Border Style="{StaticResource SectionPanelStyle}" Padding="10" Margin="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <DockPanel Margin="2,0,2,8">
+                    <DockPanel Margin="2,0,2,5">
                         <TextBlock DockPanel.Dock="Right" Text="{Binding PhyCameras.Count, Mode=OneWay, StringFormat={}{0}}"
                                    FontSize="13" FontWeight="SemiBold" Opacity="0.75"/>
                         <StackPanel>
-                            <TextBlock Text="{x:Static properties:Resources.SectionCameraList}" FontSize="17" FontWeight="SemiBold"/>
+                            <TextBlock Text="{x:Static properties:Resources.SectionCameraList}" FontSize="16" FontWeight="SemiBold"/>
                         </StackPanel>
                     </DockPanel>
 
@@ -255,11 +250,8 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <TextBlock Style="{StaticResource CameraListSecondaryTextStyle}">
-                                                    <Run Text="{Binding Config.CameraModel}"/>
-                                                    <Run Text=" · "/>
-                                                    <Run Text="{Binding Config.CameraMode}"/>
-                                                </TextBlock>
+                                                <TextBlock Text="{Binding CameraListMetaText, Mode=OneWay}"
+                                                           Style="{StaticResource CameraListSecondaryTextStyle}"/>
 
                                                 <Border Grid.Column="1"
                                                         Style="{StaticResource CameraListLicenseTagStyle}"

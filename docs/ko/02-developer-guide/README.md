@@ -12,13 +12,19 @@
 
 - [엔진 개발 가이드](./engine-development/README.md)
 - [건축 설계](../03-architecture/README.md)
-- [엔진 컴포넌트 API](../04-api-reference/engine-comComponents/README.md)
+- [엔진 컴포넌트 API](../04-api-reference/engine-components/README.md)
 
 ### 플러그인 개발
 
 - [플러그인 개발 개요](./plugin-development/README.md)
 - [플러그인 개발 시작하기](./plugin-development/getting-started.md)
 - [플러그인 수명주기](./plugin-development/lifecycle.md)
+
+### 테스트 및 검증
+
+- [테스트 및 검증 인수인계](./testing.md)
+- UI, 호스트 런타임, 설정, 로그, MCP/Copilot, PropertyGrid, 편집기 변경은 `Test/ColorVision.UI.Tests/`에서 먼저 확인합니다.
+- Native/OpenCV helper 및 luminous-area 검증은 `Test/opencv_helper_test/`를 사용합니다.
 
 ### 빌드, 배포 및 업데이트
 
@@ -37,7 +43,8 @@
 1. 먼저 [Architecture Design](../03-architecture/README.md)을 살펴보고 모듈 경계를 확인하세요.
 2. [확장성 개요](./core-concepts/extensibility.md)를 다시 살펴보고 확장 지점과 플러그인 항목을 확인하세요.
 3. 대상 주제(플러그인, 엔진, 배포 또는 백엔드)를 입력합니다.
-4. 클래스 및 인터페이스 세부 사항이 필요한 경우 [API 참조](../04-api-reference/README.md)로 이동합니다.
+4. 배포 전에 [테스트 및 검증 인수인계](./testing.md)를 확인해 필요한 검증 명령을 선택합니다.
+5. 클래스 및 인터페이스 세부 사항이 필요한 경우 [API 참조](../04-api-reference/README.md)로 이동합니다.
 
 ## 장 경계
 

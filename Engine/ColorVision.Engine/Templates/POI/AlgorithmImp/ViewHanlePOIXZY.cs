@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1725
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;

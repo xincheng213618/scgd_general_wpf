@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "SetTheme";
 
-        public string Description => "按用户要求切换应用主题；input.query 可填写目标主题，例如 dark、light、pink、cyan 或 跟随系统。";
+        public string Description => "Switch the application theme requested by the user. input.query can contain a target theme such as default, dark, light, pink, or cyan.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {

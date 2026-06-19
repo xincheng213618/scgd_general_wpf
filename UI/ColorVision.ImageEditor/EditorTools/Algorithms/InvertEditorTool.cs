@@ -1,7 +1,7 @@
-using ColorVision.Core;
+using ColorVision.ImageEditor.Algorithms;
 using log4net;
+using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms
@@ -13,47 +13,34 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(InvertEditorTool));
 
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _image;
 
-        public InvertEditorTool(ImageView imageView)
+        public InvertEditorTool(ImageProcessingContext image)
         {
-            _imageView = imageView;
+            _image = image;
         }
 
         public void Execute()
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (_imageView.HImageCache == null) return;
-                
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 log.Info("InvertImage - 开始执行");
-                
-                Task.Run(() =>
+
+                try
                 {
-                    int ret = OpenCVMediaHelper.M_InvertImage((HImage)_imageView.HImageCache, out HImage hImageProcessed);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(_imageView.ViewBitmapSource, hImageProcessed))
-                            {
-                                double DpiX = _imageView.Config.GetProperties<double>("DpiX");
-                                double DpiY = _imageView.Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmap();
-                                hImageProcessed.Dispose();
-                                _imageView.ViewBitmapSource = image;
-                            }
-                            _imageView.HImageCache?.Dispose();
-                            _imageView.HImageCache = null;
-                            _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-                            stopwatch.Stop();
-                            log.Info($"InvertImage 完成 - 耗时: {stopwatch.Elapsed}");
-                        }
-                    });
-                });
+                    ImageAlgorithmApplier.Apply(_image, OpenCvImageAlgorithms.Invert);
+                    stopwatch.Stop();
+                    log.Info($"InvertImage 完成 - 耗时: {stopwatch.Elapsed}");
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    MessageBox.Show(ex.Message);
+                }
             });
         }
     }
 }
+

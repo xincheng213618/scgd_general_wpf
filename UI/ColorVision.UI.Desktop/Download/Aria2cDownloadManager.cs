@@ -3,6 +3,7 @@ using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
+using ColorVision.UI;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
@@ -51,7 +52,7 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
-        public static string DirectoryPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision", "Downloads");
+        public static string DirectoryPath { get; set; } = Environments.DirDownloads;
         public static string DbPath { get; set; } = Path.Combine(DirectoryPath, "Downloads.db");
 
         public ObservableCollection<DownloadTask> Tasks { get; } = new();

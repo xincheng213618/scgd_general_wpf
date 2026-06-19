@@ -39,28 +39,11 @@
                 </Grid.RowDefinitions>
                 <ToolBarTray Grid.Row="0">
                     <ToolBar Padding="3,2" ToolBarTray.IsLocked="True">
-                        <ToggleButton Click="Button1_Click" Margin="0,0,2,0" >
+                        <ToggleButton Click="Button1_Click" Margin="0,0,2,0" Height="25" Width="25" Padding="5">
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
                         </ToggleButton>
-                        <ToggleButton x:Name="ToggleButtonChoice" Click="Button3_Click" Margin="0,0,2,0"  >
-                            <ToggleButton.Style>
-                                <Style TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonDefault}">
-                                    <Setter Property="Content">
-                                        <Setter.Value>
-                                            <Image Stretch="Uniform" Source="{DynamicResource DrawingImageCurrent}" />
-                                        </Setter.Value>
-                                    </Setter>
-                                    <Style.Triggers>
-                                        <Trigger Property="IsChecked" Value="True">
-                                            <Setter Property="Content">
-                                                <Setter.Value>
-                                                    <Image Stretch="Uniform" Source="{DynamicResource DrawingImageVoltage}" />
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ToggleButton.Style>
+                        <ToggleButton x:Name="ToggleButtonChoice" Click="Button3_Click"  Height="25" Width="25" Margin="0,0,2,0" Padding="5" >
+                            <Image Stretch="Uniform" Source="{DynamicResource DrawingImageCurrent}"  />
                         </ToggleButton>
                         <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="0,0,2,0" />
 

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625
+﻿#pragma warning disable CA1863,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
@@ -6,9 +6,10 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.EditorTools.PseudoColor;
+using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.ImageEditor.Layers;
 using ColorVision.ImageEditor.Realtime;
-using ColorVision.ImageEditor.Properties;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -28,6 +29,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using WpfMessageBox = System.Windows.MessageBox;
+using WpfTextBox = System.Windows.Controls.TextBox;
+using WpfWindow = System.Windows.Window;
 
 namespace ColorVision.ImageEditor
 {
@@ -38,18 +42,21 @@ namespace ColorVision.ImageEditor
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
+        private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public ImageViewConfig Config => EditorContext.Config;
         public IEditorToolFactory IEditorToolFactory => EditorContext.IEditorToolFactory;
-        public IPseudoColorService PseudoColorService => EditorContext.GetRequiredService<IPseudoColorService>();
+        private PseudoColorEditorTool? PseudoColorTool => IEditorToolFactory.GetIEditorTool<PseudoColorEditorTool>();
         public bool EnableEditorImageServices { get; set; } = true;
         public ImageLayerDescriptor? SelectedLayer { get; private set; }
 
 
-        private RealtimeImageViewService? _realtime;
-        public RealtimeImageViewService Realtime => _realtime ??= new RealtimeImageViewService(this);
+        private RealtimeFramePresenter? _realtime;
+        public RealtimeFramePresenter Realtime => _realtime ??= new RealtimeFramePresenter(this);
+        private ImageFullScreenMode? _fullScreenMode;
+        private WpfWindow? _shortcutWindow;
 
         public event EventHandler ClearImageEventHandler;
         public event EventHandler StatusBarItemsChanged;
@@ -88,7 +95,6 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private readonly List<IImageViewSettingProvider> _imageViewSettingProviders = new();
         private readonly string _pixelValueOverlayRefreshDebounceKey = $"PixelValueOverlayRefresh_{Guid.NewGuid():N}";
         private Crosshair? _crosshair;
         private double _oldZoomRatio;
@@ -103,18 +109,55 @@ namespace ColorVision.ImageEditor
             InitializeComponent();
         }
 
+        private EditorContext CreateEditorContext()
+        {
+            ImageViewConfig config = new();
+            DrawEditorContext drawContext = new(ImageShow, Zoombox1);
+            ImageProcessingContext processingContext = new(
+                config,
+                drawContext.DrawCanvas,
+                Dispatcher,
+                new ImageProcessingContextBinding
+                {
+                    IsInitialized = () => IsInitialized,
+                    GetWidth = () => Width,
+                    GetHeight = () => Height,
+                    GetHImageCache = () => HImageCache,
+                    SetHImageCache = value => HImageCache = value,
+                    GetFunctionImage = () => FunctionImage,
+                    SetFunctionImage = value => FunctionImage = value!,
+                    GetViewBitmapSource = () => ViewBitmapSource,
+                    SetViewBitmapSource = value => ViewBitmapSource = value!,
+                    GetSelectedLayerSourceChannelIndex = GetSelectedLayerSourceChannelIndex,
+                    SetImageSource = SetImageSource,
+                    UpdateZoomAndScale = UpdateZoomAndScale,
+                });
+            return new EditorContext(
+                this,
+                config,
+                drawContext,
+                processingContext,
+                TextEditorOverlay);
+        }
+
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             _defaultDisplayConfig.PropertyChanged += DefaultDisplayConfig_PropertyChanged;
 
-            EditorContext = new EditorContext(this, ImageShow, Zoombox1, TextEditorOverlay);
-            EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext.DrawEditorContext);
+
+            RenderOptions.SetBitmapScalingMode(ImageShow, DefaultBitmapScalingConfig.Current.DefaultBitmapScalingMode);
+            EditorContext = CreateEditorContext();
+            EditorContext.DrawEditorContext.SelectionVisual = new SelectEditorVisual(EditorContext.DrawEditorContext);
+            EditorContext.DrawEditorContext.SelectionVisual.TextEditingContext = EditorContext.TextEditingContext;
             EditorContext.IEditorToolFactory = new IEditorToolFactory(this, EditorContext);
             EditorContext.CompactInspectorPresenter = new CompactInspectorPresenter(EditorContext);
             EditorContext.CompactInspectorPresenter.Refresh();
 
             ImageShow.PreviewKeyDown += HandleKeyDown;
+            PreviewKeyDown += ImageView_PreviewKeyDown;
+            Loaded += ImageView_Loaded;
+            Unloaded += ImageView_Unloaded;
             ImageShow.ContextMenuOpening += HandleContextMenuOpening;
             ImageShow.ContextMenu = EditorContext.ContextMenu;
             ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
@@ -127,8 +170,6 @@ namespace ColorVision.ImageEditor
             this.Focus();
 
             Config.Cleared += Config_Cleared;
-            InitializeImageViewSettingProviders();
-
             foreach (var item in IEditorToolFactory.IImageComponents)
                 item.Execute(this);
 
@@ -137,7 +178,7 @@ namespace ColorVision.ImageEditor
             Drop += ImageView_Drop;
             Config.ShowTextChanged += (s, e) =>
             {
-                foreach (var drawingVisual in EditorContext.DrawingVisualLists)
+                foreach (var drawingVisual in EditorContext.DrawEditorContext.DrawingVisualLists)
                 {
                     if (drawingVisual.BaseAttribute is ITextProperties textProperties)
                     {
@@ -176,7 +217,7 @@ namespace ColorVision.ImageEditor
             {
                 if (!e)
                 {
-                    foreach (var drawingVisual in EditorContext.DrawingVisualLists)
+                    foreach (var drawingVisual in EditorContext.DrawEditorContext.DrawingVisualLists)
                     {
                         drawingVisual.BaseAttribute.Msg = string.Empty;
                     }
@@ -189,21 +230,6 @@ namespace ColorVision.ImageEditor
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = true; }));
 
-            var _visibilityConfig = ConfigService.Instance.GetRequiredService<EditorToolVisibilityConfig>();
-
-            // Initialize editor tools visibility list
-            var EditorTools = new ObservableCollection<EditorToolViewModel>();
-            foreach (var tool in IEditorToolFactory.IEditorTools.OrderBy(t => t.ToolBarLocal).ThenBy(t => t.Order))
-            {
-                var guidId = tool.GuidId ?? tool.GetType().Name;
-                var toolViewModel = new EditorToolViewModel(this, tool, _visibilityConfig)
-                {
-                    DisplayName = guidId,
-                    Location = tool.ToolBarLocal.ToString(),
-                    IsVisible = _visibilityConfig.GetToolVisibility(guidId)
-                };
-                EditorTools.Add(toolViewModel);
-            }
         }
 
         private void DefaultDisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -225,7 +251,7 @@ namespace ColorVision.ImageEditor
 
         private void Config_Cleared(object? sender, EventArgs e)
         {
-            PseudoColorService?.Reset();
+            PseudoColorTool?.Reset();
             FunctionImage = null;
             if (_hImageCache != null)
             {
@@ -237,13 +263,13 @@ namespace ColorVision.ImageEditor
 
         public bool ImageEditMode
         {
-            get => EditorContext.IsImageEditMode;
+            get => EditorContext.DrawEditorContext.IsImageEditMode;
             set => SetImageEditModeCore(value, applyUiState: true, notifyPropertyChanged: true);
         }
 
         private void SetImageEditModeCore(bool value, bool applyUiState, bool notifyPropertyChanged)
         {
-            if (EditorContext.IsImageEditMode == value)
+            if (EditorContext.DrawEditorContext.IsImageEditMode == value)
             {
                 return;
             }
@@ -253,22 +279,22 @@ namespace ColorVision.ImageEditor
                 Config.IsToolBarDrawVisible = value;
             }
 
-            EditorContext.IsImageEditMode = value;
+            EditorContext.DrawEditorContext.IsImageEditMode = value;
 
             if (applyUiState)
             {
                 if (value)
                 {
-                    EditorContext.Zoombox.ActivateOn = ModifierKeys.Control;
-                    EditorContext.Zoombox.Cursor = Cursors.Cross;
+                    EditorContext.DrawEditorContext.Zoombox.ActivateOn = ModifierKeys.Control;
+                    EditorContext.DrawEditorContext.Zoombox.Cursor = Cursors.Cross;
                 }
                 else
                 {
-                    EditorContext.Zoombox.ActivateOn = ModifierKeys.None;
-                    EditorContext.Zoombox.Cursor = Cursors.Arrow;
+                    EditorContext.DrawEditorContext.Zoombox.ActivateOn = ModifierKeys.None;
+                    EditorContext.DrawEditorContext.Zoombox.Cursor = Cursors.Arrow;
                 }
 
-                EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
+                EditorContext.DrawEditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
             }
 
             if (notifyPropertyChanged)
@@ -304,23 +330,64 @@ namespace ColorVision.ImageEditor
             }
         }
 
+        private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.F11) return;
+            ToggleFullScreen();
+            e.Handled = true;
+        }
+
+        private void ImageView_Loaded(object sender, RoutedEventArgs e)
+        {
+            var window = WpfWindow.GetWindow(this);
+            if (ReferenceEquals(_shortcutWindow, window)) return;
+            if (_shortcutWindow != null) _shortcutWindow.PreviewKeyDown -= ShortcutWindow_PreviewKeyDown;
+            _shortcutWindow = window;
+            if (_shortcutWindow != null) _shortcutWindow.PreviewKeyDown += ShortcutWindow_PreviewKeyDown;
+        }
+
+        private void ImageView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (_shortcutWindow == null) return;
+            _shortcutWindow.PreviewKeyDown -= ShortcutWindow_PreviewKeyDown;
+            _shortcutWindow = null;
+        }
+
+        private void ShortcutWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.F11 || (!IsKeyboardFocusWithin && !IsMouseOver)) return;
+            ToggleFullScreen();
+            e.Handled = true;
+        }
+
+        public void ToggleFullScreen()
+        {
+            ImageContentGrid.DataContext = this;
+            (_fullScreenMode ??= new ImageFullScreenMode(ImageContentGrid)).ToggleFullScreen();
+        }
+
         private void MoveView(double x, double y)
         {
             TranslateTransform translateTransform = new();
             Vector vector = new(x, y);
             translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
             translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-            EditorContext.Zoombox.SetCurrentValue(Zoombox.ContentMatrixProperty,
-                Matrix.Multiply(EditorContext.Zoombox.ContentMatrix, translateTransform.Value));
+            EditorContext.DrawEditorContext.Zoombox.SetCurrentValue(Zoombox.ContentMatrixProperty,
+                Matrix.Multiply(EditorContext.DrawEditorContext.Zoombox.ContentMatrix, translateTransform.Value));
         }
 
         private void HandleContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
             EditorContext.ContextMenu.Items.Clear();
+            Point mouseDownPoint = Mouse.GetPosition(ImageShow);
+
+            if (TryCreateReferenceLineContextMenu())
+            {
+                return;
+            }
 
             if (ImageEditMode)
             {
-                Point mouseDownPoint = Mouse.GetPosition(ImageShow);
                 Visual? mouseVisual = ImageShow.GetVisual<Visual>(mouseDownPoint);
                 if (mouseVisual == null)
                 {
@@ -333,7 +400,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (provider.ContextType.IsAssignableFrom(selectVisual.GetType()))
                         {
-                            var items = provider.GetContextMenuItems(EditorContext, selectVisual);
+                            var items = provider.GetContextMenuItems(selectVisual);
                             foreach (var item in items)
                             {
                                 EditorContext.ContextMenu.Items.Add(item);
@@ -345,7 +412,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (provider.ContextType.IsAssignableFrom(selectEditorVisual.GetType()))
                         {
-                            var items = provider.GetContextMenuItems(EditorContext, selectEditorVisual);
+                            var items = provider.GetContextMenuItems(selectEditorVisual);
                             foreach (var item in items)
                             {
                                 EditorContext.ContextMenu.Items.Add(item);
@@ -359,7 +426,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (provider.ContextType.IsAssignableFrom(mouseVisual.GetType()))
                         {
-                            var items = provider.GetContextMenuItems(EditorContext, mouseVisual);
+                            var items = provider.GetContextMenuItems(mouseVisual);
                             foreach (var item in items)
                             {
                                 EditorContext.ContextMenu.Items.Add(item);
@@ -377,6 +444,31 @@ namespace ColorVision.ImageEditor
             {
                 CreateStandardContextMenu();
             }
+        }
+
+        private bool TryCreateReferenceLineContextMenu()
+        {
+            ToolReferenceLine? referenceTool = IEditorToolFactory.GetIEditorTool<ToolReferenceLine>();
+            if (referenceTool?.IsChecked != true)
+            {
+                return false;
+            }
+
+            ReferenceLine referenceLine = referenceTool.ReferenceLine;
+            foreach (var provider in IEditorToolFactory.ContextMenuProviders)
+            {
+                if (!provider.ContextType.IsAssignableFrom(referenceLine.GetType()))
+                {
+                    continue;
+                }
+
+                foreach (var item in provider.GetContextMenuItems(referenceLine))
+                {
+                    EditorContext.ContextMenu.Items.Add(item);
+                }
+            }
+
+            return EditorContext.ContextMenu.Items.Count > 0;
         }
 
         private void CreateStandardContextMenu()
@@ -467,15 +559,15 @@ namespace ColorVision.ImageEditor
         {
             UpdateDrawingVisualScale();
 
-            double zoomRatio = EditorContext.ZoomRatio;
+            double zoomRatio = EditorContext.DrawEditorContext.ZoomRatio;
             if (_oldZoomRatio != zoomRatio)
             {
                 _oldZoomRatio = zoomRatio;
                 double scale = double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0 ? 1 : 1 / zoomRatio;
-                EditorContext.DrawCanvas.Sacle = scale;
+                EditorContext.DrawEditorContext.DrawCanvas.Scale = scale;
                 if (EditorContext.Config.IsLayoutUpdated)
                 {
-                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id, 20, () => ImageLayoutUpdatedRender(scale, EditorContext.DrawingVisualLists));
+                    DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + EditorContext.Id, 20, () => ImageLayoutUpdatedRender(scale, EditorContext.DrawEditorContext.DrawingVisualLists));
                 }
             }
         }
@@ -490,43 +582,30 @@ namespace ColorVision.ImageEditor
             try
             {
                 _isUpdatedRender = true;
-                EditorContext.DrawCanvas.Sacle = scale;
-                EditorContext.DrawCanvas.ApplyLayoutScaleToVisuals();
+                EditorContext.DrawEditorContext.DrawCanvas.Scale = scale;
+                EditorContext.DrawEditorContext.DrawCanvas.ApplyLayoutScaleToVisuals();
             }
             finally
             {
                 _isUpdatedRender = false;
             }
         }
-        private void InitializeImageViewSettingProviders()
+
+        public void RegisterSettings(Func<IEnumerable<ImageViewSettingsEntry>> getEntries)
         {
-            RegisterImageViewSettingProvider(new ImageViewDisplaySettingProvider());
-            RegisterImageViewSettingProvider(new ImageViewDefaultsSettingProvider());
-            RegisterImageViewSettingProvider(new ImageViewWorkspaceSettingProvider());
+            _settingsEntries.Add(getEntries);
         }
 
-        public void RegisterImageViewSettingProvider(IImageViewSettingProvider provider)
+        internal IEnumerable<ImageViewSettingsEntry> GetRegisteredSettings()
         {
-            ArgumentNullException.ThrowIfNull(provider);
-
-            if (_imageViewSettingProviders.Any(existing => existing.GetType() == provider.GetType()))
-            {
-                return;
-            }
-
-            _imageViewSettingProviders.Add(provider);
-        }
-
-        public IReadOnlyList<IImageViewSettingProvider> GetImageViewSettingProviders()
-        {
-            return _imageViewSettingProviders;
+            return _settingsEntries.SelectMany(getEntries => getEntries());
         }
 
         public void OpenSettingsWindow(string? initialGroup = null)
         {
             ImageViewSettingsWindow window = new(this, initialGroup)
             {
-                Owner = Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                Owner = WpfWindow.GetWindow(this) ?? Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             window.ShowDialog();
@@ -611,7 +690,38 @@ namespace ColorVision.ImageEditor
         /// <param name="fileName">文件路径</param>
         public void Save(string fileName)
         {
-            RenderTargetBitmap renderTargetBitmap = new((int)ImageShow.ActualWidth, (int)ImageShow.ActualHeight, Config.GetProperties<double>("DpiX"), Config.GetProperties<double>("DpiY"), PixelFormats.Pbgra32);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                log.Warn("Skip saving ImageView because file name is empty.");
+                return;
+            }
+
+            ImageShow.UpdateLayout();
+            int pixelWidth = GetRenderPixelLength(ImageShow.ActualWidth, ImageShow.RenderSize.Width);
+            int pixelHeight = GetRenderPixelLength(ImageShow.ActualHeight, ImageShow.RenderSize.Height);
+            if (pixelWidth <= 0 || pixelHeight <= 0)
+            {
+                log.WarnFormat(
+                    "Skip saving ImageView because render size is invalid. File={0}, Actual={1}x{2}, RenderSize={3}x{4}, Source={5}",
+                    fileName,
+                    ImageShow.ActualWidth,
+                    ImageShow.ActualHeight,
+                    ImageShow.RenderSize.Width,
+                    ImageShow.RenderSize.Height,
+                    ImageShow.Source?.GetType().FullName ?? "<null>");
+                return;
+            }
+
+            double dpiX = GetPositiveDpi(Config.GetProperties<double>("DpiX"));
+            double dpiY = GetPositiveDpi(Config.GetProperties<double>("DpiY"));
+
+            string? directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            RenderTargetBitmap renderTargetBitmap = new(pixelWidth, pixelHeight, dpiX, dpiY, PixelFormats.Pbgra32);
             renderTargetBitmap.Render(ImageShow);
 
             // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
@@ -623,9 +733,32 @@ namespace ColorVision.ImageEditor
             pngEncoder.Save(fileStream);
         }
 
+        private static int GetRenderPixelLength(params double[] values)
+        {
+            foreach (double value in values)
+            {
+                if (IsPositiveFinite(value))
+                {
+                    return Math.Max(1, (int)Math.Ceiling(value));
+                }
+            }
+
+            return 0;
+        }
+
+        private static double GetPositiveDpi(double value)
+        {
+            return IsPositiveFinite(value) ? value : 96d;
+        }
+
+        private static bool IsPositiveFinite(double value)
+        {
+            return value > 0 && !double.IsNaN(value) && !double.IsInfinity(value);
+        }
+
         public void ClearAnnotations()
         {
-            foreach (Visual visual in EditorContext.DrawingVisualLists.OfType<Visual>().ToList())
+            foreach (Visual visual in EditorContext.DrawEditorContext.DrawingVisualLists.OfType<Visual>().ToList())
             {
                 ImageShow.RemoveVisual(visual);
             }
@@ -633,17 +766,17 @@ namespace ColorVision.ImageEditor
 
         public void ExportAnnotations()
         {
-            List<DrawingVisualBase> visuals = EditorContext.DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
+            List<DrawingVisualBase> visuals = EditorContext.DrawEditorContext.DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
             if (visuals.Count == 0)
             {
-                MessageBox.Show(Properties.Resources.ImageView_NoExportableAnnotations, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                WpfMessageBox.Show(Properties.Resources.ImageView_NoExportableAnnotations, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             AnnotationDocument document = AnnotationMapper.CreateDocument(visuals);
             if (document.Items.Count == 0)
             {
-                MessageBox.Show(Properties.Resources.ImageView_NoAnnotationTypes, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                WpfMessageBox.Show(Properties.Resources.ImageView_NoAnnotationTypes, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -661,7 +794,7 @@ namespace ColorVision.ImageEditor
             string message = skippedCount > 0
                 ? string.Format(Properties.Resources.ImageView_ExportedAnnotationsWithSkip, document.Items.Count, skippedCount)
                 : string.Format(Properties.Resources.ImageView_ExportedAnnotations, document.Items.Count);
-            MessageBox.Show(message, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+            WpfMessageBox.Show(message, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public void ImportAnnotations()
@@ -684,19 +817,19 @@ namespace ColorVision.ImageEditor
                     ImageShow.AddVisual(visual);
                 }
 
-                MessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, visuals.Count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportedAnnotations, visuals.Count), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(Properties.Resources.ImageView_ImportAnnotationsFailed, ex.Message), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Error);
+                WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_ImportAnnotationsFailed, ex.Message), Properties.Resources.ImageView_ImportAnnotations, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private void ImageShow_VisualsAdd(object? sender, VisualChangedEventArgs e)
         {
-            if (e.Visual is IDrawingVisual visual && !EditorContext.DrawingVisualLists.Contains(visual) && sender is Visual visual1)
+            if (e.Visual is IDrawingVisual visual && !EditorContext.DrawEditorContext.DrawingVisualLists.Contains(visual) && sender is Visual visual1)
             {
-                EditorContext.DrawingVisualLists.Add(visual);
+                EditorContext.DrawEditorContext.DrawingVisualLists.Add(visual);
             }
 
         }
@@ -704,7 +837,7 @@ namespace ColorVision.ImageEditor
         private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)
         {
             if (e.Visual is IDrawingVisual visual)
-                EditorContext.DrawingVisualLists.Remove(visual);
+                EditorContext.DrawEditorContext.DrawingVisualLists.Remove(visual);
         }
 
 
@@ -840,7 +973,7 @@ namespace ColorVision.ImageEditor
                     }
                     else
                     {
-                        MessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, ext));
+                        WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedImageFormat, ext));
                     }
                 }
             }
@@ -849,7 +982,7 @@ namespace ColorVision.ImageEditor
                 EditorContext.IImageOpen = null;
                 IEditorToolFactory.ApplyImageOpenTools(null);
                 log.Error(ex);
-                MessageBox.Show(ex.Message);
+                WpfMessageBox.Show(ex.Message);
             }
         }
 
@@ -896,7 +1029,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
-            PseudoColorService?.Reset();
+            PseudoColorTool?.Reset();
             InvalidatePseudoColorRender();
             FunctionImage = null;
             ViewBitmapSource = null;
@@ -947,7 +1080,7 @@ namespace ColorVision.ImageEditor
                         depth = 32; // 16 bits per channel
                         break;
                     default:
-                        MessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedPixelFormat, writeableBitmap.Format));
+                        WpfMessageBox.Show(string.Format(Properties.Resources.ImageView_UnsupportedPixelFormat, writeableBitmap.Format));
                         throw new NotSupportedException("The pixel format is not supported.");
                 }
 
@@ -963,13 +1096,13 @@ namespace ColorVision.ImageEditor
                 Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_DpiY);
                 if (enableEditorImageServices)
                 {
-                    PseudoColorService?.ConfigureForImage();
+                    PseudoColorTool?.ConfigureForImage();
                 }
             }
 
             if (enableEditorImageServices)
             {
-                ImageCalibrationService.ApplyToDefault(EditorContext);
+                ImageCalibrationService.ApplyToDefault(Config);
             }
 
             ViewBitmapSource = imageSource;
@@ -1051,7 +1184,7 @@ namespace ColorVision.ImageEditor
 
         private void InvalidatePseudoColorRender()
         {
-            PseudoColorService?.Invalidate();
+            PseudoColorTool?.Invalidate();
         }
 
         public void ExtractChannel(int channel)
@@ -1073,8 +1206,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
-                            var image = hImageProcessed.ToWriteableBitmap();
-                            hImageProcessed.Dispose();
+                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
@@ -1110,12 +1242,12 @@ namespace ColorVision.ImageEditor
 
         private void UpdateDrawingVisualScale()
         {
-            ImageShow.Sacle = GetDrawingVisualScale();
+            ImageShow.Scale = GetDrawingVisualScale();
         }
 
         private double GetDrawingVisualScale()
         {
-            double zoomRatio = EditorContext?.ZoomRatio ?? 1;
+            double zoomRatio = EditorContext?.DrawEditorContext.ZoomRatio ?? 1;
             return double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0 ? 1 : 1 / zoomRatio;
         }
 
@@ -1153,7 +1285,7 @@ namespace ColorVision.ImageEditor
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (sender is TextBox textBox && textBox.AcceptsReturn)
+            if (sender is WpfTextBox textBox && textBox.AcceptsReturn)
             {
                 return;
             }
@@ -1178,7 +1310,7 @@ namespace ColorVision.ImageEditor
         /// <returns>SelectResult with shape properties, or null if cancelled</returns>
         public Task<SelectResult> BeginSelectAsync(SelectShapeType shapeType)
         {
-            var mode = new TransientRoiSelectionSession(EditorContext, shapeType);
+            var mode = new TransientRoiSelectionSession(EditorContext.DrawEditorContext, shapeType);
             return mode.Start();
         }
 
@@ -1191,10 +1323,14 @@ namespace ColorVision.ImageEditor
             _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;
             Config.Cleared -= Config_Cleared;
             IEditorToolFactory.Dispose();
-            EditorContext.MouseInfoProvider.Dispose();
+            EditorContext.DrawEditorContext.MouseInfoProvider.Dispose();
             EditorContext.CompactInspectorPresenter?.Dispose();
-            EditorContext.DrawingVisualLists?.Clear();
+            EditorContext.DrawEditorContext.DrawingVisualLists?.Clear();
             Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
+            Loaded -= ImageView_Loaded;
+            Unloaded -= ImageView_Unloaded;
+            if (_shortcutWindow != null) _shortcutWindow.PreviewKeyDown -= ShortcutWindow_PreviewKeyDown;
+            PreviewKeyDown -= ImageView_PreviewKeyDown;
             ImageShow.PreviewKeyDown -= HandleKeyDown;
             ImageShow.ContextMenuOpening -= HandleContextMenuOpening;
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;

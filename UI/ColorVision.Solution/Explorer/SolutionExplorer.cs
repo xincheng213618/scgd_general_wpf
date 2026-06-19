@@ -1,4 +1,4 @@
-#pragma warning disable CS8604,CS4014
+#pragma warning disable CS4014,CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
@@ -60,7 +60,7 @@ namespace ColorVision.Solution.Explorer
         public SolutionExplorer(SolutionEnvironments solutionEnvironments)
         {
             SolutionEnvironments = solutionEnvironments ?? throw new ArgumentNullException(nameof(solutionEnvironments));
-            CopyFullPathCommand = new RelayCommand(_ => Common.NativeMethods.Clipboard.SetText(SolutionEnvironments.SolutionPath));
+            CopyFullPathCommand = new RelayCommand(_ => Common.Clipboard.SetText(SolutionEnvironments.SolutionPath));
             OpenFileInExplorerCommand = new RelayCommand(_ => Process.Start("explorer.exe", DirectoryInfo.FullName), _ => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(_ => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
             SaveCommand = new RelayCommand(_ => SaveConfig());
@@ -200,6 +200,11 @@ namespace ColorVision.Solution.Explorer
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 var parentNode = FindNodeByFullPath(parentPath) ?? this;
+                if (parentNode is FolderNode unloadedFolder && !unloadedFolder.AreChildrenLoaded)
+                {
+                    unloadedFolder.MarkChildrenChanged();
+                    return;
+                }
 
                 // Duplicate protection
                 if (parentNode.VisualChildren.Any(c => PathEquals(c.FullPath, e.FullPath)))
@@ -230,6 +235,12 @@ namespace ColorVision.Solution.Explorer
                     if (child is IDisposable disposable)
                         disposable.Dispose();
                 }
+                else
+                {
+                    string? parentPath = Path.GetDirectoryName(e.FullPath);
+                    if (!string.IsNullOrWhiteSpace(parentPath) && FindNodeByFullPath(parentPath) is FolderNode unloadedFolder)
+                        unloadedFolder.MarkChildrenChanged();
+                }
                 VisualChildrenEventHandler?.Invoke(this, EventArgs.Empty);
             });
         }
@@ -258,6 +269,12 @@ namespace ColorVision.Solution.Explorer
                 }
 
                 var parentNode = FindNodeByFullPath(parentPath) ?? this;
+                if (parentNode is FolderNode unloadedFolder && !unloadedFolder.AreChildrenLoaded)
+                {
+                    unloadedFolder.MarkChildrenChanged();
+                    return;
+                }
+
                 if (parentNode.VisualChildren.Any(c => PathEquals(c.FullPath, e.FullPath)))
                     return;
 

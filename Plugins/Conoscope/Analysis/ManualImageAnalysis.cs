@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using ColorVision.ImageEditor.Cie;
 using Conoscope.Core;
 using System;

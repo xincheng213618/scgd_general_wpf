@@ -110,6 +110,50 @@ ThemeManager 还负责调用 DWM API 更新窗口外观：
 
 Window.ApplyCaption 还会根据当前主题切换窗口图标资源。这部分行为是当前模块很实际的一层价值，旧文档里反而没有把它讲清楚。
 
+## 作为 DLL 使用时
+
+### 应该引用它的场景
+
+- 新窗口需要使用 `BaseWindow`、统一主题资源或通用控件。
+- 应用启动时需要调用 `Application.ApplyTheme`。
+- 窗口需要跟随深色/浅色主题调整标题栏和图标。
+- 需要使用 `LoadingOverlay`、`ProgressRing`、`ToggleSwitch`、上传控件或内置转换器。
+
+### 接入步骤
+
+1. 确认应用已经引用 `ColorVision.Themes.dll`。
+2. 在启动阶段调用 `Application.Current.ApplyTheme(...)` 或由 `ColorVision.UI` 的主题菜单链触发。
+3. 新窗口按需要继承 `BaseWindow`，或在普通 `Window` 上调用 `ApplyCaption`。
+4. 如果新增资源字典，放入 `Themes/` 并在 `ThemeManager` 对应列表中注册。
+
+### 发布注意
+
+主题 DLL 的资源都通过 WPF ResourceDictionary 和 Resource 打包。新增 XAML、图片、图标、AVIF 等资源时，要确认 `.csproj` 中的 `Resource` / `None Remove` / `CopyToOutputDirectory` 设置，否则本地调试可用但 NuGet 包内缺资源。
+
+### DLL 发布验收表
+
+| 验收项 | 要查什么 | 通过标准 |
+| --- | --- | --- |
+| 目标框架 | `ColorVision.Themes.csproj` 的 `net8.0-windows7.0;net10.0-windows7.0` | 两个目标框架都能打包，宿主目标框架能解析依赖 |
+| 包元数据 | `GeneratePackageOnBuild`、`PackageReadmeFile`、`README.md` | 包内说明和版本号完整 |
+| 第三方依赖 | `HandyControl` 版本 | 宿主输出目录中依赖版本一致，没有 XAML 资源解析冲突 |
+| 主题资源 | `Themes/Base.xaml`、`Dark.xaml`、`White.xaml`、`Pink.xaml`、`Cyan.xaml` | 切换每个内置主题时资源字典都能加载 |
+| 应用入口 | `Application.ApplyTheme`、`ThemeManager.ApplyTheme`、`ForceApplyTheme` | 启动后和运行时切换都能更新全局资源 |
+| 窗口标题栏 | `Window.ApplyCaption`、DWM 调用 | 深色、浅色、粉色、青色标题栏和图标行为符合预期 |
+| 跟随系统 | `SystemEvents`、`AppsUseLightTheme`、`SystemUsesLightTheme` | Windows 主题变化后应用能按当前实现更新 |
+| 包内资源 | `ColorVision.ico`、`ColorVision1.ico`、`uploadbg.avif` 等 | 发布包内存在资源，窗口图标和上传背景不丢失 |
+
+### 现场故障首查
+
+| 现象 | 先查哪里 | 判断要点 |
+| --- | --- | --- |
+| 应用启动后主题没有生效 | `Application.ApplyTheme` 调用时机、`ThemeManager.CurrentTheme` | 先确认是否真正调用了主题入口 |
+| 某个主题切换时报资源找不到 | `Themes/*.xaml`、项目文件 Resource 配置 | 本地能用但包内失败时，优先查资源打包 |
+| 标题栏颜色不跟随主题 | `Window.ApplyCaption`、DWM API、窗口类型 | 只有调用过 caption 扩展的窗口才会跟随 |
+| 跟随系统不变化 | Windows 注册表 `AppsUseLightTheme`、系统事件监听 | 当前实现依赖系统事件和注册表，不是实时同步服务 |
+| 图标或上传背景缺失 | `Assets/Image/`、`Assets/uploadbg.avif` | 检查 NuGet 包和主程序输出目录是否包含资源 |
+| 自定义主题接不上 | 当前代码中的 `Theme` 枚举和 `ThemeManager` | 现有代码没有旧文档提到的 `Theme.Custom` 扩展点 |
+
 ## 当前实现的边界
 
 ### 主题持久化不由 ThemeManager 自己完成
@@ -146,7 +190,7 @@ Window.ApplyCaption 还会根据当前主题切换窗口图标资源。这部分
 - ThemeManager.ResourceDictionaryCustom
 - ThemeConfig.FollowSystem
 
-这类内容已经不能继续作为现有能力写在 API 参考里。
+这类内容已经不能继续作为现有能力写在模块参考里。
 
 ## 当前更适合怎样读这个模块
 

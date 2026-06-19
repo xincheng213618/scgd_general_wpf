@@ -7,7 +7,7 @@ namespace ColorVision.ShellExtension
     /// Simple file-based logger for the shell extension.
     /// Since the COM server runs inside Explorer (not in our app process),
     /// log4net and other app-level loggers are not available.
-    /// Logs are written to %APPDATA%\ColorVision\ShellExtension.log.
+    /// Logs are written to %APPDATA%\ColorVision\Log\ShellExtension.log.
     /// </summary>
     internal static class ShellLog
     {
@@ -17,7 +17,7 @@ namespace ColorVision.ShellExtension
         static ShellLog()
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string logDir = Path.Combine(appData, "ColorVision");
+            string logDir = Path.Combine(appData, "ColorVision", "Log");
             Directory.CreateDirectory(logDir);
             LogFilePath = Path.Combine(logDir, "ShellExtension.log");
         }

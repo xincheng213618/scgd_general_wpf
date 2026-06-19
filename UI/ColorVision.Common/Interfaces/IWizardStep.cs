@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.UI
@@ -11,6 +12,30 @@ namespace ColorVision.UI
         string Description { get; }
         bool ConfigurationStatus { get; set; }
 
+    }
+
+    public sealed class WizardInitializationContext
+    {
+        public WizardInitializationContext(Window owner, bool isFirstRun)
+        {
+            Owner = owner;
+            IsFirstRun = isFirstRun;
+        }
+
+        public Window Owner { get; }
+        public bool IsFirstRun { get; }
+        public bool SkipRequested { get; private set; }
+
+        public void RequestSkipWizard()
+        {
+            SkipRequested = true;
+        }
+    }
+
+    public interface IWizardInitializer
+    {
+        int Order { get; }
+        void Initialize(WizardInitializationContext context);
     }
 
     public abstract class WizardStepBase : ViewModelBase, IWizardStep

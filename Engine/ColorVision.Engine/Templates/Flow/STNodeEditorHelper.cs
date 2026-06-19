@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8603,CS8604
+﻿#pragma warning disable CA1304,CA1822,CA1854,CS8602,CS8603,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
@@ -500,6 +500,11 @@ namespace ColorVision.Engine.Templates.Flow
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
         {
+            RefreshActiveNodePropertyPanel();
+        }
+
+        public void RefreshActiveNodePropertyPanel()
+        {
             STNodePropertyGrid propertyGrid;
             StackPanel signPanel;
 
@@ -507,6 +512,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 var dockPanel = FlowNodePropertyPanel.Instance;
                 if (dockPanel == null) return;
+                dockPanel.EditorHelper = this;
                 propertyGrid = dockPanel.NodePropertyGrid;
                 signPanel = dockPanel.SignStackPanel;
             }
@@ -553,7 +559,7 @@ namespace ColorVision.Engine.Templates.Flow
                     STNodePropertyGrid = propertyGrid,
                     STNodeEditor = STNodeEditor,
                     PropertyStackPanel = StackPanel,
-                    OnActiveChanged = () => STNodeEditorMain_ActiveChanged(this, new EventArgs())
+                    OnActiveChanged = RefreshActiveNodePropertyPanel
                 };
                 configurator.Configure(context);
             }
@@ -561,7 +567,11 @@ namespace ColorVision.Engine.Templates.Flow
             signPanel.Children.Add(StackPanel);
             StackPanel.Children.Clear();
 
-            StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
+            var resourceManager = PropertyEditorHelper.GetResourceManager(STNodeEditor.ActiveNode);
+            StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
+                STNodeEditor.ActiveNode,
+                resourceManager,
+                metadataProvider: FlowNodePropertyMetadataProvider.Instance));
             signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
         public StackPanel StackPanel { get; set; } = new StackPanel();
@@ -880,14 +890,44 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void ApplyTreeLayout(int startX, int startY, int horizontalSpacing, int verticalSpacing)
         {
-            ConnectionInfo = STNodeEditor.GetConnectionInfo();
+            ConnectionInfo = GetLiveConnectionInfo();
             STNode rootNode = GetRootNode();
             if (rootNode == null) return;
 
             var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, horizontalSpacing, verticalSpacing,
                 STNodeEditor.Width, STNodeEditor.Height);
             layout.Execute(rootNode);
-            AutoSize();
+        }
+
+        private ConnectionInfo[] GetLiveConnectionInfo()
+        {
+            var connections = new List<ConnectionInfo>();
+            foreach (var item in STNodeEditor.Nodes)
+            {
+                if (item is not STNode node)
+                    continue;
+
+                var outputOptions = node.GetAllOutputOptions();
+                foreach (var output in outputOptions)
+                {
+                    if (output == null || output == STNodeOption.Empty || output.ConnectedOption == null)
+                        continue;
+
+                    foreach (var input in output.ConnectedOption)
+                    {
+                        if (input == null || input == STNodeOption.Empty)
+                            continue;
+
+                        connections.Add(new ConnectionInfo
+                        {
+                            Output = output,
+                            Input = input
+                        });
+                    }
+                }
+            }
+
+            return connections.ToArray();
         }
 
         List<STNode> GetChildren(STNode node)

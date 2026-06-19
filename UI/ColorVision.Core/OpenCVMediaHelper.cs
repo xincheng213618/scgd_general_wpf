@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CA1401,CA1707,CA2101
+using System;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.Core
@@ -47,7 +48,25 @@ namespace ColorVision.Core
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void FreeResult(IntPtr str);
+        public static extern int FreeResult(IntPtr str);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void M_FreeHImageData(IntPtr data);
+
+        public static string PtrToStringAnsiAndFree(IntPtr str)
+        {
+            try
+            {
+                return str == IntPtr.Zero ? string.Empty : Marshal.PtrToStringAnsi(str) ?? string.Empty;
+            }
+            finally
+            {
+                if (str != IntPtr.Zero)
+                {
+                    _ = FreeResult(str);
+                }
+            }
+        }
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_FindLuminousArea(HImage img, RoiRect roi, string config, out IntPtr str);
@@ -69,6 +88,58 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_PseudoColorAutoRange(HImage image, out HImage hImage, uint min, uint max, ColormapTypes colormapTypes, int channel, uint dataMin, uint dataMax);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_PseudoColorInto(HImage image, HImage output, uint min, uint max, ColormapTypes colormapTypes, int channel);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_PseudoColorAutoRangeInto(HImage image, HImage output, uint min, uint max, ColormapTypes colormapTypes, int channel, uint dataMin, uint dataMax);
+
+        public static HImage AllocateHImage(int width, int height, int channels, int depth)
+        {
+            if (width <= 0 || height <= 0 || channels <= 0 || depth <= 0 || depth % 8 != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(width), "Invalid HImage dimensions or format.");
+            }
+
+            int stride = checked(width * channels * (depth / 8));
+            int length = checked(stride * height);
+            return new HImage
+            {
+                rows = height,
+                cols = width,
+                channels = channels,
+                depth = depth,
+                stride = stride,
+                pData = Marshal.AllocCoTaskMem(length)
+            };
+        }
+
+        public static int ApplyPseudoColor(HImage image, out HImage output, uint min, uint max, ColormapTypes colormapTypes, int channel)
+        {
+            output = AllocateHImage(image.cols, image.rows, 3, 8);
+            int ret = M_PseudoColorInto(image, output, min, max, colormapTypes, channel);
+            if (ret != 0)
+            {
+                output.Dispose();
+                output = default;
+            }
+
+            return ret;
+        }
+
+        public static int ApplyPseudoColorAutoRange(HImage image, out HImage output, uint min, uint max, ColormapTypes colormapTypes, int channel, uint dataMin, uint dataMax)
+        {
+            output = AllocateHImage(image.cols, image.rows, 3, 8);
+            int ret = M_PseudoColorAutoRangeInto(image, output, min, max, colormapTypes, channel, dataMin, dataMax);
+            if (ret != 0)
+            {
+                output.Dispose();
+                output = default;
+            }
+
+            return ret;
+        }
+
         /// <summary>
         /// 从图像数据中获取最小最大值
         /// </summary>
@@ -83,7 +154,7 @@ namespace ColorVision.Core
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CharSet = CharSet.Unicode)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern int M_AutoLevelsAdjust(HImage image, out HImage hImage);
 
         /// <summary>
@@ -92,7 +163,7 @@ namespace ColorVision.Core
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CharSet = CharSet.Unicode)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern int M_AutomaticColorAdjustment(HImage image, out HImage hImage);
 
         /// <summary>
@@ -101,7 +172,7 @@ namespace ColorVision.Core
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CharSet = CharSet.Unicode)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern int M_AutomaticToneAdjustment(HImage image, out HImage hImage);
 
 
@@ -112,17 +183,41 @@ namespace ColorVision.Core
         public static extern int M_DrawPoiImage(HImage image, out HImage hImage, int radius, int[] points, int pointCount, int thickness);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_ConvertImage(HImage image, out IntPtr rowGrayPixels, out int length, int scaleFactor , int targetPixelsX, int targetPixelsY);
+        public static extern int M_ConvertImage(HImage image, out IntPtr rowGrayPixels, out int length, out int scaleFactor, int targetPixelsX, int targetPixelsY);
 
-        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void M_SetHImageData(IntPtr data);
+        public static int ConvertImageToGrayPixels(HImage image, out byte[] rowGrayPixels, out int scaleFactor, int targetPixelsX = 512, int targetPixelsY = 512)
+        {
+            rowGrayPixels = Array.Empty<byte>();
+            scaleFactor = 0;
 
+            int ret = M_ConvertImage(image, out IntPtr buffer, out int length, out int nativeScaleFactor, targetPixelsX, targetPixelsY);
+            try
+            {
+                if (ret != 0 || buffer == IntPtr.Zero || length <= 0)
+                {
+                    return ret;
+                }
 
-        [DllImport(LibPath, EntryPoint = "M_CalArtculation", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+                byte[] managed = new byte[length];
+                Marshal.Copy(buffer, managed, 0, length);
+                rowGrayPixels = managed;
+                scaleFactor = nativeScaleFactor;
+                return ret;
+            }
+            finally
+            {
+                if (buffer != IntPtr.Zero)
+                {
+                    M_FreeHImageData(buffer);
+                }
+            }
+        }
+
+        [DllImport(LibPath, EntryPoint = "M_CalArtculation", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern double M_CalArtculation(HImage image, FocusAlgorithm  evaFunc, RoiRect roi);
 
 
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_GetWhiteBalance(HImage image, out HImage hImage, double redBalance, double greenBalance, double blueBalance);
 
         /// <summary>
@@ -132,7 +227,7 @@ namespace ColorVision.Core
         /// <param name="hImage"></param>
         /// <param name="gamma"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_ApplyGammaCorrection(HImage image, out HImage hImage, double gamma);
 
         /// <summary>
@@ -143,7 +238,7 @@ namespace ColorVision.Core
         /// <param name="alpha"></param>
         /// <param name="beta"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_AdjustBrightnessContrast(HImage image, out HImage hImage, double alpha, double beta);
 
         /// <summary>
@@ -152,7 +247,7 @@ namespace ColorVision.Core
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_InvertImage(HImage image, out HImage hImage);
 
 
@@ -162,7 +257,7 @@ namespace ColorVision.Core
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_Threshold(HImage image, out HImage hImage, double thresh, double maxval, int type);
 
         /// <summary>
@@ -171,21 +266,21 @@ namespace ColorVision.Core
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_RemoveMoire(HImage image, out HImage hImage);
 
 
 
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_ConvertGray32Float(HImage image, out HImage hImage);
 
 
 
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_StitchImages(string config, out HImage hImage);
 
 
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_Fusion(string fusionjson, out HImage hImage);
 
         /// <summary>
@@ -196,7 +291,7 @@ namespace ColorVision.Core
         /// <param name="kernelSize">核大小(必须为奇数)</param>
         /// <param name="sigma">标准差</param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_ApplyGaussianBlur(HImage image, out HImage hImage, int kernelSize, double sigma);
 
         /// <summary>
@@ -206,7 +301,7 @@ namespace ColorVision.Core
         /// <param name="hImage"></param>
         /// <param name="kernelSize">核大小(必须为奇数)</param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_ApplyMedianBlur(HImage image, out HImage hImage, int kernelSize);
 
         /// <summary>
@@ -215,7 +310,7 @@ namespace ColorVision.Core
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_ApplySharpen(HImage image, out HImage hImage);
 
         /// <summary>
@@ -226,7 +321,7 @@ namespace ColorVision.Core
         /// <param name="threshold1">第一个阈值</param>
         /// <param name="threshold2">第二个阈值</param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_ApplyCannyEdgeDetection(HImage image, out HImage hImage, double threshold1, double threshold2);
 
         /// <summary>
@@ -235,7 +330,7 @@ namespace ColorVision.Core
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern int M_ApplyHistogramEqualization(HImage image, out HImage hImage);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]

@@ -1,76 +1,51 @@
-﻿using ColorVision.ImageEditor.Abstractions;
+#pragma warning disable CA1859
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.ImageEditor.Realtime;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
     public class EditorContext
     {
-        private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
-        private ImageView _imageView = null!;
-        private RealtimeEditorContext? _realtimeEditorContext;
+        private readonly Panel _textEditorOverlay;
+        private TextEditingContext? _textEditingContext;
 
-
-
-        public EditorContext(ImageView imageView, DrawCanvas drawCanvas, Zoombox zoombox)
-            : this(imageView, drawCanvas, zoombox, null)
+        public EditorContext(
+            ImageView imageView,
+            ImageViewConfig config,
+            DrawEditorContext drawEditorContext,
+            ImageProcessingContext processingContext,
+            Panel? textEditorOverlay)
         {
+            ImageView = imageView ?? throw new ArgumentNullException(nameof(imageView));
+            Config = config ?? throw new ArgumentNullException(nameof(config));
+            DrawEditorContext = drawEditorContext ?? throw new ArgumentNullException(nameof(drawEditorContext));
+            ProcessingContext = processingContext ?? throw new ArgumentNullException(nameof(processingContext));
+            _textEditorOverlay = textEditorOverlay ?? CreateFallbackTextEditorOverlay();
         }
 
-        public EditorContext(ImageView imageView, DrawCanvas drawCanvas, Zoombox zoombox, Panel? textEditorOverlay)
-        {
-            ImageView = imageView;
-            DrawEditorContext = new DrawEditorContext(drawCanvas, zoombox, textEditorOverlay, Id);
-        }
-        public EditorContext()
-        {
-            DrawEditorContext = new DrawEditorContext(Id);
-        }
+        public Guid Id => DrawEditorContext.Id;
 
-        public Guid Id { get; init; } = Guid.NewGuid();
+        public ImageView ImageView { get; }
+
         public ContextMenu ContextMenu { get; set; } = new ContextMenu();
+
         public IImageOpen? IImageOpen { get; set; }
 
         public DrawEditorContext DrawEditorContext { get; }
 
-        public RealtimeEditorContext RealtimeEditorContext
-        {
-            get
-            {
-                _realtimeEditorContext ??= new RealtimeEditorContext(ImageView, ImageView.Realtime);
-                return _realtimeEditorContext;
-            }
-        }
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => DrawEditorContext.DrawingVisualLists;
 
-        public ImageView ImageView
-        {
-            get => _imageView;
-            set
-            {
-                _imageView = value;
-                _realtimeEditorContext = null;
-            }
-        }
-
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists
-        {
-            get => DrawEditorContext.DrawingVisualLists;
-            set => DrawEditorContext.DrawingVisualLists = value;
-        }
-
-        public ImageViewConfig Config { get; set; }  = new ImageViewConfig();
-
-        public DrawCanvas DrawCanvas
-        {
-            get => DrawEditorContext.DrawCanvas;
-            set => DrawEditorContext.DrawCanvas = value;
-        }
+        public DrawCanvas DrawCanvas => DrawEditorContext.DrawCanvas;
 
         public ImageMouseInfoProvider MouseInfoProvider => DrawEditorContext.MouseInfoProvider;
 
@@ -92,59 +67,125 @@ namespace ColorVision.ImageEditor
             set => DrawEditorContext.IsImageEditMode = value;
         }
 
-        public Zoombox Zoombox
-        {
-            get => DrawEditorContext.Zoombox;
-            set => DrawEditorContext.Zoombox = value;
-        }
-
-        public Panel TextEditorOverlay => DrawEditorContext.TextEditorOverlay;
-
-        public Point TranslatePointToTextEditorOverlay(Point point)
-        {
-            return DrawEditorContext.TranslatePointToTextEditorOverlay(point);
-        }
+        public Zoombox Zoombox => DrawEditorContext.Zoombox;
 
         public double ZoomRatio => DrawEditorContext.ZoomRatio;
 
         public DrawEditorManager DrawEditorManager => DrawEditorContext.DrawEditorManager;
 
+        public Panel TextEditorOverlay => _textEditorOverlay;
+
+        public Point TranslatePointToTextEditorOverlay(Point point)
+        {
+            return TextEditingContext.TranslatePointToTextEditorOverlay(point);
+        }
+
+        public TextEditingContext TextEditingContext => _textEditingContext ??= new TextEditingContext(
+            Id,
+            DrawEditorContext.DrawCanvas,
+            DrawEditorContext.Zoombox,
+            _textEditorOverlay,
+            DrawEditorContext.SelectionVisual,
+            DrawEditorContext.DrawEditorManager,
+            DrawEditorContext.DrawingVisualLists);
+
+        public ImageProcessingContext ProcessingContext { get; }
+
+        public ImageViewConfig Config { get; }
+
         public IEditorToolFactory IEditorToolFactory { get; set; }
 
         public CompactInspectorPresenter CompactInspectorPresenter { get; set; }
 
-        public void RegisterService<TService>(TService service) where TService : class
+        public Window? OwnerWindow => Window.GetWindow(ImageView) ?? Application.Current?.MainWindow;
+
+        public ImageSource FunctionImage
         {
-            ArgumentNullException.ThrowIfNull(service);
-            _services[typeof(TService)] = service;
+            get => ImageView.FunctionImage;
+            [param: AllowNull]
+            set => ImageView.FunctionImage = value;
         }
 
-        public bool TryGetService<TService>(out TService? service) where TService : class
+        public ImageSource ViewBitmapSource
         {
-            if (_services.TryGetValue(typeof(TService), out var registeredService) && registeredService is TService typedService)
+            get => ImageView.ViewBitmapSource;
+            [param: AllowNull]
+            set => ImageView.ViewBitmapSource = value;
+        }
+
+        public void OpenImage(string? filePath)
+        {
+            ImageView.OpenImage(filePath);
+        }
+
+        public void OpenImage(WriteableBitmap? writeableBitmap)
+        {
+            ImageView.OpenImage(writeableBitmap);
+        }
+
+        public void SetImageSource(ImageSource imageSource)
+        {
+            ImageView.SetImageSource(imageSource);
+        }
+
+        public void SaveAs()
+        {
+            ImageView.SaveAs();
+        }
+
+        public void Save(string fileName)
+        {
+            ImageView.Save(fileName);
+        }
+
+        public void Clear()
+        {
+            ImageView.Clear();
+        }
+
+        public void ClearAnnotations()
+        {
+            ImageView.ClearAnnotations();
+        }
+
+        public void ExportAnnotations()
+        {
+            ImageView.ExportAnnotations();
+        }
+
+        public void ImportAnnotations()
+        {
+            ImageView.ImportAnnotations();
+        }
+
+        public void OpenSettingsWindow(string? initialGroup = null)
+        {
+            ImageView.OpenSettingsWindow(initialGroup);
+        }
+
+        internal void SetCompactInspectorItems(IEnumerable<FrameworkElement> elements)
+        {
+            ImageView.SetCompactInspectorItems(elements);
+        }
+
+        public void SetImageEditMode(bool value)
+        {
+            ImageView.ImageEditMode = value;
+        }
+
+        public Task<SelectResult> BeginSelectAsync(SelectShapeType shapeType)
+        {
+            return ImageView.BeginSelectAsync(shapeType);
+        }
+
+        private static Panel CreateFallbackTextEditorOverlay()
+        {
+            return new Canvas
             {
-                service = typedService;
-                return true;
-            }
-
-            service = null;
-            return false;
-        }
-
-        public TService GetRequiredService<TService>() where TService : class
-        {
-            if (TryGetService<TService>(out var service) && service != null)
-            {
-                return service;
-            }
-            return null;
-        }
-
-        public bool UnregisterService<TService>() where TService : class
-        {
-            return _services.Remove(typeof(TService));
+                IsHitTestVisible = false,
+                Visibility = Visibility.Collapsed,
+            };
         }
 
     }
-
 }

@@ -20,7 +20,7 @@
     <StackPanel>
         <DockPanel Margin="0,0,5,0">
             <Grid DockPanel.Dock="Right" >
-                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="True" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
@@ -41,10 +41,7 @@
                 </TextBlock>
             </Button>
 
-            <Grid>
-                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
-                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
-            </Grid>
+            <ToggleButton Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" ToolTip="{Binding DService.DeviceStatus}"/>
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel   Margin="5" >

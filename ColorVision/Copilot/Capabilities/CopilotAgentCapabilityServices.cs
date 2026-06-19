@@ -27,8 +27,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "缺少文档检索问题或关键字。",
-                    ErrorMessage = "请提供更具体的软件问题、页面名称或功能关键字。",
+                    Summary = "Missing documentation search question or keywords.",
+                    ErrorMessage = "Provide a more specific software question, page name, or feature keyword.",
                 };
             }
 
@@ -40,15 +40,15 @@ namespace ColorVision.Copilot
                     return new CopilotCapabilityResult
                     {
                         Success = false,
-                        Summary = "在线文档中没有检索到相关片段。",
-                        ErrorMessage = "请把问题说得更具体，例如功能名、页面名、菜单名、设备名或模块名。",
+                        Summary = "No relevant snippets were found in the online documentation.",
+                        ErrorMessage = "Make the question more specific, such as a feature name, page name, menu name, device name, or module name.",
                     };
                 }
 
                 return new CopilotCapabilityResult
                 {
                     Success = true,
-                    Summary = $"已从在线文档命中 {searchResult.DistinctPageCount} 个页面，返回 {searchResult.Hits.Count} 个相关片段。",
+                    Summary = $"Matched {searchResult.DistinctPageCount} documentation pages and returned {searchResult.Hits.Count} relevant snippets.",
                     Content = CopilotDocsToolSupport.BuildContextBlock(searchResult),
                 };
             }
@@ -61,7 +61,7 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "无法读取在线文档索引。",
+                    Summary = "Could not read the online documentation index.",
                     ErrorMessage = ex.Message,
                 };
             }
@@ -91,7 +91,7 @@ namespace ColorVision.Copilot
                 Summary = snapshot.Summary,
                 Content = string.Join(Environment.NewLine, new[]
                 {
-                    $"[日志文件] {snapshot.FilePath}",
+                    $"[Log File] {snapshot.FilePath}",
                     snapshot.Content,
                 }),
             };
@@ -127,8 +127,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "当前没有可用的应用实例，无法执行菜单。",
-                    ErrorMessage = "Application.Current 为空。",
+                    Summary = "No application instance is available, so the menu cannot be executed.",
+                    ErrorMessage = "Application.Current is null.",
                 };
             }
 
@@ -138,9 +138,9 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "没有找到可执行的菜单匹配项。",
+                    Summary = "No executable menu match was found.",
                     Content = BuildMenuOperationContent(null, matchResult.Suggestions, dryRun, "not_found"),
-                    ErrorMessage = "请把菜单名说得更具体，例如“打开选项”、“打开 VAM”或“检查更新”。",
+                    ErrorMessage = "Use a more specific menu name, such as Options, VAM, or Check for Updates.",
                 };
             }
 
@@ -149,9 +149,9 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = $"匹配到多个候选菜单，暂不自动执行“{matchResult.BestCandidate.DisplayHeader}”。",
+                    Summary = $"Matched multiple candidate menus; did not execute {matchResult.BestCandidate.DisplayHeader}.",
                     Content = BuildMenuOperationContent(matchResult.BestCandidate, matchResult.Candidates, dryRun, "ambiguous"),
-                    ErrorMessage = "请补充更具体的菜单名或完整路径。",
+                    ErrorMessage = "Provide a more specific menu name or full menu path.",
                 };
             }
 
@@ -161,7 +161,7 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = true,
-                    Summary = $"已完成菜单 dry-run：“{selectedCandidate.DisplayPath}”。",
+                    Summary = $"Completed menu dry-run: {selectedCandidate.DisplayPath}.",
                     Content = BuildMenuOperationContent(selectedCandidate, matchResult.Candidates, dryRun, "dry_run_only"),
                 };
             }
@@ -172,9 +172,9 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = $"菜单“{selectedCandidate.DisplayPath}”需要用户确认，MCP 默认不会执行。",
+                    Summary = $"Menu {selectedCandidate.DisplayPath} requires user confirmation and will not be executed by MCP by default.",
                     Content = BuildMenuOperationContent(selectedCandidate, matchResult.Candidates, dryRun, "confirmation_required"),
-                    ErrorMessage = "该菜单可能修改应用状态、文件、设备或运行流程；请由用户在界面中确认执行。",
+                    ErrorMessage = "This menu may modify application state, files, devices, or flow execution. Ask the user to confirm it in the UI.",
                 };
             }
 
@@ -183,9 +183,9 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = $"菜单“{selectedCandidate.DisplayPath}”当前不可执行。",
+                    Summary = $"Menu {selectedCandidate.DisplayPath} is not executable right now.",
                     Content = BuildMenuOperationContent(selectedCandidate, matchResult.Candidates, dryRun, "cannot_execute"),
-                    ErrorMessage = "该菜单可能受权限、当前状态或上下文限制。",
+                    ErrorMessage = "The menu may be limited by permissions, current state, or context.",
                 };
             }
 
@@ -204,7 +204,7 @@ namespace ColorVision.Copilot
             return new CopilotCapabilityResult
             {
                 Success = true,
-                Summary = $"已调度执行菜单“{selectedCandidate.DisplayPath}”。",
+                Summary = $"Scheduled menu execution: {selectedCandidate.DisplayPath}.",
                 Content = BuildMenuOperationContent(selectedCandidate, matchResult.Candidates, dryRun, "scheduled"),
             };
         }
@@ -217,9 +217,9 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "未识别目标主题。",
-                    Content = $"[可用主题] {CopilotApplicationControlSupport.GetThemeOptionsText()}",
-                    ErrorMessage = "请明确指定目标主题，例如深色、浅色、粉色、青色或跟随系统。",
+                    Summary = "Target theme was not recognized.",
+                    Content = $"[Available Themes] {CopilotApplicationControlSupport.GetThemeOptionsText()}",
+                    ErrorMessage = "Specify a target theme such as system, dark, light, pink, or cyan.",
                 };
             }
 
@@ -228,8 +228,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "当前没有可用的应用实例，无法切换主题。",
-                    ErrorMessage = "Application.Current 为空。",
+                    Summary = "No application instance is available, so the theme cannot be changed.",
+                    ErrorMessage = "Application.Current is null.",
                 };
             }
 
@@ -252,19 +252,19 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = true,
-                    Summary = $"当前已是 {targetThemeLabel} 主题，无需切换。",
-                    Content = $"[当前主题] {targetThemeLabel}",
+                    Summary = $"The current theme is already {targetThemeLabel}; no change was needed.",
+                    Content = $"[Current Theme] {targetThemeLabel}",
                 };
             }
 
             return new CopilotCapabilityResult
             {
                 Success = true,
-                Summary = $"已切换应用主题为 {targetThemeLabel}。",
+                Summary = $"Switched application theme to {targetThemeLabel}.",
                 Content = string.Join(Environment.NewLine, new[]
                 {
-                    $"[已应用主题] {targetThemeLabel}",
-                    $"[可用主题] {CopilotApplicationControlSupport.GetThemeOptionsText()}",
+                    $"[Applied Theme] {targetThemeLabel}",
+                    $"[Available Themes] {CopilotApplicationControlSupport.GetThemeOptionsText()}",
                 }),
             };
         }
@@ -277,9 +277,9 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "未识别目标语言。",
-                    Content = $"[可用语言] {CopilotApplicationControlSupport.GetLanguageOptionsText()}",
-                    ErrorMessage = "请明确指定目标语言，例如中文、英文、zh-Hans 或 en-US。",
+                    Summary = "Target language was not recognized.",
+                    Content = $"[Available Languages] {CopilotApplicationControlSupport.GetLanguageOptionsText()}",
+                    ErrorMessage = "Specify a target language such as Chinese, English, zh-Hans, or en-US.",
                 };
             }
 
@@ -288,8 +288,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = "当前没有可用的应用实例，无法切换语言。",
-                    ErrorMessage = "Application.Current 为空。",
+                    Summary = "No application instance is available, so the language cannot be changed.",
+                    ErrorMessage = "Application.Current is null.",
                 };
             }
 
@@ -311,8 +311,8 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = true,
-                    Summary = $"当前已是 {targetLanguageLabel}，无需切换。",
-                    Content = $"[当前语言] {targetLanguageLabel}({targetCulture})",
+                    Summary = $"The current language is already {targetLanguageLabel}; no change was needed.",
+                    Content = $"[Current Language] {targetLanguageLabel}({targetCulture})",
                 };
             }
 
@@ -321,24 +321,24 @@ namespace ColorVision.Copilot
                 return new CopilotCapabilityResult
                 {
                     Success = false,
-                    Summary = $"已取消切换到 {targetLanguageLabel}。",
-                    Content = $"[可用语言] {CopilotApplicationControlSupport.GetLanguageOptionsText()}",
-                    ErrorMessage = "语言切换需要用户确认并重启应用；本次未完成变更。",
+                    Summary = $"Switch to {targetLanguageLabel} was cancelled.",
+                    Content = $"[Available Languages] {CopilotApplicationControlSupport.GetLanguageOptionsText()}",
+                    ErrorMessage = "Language switching requires user confirmation and an application restart; the change was not completed.",
                 };
             }
 
             return new CopilotCapabilityResult
             {
                 Success = true,
-                Summary = $"已切换界面语言为 {targetLanguageLabel}，应用将重启。",
-                Content = $"[目标语言] {targetLanguageLabel}({targetCulture})",
+                Summary = $"Switched UI language to {targetLanguageLabel}; the application will restart.",
+                Content = $"[Target Language] {targetLanguageLabel}({targetCulture})",
             };
         }
 
         private static string BuildCandidateList(System.Collections.Generic.IReadOnlyList<CopilotMenuToolSupport.MenuMatchCandidate> candidates)
         {
             if (candidates == null || candidates.Count == 0)
-                return "[候选菜单] 无";
+                return "[Candidate Menus] None";
 
             var lines = candidates
                 .Take(5)
@@ -347,7 +347,7 @@ namespace ColorVision.Copilot
 
             return string.Join(Environment.NewLine, new[]
             {
-                "[候选菜单]",
+                "[Candidate Menus]",
                 string.Join(Environment.NewLine, lines),
             });
         }

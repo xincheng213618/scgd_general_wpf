@@ -15,7 +15,8 @@ extern "C" COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data);
 extern "C" COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage);
 extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage);
 extern "C" COLORVISIONCORE_API int CM_Fusion_Async(const char* fusionjson, HImage* outImage);
-extern "C" COLORVISIONCORE_API int CM_Fusion_Batch(const char* batchjson, HImage* outImages, int* outCount);
+// outImages is caller-allocated; outCapacity is the number of HImage slots available.
+extern "C" COLORVISIONCORE_API int CM_Fusion_Batch(const char* batchjson, HImage* outImages, int outCapacity, int* outCount);
 
 typedef void(__stdcall* CVNativeLogCallback)(int source, int level, const char* message);
 

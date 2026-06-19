@@ -111,4 +111,4 @@
 
 - [docs/04-api-reference/engine-components/cvColorVision.md](./cvColorVision.md)
 - [docs/04-api-reference/engine-components/ColorVision.Engine.md](./ColorVision.Engine.md)
-- [docs/03-アーキテクチャ/概要/システム-概要.md](../../03-アーキテクチャ/概要/システム-概要.md)
+- [docs/03-architecture/overview/system-overview.md](../../03-architecture/overview/system-overview.md)

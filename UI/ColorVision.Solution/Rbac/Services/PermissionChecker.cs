@@ -1,3 +1,4 @@
+#pragma warning disable CA1805
 using ColorVision.Rbac.Entity;
 using SqlSugar;
 using System.Collections.Concurrent;

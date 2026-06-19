@@ -1,3 +1,4 @@
+#pragma warning disable CA1805,CA1822,CS8604
 using ColorVision.ImageEditor.Cie;
 using Spectrum.Data;
 using SpectrumResources = Spectrum.Properties.Resources;

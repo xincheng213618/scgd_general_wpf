@@ -21,7 +21,7 @@ namespace ColorVision.Copilot
         public const int MaxWebPageContentChars = 12000;
 
         private static readonly Regex HttpUrlRegex = new("https?://[^\\s\\\"'<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly char[] UrlTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '，', '。', '；', '：', '！', '？', '）', '】', '》', '、' };
+        private static readonly char[] UrlTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '\uFF0C', '\u3002', '\uFF1B', '\uFF1A', '\uFF01', '\uFF1F', '\uFF09', '\u3011', '\u300B', '\u3001' };
         private static readonly HttpClient HttpClient = CreateHttpClient();
 
         public static List<string> ExtractHttpUrls(string text)
@@ -73,7 +73,7 @@ namespace ColorVision.Copilot
                 && !mediaType.Contains("text/plain", StringComparison.OrdinalIgnoreCase)
                 && !mediaType.Contains("xhtml", StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException($"目标地址返回的内容类型不受支持：{mediaType}");
+                throw new InvalidOperationException($"The target URL returned an unsupported content type: {mediaType}");
             }
 
             var html = await ReadWebPageContentAsync(response, cancellationToken);
@@ -83,13 +83,13 @@ namespace ColorVision.Copilot
         public static string BuildFetchedWebPageContextBlock(CopilotFetchedWebPageContent page)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"[网页抓取成功] {page.Url}");
-            builder.AppendLine($"标题：{page.Title}");
+            builder.AppendLine($"[Web Page Fetched] {page.Url}");
+            builder.AppendLine($"Title: {page.Title}");
 
             if (!string.IsNullOrWhiteSpace(page.Description))
-                builder.AppendLine($"描述：{page.Description}");
+                builder.AppendLine($"Description: {page.Description}");
 
-            builder.AppendLine("正文：");
+            builder.AppendLine("Body:");
             builder.AppendLine(page.Content);
             return builder.ToString().TrimEnd();
         }
@@ -98,9 +98,9 @@ namespace ColorVision.Copilot
         {
             return string.Join(Environment.NewLine, new[]
             {
-                $"[网页抓取失败] {url}",
-                $"失败原因：{failureMessage}",
-                "应用未能抓取到真实网页内容。回答时必须说明无法基于真实网页内容继续分析，不能假设网页中存在未抓取到的信息。",
+                $"[Web Page Fetch Failed] {url}",
+                $"Failure reason: {failureMessage}",
+                "The application could not fetch real web page content. The answer must state that it cannot continue from actual page content and must not assume unavailable page information.",
             });
         }
 
@@ -109,7 +109,7 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(page.Description))
             {
-                builder.AppendLine($"描述：{page.Description}");
+                builder.AppendLine($"Description: {page.Description}");
                 builder.AppendLine();
             }
 
@@ -147,10 +147,10 @@ namespace ColorVision.Copilot
 
             var content = string.Join(Environment.NewLine, lines).Trim();
             if (string.IsNullOrWhiteSpace(content))
-                throw new InvalidOperationException("未能提取网页正文。当前网页可能需要脚本渲染。");
+                throw new InvalidOperationException("Could not extract readable web page body text. The page may require script rendering.");
 
             if (content.Length > MaxWebPageContentChars)
-                content = content[..MaxWebPageContentChars] + Environment.NewLine + $"...<内容已截断，仅保留前 {MaxWebPageContentChars} 字符。>";
+                content = content[..MaxWebPageContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxWebPageContentChars} characters.>";
 
             return new CopilotFetchedWebPageContent(uri.ToString(), title, description, content);
         }
@@ -182,16 +182,16 @@ namespace ColorVision.Copilot
         {
             var normalized = NormalizeWebPageUrl(url);
             if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri))
-                throw new InvalidOperationException("网页地址格式不正确。");
+                throw new InvalidOperationException("The web page URL is not valid.");
 
             if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("只允许抓取 http/https 网页地址。");
+                throw new InvalidOperationException("Only http/https web page URLs are allowed.");
             }
 
             if (uri.IsLoopback || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("禁止抓取 localhost 或本机回环地址。");
+                throw new InvalidOperationException("Fetching localhost or loopback URLs is not allowed.");
 
             return uri;
         }
@@ -201,17 +201,17 @@ namespace ColorVision.Copilot
             if (IPAddress.TryParse(uri.Host, out var parsedAddress))
             {
                 if (IsBlockedWebPageAddress(parsedAddress))
-                    throw new InvalidOperationException("禁止抓取内网、本地或保留 IP 地址。");
+                    throw new InvalidOperationException("Fetching private, local, or reserved IP addresses is not allowed.");
 
                 return;
             }
 
             var addresses = await Dns.GetHostAddressesAsync(uri.DnsSafeHost, cancellationToken);
             if (addresses.Length == 0)
-                throw new InvalidOperationException("无法解析目标网页地址。");
+                throw new InvalidOperationException("Could not resolve the target web page address.");
 
             if (addresses.Any(IsBlockedWebPageAddress))
-                throw new InvalidOperationException("目标网页地址解析到了本地、内网或保留 IP，已拒绝访问。");
+                throw new InvalidOperationException("The target web page resolved to a local, private, or reserved IP address and was rejected.");
         }
 
         private static bool IsBlockedWebPageAddress(IPAddress address)
@@ -263,7 +263,7 @@ namespace ColorVision.Copilot
 
                 totalBytes += bytesRead;
                 if (totalBytes > MaxWebPageDownloadBytes)
-                    throw new InvalidOperationException($"网页内容超过大小限制（{MaxWebPageDownloadBytes / 1024} KB）。");
+                    throw new InvalidOperationException($"Web page content exceeded the size limit ({MaxWebPageDownloadBytes / 1024} KB).");
 
                 await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
             }

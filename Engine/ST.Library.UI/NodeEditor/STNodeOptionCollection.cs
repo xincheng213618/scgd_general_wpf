@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace ST.Library.UI.NodeEditor;
 
@@ -276,5 +277,48 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 			array[i] = m_options[i];
 		}
 		return array;
+	}
+
+	internal bool Reorder(IReadOnlyList<STNodeOption> orderedOptions)
+	{
+		if (orderedOptions == null)
+		{
+			throw new ArgumentNullException(nameof(orderedOptions));
+		}
+		if (orderedOptions.Count != _Count)
+		{
+			return false;
+		}
+
+		HashSet<STNodeOption> seen = new HashSet<STNodeOption>();
+		for (int i = 0; i < orderedOptions.Count; i++)
+		{
+			STNodeOption option = orderedOptions[i];
+			if (option == null || IndexOf(option) == -1 || !seen.Add(option))
+			{
+				return false;
+			}
+		}
+
+		bool changed = false;
+		for (int i = 0; i < _Count; i++)
+		{
+			if (!ReferenceEquals(m_options[i], orderedOptions[i]))
+			{
+				changed = true;
+				break;
+			}
+		}
+		if (!changed)
+		{
+			return false;
+		}
+
+		for (int i = 0; i < _Count; i++)
+		{
+			m_options[i] = orderedOptions[i];
+		}
+		Invalidate();
+		return true;
 	}
 }

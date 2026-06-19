@@ -1,67 +1,120 @@
-# Engine Components Overview
+# Engine Components & Handoff
 
-This chapter now only retains Engine-side module entry points that can be directly mapped to the current repository structure, no longer maintaining the old "version table + sample code + unified layer blueprint" draft.
+`Engine/` is the business runtime core of ColorVision. It is not only an algorithm library and not only a device driver layer. It connects device services, template parameters, flow execution, MQTT commands, database results, and image overlays into executable inspection workflows.
 
-## What This Chapter Actually Covers
+## Read This First
 
-The code under the `Engine/` directory is not a single algorithm library, but a set of runtime modules that work together:
+- [Current Engine Documentation Coverage](./current-engine-coverage.md): verify the mapping between `Engine/` projects, key business directories, and handoff pages.
+- [Engine Business Flow Matrix](./business-flow-matrix.md): map business capability to code entry, configuration source, checks, and ownership boundaries.
+- [Engine Business Scenario Playbook](./business-scenario-playbook.md): executable steps for device, template, Flow, result, project-package, and external-system changes.
+- [Engine Business Handoff](./business-handoff.md): Understand the current implementation by business chain.
+- [Engine Change Impact And Acceptance Checklist](./engine-change-impact-checklist.md): collect handoff evidence after device, template, Flow, result, or project-field changes.
+- [Engine Runtime Object Map](./runtime-object-map.md): map class names and runtime objects to business chains.
+- [Engine Device Service Chain](./device-service-chain.md): from database resources to `DeviceService` and display pages.
+- [Engine Templates And Flow Chain](./template-flow-chain.md): template loading, Flow saving, node configurators, and completion events.
+- [Flow Conversion And Calibration Nodes](./flow-conversion-calibration-nodes.md): data conversion, image conversion, calibration, calibration ROI, and legacy color-correction node handoff.
+- [Engine Result Display And Project Handoff](./result-handoff-chain.md): algorithm results, overlays, and project-package outputs.
+- [ColorVision.Engine](./ColorVision.Engine.md): Main engine module entry.
+- [FlowEngineLib](./FlowEngineLib.md): Flow node editing and execution control.
+- [cvColorVision](./cvColorVision.md): Native vision and OpenCV capability wrappers.
+- [ColorVision.FileIO](./ColorVision.FileIO.md): Image and custom file format I/O.
+- [ST.Library.UI](./ST.Library.UI.md): UI foundation used by the flow node editor.
+- [ColorVision.ShellExtension](./ColorVision.ShellExtension.md): Explorer thumbnails for `.cvraw` / `.cvcie` files and external shell integration.
 
-- `ColorVision.Engine/`: Main engine layer, connecting services, templates, MQTT, database, and flow integration.
-- `FlowEngineLib/`: Flow nodes and execution control core.
-- `cvColorVision/`: Native capability wrappers and interop bridge.
-- `ColorVision.FileIO/`: Image and custom format file I/O.
-- `ST.Library.UI/`: Node editor and related UI foundation controls.
+## Engine Module Map
 
-Therefore, when reading the Engine chapter, do not understand it as "only algorithm implementations" — it also includes runtime orchestration, flow execution, low-level wrappers, and editor support layers.
+| Module | Source directory | Main responsibility | Handoff focus |
+| --- | --- | --- | --- |
+| `ColorVision.Engine` | `Engine/ColorVision.Engine/` | Device services, templates, flow integration, MQTT, batches, results | Main business chain and extension points |
+| `FlowEngineLib` | `Engine/FlowEngineLib/` | Flow nodes, start/end nodes, execution control | Node lifecycle and completion events |
+| `cvColorVision` | `Engine/cvColorVision/` | OpenCV/native wrappers and low-level vision processing | Native DLL and algorithm boundary |
+| `ColorVision.FileIO` | `Engine/ColorVision.FileIO/` | CVRAW/CVCIE and related file I/O | Import/export and format handling |
+| `ST.Library.UI` | `Engine/ST.Library.UI/` | Node editor UI controls | Visual node editing and property editing |
+| `ColorVision.ShellExtension` | `Engine/ColorVision.ShellExtension/` | Windows shell thumbnail extension | External integration, not the main business path |
 
-## How to Read This Chapter
+If you are taking over a business issue, start from [Engine Business Flow Matrix](./business-flow-matrix.md). If you already know class names such as `ServiceManager`, `TemplateControl`, `FlowControl`, `NodeConfiguratorRegistry`, or `ViewResultAlg`, go directly to [Engine Runtime Object Map](./runtime-object-map.md).
 
-If this is your first time entering the Engine code, it is recommended to build awareness in this order:
+If an Engine change is complete or ready for handoff, use [Engine Change Impact And Acceptance Checklist](./engine-change-impact-checklist.md) to collect SN, batch, template, result id, exported file, and documentation evidence.
 
-1. Start with `ColorVision.Engine` to understand how services, templates, and flows are connected into the main program.
-2. Then look at `FlowEngineLib` to understand where node execution, start/end chains, and flow completion events come from.
-3. Then supplement with `ColorVision.FileIO` and `cvColorVision` to distinguish the file I/O layer from the native algorithm/device wrapper layer.
-4. Finally, look at `ST.Library.UI` to understand the node UI infrastructure that the flow editor depends on.
+## Main Business Chain
 
-## Module Map
+```mermaid
+flowchart TD
+  Resource["SysResourceModel / database resource"] --> Factory["DeviceServiceFactoryRegistry"]
+  Factory --> Service["DeviceService instance"]
+  Service --> MQTT["MQTTDeviceService / MQTTControl"]
+  Template["TemplateControl / TemplateModel"] --> FlowTemplate["TemplateFlow"]
+  FlowTemplate --> FlowEngine["FlowEngineControl"]
+  FlowEngine --> Node["Flow node"]
+  Node --> Service
+  Node --> Algorithm["Algorithm/template command"]
+  Algorithm --> Result["AlgResult / ViewResult"]
+  Result --> ImageEditor["ImageEditor overlay"]
+  Result --> Dao["MySQL / SQLite / CSV"]
+```
 
-### Main Engine Layer
+Handoff work should start from this chain before diving into every template folder.
 
-- [ColorVision.Engine](./ColorVision.Engine.md): The most important Engine entry point in the current system, primarily focusing on directories like `Services/`, `Templates/`, `MQTT/`, `Messages/`.
+## Key Directories
 
-### Flow Execution Layer
+| Directory | Meaning |
+| --- | --- |
+| `Services/` | Service manager, device service base types, physical camera, terminal, cache, RC service |
+| `Services/Devices/` | Camera, Calibration, Algorithm, FileServer, FlowDevice, Motor, PG, SMU, Spectrum, and related devices |
+| `Templates/` | Template management, Flow templates, POI/ROI, ARVR, JSON algorithm templates |
+| `MQTT/` | MQTT configuration, connection window, control objects |
+| `Batch/`, `Dao/` | Batches, flow records, result data access |
+| `Messages/` | MQTT and business message models |
+| `Archive/` | Archived result lookup |
+| `Reports/` | Report generation |
+| `ToolPlugins/` | Built-in tools such as ImageJ and CVRaw-to-CSV |
 
-- [FlowEngineLib](./FlowEngineLib.md): Node execution and flow control core, but it needs to be read together with `ColorVision.Engine/Templates/Flow/` to form the complete actual runtime chain.
+## Device Service Creation
 
-### Underlying Support Layer
+Detailed chain: [Engine Device Service Chain](./device-service-chain.md).
 
-- [ColorVision.FileIO](./ColorVision.FileIO.md): File formats, import/export, and related I/O processing.
-- [cvColorVision](./cvColorVision.md): Native vision capability wrappers and device/algorithm interop bridge.
+`ServiceManager` owns the active device service collection. `DeviceServiceFactoryRegistry` maps resource types to concrete service instances. The default registered device types include Camera, PG, Spectrum, SMU, Sensor, FileServer, Algorithm, CfwPort, Calibration, Motor, ThirdPartyAlgorithms, and FlowDevice.
 
-### Editor Foundation Layer
+When adding a device, register it through this factory path. Otherwise the resource may exist in the database but fail to produce a stable runtime `DeviceService`.
 
-- [ST.Library.UI](./ST.Library.UI.md): UI foundation capabilities such as flow node editor and property panel.
+## Templates and Flow
 
-## Current Boundaries Most Easily Written Incorrectly
+Detailed chain: [Engine Templates And Flow Chain](./template-flow-chain.md).
 
-- `ColorVision.Engine` is not a monolithic module where "all algorithms are computed here" — it is more about organizing templates, devices, flows, and message chains.
-- `FlowEngineLib` is not the complete implementation of the entire flow system; when truly entering the main program, it must go through the template and window layers in `Templates/Flow/`.
-- `cvColorVision` and `ColorVision.FileIO` both belong to the support layer and should not be conflated with template/UI-side capabilities into the same layer.
-- `Engine/ColorVision.ShellExtension/`, while currently existing in the source tree, has not yet been expanded in this chapter as a stable API reference entry point.
+- Template parameters are carried by `TemplateModel<T>`.
+- Template entries usually implement `ITemplate<T>` or `ITemplateJson<T>`.
+- `TemplateControl` initializes and loads template types.
+- `TemplateFlow` stores visual flow templates.
+- `FlowEngineLib` executes nodes.
+- Node configurators under `Templates/Flow/NodeConfigurator/` bind nodes to devices, templates, and parameters.
 
-## Suggested Source Code Anchors to Read First
+Project packages normally select templates, run flows, and map results. They should not reimplement the FlowEngine core.
 
-If the goal is to understand the real control surface on the Engine side, prioritizing these code files over old documentation is more effective:
+## Results Back to UI and Data
 
-- `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
-- `Engine/ColorVision.Engine/Templates/TemplateManagerWindow.xaml.cs`
-- `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`
-- `Engine/FlowEngineLib/FlowEngineControl.cs`
-- `Engine/FlowEngineLib/Start/BaseStartNode.cs`
-- `Engine/FlowEngineLib/End/CVEndNode.cs`
+Detailed chain: [Engine Result Display And Project Handoff](./result-handoff-chain.md).
+
+Algorithm results usually pass through three layers:
+
+1. Engine reads or receives algorithm results and builds ViewResult/DAO models.
+2. ImageEditor or AlgorithmView renders ROI, POI, grid, curve, and other overlays.
+3. Project packages map the results into `ObjectiveTestResult`, CSV, PDF, MES, or Socket responses.
+
+If the algorithm finished but the image has no overlay, first inspect the ViewResult handler and ImageEditor overlay path. If the UI shows data but the project CSV is empty, inspect project-level Process/Recipe/Fix mapping.
 
 ## Continue Reading
 
-- [Templates Module Analysis](../../03-architecture/components/templates/analysis.md)
+- [Current Engine Documentation Coverage](./current-engine-coverage.md)
+- [Engine Business Flow Matrix](./business-flow-matrix.md)
+- [Engine Business Scenario Playbook](./business-scenario-playbook.md)
+- [Engine Business Handoff](./business-handoff.md)
+- [Engine Change Impact And Acceptance Checklist](./engine-change-impact-checklist.md)
+- [Engine Runtime Object Map](./runtime-object-map.md)
+- [Engine Device Service Chain](./device-service-chain.md)
+- [Engine Templates And Flow Chain](./template-flow-chain.md)
+- [Flow Conversion And Calibration Nodes](./flow-conversion-calibration-nodes.md)
+- [Engine Result Display And Project Handoff](./result-handoff-chain.md)
+- [ColorVision.ShellExtension](./ColorVision.ShellExtension.md)
 - [FlowEngineLib Architecture](../../03-architecture/components/engine/flow-engine.md)
-- [System Runtime](../../03-architecture/overview/runtime.md)
+- [Templates Architecture](../../03-architecture/components/templates/design.md)
+- [Project Packages](../projects/README.md)

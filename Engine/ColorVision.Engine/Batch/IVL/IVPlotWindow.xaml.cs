@@ -1,3 +1,4 @@
+#pragma warning disable CA1805,CA1854
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using log4net;
 using Microsoft.Win32;

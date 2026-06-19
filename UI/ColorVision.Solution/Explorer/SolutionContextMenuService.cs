@@ -1,3 +1,4 @@
+#pragma warning disable CS8604,CS8620
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
 using System.Windows;

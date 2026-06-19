@@ -63,6 +63,7 @@ The main window is the workbench of ColorVision. Most daily operations go throug
 
 ## Continue Reading
 
+- [UI Component User Handbook](./ui-component-handbook.md)
 - [Property Editor](./property-editor.md)
 - [Log Viewer](./log-viewer.md)
 - [Terminal](./terminal.md)

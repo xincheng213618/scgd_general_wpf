@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿#pragma warning disable CS8603
+using ColorVision.UI;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;

@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS0168,CS8603
+using ColorVision.Common.MVVM;
 using ProjectLUX.Process;
 using ProjectLUX.Process.AR.W51AR;
 using ProjectLUX.Process.Blue;

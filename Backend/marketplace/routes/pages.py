@@ -8,10 +8,11 @@ Handles: /, /releases, /changelog, /updates, /tools, /plugins, /browse,
 from __future__ import annotations
 
 import hashlib
+import hmac
 from pathlib import Path
 from typing import Any
 
-from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 
 pages = Blueprint("pages", __name__)
 
@@ -36,6 +37,53 @@ def _cache():
 
 def _services():
     return _SERVICES
+
+
+def _is_transfer_storage_path(relative_path: str) -> bool:
+    try:
+        from transfer_files import is_transfer_storage_path
+        target = _app_mod._storage_target(relative_path)
+        return is_transfer_storage_path(_storage(), _app_mod.CONFIG, target)
+    except Exception:
+        return False
+
+
+def _has_transfer_auth() -> bool:
+    if session.get("authenticated"):
+        return True
+
+    auth = request.authorization
+    if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
+        expected_username, expected_password = _app_mod._get_upload_auth()
+        if (
+            expected_username
+            and expected_password
+            and hmac.compare_digest(auth.username, expected_username)
+            and hmac.compare_digest(auth.password, expected_password)
+        ):
+            return True
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+        if token:
+            from services.api_key_service import verify_api_key
+            from transfer_files import TRANSFER_FILE_SCOPE
+            return verify_api_key(_cache(), token, required_scopes=[TRANSFER_FILE_SCOPE]) is not None
+
+    return False
+
+
+def _require_transfer_auth_for_storage_path(relative_path: str, *, challenge: bool):
+    if not _is_transfer_storage_path(relative_path):
+        return None
+    if _has_transfer_auth():
+        return None
+    if challenge:
+        response = _app_mod.app.response_class("Authentication required", status=401)
+        response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Transfer"'
+        return response
+    return redirect(url_for("public_pages.login_page", next=request.url))
 
 
 # -------------------------------------------------------------------
@@ -89,7 +137,11 @@ def tools_page():
 
 @pages.route("/download/<path:relative_path>")
 def download_storage_file(relative_path):
-    target = _services().resolve_storage_file(relative_path)
+    normalized = _app_mod._normalize_relative_path(relative_path)
+    auth_result = _require_transfer_auth_for_storage_path(normalized, challenge=True)
+    if auth_result is not None:
+        return auth_result
+    target = _services().resolve_storage_file(normalized)
     return send_from_directory(str(target.parent), target.name, as_attachment=True)
 
 
@@ -249,6 +301,9 @@ def browse_page(subpath=""):
     from page_contexts import build_browse_page_context
     storage = _storage()
     normalized = _app_mod._normalize_relative_path(subpath)
+    auth_result = _require_transfer_auth_for_storage_path(normalized, challenge=False)
+    if auth_result is not None:
+        return auth_result
     target = _app_mod._storage_target(normalized)
     if not target.exists():
         abort(404)

@@ -13,18 +13,18 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(HistogramEqualizationEditorTool));
 
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _image;
 
-        public HistogramEqualizationEditorTool(ImageView imageView)
+        public HistogramEqualizationEditorTool(ImageProcessingContext image)
         {
-            _imageView = imageView;
+            _image = image;
         }
 
         public void Execute()
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (_imageView.HImageCache == null) return;
+                if (_image.HImageCache == null) return;
                 
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
@@ -32,22 +32,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 
                 Task.Run(() =>
                 {
-                    int ret = OpenCVMediaHelper.M_ApplyHistogramEqualization((HImage)_imageView.HImageCache, out HImage hImageProcessed);
+                    int ret = OpenCVMediaHelper.M_ApplyHistogramEqualization((HImage)_image.HImageCache, out HImage hImageProcessed);
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         if (ret == 0)
                         {
-                            if (!HImageExtension.UpdateWriteableBitmap(_imageView.ViewBitmapSource, hImageProcessed))
+                            if (!HImageExtension.UpdateWriteableBitmap(_image.ViewBitmapSource, hImageProcessed))
                             {
-                                double DpiX = _imageView.Config.GetProperties<double>("DpiX");
-                                double DpiY = _imageView.Config.GetProperties<double>("DpiY");
-                                var image = hImageProcessed.ToWriteableBitmap();
-                                hImageProcessed.Dispose();
-                                _imageView.ViewBitmapSource = image;
+                                double DpiX = _image.Config.GetProperties<double>("DpiX");
+                                double DpiY = _image.Config.GetProperties<double>("DpiY");
+                                var image = hImageProcessed.ToWriteableBitmapAndDispose();
+                                _image.ViewBitmapSource = image;
                             }
-                            _imageView.HImageCache?.Dispose();
-                            _imageView.HImageCache = null;
-                            _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
+                            _image.HImageCache?.Dispose();
+                            _image.HImageCache = null;
+                            _image.ImageShow.Source = _image.ViewBitmapSource;
                             stopwatch.Stop();
                             log.Info($"HistogramEqualization 完成 - 耗时: {stopwatch.Elapsed}");
                         }
@@ -57,3 +56,4 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         }
     }
 }
+

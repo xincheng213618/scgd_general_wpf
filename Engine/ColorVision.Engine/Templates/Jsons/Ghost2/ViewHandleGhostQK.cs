@@ -1,4 +1,5 @@
-﻿
+﻿#pragma warning disable CA1725,CS8604
+
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;

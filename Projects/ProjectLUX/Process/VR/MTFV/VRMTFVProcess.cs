@@ -1,3 +1,4 @@
+#pragma warning disable CS8601
 using ColorVision.Common.NativeMethods;
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs

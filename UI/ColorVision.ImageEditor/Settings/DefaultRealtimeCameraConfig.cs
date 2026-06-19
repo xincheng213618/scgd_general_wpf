@@ -52,7 +52,7 @@ namespace ColorVision.ImageEditor.Settings
         }
 
         [DisplayName("启用视频计算")]
-        [Description("是否允许 realtime 相机入口构建额外处理请求。关闭后只显示最新帧，不触发清晰度或伪彩处理。")]
+        [Description("是否允许 realtime 相机入口构建额外处理请求。关闭后只显示最新帧，不触发清晰度计算。")]
         public bool IsUseCacheFile { get => _isUseCacheFile; set { _isUseCacheFile = value; OnPropertyChanged(); } }
         private bool _isUseCacheFile;
 

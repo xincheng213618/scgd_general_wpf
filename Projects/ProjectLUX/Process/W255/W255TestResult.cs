@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System.ComponentModel; // PoiPointResultModel

@@ -5,14 +5,11 @@ using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.EditorTools.FullScreen
 {
-    /// <summary>
-    /// 图像全屏模式管理类
-    /// </summary>
     public class ImageFullScreenMode
     {
         private readonly FrameworkElement _parent;
-        private PlacementStatus _oldWindowStatus;
-        
+        private PlacementStatus? _oldWindowStatus;
+
         public bool IsMax { get; private set; }
 
         public ImageFullScreenMode(FrameworkElement parent)
@@ -20,81 +17,61 @@ namespace ColorVision.ImageEditor.EditorTools.FullScreen
             _parent = parent ?? throw new ArgumentNullException(nameof(parent));
         }
 
-        /// <summary>
-        /// 切换全屏模式
-        /// </summary>
         public void ToggleFullScreen()
         {
-            void PreviewKeyDown(object s, KeyEventArgs e)
-            {
-                if (e.Key == Key.Escape || e.Key == Key.F11)
-                {
-                    if (IsMax)
-                        ToggleFullScreen();
-                }
-            }
-
             var window = Window.GetWindow(_parent);
-            if (!IsMax)
+            if (window == null) return;
+            if (!IsMax) EnterFullScreen(window);
+            else ExitFullScreen(window);
+        }
+
+        private void EnterFullScreen(Window window)
+        {
+            if (_parent.Parent is Panel panel)
             {
-                IsMax = true;
-                if (_parent.Parent is Panel p)
-                {
-                    _oldWindowStatus = new PlacementStatus();
-                    _oldWindowStatus.Parent = p;
-                    _oldWindowStatus.WindowState = window.WindowState;
-                    _oldWindowStatus.WindowStyle = window.WindowStyle;
-                    _oldWindowStatus.ResizeMode = window.ResizeMode;
-                    _oldWindowStatus.Root = window.Content;
-                    window.WindowStyle = WindowStyle.None;
-                    window.WindowState = WindowState.Maximized;
-
-                    _oldWindowStatus.Parent.Children.Remove(_parent);
-                    window.Content = _parent;
-
-                    window.PreviewKeyDown -= PreviewKeyDown;
-                    window.PreviewKeyDown += PreviewKeyDown;
-                }
-                else if (_parent.Parent is ContentControl content)
-                {
-                    _oldWindowStatus = new PlacementStatus();
-                    _oldWindowStatus.ContentParent = content;
-                    _oldWindowStatus.WindowState = window.WindowState;
-                    _oldWindowStatus.WindowStyle = window.WindowStyle;
-                    _oldWindowStatus.ResizeMode = window.ResizeMode;
-                    _oldWindowStatus.Root = window.Content;
-                    window.WindowStyle = WindowStyle.None;
-                    window.WindowState = WindowState.Maximized;
-
-                    content.Content = null;
-                    window.Content = _parent;
-                    window.PreviewKeyDown -= PreviewKeyDown;
-                    window.PreviewKeyDown += PreviewKeyDown;
-                }
+                _oldWindowStatus = new PlacementStatus { Parent = panel, WindowState = window.WindowState, WindowStyle = window.WindowStyle, ResizeMode = window.ResizeMode, Root = window.Content };
+                panel.Children.Remove(_parent);
             }
-            else
+            else if (_parent.Parent is ContentControl content)
             {
-                IsMax = false;
-                if (_oldWindowStatus == null) return;
-                if ( _oldWindowStatus.Parent != null)
-                {
-                    window.WindowStyle = _oldWindowStatus.WindowStyle;
-                    window.WindowState = _oldWindowStatus.WindowState;
-                    window.ResizeMode = _oldWindowStatus.ResizeMode;
-
-                    window.Content = _oldWindowStatus.Root;
-                    _oldWindowStatus.Parent.Children.Add(_parent);
-                }
-                else
-                {
-                    window.WindowStyle = _oldWindowStatus.WindowStyle;
-                    window.WindowState = _oldWindowStatus.WindowState;
-                    window.ResizeMode = _oldWindowStatus.ResizeMode;
-
-                    _oldWindowStatus.ContentParent.Content = _parent;
-                }
-                window.PreviewKeyDown -= PreviewKeyDown;
+                _oldWindowStatus = new PlacementStatus { ContentParent = content, WindowState = window.WindowState, WindowStyle = window.WindowStyle, ResizeMode = window.ResizeMode, Root = window.Content };
+                content.Content = null;
             }
+            else return;
+
+            IsMax = true;
+            window.WindowState = WindowState.Normal;
+            window.WindowStyle = WindowStyle.None;
+            window.ResizeMode = ResizeMode.NoResize;
+            window.WindowState = WindowState.Maximized;
+            window.Content = _parent;
+            window.PreviewKeyDown -= Window_PreviewKeyDown;
+            window.PreviewKeyDown += Window_PreviewKeyDown;
+        }
+
+        private void ExitFullScreen(Window window)
+        {
+            if (_oldWindowStatus == null) return;
+
+            IsMax = false;
+            window.Content = _oldWindowStatus.Root;
+
+            if (_oldWindowStatus.Parent != null) _oldWindowStatus.Parent.Children.Add(_parent);
+            else if (_oldWindowStatus.ContentParent != null) _oldWindowStatus.ContentParent.Content = _parent;
+
+            window.WindowStyle = _oldWindowStatus.WindowStyle;
+            window.ResizeMode = _oldWindowStatus.ResizeMode;
+            window.WindowState = _oldWindowStatus.WindowState;
+
+            _oldWindowStatus = null;
+            window.PreviewKeyDown -= Window_PreviewKeyDown;
+        }
+
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!IsMax || (e.Key != Key.Escape && e.Key != Key.F11)) return;
+            ToggleFullScreen();
+            e.Handled = true;
         }
     }
 }

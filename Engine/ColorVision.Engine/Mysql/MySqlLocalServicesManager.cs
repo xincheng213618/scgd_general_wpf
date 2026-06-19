@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602,CA1822,CS8603
+﻿#pragma warning disable CA1822,CA1863,CS8602,CS8603
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
@@ -23,7 +23,7 @@ namespace ColorVision.Database
     public class MySqlLocalConfig : IConfig
     {
         public static MySqlLocalConfig Instance => ConfigService.Instance.GetRequiredService<MySqlLocalConfig>();
-        public string ServiceName { get; set; } = "MySql80";
+        public string ServiceName { get; set; } = "MySQL";
 
         public string ImagePath { get; set; }
         public string MysqldPath { get; set; }

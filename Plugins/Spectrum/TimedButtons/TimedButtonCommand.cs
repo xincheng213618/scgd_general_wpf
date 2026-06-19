@@ -2,7 +2,6 @@ using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace Spectrum.TimedButtons
 {
@@ -23,9 +22,6 @@ namespace Spectrum.TimedButtons
         private readonly Func<FrameworkElement?> _ownerProvider;
         private readonly Func<string, string> _operationKeyBuilder;
         private readonly string _actionKey;
-        private readonly string _buttonLabel;
-        private readonly string _tooltipLabel;
-        private readonly Brush _progressForeground;
         private readonly string? _runningText;
         private readonly Action<Exception>? _onException;
 
@@ -35,9 +31,6 @@ namespace Spectrum.TimedButtons
             Func<FrameworkElement?> ownerProvider,
             Func<string, string> operationKeyBuilder,
             string actionKey,
-            string buttonLabel,
-            string tooltipLabel,
-            Brush progressForeground,
             string? runningText = null,
             Action<Exception>? onException = null)
         {
@@ -46,9 +39,6 @@ namespace Spectrum.TimedButtons
             _ownerProvider = ownerProvider ?? throw new ArgumentNullException(nameof(ownerProvider));
             _operationKeyBuilder = operationKeyBuilder ?? throw new ArgumentNullException(nameof(operationKeyBuilder));
             _actionKey = actionKey ?? throw new ArgumentNullException(nameof(actionKey));
-            _buttonLabel = buttonLabel ?? throw new ArgumentNullException(nameof(buttonLabel));
-            _tooltipLabel = tooltipLabel ?? throw new ArgumentNullException(nameof(tooltipLabel));
-            _progressForeground = progressForeground ?? throw new ArgumentNullException(nameof(progressForeground));
             _runningText = runningText;
             _onException = onException;
         }
@@ -76,12 +66,8 @@ namespace Spectrum.TimedButtons
                 if (owner != null && button != null)
                 {
                     TimedButtonOperationRegistry operations = owner.GetTimedButtonOperations(_operationKeyBuilder);
-                    if (!operations.Contains(button))
-                    {
-                        operations.Register(button, _actionKey, _buttonLabel, _tooltipLabel, _progressForeground);
-                    }
-
-                    operationScope = operations.Begin(button, runningText: _runningText ?? _buttonLabel);
+                    operations.Register(button, _actionKey);
+                    operationScope = operations.Begin(button, runningText: _runningText);
                 }
 
                 success = await _executeAsync(logicalParameter);

@@ -1,4 +1,5 @@
-﻿using ColorVision.Rbac.Dtos;
+﻿#pragma warning disable CA1822
+using ColorVision.Rbac.Dtos;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System.Windows;

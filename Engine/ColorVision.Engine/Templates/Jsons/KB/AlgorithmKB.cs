@@ -53,12 +53,9 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         }
         public UserControl UserControl { get; set; }
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
             ParamBase paramBase = TemplateKB.Params[TemplateSelectedIndex].Value;
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
@@ -66,7 +63,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             MsgSend msg = new()
             {
                 EventName = "KB",
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

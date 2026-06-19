@@ -72,15 +72,9 @@ namespace ColorVision.Engine.PropertyEditor
                 Height = 10,
                 Width = 10,
                 HorizontalAlignment = HorizontalAlignment.Center,
+                IsChecked = true,
                 IsEnabled = false
             };
-            // Create the binding for IsChecked
-            var binding = new Binding("DService.IsAlive")
-            {
-                Mode = BindingMode.OneWay
-            };
-            // Set the binding to the ToggleButton
-            toggleButton.SetBinding(ToggleButton.IsCheckedProperty, binding);
             // Create an Image
             var image = new Image
             {

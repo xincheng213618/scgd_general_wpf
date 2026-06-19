@@ -78,13 +78,13 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            changed |= CopilotTemporaryProfileSource.Sync(Profiles, DateTimeOffset.UtcNow);
+
             if (Profiles.Count == 0)
             {
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
                 changed = true;
             }
-
-            changed |= CopilotTemporaryProfileSource.Sync(Profiles, DateTimeOffset.UtcNow);
 
             foreach (var profile in Profiles)
             {

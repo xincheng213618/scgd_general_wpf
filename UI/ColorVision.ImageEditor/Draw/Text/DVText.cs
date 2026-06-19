@@ -71,7 +71,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private TextBox? _editTextBox;
         private Panel? _editHost;
-        private DrawEditorContext? _editorContext;
+        private TextEditingContext? _textContext;
         private string _originalText = string.Empty;
         private bool _isEditing;
 
@@ -141,7 +141,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private double GetEditorScreenFontSize()
         {
-            double zoomRatio = _editorContext?.ZoomRatio ?? 1;
+            double zoomRatio = _textContext?.ZoomRatio ?? 1;
             if (double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0)
             {
                 zoomRatio = 1;
@@ -168,7 +168,7 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = RenderOpen();
         }
 
-        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems()
         {
             return new CompactInspectorItem[]
             {
@@ -180,7 +180,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private void UpdateEditorBounds()
         {
-            if (_editTextBox == null || _editorContext == null)
+            if (_editTextBox == null || _textContext == null)
             {
                 return;
             }
@@ -189,7 +189,7 @@ namespace ColorVision.ImageEditor.Draw
             FormattedText formattedText = CreateFormattedText(_editTextBox.Text, editorFontSize);
             double textWidth = Math.Max(formattedText.WidthIncludingTrailingWhitespace, 1);
             double textHeight = Math.Max(formattedText.Height, editorFontSize);
-            Point overlayPoint = _editorContext.TranslatePointToTextEditorOverlay(Attribute.Position);
+            Point overlayPoint = _textContext.TranslatePointToTextEditorOverlay(Attribute.Position);
 
             _editTextBox.FontSize = editorFontSize;
             _editTextBox.MinWidth = Math.Max(editorFontSize, 12);
@@ -296,13 +296,13 @@ namespace ColorVision.ImageEditor.Draw
 
         private void RemoveFromCanvas()
         {
-            if (_editorContext == null)
+            if (_textContext == null)
             {
                 return;
             }
 
-            _editorContext.SelectionVisual.ClearRender();
-            _editorContext.DrawCanvas.RemoveVisualCommand(this);
+            _textContext.SelectionVisual.ClearRender();
+            _textContext.DrawCanvas.RemoveVisualCommand(this);
         }
 
         private void DetachEditorTextBox()
@@ -339,12 +339,7 @@ namespace ColorVision.ImageEditor.Draw
         /// <summary>
         /// 开始编辑
         /// </summary>
-        public void BeginEdit(EditorContext context)
-        {
-            BeginEdit(context.DrawEditorContext);
-        }
-
-        public void BeginEdit(DrawEditorContext context)
+        public void BeginEdit(TextEditingContext context)
         {
             ArgumentNullException.ThrowIfNull(context);
 
@@ -354,7 +349,7 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             }
 
-            _editorContext = context;
+            _textContext = context;
             _editHost = context.TextEditorOverlay;
             _originalText = Attribute.Text;
             _isEditing = true;
@@ -396,9 +391,9 @@ namespace ColorVision.ImageEditor.Draw
 
             DetachEditorTextBox();
 
-            if (_editorContext != null)
+            if (_textContext != null)
             {
-                _editorContext.Zoombox.ContentMatrixChanged -= OnZoomChanged;
+                _textContext.Zoombox.ContentMatrixChanged -= OnZoomChanged;
             }
 
             _isEditing = false;
@@ -416,22 +411,17 @@ namespace ColorVision.ImageEditor.Draw
             }
             else
             {
-                _editorContext?.SelectionVisual.SetRender(this);
+                _textContext?.SelectionVisual.SetRender(this);
             }
 
             _editHost = null;
-            _editorContext = null;
+            _textContext = null;
         }
 
         /// <summary>
         /// 处理双击事件
         /// </summary>
-        public bool HandleDoubleClick(EditorContext context, Point point)
-        {
-            return HandleDoubleClick(context.DrawEditorContext, point);
-        }
-
-        public bool HandleDoubleClick(DrawEditorContext context, Point point)
+        public bool HandleDoubleClick(TextEditingContext context, Point point)
         {
             if (GetRect().Contains(point))
             {
@@ -462,7 +452,7 @@ namespace ColorVision.ImageEditor.Draw
         /// <summary>
         /// 开始编辑
         /// </summary>
-        void BeginEdit(DrawEditorContext context);
+        void BeginEdit(TextEditingContext context);
 
         /// <summary>
         /// 结束编辑
@@ -475,6 +465,6 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         /// <param name="point">点击位置</param>
         /// <returns>是否处理了事件</returns>
-        bool HandleDoubleClick(DrawEditorContext context, Point point);
+        bool HandleDoubleClick(TextEditingContext context, Point point);
     }
 }

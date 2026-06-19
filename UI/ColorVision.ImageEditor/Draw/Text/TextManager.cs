@@ -27,21 +27,17 @@ namespace ColorVision.ImageEditor.Draw
         private bool _FollowZoom = true;
     }
 
-    public class TextManager : DrawEditorToggleToolBase, ICompactInspectorProvider, IDisposable
+    public class TextManager : TextDrawingToolBase, ICompactInspectorProvider, IDisposable
     {
         private const string DefaultStyleSaveKeyPrefix = "TextManagerDefaultStyleSave_";
 
         public TextManagerConfig Config { get; set; } = new TextManagerConfig();
         private static DefaultTextStyleConfig DefaultTextStyle => DefaultTextStyleConfig.Current;
-        private Zoombox Zoombox => EditorContext.Zoombox;
-        private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-        public DrawEditorContext EditorContext { get; set; }
 
 
-        public TextManager(DrawEditorContext context)
+        public TextManager(TextEditingContext context)
+            : base(context)
         {
-            EditorContext = context;
-            ToolBarLocal = ToolBarLocal.Draw;
             Order = 8;
             Icon = new TextBlock() { Text = "A" };
             Config.DefaultFontSize = DefaultTextStyle.FontSize;
@@ -56,12 +52,12 @@ namespace ColorVision.ImageEditor.Draw
                 _IsChecked = value;
                 if (value)
                 {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(this);
+                    TextContext.DrawEditorManager.SetCurrentDrawEditor(this);
                     Load();
                 }
                 else
                 {
-                    EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
+                    TextContext.DrawEditorManager.SetCurrentDrawEditor(null);
                     UnLoad();
                 }
                 OnPropertyChanged();
@@ -75,7 +71,7 @@ namespace ColorVision.ImageEditor.Draw
         private bool IsMouseDown;
         private int CheckNo()
         {
-            if (EditorContext.DrawingVisualLists.Count > 0 && EditorContext.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
+            if (TextContext.DrawingVisualLists.Count > 0 && TextContext.DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
             {
                 return drawingVisual.ID + 1;
             }
@@ -105,7 +101,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
             TextCache = null;
-            EditorContext.SelectionVisual.ClearRender();
+            SelectionVisual.ClearRender();
         }
 
         private void DefaultTextStyle_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -115,7 +111,7 @@ namespace ColorVision.ImageEditor.Draw
                 Config.DefaultFontSize = DefaultTextStyle.FontSize;
             }
 
-            DebounceTimer.AddOrResetTimer(DefaultStyleSaveKeyPrefix + EditorContext.Id, 120, DefaultTextStyleConfig.SaveCurrent);
+            DebounceTimer.AddOrResetTimer(DefaultStyleSaveKeyPrefix + TextContext.Id, 120, DefaultTextStyleConfig.SaveCurrent);
         }
 
         private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -126,7 +122,7 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems()
         {
             return new CompactInspectorItem[]
             {
@@ -142,13 +138,13 @@ namespace ColorVision.ImageEditor.Draw
             MouseDownP = e.GetPosition(DrawCanvas);
             IsMouseDown = true;
 
-            if (EditorContext.SelectionVisual.GetContainingRect(MouseDownP))
+            if (SelectionVisual.GetContainingRect(MouseDownP))
             {
                 return;
             }
             else
             {
-                EditorContext.SelectionVisual.ClearRender();
+                SelectionVisual.ClearRender();
             }
 
             if (TextCache != null) return;
@@ -176,8 +172,8 @@ namespace ColorVision.ImageEditor.Draw
             {
                 DVText createdText = TextCache;
                 TextCache = null;
-                EditorContext.SelectionVisual.SetRender(createdText);
-                createdText.BeginEdit(EditorContext);
+                SelectionVisual.SetRender(createdText);
+                createdText.BeginEdit(TextContext);
                 IsChecked = false;
             }
             e.Handled = true;

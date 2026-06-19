@@ -4,6 +4,7 @@ using log4net;
 using MySqlConnector;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace WindowsServicePlugin.ServiceManager
 {
@@ -74,6 +75,53 @@ namespace WindowsServicePlugin.ServiceManager
         public bool IsInstalled => WinServiceHelper.IsServiceExisted(ServiceName);
         public bool IsRunning => WinServiceHelper.IsServiceRunning(ServiceName);
 
+        public bool RegisterExistingService(Action<string> logCallback)
+        {
+            if (!File.Exists(MysqldExePath))
+            {
+                logCallback($"mysqld.exe 不存在: {MysqldExePath}");
+                return false;
+            }
+
+            try
+            {
+                bool exists = WinServiceHelper.IsServiceExisted(ServiceName);
+                string? registeredPath = WinServiceHelper.GetServiceInstallPath(ServiceName);
+                bool shouldInstall = !exists || !IsSamePath(registeredPath, MysqldExePath);
+
+                if (exists && shouldInstall)
+                {
+                    logCallback($"MySQL 服务路径变化，重新安装: {ServiceName}");
+                    WinServiceHelper.StopService(ServiceName, 30);
+                    RunProcessAdmin(MysqldExePath, $"--remove {ServiceName}", Path.GetDirectoryName(MysqldExePath)!);
+                    WinServiceHelper.UninstallService(ServiceName);
+                }
+
+                if (shouldInstall)
+                {
+                    logCallback($"正在注册 MySQL 服务 ({ServiceName})...");
+                    if (!RunProcessAdmin(MysqldExePath, $"--install {ServiceName}", Path.GetDirectoryName(MysqldExePath)!))
+                    {
+                        logCallback("MySQL 服务安装失败");
+                        return false;
+                    }
+                    logCallback("MySQL 服务安装成功");
+                }
+                else
+                {
+                    logCallback($"MySQL 服务已安装: {ServiceName}");
+                }
+
+                return Start(logCallback);
+            }
+            catch (Exception ex)
+            {
+                logCallback($"注册 MySQL 服务失败: {ex.Message}");
+                log.Error("注册 MySQL 服务失败", ex);
+                return false;
+            }
+        }
+
         /// <summary>
         /// ZIP全安装: 停止/删除旧服务 → 解压 → 初始化 → 安装服务 → 启动 → 设置随机 root 密码 → 创建业务用户
         /// </summary>
@@ -84,7 +132,7 @@ namespace WindowsServicePlugin.ServiceManager
             string rootPassword = "",
             string appUser = "",
             string appPassword = "",
-            string database = "color_vision")
+            string database = "color_vision_4xx")
         {
             return await Task.Run(() =>
             {
@@ -112,14 +160,14 @@ namespace WindowsServicePlugin.ServiceManager
                     }
 
                     EnsureAllMySqlProcessesStopped(logCallback);
-                    CleanupExistingInstallation(targetPath, logCallback);
+                    CleanupExistingInstallation(zipFilePath, targetPath, logCallback);
 
                     // 2. 解压
                     logCallback("正在解压 MySQL...");
                     System.IO.Compression.ZipFile.ExtractToDirectory(zipFilePath, targetPath, true);
 
                     // 3. 查找解压后的 mysql 目录（如 mysql-5.7.37-winx64）
-                    var mysqlDirs = Directory.GetDirectories(targetPath, "mysql-*");
+                    var mysqlDirs = ResolveExtractedMySqlDirectories(zipFilePath, targetPath);
                     if (mysqlDirs.Length == 0)
                     {
                         logCallback("解压完成但未找到 MySQL 目录 (mysql-*)");
@@ -147,7 +195,7 @@ namespace WindowsServicePlugin.ServiceManager
             string rootPassword = "",
             string appUser = "",
             string appPassword = "",
-            string database = "color_vision")
+            string database = "color_vision_4xx")
         {
             if (!File.Exists(MysqldExePath))
             {
@@ -159,7 +207,7 @@ namespace WindowsServicePlugin.ServiceManager
             string effectiveRootPassword = string.IsNullOrWhiteSpace(rootPassword) ? GenerateRandomPassword() : rootPassword;
             string effectiveAppUser = string.IsNullOrWhiteSpace(appUser) ? "cv" : appUser.Trim();
             string effectiveAppPassword = string.IsNullOrWhiteSpace(appPassword) ? GenerateRandomPassword() : appPassword;
-            string effectiveDatabase = string.IsNullOrWhiteSpace(database) ? "color_vision" : database.Trim();
+            string effectiveDatabase = string.IsNullOrWhiteSpace(database) ? "color_vision_4xx" : database.Trim();
 
             LastGeneratedRootPassword = string.Empty;
 
@@ -320,6 +368,8 @@ namespace WindowsServicePlugin.ServiceManager
                     return false;
                 }
 
+                var (sqlText, encodingName) = ReadSqlFileText(sqlFilePath);
+
                 var psi = new ProcessStartInfo
                 {
                     FileName = mysqlPath,
@@ -328,7 +378,10 @@ namespace WindowsServicePlugin.ServiceManager
                     CreateNoWindow = true,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    RedirectStandardError = true,
+                    StandardInputEncoding = new UTF8Encoding(false),
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
                 };
                 psi.ArgumentList.Add("-P");
                 psi.ArgumentList.Add(Port.ToString());
@@ -351,15 +404,39 @@ namespace WindowsServicePlugin.ServiceManager
                     return false;
                 }
 
-                using (var reader = File.OpenText(sqlFilePath))
+                Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+                Exception? writeException = null;
+                try
                 {
-                    process.StandardInput.Write(reader.ReadToEnd());
+                    process.StandardInput.Write(sqlText);
                 }
-                process.StandardInput.Close();
+                catch (IOException ex)
+                {
+                    writeException = ex;
+                }
+                finally
+                {
+                    process.StandardInput.Close();
+                }
 
-                string stdout = process.StandardOutput.ReadToEnd();
-                string stderr = process.StandardError.ReadToEnd();
-                process.WaitForExit(600000);
+                bool finished = process.WaitForExit(600000);
+                if (!finished)
+                {
+                    try
+                    {
+                        process.Kill(true);
+                    }
+                    catch
+                    {
+                    }
+
+                    logCallback("SQL 脚本执行超时");
+                    return false;
+                }
+
+                string stdout = stdoutTask.GetAwaiter().GetResult();
+                string stderr = stderrTask.GetAwaiter().GetResult();
 
                 if (!string.IsNullOrWhiteSpace(stdout))
                 {
@@ -375,13 +452,40 @@ namespace WindowsServicePlugin.ServiceManager
                     return false;
                 }
 
-                logCallback("SQL 脚本执行完成");
+                if (writeException != null)
+                {
+                    logCallback($"SQL 输入提前结束: {writeException.Message}");
+                    return false;
+                }
+
+                logCallback($"SQL 脚本执行完成（源编码: {encodingName}，输入编码: UTF-8）");
                 return true;
             }
             catch (Exception ex)
             {
                 logCallback($"执行 SQL 失败: {ex.Message}");
                 return false;
+            }
+        }
+
+        private static (string Text, string EncodingName) ReadSqlFileText(string sqlFilePath)
+        {
+            byte[] bytes = File.ReadAllBytes(sqlFilePath);
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            {
+                return (Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3), "UTF-8 BOM");
+            }
+
+            var strictUtf8 = new UTF8Encoding(false, true);
+            try
+            {
+                return (strictUtf8.GetString(bytes), "UTF-8");
+            }
+            catch (DecoderFallbackException)
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                Encoding gb18030 = Encoding.GetEncoding("GB18030");
+                return (gb18030.GetString(bytes), "GB18030");
             }
         }
 
@@ -728,7 +832,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private static void CleanupExistingInstallation(string targetPath, Action<string> logCallback)
+        private static void CleanupExistingInstallation(string zipFilePath, string targetPath, Action<string> logCallback)
         {
             if (!Directory.Exists(targetPath))
             {
@@ -736,7 +840,14 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
             }
 
-            string[] existingDirs = Directory.GetDirectories(targetPath, "mysql-*", SearchOption.TopDirectoryOnly);
+            string[] packageDirNames = GetMySqlPackageTopLevelDirectoryNames(zipFilePath);
+            string[] existingDirs = packageDirNames.Length > 0
+                ? packageDirNames
+                    .Select(name => Path.Combine(targetPath, name))
+                    .Where(Directory.Exists)
+                    .ToArray()
+                : [];
+
             foreach (string existingDir in existingDirs)
             {
                 try
@@ -749,6 +860,53 @@ namespace WindowsServicePlugin.ServiceManager
                     throw new IOException($"清理旧 MySQL 目录失败: {existingDir}. {ex.Message}", ex);
                 }
             }
+        }
+
+        private static string[] ResolveExtractedMySqlDirectories(string zipFilePath, string targetPath)
+        {
+            string[] packageDirNames = GetMySqlPackageTopLevelDirectoryNames(zipFilePath);
+            string[] packageDirs = packageDirNames
+                .Select(name => Path.Combine(targetPath, name))
+                .Where(dir => File.Exists(Path.Combine(dir, "bin", "mysqld.exe")))
+                .ToArray();
+            if (packageDirs.Length > 0)
+            {
+                return packageDirs;
+            }
+
+            return Directory.GetDirectories(targetPath, "mysql-*", SearchOption.TopDirectoryOnly)
+                .Where(dir => File.Exists(Path.Combine(dir, "bin", "mysqld.exe")))
+                .OrderByDescending(dir => dir)
+                .ToArray();
+        }
+
+        private static string[] GetMySqlPackageTopLevelDirectoryNames(string zipFilePath)
+        {
+            try
+            {
+                using var archive = System.IO.Compression.ZipFile.OpenRead(zipFilePath);
+                return archive.Entries
+                    .Select(entry => GetTopLevelEntryName(entry.FullName))
+                    .Where(name => name.StartsWith("mysql-", StringComparison.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        private static string GetTopLevelEntryName(string entryName)
+        {
+            string normalized = entryName.Replace('\\', '/').TrimStart('/');
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return string.Empty;
+            }
+
+            string top = normalized.Split('/')[0].Trim();
+            return top is "." or ".." ? string.Empty : top;
         }
 
         private void LogInitializationDirectoryState(Action<string> logCallback)
@@ -845,6 +1003,21 @@ namespace WindowsServicePlugin.ServiceManager
         private static string EscapeSqlIdentifier(string value)
         {
             return value.Replace("`", "``");
+        }
+
+        private static bool IsSamePath(string? left, string right)
+        {
+            if (string.IsNullOrWhiteSpace(left))
+                return false;
+
+            try
+            {
+                return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return string.Equals(left.Trim('"'), right.Trim('"'), StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         private static bool RunProcess(string fileName, string arguments, string workingDir, int timeoutMilliseconds = 60000)

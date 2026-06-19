@@ -60,7 +60,7 @@ namespace WindowsServicePlugin.CVWinSMS
                     }
                 }
             }
-            catch(Exception ex)
+            catch
             {
                 return;
             }

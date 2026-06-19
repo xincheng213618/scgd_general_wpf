@@ -1,0 +1,1086 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/distortion.schema.json",
+  "title": "畸变V2",
+  "description": "Provider-maintained JSON parameter schema. Defaults are sourced from the provider test-case default parameter file; the C++ JSON string interface remains unchanged.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "debugCfg": {
+      "Debug": false,
+      "debugPath": "Result\\",
+      "debugImgResize": 2
+    },
+    "MaskRect": {
+      "enable": false,
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+    },
+    "CommonParams": {
+      "pattern": 2,
+      "brightNumX": 3,
+      "brightNumY": 3,
+      "PercentageDisplay": true
+    },
+    "Point9Params": {
+      "threshold": 20000,
+      "outRectSizeMin": 40,
+      "outRectSizeMax": 400,
+      "erodeKernel": 3,
+      "erodeTime": 0
+    },
+    "ClassicalParams": {
+      "slopeType": 0,
+      "layoutType": 0,
+      "blobThreParams": {
+        "filterByColor": true,
+        "blobColor": 0,
+        "minThreshold": 10.0,
+        "thresholdStep": 10.0,
+        "maxThreshold": 220.0,
+        "darkRatio": 0.01,
+        "contrastRatio": 0.1,
+        "bgRadius": 31,
+        "minDistBetweenBlobs": 50.0,
+        "filterByArea": true,
+        "minArea": 200.0,
+        "maxArea": 10000.0,
+        "minRepeatability": 2,
+        "filterByCircularity": false,
+        "minCircularity": 0.9,
+        "maxCircularity": 3.4028235e+38,
+        "filterByConvexity": false,
+        "minConvexity": 0.9,
+        "maxConvexity": 3.4028235e+38,
+        "filterByInertia": false,
+        "minInertiaRatio": 0.1,
+        "maxInertiaRatio": 3.4028235e+38
+      },
+      "timeOut": 50000
+    },
+    "caclDistorType": {
+      "Distortion9Point": true,
+      "DistortionTV": true,
+      "DistortionOptic": true,
+      "TvCaclWay": 0
+    },
+    "rectCorner": {
+      "qualityLevel": 0.04,
+      "cutWidth": 200,
+      "edge": 10,
+      "active": true
+    }
+  },
+  "properties": {
+    "debugCfg": {
+      "type": "object",
+      "title": "Debug Cfg",
+      "x-ui": {
+        "order": 10
+      },
+      "default": {
+        "Debug": false,
+        "debugPath": "Result\\",
+        "debugImgResize": 2
+      },
+      "description": "Debug 相关配置。",
+      "additionalProperties": true,
+      "properties": {
+        "Debug": {
+          "type": "boolean",
+          "title": "Debug",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否开启 debug 输出。",
+          "$comment": "Provider note: keep JSON path '$.debugCfg.Debug' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.Debug",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugPath": {
+          "type": "string",
+          "title": "Debug Path",
+          "x-ui": {
+            "order": 20
+          },
+          "default": "Result\\",
+          "description": "debug 文件输出路径。",
+          "$comment": "Provider note: keep JSON path '$.debugCfg.debugPath' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugPath",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugImgResize": {
+          "type": "integer",
+          "title": "Debug Img Resize",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 2,
+          "description": "debug 图片压缩倍率，2、3、4 生效，其他值表示不压缩。",
+          "examples": [
+            2,
+            3,
+            4
+          ],
+          "$comment": "Provider note: keep JSON path '$.debugCfg.debugImgResize' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugImgResize",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.debugCfg' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.debugCfg",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "MaskRect": {
+      "type": "object",
+      "title": "Mask Rect",
+      "x-ui": {
+        "order": 20
+      },
+      "default": {
+        "enable": false,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "description": "ROI/Mask 区域配置；启用后以左上角 (x, y) 和尺寸 (w, h) 限定计算范围。",
+      "additionalProperties": true,
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "title": "Enable",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否启用 ROI/Mask 区域。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.enable' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.enable",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "x": {
+          "type": "integer",
+          "title": "X",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "description": "ROI 左上角 X 坐标。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.x' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.x",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "y": {
+          "type": "integer",
+          "title": "Y",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 0,
+          "description": "ROI 左上角 Y 坐标。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.y' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.y",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "w": {
+          "type": "integer",
+          "title": "W",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "description": "ROI 宽度。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.w' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.w",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "h": {
+          "type": "integer",
+          "title": "H",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 0,
+          "description": "ROI 高度。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.h' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.h",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.MaskRect' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.MaskRect",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "CommonParams": {
+      "type": "object",
+      "title": "Common Params",
+      "x-ui": {
+        "order": 30
+      },
+      "default": {
+        "pattern": 2,
+        "brightNumX": 3,
+        "brightNumY": 3,
+        "PercentageDisplay": true
+      },
+      "description": "畸变通用参数。",
+      "additionalProperties": true,
+      "properties": {
+        "pattern": {
+          "type": "integer",
+          "title": "Pattern",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 2,
+          "description": "图案类型：1 矩形发光区，2 点阵发光区，3 棋盘格角点提取。",
+          "enum": [
+            1,
+            2,
+            3
+          ],
+          "x-enumDescriptions": [
+            "矩形发光区",
+            "点阵发光区",
+            "棋盘格角点提取"
+          ],
+          "$comment": "Provider note: keep JSON path '$.CommonParams.pattern' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CommonParams.pattern",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "brightNumX": {
+          "type": "integer",
+          "title": "Bright Num X",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 3,
+          "description": "光点横向数量。",
+          "$comment": "Provider note: keep JSON path '$.CommonParams.brightNumX' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CommonParams.brightNumX",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "brightNumY": {
+          "type": "integer",
+          "title": "Bright Num Y",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 3,
+          "description": "光点纵向数量。",
+          "$comment": "Provider note: keep JSON path '$.CommonParams.brightNumY' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CommonParams.brightNumY",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "PercentageDisplay": {
+          "type": "boolean",
+          "title": "Percentage Display",
+          "x-ui": {
+            "order": 40
+          },
+          "default": true,
+          "description": "是否以百分比呈现结果。",
+          "$comment": "Provider note: keep JSON path '$.CommonParams.PercentageDisplay' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CommonParams.PercentageDisplay",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.CommonParams' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.CommonParams",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "Point9Params": {
+      "type": "object",
+      "title": "Point9 Params",
+      "x-ui": {
+        "order": 40
+      },
+      "default": {
+        "threshold": 20000,
+        "outRectSizeMin": 40,
+        "outRectSizeMax": 400,
+        "erodeKernel": 3,
+        "erodeTime": 0
+      },
+      "description": "九点畸变检测参数。",
+      "additionalProperties": true,
+      "properties": {
+        "threshold": {
+          "type": "integer",
+          "title": "Threshold",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 20000,
+          "description": "二值化阈值。",
+          "$comment": "Provider note: keep JSON path '$.Point9Params.threshold' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Point9Params.threshold",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "outRectSizeMin": {
+          "type": "integer",
+          "title": "Out Rect Size Min",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 40,
+          "description": "光点最小外接矩形尺寸，以最短边为准。",
+          "$comment": "Provider note: keep JSON path '$.Point9Params.outRectSizeMin' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Point9Params.outRectSizeMin",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "outRectSizeMax": {
+          "type": "integer",
+          "title": "Out Rect Size Max",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 400,
+          "description": "光点最大外接矩形尺寸。",
+          "$comment": "Provider note: keep JSON path '$.Point9Params.outRectSizeMax' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Point9Params.outRectSizeMax",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeKernel": {
+          "type": "integer",
+          "title": "Erode Kernel",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 3,
+          "description": "腐蚀核大小，通常取 2-5，用于去除底噪。",
+          "minimum": 2,
+          "maximum": 5,
+          "$comment": "Provider note: keep JSON path '$.Point9Params.erodeKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Point9Params.erodeKernel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeTime": {
+          "type": "integer",
+          "title": "Erode Time",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 0,
+          "description": "腐蚀次数。",
+          "$comment": "Provider note: keep JSON path '$.Point9Params.erodeTime' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Point9Params.erodeTime",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.Point9Params' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.Point9Params",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "ClassicalParams": {
+      "type": "object",
+      "title": "Classical Params",
+      "x-ui": {
+        "order": 50
+      },
+      "default": {
+        "slopeType": 0,
+        "layoutType": 0,
+        "blobThreParams": {
+          "filterByColor": true,
+          "blobColor": 0,
+          "minThreshold": 10.0,
+          "thresholdStep": 10.0,
+          "maxThreshold": 220.0,
+          "darkRatio": 0.01,
+          "contrastRatio": 0.1,
+          "bgRadius": 31,
+          "minDistBetweenBlobs": 50.0,
+          "filterByArea": true,
+          "minArea": 200.0,
+          "maxArea": 10000.0,
+          "minRepeatability": 2,
+          "filterByCircularity": false,
+          "minCircularity": 0.9,
+          "maxCircularity": 3.4028235e+38,
+          "filterByConvexity": false,
+          "minConvexity": 0.9,
+          "maxConvexity": 3.4028235e+38,
+          "filterByInertia": false,
+          "minInertiaRatio": 0.1,
+          "maxInertiaRatio": 3.4028235e+38
+        },
+        "timeOut": 50000
+      },
+      "description": "经典畸变计算参数。",
+      "additionalProperties": true,
+      "properties": {
+        "slopeType": {
+          "type": "integer",
+          "title": "Slope Type",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 0,
+          "description": "斜率计算方法：0 中心点九点取斜率，1 去除方差较大的点后取斜率。",
+          "$comment": "Provider note: keep JSON path '$.ClassicalParams.slopeType' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.ClassicalParams.slopeType",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "layoutType": {
+          "type": "integer",
+          "title": "Layout Type",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "description": "理想点布点方法：0 采用斜率布点，1 不采用斜率布点。",
+          "$comment": "Provider note: keep JSON path '$.ClassicalParams.layoutType' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.ClassicalParams.layoutType",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "blobThreParams": {
+          "type": "object",
+          "title": "Blob Thre Params",
+          "x-ui": {
+            "order": 30
+          },
+          "default": {
+            "filterByColor": true,
+            "blobColor": 0,
+            "minThreshold": 10.0,
+            "thresholdStep": 10.0,
+            "maxThreshold": 220.0,
+            "darkRatio": 0.01,
+            "contrastRatio": 0.1,
+            "bgRadius": 31,
+            "minDistBetweenBlobs": 50.0,
+            "filterByArea": true,
+            "minArea": 200.0,
+            "maxArea": 10000.0,
+            "minRepeatability": 2,
+            "filterByCircularity": false,
+            "minCircularity": 0.9,
+            "maxCircularity": 3.4028235e+38,
+            "filterByConvexity": false,
+            "minConvexity": 0.9,
+            "maxConvexity": 3.4028235e+38,
+            "filterByInertia": false,
+            "minInertiaRatio": 0.1,
+            "maxInertiaRatio": 3.4028235e+38
+          },
+          "description": "斑点检测阈值与形状过滤参数。",
+          "additionalProperties": true,
+          "properties": {
+            "filterByColor": {
+              "type": "boolean",
+              "title": "Filter By Color",
+              "x-ui": {
+                "order": 10
+              },
+              "default": true,
+              "description": "是否使用颜色过滤。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.filterByColor' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.filterByColor",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "blobColor": {
+              "type": "integer",
+              "title": "Blob Color",
+              "x-ui": {
+                "order": 20
+              },
+              "default": 0,
+              "description": "斑点颜色：255 表示亮斑，0 表示暗斑。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.blobColor' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.blobColor",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "minThreshold": {
+              "type": "number",
+              "title": "Min Threshold",
+              "x-ui": {
+                "order": 30
+              },
+              "default": 10.0,
+              "description": "斑点最小灰度。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.minThreshold' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.minThreshold",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "thresholdStep": {
+              "type": "number",
+              "title": "Threshold Step",
+              "x-ui": {
+                "order": 40
+              },
+              "default": 10.0,
+              "description": "阈值步进间隔。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.thresholdStep' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.thresholdStep",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "maxThreshold": {
+              "type": "number",
+              "title": "Max Threshold",
+              "x-ui": {
+                "order": 50
+              },
+              "default": 220.0,
+              "description": "斑点最大灰度。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.maxThreshold' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.maxThreshold",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "darkRatio": {
+              "type": "number",
+              "title": "Dark Ratio",
+              "x-ui": {
+                "order": 60
+              },
+              "default": 0.01,
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.darkRatio' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.darkRatio",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "contrastRatio": {
+              "type": "number",
+              "title": "Contrast Ratio",
+              "x-ui": {
+                "order": 70
+              },
+              "default": 0.1,
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.contrastRatio' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.contrastRatio",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "bgRadius": {
+              "type": "integer",
+              "title": "Bg Radius",
+              "x-ui": {
+                "order": 80
+              },
+              "default": 31,
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.bgRadius' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.bgRadius",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "minDistBetweenBlobs": {
+              "type": "number",
+              "title": "Min Dist Between Blobs",
+              "x-ui": {
+                "order": 90
+              },
+              "default": 50.0,
+              "description": "斑点最小间隔距离。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.minDistBetweenBlobs' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.minDistBetweenBlobs",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "filterByArea": {
+              "type": "boolean",
+              "title": "Filter By Area",
+              "x-ui": {
+                "order": 100
+              },
+              "default": true,
+              "description": "是否使用面积过滤。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.filterByArea' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.filterByArea",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "minArea": {
+              "type": "number",
+              "title": "Min Area",
+              "x-ui": {
+                "order": 110
+              },
+              "default": 200.0,
+              "description": "斑点最小面积。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.minArea' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.minArea",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "maxArea": {
+              "type": "number",
+              "title": "Max Area",
+              "x-ui": {
+                "order": 120
+              },
+              "default": 10000.0,
+              "description": "斑点最大面积。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.maxArea' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.maxArea",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "minRepeatability": {
+              "type": "integer",
+              "title": "Min Repeatability",
+              "x-ui": {
+                "order": 130
+              },
+              "default": 2,
+              "description": "重复次数认定阈值。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.minRepeatability' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.minRepeatability",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "filterByCircularity": {
+              "type": "boolean",
+              "title": "Filter By Circularity",
+              "x-ui": {
+                "order": 140
+              },
+              "default": false,
+              "description": "是否启用圆形度过滤。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.filterByCircularity' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.filterByCircularity",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "minCircularity": {
+              "type": "number",
+              "title": "Min Circularity",
+              "x-ui": {
+                "order": 150
+              },
+              "default": 0.9,
+              "description": "最小圆形度，越接近 1 越接近圆。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.minCircularity' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.minCircularity",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "maxCircularity": {
+              "type": "number",
+              "title": "Max Circularity",
+              "x-ui": {
+                "order": 160
+              },
+              "default": 3.4028235e+38,
+              "description": "最大圆形度。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.maxCircularity' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.maxCircularity",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "filterByConvexity": {
+              "type": "boolean",
+              "title": "Filter By Convexity",
+              "x-ui": {
+                "order": 170
+              },
+              "default": false,
+              "description": "是否启用凸性过滤。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.filterByConvexity' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.filterByConvexity",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "minConvexity": {
+              "type": "number",
+              "title": "Min Convexity",
+              "x-ui": {
+                "order": 180
+              },
+              "default": 0.9,
+              "description": "最小凸性，越接近 1 越没有豁口。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.minConvexity' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.minConvexity",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "maxConvexity": {
+              "type": "number",
+              "title": "Max Convexity",
+              "x-ui": {
+                "order": 190
+              },
+              "default": 3.4028235e+38,
+              "description": "最大凸性。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.maxConvexity' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.maxConvexity",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "filterByInertia": {
+              "type": "boolean",
+              "title": "Filter By Inertia",
+              "x-ui": {
+                "order": 200
+              },
+              "default": false,
+              "description": "是否启用惯性/椭圆度过滤。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.filterByInertia' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.filterByInertia",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "minInertiaRatio": {
+              "type": "number",
+              "title": "Min Inertia Ratio",
+              "x-ui": {
+                "order": 210
+              },
+              "default": 0.1,
+              "description": "最小惯性比，0 可近似认为直线，1 基本为圆。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.minInertiaRatio' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.minInertiaRatio",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "maxInertiaRatio": {
+              "type": "number",
+              "title": "Max Inertia Ratio",
+              "x-ui": {
+                "order": 220
+              },
+              "default": 3.4028235e+38,
+              "description": "最大惯性比。",
+              "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams.maxInertiaRatio' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.ClassicalParams.blobThreParams.maxInertiaRatio",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            }
+          },
+          "$comment": "Provider note: keep JSON path '$.ClassicalParams.blobThreParams' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.ClassicalParams.blobThreParams",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "timeOut": {
+          "type": "integer",
+          "title": "Time Out",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 50000,
+          "description": "算法超时时间。",
+          "$comment": "Provider note: keep JSON path '$.ClassicalParams.timeOut' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.ClassicalParams.timeOut",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.ClassicalParams' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.ClassicalParams",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "caclDistorType": {
+      "type": "object",
+      "title": "Cacl Distor Type",
+      "x-ui": {
+        "order": 60
+      },
+      "default": {
+        "Distortion9Point": true,
+        "DistortionTV": true,
+        "DistortionOptic": true,
+        "TvCaclWay": 0
+      },
+      "description": "畸变计算开关；通常根据项目选择需要计算的类型。",
+      "additionalProperties": true,
+      "properties": {
+        "Distortion9Point": {
+          "type": "boolean",
+          "title": "Distortion9 Point",
+          "x-ui": {
+            "order": 10
+          },
+          "default": true,
+          "description": "是否计算九点畸变。",
+          "$comment": "Provider note: keep JSON path '$.caclDistorType.Distortion9Point' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.caclDistorType.Distortion9Point",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "DistortionTV": {
+          "type": "boolean",
+          "title": "Distortion TV",
+          "x-ui": {
+            "order": 20
+          },
+          "default": true,
+          "description": "是否计算 TV 畸变。",
+          "$comment": "Provider note: keep JSON path '$.caclDistorType.DistortionTV' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.caclDistorType.DistortionTV",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "DistortionOptic": {
+          "type": "boolean",
+          "title": "Distortion Optic",
+          "x-ui": {
+            "order": 30
+          },
+          "default": true,
+          "description": "是否计算光学畸变。",
+          "$comment": "Provider note: keep JSON path '$.caclDistorType.DistortionOptic' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.caclDistorType.DistortionOptic",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "TvCaclWay": {
+          "type": "integer",
+          "title": "Tv Cacl Way",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "description": "TV 畸变计算方式：0 为 ((A1 + A2) / 2 - B) / B；1 为上述结果再除以 2。",
+          "enum": [
+            0,
+            1
+          ],
+          "x-enumDescriptions": [
+            "((A1 + A2) / 2 - B) / B",
+            "方式 0 的结果再除以 2"
+          ],
+          "$comment": "Provider note: keep JSON path '$.caclDistorType.TvCaclWay' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.caclDistorType.TvCaclWay",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.caclDistorType' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.caclDistorType",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "rectCorner": {
+      "type": "object",
+      "title": "Rect Corner",
+      "x-ui": {
+        "order": 70
+      },
+      "default": {
+        "qualityLevel": 0.04,
+        "cutWidth": 200,
+        "edge": 10,
+        "active": true
+      },
+      "description": "精定位参数。",
+      "additionalProperties": true,
+      "properties": {
+        "qualityLevel": {
+          "type": "number",
+          "title": "Quality Level",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 0.04,
+          "description": "角点精定位质量阈值，通常取 0.04 或 0.06。",
+          "examples": [
+            0.04,
+            0.06
+          ],
+          "$comment": "Provider note: keep JSON path '$.rectCorner.qualityLevel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.rectCorner.qualityLevel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "cutWidth": {
+          "type": "integer",
+          "title": "Cut Width",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 200,
+          "description": "精定位裁剪窗口尺寸。",
+          "$comment": "Provider note: keep JSON path '$.rectCorner.cutWidth' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.rectCorner.cutWidth",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "edge": {
+          "type": "integer",
+          "title": "Edge",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 10,
+          "description": "精定位边缘参数，通常取 10-20。",
+          "minimum": 10,
+          "maximum": 20,
+          "$comment": "Provider note: keep JSON path '$.rectCorner.edge' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.rectCorner.edge",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "active": {
+          "type": "boolean",
+          "title": "Active",
+          "x-ui": {
+            "order": 40
+          },
+          "default": true,
+          "description": "是否启用精定位。",
+          "$comment": "Provider note: keep JSON path '$.rectCorner.active' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.rectCorner.active",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.rectCorner' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.rectCorner",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T07:57:54+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 40,
+      "code": "distortion",
+      "name": "畸变V2",
+      "version": "2.0",
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "distortion_2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "畸变检测算法说明.docx"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from the provider-maintained test-case default parameter file.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "This schema may update default/type when the provider-maintained defaultparam.txt changes.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "defaultSource": "provider-test-case-defaultparam",
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "distortion_2.0",
+      "defaultParamFile": "defaultparam.txt",
+      "docFiles": [
+        "畸变检测算法说明.docx"
+      ]
+    }
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/OLED.AOI.FPForQuardImg.schema.json",
+  "title": "亮点检测",
+  "description": "1/4 点亮图亮点检测参数。默认值来自 CvOledInterface.h 中的 findPixelDefectsForQuardImgMemWithConfigImp 示例。",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "th": 0.1,
+    "index": 1,
+    "num_th": 10
+  },
+  "properties": {
+    "th": {
+      "type": "number",
+      "title": "亮度阈值",
+      "x-ui": {
+        "order": 10
+      },
+      "default": 0.1,
+      "$comment": "Provider/AI note: keep JSON path '$.th' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.th",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "1/4 点亮图亮点检测阈值。",
+      "minimum": 0
+    },
+    "index": {
+      "type": "integer",
+      "title": "1/4 图位置",
+      "x-ui": {
+        "order": 20
+      },
+      "default": 1,
+      "$comment": "Provider/AI note: keep JSON path '$.index' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.index",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "1/4 点亮图位置索引。",
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "x-enumDescriptions": [
+        "左上",
+        "右上",
+        "左下",
+        "右下"
+      ],
+      "minimum": 0,
+      "maximum": 3
+    },
+    "num_th": {
+      "type": "integer",
+      "title": "异常灯珠数量阈值",
+      "x-ui": {
+        "order": 30
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.num_th' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.num_th",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "缺陷 LED / 异常灯珠数量阈值，超过后判定为 NG。",
+      "minimum": 0
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T09:36:19+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 55,
+      "code": "OLED.AOI.FPForQuardImg",
+      "name": "亮点检测",
+      "version": null,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "AOI检测文档和参数例子",
+        "defaultParamFile": "CvOledInterface.h example",
+        "docFiles": [
+          "CvOledInterface.h",
+          "AOI检测流程API文档.xlsx",
+          "cv_oled_JSON_CONFIG_REFERENCE.pdf"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from provider-maintained AOI test-case config files because the database cfg_json may lag behind provider development.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "Default/type may follow provider-maintained config files when database cfg_json is stale.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "AOI检测文档和参数例子",
+      "defaultParamFile": "CvOledInterface.h example",
+      "docFiles": [
+        "CvOledInterface.h",
+        "AOI检测流程API文档.xlsx",
+        "cv_oled_JSON_CONFIG_REFERENCE.pdf"
+      ]
+    },
+    "defaultSource": "provider-maintained-config"
+  },
+  "required": [
+    "th",
+    "index",
+    "num_th"
+  ]
+}

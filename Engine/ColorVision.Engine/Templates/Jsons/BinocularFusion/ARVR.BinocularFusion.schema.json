@@ -1,0 +1,720 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/ARVR.BinocularFusion.schema.json",
+  "title": "双目融合",
+  "description": "Provider-maintained JSON parameter schema. Defaults are sourced from the provider test-case default parameter file; the C++ JSON string interface remains unchanged.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "debugCfg": {
+      "Debug": false,
+      "debugPath": "Result\\",
+      "debugImgResize": 2
+    },
+    "mathMaskRect": {
+      "enable": false,
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+    },
+    "CheckLine": {
+      "rho": 5.0,
+      "floAngle": 10.0,
+      "houghV": 100
+    },
+    "opticsParams": {
+      "stdCenter": {
+        "x": 0,
+        "y": 0
+      },
+      "objectDistance": 500.0,
+      "focusLength": 14.5,
+      "sensorPixSize": 3.76
+    },
+    "erodeAndDiate": {
+      "erodeKernel": 3,
+      "erodeTime": 0,
+      "dilateKernel": 3,
+      "dilateTime": 0,
+      "erodeFirst": true
+    },
+    "caclWay": 1,
+    "findEndPointWay": 1,
+    "rotationType": 3,
+    "threshold": 25,
+    "binaryByContours": true,
+    "binaryRateInContours": 0.7,
+    "minLineLength": 120,
+    "maxLineGap": 40,
+    "blurKernel": 3,
+    "singleErodeKernel": 15
+  },
+  "properties": {
+    "debugCfg": {
+      "type": "object",
+      "title": "Debug Cfg",
+      "x-ui": {
+        "order": 10
+      },
+      "default": {
+        "Debug": false,
+        "debugPath": "Result\\",
+        "debugImgResize": 2
+      },
+      "description": "Debug 相关配置。",
+      "additionalProperties": true,
+      "properties": {
+        "Debug": {
+          "type": "boolean",
+          "title": "Debug",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否开启 debug 输出。",
+          "$comment": "Provider note: keep JSON path '$.debugCfg.Debug' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.Debug",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugPath": {
+          "type": "string",
+          "title": "Debug Path",
+          "x-ui": {
+            "order": 20
+          },
+          "default": "Result\\",
+          "description": "debug 文件输出路径。",
+          "$comment": "Provider note: keep JSON path '$.debugCfg.debugPath' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugPath",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugImgResize": {
+          "type": "integer",
+          "title": "Debug Img Resize",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 2,
+          "description": "debug 图片压缩倍率，2、3、4 生效，其他值表示不压缩。",
+          "examples": [
+            2,
+            3,
+            4
+          ],
+          "$comment": "Provider note: keep JSON path '$.debugCfg.debugImgResize' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugImgResize",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.debugCfg' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.debugCfg",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "mathMaskRect": {
+      "type": "object",
+      "title": "Math Mask Rect",
+      "x-ui": {
+        "order": 20
+      },
+      "default": {
+        "enable": false,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "description": "mask 相关配置。",
+      "additionalProperties": true,
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "title": "Enable",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否启用 Mask 区域。",
+          "$comment": "Provider note: keep JSON path '$.mathMaskRect.enable' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.enable",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "x": {
+          "type": "integer",
+          "title": "X",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "description": "Mask 左上角 X 坐标。",
+          "$comment": "Provider note: keep JSON path '$.mathMaskRect.x' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.x",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "y": {
+          "type": "integer",
+          "title": "Y",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 0,
+          "description": "Mask 左上角 Y 坐标。",
+          "$comment": "Provider note: keep JSON path '$.mathMaskRect.y' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.y",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "w": {
+          "type": "integer",
+          "title": "W",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "description": "Mask 宽度。",
+          "$comment": "Provider note: keep JSON path '$.mathMaskRect.w' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.w",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "h": {
+          "type": "integer",
+          "title": "H",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 0,
+          "description": "Mask 高度。",
+          "$comment": "Provider note: keep JSON path '$.mathMaskRect.h' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.h",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.mathMaskRect' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.mathMaskRect",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "CheckLine": {
+      "type": "object",
+      "title": "Check Line",
+      "x-ui": {
+        "order": 30
+      },
+      "default": {
+        "rho": 5.0,
+        "floAngle": 10.0,
+        "houghV": 100
+      },
+      "description": "Hough 找线段相关参数。",
+      "additionalProperties": true,
+      "properties": {
+        "rho": {
+          "type": "number",
+          "title": "Rho",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 5.0,
+          "description": "Hough 距离分辨率，通常取 1-5。",
+          "minimum": 1,
+          "maximum": 5,
+          "$comment": "Provider note: keep JSON path '$.CheckLine.rho' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.rho",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "floAngle": {
+          "type": "number",
+          "title": "Flo Angle",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 10.0,
+          "description": "浮动角度。",
+          "$comment": "Provider note: keep JSON path '$.CheckLine.floAngle' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.floAngle",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "houghV": {
+          "type": "integer",
+          "title": "Hough V",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 100,
+          "description": "Hough 阈值，通常取 50-200。",
+          "minimum": 50,
+          "maximum": 200,
+          "$comment": "Provider note: keep JSON path '$.CheckLine.houghV' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.houghV",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.CheckLine' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.CheckLine",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "opticsParams": {
+      "type": "object",
+      "title": "Optics Params",
+      "x-ui": {
+        "order": 40
+      },
+      "default": {
+        "stdCenter": {
+          "x": 0,
+          "y": 0
+        },
+        "objectDistance": 500.0,
+        "focusLength": 14.5,
+        "sensorPixSize": 3.76
+      },
+      "description": "光学参数。",
+      "additionalProperties": true,
+      "properties": {
+        "stdCenter": {
+          "type": "object",
+          "title": "Std Center",
+          "x-ui": {
+            "order": 10
+          },
+          "default": {
+            "x": 0,
+            "y": 0
+          },
+          "description": "光学标定坐标。",
+          "additionalProperties": true,
+          "properties": {
+            "x": {
+              "type": "integer",
+              "title": "X",
+              "x-ui": {
+                "order": 10
+              },
+              "default": 0,
+              "description": "光学标定中心 X。",
+              "$comment": "Provider note: keep JSON path '$.opticsParams.stdCenter.x' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.opticsParams.stdCenter.x",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            },
+            "y": {
+              "type": "integer",
+              "title": "Y",
+              "x-ui": {
+                "order": 20
+              },
+              "default": 0,
+              "description": "光学标定中心 Y。",
+              "$comment": "Provider note: keep JSON path '$.opticsParams.stdCenter.y' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+              "x-provider": {
+                "jsonPath": "$.opticsParams.stdCenter.y",
+                "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+              }
+            }
+          },
+          "$comment": "Provider note: keep JSON path '$.opticsParams.stdCenter' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.opticsParams.stdCenter",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "objectDistance": {
+          "type": "number",
+          "title": "Object Distance",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 500.0,
+          "description": "物距，单位 mm。",
+          "unit": "mm",
+          "$comment": "Provider note: keep JSON path '$.opticsParams.objectDistance' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.opticsParams.objectDistance",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "focusLength": {
+          "type": "number",
+          "title": "Focus Length",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 14.5,
+          "description": "焦距，单位 mm。",
+          "unit": "mm",
+          "$comment": "Provider note: keep JSON path '$.opticsParams.focusLength' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.opticsParams.focusLength",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "sensorPixSize": {
+          "type": "number",
+          "title": "Sensor Pix Size",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 3.76,
+          "description": "传感器像素尺寸，单位 um。",
+          "unit": "um",
+          "$comment": "Provider note: keep JSON path '$.opticsParams.sensorPixSize' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.opticsParams.sensorPixSize",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.opticsParams' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.opticsParams",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "erodeAndDiate": {
+      "type": "object",
+      "title": "Erode And Diate",
+      "x-ui": {
+        "order": 50
+      },
+      "default": {
+        "erodeKernel": 3,
+        "erodeTime": 0,
+        "dilateKernel": 3,
+        "dilateTime": 0,
+        "erodeFirst": true
+      },
+      "description": "膨胀、腐蚀相关参数。",
+      "additionalProperties": true,
+      "properties": {
+        "erodeKernel": {
+          "type": "integer",
+          "title": "Erode Kernel",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 3,
+          "description": "腐蚀核大小。",
+          "$comment": "Provider note: keep JSON path '$.erodeAndDiate.erodeKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.erodeKernel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeTime": {
+          "type": "integer",
+          "title": "Erode Time",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "description": "腐蚀次数。",
+          "$comment": "Provider note: keep JSON path '$.erodeAndDiate.erodeTime' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.erodeTime",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "dilateKernel": {
+          "type": "integer",
+          "title": "Dilate Kernel",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 3,
+          "description": "膨胀核大小。",
+          "$comment": "Provider note: keep JSON path '$.erodeAndDiate.dilateKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.dilateKernel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "dilateTime": {
+          "type": "integer",
+          "title": "Dilate Time",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "description": "膨胀次数。",
+          "$comment": "Provider note: keep JSON path '$.erodeAndDiate.dilateTime' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.dilateTime",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "erodeFirst": {
+          "type": "boolean",
+          "title": "Erode First",
+          "x-ui": {
+            "order": 50
+          },
+          "default": true,
+          "description": "true 表示先腐蚀后膨胀。",
+          "$comment": "Provider note: keep JSON path '$.erodeAndDiate.erodeFirst' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.erodeFirst",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.erodeAndDiate' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.erodeAndDiate",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "caclWay": {
+      "type": "integer",
+      "title": "Cacl Way",
+      "x-ui": {
+        "order": 60
+      },
+      "default": 1,
+      "description": "计算方式：0 使用 Hough 方式，1 使用二值化方式。",
+      "enum": [
+        0,
+        1
+      ],
+      "$comment": "Provider note: keep JSON path '$.caclWay' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.caclWay",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "findEndPointWay": {
+      "type": "integer",
+      "title": "Find End Point Way",
+      "x-ui": {
+        "order": 70
+      },
+      "default": 1,
+      "description": "端点查找方式：0 找极点方法，1 骨架算法。",
+      "enum": [
+        0,
+        1
+      ],
+      "x-enumDescriptions": [
+        "找极点方法",
+        "骨架算法"
+      ],
+      "$comment": "Provider note: keep JSON path '$.findEndPointWay' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.findEndPointWay",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "rotationType": {
+      "type": "integer",
+      "title": "Rotation Type",
+      "x-ui": {
+        "order": 80
+      },
+      "default": 3,
+      "description": "旋转角计算方式：0 四个最大值，1 水平平均值，2 垂直平均值，3 四个平均值。",
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "x-enumDescriptions": [
+        "四个最大值",
+        "水平平均值",
+        "垂直平均值",
+        "四个平均值"
+      ],
+      "$comment": "Provider note: keep JSON path '$.rotationType' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.rotationType",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "threshold": {
+      "type": "integer",
+      "title": "Threshold",
+      "x-ui": {
+        "order": 90
+      },
+      "default": 25,
+      "description": "二值化阈值。",
+      "$comment": "Provider note: keep JSON path '$.threshold' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.threshold",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "binaryByContours": {
+      "type": "boolean",
+      "title": "Binary By Contours",
+      "x-ui": {
+        "order": 100
+      },
+      "default": true,
+      "description": "是否先找轮廓，再用轮廓内部灰度乘以 binaryRateInContours 得到最终二值化阈值。",
+      "$comment": "Provider note: keep JSON path '$.binaryByContours' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.binaryByContours",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "binaryRateInContours": {
+      "type": "number",
+      "title": "Binary Rate In Contours",
+      "x-ui": {
+        "order": 110
+      },
+      "default": 0.7,
+      "description": "轮廓内灰度乘以该系数，得到最终二值化阈值。",
+      "$comment": "Provider note: keep JSON path '$.binaryRateInContours' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.binaryRateInContours",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "minLineLength": {
+      "type": "integer",
+      "title": "Min Line Length",
+      "x-ui": {
+        "order": 120
+      },
+      "default": 120,
+      "description": "线条最小长度。",
+      "$comment": "Provider note: keep JSON path '$.minLineLength' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.minLineLength",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "maxLineGap": {
+      "type": "integer",
+      "title": "Max Line Gap",
+      "x-ui": {
+        "order": 130
+      },
+      "default": 40,
+      "description": "线条允许的最大断连间隔。",
+      "$comment": "Provider note: keep JSON path '$.maxLineGap' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.maxLineGap",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "blurKernel": {
+      "type": "integer",
+      "title": "Blur Kernel",
+      "x-ui": {
+        "order": 140
+      },
+      "default": 3,
+      "description": "滤波核大小。",
+      "$comment": "Provider note: keep JSON path '$.blurKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.blurKernel",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "singleErodeKernel": {
+      "type": "integer",
+      "title": "Single Erode Kernel",
+      "x-ui": {
+        "order": 150
+      },
+      "default": 15,
+      "description": "水平或垂直单向腐蚀核大小。",
+      "$comment": "Provider note: keep JSON path '$.singleErodeKernel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.singleErodeKernel",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T07:57:54+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 35,
+      "code": "ARVR.BinocularFusion",
+      "name": "双目融合",
+      "version": null,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "双目融合",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "双目融合参数及结果说明.docx"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from the provider-maintained test-case default parameter file.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "This schema may update default/type when the provider-maintained defaultparam.txt changes.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "defaultSource": "provider-test-case-defaultparam",
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "双目融合",
+      "defaultParamFile": "defaultparam.txt",
+      "docFiles": [
+        "双目融合参数及结果说明.docx"
+      ]
+    }
+  }
+}

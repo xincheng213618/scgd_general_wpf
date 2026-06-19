@@ -6,10 +6,23 @@
 
 如果你是第一次進入這個倉庫，建議按下面順序建立認知：
 
-1. 先看 [ColorVision.UI](./ColorVision.UI.md)，理解配置、外掛、選單、屬性編輯器和快捷鍵這些橫切基礎設施。
-2. 再看 [ColorVision.Solution](./ColorVision.Solution.md) 和 [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md)，理解工作區殼層與桌面輔助視窗。
-3. 與影像相關的能力，再順著 [ColorVision.Core](./ColorVision.Core.md) -> [ColorVision.ImageEditor](./ColorVision.ImageEditor.md) 往上看。
-4. 某個獨立子系統需要深挖時，再進入對應單頁。
+1. 先看 [目前 UI DLL 文件覆蓋清單](./current-ui-dll-coverage.md)，確認目前 10 個 UI 專案、對應文件頁和發布證據沒有缺口。
+2. 再看 [UI DLL 元件手冊](./component-handbook.md)，按發布 DLL 建立模組邊界。
+3. 如果要發布或替換 DLL，進入 [UI DLL 發布場景手冊](./ui-dll-release-playbook.md) 和 [UI DLL 發布矩陣](./release-matrix.md)。
+4. 如果要排查選單、設定、外掛載入、ImageEditor、Socket、Scheduler 或 Solution 工作區，進入 [UI 執行時元件交接手冊](./ui-runtime-handoff.md)。
+5. 如果要定位具體控制項或窗口，進入 [UI 元件目錄](./control-catalog.md)。
+6. 最後再進入單個 DLL 頁。
+
+## 發布與交接入口
+
+- [UI DLL 元件手冊](./component-handbook.md)：按 DLL 說明每個發布單元的職責和邊界。
+- [目前 UI DLL 文件覆蓋清單](./current-ui-dll-coverage.md)：確認目前 UI 專案、文件頁、發布證據和維護規則。
+- [UI 元件目錄](./control-catalog.md)：按控制項、窗口、Provider 和擴充點定位源碼。
+- [UI 執行時元件交接手冊](./ui-runtime-handoff.md)：說明選單、設定、PropertyGrid、ImageEditor、Socket、Scheduler、Solution 的發現與排障鏈。
+- [UI DLL 發布場景手冊](./ui-dll-release-playbook.md)：按發布場景判斷要構建和驗收哪些包。
+- [UI DLL 發布矩陣](./release-matrix.md)：列出每個 DLL 的版本、目標框架、依賴、資源和煙測項。
+- [UI DLL 發布證據與現場核查表](./dll-release-evidence.md)：整理 `.csproj` 證據、包內容、輸出目錄、消費方驗證和回退記錄。
+- [UI DLL 發布手冊](./publishing.md)：通用構建命令、包內容檢查和發布後驗證。
 
 ## 模組地圖
 

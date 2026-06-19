@@ -20,6 +20,7 @@ public class STNodeEditor : Control
 	{
 		None,
 		MoveNode,
+		MoveCanvas,
 		ConnectOption,
 		SelectRectangle,
 		DrawMarkDetails
@@ -63,6 +64,8 @@ public class STNodeEditor : Control
 	private bool _ShowGrid = true;
 
 	private bool _ShowLocation = true;
+
+	private bool _EnableBlankLeftDragCanvas = true;
 
 	private STNodeCollection _Nodes;
 
@@ -167,6 +170,8 @@ public class STNodeEditor : Control
 	private GraphicsPath m_gp_hover;
 
 	private StringFormat m_sf = new StringFormat();
+
+	private Rectangle m_rect_canvas_drag_lock;
 
 	private Dictionary<GraphicsPath, ConnectionInfo> m_dic_gp_info = new Dictionary<GraphicsPath, ConnectionInfo>();
 
@@ -530,6 +535,23 @@ public class STNodeEditor : Control
 		}
 	}
 
+	public bool EnableBlankLeftDragCanvas
+	{
+		get
+		{
+			return _EnableBlankLeftDragCanvas;
+		}
+		set
+		{
+			if (_EnableBlankLeftDragCanvas == value)
+			{
+				return;
+			}
+			_EnableBlankLeftDragCanvas = value;
+			Invalidate();
+		}
+	}
+
 	[Description("活动的节点发生变化时候发生")]
 	public event EventHandler ActiveChanged;
 
@@ -785,12 +807,19 @@ public class STNodeEditor : Control
 			OnDrawNodeOutLocation(m_drawing_tools, base.Size, m_lst_node_out);
 		}
 		OnDrawAlert(graphics);
+		OnDrawCanvasDragLockButton(m_drawing_tools);
 	}
 
 	protected override void OnMouseDown(MouseEventArgs e)
 	{
 		base.OnMouseDown(e);
 		Focus();
+		if (e.Button == MouseButtons.Left && m_rect_canvas_drag_lock.Contains(e.Location))
+		{
+			EnableBlankLeftDragCanvas = !EnableBlankLeftDragCanvas;
+			m_ca = CanvasAction.None;
+			return;
+		}
 		m_ca = CanvasAction.None;
 		m_mi.XMatched = (m_mi.YMatched = false);
 		m_pt_down_in_control = e.Location;
@@ -816,6 +845,12 @@ public class STNodeEditor : Control
 			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
+		if (e.Button == MouseButtons.Left
+			&& EnableBlankLeftDragCanvas
+			&& (!string.IsNullOrEmpty(nodeFindInfo.Mark) || nodeFindInfo.NodeOption != null || nodeFindInfo.Node != null))
+		{
+			EnableBlankLeftDragCanvas = false;
+		}
 		if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
 		{
 			m_ca = CanvasAction.DrawMarkDetails;
@@ -893,7 +928,7 @@ public class STNodeEditor : Control
 			{
 				sTNode2.SetSelected(bSelected: false, bRedraw: false);
 			}
-			m_ca = CanvasAction.SelectRectangle;
+			m_ca = EnableBlankLeftDragCanvas && e.Button == MouseButtons.Left ? CanvasAction.MoveCanvas : CanvasAction.SelectRectangle;
 			ref RectangleF rect_select = ref m_rect_select;
 			float num = (m_rect_select.Height = 0f);
 			rect_select.Width = num;
@@ -929,6 +964,11 @@ public class STNodeEditor : Control
 				{
 					MoveNode(e.Location);
 				}
+				return;
+			case CanvasAction.MoveCanvas:
+				_CanvasOffsetX = (m_real_canvas_x = m_pt_canvas_old.X + (float)(e.X - m_pt_down_in_control.X));
+				_CanvasOffsetY = (m_real_canvas_y = m_pt_canvas_old.Y + (float)(e.Y - m_pt_down_in_control.Y));
+				Invalidate();
 				return;
 			case CanvasAction.ConnectOption:
 				Invalidate();
@@ -1410,6 +1450,35 @@ public class STNodeEditor : Control
 			graphics.SmoothingMode = SmoothingMode.HighQuality;
 			graphics.DrawString(strText, Font, solidBrush, rect, m_sf);
 		}
+	}
+
+	protected virtual void OnDrawCanvasDragLockButton(DrawingTools dt)
+	{
+		const int size = 28;
+		const int margin = 8;
+		m_rect_canvas_drag_lock = new Rectangle(base.Width - size - margin, margin, size, size);
+
+		Graphics graphics = dt.Graphics;
+		Color backColor = EnableBlankLeftDragCanvas
+			? Color.FromArgb(220, 40, 120, 60)
+			: Color.FromArgb(190, 35, 35, 35);
+		Color borderColor = EnableBlankLeftDragCanvas
+			? Color.FromArgb(240, 92, 196, 112)
+			: Color.FromArgb(220, 110, 110, 110);
+
+		using SolidBrush backgroundBrush = new SolidBrush(backColor);
+		using Pen borderPen = new Pen(borderColor);
+		graphics.FillRectangle(backgroundBrush, m_rect_canvas_drag_lock);
+		graphics.DrawRectangle(borderPen, m_rect_canvas_drag_lock);
+
+		using Font iconFont = new Font("Segoe MDL2 Assets", 13f, FontStyle.Regular, GraphicsUnit.Point);
+		using SolidBrush iconBrush = new SolidBrush(Color.White);
+		using StringFormat iconFormat = new StringFormat
+		{
+			Alignment = StringAlignment.Center,
+			LineAlignment = StringAlignment.Center
+		};
+		graphics.DrawString(EnableBlankLeftDragCanvas ? "\uE72E" : "\uE785", iconFont, iconBrush, m_rect_canvas_drag_lock, iconFormat);
 	}
 
 	protected virtual Rectangle GetAlertRectangle(Graphics g, string strText, AlertLocation al)

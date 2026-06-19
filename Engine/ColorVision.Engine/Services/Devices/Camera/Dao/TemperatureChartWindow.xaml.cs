@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Dao;
+﻿#pragma warning disable CA1863
+using ColorVision.Engine.Services.Dao;
 using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.Plottables;

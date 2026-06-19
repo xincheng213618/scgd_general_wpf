@@ -1,9 +1,11 @@
+#pragma warning disable CA1863
 using ColorVision.Properties;
 using ColorVision.UI.Menus;
+using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Update.Export
@@ -13,91 +15,17 @@ namespace ColorVision.Update.Export
         public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 1001;
         public override string Header => Resources.MenuRegisterThumbnail;
+        public override Visibility Visibility => Visibility.Collapsed;
 
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuRegisterThumbnail));
 
-        public override void Execute()
+        public override async void Execute()
         {
-            try
-            {
-                string appPath = Environment.ProcessPath ?? throw new InvalidOperationException("Unable to resolve executable path.");
-                string appDir = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
-                string comHostDll = Path.Combine(appDir, "ColorVision.ShellExtension.comhost.dll");
-
-                if (!File.Exists(comHostDll))
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),
-                        string.Format(Properties.Resources.ShellExtensionNotFound, comHostDll),
-                        "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // regsvr32 registers the COM server (CLSID + InprocServer32)
-                var regsvr32 = Process.Start(new ProcessStartInfo
-                {
-                    FileName = "regsvr32",
-                    Arguments = $"\"{comHostDll}\"",
-                    UseShellExecute = true,
-                    Verb = "runas"
-                });
-                regsvr32?.WaitForExit();
-
-                if (regsvr32?.ExitCode != 0)
-                {
-                    log.Warn($"regsvr32 exited with code {regsvr32?.ExitCode}");
-                    MessageBox.Show(Application.Current.GetActiveWindow(),
-                        Properties.Resources.ComRegistrationFailed,
-                        "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // Write shellex thumbnail handler association for .cvraw and .cvcie via reg.exe
-                string thumbnailClsid = "{7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C}";
-                string thumbnailProviderIid = "{E357FCCD-A995-4576-B01F-234630154E96}";
-
-                string[] extensions = { ".cvraw", ".cvcie" };
-                foreach (var ext in extensions)
-                {
-                    var reg = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "reg",
-                        Arguments = $"add \"HKCR\\{ext}\\ShellEx\\{thumbnailProviderIid}\" /ve /d \"{thumbnailClsid}\" /f",
-                        UseShellExecute = true,
-                        Verb = "runas",
-                        CreateNoWindow = true,
-                        WindowStyle = ProcessWindowStyle.Hidden
-                    });
-                    reg?.WaitForExit();
-                }
-
-                // Clear thumbnail cache
-                string thumbCacheDir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Microsoft", "Windows", "Explorer");
-                if (Directory.Exists(thumbCacheDir))
-                {
-                    foreach (var file in Directory.GetFiles(thumbCacheDir, "thumbcache_*.db"))
-                    {
-                        try { File.Delete(file); } catch { }
-                    }
-                    foreach (var file in Directory.GetFiles(thumbCacheDir, "iconcache_*.db"))
-                    {
-                        try { File.Delete(file); } catch { }
-                    }
-                }
-
-                log.Info("Thumbnail shell extension registered successfully");
-                MessageBox.Show(Application.Current.GetActiveWindow(),
-                    Properties.Resources.ThumbnailRegistrationSuccess,
-                    "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                log.Error($"RegisterThumbnail failed: {ex}");
-                MessageBox.Show(Application.Current.GetActiveWindow(),
-                    string.Format(Properties.Resources.RegistrationFailed, ex.Message),
-                    "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            await ThumbnailServiceHostCommands.ExecuteAsync(
+                "register-thumbnail",
+                Resources.ThumbnailRegistrationSuccess,
+                Resources.RegistrationFailed,
+                log).ConfigureAwait(true);
         }
     }
 
@@ -106,57 +34,73 @@ namespace ColorVision.Update.Export
         public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 1002;
         public override string Header => Resources.MenuUnregisterThumbnail;
+        public override Visibility Visibility => Visibility.Collapsed;
 
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuUnregisterThumbnail));
 
-        public override void Execute()
+        public override async void Execute()
+        {
+            await ThumbnailServiceHostCommands.ExecuteAsync(
+                "unregister-thumbnail",
+                Resources.ThumbnailUnregistered,
+                Resources.UnregistrationFailed,
+                log).ConfigureAwait(true);
+        }
+    }
+
+    internal static class ThumbnailServiceHostCommands
+    {
+        public static async Task ExecuteAsync(string command, string successMessage, string failureFormat, ILog log)
         {
             try
             {
                 string appPath = Environment.ProcessPath ?? throw new InvalidOperationException("Unable to resolve executable path.");
-                string appDir = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
-                string comHostDll = Path.Combine(appDir, "ColorVision.ShellExtension.comhost.dll");
+                string appDirectory = Path.GetDirectoryName(appPath) ?? throw new InvalidOperationException("Unable to resolve executable directory.");
+                string comHostDll = Path.Combine(appDirectory, "ColorVision.ShellExtension.comhost.dll");
 
-                // Remove shellex associations first
-                string thumbnailProviderIid = "{E357FCCD-A995-4576-B01F-234630154E96}";
-                string[] extensions = { ".cvraw", ".cvcie" };
-                foreach (var ext in extensions)
+                if (!File.Exists(comHostDll))
                 {
-                    var reg = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "reg",
-                        Arguments = $"delete \"HKCR\\{ext}\\ShellEx\\{thumbnailProviderIid}\" /f",
-                        UseShellExecute = true,
-                        Verb = "runas",
-                        CreateNoWindow = true,
-                        WindowStyle = ProcessWindowStyle.Hidden
-                    });
-                    reg?.WaitForExit();
+                    MessageBox.Show(Application.Current.GetActiveWindow(),
+                        string.Format(Resources.ShellExtensionNotFound, comHostDll),
+                        "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
                 }
 
-                // Unregister COM server
-                if (File.Exists(comHostDll))
+                string thumbnailCacheDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Microsoft", "Windows", "Explorer");
+
+                ServiceHostResponse response = command switch
                 {
-                    var regsvr32 = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "regsvr32",
-                        Arguments = $"/u \"{comHostDll}\"",
-                        UseShellExecute = true,
-                        Verb = "runas"
-                    });
-                    regsvr32?.WaitForExit();
+                    "register-thumbnail" => await ColorVisionServiceHostClient.Default
+                        .RegisterThumbnailAsync(appDirectory, thumbnailCacheDirectory)
+                        .ConfigureAwait(true),
+                    "unregister-thumbnail" => await ColorVisionServiceHostClient.Default
+                        .UnregisterThumbnailAsync(appDirectory, thumbnailCacheDirectory)
+                        .ConfigureAwait(true),
+                    _ => await ColorVisionServiceHostClient.Default
+                        .SendAsync(command, new { appDirectory, thumbnailCacheDirectory }, TimeSpan.FromSeconds(30))
+                        .ConfigureAwait(true),
+                };
+
+                if (response.Success)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(),
+                        successMessage,
+                        "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
                 }
 
-                log.Info("Thumbnail shell extension unregistered successfully");
+                log.Warn($"{command} failed: {response.ToDisplayText()}");
                 MessageBox.Show(Application.Current.GetActiveWindow(),
-                    Properties.Resources.ThumbnailUnregistered,
-                    "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    string.Format(failureFormat, response.Message),
+                    "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
-                log.Error($"UnregisterThumbnail failed: {ex}");
+                log.Error($"{command} failed.", ex);
                 MessageBox.Show(Application.Current.GetActiveWindow(),
-                    string.Format(Properties.Resources.UnregistrationFailed, ex.Message),
+                    string.Format(failureFormat, ex.Message),
                     "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

@@ -39,41 +39,6 @@
                             Style="{StaticResource ButtonPrimary}"/>
                     <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
-
-                    <Border Margin="0,0,8,0" Padding="10,6" CornerRadius="4" BorderThickness="1">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="#FFFDECC8"/>
-                                <Setter Property="BorderBrush" Value="#FFE0B84D"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsAdministratorMode}" Value="True">
-                                        <Setter Property="Background" Value="#FFE7F6EA"/>
-                                        <Setter Property="BorderBrush" Value="#FF63B36D"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <TextBlock Text="{Binding AdministratorModeText}" FontWeight="SemiBold">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="#FF9A6700"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsAdministratorMode}" Value="True">
-                                            <Setter Property="Foreground" Value="#FF237A3B"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Border>
-
-                    <Button Content="以管理员模式重启" Command="{Binding RestartAsAdministratorCommand}" Margin="0,0,8,0" Padding="12,6"
-                            Visibility="{Binding NeedsAdministratorRestart, Converter={StaticResource BoolToVis}}"
-                            ToolTip="重新以管理员权限启动当前程序，用于需要提权的操作"/>
-
-
-                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
-
                     <Button Content="更新配置" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
                     <Button Content="检查数据库配置" Command="{Binding CheckDatabaseConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
                     <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
@@ -125,11 +90,14 @@
                                             </TextBlock>
                                         </WrapPanel>
                                         <WrapPanel Margin="0,6,0,0">
+                                            <Button Content="启动" Command="{Binding DataContext.ServiceStartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="停止" Command="{Binding DataContext.ServiceStopCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="重启" Command="{Binding DataContext.ServiceRestartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="终止" Command="{Binding DataContext.ServiceTerminateCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                             <Button Content="打开目录" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                             <Button Content="WinService" Command="{Binding DataContext.OpenWinServiceConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                             <Button Content="MySql" Command="{Binding DataContext.OpenMySqlConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                             <Button Content="MQTT" Command="{Binding DataContext.OpenMqttConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
-                                            <Button Content="log4net" Command="{Binding DataContext.OpenLog4NetConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                         </WrapPanel>
                                     </StackPanel>
                                 </Border>
@@ -199,6 +167,10 @@
                     <!-- MySQL 操作按钮 -->
                     <WrapPanel Grid.Row="1" Margin="0,0,0,8">
                         <Button Content="Zip全安装" Command="{Binding MySqlInstallZipCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="后台修复" Command="{Binding MySqlRepairServiceCommand}" Margin="0,0,8,0" Padding="12,6"
+                                ToolTip="通过 ColorVisionServiceHost 修复或重启 MySQL 服务"/>
+                        <Button Content="注册服务" Command="{Binding MySqlRegisterExistingCommand}" Margin="0,0,8,0" Padding="12,6"
+                                ToolTip="使用上次保存的 MySQL 路径注册 MySQL，不重新初始化数据"/>
                         <Button Content="启动" Command="{Binding MySqlStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="停止" Command="{Binding MySqlStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="卸载" Command="{Binding MySqlUninstallCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
@@ -208,6 +180,8 @@
                         <Button Content="数据库备份" Command="{Binding MySqlBackupCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="数据库还原" Command="{Binding MySqlRestoreCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="脚本执行" Command="{Binding MySqlRunScriptCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="重置数据库" Command="{Binding MySqlResetDatabaseCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"
+                                ToolTip="使用 root 执行服务安装目录 SQL\color_vision_all.sql"/>
                         <Button Content="设置root密码" Command="{Binding MySqlSetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="重置root密码" Command="{Binding MySqlForceResetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
                         <Button Content="创建/更新用户" Command="{Binding MySqlCreateOrUpdateUserCommand}" Margin="0,0,8,0" Padding="12,6"/>
@@ -288,9 +262,6 @@
 
         <!-- 状态栏 -->
         <StatusBar Grid.Row="4">
-            <StatusBarItem>
-                <TextBlock Text="{Binding AdministratorModeText}"/>
-            </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="{Binding ProgressText}"/>
             </StatusBarItem>

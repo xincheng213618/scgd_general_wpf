@@ -11,7 +11,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using Clipboard = ColorVision.Common.NativeMethods.Clipboard;
 
 namespace ColorVision.SocketProtocol
 {
@@ -211,7 +210,7 @@ namespace ColorVision.SocketProtocol
         {
             if (sender is MenuItem menuItem && menuItem.Tag is SocketMessage message)
             {
-                Clipboard.SetText(message.Content ?? string.Empty);
+                Common.Clipboard.SetText(message.Content ?? string.Empty);
             }
         }
 
@@ -244,7 +243,7 @@ namespace ColorVision.SocketProtocol
         {
             if (DetailPanel.DataContext is SocketMessage message)
             {
-                Clipboard.SetText(message.Content ?? string.Empty);
+                Common.Clipboard.SetText(message.Content ?? string.Empty);
             }
         }
 
@@ -255,7 +254,7 @@ namespace ColorVision.SocketProtocol
         {
             if (DetailPanel.DataContext is SocketMessage message && !string.IsNullOrEmpty(message.Content))
             {
-                Clipboard.SetText(FormatContent(message.Content, true));
+                Common.Clipboard.SetText(FormatContent(message.Content, true));
             }
         }
 
@@ -415,7 +414,7 @@ namespace ColorVision.SocketProtocol
 
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C && GetCurrentMessage() is SocketMessage copyMessage)
             {
-                Clipboard.SetText(copyMessage.Content ?? string.Empty);
+                Common.Clipboard.SetText(copyMessage.Content ?? string.Empty);
                 e.Handled = true;
                 return;
             }

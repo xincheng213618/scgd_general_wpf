@@ -1,6 +1,8 @@
+#pragma warning disable CA1822
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Flow;
 using Newtonsoft.Json;
+using ProjectKB.Auth;
 using System.IO;
 using System.Windows;
 
@@ -41,6 +43,8 @@ namespace ProjectKB
 
         public static void Edit()
         {
+            if (!KBAuthManager.GetInstance().RequireAdmin(Application.Current.GetActiveWindow())) return;
+
             EditRecipeWindow editRecipeWindow = new() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             editRecipeWindow.ShowDialog();
         }

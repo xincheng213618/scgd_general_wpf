@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/LEDStripDetection.schema.json",
+  "title": "灯条检测V2",
+  "description": "Auto-generated from t_scgd_sys_dictionary_mod_master.cfg_json. Providers may maintain titles, descriptions, ranges, units, groups, and UI hints without changing the C++ JSON interface.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "debugCfg": {
+      "Debug": false,
+      "debugPath": "Result\\",
+      "debugImgResize": 2
+    },
+    "caliRatio": 10,
+    "threshold": 25,
+    "erodeAndDiate": {
+      "erodeTime": 0,
+      "dilateTime": 0,
+      "erodeFirst": true,
+      "erodeKernel": 3,
+      "dilateKernel": 3
+    },
+    "binaryByContours": true,
+    "binaryRateInContours": 0.35
+  },
+  "properties": {
+    "debugCfg": {
+      "type": "object",
+      "title": "Debug Cfg",
+      "x-ui": {
+        "order": 10
+      },
+      "default": {
+        "Debug": false,
+        "debugPath": "Result\\",
+        "debugImgResize": 2
+      },
+      "additionalProperties": true,
+      "properties": {
+        "Debug": {
+          "type": "boolean",
+          "title": "Debug",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "$comment": "Provider/AI note: keep JSON path '$.debugCfg.Debug' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.Debug",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "debugPath": {
+          "type": "string",
+          "title": "Debug Path",
+          "x-ui": {
+            "order": 20
+          },
+          "default": "Result\\",
+          "$comment": "Provider/AI note: keep JSON path '$.debugCfg.debugPath' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugPath",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "debugImgResize": {
+          "type": "integer",
+          "title": "Debug Img Resize",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 2,
+          "$comment": "Provider/AI note: keep JSON path '$.debugCfg.debugImgResize' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugImgResize",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.debugCfg' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.debugCfg",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "caliRatio": {
+      "type": "integer",
+      "title": "Cali Ratio",
+      "x-ui": {
+        "order": 20
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.caliRatio' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.caliRatio",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "threshold": {
+      "type": "integer",
+      "title": "Threshold",
+      "x-ui": {
+        "order": 30
+      },
+      "default": 25,
+      "$comment": "Provider/AI note: keep JSON path '$.threshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.threshold",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "erodeAndDiate": {
+      "type": "object",
+      "title": "Erode And Diate",
+      "x-ui": {
+        "order": 40
+      },
+      "default": {
+        "erodeTime": 0,
+        "dilateTime": 0,
+        "erodeFirst": true,
+        "erodeKernel": 3,
+        "dilateKernel": 3
+      },
+      "additionalProperties": true,
+      "properties": {
+        "erodeTime": {
+          "type": "integer",
+          "title": "Erode Time",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 0,
+          "$comment": "Provider/AI note: keep JSON path '$.erodeAndDiate.erodeTime' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.erodeTime",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "dilateTime": {
+          "type": "integer",
+          "title": "Dilate Time",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "$comment": "Provider/AI note: keep JSON path '$.erodeAndDiate.dilateTime' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.dilateTime",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "erodeFirst": {
+          "type": "boolean",
+          "title": "Erode First",
+          "x-ui": {
+            "order": 30
+          },
+          "default": true,
+          "$comment": "Provider/AI note: keep JSON path '$.erodeAndDiate.erodeFirst' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.erodeFirst",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "erodeKernel": {
+          "type": "integer",
+          "title": "Erode Kernel",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 3,
+          "$comment": "Provider/AI note: keep JSON path '$.erodeAndDiate.erodeKernel' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.erodeKernel",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "dilateKernel": {
+          "type": "integer",
+          "title": "Dilate Kernel",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 3,
+          "$comment": "Provider/AI note: keep JSON path '$.erodeAndDiate.dilateKernel' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.erodeAndDiate.dilateKernel",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.erodeAndDiate' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.erodeAndDiate",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "binaryByContours": {
+      "type": "boolean",
+      "title": "Binary By Contours",
+      "x-ui": {
+        "order": 50
+      },
+      "default": true,
+      "$comment": "Provider/AI note: keep JSON path '$.binaryByContours' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.binaryByContours",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "binaryRateInContours": {
+      "type": "number",
+      "title": "Binary Rate In Contours",
+      "x-ui": {
+        "order": 60
+      },
+      "default": 0.35,
+      "$comment": "Provider/AI note: keep JSON path '$.binaryRateInContours' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.binaryRateInContours",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": false,
+    "generatedAt": "2026-06-04T07:32:58+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 26,
+      "code": "LEDStripDetection",
+      "name": "灯条检测V2",
+      "version": "2.0"
+    },
+    "notes": [
+      "The default value mirrors the current database cfg_json at generation time.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys unchanged; C++ receives the JSON string by key.",
+        "Do not remove existing fields from default unless the database default and algorithm contract are updated together.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "type",
+        "default",
+        "additionalProperties"
+      ]
+    }
+  }
+}

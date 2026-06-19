@@ -13,6 +13,7 @@
 #include <condition_variable>
 #include <future>
 #include <atomic>
+#include <exception>
 
 using json = nlohmann::json;
 
@@ -310,68 +311,141 @@ cv::Mat FusionAdvancedPipeline(const std::vector<std::string>& files, int STEP) 
 // Original and Optimized Export Functions
 // ============================================================================
 
-extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
+namespace {
+
+int ParseFusionFiles(const char* fusionjson, std::vector<std::string>& files)
 {
-    std::chrono::steady_clock::time_point start, end;
-    std::chrono::microseconds duration;
-    start = std::chrono::high_resolution_clock::now();
+    if (fusionjson == nullptr) {
+        return -1;
+    }
 
-    std::string sss = fusionjson;
+    json j = json::parse(fusionjson, nullptr, false);
+    if (j.is_discarded() || !j.is_array()) {
+        return -2;
+    }
 
-    // Parse JSON
-    json j;
     try {
-        j = json::parse(sss);
+        files = j.get<std::vector<std::string>>();
     }
-    catch (const json::exception& e) {
-        std::cerr << "JSON parse error: " << e.what() << std::endl;
-        return -1;
-    }
-
-    if (!j.is_array()) {
-        std::cerr << "Error: JSON is not an array" << std::endl;
-        return -1;
+    catch (const json::exception&) {
+        return -3;
     }
 
-    std::vector<std::string> files = j.get<std::vector<std::string>>();
-    if (files.empty()) {
-        std::cerr << "Error: No files provided in JSON array." << std::endl;
-        return -1;
-    }
+    return files.empty() ? -4 : 0;
+}
 
-    // Use async pipeline for loading
-    std::vector<cv::Mat> imgs(files.size());
+int LoadImagesParallel(const std::vector<std::string>& files, std::vector<cv::Mat>& imgs)
+{
+    imgs.assign(files.size(), cv::Mat());
     std::vector<std::thread> threads;
     std::vector<bool> read_success(files.size(), false);
     std::mutex imgs_mutex;
 
-    auto load_start = std::chrono::steady_clock::now();
-
-    for (size_t i = 0; i < files.size(); ++i) {
-        threads.emplace_back([i, &files, &imgs, &read_success, &imgs_mutex]() {
-            cv::Mat img = cv::imread(files[i], cv::IMREAD_UNCHANGED);
-            if (!img.empty()) {
-                std::lock_guard<std::mutex> lock(imgs_mutex);
-                imgs[i] = std::move(img);
-                read_success[i] = true;
+    threads.reserve(files.size());
+    try {
+        for (size_t i = 0; i < files.size(); ++i) {
+            threads.emplace_back([i, &files, &imgs, &read_success, &imgs_mutex]() {
+                cv::Mat img = cv::imread(files[i], cv::IMREAD_UNCHANGED);
+                if (!img.empty()) {
+                    std::lock_guard<std::mutex> lock(imgs_mutex);
+                    imgs[i] = std::move(img);
+                    read_success[i] = true;
+                }
+            });
+        }
+    }
+    catch (...) {
+        for (auto& t : threads) {
+            if (t.joinable()) {
+                t.join();
             }
-        });
+        }
+        throw;
     }
 
     for (auto& t : threads) {
-        t.join();
+        if (t.joinable()) {
+            t.join();
+        }
     }
 
+    for (size_t i = 0; i < files.size(); ++i) {
+        if (!read_success[i]) {
+            std::cerr << "Error: Failed to load image " << i << ": " << files[i] << std::endl;
+            return -5;
+        }
+    }
+
+    return 0;
+}
+
+int WriteOutputImage(const cv::Mat& out, HImage* outImage)
+{
+    if (outImage == nullptr) {
+        return -1;
+    }
+    if (out.empty()) {
+        *outImage = HImage{};
+        return -6;
+    }
+
+    return MatToHImage(out, outImage);
+}
+
+void ClearHImages(HImage* images, int count) noexcept
+{
+    if (images == nullptr || count <= 0) {
+        return;
+    }
+
+    for (int i = 0; i < count; ++i) {
+        images[i] = HImage{};
+    }
+}
+
+int MapExceptionToError(const char* operation, const std::exception& e)
+{
+    std::cerr << operation << " exception: " << e.what() << std::endl;
+    return -100;
+}
+
+} // namespace
+
+extern "C" COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
+{
+    if (data != nullptr) {
+        CoTaskMemFree(data);
+    }
+}
+
+extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
+{
+    if (outImage == nullptr) {
+        return -1;
+    }
+    *outImage = HImage{};
+
+    try {
+    std::chrono::steady_clock::time_point start, end;
+    std::chrono::microseconds duration;
+    start = std::chrono::high_resolution_clock::now();
+
+    std::vector<std::string> files;
+    int parseResult = ParseFusionFiles(fusionjson, files);
+    if (parseResult != 0) {
+        return parseResult;
+    }
+
+    // Use async pipeline for loading
+    auto load_start = std::chrono::steady_clock::now();
+    std::vector<cv::Mat> imgs;
+    int loadResult = LoadImagesParallel(files, imgs);
     auto load_end = std::chrono::steady_clock::now();
     std::cout << "Image loading time: "
               << std::chrono::duration_cast<std::chrono::milliseconds>(load_end - load_start).count()
               << " ms" << std::endl;
-
-    // Check if all images loaded successfully
-    for (size_t i = 0; i < files.size(); ++i) {
-        if (!read_success[i]) {
-            std::cerr << "Error: Failed to load image " << i << ": " << files[i] << std::endl;
-        }
+    if (loadResult != 0) {
+        return loadResult;
     }
 
     auto fusion_start = std::chrono::steady_clock::now();
@@ -386,7 +460,7 @@ extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* out
     duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     std::cout << "Total execution time: " << duration.count() / 1000.0 << " ms" << std::endl;
 
-    int result = MatToHImage(out, outImage);
+    int result = WriteOutputImage(out, outImage);
 
     auto convert_end = std::chrono::steady_clock::now();
     std::cout << "MatToHImage time: "
@@ -394,6 +468,21 @@ extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* out
               << " ms" << std::endl;
 
     return result;
+    }
+    catch (const cv::Exception& e) {
+        return MapExceptionToError("CM_Fusion OpenCV", e);
+    }
+    catch (const std::exception& e) {
+        return MapExceptionToError("CM_Fusion", e);
+    }
+    catch (...) {
+        return -101;
+    }
+}
+
+extern "C" COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
+{
+    return CM_Fusion(fusionjson, outImage);
 }
 
 /**
@@ -401,29 +490,19 @@ extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* out
  */
 extern "C" COLORVISIONCORE_API int CM_Fusion_Async(const char* fusionjson, HImage* outImage)
 {
+    if (outImage == nullptr) {
+        return -1;
+    }
+    *outImage = HImage{};
+
+    try {
     std::chrono::steady_clock::time_point start;
     start = std::chrono::high_resolution_clock::now();
 
-    std::string sss = fusionjson;
-
-    json j;
-    try {
-        j = json::parse(sss);
-    }
-    catch (const json::exception& e) {
-        std::cerr << "JSON parse error: " << e.what() << std::endl;
-        return -1;
-    }
-
-    if (!j.is_array()) {
-        std::cerr << "Error: JSON is not an array" << std::endl;
-        return -1;
-    }
-
-    std::vector<std::string> files = j.get<std::vector<std::string>>();
-    if (files.empty()) {
-        std::cerr << "Error: No files provided in JSON array." << std::endl;
-        return -1;
+    std::vector<std::string> files;
+    int parseResult = ParseFusionFiles(fusionjson, files);
+    if (parseResult != 0) {
+        return parseResult;
     }
 
     // Use optimized async pipeline
@@ -438,15 +517,34 @@ extern "C" COLORVISIONCORE_API int CM_Fusion_Async(const char* fusionjson, HImag
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     std::cout << "Total async execution time: " << duration.count() / 1000.0 << " ms" << std::endl;
 
-    return MatToHImage(out, outImage);
+    return WriteOutputImage(out, outImage);
+    }
+    catch (const cv::Exception& e) {
+        return MapExceptionToError("CM_Fusion_Async OpenCV", e);
+    }
+    catch (const std::exception& e) {
+        return MapExceptionToError("CM_Fusion_Async", e);
+    }
+    catch (...) {
+        return -101;
+    }
 }
 
 /**
  * @brief Batch processing fusion for multiple image sets
  */
-extern "C" COLORVISIONCORE_API int CM_Fusion_Batch(const char* batchjson, HImage* outImages, int* outCount)
+extern "C" COLORVISIONCORE_API int CM_Fusion_Batch(const char* batchjson, HImage* outImages, int outCapacity, int* outCount)
 {
+    if (outCount != nullptr) {
+        *outCount = 0;
+    }
+    ClearHImages(outImages, outCapacity);
+
+    if (batchjson == nullptr || outImages == nullptr || outCapacity <= 0 || outCount == nullptr) {
+        return -1;
+    }
+
     // TODO: Implement batch processing for multiple fusion tasks
     // This would allow processing multiple image sets in parallel
-    return -1;
+    return -10;
 }

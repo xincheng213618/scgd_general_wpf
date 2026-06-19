@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using ColorVision.UI.LogImp;
 using ColorVision.UI.LogImp.Models;
 using System.IO;

@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
         public object? Icon { get; set; } = IEditorToolFactory.TryFindResource("DrawingImageClear");
         public ICommand? Command { get; set; } = new RelayCommand(a =>
         {
-            EditorContext.ImageView.Clear();
+            EditorContext.Clear();
         }, a => true);
     }
 

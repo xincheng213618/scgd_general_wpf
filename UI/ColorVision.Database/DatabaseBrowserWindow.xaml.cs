@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using ColorVision.Themes;
 using log4net;
 using ColorVision.Database.Properties;

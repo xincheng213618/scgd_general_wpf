@@ -1,11 +1,11 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1822
+using ColorVision.Common.MVVM;
 using log4net;
 using Spectrum.TimedButtons;
 using System.IO.Ports;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace Spectrum.Configs
 {
@@ -41,40 +41,28 @@ namespace Spectrum.Configs
                 _ => !IsConnected,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
-                "shutter-connect",
-                "连接",
-                "连接快门",
-                Brushes.Red);
+                "shutter-connect");
 
             DisconnectCommand = new TimedButtonCommand(
                 async _ => await Task.FromResult(Disconnect()),
                 _ => IsConnected,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
-                "shutter-disconnect",
-                "断开",
-                "断开快门",
-                Brushes.Red);
+                "shutter-disconnect");
 
             OpenShutterCommand = new TimedButtonCommand(
                 _ => SendCommand(Config.OpenCmd),
                 _ => IsConnected,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
-                "shutter-open",
-                "Open Shutter",
-                "打开快门",
-                Brushes.Red);
+                "shutter-open");
 
             CloseShutterCommand = new TimedButtonCommand(
                 _ => SendCommand(Config.CloseCmd),
                 _ => IsConnected,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
-                "shutter-close",
-                "Close Shutter",
-                "关闭快门",
-                Brushes.Red);
+                "shutter-close");
         }
 
         private bool Connect()

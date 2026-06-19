@@ -1,0 +1,63 @@
+﻿#pragma warning disable CA1725,CS8602
+
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Database;
+using ColorVision.Engine.Services;
+using log4net;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Windows.Controls;
+
+namespace ColorVision.Engine.Templates.Jsons.CompoundImg
+{
+
+    public class ViewHandleCompoundImg : IResultHandleBase
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleCompoundImg));
+
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.CompoundImg };
+
+
+        public override void SideSave(ViewResultAlg result, string selectedPath)
+        {
+            string filePath = selectedPath + "//" + result.Batch + result.ResultType + ".csv";
+        }
+
+
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
+        {
+            if (result.ViewResults == null)
+            {
+                var values = AlgResultImageDao.Instance.GetAllByPid(result.Id);
+                result.ViewResults = new ObservableCollection<IViewResult>(values);
+
+                if (values.Count == 1)
+                {
+                    AlgResultImageModel algResultImageModel = values[0];
+                    if (File.Exists(algResultImageModel.FileName))
+                        result.ContextMenu.Items.Add(new MenuItem() { Header = "打开输出文件位置", Command = new RelayCommand(a => { PlatformHelper.OpenFolderAndSelectFile(algResultImageModel.FileName); }) });
+                }
+
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmCompoundImg), ImageFilePath = result.FilePath })) });
+            }
+        }
+
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
+        {
+            var values = result.ViewResults.ToSpecificViewResults<AlgResultImageModel>();
+            if (values.Count == 1)
+            {
+                AlgResultImageModel algResultImageModel = values[0];
+                if (File.Exists(algResultImageModel.FileName))
+                    ctx.ImageView.OpenImage(algResultImageModel.FileName);
+            }
+            else
+            {
+                if (File.Exists(result.FilePath))
+                    ctx.ImageView.OpenImage(result.FilePath);
+            }
+        }
+    }
+}

@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 namespace ProjectARVRPro.Process.Black
 {
     public class BlackProcessConfig : ProcessConfigBase

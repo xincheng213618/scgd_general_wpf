@@ -24,12 +24,18 @@ namespace System.ComponentModel
             {
                 var ofd = new Microsoft.Win32.OpenFileDialog();
                 var path = property.GetValue(obj) as string;
-#if NET8_0
-                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                var initialDirectory = PathSelectionHelper.GetExistingDirectory(path);
+                if (!string.IsNullOrWhiteSpace(initialDirectory))
                 {
-                    ofd.DefaultDirectory = Directory.GetDirectoryRoot(path);
+                    ofd.InitialDirectory = initialDirectory;
                 }
-#endif
+
+                var fileName = Directory.Exists(path) ? null : PathSelectionHelper.GetFileName(path);
+                if (!string.IsNullOrWhiteSpace(fileName))
+                {
+                    ofd.FileName = fileName;
+                }
+
                 if (ofd.ShowDialog() == true)
                 {
                     property.SetValue(obj, ofd.FileName);
@@ -40,7 +46,19 @@ namespace System.ComponentModel
             openFolderBtn.Click += (_, __) =>
             {
                 var path = property.GetValue(obj) as string;
-                if (!string.IsNullOrWhiteSpace(path)) PlatformHelper.OpenFolder(path);
+                if (string.IsNullOrWhiteSpace(path)) return;
+
+                if (File.Exists(path))
+                {
+                    PlatformHelper.OpenFolderAndSelectFile(path);
+                    return;
+                }
+
+                var folder = PathSelectionHelper.GetExistingDirectory(path);
+                if (!string.IsNullOrWhiteSpace(folder))
+                {
+                    PlatformHelper.OpenFolder(folder);
+                }
             };
 
             DockPanel.SetDock(selectBtn, Dock.Right);

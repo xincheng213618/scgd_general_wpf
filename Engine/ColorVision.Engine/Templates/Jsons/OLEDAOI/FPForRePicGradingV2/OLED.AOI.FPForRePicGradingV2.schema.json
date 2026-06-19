@@ -1,0 +1,965 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/OLED.AOI.FPForRePicGradingV2.schema.json",
+  "title": "缺陷检测V2",
+  "description": "OLED AOI Method2 缺陷检测参数。默认值来自开发者维护的 aoi_m2_colorvision.cfg，包含中心/边缘阈值和产品分级配置。",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "topRatio": 10,
+    "lowRatio": 10,
+    "brightPixelLvRatioThreshold": 1.6,
+    "darkPixelLvRatioThreshold": 0.6,
+    "badPixelNumThreshold": 102,
+    "connectedBadPixelNumThreshold": 10,
+    "width": 12,
+    "height": 12,
+    "faultPixelRatio": 4,
+    "brightPixelNumThreshold": 70,
+    "bright_lvs": [
+      1,
+      2,
+      3,
+      4,
+      6
+    ],
+    "dark_lvs": [
+      1,
+      2,
+      3,
+      4,
+      6
+    ],
+    "scan_type": 1,
+    "radius": 6,
+    "edge_area_x": 239,
+    "edge_area_y": 179,
+    "edge_area_w": 160,
+    "edge_area_h": 120,
+    "brightPixelLvRatioThreshold_center": 1.6,
+    "darkPixelLvRatioThreshold_center": 0.6,
+    "brightPixelLvRatioThreshold_edge": 1.6,
+    "darkPixelLvRatioThreshold_edge": 0.6,
+    "gradingCfgs": [
+      {
+        "grade_name": "A",
+        "bright_max_nums_total": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_total": [
+          102,
+          1,
+          0,
+          0,
+          0
+        ],
+        "bright_max_nums_center": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_center": [
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "grade_name": "B",
+        "bright_max_nums_total": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_total": [
+          102,
+          3,
+          4,
+          0,
+          2
+        ],
+        "bright_max_nums_center": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_center": [
+          3,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "grade_name": "C",
+        "bright_max_nums_total": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_total": [
+          102,
+          100,
+          50,
+          10,
+          1
+        ],
+        "bright_max_nums_center": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_center": [
+          3,
+          2,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "grade_name": "D",
+        "bright_max_nums_total": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_total": [
+          3000,
+          100,
+          50,
+          10,
+          11
+        ],
+        "bright_max_nums_center": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_center": [
+          3,
+          2,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "grade_name": "E",
+        "bright_max_nums_total": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_total": [
+          3000,
+          100,
+          50,
+          10,
+          12
+        ],
+        "bright_max_nums_center": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dark_max_nums_center": [
+          3,
+          2,
+          1,
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "properties": {
+    "width": {
+      "type": "integer",
+      "title": "矩形扫描宽度",
+      "x-ui": {
+        "order": 10
+      },
+      "default": 12,
+      "$comment": "Provider/AI note: keep JSON path '$.width' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.width",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "局部密度检测矩形扫描区域宽度，scan_type=0 时有效。",
+      "unit": "px",
+      "minimum": 0
+    },
+    "height": {
+      "type": "integer",
+      "title": "矩形扫描高度",
+      "x-ui": {
+        "order": 20
+      },
+      "default": 12,
+      "$comment": "Provider/AI note: keep JSON path '$.height' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.height",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "局部密度检测矩形扫描区域高度，scan_type=0 时有效。",
+      "unit": "px",
+      "minimum": 0
+    },
+    "radius": {
+      "type": "integer",
+      "title": "圆形扫描半径",
+      "x-ui": {
+        "order": 30
+      },
+      "default": 6,
+      "$comment": "Provider/AI note: keep JSON path '$.radius' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.radius",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "局部密度检测圆形扫描区域半径，scan_type=1 时有效。",
+      "unit": "px",
+      "minimum": 0
+    },
+    "dark_lvs": {
+      "type": "array",
+      "title": "暗点等级阈值数组",
+      "x-ui": {
+        "order": 40
+      },
+      "default": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "items": {
+        "type": "integer",
+        "$comment": "Provider/AI note: keep JSON path '$.dark_lvs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+        "x-provider": {
+          "jsonPath": "$.dark_lvs[]",
+          "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+        },
+        "minimum": 0
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.dark_lvs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.dark_lvs",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "暗点连通域分级档位数组，例如 [1,2,3,4,6] 对应 Level1~Level5。"
+    },
+    "lowRatio": {
+      "type": "number",
+      "title": "基准下限剔除比例",
+      "x-ui": {
+        "order": 50
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.lowRatio' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.lowRatio",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "基准亮度计算时剔除最暗像素的百分比。",
+      "unit": "%",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "topRatio": {
+      "type": "number",
+      "title": "基准上限剔除比例",
+      "x-ui": {
+        "order": 60
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.topRatio' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.topRatio",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "基准亮度计算时剔除最亮像素的百分比。",
+      "unit": "%",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "scan_type": {
+      "type": "integer",
+      "title": "局部密度扫描类型",
+      "x-ui": {
+        "order": 70
+      },
+      "default": 1,
+      "$comment": "Provider/AI note: keep JSON path '$.scan_type' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.scan_type",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "0 为矩形扫描，1 为圆形扫描。",
+      "enum": [
+        0,
+        1
+      ],
+      "x-enumDescriptions": [
+        "矩形扫描",
+        "圆形扫描"
+      ]
+    },
+    "bright_lvs": {
+      "type": "array",
+      "title": "亮点等级阈值数组",
+      "x-ui": {
+        "order": 80
+      },
+      "default": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "items": {
+        "type": "integer",
+        "$comment": "Provider/AI note: keep JSON path '$.bright_lvs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+        "x-provider": {
+          "jsonPath": "$.bright_lvs[]",
+          "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+        },
+        "minimum": 0
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.bright_lvs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.bright_lvs",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "亮点连通域分级档位数组，例如 [1,2,3,4,6] 对应 Level1~Level5。"
+    },
+    "edge_area_h": {
+      "type": "integer",
+      "title": "中心区域高度",
+      "x-ui": {
+        "order": 90
+      },
+      "default": 120,
+      "$comment": "Provider/AI note: keep JSON path '$.edge_area_h' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.edge_area_h",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "A 类中心区域高度。",
+      "unit": "px",
+      "minimum": 0
+    },
+    "edge_area_w": {
+      "type": "integer",
+      "title": "中心区域宽度",
+      "x-ui": {
+        "order": 100
+      },
+      "default": 160,
+      "$comment": "Provider/AI note: keep JSON path '$.edge_area_w' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.edge_area_w",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "A 类中心区域宽度。",
+      "unit": "px",
+      "minimum": 0
+    },
+    "edge_area_x": {
+      "type": "integer",
+      "title": "中心区域 X",
+      "x-ui": {
+        "order": 110
+      },
+      "default": 239,
+      "$comment": "Provider/AI note: keep JSON path '$.edge_area_x' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.edge_area_x",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "A 类中心区域左上角 X 坐标；全图其余区域为 B 类边缘区。",
+      "unit": "px",
+      "minimum": 0
+    },
+    "edge_area_y": {
+      "type": "integer",
+      "title": "中心区域 Y",
+      "x-ui": {
+        "order": 120
+      },
+      "default": 179,
+      "$comment": "Provider/AI note: keep JSON path '$.edge_area_y' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.edge_area_y",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "A 类中心区域左上角 Y 坐标。",
+      "unit": "px",
+      "minimum": 0
+    },
+    "faultPixelRatio": {
+      "type": "number",
+      "title": "局部坏点密度阈值",
+      "x-ui": {
+        "order": 130
+      },
+      "default": 4,
+      "$comment": "Provider/AI note: keep JSON path '$.faultPixelRatio' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.faultPixelRatio",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "局部区域最大坏点密度阈值，超出则记录为缺陷密度区域。",
+      "unit": "%",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "badPixelNumThreshold": {
+      "type": "integer",
+      "title": "坏点数量阈值",
+      "x-ui": {
+        "order": 140
+      },
+      "default": 102,
+      "$comment": "Provider/AI note: keep JSON path '$.badPixelNumThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.badPixelNumThreshold",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "坏点总数量阈值。",
+      "minimum": 0
+    },
+    "brightPixelNumThreshold": {
+      "type": "integer",
+      "title": "亮点数量阈值",
+      "x-ui": {
+        "order": 150
+      },
+      "default": 70,
+      "$comment": "Provider/AI note: keep JSON path '$.brightPixelNumThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.brightPixelNumThreshold",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "亮点数量阈值。",
+      "minimum": 0
+    },
+    "darkPixelLvRatioThreshold": {
+      "type": "number",
+      "title": "暗点倍率阈值",
+      "x-ui": {
+        "order": 160
+      },
+      "default": 0.6,
+      "$comment": "Provider/AI note: keep JSON path '$.darkPixelLvRatioThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.darkPixelLvRatioThreshold",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "单像素亮度 / 基准均值小于该值时判定为暗点。",
+      "minimum": 0
+    },
+    "brightPixelLvRatioThreshold": {
+      "type": "number",
+      "title": "亮点倍率阈值",
+      "x-ui": {
+        "order": 170
+      },
+      "default": 1.6,
+      "$comment": "Provider/AI note: keep JSON path '$.brightPixelLvRatioThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.brightPixelLvRatioThreshold",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "单像素亮度 / 基准均值大于该值时判定为亮点。",
+      "minimum": 0
+    },
+    "connectedBadPixelNumThreshold": {
+      "type": "integer",
+      "title": "连通坏点数量阈值",
+      "x-ui": {
+        "order": 180
+      },
+      "default": 10,
+      "$comment": "Provider/AI note: keep JSON path '$.connectedBadPixelNumThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.connectedBadPixelNumThreshold",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "连通坏点数量阈值。",
+      "minimum": 0
+    },
+    "brightPixelLvRatioThreshold_center": {
+      "type": "number",
+      "x-ui": {
+        "order": 190
+      },
+      "title": "中心区亮点倍率阈值",
+      "description": "中心区亮点倍率阈值。",
+      "minimum": 0,
+      "x-provider": {
+        "jsonPath": "$.brightPixelLvRatioThreshold_center",
+        "aiHint": "Optional provider-documented field; keep JSON key compatible with the C++ DLL."
+      },
+      "default": 1.6
+    },
+    "darkPixelLvRatioThreshold_center": {
+      "type": "number",
+      "x-ui": {
+        "order": 200
+      },
+      "title": "中心区暗点倍率阈值",
+      "description": "中心区暗点倍率阈值。",
+      "minimum": 0,
+      "x-provider": {
+        "jsonPath": "$.darkPixelLvRatioThreshold_center",
+        "aiHint": "Optional provider-documented field; keep JSON key compatible with the C++ DLL."
+      },
+      "default": 0.6
+    },
+    "brightPixelLvRatioThreshold_edge": {
+      "type": "number",
+      "x-ui": {
+        "order": 210
+      },
+      "title": "边缘区亮点倍率阈值",
+      "description": "边缘区亮点倍率阈值。",
+      "minimum": 0,
+      "x-provider": {
+        "jsonPath": "$.brightPixelLvRatioThreshold_edge",
+        "aiHint": "Optional provider-documented field; keep JSON key compatible with the C++ DLL."
+      },
+      "default": 1.6
+    },
+    "darkPixelLvRatioThreshold_edge": {
+      "type": "number",
+      "x-ui": {
+        "order": 220
+      },
+      "title": "边缘区暗点倍率阈值",
+      "description": "边缘区暗点倍率阈值。",
+      "minimum": 0,
+      "x-provider": {
+        "jsonPath": "$.darkPixelLvRatioThreshold_edge",
+        "aiHint": "Optional provider-documented field; keep JSON key compatible with the C++ DLL."
+      },
+      "default": 0.6
+    },
+    "gradingCfgs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "grade_name": {
+            "type": "string",
+            "x-ui": {
+              "order": 10
+            },
+            "title": "等级名称",
+            "description": "等级标识，例如 A、B、C、D、E。",
+            "x-provider": {
+              "jsonPath": "$.gradingCfgs[].grade_name",
+              "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+            },
+            "default": "A"
+          },
+          "bright_max_nums_total": {
+            "type": "array",
+            "x-ui": {
+              "order": 20
+            },
+            "title": "全域亮点数量上限",
+            "description": "全域各 Level 亮点最大允许数量，数组位置对应 bright_lvs。",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "x-provider": {
+              "jsonPath": "$.gradingCfgs[].bright_max_nums_total",
+              "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+            },
+            "default": [
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "dark_max_nums_total": {
+            "type": "array",
+            "x-ui": {
+              "order": 30
+            },
+            "title": "全域暗点数量上限",
+            "description": "全域各 Level 暗点最大允许数量，数组位置对应 dark_lvs。",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "x-provider": {
+              "jsonPath": "$.gradingCfgs[].dark_max_nums_total",
+              "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+            },
+            "default": [
+              102,
+              1,
+              0,
+              0,
+              0
+            ]
+          },
+          "bright_max_nums_center": {
+            "type": "array",
+            "x-ui": {
+              "order": 40
+            },
+            "title": "中心区亮点数量上限",
+            "description": "中心区各 Level 亮点最大允许数量。",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "x-provider": {
+              "jsonPath": "$.gradingCfgs[].bright_max_nums_center",
+              "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+            },
+            "default": [
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "dark_max_nums_center": {
+            "type": "array",
+            "x-ui": {
+              "order": 50
+            },
+            "title": "中心区暗点数量上限",
+            "description": "中心区各 Level 暗点最大允许数量。",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "x-provider": {
+              "jsonPath": "$.gradingCfgs[].dark_max_nums_center",
+              "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+            },
+            "default": [
+              2,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "bright_max_nums": {
+            "type": "array",
+            "x-ui": {
+              "order": 60
+            },
+            "title": "亮点数量上限（兼容）",
+            "description": "旧版兼容字段；若未配置 total 字段，算法可使用该数组作为亮点上限。",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "x-provider": {
+              "jsonPath": "$.gradingCfgs[].bright_max_nums",
+              "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+            }
+          },
+          "dark_max_nums": {
+            "type": "array",
+            "x-ui": {
+              "order": 70
+            },
+            "title": "暗点数量上限（兼容）",
+            "description": "旧版兼容字段；若未配置 total 字段，算法可使用该数组作为暗点上限。",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "x-provider": {
+              "jsonPath": "$.gradingCfgs[].dark_max_nums",
+              "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+            }
+          }
+        }
+      },
+      "x-ui": {
+        "order": 230
+      },
+      "title": "产品分级配置",
+      "description": "产品综合等级配置数组，按从严格到宽松顺序排列。",
+      "default": [
+        {
+          "grade_name": "A",
+          "bright_max_nums_total": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_total": [
+            102,
+            1,
+            0,
+            0,
+            0
+          ],
+          "bright_max_nums_center": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_center": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "grade_name": "B",
+          "bright_max_nums_total": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_total": [
+            102,
+            3,
+            4,
+            0,
+            2
+          ],
+          "bright_max_nums_center": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_center": [
+            3,
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "grade_name": "C",
+          "bright_max_nums_total": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_total": [
+            102,
+            100,
+            50,
+            10,
+            1
+          ],
+          "bright_max_nums_center": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_center": [
+            3,
+            2,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "grade_name": "D",
+          "bright_max_nums_total": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_total": [
+            3000,
+            100,
+            50,
+            10,
+            11
+          ],
+          "bright_max_nums_center": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_center": [
+            3,
+            2,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "grade_name": "E",
+          "bright_max_nums_total": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_total": [
+            3000,
+            100,
+            50,
+            10,
+            12
+          ],
+          "bright_max_nums_center": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums_center": [
+            3,
+            2,
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "x-provider": {
+        "jsonPath": "$.gradingCfgs",
+        "aiHint": "Provider-maintained field. Keep JSON key compatible with the C++ DLL."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T09:36:19+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 56,
+      "code": "OLED.AOI.FPForRePicGradingV2",
+      "name": "缺陷检测V2",
+      "version": null,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "AOI检测文档和参数例子",
+        "defaultParamFile": "aoi_m2_colorvision.cfg",
+        "docFiles": [
+          "findPixelDefectsForRebuildPicGradingMethod2MemImp接口参数文档.md",
+          "cv_oled_JSON_CONFIG_REFERENCE.pdf",
+          "CvOledInterface.h"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from provider-maintained AOI test-case config files because the database cfg_json may lag behind provider development.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "Default/type may follow provider-maintained config files when database cfg_json is stale.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "AOI检测文档和参数例子",
+      "defaultParamFile": "aoi_m2_colorvision.cfg",
+      "docFiles": [
+        "findPixelDefectsForRebuildPicGradingMethod2MemImp接口参数文档.md",
+        "cv_oled_JSON_CONFIG_REFERENCE.pdf",
+        "CvOledInterface.h"
+      ]
+    },
+    "defaultSource": "provider-maintained-config"
+  },
+  "required": [
+    "topRatio",
+    "lowRatio",
+    "brightPixelLvRatioThreshold",
+    "darkPixelLvRatioThreshold",
+    "badPixelNumThreshold",
+    "connectedBadPixelNumThreshold",
+    "faultPixelRatio",
+    "brightPixelNumThreshold"
+  ]
+}

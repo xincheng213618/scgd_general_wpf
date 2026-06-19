@@ -1,3 +1,4 @@
+#pragma warning disable CA1806,CA1822,CA1863
 using cvColorVision;
 using Newtonsoft.Json;
 using Spectrum.License;

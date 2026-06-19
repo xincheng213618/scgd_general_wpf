@@ -1,3 +1,4 @@
+#pragma warning disable CA1822
 using ColorVision.Rbac.Entity;
 using ColorVision.Rbac.Exceptions;
 using ColorVision.Themes;

@@ -1,3 +1,4 @@
+#pragma warning disable CA1852
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using System.Collections.ObjectModel;

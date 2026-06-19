@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using ST.Library.UI.NodeEditor;
 using System.Text;
 

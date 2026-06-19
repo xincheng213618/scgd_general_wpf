@@ -75,6 +75,18 @@ Both writing configuration and clearing configuration require administrator priv
 
 Beyond registry configuration, `SaveDump()` also calls `DumpHelper.WriteMiniDump(...)` to write the current process dump to the target directory.
 
+## Feedback Package Boundary
+
+`DumpFileCollector` also provides a dump-file collection path for feedback/log packages. It reads the `DumpFolder` resolved by `DumpConfig`, copies existing `.dmp` files to a temporary location, and contributes them as `Dumps/<file>` entries.
+
+This chain only collects files that already exist. It does not modify the registry and does not trigger a new process dump. Keep these paths separate during handoff:
+
+| Capability | Entry | Writes system configuration |
+| --- | --- | --- |
+| Configure LocalDumps | Help -> Dump settings submenu | Yes, writes HKLM |
+| Save current process dump | Help -> Dump settings -> Save Dmp | No, but writes a dump file |
+| Collect dumps in feedback package | Feedback/log collection chain | No, copies existing `.dmp` files only |
+
 ## Current Manifest Information
 
 According to `manifest.json`, the basic information currently publicly available for this plugin is:
@@ -114,12 +126,37 @@ If only one layer is documented, the documentation would oversimplify the curren
 2. `Plugins/EventVWR/EventWindow.xaml.cs`
 3. `Plugins/EventVWR/Dump/DumpConfig.cs`
 4. `Plugins/EventVWR/Dump/MenuDump.cs`
-5. `Plugins/EventVWR/manifest.json`
+5. `Plugins/EventVWR/Dump/DumpFileCollector.cs`
+6. `Plugins/EventVWR/manifest.json`
 
 This allows seeing the host entry point first, then the window behavior and system-level configuration landing points.
 
+## Handoff Acceptance
+
+| Check | Action | Pass criteria |
+| --- | --- | --- |
+| Plugin loading | Start the host and inspect Help menu | Event window and Dump settings entries are visible |
+| Permission boundary | Open event window as normal user and as administrator | Normal mode is blocked by permission chain; administrator mode opens |
+| Event reading | Open event window | Reads Windows `Application` Error entries and shows `Message` detail |
+| Dump type setting | Select Mini/Full/Custom from Dump submenu | HKLM LocalDumps process key receives `DumpType` and required fields |
+| Save current dump | Click Save Dmp | Current process `.dmp` appears under `DumpFolder` |
+| Clear setting | Click Clear Dmp | Current process LocalDumps registry key is removed |
+| Feedback collection | Trigger feedback/log collection | Existing `.dmp` files are copied into `Dumps/` |
+
+## First Checks
+
+| Symptom | First check | Handling |
+| --- | --- | --- |
+| Menu missing | Plugin load state and `manifest.json` `dllpath` | Check plugin manager and load logs first |
+| Event window cannot open | Administrator mode and permission attribute | The event entry requires administrator permission |
+| Dump setup fails | HKLM write permission and registry path | Run as administrator |
+| Save Dump creates no file | `DumpFolder` existence/permissions and `DumpHelper.WriteMiniDump` errors | Verify directory permissions first |
+| Feedback package has no dumps | Whether `DumpFolder` already contains `.dmp` files | Collector does not create dumps |
+
 ## Continue Reading
 
-- [Plugins/README.md](../../../../Plugins/README.md)
+- [Existing Plugin Field Acceptance And Handoff Checklist](../plugin-field-acceptance.md)
+- [Plugin Capability & Handoff Matrix](../plugin-capability-matrix.md)
+- [Plugins/README.md](../../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
 - [docs/04-api-reference/plugins/standard-plugins/system-monitor.md](./system-monitor.md)

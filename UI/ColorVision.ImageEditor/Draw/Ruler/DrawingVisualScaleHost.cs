@@ -30,12 +30,12 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             DefalutTextAttribute.Defalut.PropertyChanged += Defalut_PropertyChanged;
         }
 
-        public DrawingVisualScaleHost(EditorContext editorContext) : this()
+        public DrawingVisualScaleHost(ImageViewConfig config) : this()
         {
-            EditorContext = editorContext;
+            Config = config;
         }
 
-        public EditorContext? EditorContext { get; set; }
+        public ImageViewConfig? Config { get; set; }
 
         public double ParentWidth { get; set; }
         public double ParentHeight { get; set; }
@@ -57,7 +57,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 
         private void SaveCalibration()
         {
-            ImageCalibrationService.SaveCurrent(EditorContext);
+            ImageCalibrationService.SaveCurrent(Config);
         }
 
         private double Lastlength = 1;

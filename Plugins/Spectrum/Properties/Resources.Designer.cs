@@ -1119,29 +1119,11 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 使用前请确保校零准确，推荐使用自动积分 的本地化字符串。
-        /// </summary>
-        public static string 使用前请确保校零准确推荐使用自动积分 {
-            get {
-                return ResourceManager.GetString("使用前请确保校零准确推荐使用自动积分", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 停止 的本地化字符串。
         /// </summary>
         public static string 停止 {
             get {
                 return ResourceManager.GetString("停止", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 光谱校正 的本地化字符串。
-        /// </summary>
-        public static string 光谱校正 {
-            get {
-                return ResourceManager.GetString("光谱校正", resourceCulture);
             }
         }
         
@@ -1164,38 +1146,11 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 参数设置 的本地化字符串。
-        /// </summary>
-        public static string 参数设置 {
-            get {
-                return ResourceManager.GetString("参数设置", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 取消 的本地化字符串。
-        /// </summary>
-        public static string 取消 {
-            get {
-                return ResourceManager.GetString("取消", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 峰值波长Lp(nm) 的本地化字符串。
         /// </summary>
         public static string 峰值波长LpNm {
             get {
                 return ResourceManager.GetString("峰值波长LpNm", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已成功断开连接 的本地化字符串。
-        /// </summary>
-        public static string 已成功断开连接 {
-            get {
-                return ResourceManager.GetString("已成功断开连接", resourceCulture);
             }
         }
         
@@ -1227,29 +1182,11 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 开始校正 的本地化字符串。
-        /// </summary>
-        public static string 开始校正 {
-            get {
-                return ResourceManager.GetString("开始校正", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 开始校零 的本地化字符串。
         /// </summary>
         public static string 开始校零 {
             get {
                 return ResourceManager.GetString("开始校零", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 数据 的本地化字符串。
-        /// </summary>
-        public static string 数据 {
-            get {
-                return ResourceManager.GetString("数据", resourceCulture);
             }
         }
         
@@ -1290,24 +1227,6 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 校正 的本地化字符串。
-        /// </summary>
-        public static string 校正 {
-            get {
-                return ResourceManager.GetString("校正", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 校正文件 的本地化字符串。
-        /// </summary>
-        public static string 校正文件 {
-            get {
-                return ResourceManager.GetString("校正文件", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 步长 的本地化字符串。
         /// </summary>
         public static string 步长 {
@@ -1326,47 +1245,11 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 注：选择正确的校正文件后，对准校正光源，点击开始校正按钮 的本地化字符串。
-        /// </summary>
-        public static string 注选择正确的校正文件后对准校正光源点击开始校正按钮 {
-            get {
-                return ResourceManager.GetString("注选择正确的校正文件后对准校正光源点击开始校正按钮", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 测量时间 的本地化字符串。
         /// </summary>
         public static string 测量时间 {
             get {
                 return ResourceManager.GetString("测量时间", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 清空数据 的本地化字符串。
-        /// </summary>
-        public static string 清空数据 {
-            get {
-                return ResourceManager.GetString("清空数据", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 滤波宽度（1-10）: 的本地化字符串。
-        /// </summary>
-        public static string 滤波宽度110 {
-            get {
-                return ResourceManager.GetString("滤波宽度110", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 滤波校正 的本地化字符串。
-        /// </summary>
-        public static string 滤波校正 {
-            get {
-                return ResourceManager.GetString("滤波校正", resourceCulture);
             }
         }
         
@@ -1407,33 +1290,6 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 确定 的本地化字符串。
-        /// </summary>
-        public static string 确定 {
-            get {
-                return ResourceManager.GetString("确定", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 积分时间(0.11ms-10s) 的本地化字符串。
-        /// </summary>
-        public static string 积分时间011ms10s {
-            get {
-                return ResourceManager.GetString("积分时间011ms10s", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 积分时间上限 的本地化字符串。
-        /// </summary>
-        public static string 积分时间上限 {
-            get {
-                return ResourceManager.GetString("积分时间上限", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 积分时间上限(ms): 的本地化字符串。
         /// </summary>
         public static string 积分时间上限Ms {
@@ -1448,15 +1304,6 @@ namespace Spectrum.Properties {
         public static string 结束 {
             get {
                 return ResourceManager.GetString("结束", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 绝对光谱校正 的本地化字符串。
-        /// </summary>
-        public static string 绝对光谱校正 {
-            get {
-                return ResourceManager.GetString("绝对光谱校正", resourceCulture);
             }
         }
         
@@ -1542,15 +1389,6 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 设置 的本地化字符串。
-        /// </summary>
-        public static string 设置 {
-            get {
-                return ResourceManager.GetString("设置", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 起始 的本地化字符串。
         /// </summary>
         public static string 起始 {
@@ -1569,29 +1407,11 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 连接失败！ 的本地化字符串。
-        /// </summary>
-        public static string 连接失败 {
-            get {
-                return ResourceManager.GetString("连接失败", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 连接成功 的本地化字符串。
         /// </summary>
         public static string 连接成功 {
             get {
                 return ResourceManager.GetString("连接成功", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 连接成功！ 的本地化字符串。
-        /// </summary>
-        public static string 连接成功1 {
-            get {
-                return ResourceManager.GetString("连接成功1", resourceCulture);
             }
         }
         
@@ -1610,24 +1430,6 @@ namespace Spectrum.Properties {
         public static string 连续测试 {
             get {
                 return ResourceManager.GetString("连续测试", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 选择文件 的本地化字符串。
-        /// </summary>
-        public static string 选择文件 {
-            get {
-                return ResourceManager.GetString("选择文件", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 验证数据:0 的本地化字符串。
-        /// </summary>
-        public static string 验证数据0 {
-            get {
-                return ResourceManager.GetString("验证数据0", resourceCulture);
             }
         }
     }

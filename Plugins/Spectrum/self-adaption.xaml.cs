@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿#pragma warning disable CA1051,CA1707,CS0169
+using System.Windows;
 
 namespace Spectrum
 {

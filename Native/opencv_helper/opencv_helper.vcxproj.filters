@@ -48,9 +48,6 @@
     <ClInclude Include="..\include\common.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\custom_file.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\custom_structs.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -60,13 +57,7 @@
     <ClInclude Include="..\include\video_export.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="algorithm\sfr\sfr_base.h">
-      <Filter>算法\SFR</Filter>
-    </ClInclude>
     <ClInclude Include="algorithm\sfr\sfr_slanted.h">
-      <Filter>算法\SFR</Filter>
-    </ClInclude>
-    <ClInclude Include="algorithm\sfr\sfr_cylinder.h">
       <Filter>算法\SFR</Filter>
     </ClInclude>
     <ClInclude Include="include\cvcore\sfr.h">
@@ -98,16 +89,7 @@
     <ClCompile Include="video_export.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="custom_file.cpp">
-      <Filter>自定义文件</Filter>
-    </ClCompile>
-    <ClCompile Include="algorithm\sfr\sfr_base.cpp">
-      <Filter>算法\SFR</Filter>
-    </ClCompile>
     <ClCompile Include="algorithm\sfr\sfr_slanted.cpp">
-      <Filter>算法\SFR</Filter>
-    </ClCompile>
-    <ClCompile Include="algorithm\sfr\sfr_cylinder.cpp">
       <Filter>算法\SFR</Filter>
     </ClCompile>
     <ClCompile Include="exports\sfr_export.cpp">

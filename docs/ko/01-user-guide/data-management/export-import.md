@@ -1,97 +1,148 @@
 # 데이터 내보내기 및 가져오기
 
-현재 창고에는 모든 데이터를 가져오고 내보내는 통합 마스터 제어 센터가 없습니다. 실제 상황에 더 가까운 것은 서로 다른 개체가 서로 다른 입구를 통과하고 설정, 프로세스 템플릿 및 특정 결과 데이터가 각각 고유한 가져오기 및 내보내기 방법을 가지고 있다는 것입니다.
+현재 repository 에는 "모든 데이터를 여기서 import/export" 하는 통합 센터가 없습니다. 실제로는 settings, Flow template, result data 가 각각 다른 입구를 가집니다.
 
-## 먼저 이 페이지를 어떻게 이해해야 할까요?
+## 먼저 확인할 것
 
-가져오고 내보내려면 먼저 세 가지 질문에 대답하십시오.
+import/export 전에 다음 세 가지를 확인합니다.
 
-1. 설정, 프로세스 템플릿 또는 결과 모듈의 데이터를 다루고 있습니까?
-2. 개별 비즈니스 개체의 글로벌 구성 마이그레이션 또는 내보내기가 필요합니까?
-3. 이 기능은 원래 데이터 관리 센터가 아닌 특정 창에 속해 있는 기능인가요?
+1. 대상이 settings, Flow template, 특정 result module data 중 무엇인지.
+2. 필요한 것이 전체 config migration 인지, 단일 business object export 인지.
+3. 이 기능이 data management center 가 아니라 특정 window 에 속한 기능인지.
 
-## 명확하게 확인할 수 있는 현재 항목
+## 현재 확인 가능한 입구
 
-### 가져오기 및 내보내기 설정
+### settings import/export
 
-현재 명확한 메뉴 항목이 있습니다.
+명확한 menu entry 가 있습니다.
 
-- 도구 → 설정 가져오기 및 내보내기
+- Tools -> Import/Export Settings
 
-여기에는 최소한 두 가지 유형의 작업이 있습니다.
+여기서는 최소 다음 동작을 다룹니다.
 
-- '.cvsettings'로 설정 내보내기
-- `.cvsettings`에서 설정 가져오기
+- settings 를 `.cvsettings` 로 export
+- `.cvsettings` 에서 settings import
 
-결과 데이터를 마이그레이션하는 것이 아니라 소프트웨어 구성을 마이그레이션하는 것이 목표라면 여기에서 먼저 시작하세요.
+목표가 result data migration 이 아니라 software config migration 이라면 여기서 시작합니다.
 
-### 프로세스 템플릿 가져오기 및 내보내기
+### Flow template import/export
 
-프로세스 템플릿 가져오기 및 내보내기는 데이터 관리 페이지에서 일률적으로 처리되지 않고 프로세스 디자이너에서 별도로 제공됩니다.
+Flow template import/export 는 data management page 가 아니라 Flow designer 에서 다룹니다.
 
-- 현재 프로세스 내보내기
-- 수입과정
-- 모듈 가져오기
+- export current Flow
+- import Flow
+- import module
 
-프로세스 콘텐츠를 마이그레이션하려면 먼저 [Process Design](../workflow/design.md)으로 이동하세요.
+Flow 내용을 이동하려면 먼저 [Flow 설계](../workflow/design.md) 를 확인합니다.
 
-### 모듈 내에서 결과 내보내기
+### module 내부 result export
 
-일부 비즈니스 창은 다음과 같은 자체 내보내기 기능을 제공합니다.
+일부 business window 는 자체 export 기능을 가집니다.
 
-- 프로세스 노드 분석 창을 CSV로 내보낼 수 있습니다.
-- 일부 플러그인이나 이미지/측정 창에는 자체 CSV 또는 이미지 내보내기 입구가 있습니다.
+- Flow node analysis window 의 CSV export
+- 일부 plugin 또는 image/measurement window 의 CSV/image export
 
-이러한 유형의 내보내기는 일반적으로 특정 비즈니스 개체에 강력하게 바인딩되므로 더 이상 통합된 글로벌 "데이터 내보내기 센터"로 설명되어서는 안 됩니다.
+이런 export 는 특정 business object 와 강하게 묶이므로 unified global data export center 로 설명하지 않습니다.
+
+## object 와 entry 대응
+
+| 납품 대상 | 우선 입구 | 납품 전 확인 |
+| --- | --- | --- |
+| software settings | Tools -> Import/Export Settings | `.cvsettings` import 가능, restart 후 key settings 유지 |
+| Flow template | Flow designer import/export | import 후 start node, device binding, template parameter 정상 |
+| database record | database browser 또는 business result page | SN, time, batch 로 같은 run 검색 가능 |
+| CSV/Excel | 대상 business window 또는 plugin export | field order, unit, PASS/FAIL, encoding 이 고객 요구와 일치 |
+| PDF/report | project window 또는 plugin report entry | header, customer mark, result image, judgement item 정상 |
+| image/overlay | image editor 또는 result window | original image, ROI/POI, annotation coordinate, file name 대응 |
+| Socket/MES response | project window, SocketProtocol, integration tool | request/response sample 저장, status/Data field 정상 |
+
+## export 납품 전 검수
+
+export 는 "button 은 동작하지만 납품 file 이 틀림" 문제가 자주 생깁니다. 납품 전에 한 번 end-to-end 로 확인합니다.
+
+| 단계 | 작업 | 통과 기준 |
+| --- | --- | --- |
+| 1 | 명확한 SN 또는 test batch 로 최소 Flow 실행 | query, export, external response 가 같은 식별자를 사용 |
+| 2 | database 또는 result window 에서 source data 확인 | 빈 데이터나 이전 batch 가 아님 |
+| 3 | target window 에서 export | file 생성, path/name 설명 가능 |
+| 4 | export file 열어 fields 확인 | field order, unit, judgement, time, SN 이 고객 형식과 일치 |
+| 5 | sample file 과 screenshot 저장 | upgrade 후 재테스트 기준으로 사용 |
+
+## export failure triage
+
+| 현상 | 먼저 확인 | 다음 확인 |
+| --- | --- | --- |
+| export button 을 찾을 수 없음 | 대상이 settings, Flow, business window 중 무엇인지 | plugin/project docs 가 export support 를 명시하는지 |
+| file 은 생성되지만 비어 있음 | source data 존재, batch/SN 선택 정확성 | export filter 와 field mapping |
+| field 누락/순서 다름 | 올바른 object/window 를 export 하는지 | project exporter, customer format version |
+| image/overlay 정렬 안 됨 | result image 와 original image 가 같은 run 인지 | ROI/POI coordinate, scaling, template version |
+| external system 이 받지 못함 | ColorVision 이 완료하고 result 를 생성했는지 | protocol, port, project handler, response field |
+| migration 후 동작 변화 | export 한 것이 settings 만인지 | old config, Flow template, database backup 동기화 |
+
+## Handoff Record Template
+
+```text
+export object:
+source window:
+source SN/batch/time:
+database evidence:
+export file path:
+file format/version:
+required fields:
+sample screenshot:
+external response sample:
+known limitations:
+owner/date:
+```
 
 ## 일반적인 사용 순서
 
-1. 먼저 내보낼 개체를 확인합니다.
-2. 전역 설정인 경우 "설정 가져오기 및 내보내기"로 이동합니다.
-3. 프로세스 내용인 경우 [Process Design](../workflow/design.md)에서 가져오기 및 내보내기로 이동합니다.
-4. 결과 데이터 또는 비즈니스 데이터인 경우 먼저 해당 모듈 창으로 돌아가서 자체 수출입구를 찾으세요.
-5. 실제로 데이터베이스에 있는 데이터가 포함된 경우 [데이터베이스 작업](./database.md)에 협조하여 원본 데이터 범위를 확인합니다.
+1. export 할 object 를 확인합니다.
+2. global settings 라면 Import/Export Settings 를 사용합니다.
+3. Flow content 라면 [Flow 설계](../workflow/design.md) 의 import/export 를 사용합니다.
+4. result data 또는 business data 라면 해당 module window 의 export entry 를 찾습니다.
+5. database data 가 관련되면 [데이터베이스 작업](./database.md) 으로 source range 를 확인합니다.
 
-## 이 페이지는 더 이상 아무것도 약속하지 않습니다.
+## 이 페이지가 보장하지 않는 것
 
-다음 기능은 특정 모듈 창에서 본 경우를 제외하고 현재 사용자 가이드 페이지에서 기본적으로 더 이상 균일하게 사용 가능한 기능으로 선언되지 않습니다.
+특정 module window 에서 확인되지 않은 경우 다음 기능을 unified 기능으로 선언하지 않습니다.
 
-- 통합 엑셀 내보내기 센터
-- 통합 JSON 내보내기 센터
-- 통합 XML 내보내기 센터
-- 통합 PDF 보고서 내보내기 센터
-- 일반 열 매핑 가져오기 마법사
-- 범용 배치 폴더 가져오기 마법사
+- unified Excel export center
+- unified JSON export center
+- unified XML export center
+- unified PDF report export center
+- generic column mapping import wizard
+- generic batch folder import wizard
 
-플러그인이나 창이 이러한 형식을 지원하는 경우 여기에서 일반적으로 논의하기보다는 해당 모듈 자체 페이지에서 설명해야 합니다.
+plugin 또는 window 가 이런 기능을 갖는다면 해당 module 자체 페이지에 기록합니다.
 
 ## FAQ
 
-### 데이터를 내보내고 싶은데 통합출입구를 찾을 수 없습니다
+### export 입구를 찾을 수 없음
 
-- 아직 메인 메뉴를 계속 찾지 마세요.
-- 해당 객체가 설정, 프로세스, 업무결과 창에 속하는지 먼저 확인하세요.
-- 해당 모듈 페이지로 돌아가서 수출입구를 찾으세요.
+- top-level menu 를 계속 찾기 전에 대상이 settings, Flow, business result window 중 무엇인지 확인합니다.
+- 해당 module page 에서 export entry 를 확인합니다.
 
-### 설정을 내보냈지만 비즈니스 결과는 마이그레이션되지 않았습니다.
+### settings 는 export 했지만 business result 는 이동되지 않음
 
-- `.cvsettings`는 주로 구성 마이그레이션에 사용되며 데이터베이스 결과 마이그레이션과 동일하지 않습니다.
-- 실제 결과 데이터는 [데이터베이스 운영](./database.md)과 결합하거나 해당 비즈니스 모듈에서 별도로 처리해야 합니다.
+- `.cvsettings` 는 주로 config migration 용이며 database result migration 이 아닙니다.
+- actual result data 는 [데이터베이스 작업](./database.md) 또는 해당 business module 에서 다룹니다.
 
-### 프로세스 가져오기는 성공했지만 실행 결과가 올바르지 않습니다.
+### Flow import 는 성공했지만 결과가 다름
 
-- 먼저 가져온 프로세스 버전이 올바른지 확인하십시오.
-- [프로세스 실행 및 디버깅](../workflow/execution.md)으로 돌아가 종속 장치 및 템플릿을 확인합니다.
-- 필요한 경우 모듈 가져오기 및 프로세스 매개변수를 다시 확인하세요.
+- 올바른 Flow version 을 import 했는지 확인합니다.
+- [Flow 실행과 디버깅](../workflow/execution.md) 에서 dependent device 와 template 을 확인합니다.
+- 필요하면 module import 와 Flow parameter 를 다시 확인합니다.
 
 ## 계속 읽기
 
 - [데이터 관리 개요](./README.md)
 - [데이터베이스 작업](./database.md)
-- [프로세스 설계](../workflow/design.md)
+- [Flow 설계](../workflow/design.md)
 - [FAQ](../troubleshooting/common-issues.md)
+- [현장 작업 검수 체크리스트](../field-operation-acceptance.md)
 
 ## 설명
 
-- 이 페이지에서는 현재 확인 가능한 가져오기 및 내보내기 경로만 설명하며 일반 Excel/JSON/XML/PDF 통합 마법사 문서는 더 이상 유지하지 않습니다.
-- 설정 가져오기 및 내보내기 구현은 주로 `UI/ColorVision.UI.Desktop/Settings/ExportAndImport/`에 있습니다.
+- 이 페이지는 현재 확인 가능한 import/export path 만 다룹니다.
+- settings import/export 구현은 주로 `UI/ColorVision.UI.Desktop/Settings/ExportAndImport/` 에 있습니다.

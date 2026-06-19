@@ -76,11 +76,8 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(ParamBase param, CVOLEDCOLOR cOLOR, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(ParamBase param, CVOLEDCOLOR cOLOR, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
@@ -95,7 +92,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             MsgSend msg = new()
             {
                 EventName = MQTTMessageLib.Algorithm.MQTTAlgorithmEventEnum.Event_OLED_FindDotsArrayMem_GetData,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

@@ -1,10 +1,21 @@
 ﻿using ColorVision.Common.ThirdPartyApps;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
 namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
 {
+    internal static class ThirdPartyAppGroupNames
+    {
+        public static string CommonTools => IsChineseUICulture() ? "常用工具" : "Common Tools";
+
+        private static bool IsChineseUICulture()
+        {
+            return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", System.StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     public class PortableAppProvider : IThirdPartyAppProvider
     {
         public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
@@ -22,7 +33,8 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 new ThirdPartyAppInfo
                 {
                     Name = "SSCOM",
-                    Group = group,
+                    Group = ThirdPartyAppGroupNames.CommonTools,
+                    Order = -898,
                     IsPortable = true,
                     PortableExePath = Path.Combine("Assets", "Tool", "sscom5.13.1.exe"),
                 }
@@ -34,14 +46,14 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
     {
         public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
-            string group = Properties.Resources.InstallTools;
             string everythingInstallerPath = Path.Combine("Assets", "InstallTool", "Everything-1.4.1.1032.x64-Setup.exe");
             string winRarInstallerPath = Path.Combine("Assets", "InstallTool", "winrar-x64-720sc.exe");
 
             var everything = new ThirdPartyAppInfo
             {
                 Name = "Everything",
-                Group = group,
+                Group = ThirdPartyAppGroupNames.CommonTools,
+                Order = -900,
                 InstallerPath = everythingInstallerPath,
                 ExecutableFileName = "Everything.exe",
                 KnownExePaths = new[]
@@ -59,7 +71,8 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             var winRar = new ThirdPartyAppInfo
             {
                 Name = "WinRAR",
-                Group = group,
+                Group = ThirdPartyAppGroupNames.CommonTools,
+                Order = -899,
                 InstallerPath = winRarInstallerPath,
                 ExecutableFileName = "WinRAR.exe",
                 KnownExePaths = new[]

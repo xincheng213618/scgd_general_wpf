@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Messages;
+﻿#pragma warning disable CS0168
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
@@ -6,6 +7,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
+using FlowEngineLib.Algorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
@@ -206,7 +208,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     case "Open":
                         DeviceStatus = DeviceStatusType.Closed;
                         string SN = msg.Data.SN;
-                        Common.NativeMethods.Clipboard.SetText(SN);
+                        Common.Clipboard.SetText(SN);
                         Application.Current.Dispatcher.BeginInvoke(() => 
                         {
                             MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine} 请粘贴到SN到指定位置:{SN} ","ColorVision");
@@ -246,19 +248,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
 
-        public MsgRecord OpenVideo(string host, int port)
+        public MsgRecord OpenVideo()
         {
             CurrentTakeImageMode = TakeImageMode.Live;
-            bool IsLocal = (host=="127.0.0.1");
+            bool IsLocal = true;
 
-            var Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Device.DisplayConfig.Gain }, { "ExpTime", Device.DisplayConfig.ExpTime }, { "IsLocal", IsLocal } };
+            var Params = new Dictionary<string, object>() { { "RemoteIp", "127.0.0.1" }, { "RemotePort", "25558" }, { "Gain", Device.DisplayConfig.Gain }, { "ExpTime", Device.DisplayConfig.ExpTime }, { "IsLocal", IsLocal } };
             MsgSend msg = new()
             {
                 EventName = "OpenLive",
                 Params = Params
             };
-            Params.Add("FlipMode", Device.DisplayConfig.FlipMode);
-
+            Params.Add("FlipMode", CVImageFlipMode.None);
             return PublishAsyncClient(msg);
         }
         public TakeImageMode CurrentTakeImageMode { get; set; }

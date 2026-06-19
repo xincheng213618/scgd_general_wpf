@@ -88,9 +88,16 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DrawingVisualBaseDVContextMenu : IDVContextMenu
     {
+        private readonly DrawEditorContext _drawContext;
+
+        public DrawingVisualBaseDVContextMenu(DrawEditorContext drawContext)
+        {
+            _drawContext = drawContext;
+        }
+
         public Type ContextType => typeof(DrawingVisualBase);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DrawingVisualBase visual)
@@ -98,15 +105,15 @@ namespace ColorVision.ImageEditor.Draw
                 MenuItem menuIte2 = new MenuItem() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Delete };
                 menuIte2.Click += (s, e) =>
                 {
-                    context.DrawCanvas.RemoveVisualCommand(visual);
-                    context.SelectionVisual.ClearRender();
+                    _drawContext.DrawCanvas.RemoveVisualCommand(visual);
+                    _drawContext.SelectionVisual.ClearRender();
                 };
                 MenuItems.Add(menuIte2);
 
                 MenuItem menuIte3 = new MenuItem() { Header = "Top" };
                 menuIte3.Click += (s, e) =>
                 {
-                    context.DrawCanvas.TopVisual(visual);
+                    _drawContext.DrawCanvas.TopVisual(visual);
                 };
                 MenuItems.Add(menuIte3);
 

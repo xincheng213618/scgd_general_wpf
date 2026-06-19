@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
+using ColorVision.UI.ServiceHost;
 using log4net;
 using log4net.Util;
 using Microsoft.Win32;
@@ -117,18 +118,15 @@ namespace ColorVision.Engine.Services.RC
 
                     if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
                     {
-                        if (Tool.IsAdministrator())
+                        ServiceHostResponse response = await ColorVisionServiceHostClient.Default.StartServiceAsync(
+                            "RegistrationCenterService",
+                            timeoutSeconds: 45,
+                            timeout: TimeSpan.FromSeconds(60));
+
+                        if (!response.Success)
                         {
-                            serviceController.Start();
-                            serviceController.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(5));
-                        }
-                        else
-                        {
-                            if (!Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService"))
-                            {
-                                log.Info("以管理员权限启动 RegistrationCenterService 服务失败。");
-                                return;
-                            }
+                            log.Info($"ColorVisionServiceHost 启动 RegistrationCenterService 服务失败：{response.Message}");
+                            return;
                         }
                     }
                     else if (status == ServiceControllerStatus.Running)
@@ -143,47 +141,8 @@ namespace ColorVision.Engine.Services.RC
                 {
                     if (File.Exists(ServiceConfig.Instance.RegistrationCenterService))
                     {
-                        try
-                        {
-                            string creatrcmd = string.Empty;
-                            string crcmd(string serviceName,string exePath)
-                            {
-                                string Cmd = $"sc create {serviceName} binPath= \"{exePath}\" start= delayed-auto DisplayName= \"{serviceName}\"";
-                                return Cmd;
-                            }
-                            creatrcmd += crcmd("RegistrationCenterService", ServiceConfig.Instance.RegistrationCenterService);
-                            if (File.Exists(ServiceConfig.Instance.CVMainService_x64))
-                            {
-                                creatrcmd += "&&";
-                                creatrcmd +=  crcmd("CVMainService_x64", ServiceConfig.Instance.CVMainService_x64);
-                            }
-                            if (File.Exists(ServiceConfig.Instance.CVMainService_dev))
-                            {
-                                creatrcmd += "&&";
-                                creatrcmd += crcmd("CVMainService_dev", ServiceConfig.Instance.CVMainService_dev);
-                            }
-                            if (File.Exists(ServiceConfig.Instance.CVArchService))
-                            {
-                                creatrcmd += "&&";
-                                creatrcmd += crcmd("CVArchService", ServiceConfig.Instance.CVArchService);
-                            }
-                            if (!Tool.ExecuteCommandAsAdmin(creatrcmd))
-                            {
-                                log.Info("创建服务失败");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"创建服务失败: {ex.Message}");
-                        }
-
-                        if (!Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService"))
-                        {
-                            log.Info("以管理员权限启动 RegistrationCenterService 服务失败。");
-                            return;
-                        }
-                        isConnect = await MqttRCService.GetInstance().Connect();
-                        if (isConnect) return;
+                        log.Info("RegistrationCenterService 服务未安装，启动阶段不再弹出 UAC 自动创建服务，请通过服务管理器安装/修复。");
+                        return;
                     }
 
 

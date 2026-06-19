@@ -1,4 +1,4 @@
-#pragma warning disable CS8602,CS8603,CS4014,CS8765
+#pragma warning disable CA1805,CS4014,CS8602,CS8603,CS8765
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
@@ -25,6 +25,11 @@ namespace ColorVision.Solution.Explorer
         public RelayCommand OpenInCmdCommand { get; set; }
         public RelayCommand OpenMethodCommand { get; set; }
         public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
+        private bool _childrenLoaded;
+        private bool _childrenLoading;
+        private bool _isExpanded;
+
+        public bool AreChildrenLoaded => _childrenLoaded;
 
         public FolderNode(IFolderMeta folder) : base()
         {
@@ -32,6 +37,7 @@ namespace ColorVision.Solution.Explorer
             FullPath = DirectoryInfo.FullName;
             Name1 = DirectoryInfo.Name;
             Initialize();
+            AddLazyPlaceholderIfNeeded();
         }
 
         public override void Initialize()
@@ -40,10 +46,61 @@ namespace ColorVision.Solution.Explorer
 
             InitializeCommands();
             AddChildEventHandler += (s, e) => NotifyPropertyChanged(nameof(HasFile));
+        }
 
-            var cache = SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache;
-            Application.Current?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
-                () => SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache));
+        public override bool IsExpanded
+        {
+            get => _isExpanded;
+            set
+            {
+                if (_isExpanded == value)
+                    return;
+
+                _isExpanded = value;
+                NotifyPropertyChanged();
+                if (value)
+                    EnsureChildrenLoaded();
+            }
+        }
+
+        public void EnsureChildrenLoaded()
+        {
+            if (_childrenLoaded || _childrenLoading || !DirectoryInfo.Exists)
+                return;
+
+            _childrenLoading = true;
+            Application.Current?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, async () =>
+            {
+                try
+                {
+                    VisualChildren.Clear();
+                    var cache = SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache;
+                    await SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache);
+                    _childrenLoaded = true;
+                }
+                finally
+                {
+                    _childrenLoading = false;
+                    NotifyPropertyChanged(nameof(HasFile));
+                }
+            });
+        }
+
+        public void MarkChildrenChanged()
+        {
+            if (_childrenLoaded)
+                return;
+
+            VisualChildren.Clear();
+            AddLazyPlaceholderIfNeeded();
+        }
+
+        private void AddLazyPlaceholderIfNeeded()
+        {
+            if (SolutionNodeFactory.HasVisibleChildren(DirectoryInfo))
+            {
+                VisualChildren.Add(new LazyLoadingNode { Parent = this });
+            }
         }
 
         private void InitializeFileSystemWatcher()
@@ -331,7 +388,10 @@ namespace ColorVision.Solution.Explorer
                     FullPath = destinationDirectoryPath;
 
                     VisualChildren.Clear();
-                    SolutionNodeFactory.PopulateChildren(this, DirectoryInfo);
+                    _childrenLoaded = false;
+                    AddLazyPlaceholderIfNeeded();
+                    if (IsExpanded)
+                        EnsureChildrenLoaded();
 
                     if (FileSystemWatcher != null)
                     {
@@ -397,7 +457,10 @@ namespace ColorVision.Solution.Explorer
                     }
 
                     VisualChildren.Clear();
-                    SolutionNodeFactory.PopulateChildren(this, DirectoryInfo);
+                    _childrenLoaded = false;
+                    AddLazyPlaceholderIfNeeded();
+                    if (IsExpanded)
+                        EnsureChildrenLoaded();
                     LogOperation("成功回滚重命名操作");
                 }
             }
@@ -414,7 +477,21 @@ namespace ColorVision.Solution.Explorer
         {
             if (MessageBox.Show(Application.Current.GetActiveWindow(), $"\"{Name}\"{Resources.FolderDeleteSign}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
             {
-                base.Delete();
+                try
+                {
+                    int result = ShellFileOperations.DeleteToRecycleBin(DirectoryInfo.FullName);
+                    if (result != 0)
+                    {
+                        ShowUserError($"删除文件夹失败，Shell 返回代码: {result}");
+                        return;
+                    }
+                    base.Delete();
+                }
+                catch (Exception ex)
+                {
+                    LogError($"删除文件夹失败: {DirectoryInfo.FullName}", ex);
+                    ShowUserError($"删除文件夹失败: {ex.Message}");
+                }
             }
         }
 

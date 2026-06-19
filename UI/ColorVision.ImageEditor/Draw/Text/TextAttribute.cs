@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1711
+using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Windows;

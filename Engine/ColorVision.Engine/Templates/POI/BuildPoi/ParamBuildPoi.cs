@@ -1,4 +1,5 @@
-﻿using ColorVision.ImageEditor;
+﻿#pragma warning disable CA1707,CS8603
+using ColorVision.ImageEditor;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.ComponentModel;

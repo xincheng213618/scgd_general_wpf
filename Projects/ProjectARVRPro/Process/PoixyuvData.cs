@@ -1,3 +1,4 @@
+#pragma warning disable CA1708
 namespace ProjectARVRPro.Process
 {
     public class PoixyuvData

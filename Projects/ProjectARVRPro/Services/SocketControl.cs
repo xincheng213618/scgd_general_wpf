@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Templates.Flow;
+﻿#pragma warning disable CS4014,CS8602,CS8603,CS8625
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
 using log4net;
 using ProjectARVRPro.PluginConfig;

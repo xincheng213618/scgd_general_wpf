@@ -1,0 +1,217 @@
+<Window x:Class="ColorVision.ImageEditor.Cie.ManualColorGamutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:cie="clr-namespace:ColorVision.ImageEditor.Cie"
+        Title="手动色域计算"
+        Height="720"
+        Width="1060"
+        MinHeight="560"
+        MinWidth="860"
+        Background="{DynamicResource GlobalBackground}"
+        Icon="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.ico"
+        Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="PanelGroupBox" TargetType="{x:Type GroupBox}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+
+        <Style x:Key="LabelText" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
+
+        <Style x:Key="ValueText" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="Margin" Value="0,2,0,2" />
+        </Style>
+
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
+            <Setter Property="Margin" Value="4,3" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBox.Small}">
+            <Setter Property="MinHeight" Value="24" />
+        </Style>
+
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="330" />
+            <ColumnDefinition Width="6" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Padding="10"
+                Background="{DynamicResource GlobalBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <GroupBox Header="标准色域" Style="{StaticResource PanelGroupBox}">
+                        <StackPanel>
+                            <ListBox x:Name="ListBoxStandards"
+                                     MinHeight="170"
+                                     MaxHeight="240"
+                                     BorderBrush="{DynamicResource BorderBrush}"
+                                     SelectionChanged="ListBoxStandards_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding Standard.Name}"
+                                                  IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Checked="StandardCheckBox_Changed"
+                                                  Unchecked="StandardCheckBox_Changed" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="全选" Click="ButtonSelectAll_Click" />
+                                <Button Content="清空" Click="ButtonClearSelection_Click" />
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="RGB CIE 1931 xy 坐标" Style="{StaticResource PanelGroupBox}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="54" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="x" HorizontalAlignment="Center" />
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="y" HorizontalAlignment="Center" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="R" Style="{StaticResource LabelText}" />
+                            <TextBox x:Name="TextBoxRedX" Grid.Row="1" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
+                            <TextBox x:Name="TextBoxRedY" Grid.Row="1" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="G" Style="{StaticResource LabelText}" />
+                            <TextBox x:Name="TextBoxGreenX" Grid.Row="2" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
+                            <TextBox x:Name="TextBoxGreenY" Grid.Row="2" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="B" Style="{StaticResource LabelText}" />
+                            <TextBox x:Name="TextBoxBlueX" Grid.Row="3" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
+                            <TextBox x:Name="TextBoxBlueY" Grid.Row="3" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
+                        </Grid>
+                    </GroupBox>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="套用标准值" Click="ButtonApplyStandard_Click" />
+                        <Button Content="计算" Click="ButtonCalculate_Click" />
+                        <Button x:Name="ButtonExport" Content="导出" Click="ButtonExport_Click" IsEnabled="False" />
+                    </StackPanel>
+
+                    <GroupBox Header="结果摘要" Style="{StaticResource PanelGroupBox}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock DockPanel.Dock="Left" Text="样品面积" Style="{StaticResource LabelText}" />
+                                <TextBlock x:Name="TextBlockSampleArea" DockPanel.Dock="Right" Style="{StaticResource ValueText}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock DockPanel.Dock="Left" Text="结果数量" Style="{StaticResource LabelText}" />
+                                <TextBlock x:Name="TextBlockResultCount" DockPanel.Dock="Right" Style="{StaticResource ValueText}" />
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Left" Text="面积比范围" Style="{StaticResource LabelText}" />
+                                <TextBlock x:Name="TextBlockCoverageRange" DockPanel.Dock="Right" FontWeight="SemiBold" Style="{StaticResource ValueText}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <Border BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="8"
+                            MinHeight="54">
+                        <TextBlock x:Name="TextBlockStatus"
+                                   TextWrapping="Wrap"
+                                   Foreground="Gray" />
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <GridSplitter Grid.Column="1"
+                      Width="6"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Background="{DynamicResource BorderBrush}" />
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="6" />
+                <RowDefinition Height="220" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Background="#1E1E1E"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    ClipToBounds="True">
+                <cie:CieDiagramView x:Name="CieDiagram" />
+            </Border>
+
+            <GridSplitter Grid.Row="1"
+                          Height="6"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          Background="{DynamicResource BorderBrush}" />
+
+            <Border Grid.Row="2"
+                    Padding="8"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4">
+                <DataGrid x:Name="ResultGrid"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          SelectionMode="Single">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="序号" Binding="{Binding Index}" Width="54" />
+                        <DataGridTextColumn Header="标准色域" Binding="{Binding StandardName}" Width="130" />
+                        <DataGridTextColumn Header="样品面积" Binding="{Binding SampleAreaDisplay}" Width="100" />
+                        <DataGridTextColumn Header="标准面积" Binding="{Binding StandardAreaDisplay}" Width="100" />
+                        <DataGridTextColumn Header="面积比(%)" Binding="{Binding CoverageDisplay}" Width="100" />
+                        <DataGridTextColumn Header="R xy" Binding="{Binding RedDisplay}" Width="120" />
+                        <DataGridTextColumn Header="G xy" Binding="{Binding GreenDisplay}" Width="120" />
+                        <DataGridTextColumn Header="B xy" Binding="{Binding BlueDisplay}" Width="120" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

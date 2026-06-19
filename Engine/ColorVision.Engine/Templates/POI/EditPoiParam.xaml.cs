@@ -1,9 +1,10 @@
-﻿#pragma warning disable CS8625,CS8604,CS8602
+﻿#pragma warning disable CA1805,CS0414,CS8601,CS8602,CS8604,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.POI.BuildPoi;
@@ -22,7 +23,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,6 +52,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             PoiParam = poiParam;
             InitializeComponent();
+            PoiImageViewComponent.SetIsTemplateSelectorEnabled(ImageView, false);
             this.ApplyCaption();
 
             this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
@@ -710,9 +711,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         if (ret == 0)
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-
-                                            hImageProcessed.Dispose();
+                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
                                         }
@@ -727,8 +726,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         if (ret == 0)
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-                                            hImageProcessed.Dispose();
+                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
                                         }
@@ -858,9 +856,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         if (ret == 0)
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-
-                                            hImageProcessed.Dispose();
+                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
 
@@ -876,8 +872,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmap();
-                                            hImageProcessed.Dispose();
+                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
                                             ImageShow.Source = image;
                                         }
@@ -1228,7 +1223,7 @@ namespace ColorVision.Engine.Templates.POI
 
             var recentItems = Db.Queryable<MeasureResultImgModel>()
                    .OrderBy(it => it.CreateDate, OrderByType.Desc)
-                   .Take(6)
+                   .Take(20)
                    .ToList();
 
             if (recentItems.Count == 0)
@@ -1240,11 +1235,8 @@ namespace ColorVision.Engine.Templates.POI
             {
                 foreach (var item in recentItems)
                 {
-                    if (File.Exists(item.FileUrl))
-                    {
-                        ImageView.OpenImage(item.FileUrl);
+                    if (TryOpenMeasureImage(item, allowCieFile: true))
                         return;
-                    }
                 }
                 MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
             }
@@ -1252,6 +1244,42 @@ namespace ColorVision.Engine.Templates.POI
             {
                 MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
             }
+        }
+
+        private bool TryOpenMeasureImage(MeasureResultImgModel model, bool allowCieFile)
+        {
+            if (!TryResolveMeasureImagePath(model, allowCieFile, out string filePath))
+                return false;
+
+            ImageView.OpenImage(filePath);
+            PoiConfig.BackgroundFilePath = filePath;
+            return true;
+        }
+
+        private static bool TryResolveMeasureImagePath(MeasureResultImgModel model, bool allowCieFile, out string filePath)
+        {
+            filePath = string.Empty;
+            foreach (string? path in new[] { model.FileUrl, model.RawFile })
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                    continue;
+
+                if (!allowCieFile && IsCieFile(path))
+                    continue;
+
+                if (File.Exists(path))
+                {
+                    filePath = path;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsCieFile(string path)
+        {
+            return string.Equals(Path.GetExtension(path), ".cvcie", StringComparison.OrdinalIgnoreCase);
         }
 
 
@@ -1263,11 +1291,12 @@ namespace ColorVision.Engine.Templates.POI
             imgs.Reverse();
             foreach (var item in imgs)
             {
-                if (!string.IsNullOrWhiteSpace(item.RawFile) &&!item.RawFile.Contains(".cvcie",StringComparison.OrdinalIgnoreCase))
+                if (TryResolveMeasureImagePath(item, allowCieFile: false, out _))
                     MeasureImgResultModels.Add(item);
             }
             ComboBoxImg.ItemsSource = MeasureImgResultModels;
             ComboBoxImg.DisplayMemberPath = "RawFile";
+            ComboBoxImg.SelectedIndex = MeasureImgResultModels.Count > 0 ? 0 : -1;
         }
 
         private void Button_Service_Click(object sender, RoutedEventArgs e)
@@ -1276,22 +1305,21 @@ namespace ColorVision.Engine.Templates.POI
             {
                 try
                 {
-                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureResultImgModel model && model.FileUrl != null)
+                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureResultImgModel model && TryOpenMeasureImage(model, allowCieFile: false))
                     {
-                        ImageView.OpenImage(model.FileUrl);
-                        PoiConfig.BackgroundFilePath = model.FileUrl;
+                        return;
                     }
-                    else
-                    {
-                        MessageBox.Show("打开最近服务拍摄的图像失败");
-                    }
+                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
                 }
             }
-           
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SelectDataFirst, "ColorVision");
+            }
         }
 
         private void ButtonImportMarin_Click(object sender, RoutedEventArgs e)
@@ -1481,9 +1509,8 @@ namespace ColorVision.Engine.Templates.POI
                         int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache,new RoiRect(), FindLuminousAreajson,out IntPtr resultPtr);
                         if (length > 0)
                         {
-                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                             Console.WriteLine("Result: " + result);
-                            OpenCVMediaHelper.FreeResult(resultPtr);
                             MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
 
                             Application.Current.Dispatcher.Invoke(() =>
@@ -1536,8 +1563,7 @@ namespace ColorVision.Engine.Templates.POI
                 int length = OpenCVMediaHelper.M_DetectKeyRegions((HImage)ImageView.HImageCache, new RoiRect(), configJson, out IntPtr resultPtr);
                 if (length > 0)
                 {
-                    string result = Marshal.PtrToStringAnsi(resultPtr);
-                    OpenCVMediaHelper.FreeResult(resultPtr);
+                    string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                     log.Info("DetectKeyRegions result: " + result);
 
                     Application.Current.Dispatcher.Invoke(() =>
@@ -1687,7 +1713,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                if ( ImageView.HImageCache != null)
+                if (ImageView.HImageCache != null)
                 {
                     string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
                     Task.Run(() =>
@@ -1695,26 +1721,21 @@ namespace ColorVision.Engine.Templates.POI
                         int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, new RoiRect(), FindLuminousAreaCornerjson, out IntPtr resultPtr);
                         if (length > 0)
                         {
-                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                             log.Info(result);
-                            OpenCVMediaHelper.FreeResult(resultPtr);
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 if (PoiConfig.FindLuminousAreaCorner.UseRotatedRect)
                                 {
                                     var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
-                                    var corners = jObj["Corners"].ToObject<List<List<float>>>();
-                                    if (corners.Count == 4)
+                                    var corners = jObj["Corners"]?.ToObject<List<List<float>>>();
+                                    if (corners?.Count == 4 && corners.All(corner => corner.Count >= 2))
                                     {
-                                        PoiConfig.Polygon1X = (int)corners[0][0];
-                                        PoiConfig.Polygon1Y = (int)corners[0][1];
-                                        PoiConfig.Polygon2X = (int)corners[1][0];
-                                        PoiConfig.Polygon2Y = (int)corners[1][1];
-                                        PoiConfig.Polygon3X = (int)corners[2][0];
-                                        PoiConfig.Polygon3Y = (int)corners[2][1];
-                                        PoiConfig.Polygon4X = (int)corners[3][0];
-                                        PoiConfig.Polygon4Y = (int)corners[3][1];
+                                        var orderedCorners = OrderQuadrilateralCorners(corners
+                                            .Select(corner => new Point(corner[0], corner[1]))
+                                            .ToList());
+                                        ApplyQuadrilateralCorners(orderedCorners);
                                     }
 
 
@@ -1745,6 +1766,52 @@ namespace ColorVision.Engine.Templates.POI
                 ;
             }));
         }
+
+        private static List<Point> OrderQuadrilateralCorners(List<Point> corners)
+        {
+            if (corners.Count != 4)
+                return corners.ToList();
+
+            double centerX = corners.Average(point => point.X);
+            double centerY = corners.Average(point => point.Y);
+
+            var ordered = corners
+                .OrderBy(point => Math.Atan2(point.Y - centerY, point.X - centerX))
+                .ToList();
+
+            int leftTopIndex = 0;
+            for (int i = 1; i < ordered.Count; i++)
+            {
+                double currentScore = ordered[i].X + ordered[i].Y;
+                double bestScore = ordered[leftTopIndex].X + ordered[leftTopIndex].Y;
+
+                if (currentScore < bestScore ||
+                    (Math.Abs(currentScore - bestScore) < 0.0001 && ordered[i].Y < ordered[leftTopIndex].Y))
+                {
+                    leftTopIndex = i;
+                }
+            }
+
+            return ordered
+                .Skip(leftTopIndex)
+                .Concat(ordered.Take(leftTopIndex))
+                .ToList();
+        }
+
+        private void ApplyQuadrilateralCorners(List<Point> corners)
+        {
+            if (corners.Count < 4)
+                return;
+
+            PoiConfig.Polygon1X = (int)corners[0].X;
+            PoiConfig.Polygon1Y = (int)corners[0].Y;
+            PoiConfig.Polygon2X = (int)corners[1].X;
+            PoiConfig.Polygon2Y = (int)corners[1].Y;
+            PoiConfig.Polygon3X = (int)corners[2].X;
+            PoiConfig.Polygon3Y = (int)corners[2].Y;
+            PoiConfig.Polygon4X = (int)corners[3].X;
+            PoiConfig.Polygon4Y = (int)corners[3].Y;
+        }
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -1760,14 +1827,14 @@ namespace ColorVision.Engine.Templates.POI
 
         private void Button_Click_41(object sender, RoutedEventArgs e)
         {
-            PoiEditRectCache.Instance.RightTopX = PoiParam.PoiConfig.Polygon1X;
-            PoiEditRectCache.Instance.RightTopY = PoiParam.PoiConfig.Polygon1Y;
-            PoiEditRectCache.Instance.LeftTopX = PoiParam.PoiConfig.Polygon2X;
-            PoiEditRectCache.Instance.LeftTopY = PoiParam.PoiConfig.Polygon2Y;
-            PoiEditRectCache.Instance.LeftBottomX = PoiParam.PoiConfig.Polygon3X;
-            PoiEditRectCache.Instance.LeftBottomY = PoiParam.PoiConfig.Polygon3Y;
-            PoiEditRectCache.Instance.RightBottomX = PoiParam.PoiConfig.Polygon4X;
-            PoiEditRectCache.Instance.RightBottomY = PoiParam.PoiConfig.Polygon4Y;
+            PoiEditRectCache.Instance.LeftTopX = PoiConfig.Polygon1X;
+            PoiEditRectCache.Instance.LeftTopY = PoiConfig.Polygon1Y;
+            PoiEditRectCache.Instance.RightTopX = PoiConfig.Polygon2X;
+            PoiEditRectCache.Instance.RightTopY = PoiConfig.Polygon2Y;
+            PoiEditRectCache.Instance.RightBottomX = PoiConfig.Polygon3X;
+            PoiEditRectCache.Instance.RightBottomY = PoiConfig.Polygon3Y;
+            PoiEditRectCache.Instance.LeftBottomX = PoiConfig.Polygon4X;
+            PoiEditRectCache.Instance.LeftBottomY = PoiConfig.Polygon4Y;
         }
 
         private void ListView1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -1779,7 +1846,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (provider.ContextType.IsAssignableFrom(type))
                 {
-                    var items = provider.GetContextMenuItems(ImageView.EditorContext, DrawingVisualLists[ListView1.SelectedIndex]);
+                    var items = provider.GetContextMenuItems(DrawingVisualLists[ListView1.SelectedIndex]);
                     foreach (var item in items)
                         ListView1.ContextMenu.Items.Add(item);
                 }

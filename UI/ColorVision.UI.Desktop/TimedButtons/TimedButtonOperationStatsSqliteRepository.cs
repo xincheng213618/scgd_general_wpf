@@ -1,6 +1,7 @@
 #pragma warning disable CA1822
 using SqlSugar;
 using System.IO;
+using ColorVision.UI;
 
 namespace ColorVision.UI.Desktop.TimedButtons
 {
@@ -29,10 +30,7 @@ namespace ColorVision.UI.Desktop.TimedButtons
         private readonly object _syncRoot = new object();
         private readonly Dictionary<string, TimedButtonOperationStats> _cache = new Dictionary<string, TimedButtonOperationStats>(StringComparer.Ordinal);
 
-        public static string DirectoryPath { get; set; } = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "ColorVision",
-            "Desktop");
+        public static string DirectoryPath { get; set; } = Environments.DirStateDesktop;
 
         public static string DbPath { get; set; } = Path.Combine(DirectoryPath, "TimedButtonOperationStats.db");
 

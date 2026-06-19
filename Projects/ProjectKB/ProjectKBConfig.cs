@@ -3,6 +3,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using ProjectKB.Auth;
 using ProjectKB.Modbus;
 using ProjectKB.Services;
 using System.Collections.ObjectModel;
@@ -42,6 +43,11 @@ namespace ProjectKB
             EditConfigCommand = new RelayCommand(a => EditConfig());
             OpenModbusCommand = new RelayCommand(a => OpenModbus());
             OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
+
+            KBAuthManager.GetInstance().IsAdminChanged += (s, e) =>
+            {
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            };
         }
 
         [DisplayName("显示日志面板"), Category("KB")]
@@ -62,13 +68,41 @@ namespace ProjectKB
         public bool IgnoreAutoRunWhenSnEmpty { get => _IgnoreAutoRunWhenSnEmpty; set { _IgnoreAutoRunWhenSnEmpty = value; OnPropertyChanged(); } }
         private bool _IgnoreAutoRunWhenSnEmpty;
 
+        [JsonIgnore]
+        [DisplayName("启用权限控制"), Category("KB权限")]
+        [Description("默认关闭。关闭时ProjectKB全部功能可用；开启后默认产线权限，受限功能点击时需要管理员登录。")]
+        public bool EnablePermissionControl
+        {
+            get => KBAuthManager.GetInstance().IsPermissionControlEnabled;
+            set
+            {
+                KBAuthManager.GetInstance().IsPermissionControlEnabled = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [JsonIgnore]
+        [DisplayName("管理员超时(分钟)"), Category("KB权限")]
+        [Description("管理员登录后如果只进行产线检测/切换档案，不会刷新超时；0表示不自动退出管理员模式。")]
+        public int AdminIdleTimeoutMinutes
+        {
+            get => KBAuthManager.GetInstance().IdleTimeoutMinutes;
+            set
+            {
+                KBAuthManager.GetInstance().IdleTimeoutMinutes = Math.Max(0, value);
+                OnPropertyChanged();
+            }
+        }
+
         public void EditConfig()
         {
+            if (!RequireAdmin()) return;
             new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog();
             ConfigService.Instance.SaveConfigs();
         }
         public static void OepnSocketConfig()
         {
+            if (!RequireAdmin()) return;
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.Show();
         }
@@ -76,12 +110,14 @@ namespace ProjectKB
 
         public static void OpenModbus()
         {
+            if (!RequireAdmin()) return;
             ModbusConnect modbusConnect = new ModbusConnect() { Owner = Application.Current.GetActiveWindow() };
             modbusConnect.ShowDialog();
         }
 
         public static void OpenLog()
         {
+            if (!RequireAdmin()) return;
             WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };
             windowLog.Show();
         }
@@ -95,13 +131,21 @@ namespace ProjectKB
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
+            if (!RequireAdmin()) return;
             new TemplateEditorWindow(new TemplateFlow(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public void OpenFlowEngineTool()
         {
+            if (!RequireAdmin()) return;
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+        private static bool RequireAdmin()
+        {
+            return KBAuthManager.GetInstance().RequireAdmin(Application.Current.GetActiveWindow());
+        }
+
         public event EventHandler<string> SNChanged;
 
         [DisplayName("SN锁")]

@@ -9,7 +9,7 @@ ColorVision 的插件以独立目录部署在主程序运行目录下的 `Plugin
 当前代码中可以直接确认的几个关键点：
 
 - 插件基础接口位于 `UI/ColorVision.Common/Interfaces/IPlugin.cs`
-- 插件清单位于 `UI/ColorVision.UI/Plugins/PluginManifest.cs`
+- 插件 manifest 模型位于 `UI/ColorVision.UI/Plugins/PluginManifest.cs`
 - 插件装载逻辑位于 `UI/ColorVision.UI/Plugins/PluginLoader.cs`
 
 ## 关键组成
@@ -89,10 +89,10 @@ Plugins/
 
 ## 建议阅读顺序
 
-1. 先看 [插件开发总览](./README.md)
+1. 先看 [插件开发手册](./README.md)
 2. 再看 [插件开发入门](./getting-started.md)
 3. 需要理解装载和运行阶段时，再看 [插件生命周期](./lifecycle.md)
-4. 想参考现成插件时，直接看 [Pattern 插件](../../04-api-reference/plugins/standard-plugins/pattern.md)
+4. 想参考现成插件时，先看 [现有插件能力说明](../../04-api-reference/plugins/README.md)，再进入 [Conoscope](../../04-api-reference/plugins/standard-plugins/conoscope.md)、[Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md) 或 [SystemMonitor](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
 
 ## 说明
 

@@ -55,11 +55,8 @@ namespace ColorVision.Engine.Templates.MTF
         }
         public UserControl UserControl { get; set; }
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
+        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, int poiId, string poiTempName)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
@@ -69,7 +66,7 @@ namespace ColorVision.Engine.Templates.MTF
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_MTF_GetData,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

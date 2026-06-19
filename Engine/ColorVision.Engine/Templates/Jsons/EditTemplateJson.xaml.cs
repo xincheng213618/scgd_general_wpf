@@ -1,9 +1,12 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1805,CS8601,CS8604,CS8625
+using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -22,7 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public double Width { get => _Width; set { _Width = value; } }
         private double _Width = double.NaN;
 
-        public bool UsePropertyEditor { get; set; } = false; // Default to text editor mode
+        public bool UsePropertyEditor { get; set; } = true; // Default to property editor mode
     }
 
     public sealed class CopilotTemplateJsonPatchApplyResult
@@ -49,18 +52,18 @@ namespace ColorVision.Engine.Templates.Jsons
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
         private const int MaxCopilotJsonChars = 16000;
+        private const string SchemaIndexResourceName = "Templates/Jsons/Schemas/schema-index.json";
         private static readonly object CopilotEditorSyncRoot = new();
         private static readonly Dictionary<string, WeakReference<EditTemplateJson>> CopilotEditors = new(StringComparer.OrdinalIgnoreCase);
         private readonly string _copilotContextSourceId = $"template-json-editor:{Guid.NewGuid():N}";
 
-        private string Description { get; set; }
         private bool _isInPropertyEditorMode = false;
         private bool _isSyncingFromPropertyEditor = false;
         private string _loadedJsonSnapshot = string.Empty;
+        private TemplateJsonSchemaInfo? _schemaInfo;
 
         public EditTemplateJson(string description)
         {
-            Description = description;
             InitializeComponent();
             this.Width = EditTemplateJsonConfig.Instance.Width;
             this.SizeChanged += (s, e) =>
@@ -133,6 +136,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (IEditTemplateJson !=null)
                     IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
                 IEditTemplateJson = editTemplateJson;
+                _schemaInfo = TryLoadTemplateSchema(GetTemplateCode(editTemplateJson));
                 _loadedJsonSnapshot = IEditTemplateJson.JsonValue ?? string.Empty;
                 textEditor.Text = IEditTemplateJson.JsonValue;
                 IEditTemplateJson.JsonValueChanged += IEditTemplateJson_JsonValueChanged;
@@ -145,7 +149,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 {
                     try
                     {
-                        propertyEditor.SetJson(IEditTemplateJson.JsonValue);
+                        SetPropertyEditorJson(IEditTemplateJson.JsonValue);
                     }
                     catch (Exception ex)
                     {
@@ -153,7 +157,6 @@ namespace ColorVision.Engine.Templates.Jsons
                     }
                 }
             }
-            DescriptionButton.IsChecked = false;
             PublishCopilotContext();
         }
 
@@ -163,28 +166,170 @@ namespace ColorVision.Engine.Templates.Jsons
             PublishCopilotContext();
         }
 
-        private string texttemp;
-
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void SetPropertyEditorJson(string json)
         {
-            if(sender is ToggleButton toggleButton)
-            {
-                if (toggleButton.IsChecked == true)
-                {
-                    textEditor.TextChanged -= TextEditor_TextChanged;
-                    texttemp = textEditor.Text;
-                    textEditor.Text = Description;
-                }
-                else
-                {
+            propertyEditor.SetJson(json, _schemaInfo?.SchemaJson, _schemaInfo?.Title);
+        }
 
-                    textEditor.Text = texttemp;
-                    textEditor.TextChanged -= TextEditor_TextChanged;
-                    textEditor.TextChanged += TextEditor_TextChanged;
+        private static string? GetTemplateCode(IEditTemplateJson editTemplateJson)
+        {
+            return editTemplateJson is TemplateJsonParam templateJsonParam
+                ? templateJsonParam.TemplateJsonModel?.Code
+                : null;
+        }
+
+        private static TemplateJsonSchemaInfo? TryLoadTemplateSchema(string? templateCode)
+        {
+            if (string.IsNullOrWhiteSpace(templateCode))
+                return null;
+
+            var embeddedSchema = TryLoadEmbeddedTemplateSchema(templateCode);
+            if (embeddedSchema != null)
+                return embeddedSchema;
+
+            foreach (var indexPath in EnumerateSchemaIndexPaths())
+            {
+                try
+                {
+                    if (!File.Exists(indexPath))
+                        continue;
+
+                    using var indexDocument = JsonDocument.Parse(File.ReadAllText(indexPath));
+                    if (!indexDocument.RootElement.TryGetProperty("schemas", out var schemas) ||
+                        schemas.ValueKind != JsonValueKind.Array)
+                        continue;
+
+                    foreach (var schemaItem in schemas.EnumerateArray())
+                    {
+                        if (!TryGetString(schemaItem, "code", out var code) ||
+                            !string.Equals(code, templateCode, StringComparison.OrdinalIgnoreCase) ||
+                            !TryGetString(schemaItem, "file", out var relativeFile))
+                            continue;
+
+                        var jsonsRoot = Directory.GetParent(Path.GetDirectoryName(indexPath) ?? string.Empty)?.FullName;
+                        if (string.IsNullOrWhiteSpace(jsonsRoot))
+                            continue;
+
+                        var schemaPath = Path.GetFullPath(Path.Combine(
+                            jsonsRoot,
+                            relativeFile.Replace('/', Path.DirectorySeparatorChar)));
+
+                        if (!File.Exists(schemaPath))
+                            continue;
+
+                        var schemaJson = File.ReadAllText(schemaPath);
+                        var title = TryGetString(schemaItem, "name", out var itemName) ? itemName : code;
+
+                        return new TemplateJsonSchemaInfo
+                        {
+                            Code = code,
+                            Title = title,
+                            SchemaJson = schemaJson,
+                            SchemaPath = schemaPath
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Load JSON schema failed: {indexPath}, {ex.Message}");
                 }
             }
 
-            PublishCopilotContext();
+            return null;
+        }
+
+        private static TemplateJsonSchemaInfo? TryLoadEmbeddedTemplateSchema(string templateCode)
+        {
+            try
+            {
+                var assembly = typeof(EditTemplateJson).Assembly;
+                var indexJson = ReadEmbeddedResourceText(assembly, SchemaIndexResourceName);
+                if (string.IsNullOrWhiteSpace(indexJson))
+                    return null;
+
+                using var indexDocument = JsonDocument.Parse(indexJson);
+                if (!indexDocument.RootElement.TryGetProperty("schemas", out var schemas) ||
+                    schemas.ValueKind != JsonValueKind.Array)
+                    return null;
+
+                foreach (var schemaItem in schemas.EnumerateArray())
+                {
+                    if (!TryGetString(schemaItem, "code", out var code) ||
+                        !string.Equals(code, templateCode, StringComparison.OrdinalIgnoreCase) ||
+                        !TryGetString(schemaItem, "file", out var relativeFile))
+                        continue;
+
+                    string resourceName = "Templates/Jsons/" + relativeFile.Replace('\\', '/');
+                    string windowsResourceName = "Templates/Jsons/" + relativeFile.Replace('/', '\\');
+                    var schemaJson = ReadEmbeddedResourceText(assembly, resourceName)
+                        ?? ReadEmbeddedResourceText(assembly, windowsResourceName)
+                        ?? ReadEmbeddedResourceText(assembly, resourceName.Replace('/', '\\'));
+                    if (string.IsNullOrWhiteSpace(schemaJson))
+                        continue;
+
+                    var title = TryGetString(schemaItem, "name", out var itemName) ? itemName : code;
+
+                    return new TemplateJsonSchemaInfo
+                    {
+                        Code = code,
+                        Title = title,
+                        SchemaJson = schemaJson,
+                        SchemaPath = "resource://" + resourceName
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Load embedded JSON schema failed: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        private static string? ReadEmbeddedResourceText(Assembly assembly, string resourceName)
+        {
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+                return null;
+
+            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            return reader.ReadToEnd();
+        }
+
+        private static IEnumerable<string> EnumerateSchemaIndexPaths()
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var basePath in new[] { AppContext.BaseDirectory, Environment.CurrentDirectory })
+            {
+                if (string.IsNullOrWhiteSpace(basePath))
+                    continue;
+
+                var directory = new DirectoryInfo(basePath);
+                for (var depth = 0; directory != null && depth < 8; depth++, directory = directory.Parent)
+                {
+                    foreach (var relativePath in new[]
+                    {
+                        Path.Combine("Templates", "Jsons", "Schemas", "schema-index.json"),
+                        Path.Combine("Engine", "ColorVision.Engine", "Templates", "Jsons", "Schemas", "schema-index.json")
+                    })
+                    {
+                        var candidate = Path.GetFullPath(Path.Combine(directory.FullName, relativePath));
+                        if (seen.Add(candidate))
+                            yield return candidate;
+                    }
+                }
+            }
+        }
+
+        private static bool TryGetString(JsonElement element, string propertyName, out string value)
+        {
+            value = string.Empty;
+            if (!element.TryGetProperty(propertyName, out var property) ||
+                property.ValueKind != JsonValueKind.String)
+                return false;
+
+            value = property.GetString() ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(value);
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -194,7 +339,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 FileName = "https://www.json.cn/",
                 UseShellExecute = true
             });
-            Common.NativeMethods.Clipboard.SetText(IEditTemplateJson.JsonValue);
+            Common.Clipboard.SetText(IEditTemplateJson.JsonValue);
         }
 
         private void EditorModeToggle_Click(object sender, RoutedEventArgs e)
@@ -222,7 +367,7 @@ namespace ColorVision.Engine.Templates.Jsons
             try
             {
                 // Load current JSON into property editor
-                propertyEditor.SetJson(textEditor.Text);
+                SetPropertyEditorJson(textEditor.Text);
 
                 // Show property editor, hide text editor
                 textEditor.Visibility = Visibility.Collapsed;
@@ -485,7 +630,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 IEditTemplateJson.JsonValue = patchedJson;
 
                 if (_isInPropertyEditorMode)
-                    propertyEditor.SetJson(patchedJson);
+                    SetPropertyEditorJson(patchedJson);
             }
             finally
             {
@@ -559,11 +704,19 @@ namespace ColorVision.Engine.Templates.Jsons
             var windowTitle = Window.GetWindow(this)?.Title ?? string.Empty;
 
             var summary = $"JSON lines {lineCount} · {(hasUnsavedChanges ? "modified" : "unchanged")} · {(isValidJson ? "valid" : "invalid")} · {editorMode}";
+            if (_schemaInfo != null)
+                summary += $" · schema {_schemaInfo.Code}";
 
             var builder = new StringBuilder();
             builder.Append("Surface: ").AppendLine("Template JSON editor");
             builder.Append("Template name: ").AppendLine(templateName);
             builder.Append("Current selection: ").AppendLine(templateName);
+            if (_schemaInfo != null)
+            {
+                builder.Append("Schema code: ").AppendLine(_schemaInfo.Code);
+                builder.Append("Schema title: ").AppendLine(_schemaInfo.Title);
+                builder.Append("Schema path: ").AppendLine(_schemaInfo.SchemaPath);
+            }
 
             if (!string.IsNullOrWhiteSpace(windowTitle))
                 builder.Append("Window title: ").AppendLine(windowTitle);
@@ -614,9 +767,6 @@ namespace ColorVision.Engine.Templates.Jsons
             if (IEditTemplateJson == null)
                 return string.Empty;
 
-            if (DescriptionButton.IsChecked == true)
-                return IEditTemplateJson.JsonValue ?? string.Empty;
-
             if (_isInPropertyEditorMode)
             {
                 try
@@ -637,9 +787,6 @@ namespace ColorVision.Engine.Templates.Jsons
 
         private string GetEditorModeLabel()
         {
-            if (DescriptionButton.IsChecked == true)
-                return "description view";
-
             return _isInPropertyEditorMode ? "property editor" : "text editor";
         }
 
@@ -658,6 +805,17 @@ namespace ColorVision.Engine.Templates.Jsons
 
             var normalized = json.Replace("\r\n", "\n").Replace('\r', '\n');
             return normalized.Split('\n').Length;
+        }
+
+        private sealed class TemplateJsonSchemaInfo
+        {
+            public string Code { get; init; } = string.Empty;
+
+            public string Title { get; init; } = string.Empty;
+
+            public string SchemaJson { get; init; } = string.Empty;
+
+            public string SchemaPath { get; init; } = string.Empty;
         }
     }
 }

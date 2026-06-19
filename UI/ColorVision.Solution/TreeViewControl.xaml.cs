@@ -1,4 +1,5 @@
-﻿using ColorVision.Solution.Explorer;
+﻿#pragma warning disable CA1868
+using ColorVision.Solution.Explorer;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -64,44 +65,46 @@ namespace ColorVision.Solution
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
-            var b = e.Data.GetDataPresent(DataFormats.FileDrop);
-
-            if (b)
+            if (TryGetDropPaths(e.Data, out var paths, out bool isInternalDrag))
             {
-                var sarr = e.Data.GetData(DataFormats.FileDrop);
-                var a = sarr as string[];
-                var fn = a?.First();
-
-                if (File.Exists(fn))
+                if (!isInternalDrag && TryOpenDroppedSolution(paths))
                 {
-                    var destDir = SolutionManager.SolutionExplorers[0].SolutionEnvironments.SolutionDir;
-                    if (!Directory.Exists(destDir))
-                        Directory.CreateDirectory(destDir);
-
-                    var destFile = Path.Combine(destDir, Path.GetFileName(fn));
-                    File.Copy(fn, destFile, overwrite: true);
                     e.Handled = true;
+                    return;
+                }
 
-                }
-                else if (Directory.Exists(fn))
-                {
-                    DirectoryInfo directoryInfo = new(fn);
-                    foreach (var item in directoryInfo.GetFiles())
-                    {
-                        if (item.Extension == ".cvproj")
-                        {
-                            SolutionManager.OpenSolution(item.FullName);
-                            e.Handled = true;
-                            break;
-                        }
-                    }
-                }
+                string? targetDir = GetDropTargetDirectory(e);
+                if (targetDir == null)
+                    return;
+
+                bool isMove = isInternalDrag
+                    ? !Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
+                    : Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+                CopyOrMovePaths(paths, targetDir, isMove);
+                e.Handled = true;
             }
+        }
+
+        private void TreeViewControl_DragOver(object sender, DragEventArgs e)
+        {
+            if (TryGetDropPaths(e.Data, out _, out bool isInternalDrag))
+            {
+                bool isMove = isInternalDrag
+                    ? !Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
+                    : Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+                e.Effects = isMove ? DragDropEffects.Move : DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+            e.Handled = true;
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             AllowDrop = true;
+            DragOver += TreeViewControl_DragOver;
             Drop += TreeViewControl_Drop;
 
             // Use the shared context menu service instead of per-node ContextMenu
@@ -187,6 +190,93 @@ namespace ColorVision.Solution
             }
         }
 
+        protected override void OnPreviewMouseMove(MouseEventArgs e)
+        {
+            base.OnPreviewMouseMove(e);
+
+            if (e.LeftButton != MouseButtonState.Pressed || _selectedNodes.Count == 0)
+                return;
+
+            Point currentPoint = e.GetPosition(SolutionTreeView);
+            if (Math.Abs(currentPoint.X - SelectPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(currentPoint.Y - SelectPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+
+            var paths = _selectedNodes
+                .Where(node => !string.IsNullOrWhiteSpace(node.FullPath) && (File.Exists(node.FullPath) || Directory.Exists(node.FullPath)))
+                .Select(node => node.FullPath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (paths.Length == 0)
+                return;
+
+            DragDrop.DoDragDrop(SolutionTreeView, CreatePathDataObject(paths, isCut: false), DragDropEffects.Copy | DragDropEffects.Move);
+        }
+
+        private static bool TryGetDropPaths(IDataObject dataObject, out string[] paths, out bool isInternalDrag)
+        {
+            paths = Array.Empty<string>();
+            isInternalDrag = dataObject.GetDataPresent(ClipboardFormat);
+
+            if (dataObject.GetDataPresent(DataFormats.FileDrop) &&
+                dataObject.GetData(DataFormats.FileDrop) is string[] fileDropPaths)
+            {
+                paths = fileDropPaths
+                    .Where(path => File.Exists(path) || Directory.Exists(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
+
+            return paths.Length > 0;
+        }
+
+        private static bool TryOpenDroppedSolution(IEnumerable<string> paths)
+        {
+            foreach (string path in paths)
+            {
+                if (File.Exists(path) && string.Equals(Path.GetExtension(path), ".cvproj", StringComparison.OrdinalIgnoreCase))
+                {
+                    SolutionManager.OpenSolution(path);
+                    return true;
+                }
+
+                if (!Directory.Exists(path))
+                    continue;
+
+                foreach (string projectFile in Directory.EnumerateFiles(path, "*.cvproj", SearchOption.TopDirectoryOnly))
+                {
+                    SolutionManager.OpenSolution(projectFile);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private string? GetDropTargetDirectory(DragEventArgs e)
+        {
+            var node = GetNodeAtPoint(e.GetPosition(SolutionTreeView));
+            if (node is FileNode)
+                return Path.GetDirectoryName(node.FullPath);
+
+            if (node != null && Directory.Exists(node.FullPath))
+                return node.FullPath;
+
+            return SolutionManager.CurrentSolutionExplorer?.DirectoryInfo?.FullName;
+        }
+
+        private SolutionNode? GetNodeAtPoint(Point point)
+        {
+            HitTestResult result = VisualTreeHelper.HitTest(SolutionTreeView, point);
+            if (result == null)
+                return null;
+
+            TreeViewItem? item = ViewHelper.FindVisualParent<TreeViewItem>(result.VisualHit);
+            return item?.DataContext as SolutionNode;
+        }
+
         private void ClearSelection()
         {
             foreach (var node in _selectedNodes)
@@ -216,15 +306,49 @@ namespace ColorVision.Solution
             else
             {
                 var keywords = text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-                var filteredResults = SolutionManager.GetInstance().SolutionExplorers.
-                    SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren())
-                    .OfType<SolutionNode>()
-                    .Where(template => keywords.All(keyword =>
-                        template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                        ))
-                    .ToList();
+                var currentExplorer = SolutionManager.GetInstance().CurrentSolutionExplorer;
+                List<SolutionNode> filteredResults;
+                if (currentExplorer?.Cache?.HasCache() == true)
+                {
+                    filteredResults = currentExplorer.Cache.Search(keywords)
+                        .Select(CreateSearchResultNode)
+                        .Where(node => node != null)
+                        .Cast<SolutionNode>()
+                        .ToList();
+                }
+                else
+                {
+                    filteredResults = SolutionManager.GetInstance().SolutionExplorers.
+                        SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren())
+                        .OfType<SolutionNode>()
+                        .Where(template => keywords.All(keyword =>
+                            template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                            ))
+                        .ToList();
+                }
 
                 SolutionTreeView.ItemsSource = filteredResults;
+            }
+        }
+
+        private static SolutionNode? CreateSearchResultNode(FileTreeCacheEntry entry)
+        {
+            try
+            {
+                if (entry.IsDirectory)
+                {
+                    if (!Directory.Exists(entry.FullPath))
+                        return null;
+                    return SolutionNodeFactory.CreateFolderNode(new DirectoryInfo(entry.FullPath));
+                }
+
+                if (!File.Exists(entry.FullPath))
+                    return null;
+                return SolutionNodeFactory.CreateFileNode(new FileInfo(entry.FullPath));
+            }
+            catch
+            {
+                return null;
             }
         }
 

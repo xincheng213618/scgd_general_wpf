@@ -32,6 +32,8 @@
                 <Button Content="重命名" Padding="8 3" Margin="0 0 5 0" Command="{Binding RenameGroupCommand}"/>
                 <Button Content="复制组" Padding="8 3" Margin="0 0 5 0" Command="{Binding DuplicateGroupCommand}"/>
                 <Button Content="删除组" Padding="8 3" Margin="0 0 5 0" Command="{Binding RemoveGroupCommand}" Foreground="Red"/>
+                <Button Content="导入配置" Padding="8 3" Margin="12 0 5 0" Command="{Binding ImportConfigCommand}"/>
+                <Button Content="导出配置" Padding="8 3" Margin="0 0 5 0" Command="{Binding ExportConfigCommand}"/>
             </WrapPanel>
         </Border>
 

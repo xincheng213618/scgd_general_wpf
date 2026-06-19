@@ -7,6 +7,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Archive.Dao
 {
@@ -166,7 +168,7 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName = "guid",IsPrimaryKey = true)]
         [DisplayName("Guid")]
         public string Guid { get; set; }
-        [SugarColumn(ColumnName ="p_guid"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "Name")]
+        [SugarColumn(ColumnName ="p_guid"), LocalizedDisplayName(nameof(Resources.Name))]
         public string PGuid { get; set; }
         [SugarColumn(ColumnName ="detail_type"), DisplayName("detail_type")]
         public string DetailType { get; set; }
@@ -174,12 +176,12 @@ namespace ColorVision.Engine.Archive.Dao
         public int? ZIndex { get; set; }
         [SugarColumn(ColumnName ="output_value"),DisplayName("Data")]
         public string OutputValue { get; set; }
-        [SugarColumn(ColumnName ="device_code"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DeviceName")]
+        [SugarColumn(ColumnName ="device_code"), LocalizedDisplayName(nameof(Resources.DeviceName))]
         public string DeviceCode { get; set; }
         [SugarColumn(ColumnName ="device_cfg")]
         public string DeviceCfg { get; set; }
 
-        [SugarColumn(ColumnName ="input_cfg"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ParamInput")]
+        [SugarColumn(ColumnName ="input_cfg"), LocalizedDisplayName(nameof(Resources.ParamInput))]
         public string InputCfg { get; set; }
 
     }

@@ -11,11 +11,11 @@
 | `UI/ColorVision.SocketProtocol/` | 本地 TCP 服務、訊息歷史和管理視窗 | [ColorVision.SocketProtocol](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) / [Socket 通訊最佳化路線](../../02-developer-guide/performance/socket-protocol-optimization-roadmap.md) |
 | `Engine/` | 核心引擎、裝置服務、模板系統、流程執行 | [Engine 開發指南](../../02-developer-guide/engine-development/README.md) / [Engine 元件總覽](../../04-api-reference/engine-components/README.md) |
 | `Plugins/` | 執行時外掛和擴充套件能力 | [外掛開發概覽](../../02-developer-guide/plugin-development/overview.md) |
-| `Projects/` | 客戶專案包和業務定製實現 | [元件互動](../../03-architecture/overview/component-interactions.md) |
+| `Projects/` | 客戶專案包、業務定製和對接示例 | [專案說明](../../00-projects/README.md) / [專案包總覽](../../04-api-reference/projects/README.md) |
 | `Backend/marketplace/` | 外掛市場後端服務 | [外掛市場後端](../../02-developer-guide/backend/README.md) |
 | `Scripts/` | 建置、打包、釋出指令碼 | [建置與釋出指令碼](../../02-developer-guide/scripts/README.md) |
 | `ColorVisionSetup/` | 安裝器與更新程式 | [自動更新系統](../../02-developer-guide/deployment/auto-update.md) |
-| `Test/` | 測試專案 | [開發指南](../../02-developer-guide/README.md) |
+| `Test/` | xUnit、native helper、後端和指令碼驗證 | [測試與驗證交接手冊](../../02-developer-guide/testing.md) |
 | `docs/` | VitePress 文件原始碼 | 當前文件 / [模組與文件對照表](./module-documentation-map.md) |
 
 ## 按角色閱讀
@@ -36,7 +36,15 @@
 
 1. [擴充套件性概覽](../../02-developer-guide/core-concepts/extensibility.md)
 2. [外掛開發概覽](../../02-developer-guide/plugin-development/overview.md)
-3. [標準外掛專題](../../04-api-reference/plugins/standard-plugins/pattern.md)
+3. [現有外掛能力說明](../../04-api-reference/plugins/README.md)
+4. [當前外掛文件覆蓋清單](../../04-api-reference/plugins/current-plugin-coverage.md)
+
+### 客戶專案交接
+
+1. [專案說明](../../00-projects/README.md)
+2. [專案包總覽](../../04-api-reference/projects/README.md)
+3. [目前專案文件覆蓋清單](../../04-api-reference/projects/current-project-coverage.md)
+4. [專案包能力與交接矩陣](../../04-api-reference/projects/project-capability-matrix.md)
 
 ### 文件維護
 

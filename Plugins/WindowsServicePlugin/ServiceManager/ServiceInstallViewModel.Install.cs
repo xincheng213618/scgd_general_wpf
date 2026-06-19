@@ -1,5 +1,6 @@
 using System.IO;
 using System.IO.Compression;
+using System.Diagnostics;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager
@@ -25,74 +26,85 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
             }
 
-            SetBusy(true, "正在执行安装...");
-            await Task.Run(() =>
+            bool requiresAdministrator = InstallServiceChecked || InstallMqttChecked;
+            if (requiresAdministrator && !ColorVision.Common.Utilities.Tool.IsAdministrator())
             {
-                try
+                MessageBox.Show("安装或更新 CVWindowsService/MQTT 需要管理员权限；MySQL 会优先通过 ColorVisionServiceHost 处理。", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            SetBusy(true, "正在执行安装...");
+            try
+            {
+                await Task.Run(() =>
                 {
-                    int progress = 0;
-
-                    // 1. 备份数据库
-                    if (BackupBeforeInstall)
+                    try
                     {
-                        SetProgress(progress += 5, "备份数据库...");
-                        DoBackupNow();
-                    }
+                        int progress = 0;
 
-                    bool servicesStoppedForInstall = false;
-
-                    // 2. 备份服务文件夹
-                    if (BackupServiceBeforeInstall && InstallServiceChecked)
-                    {
-                        SetProgress(progress += 5, "备份服务文件夹...");
-                        StopPackagedServices();
-                        servicesStoppedForInstall = true;
-                        DoBackupServiceArchiveOnly();
-
-                    }
-
-                    // 3. 安装 MySQL
-                    if (InstallMySqlChecked && !string.IsNullOrWhiteSpace(MySqlPackagePath) && File.Exists(MySqlPackagePath))
-                    {
-                        SetProgress(progress += 15, "安装 MySQL...");
-                        var serviceManager = ServiceManagerViewModel.Instance;
-                        bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipAsync(MySqlPackagePath, basePath, AddLog).GetAwaiter().GetResult();
-                        if (!mysqlInstalled)
+                        // 1. 备份数据库
+                        if (BackupBeforeInstall)
                         {
-                            throw new InvalidOperationException("MySQL 安装失败");
+                            SetProgress(progress += 5, "备份数据库...");
+                            DoBackupNow();
                         }
-                    }
 
-                    // 4. 安装 MQTT
-                    if (InstallMqttChecked && !string.IsNullOrWhiteSpace(MqttInstallerPath) && File.Exists(MqttInstallerPath))
-                    {
-                        SetProgress(progress += 15, "安装 MQTT...");
-                        InstallMqttFromExe(MqttInstallerPath);
-                    }
+                        bool servicesStoppedForInstall = false;
 
-                    // 5. 安装/更新服务包
-                    if (InstallServiceChecked && !string.IsNullOrWhiteSpace(ServicePackagePath) && File.Exists(ServicePackagePath))
-                    {
-                        if (IsIncrementalUpdatePackage(ServicePackagePath))
+                        // 2. 备份服务文件夹
+                        if (BackupServiceBeforeInstall && InstallServiceChecked)
                         {
-                            // ── 增量更新包：仅覆盖变更文件，保留 cfg/，不重新注册服务 ──
-                            SetProgress(progress += 20, "正在应用增量更新...");
-                            if (!servicesStoppedForInstall)
+                            SetProgress(progress += 5, "备份服务文件夹...");
+                            StopPackagedServices();
+                            servicesStoppedForInstall = true;
+                            DoBackupServiceArchiveOnly();
+
+                        }
+
+                        // 3. 安装 MySQL
+                        if (InstallMySqlChecked)
+                        {
+                            if (string.IsNullOrWhiteSpace(MySqlPackagePath) || !File.Exists(MySqlPackagePath))
+                                throw new InvalidOperationException("已勾选 MySQL，但未选择有效的 MySQL ZIP 安装包");
+
+                            SetProgress(progress += 15, "安装 MySQL...");
+                            var serviceManager = ServiceManagerViewModel.Instance;
+                            bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipViaServiceHostAsync(MySqlPackagePath, basePath, AddLog).GetAwaiter().GetResult();
+                            if (!mysqlInstalled)
                             {
-                                StopPackagedServices();
-                                servicesStoppedForInstall = true;
+                                throw new InvalidOperationException("MySQL 安装失败");
                             }
-                            ApplyIncrementalUpdate(basePath);
                         }
-                        else
+
+                        // 4. 安装 MQTT
+                        if (InstallMqttChecked)
                         {
-                            // ── 完整安装包：全量解压 + 重新注册服务 ──
+                            if (string.IsNullOrWhiteSpace(MqttInstallerPath) || !File.Exists(MqttInstallerPath))
+                                throw new InvalidOperationException("已勾选 MQTT，但未选择有效的 MQTT 安装程序");
+
+                            SetProgress(progress += 15, "安装 MQTT...");
+                            InstallMqttFromExe(MqttInstallerPath);
+                        }
+
+                        // 5. 安装/更新服务包
+                        if (InstallServiceChecked)
+                        {
+                            if (string.IsNullOrWhiteSpace(ServicePackagePath) || !File.Exists(ServicePackagePath))
+                                throw new InvalidOperationException("已勾选服务包，但未选择有效的 CVWindowsService 完整安装包");
+
+                            if (!IsFullServicePackageZip(ServicePackagePath))
+                            {
+                                throw new InvalidOperationException("当前安装流程只支持完整服务包，请选择 CVWindowsService 完整安装包");
+                            }
+                            // 完整安装包：全量解压 + 重新注册服务。
                             SetProgress(progress += 20, "安装 CVWindowsService...");
+                            StopLegacyManagementToolProcesses();
                             if (!servicesStoppedForInstall)
                             {
                                 StopPackagedServices();
                                 servicesStoppedForInstall = true;
                             }
+                            CleanExistingServicePackageTargets(ServicePackagePath, basePath);
                             ZipFile.ExtractToDirectory(ServicePackagePath, basePath, true);
                             AddLog("解压服务包完成");
 
@@ -103,47 +115,50 @@ namespace WindowsServicePlugin.ServiceManager
                             SetProgress(progress += 5, "注册/更新服务...");
                             InstallOrUpdatePackagedServices(installRoot);
                         }
-                    }
 
-                    // 6. 执行数据库脚本
-                    if (AutoUpdateDatabase)
-                    {
-                        SetProgress(progress += 15, "执行数据库脚本...");
-                        if (!ExecuteColorVisionAllSql(basePath))
+                        // 6. 同步配置
+                        SetProgress(progress += 10, "同步配置...");
+                        ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
+
+                        // 7. 执行数据库脚本
+                        if (AutoUpdateDatabase)
                         {
-                            throw new InvalidOperationException("执行 color_vision_all.sql 失败");
+                            SetProgress(progress += 15, "执行数据库脚本...");
+                            if (!ExecuteColorVisionAllSql(basePath))
+                            {
+                                throw new InvalidOperationException("执行 color_vision_all.sql 失败");
+                            }
                         }
+
+                        // 8. 启动服务
+                        if (AutoStartAfterInstall)
+                        {
+                            SetProgress(progress += 10, "启动服务...");
+                            StartInstalledServicesAfterInstall();
+                        }
+                        else if (servicesStoppedForInstall)
+                        {
+                            AddLog("安装前已停止服务，当前未自动启动（根据配置）");
+                        }
+
+                        CleanupPackDirectory(basePath);
+
+                        SetProgress(100, "安装完成");
+                        AddLog("安装完成！");
                     }
-
-                    // 7. 同步配置
-                    SetProgress(progress += 10, "同步配置...");
-                    ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
-
-                    // 8. 启动服务
-                    if (AutoStartAfterInstall)
+                    catch (Exception ex)
                     {
-                        SetProgress(progress += 10, "启动服务...");
-                        ServiceManagerViewModel.Instance.OneKeyStartCommand.Execute(null);
+                        AddLog($"安装失败: {ex.Message}");
+                        log.Error("安装失败", ex);
+                        Application.Current?.Dispatcher.Invoke(() =>
+                            MessageBox.Show($"安装失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
                     }
-                    else if (servicesStoppedForInstall)
-                    {
-                        AddLog("安装前已停止服务，当前未自动启动（根据配置）");
-                    }
-
-                    CleanupPackDirectory(basePath);
-
-                    SetProgress(100, "安装完成");
-                    AddLog("安装完成！");
-                }
-                catch (Exception ex)
-                {
-                    AddLog($"安装失败: {ex.Message}");
-                    log.Error("安装失败", ex);
-                    MessageBox.Show($"安装失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            });
-
-            SetBusy(false);
+                });
+            }
+            finally
+            {
+                SetBusy(false);
+            }
         }
 
         private void CleanupPackDirectory(string basePath)
@@ -186,6 +201,22 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 try
                 {
+                    if (IsFullServicePackageZip(zipFile))
+                    {
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            ServicePackagePath = zipFile;
+                            InstallServiceChecked = true;
+                            MySqlPackagePath = string.Empty;
+                            InstallMySqlChecked = false;
+                            MqttInstallerPath = string.Empty;
+                            InstallMqttChecked = false;
+                            AddLog($"已识别完整服务包: {ServicePackagePath}");
+                        });
+                        AddLog("安装包解析完成：当前包仅包含 CVWindowsService 服务主体");
+                        return;
+                    }
+
                     string packDir = Path.Combine(Directory.GetParent(zipFile)!.FullName, Path.GetFileNameWithoutExtension(zipFile));
                     if (Directory.Exists(packDir))
                         Directory.Delete(packDir, true);
@@ -201,22 +232,23 @@ namespace WindowsServicePlugin.ServiceManager
 
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
+                        ServicePackagePath = hasSvc ? serviceZip : string.Empty;
+                        InstallServiceChecked = hasSvc;
+                        MySqlPackagePath = File.Exists(mysqlZip) ? mysqlZip : string.Empty;
+                        InstallMySqlChecked = File.Exists(mysqlZip);
+                        MqttInstallerPath = File.Exists(mqttInstaller) ? mqttInstaller : string.Empty;
+                        InstallMqttChecked = File.Exists(mqttInstaller);
+
                         if (hasSvc)
                         {
-                            ServicePackagePath = serviceZip;
-                            InstallServiceChecked = true;
                             AddLog($"已应用服务包路径: {ServicePackagePath}");
                         }
                         if (File.Exists(mysqlZip))
                         {
-                            MySqlPackagePath = mysqlZip;
-                            InstallMySqlChecked = true;
                             AddLog($"已应用 MySQL 包路径: {MySqlPackagePath}");
                         }
                         if (File.Exists(mqttInstaller))
                         {
-                            MqttInstallerPath = mqttInstaller;
-                            InstallMqttChecked = true;
                             AddLog($"已应用 MQTT 包路径: {MqttInstallerPath}");
                         }
                     });
@@ -257,6 +289,26 @@ namespace WindowsServicePlugin.ServiceManager
             return string.Empty;
         }
 
+        private static bool IsFullServicePackageZip(string zipPath)
+        {
+            try
+            {
+                using var archive = ZipFile.OpenRead(zipPath);
+                var topLevelNames = archive.Entries
+                    .Select(entry => GetTopLevelEntryName(entry.FullName))
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                return topLevelNames.Contains("RegWindowsService")
+                    && (topLevelNames.Contains("CVMainWindowsService_x64")
+                        || topLevelNames.Contains("CVMainWindowsService_dev"));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private void InstallMqttFromExe(string exeFile)
         {
             ServiceManagerViewModel.Instance.MqttManager.InstallFromExe(exeFile, AddLog);
@@ -285,6 +337,33 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
+        private void StopLegacyManagementToolProcesses()
+        {
+            foreach (var process in Process.GetProcessesByName("CVWinSMS"))
+            {
+                try
+                {
+                    AddLog($"关闭旧版服务管理工具进程: CVWinSMS, PID={process.Id}");
+                    if (!process.CloseMainWindow())
+                    {
+                        process.Kill();
+                    }
+                    else if (!process.WaitForExit(5000))
+                    {
+                        process.Kill();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AddLog($"关闭 CVWinSMS 进程失败: PID={process.Id}, {ex.Message}");
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            }
+        }
+
         private void StartPackagedServices()
         {
             var entries = ServiceManagerConfig.GetDefaultServiceEntries();
@@ -305,6 +384,29 @@ namespace WindowsServicePlugin.ServiceManager
                 Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
             }
 
+        }
+
+        private void StartInstalledServicesAfterInstall()
+        {
+            var serviceManager = ServiceManagerViewModel.Instance;
+            Application.Current.Dispatcher.Invoke(() => serviceManager.RefreshAll());
+
+            serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
+            if (serviceManager.MySqlManager.Config.IsInstalled && !serviceManager.MySqlManager.Config.IsRunning)
+            {
+                AddLog($"启动 MySQL 服务: {serviceManager.MySqlManager.Helper.ServiceName}");
+                serviceManager.MySqlManager.StartViaServiceHostAsync(AddLog).GetAwaiter().GetResult();
+            }
+
+            serviceManager.MqttManager.RefreshStatus(serviceManager.Services);
+            if (serviceManager.MqttManager.Config.IsInstalled && !serviceManager.MqttManager.Config.IsRunning)
+            {
+                AddLog($"启动 MQTT 服务: {serviceManager.MqttManager.Config.ServiceName}");
+                serviceManager.MqttManager.StartViaServiceHostAsync(AddLog).GetAwaiter().GetResult();
+            }
+
+            StartPackagedServices();
+            Application.Current.Dispatcher.Invoke(() => serviceManager.RefreshAll());
         }
 
         private void InstallOrUpdatePackagedServices(string basePath)
@@ -345,7 +447,72 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private string ResolveServiceInstallRoot(string basePath)
+        private void CleanExistingServicePackageTargets(string zipPath, string basePath)
+        {
+            string fullBasePath = Path.GetFullPath(basePath);
+            Directory.CreateDirectory(fullBasePath);
+
+            using var archive = ZipFile.OpenRead(zipPath);
+            var topLevelNames = archive.Entries
+                .Select(entry => GetTopLevelEntryName(entry.FullName))
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            foreach (string name in topLevelNames)
+            {
+                if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                {
+                    AddLog($"跳过异常安装包路径: {name}");
+                    continue;
+                }
+
+                string targetPath = Path.GetFullPath(Path.Combine(fullBasePath, name));
+                if (!IsPathInsideDirectory(targetPath, fullBasePath))
+                {
+                    AddLog($"跳过安装根目录外路径: {targetPath}");
+                    continue;
+                }
+
+                try
+                {
+                    if (Directory.Exists(targetPath))
+                    {
+                        Directory.Delete(targetPath, true);
+                        AddLog($"已清理旧目录: {targetPath}");
+                    }
+                    else if (File.Exists(targetPath))
+                    {
+                        File.Delete(targetPath);
+                        AddLog($"已清理旧文件: {targetPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new IOException($"清理旧服务文件失败: {targetPath}. {ex.Message}", ex);
+                }
+            }
+        }
+
+        private static string GetTopLevelEntryName(string entryName)
+        {
+            string normalized = entryName.Replace('\\', '/').TrimStart('/');
+            if (string.IsNullOrWhiteSpace(normalized))
+                return string.Empty;
+
+            string top = normalized.Split('/')[0].Trim();
+            return top is "." or ".." ? string.Empty : top;
+        }
+
+        private static bool IsPathInsideDirectory(string path, string directory)
+        {
+            string fullDirectory = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+            string fullPath = Path.GetFullPath(path);
+            return fullPath.StartsWith(fullDirectory, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ResolveServiceInstallRoot(string basePath)
         {
             string nested = Path.Combine(basePath, "CVWindowsService");
             string[] candidates =
@@ -376,19 +543,6 @@ namespace WindowsServicePlugin.ServiceManager
         private bool ExecuteColorVisionAllSql(string basePath)
         {
             return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, AddLog);
-        }
-
-        private string? ResolveColorVisionAllSqlPath(string basePath)
-        {
-            string installRoot = ResolveServiceInstallRoot(basePath);
-            string[] candidates =
-            [
-                Path.Combine(installRoot, "SQL", "color_vision_all.sql"),
-                Path.Combine(basePath, "SQL", "color_vision_all.sql"),
-                Path.Combine(basePath, "CVWindowsService", "SQL", "color_vision_all.sql")
-            ];
-
-            return candidates.FirstOrDefault(File.Exists);
         }
 
         private static bool IsLogPath(string fullPath, string rootPath)

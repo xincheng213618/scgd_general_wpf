@@ -1,5 +1,4 @@
 using ColorVision.Core;
-using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -7,21 +6,9 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
-    internal sealed class VideoFrameProcessingRequest
-    {
-        public bool EnableArticulation { get; init; }
-        public FocusAlgorithm FocusAlgorithm { get; init; }
-        public RoiRect Roi { get; init; }
-        public PseudoColorFrameRequest? PseudoColor { get; init; }
+    internal readonly record struct VideoFrameProcessingRequest(FocusAlgorithm FocusAlgorithm, RoiRect Roi);
 
-        public bool NeedsProcessing => EnableArticulation || PseudoColor.HasValue;
-    }
-
-    internal sealed class VideoFrameProcessingResult
-    {
-        public double? Articulation { get; init; }
-        public HImage? PseudoImage { get; init; }
-    }
+    internal readonly record struct VideoFrameProcessingResult(double Articulation);
 
     internal sealed class VideoFrameProcessor : IDisposable
     {
@@ -35,7 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private HImage? _workingFrame;
         private int _pendingCapacity;
         private int _workingCapacity;
-        private VideoFrameProcessingRequest? _pendingRequest;
+        private VideoFrameProcessingRequest _pendingRequest;
         private bool _hasPendingFrame;
         private bool _disposed;
 
@@ -53,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int depth, int stride, VideoFrameProcessingRequest request)
         {
             ArgumentNullException.ThrowIfNull(sourceBuffer);
-            if (length <= 0 || length > sourceBuffer.Length || request == null || !request.NeedsProcessing || _disposed) return;
+            if (length <= 0 || length > sourceBuffer.Length || _disposed) return;
 
             unsafe
             {
@@ -66,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, VideoFrameProcessingRequest request)
         {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || request == null || !request.NeedsProcessing || _disposed) return;
+            if (sourcePointer == IntPtr.Zero || length <= 0 || _disposed) return;
             SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, request);
         }
 
@@ -94,11 +81,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 }
 
                 HImage workingFrame;
-                VideoFrameProcessingRequest? request;
+                VideoFrameProcessingRequest request;
 
                 lock (_gate)
                 {
-                    if (!_hasPendingFrame || _pendingFrame == null || _pendingRequest == null)
+                    if (!_hasPendingFrame || _pendingFrame == null)
                     {
                         continue;
                     }
@@ -106,7 +93,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     (_pendingFrame, _workingFrame) = (_workingFrame, _pendingFrame);
                     (_pendingCapacity, _workingCapacity) = (_workingCapacity, _pendingCapacity);
                     request = _pendingRequest;
-                    _pendingRequest = null;
+                    _pendingRequest = default;
                     _hasPendingFrame = false;
                     workingFrame = _workingFrame!.Value;
                 }
@@ -117,7 +104,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 {
                     if (_cts.IsCancellationRequested)
                     {
-                        DisposePseudoImage(result.PseudoImage);
                         break;
                     }
 
@@ -125,48 +111,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 }
                 catch
                 {
-                    DisposePseudoImage(result.PseudoImage);
                 }
             }
         }
 
         private static VideoFrameProcessingResult ProcessFrame(HImage frame, VideoFrameProcessingRequest request)
-        {
-            double? articulation = null;
-            HImage? pseudoImage = null;
-
-            if (request.EnableArticulation)
-            {
-                articulation = OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi);
-            }
-
-            if (request.PseudoColor is PseudoColorFrameRequest pseudoColor)
-            {
-                int ret;
-                if (pseudoColor.HasValidAutoRange)
-                {
-                    ret = OpenCVMediaHelper.M_PseudoColorAutoRange(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel, pseudoColor.DataMin, pseudoColor.DataMax);
-                    if (ret == 0)
-                    {
-                        pseudoImage = processedImage;
-                    }
-                }
-                else
-                {
-                    ret = OpenCVMediaHelper.M_PseudoColor(frame, out HImage processedImage, pseudoColor.Min, pseudoColor.Max, pseudoColor.ColormapTypes, pseudoColor.Channel);
-                    if (ret == 0)
-                    {
-                        pseudoImage = processedImage;
-                    }
-                }
-            }
-
-            return new VideoFrameProcessingResult
-            {
-                Articulation = articulation,
-                PseudoImage = pseudoImage
-            };
-        }
+            => new(OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi));
 
         private static void EnsureBuffer(ref HImage? buffer, ref int capacity, int width, int height, int channels, int depth, int stride, int requiredLength)
         {
@@ -188,17 +138,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     channels = channels,
                     depth = depth,
                     stride = stride,
-                    pData = Marshal.AllocHGlobal(requiredLength)
+                    pData = Marshal.AllocCoTaskMem(requiredLength)
                 };
                 capacity = requiredLength;
-            }
-        }
-
-        private static void DisposePseudoImage(HImage? image)
-        {
-            if (image is HImage pseudoImage)
-            {
-                pseudoImage.Dispose();
             }
         }
 

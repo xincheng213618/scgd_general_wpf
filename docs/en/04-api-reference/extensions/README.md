@@ -29,6 +29,6 @@ This means the current `extensions/` is not a complete extension encyclopedia, b
 
 ## Continue Reading
 
-- [API Reference Overview](../README.md)
+- [Module Handbook Overview](../README.md)
 - [Plugins and Status](../plugins/README.md)
 - [FlowEngineLib Architecture](../../03-architecture/components/engine/flow-engine.md)

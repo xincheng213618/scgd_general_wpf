@@ -1,3 +1,4 @@
+#pragma warning disable CA1068,CS8604
 using ColorVision.FileIO;
 using Conoscope.Core;
 using Conoscope.ApplicationServices.Preprocess;

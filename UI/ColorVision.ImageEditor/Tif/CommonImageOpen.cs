@@ -8,7 +8,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
 {
-    [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|gif")]
+    [FileExtension(".bmp|.jpg|.jpeg|.png|.webp|.ico|.gif")]
     public record class CommonImageOpen(EditorContext EditorContext) : IImageOpen
     {
         public async void OpenImage(EditorContext context, string? filePath)

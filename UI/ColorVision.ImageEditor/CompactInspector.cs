@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1859
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
@@ -18,8 +19,8 @@ using System.Windows.Media;
 namespace ColorVision.ImageEditor
 {
     public interface ICompactInspectorProvider
-    {
-        IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context);
+    {  
+        IEnumerable<CompactInspectorItem> GetCompactInspectorItems();
     }
 
     public enum CompactInspectorEditorKind
@@ -124,17 +125,16 @@ namespace ColorVision.ImageEditor
                     ToolTip = "完整编辑",
                     Command = new RelayCommand(_ =>
                     {
-                        Window? owner = Window.GetWindow(_context.ImageView) ?? Application.Current?.MainWindow;
                         new PropertyEditorWindow(drawingVisual.BaseAttribute)
                         {
-                            Owner = owner,
+                            Owner = _context.OwnerWindow,
                             WindowStartupLocation = WindowStartupLocation.CenterOwner,
                         }.ShowDialog();
                     })
                 });
             }
 
-            _context.ImageView.SetCompactInspectorItems(items.Select(CompactInspectorElementFactory.CreateElement));
+            _context.SetCompactInspectorItems(items.Select(CompactInspectorElementFactory.CreateElement));
         }
 
         private object? ResolveSource()
@@ -161,12 +161,12 @@ namespace ColorVision.ImageEditor
         {
             if (source is ICompactInspectorProvider provider)
             {
-                return provider.GetCompactInspectorItems(_context);
+                return provider.GetCompactInspectorItems();
             }
 
             if (source is DrawingVisualBase drawingVisual && drawingVisual.BaseAttribute is ICompactInspectorProvider attributeProvider)
             {
-                return attributeProvider.GetCompactInspectorItems(_context);
+                return attributeProvider.GetCompactInspectorItems();
             }
 
             return Array.Empty<CompactInspectorItem>();

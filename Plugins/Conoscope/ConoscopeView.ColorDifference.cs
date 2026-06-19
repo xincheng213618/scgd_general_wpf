@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using Conoscope.Core;
 using Conoscope.Presentation.Helpers;
 using System;

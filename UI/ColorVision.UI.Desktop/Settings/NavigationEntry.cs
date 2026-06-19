@@ -4,7 +4,7 @@ namespace ColorVision.UI.Desktop.Settings
     {
         public string Group { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
-        public int Count { get; set; }
+        public string IconGlyph { get; set; } = string.Empty;
         public int Order { get; set; }
     }
 }

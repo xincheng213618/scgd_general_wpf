@@ -61,8 +61,8 @@ namespace ColorVision.Copilot
                     {
                         Success = false,
                         Mode = mode,
-                        Summary = "未找到最近日志。",
-                        ErrorMessage = "当前环境没有发现可读取的日志文件。",
+                        Summary = "No recent logs were found.",
+                        ErrorMessage = "No readable log files were found in the current environment.",
                         RequestedRecentLineCount = safeMaxLines,
                     };
                 }
@@ -78,7 +78,7 @@ namespace ColorVision.Copilot
                 var content = filteredLines.Length > 0
                     ? string.Join(Environment.NewLine, new[]
                     {
-                        $"[过滤关键字] {query}",
+                        $"[Filter Keyword] {query}",
                         string.Join(Environment.NewLine, filteredLines),
                     })
                     : string.Join(Environment.NewLine, linesToDisplay);
@@ -86,7 +86,7 @@ namespace ColorVision.Copilot
                 var contentWasTruncated = false;
                 if (content.Length > safeMaxChars)
                 {
-                    content = content[..safeMaxChars] + Environment.NewLine + $"...<内容已截断，仅保留最近 {safeMaxChars} 字符。>";
+                    content = content[..safeMaxChars] + Environment.NewLine + $"...<content truncated; kept the most recent {safeMaxChars} characters.>";
                     contentWasTruncated = true;
                 }
 
@@ -110,7 +110,7 @@ namespace ColorVision.Copilot
                 {
                     Success = false,
                     Mode = mode,
-                    Summary = "读取最近日志失败。",
+                    Summary = "Failed to read recent logs.",
                     ErrorMessage = ex.Message,
                     RequestedRecentLineCount = safeMaxLines,
                 };
@@ -161,20 +161,20 @@ namespace ColorVision.Copilot
             if (filteredLineCount > 0)
             {
                 summary = mode == CopilotRecentLogMode.FullDay
-                    ? $"已读取当日日志：{fileName}，按关键字 {query} 命中 {filteredLineCount} 行。"
-                    : $"已读取最近日志：{fileName}，按关键字 {query} 命中 {filteredLineCount} 行。";
+                    ? $"Read today's log {fileName}; keyword {query} matched {filteredLineCount} lines."
+                    : $"Read recent log {fileName}; keyword {query} matched {filteredLineCount} lines.";
             }
             else if (mode == CopilotRecentLogMode.FullDay)
             {
-                summary = $"已读取当日日志：{fileName}，共 {totalLineCount} 行。";
+                summary = $"Read today's log {fileName}; total lines: {totalLineCount}.";
             }
             else
             {
-                summary = $"已读取最近日志：{fileName}，保留最近 {Math.Min(requestedRecentLineCount, totalLineCount)} 行中的 {displayedLineCount} 行。";
+                summary = $"Read recent log {fileName}; showing {displayedLineCount} of the latest {Math.Min(requestedRecentLineCount, totalLineCount)} lines.";
             }
 
             if (contentWasTruncated)
-                summary += " 内容较大，显示已截断。";
+                summary += " Content was large and has been truncated.";
 
             return summary;
         }

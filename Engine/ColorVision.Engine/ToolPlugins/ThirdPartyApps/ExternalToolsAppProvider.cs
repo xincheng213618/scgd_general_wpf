@@ -98,7 +98,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 "ColorVision",
                 MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
-                string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+                string downloadDir = Environments.DirToolPackageCache;
                 var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
                 if (service == null) return;
 
@@ -110,7 +110,8 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                     {
                         try
                         {
-                            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+                            string path = Environments.DirTools;
+                            Directory.CreateDirectory(path);
                             ZipFile.ExtractToDirectory(filePath, path, true);
 
                             string exePath = Path.Combine(path, extractedExeRelativePath);

@@ -1,3 +1,4 @@
+#pragma warning disable CA1304
 using System;
 using System.ComponentModel;
 using System.Resources;

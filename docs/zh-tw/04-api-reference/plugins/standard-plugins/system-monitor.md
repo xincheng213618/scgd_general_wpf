@@ -139,6 +139,6 @@
 
 ## 繼續閱讀
 
-- [Plugins/README.md](../../../../Plugins/README.md)
+- [Plugins/README.md](../../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
-- [docs/04-api-reference/plugins/standard-plugins/pattern.md](./pattern.md)
+- [現有外掛能力說明](../README.md)

@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿#pragma warning disable CA1822,CS8622,CS8625
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Globalization;

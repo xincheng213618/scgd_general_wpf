@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using System;
 using System.IO;
 using System.Runtime.InteropServices;

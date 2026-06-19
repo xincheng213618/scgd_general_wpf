@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1863
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -40,8 +41,7 @@ namespace Conoscope
         public DrawEditorContext EditorContext { get; }
 
         private readonly ContextMenu focusCircleContextMenu = new();
-        private readonly EditorContext contextMenuEditorContext = new();
-        private readonly DrawingVisualBaseDVContextMenu focusCirclePropertyContextMenu = new();
+        private readonly DrawingVisualBaseDVContextMenu focusCirclePropertyContextMenu;
         private readonly MenuItem editFocusCircleByPolarMenuItem = new();
         private readonly MenuItem calculateFocusCircleMenuItem = new();
         private readonly MenuItem clearFocusCircleMenuItem = new();
@@ -66,6 +66,7 @@ namespace Conoscope
             EditorContext = new DrawEditorContext(ImageCanvas, ZoomBox);
 
             EditorContext.SelectionVisual = new SelectEditorVisual(EditorContext);
+            focusCirclePropertyContextMenu = new DrawingVisualBaseDVContextMenu(EditorContext);
             focusCircleDrawTool = new ConoscopeFocusCircleDrawTool(EditorContext, this);
             focusCircleEraseTool = new EraseManager(EditorContext);
             focusCircleEraseTool.CanEraseVisual = static visual => visual is DVCircleText;
@@ -223,9 +224,6 @@ namespace Conoscope
             calculateFocusCircleMenuItem.Click += CalculateFocusCircleMenuItem_Click;
             clearFocusCircleMenuItem.Click += ClearFocusCircleMenuItem_Click;
 
-            contextMenuEditorContext.DrawCanvas = ImageCanvas;
-            contextMenuEditorContext.Zoombox = ZoomBox;
-            contextMenuEditorContext.SelectionVisual = EditorContext.SelectionVisual;
             ImageCanvas.ContextMenu = focusCircleContextMenu;
             UpdateCanvasCursor();
         }
@@ -388,7 +386,7 @@ namespace Conoscope
                 focusCircleContextMenu.Items.Add(editFocusCircleByPolarMenuItem);
                 focusCircleContextMenu.Items.Add(new Separator());
 
-                foreach (MenuItem menuItem in focusCirclePropertyContextMenu.GetContextMenuItems(contextMenuEditorContext, contextMenuFocusCircle))
+                foreach (MenuItem menuItem in focusCirclePropertyContextMenu.GetContextMenuItems(contextMenuFocusCircle))
                 {
                     focusCircleContextMenu.Items.Add(menuItem);
                 }

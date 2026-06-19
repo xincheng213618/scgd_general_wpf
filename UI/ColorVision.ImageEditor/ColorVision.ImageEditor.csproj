@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>disable</ImplicitUsings>
-		<VersionPrefix>1.5.5.5</VersionPrefix>
+		<VersionPrefix>1.5.5.7</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -16,6 +16,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<None Remove="EditorTools\Filters\Shaders\*.ps" />
 		<None Remove="Assets\Colormap\colorscale_autumn.jpg" />
 		<None Remove="Assets\Colormap\colorscale_bone.jpg" />
 		<None Remove="Assets\Colormap\colorscale_cividis.jpg" />
@@ -57,6 +58,8 @@
 	<ItemGroup>
 		<PackageReference Include="log4net" Version="3.3.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260602" />
 		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.27.3" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
 	</ItemGroup>
@@ -74,6 +77,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="EditorTools\Filters\Shaders\*.ps" />
 		<Resource Include="Assets\Colormap\colorscale_autumn.jpg" />
 		<Resource Include="Assets\Colormap\colorscale_bone.jpg" />
 		<Resource Include="Assets\Colormap\colorscale_cividis.jpg" />

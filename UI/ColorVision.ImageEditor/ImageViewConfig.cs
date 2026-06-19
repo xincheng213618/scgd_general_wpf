@@ -67,11 +67,6 @@ namespace ColorVision.ImageEditor
             Cleared?.Invoke(this, new EventArgs());
         }
 
-
-
-        public void AddProperties(string Key,object? Value)
-            => SetProperty(Key, Value, ImageViewPropertyScope.Legacy);
-
         public void SetImageMetadata(string key, object? value, string? owner = null, string? description = null)
             => SetProperty(key, value, ImageViewPropertyScope.ImageMetadata, owner, description);
 
@@ -115,7 +110,7 @@ namespace ColorVision.ImageEditor
                 {
                     Key = item.Key,
                     Value = item.Value,
-                    Scope = state?.Scope ?? ImageViewPropertyScope.Legacy,
+                    Scope = state?.Scope ?? ImageViewPropertyScope.ViewState,
                     Owner = state?.Owner,
                     Description = state?.Description,
                 };
@@ -172,7 +167,7 @@ namespace ColorVision.ImageEditor
                 ImageViewPropertyScope.ImageMetadata => ColorVision.ImageEditor.Properties.Resources.ImageView_Scope_ImageMetadata,
                 ImageViewPropertyScope.ViewState => ColorVision.ImageEditor.Properties.Resources.ImageView_Scope_ViewState,
                 ImageViewPropertyScope.OpenerRuntime => ColorVision.ImageEditor.Properties.Resources.ImageView_Scope_OpenerRuntime,
-                _ => ColorVision.ImageEditor.Properties.Resources.ImageView_Scope_Legacy,
+                _ => scope.ToString(),
             };
         }
 
@@ -183,7 +178,7 @@ namespace ColorVision.ImageEditor
                 ImageViewPropertyScope.ImageMetadata => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_ImageMetadata,
                 ImageViewPropertyScope.ViewState => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_ViewState,
                 ImageViewPropertyScope.OpenerRuntime => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_OpenerRuntime,
-                _ => ColorVision.ImageEditor.Properties.Resources.ImageView_ScopeDesc_Legacy,
+                _ => string.Empty,
             };
         }
 
@@ -200,7 +195,7 @@ namespace ColorVision.ImageEditor
 
 
         [JsonIgnore]
-        public string FilePath { get => GetProperties<string>(ImageViewPropertyKeys.FilePath); set { SetImageMetadata(ImageViewPropertyKeys.FilePath, value, nameof(ImageViewConfig), ColorVision.ImageEditor.Properties.Resources.ImageView_MetadataDesc_FilePath); OnPropertyChanged(); } }
+        public string FilePath { get => GetProperties<string>(ImageViewPropertyKeys.FilePath) ?? string.Empty; set { SetImageMetadata(ImageViewPropertyKeys.FilePath, value, nameof(ImageViewConfig), ColorVision.ImageEditor.Properties.Resources.ImageView_MetadataDesc_FilePath); OnPropertyChanged(); } }
 
 
         public event EventHandler<bool> LayoutUpdatedChanged;

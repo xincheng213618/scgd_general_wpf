@@ -1,0 +1,1019 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/OLED.AOI.schema.json",
+  "title": "OLED AOI",
+  "description": "OLED AOI 全量参数中的像素缺陷检测参数。默认值来自开发者维护的 pixelDefectDetect.cfg；pixelDefectDetectDark.cfg 作为暗画面示例保留。",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "rebuiltImgPixelDefects": {
+      "averageMaskLvRatioThresholdDark": 0.4,
+      "averageMaskLvRatioThresholdBright": 2,
+      "darkPixelLvRatioThreshold": 0.4,
+      "brightPixelLvRatioThreshold": 2,
+      "edge_area_x": 80,
+      "edge_area_y": 50,
+      "edge_area_w": 520,
+      "edge_area_h": 380,
+      "darkThreshold_edge_area": 0.15,
+      "brightThreshold_edge_area": 2.5,
+      "enable_grading": true,
+      "bright_lvs": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "dark_lvs": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "gradingCfgs": [
+        {
+          "grade_name": "GOOD",
+          "bright_max_nums": [
+            2,
+            1,
+            0,
+            0,
+            0
+          ],
+          "dark_max_nums": [
+            2,
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "grade_name": "WELL",
+          "bright_max_nums": [
+            2000,
+            100,
+            50,
+            10,
+            1
+          ],
+          "dark_max_nums": [
+            2000,
+            100,
+            50,
+            10,
+            1
+          ]
+        },
+        {
+          "grade_name": "SOSO",
+          "bright_max_nums": [
+            3000,
+            100,
+            50,
+            10,
+            1
+          ],
+          "dark_max_nums": [
+            3000,
+            100,
+            50,
+            10,
+            1
+          ]
+        }
+      ]
+    }
+  },
+  "properties": {
+    "rebuiltImgPixelDefects": {
+      "type": "object",
+      "title": "重建图像像素缺陷参数",
+      "x-ui": {
+        "order": 10
+      },
+      "default": {
+        "averageMaskLvRatioThresholdDark": 0.4,
+        "averageMaskLvRatioThresholdBright": 2,
+        "darkPixelLvRatioThreshold": 0.4,
+        "brightPixelLvRatioThreshold": 2,
+        "edge_area_x": 80,
+        "edge_area_y": 50,
+        "edge_area_w": 520,
+        "edge_area_h": 380,
+        "darkThreshold_edge_area": 0.15,
+        "brightThreshold_edge_area": 2.5,
+        "enable_grading": true,
+        "bright_lvs": [
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "dark_lvs": [
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "gradingCfgs": [
+          {
+            "grade_name": "GOOD",
+            "bright_max_nums": [
+              2,
+              1,
+              0,
+              0,
+              0
+            ],
+            "dark_max_nums": [
+              2,
+              1,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "grade_name": "WELL",
+            "bright_max_nums": [
+              2000,
+              100,
+              50,
+              10,
+              1
+            ],
+            "dark_max_nums": [
+              2000,
+              100,
+              50,
+              10,
+              1
+            ]
+          },
+          {
+            "grade_name": "SOSO",
+            "bright_max_nums": [
+              3000,
+              100,
+              50,
+              10,
+              1
+            ],
+            "dark_max_nums": [
+              3000,
+              100,
+              50,
+              10,
+              1
+            ]
+          }
+        ]
+      },
+      "additionalProperties": true,
+      "properties": {
+        "dark_lvs": {
+          "type": "array",
+          "title": "暗点等级阈值数组",
+          "x-ui": {
+            "order": 10
+          },
+          "default": [
+            1,
+            2,
+            3,
+            4,
+            6
+          ],
+          "items": {
+            "type": "integer",
+            "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.dark_lvs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+            "x-provider": {
+              "jsonPath": "$.rebuiltImgPixelDefects.dark_lvs[]",
+              "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+            },
+            "minimum": 0
+          },
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.dark_lvs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.dark_lvs",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "暗点连通域分级档位数组。"
+        },
+        "bright_lvs": {
+          "type": "array",
+          "title": "亮点等级阈值数组",
+          "x-ui": {
+            "order": 20
+          },
+          "default": [
+            1,
+            2,
+            3,
+            4,
+            6
+          ],
+          "items": {
+            "type": "integer",
+            "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.bright_lvs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+            "x-provider": {
+              "jsonPath": "$.rebuiltImgPixelDefects.bright_lvs[]",
+              "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+            },
+            "minimum": 0
+          },
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.bright_lvs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.bright_lvs",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "亮点连通域分级档位数组。"
+        },
+        "edge_area_h": {
+          "type": "integer",
+          "title": "中心区域高度",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 380,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.edge_area_h' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.edge_area_h",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "中心区域高度。",
+          "unit": "px",
+          "minimum": 0
+        },
+        "edge_area_w": {
+          "type": "integer",
+          "title": "中心区域宽度",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 520,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.edge_area_w' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.edge_area_w",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "中心区域宽度。",
+          "unit": "px",
+          "minimum": 0
+        },
+        "edge_area_x": {
+          "type": "integer",
+          "title": "中心区域 X",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 80,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.edge_area_x' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.edge_area_x",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "中心区域左上角 X 坐标。",
+          "unit": "px",
+          "minimum": 0
+        },
+        "edge_area_y": {
+          "type": "integer",
+          "title": "中心区域 Y",
+          "x-ui": {
+            "order": 60
+          },
+          "default": 50,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.edge_area_y' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.edge_area_y",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "中心区域左上角 Y 坐标。",
+          "unit": "px",
+          "minimum": 0
+        },
+        "gradingCfgs": {
+          "type": "array",
+          "title": "产品分级配置",
+          "x-ui": {
+            "order": 70
+          },
+          "default": [
+            {
+              "grade_name": "GOOD",
+              "bright_max_nums": [
+                2,
+                1,
+                0,
+                0,
+                0
+              ],
+              "dark_max_nums": [
+                2,
+                1,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "grade_name": "WELL",
+              "bright_max_nums": [
+                2000,
+                100,
+                50,
+                10,
+                1
+              ],
+              "dark_max_nums": [
+                2000,
+                100,
+                50,
+                10,
+                1
+              ]
+            },
+            {
+              "grade_name": "SOSO",
+              "bright_max_nums": [
+                3000,
+                100,
+                50,
+                10,
+                1
+              ],
+              "dark_max_nums": [
+                3000,
+                100,
+                50,
+                10,
+                1
+              ]
+            }
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "grade_name": {
+                "type": "string",
+                "title": "等级名称",
+                "x-ui": {
+                  "order": 10
+                },
+                "default": "GOOD",
+                "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].grade_name' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].grade_name",
+                  "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                },
+                "description": "等级标识，例如 GOOD、WELL、SOSO。"
+              },
+              "dark_max_nums": {
+                "type": "array",
+                "title": "暗点数量上限",
+                "x-ui": {
+                  "order": 20
+                },
+                "default": [
+                  2,
+                  1,
+                  0,
+                  0,
+                  0
+                ],
+                "items": {
+                  "type": "integer",
+                  "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                  "x-provider": {
+                    "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums[]",
+                    "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                  }
+                },
+                "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums",
+                  "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                },
+                "description": "各档位暗点最大允许数量。"
+              },
+              "bright_max_nums": {
+                "type": "array",
+                "title": "亮点数量上限",
+                "x-ui": {
+                  "order": 30
+                },
+                "default": [
+                  2,
+                  1,
+                  0,
+                  0,
+                  0
+                ],
+                "items": {
+                  "type": "integer",
+                  "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                  "x-provider": {
+                    "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums[]",
+                    "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                  }
+                },
+                "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums",
+                  "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+                },
+                "description": "各档位亮点最大允许数量。"
+              },
+              "bright_max_nums_total": {
+                "type": "array",
+                "x-ui": {
+                  "order": 40
+                },
+                "title": "全域亮点数量上限",
+                "description": "全域各档位亮点最大允许数量。",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums_total",
+                  "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+                }
+              },
+              "dark_max_nums_total": {
+                "type": "array",
+                "x-ui": {
+                  "order": 50
+                },
+                "title": "全域暗点数量上限",
+                "description": "全域各档位暗点最大允许数量。",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums_total",
+                  "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+                }
+              },
+              "bright_max_nums_center": {
+                "type": "array",
+                "x-ui": {
+                  "order": 60
+                },
+                "title": "中心区亮点数量上限",
+                "description": "中心区各档位亮点最大允许数量。",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].bright_max_nums_center",
+                  "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+                }
+              },
+              "dark_max_nums_center": {
+                "type": "array",
+                "x-ui": {
+                  "order": 70
+                },
+                "title": "中心区暗点数量上限",
+                "description": "中心区各档位暗点最大允许数量。",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "x-provider": {
+                  "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[].dark_max_nums_center",
+                  "aiHint": "Provider-documented grading field; keep JSON key compatible with the C++ DLL."
+                }
+              }
+            },
+            "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs[]' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+            "x-provider": {
+              "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs[]",
+              "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+            }
+          },
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.gradingCfgs' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.gradingCfgs",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "产品综合等级配置数组。"
+        },
+        "enable_grading": {
+          "type": "boolean",
+          "title": "启用分级",
+          "x-ui": {
+            "order": 80
+          },
+          "default": true,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.enable_grading' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.enable_grading",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "是否启用产品等级分级。"
+        },
+        "darkThreshold_edge_area": {
+          "type": "number",
+          "title": "边缘区暗点阈值",
+          "x-ui": {
+            "order": 90
+          },
+          "default": 0.15,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.darkThreshold_edge_area' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.darkThreshold_edge_area",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "边缘区暗点阈值。",
+          "minimum": 0
+        },
+        "brightThreshold_edge_area": {
+          "type": "number",
+          "title": "边缘区亮点阈值",
+          "x-ui": {
+            "order": 100
+          },
+          "default": 2.5,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.brightThreshold_edge_area' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.brightThreshold_edge_area",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "边缘区亮点阈值。",
+          "minimum": 0
+        },
+        "darkPixelLvRatioThreshold": {
+          "type": "number",
+          "title": "暗点亮度倍率阈值",
+          "x-ui": {
+            "order": 110
+          },
+          "default": 0.4,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.darkPixelLvRatioThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.darkPixelLvRatioThreshold",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "像素亮度 / 基准均值低于该值时按暗点处理。",
+          "minimum": 0
+        },
+        "brightPixelLvRatioThreshold": {
+          "type": "number",
+          "title": "亮点亮度倍率阈值",
+          "x-ui": {
+            "order": 120
+          },
+          "default": 2,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.brightPixelLvRatioThreshold' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.brightPixelLvRatioThreshold",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "像素亮度 / 基准均值高于该值时按亮点处理。",
+          "minimum": 0
+        },
+        "averageMaskLvRatioThresholdDark": {
+          "type": "number",
+          "title": "暗点均值掩膜倍率阈值",
+          "x-ui": {
+            "order": 130
+          },
+          "default": 0.4,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.averageMaskLvRatioThresholdDark' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.averageMaskLvRatioThresholdDark",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "用于暗点均值掩膜的倍率阈值，默认通常等于 darkPixelLvRatioThreshold。",
+          "minimum": 0
+        },
+        "averageMaskLvRatioThresholdBright": {
+          "type": "number",
+          "title": "亮点均值掩膜倍率阈值",
+          "x-ui": {
+            "order": 140
+          },
+          "default": 2,
+          "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects.averageMaskLvRatioThresholdBright' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.rebuiltImgPixelDefects.averageMaskLvRatioThresholdBright",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          },
+          "description": "用于亮点均值掩膜的倍率阈值，默认通常等于 brightPixelLvRatioThreshold。",
+          "minimum": 0
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.rebuiltImgPixelDefects' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.rebuiltImgPixelDefects",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      },
+      "description": "重建图像像素缺陷检测参数，包括亮暗点倍率阈值、中心/边缘区域和产品分级配置。",
+      "examples": [
+        {
+          "averageMaskLvRatioThresholdDark": 0.4,
+          "averageMaskLvRatioThresholdBright": 2,
+          "darkPixelLvRatioThreshold": 0.4,
+          "brightPixelLvRatioThreshold": 2,
+          "edge_area_x": 80,
+          "edge_area_y": 50,
+          "edge_area_w": 520,
+          "edge_area_h": 380,
+          "darkThreshold_edge_area": 0.15,
+          "brightThreshold_edge_area": 2.5,
+          "enable_grading": true,
+          "bright_lvs": [
+            1,
+            2,
+            3,
+            4,
+            6
+          ],
+          "dark_lvs": [
+            1,
+            2,
+            3,
+            4,
+            6
+          ],
+          "gradingCfgs": [
+            {
+              "grade_name": "GOOD",
+              "bright_max_nums": [
+                2,
+                1,
+                0,
+                0,
+                0
+              ],
+              "dark_max_nums": [
+                2,
+                1,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "grade_name": "WELL",
+              "bright_max_nums": [
+                2000,
+                100,
+                50,
+                10,
+                1
+              ],
+              "dark_max_nums": [
+                2000,
+                100,
+                50,
+                10,
+                1
+              ]
+            },
+            {
+              "grade_name": "SOSO",
+              "bright_max_nums": [
+                3000,
+                100,
+                50,
+                10,
+                1
+              ],
+              "dark_max_nums": [
+                3000,
+                100,
+                50,
+                10,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "averageMaskLvRatioThresholdDark": 0.4,
+          "averageMaskLvRatioThresholdBright": 2,
+          "darkPixelLvRatioThreshold": 0.4,
+          "brightPixelLvRatioThreshold": 1,
+          "edge_area_x": 80,
+          "edge_area_y": 50,
+          "edge_area_w": 520,
+          "edge_area_h": 380,
+          "darkThreshold_edge_area": 0.15,
+          "brightThreshold_edge_area": 1,
+          "enable_grading": true,
+          "bright_lvs": [
+            1,
+            2,
+            3,
+            4,
+            6
+          ],
+          "dark_lvs": [
+            1,
+            2,
+            3,
+            4,
+            6
+          ],
+          "gradingCfgs": [
+            {
+              "grade_name": "GOOD",
+              "bright_max_nums": [
+                2,
+                1,
+                0,
+                0,
+                0
+              ],
+              "dark_max_nums": [
+                2,
+                1,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "grade_name": "WELL",
+              "bright_max_nums": [
+                2000,
+                100,
+                50,
+                10,
+                1
+              ],
+              "dark_max_nums": [
+                2000,
+                100,
+                50,
+                10,
+                1
+              ]
+            },
+            {
+              "grade_name": "SOSO",
+              "bright_max_nums": [
+                3000,
+                100,
+                50,
+                10,
+                1
+              ],
+              "dark_max_nums": [
+                3000,
+                100,
+                50,
+                10,
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T09:36:19+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 28,
+      "code": "OLED.AOI",
+      "name": "OLED AOI",
+      "version": null,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "AOI检测文档和参数例子",
+        "defaultParamFile": "pixelDefectDetect.cfg",
+        "docFiles": [
+          "pixelDefectDetectDark.cfg",
+          "cv_oled_JSON_CONFIG_REFERENCE.pdf",
+          "AOI检测流程API文档.xlsx"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from provider-maintained AOI test-case config files because the database cfg_json may lag behind provider development.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "Default/type may follow provider-maintained config files when database cfg_json is stale.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "AOI检测文档和参数例子",
+      "defaultParamFile": "pixelDefectDetect.cfg",
+      "docFiles": [
+        "pixelDefectDetectDark.cfg",
+        "cv_oled_JSON_CONFIG_REFERENCE.pdf",
+        "AOI检测流程API文档.xlsx"
+      ]
+    },
+    "defaultSource": "provider-maintained-config"
+  },
+  "examples": [
+    {
+      "rebuiltImgPixelDefects": {
+        "averageMaskLvRatioThresholdDark": 0.4,
+        "averageMaskLvRatioThresholdBright": 2,
+        "darkPixelLvRatioThreshold": 0.4,
+        "brightPixelLvRatioThreshold": 2,
+        "edge_area_x": 80,
+        "edge_area_y": 50,
+        "edge_area_w": 520,
+        "edge_area_h": 380,
+        "darkThreshold_edge_area": 0.15,
+        "brightThreshold_edge_area": 2.5,
+        "enable_grading": true,
+        "bright_lvs": [
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "dark_lvs": [
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "gradingCfgs": [
+          {
+            "grade_name": "GOOD",
+            "bright_max_nums": [
+              2,
+              1,
+              0,
+              0,
+              0
+            ],
+            "dark_max_nums": [
+              2,
+              1,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "grade_name": "WELL",
+            "bright_max_nums": [
+              2000,
+              100,
+              50,
+              10,
+              1
+            ],
+            "dark_max_nums": [
+              2000,
+              100,
+              50,
+              10,
+              1
+            ]
+          },
+          {
+            "grade_name": "SOSO",
+            "bright_max_nums": [
+              3000,
+              100,
+              50,
+              10,
+              1
+            ],
+            "dark_max_nums": [
+              3000,
+              100,
+              50,
+              10,
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "rebuiltImgPixelDefects": {
+        "averageMaskLvRatioThresholdDark": 0.4,
+        "averageMaskLvRatioThresholdBright": 2,
+        "darkPixelLvRatioThreshold": 0.4,
+        "brightPixelLvRatioThreshold": 1,
+        "edge_area_x": 80,
+        "edge_area_y": 50,
+        "edge_area_w": 520,
+        "edge_area_h": 380,
+        "darkThreshold_edge_area": 0.15,
+        "brightThreshold_edge_area": 1,
+        "enable_grading": true,
+        "bright_lvs": [
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "dark_lvs": [
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "gradingCfgs": [
+          {
+            "grade_name": "GOOD",
+            "bright_max_nums": [
+              2,
+              1,
+              0,
+              0,
+              0
+            ],
+            "dark_max_nums": [
+              2,
+              1,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "grade_name": "WELL",
+            "bright_max_nums": [
+              2000,
+              100,
+              50,
+              10,
+              1
+            ],
+            "dark_max_nums": [
+              2000,
+              100,
+              50,
+              10,
+              1
+            ]
+          },
+          {
+            "grade_name": "SOSO",
+            "bright_max_nums": [
+              3000,
+              100,
+              50,
+              10,
+              1
+            ],
+            "dark_max_nums": [
+              3000,
+              100,
+              50,
+              10,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

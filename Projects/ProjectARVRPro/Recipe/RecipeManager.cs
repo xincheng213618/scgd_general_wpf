@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿#pragma warning disable CA1859
+using log4net;
 using Newtonsoft.Json;
 using System.IO;
 

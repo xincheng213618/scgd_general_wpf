@@ -1,3 +1,4 @@
+#pragma warning disable CS8601,CS8602
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Media;
@@ -50,7 +51,7 @@ namespace ProjectARVRPro.Process.Chessboard
                         if (details.Count == 1)
                         {
                             var view = new PoiAnalysisDetailViewReslut(details[0]);
-                            view.PoiAnalysisResult.result.Value *= recipeConfig.ChessboardContrast.Fix;
+                            view.PoiAnalysisResult.result.Value = recipeConfig.ChessboardContrast.Apply(view.PoiAnalysisResult.result.Value);
                             var contrast = new ObjectiveTestItem
                             {
                                 Name = "Chessboard_Contrast",
@@ -67,6 +68,10 @@ namespace ProjectARVRPro.Process.Chessboard
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.ChessboardTestResult = JsonConvert.DeserializeObject<ChessboardTestResult>(ctx.Result.ViewResultJson) ?? new ChessboardTestResult();
+                if (Config.SaveCsv)
+                {
+                    ChessboardCsvExporter.SavePoixyuvDatas(testResult.PoixyuvDatas, ctx, "Chessboard");
+                }
                 return true;
             }
             catch (Exception ex)

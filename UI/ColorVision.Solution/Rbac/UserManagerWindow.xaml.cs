@@ -1,4 +1,5 @@
-﻿using ColorVision.Rbac.ViewModels;
+﻿#pragma warning disable CA1822,CA1863
+using ColorVision.Rbac.ViewModels;
 using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Controls;

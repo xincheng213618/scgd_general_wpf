@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.MTF.MTFHV058

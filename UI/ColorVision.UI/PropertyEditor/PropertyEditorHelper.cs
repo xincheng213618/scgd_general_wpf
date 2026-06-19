@@ -3,9 +3,11 @@ using ColorVision.Themes;
 using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -16,6 +18,15 @@ using System.Windows.Media.Animation;
 
 namespace ColorVision.UI
 {
+    public interface IPropertyEditorMetadataProvider
+    {
+        bool IsPropertyManaged(PropertyInfo propertyInfo);
+        bool IsBrowsable(PropertyInfo propertyInfo);
+        string? GetDisplayName(PropertyInfo propertyInfo);
+        string? GetDescription(PropertyInfo propertyInfo);
+        string? GetCategory(PropertyInfo propertyInfo);
+    }
+
     public static class PropertyEditorHelper
     {
         // Constants
@@ -24,9 +35,11 @@ namespace ColorVision.UI
 
         // Cache for resources and reflection results
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new();
+        private static readonly ConcurrentDictionary<(ResourceManager ResourceManager, string CultureName, string Key), string> ResourceStringCache = new();
         public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache { get; } = new();
         private static readonly Dictionary<Type, Type> EditorTypeRegistry = new();
         private static readonly List<(Func<Type, bool> Predicate, Type EditorType)> TypePredicateRegistry = new();
+        private static readonly AsyncLocal<IPropertyEditorMetadataProvider?> MetadataProviderContext = new();
 
         static PropertyEditorHelper()
         {
@@ -116,6 +129,7 @@ namespace ColorVision.UI
         }
 
         private static readonly Lazy<ResourceCache> Resources = new(() => new ResourceCache());
+
         private class ResourceCache
         {
             public Brush GlobalTextBrush { get; set; }
@@ -171,37 +185,40 @@ namespace ColorVision.UI
 
         public static ResourceManager? GetResourceManager(object obj, ResourceManager? resourceManager = null)
         {
-            var type = obj.GetType();
-            if (resourceManager == null)
-            {
-                var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
-                {
-                    try
-                    {
-                        string namespaceName = t.Assembly.GetName().Name!;
-                        string resourceClassName = $"{namespaceName}.Properties.Resources";
-                        Type? resourceType = t.Assembly.GetType(resourceClassName);
-                        if (resourceType != null)
-                        {
-                            var rmProp = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                            if (rmProp?.GetValue(null) is ResourceManager rm)
-                                return rm;
-                        }
-                    }
-                    catch
-                    {
-                        // ignore and fallback to null
-                    }
-                    return null;
-                }));
-                return lazyResourceManager.Value;
+            ArgumentNullException.ThrowIfNull(obj);
+            return GetResourceManager(obj.GetType(), resourceManager);
+        }
 
-            }
-            else
+        public static ResourceManager? GetResourceManager(Type type, ResourceManager? resourceManager = null)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            if (resourceManager != null)
             {
                 ResourceManagerCache.AddOrUpdate(type, new Lazy<ResourceManager?>(() => resourceManager), (_, __) => new Lazy<ResourceManager?>(() => resourceManager));
                 return resourceManager;
             }
+
+            var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
+            {
+                try
+                {
+                    string namespaceName = t.Assembly.GetName().Name!;
+                    string resourceClassName = $"{namespaceName}.Properties.Resources";
+                    Type? resourceType = t.Assembly.GetType(resourceClassName);
+                    if (resourceType != null)
+                    {
+                        var rmProp = resourceType.GetProperty(nameof(ResourceManager), BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                        if (rmProp?.GetValue(null) is ResourceManager rm)
+                            return rm;
+                    }
+                }
+                catch
+                {
+                    // ignore and fallback to null
+                }
+                return null;
+            }));
+            return lazyResourceManager.Value;
         }
 
         public static void GenCommand(object obj, UniformGrid uniformGrid)
@@ -254,7 +271,7 @@ namespace ColorVision.UI
                 stackPanel.Children.Add(nameText);
 
                 var descriptionAttr = item.Prop.GetCustomAttribute<DescriptionAttribute>();
-                var description = descriptionAttr?.Description ?? string.Empty;
+                var description = GetLocalizedString(rm, descriptionAttr?.Description);
                 if (!string.IsNullOrWhiteSpace(description))
                 {
                     var assemblyText = new TextBlock
@@ -292,7 +309,6 @@ namespace ColorVision.UI
 
         public static ComboBox GenEnumPropertiesComboBox(PropertyInfo property, object obj)
         {
-            var rm = GetResourceManager(obj);
             var comboBox = new ComboBox
             {
                 Margin = new Thickness(5, 0, 0, 0),
@@ -592,13 +608,34 @@ namespace ColorVision.UI
             dockPanel.SetBinding(UIElement.VisibilityProperty, binding);
         }
 
-        public static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager = null)
+        public static StackPanel GenPropertyEditorControl(
+            object obj,
+            ResourceManager? resourceManager = null,
+            bool showCategoryHeader = true,
+            IPropertyEditorMetadataProvider? metadataProvider = null)
         {
             var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
-            return GenPropertyEditorControl(obj, resourceManager, visited);
+            var previousProvider = MetadataProviderContext.Value;
+
+            if (metadataProvider != null)
+            {
+                MetadataProviderContext.Value = metadataProvider;
+            }
+
+            try
+            {
+                return GenPropertyEditorControl(obj, resourceManager, visited, showCategoryHeader);
+            }
+            finally
+            {
+                if (metadataProvider != null)
+                {
+                    MetadataProviderContext.Value = previousProvider;
+                }
+            }
         }
 
-        private static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager, HashSet<object> visited)
+        private static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager, HashSet<object> visited, bool showCategoryHeader = true)
         {
             if (obj == null) return new StackPanel();
             if (!visited.Add(obj)) return new StackPanel();
@@ -617,11 +654,20 @@ namespace ColorVision.UI
                 void CollectProperties(object source)
                 {
                     var type = source.GetType();
+                    var metadataProvider = MetadataProviderContext.Value;
 
                     // 1. 获取属性
                     var allProps = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                    .Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0);
+                                    .Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0)
+                                    .ToList();
 
+                    if (metadataProvider != null)
+                    {
+                        bool hasManagedProperties = allProps.Any(metadataProvider.IsPropertyManaged);
+                        allProps = allProps
+                            .Where(p => (!hasManagedProperties || metadataProvider.IsPropertyManaged(p)) && metadataProvider.IsBrowsable(p))
+                            .ToList();
+                    }
 
                     var sortedProps = orderBy ? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType ?? type)) : allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType ?? type));
 
@@ -632,7 +678,9 @@ namespace ColorVision.UI
                             continue;
 
                         var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
-                        string category = categoryAttr?.Category ?? type.Name;
+                        string category = metadataProvider?.IsPropertyManaged(prop) == true
+                            ? metadataProvider.GetCategory(prop) ?? categoryAttr?.Category ?? type.Name
+                            : categoryAttr?.Category ?? type.Name;
 
                         if (!categoryGroups.TryGetValue(category, out var list))
                         {
@@ -658,18 +706,21 @@ namespace ColorVision.UI
                     border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
                     border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
 
-                    var stackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
+                    var stackPanel = new StackPanel { Margin = showCategoryHeader ? new Thickness(5, 5, 5, 0) : new Thickness(5) };
 
 
-                    var categoryHeader = new TextBlock
+                    if (showCategoryHeader)
                     {
-                        Text = categoryGroup.Key,
-                        FontWeight = FontWeights.Bold,
-                        Foreground = GlobalTextBrush,
-                        Margin = new Thickness(0, 0, 0, 5)
-                    };
-                    categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-                    stackPanel.Children.Add(categoryHeader);
+                        var categoryHeader = new TextBlock
+                        {
+                            Text = categoryGroup.Key,
+                            FontWeight = FontWeights.Bold,
+                            Foreground = GlobalTextBrush,
+                            Margin = new Thickness(0, 0, 0, 5)
+                        };
+                        categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                        stackPanel.Children.Add(categoryHeader);
+                    }
 
 
                     border.Child = stackPanel;
@@ -682,7 +733,7 @@ namespace ColorVision.UI
                         }
                     }
 
-                    if (stackPanel.Children.Count > 1)
+                    if (showCategoryHeader ? stackPanel.Children.Count > 1 : stackPanel.Children.Count > 0)
                     {
                         propertyPanel.Children.Add(border);
                     }
@@ -703,13 +754,49 @@ namespace ColorVision.UI
         public static string GetDisplayName(ResourceManager? rm, PropertyInfo prop, string? overrideName = null)
         {
             var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
-            var raw = overrideName ?? displayNameAttr?.DisplayName ?? prop.Name;
-            return rm?.GetString(raw, Thread.CurrentThread.CurrentUICulture) ?? raw;
+            var metadataProvider = MetadataProviderContext.Value;
+            var metadataName = metadataProvider?.IsPropertyManaged(prop) == true
+                ? metadataProvider.GetDisplayName(prop)
+                : null;
+            var raw = overrideName ?? metadataName ?? displayNameAttr?.DisplayName ?? prop.Name;
+            return GetLocalizedString(rm, raw);
+        }
+
+        public static string GetDescription(ResourceManager? rm, PropertyInfo prop)
+        {
+            var metadataProvider = MetadataProviderContext.Value;
+            var metadataDescription = metadataProvider?.IsPropertyManaged(prop) == true
+                ? metadataProvider.GetDescription(prop)
+                : null;
+            var raw = metadataDescription ?? prop.GetCustomAttribute<DescriptionAttribute>()?.Description;
+
+            return GetLocalizedString(rm, raw);
+        }
+
+        public static string GetLocalizedString(ResourceManager? rm, string? key)
+        {
+            if (rm == null || string.IsNullOrWhiteSpace(key))
+            {
+                return key ?? string.Empty;
+            }
+
+            var culture = CultureInfo.CurrentUICulture;
+            return ResourceStringCache.GetOrAdd((rm, culture.Name, key), _ =>
+            {
+                try
+                {
+                    return rm.GetString(key, culture) ?? key;
+                }
+                catch
+                {
+                    return key;
+                }
+            });
         }
 
         public static TextBlock CreateLabel(PropertyInfo property, ResourceManager? rm)
         {
-            var desc = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
+            var desc = GetDescription(rm, property);
             var tb = new TextBlock
             {
                 Text = GetDisplayName(rm, property),

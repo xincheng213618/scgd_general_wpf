@@ -194,14 +194,5 @@ namespace EventVWR.Properties {
                 return ResourceManager.GetString("EventWindow", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   查找类似 搜索 的本地化字符串。
-        /// </summary>
-        public static string Search {
-            get {
-                return ResourceManager.GetString("Search", resourceCulture);
-            }
-        }
     }
 }

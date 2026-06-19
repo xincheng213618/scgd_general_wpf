@@ -67,9 +67,6 @@
   <data name="ZoomOut" xml:space="preserve">
     <value>축소</value>
   </data>
-  <data name="ZoomNone" xml:space="preserve">
-    <value>원래 크기</value>
-  </data>
   <data name="ZoomUniform" xml:space="preserve">
     <value>화면에 맞추기</value>
   </data>
@@ -145,12 +142,6 @@
   <data name="ColormapTypes" xml:space="preserve">
     <value>거짓 색상</value>
   </data>
-  <data name="Reload" xml:space="preserve">
-    <value>재장전</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>현재 이미지 적용</value>
-  </data>
   <data name="AutoLevelsAdjustment" xml:space="preserve">
     <value>자동 레벨 조정</value>
   </data>
@@ -199,62 +190,11 @@
   <data name="Draw_ResetToImageCenter" xml:space="preserve">
     <value>이미지 중심으로 초기화</value>
   </data>
-  <data name="Draw_Mode" xml:space="preserve">
-    <value>모드</value>
-  </data>
   <data name="Draw_Color" xml:space="preserve">
     <value>색상</value>
   </data>
   <data name="Draw_LineWidth" xml:space="preserve">
     <value>선 두께</value>
-  </data>
-  <data name="Draw_Angle" xml:space="preserve">
-    <value>각도</value>
-  </data>
-  <data name="Draw_CenterX" xml:space="preserve">
-    <value>중심 X</value>
-  </data>
-  <data name="Draw_CenterY" xml:space="preserve">
-    <value>중심 Y</value>
-  </data>
-  <data name="Draw_MaskSettings" xml:space="preserve">
-    <value>마스크 설정</value>
-  </data>
-  <data name="Draw_MaskShape" xml:space="preserve">
-    <value>마스크 모양</value>
-  </data>
-  <data name="Draw_MaskTransparentSize" xml:space="preserve">
-    <value>마스크 투명 영역 크기</value>
-  </data>
-  <data name="Draw_MaskOpacity" xml:space="preserve">
-    <value>마스크 불투명도 (0-255)</value>
-  </data>
-  <data name="Draw_CenterOverlay" xml:space="preserve">
-    <value>중심 오버레이</value>
-  </data>
-  <data name="Draw_OverlayShape" xml:space="preserve">
-    <value>오버레이 모양</value>
-  </data>
-  <data name="Draw_OverlayColor" xml:space="preserve">
-    <value>오버레이 색상</value>
-  </data>
-  <data name="Draw_OverlaySize" xml:space="preserve">
-    <value>오버레이 크기</value>
-  </data>
-  <data name="Draw_PhysicalSize" xml:space="preserve">
-    <value>물리적 크기</value>
-  </data>
-  <data name="Draw_PhysicalSizeX" xml:space="preserve">
-    <value>물리적 크기 X (mm)</value>
-  </data>
-  <data name="Draw_PhysicalSizeY" xml:space="preserve">
-    <value>물리적 크기 Y (mm)</value>
-  </data>
-  <data name="Draw_PixelPerUnit" xml:space="preserve">
-    <value>픽셀/단위 (px/mm)</value>
-  </data>
-  <data name="Draw_Highlighter" xml:space="preserve">
-    <value>형광펜</value>
   </data>
   <data name="Draw_SampleSpacing" xml:space="preserve">
     <value>샘플 간격</value>
@@ -267,18 +207,6 @@
   </data>
   <data name="Draw_FontSize" xml:space="preserve">
     <value>글꼴 크기</value>
-  </data>
-  <data name="Draw_FontSizeLabel" xml:space="preserve">
-    <value>글꼴 크기</value>
-  </data>
-  <data name="Draw_FontFamily" xml:space="preserve">
-    <value>글꼴</value>
-  </data>
-  <data name="Draw_Position" xml:space="preserve">
-    <value>위치</value>
-  </data>
-  <data name="Draw_Background" xml:space="preserve">
-    <value>배경</value>
   </data>
   <data name="Draw_Fill" xml:space="preserve">
     <value>채우기</value>
@@ -339,9 +267,6 @@
   </data>
   <data name="Ruler_ActualDistance" xml:space="preserve">
     <value>실제 거리</value>
-  </data>
-  <data name="Ruler_PhysicalLength" xml:space="preserve">
-    <value>물리적 길이</value>
   </data>
   <data name="Annotation_NotEnoughPoints" xml:space="preserve">
     <value>프로파일 차트를 생성할 포인트가 부족합니다.</value>
@@ -436,9 +361,6 @@
   <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
     <value>오프너 런타임</value>
   </data>
-  <data name="ImageView_Scope_Legacy" xml:space="preserve">
-    <value>레거시</value>
-  </data>
   <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
     <value>현재 파일과 픽셀 내용에 의해 결정됩니다. 이미지 전환 시 전체가 새로고침됩니다.</value>
   </data>
@@ -447,9 +369,6 @@
   </data>
   <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
     <value>특정 오프너 워크플로에서만 의미 있는 런타임 정보입니다.</value>
-  </data>
-  <data name="ImageView_ScopeDesc_Legacy" xml:space="preserve">
-    <value>명시적 스코프로 아직 마이그레이션되지 않은 레거시 키입니다. 정리를 권장합니다.</value>
   </data>
   <data name="Cie_Title" xml:space="preserve">
     <value>CIE 색도 다이어그램</value>
@@ -496,26 +415,8 @@
   <data name="Settings_Close" xml:space="preserve">
     <value>Close</value>
   </data>
-  <data name="Settings_ScopeCurrentView" xml:space="preserve">
-    <value>Scope: Current View</value>
-  </data>
-  <data name="Settings_ScopeGlobalDefault" xml:space="preserve">
-    <value>Scope: Global Default</value>
-  </data>
-  <data name="Settings_ScopeLoaderDefault" xml:space="preserve">
-    <value>Scope: Loader Default</value>
-  </data>
-  <data name="Settings_ScopeWorkspace" xml:space="preserve">
-    <value>Scope: Workspace</value>
-  </data>
-  <data name="Settings_ScopeUncategorized" xml:space="preserve">
-    <value>Scope: Uncategorized</value>
-  </data>
   <data name="Settings_ToolbarVisibility" xml:space="preserve">
     <value>Toolbar Visibility</value>
-  </data>
-  <data name="Settings_ToolbarVisibilityDesc" xml:space="preserve">
-    <value>These switches control the visibility of toolbar areas in the current ImageView instance.</value>
   </data>
   <data name="Settings_BottomToolbar" xml:space="preserve">
     <value>Bottom Toolbar (ToolBarAl)</value>
@@ -532,41 +433,8 @@
   <data name="Settings_RightToolbar" xml:space="preserve">
     <value>Right Toolbar (ToolBarRight)</value>
   </data>
-  <data name="Settings_EditorTools" xml:space="preserve">
-    <value>Editor Tools</value>
-  </data>
-  <data name="Settings_EditorToolsDesc" xml:space="preserve">
-    <value>The following list shows currently loaded IEditorTools; toggles only control their visibility in toolbars and do not affect assembly discovery.</value>
-  </data>
-  <data name="Settings_ShowAll" xml:space="preserve">
-    <value>Show All</value>
-  </data>
-  <data name="Settings_HideAll" xml:space="preserve">
-    <value>Hide All</value>
-  </data>
   <data name="Settings_ImageOpeners" xml:space="preserve">
     <value>Image Openers</value>
-  </data>
-  <data name="Settings_ImageOpenersDesc" xml:space="preserve">
-    <value>Registered IImageOpen handlers for the current ImageView and their supported extensions.</value>
-  </data>
-  <data name="Settings_PropertySnapshot" xml:space="preserve">
-    <value>Current View Property Snapshot</value>
-  </data>
-  <data name="Settings_Refresh" xml:space="preserve">
-    <value>Refresh</value>
-  </data>
-  <data name="Settings_NoContextProperties" xml:space="preserve">
-    <value>The current view has no context properties to display yet.</value>
-  </data>
-  <data name="Settings_DescriptionLabel" xml:space="preserve">
-    <value>Description</value>
-  </data>
-  <data name="Settings_NoPropertyContext" xml:space="preserve">
-    <value>The current view has not written any property context yet. After opening an image or running a tool, the actual state will be shown here by scope.</value>
-  </data>
-  <data name="Settings_PropertyContextSummary" xml:space="preserve">
-    <value>The current view has recorded {0} properties across {1} scope groups. This is a read-only snapshot to help diagnose whether current and default values are leaking across layers.</value>
   </data>
   <data name="Settings_EntryCount" xml:space="preserve">
     <value>{0} items</value>
@@ -589,53 +457,23 @@
   <data name="Settings_GroupLoader" xml:space="preserve">
     <value>Loader</value>
   </data>
-  <data name="Settings_CurrentImageContext" xml:space="preserve">
-    <value>Current Image Context</value>
-  </data>
-  <data name="Settings_CurrentImageContextDesc" xml:space="preserve">
-    <value>Read-only display of the current ImageView property dictionary by scope, helping distinguish image metadata, view state, loader runtime state, and legacy keys pending migration.</value>
-  </data>
   <data name="Settings_DefaultImageScaling" xml:space="preserve">
     <value>Default Image Scaling</value>
-  </data>
-  <data name="Settings_DefaultImageScalingDesc" xml:space="preserve">
-    <value>Controls the BitmapScalingMode seeded during ImageView initialization. After initialization the current value is preserved and only changes when explicitly adjusted by the user or overridden by a specific loader.</value>
   </data>
   <data name="Settings_DefaultDisplayParams" xml:space="preserve">
     <value>Default Display Parameters</value>
   </data>
-  <data name="Settings_DefaultDisplayParamsDesc" xml:space="preserve">
-    <value>Controls the global max/min zoom of the Zoombox and the performance threshold for NearestNeighbor pixel value overlay.</value>
-  </data>
   <data name="Settings_DefaultTextStyle" xml:space="preserve">
     <value>Default Text Style</value>
-  </data>
-  <data name="Settings_DefaultTextStyleDesc" xml:space="preserve">
-    <value>Controls the default font, color, and layout for new text and text-bearing primitives.</value>
   </data>
   <data name="Settings_PhysicalSizeDefaults" xml:space="preserve">
     <value>Physical Size Defaults</value>
   </data>
-  <data name="Settings_PhysicalSizeDefaultsDesc" xml:space="preserve">
-    <value>Controls the default length and unit for physical size conversions such as rulers and grids.</value>
-  </data>
   <data name="Settings_DefaultRealtimeCameraParams" xml:space="preserve">
     <value>Default Realtime Camera Parameters</value>
   </data>
-  <data name="Settings_DefaultRealtimeCameraParamsDesc" xml:space="preserve">
-    <value>Controls the shared display FPS, sharpness calculation, and ROI/status text style for realtime camera entries.</value>
-  </data>
-  <data name="Settings_ToolbarToolsAndOpeners" xml:space="preserve">
-    <value>Toolbars, Tools and Openers</value>
-  </data>
-  <data name="Settings_ToolbarToolsAndOpenersDesc" xml:space="preserve">
-    <value>Unified management of toolbar display, loaded IEditorTool visibility, and supported IImageOpen handlers for the current ImageView.</value>
-  </data>
   <data name="Settings_TifOpener" xml:space="preserve">
     <value>TIF Opener</value>
-  </data>
-  <data name="Settings_TifOpenerDesc" xml:space="preserve">
-    <value>Controls loading strategies such as converting Gray32Float TIFF to Gray16 when opening.</value>
   </data>
   <data name="Draw_Delete" xml:space="preserve">
     <value>삭제</value>
@@ -643,7 +481,7 @@
   <data name="Draw_Edit" xml:space="preserve">
     <value>편집</value>
   </data>
-<data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data>
+  <data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data>
   <data name="ThreeD_ModelViewer" xml:space="preserve">
     <value>3D Model Viewer</value>
   </data>
@@ -905,18 +743,6 @@
   <data name="Graphic_ClearAll" xml:space="preserve">
     <value>Clear</value>
   </data>
-  <data name="Graphic_ExportAnnotations" xml:space="preserve">
-    <value>Export Annotations</value>
-  </data>
-  <data name="Graphic_ImportAnnotations" xml:space="preserve">
-    <value>Import Annotations</value>
-  </data>
-  <data name="Graphic_ImportAnnotationsMenu" xml:space="preserve">
-    <value>Import Annotations</value>
-  </data>
-  <data name="Graphic_ExportAnnotationsMenu" xml:space="preserve">
-    <value>Export Annotations</value>
-  </data>
   <data name="Graphic_ImageViewSettings" xml:space="preserve">
     <value>Image Settings</value>
   </data>
@@ -925,36 +751,6 @@
   </data>
   <data name="Graphic_ArrayCountMin1" xml:space="preserve">
     <value>Array rows and columns cannot be less than 1</value>
-  </data>
-  <data name="Desc_BinaryThreshold" xml:space="preserve">
-    <value>Binary threshold (0-255)</value>
-  </data>
-  <data name="Desc_BeadSize" xml:space="preserve">
-    <value>Bead size</value>
-  </data>
-  <data name="Desc_MinBeadSize" xml:space="preserve">
-    <value>Minimum bead size (pixels)</value>
-  </data>
-  <data name="Desc_MaxBeadSize" xml:space="preserve">
-    <value>Maximum bead size (pixels)</value>
-  </data>
-  <data name="Desc_ExpectedRows" xml:space="preserve">
-    <value>Expected bead rows</value>
-  </data>
-  <data name="Desc_ExpectedCols" xml:space="preserve">
-    <value>Expected bead columns</value>
-  </data>
-  <data name="Desc_BinaryThresholdAuto" xml:space="preserve">
-    <value>Binary threshold, -1 for auto (OTSU)</value>
-  </data>
-  <data name="Desc_MinKeyArea" xml:space="preserve">
-    <value>Minimum key area (pixels)</value>
-  </data>
-  <data name="Desc_MaxKeyArea" xml:space="preserve">
-    <value>Maximum key area (pixels), 0 for unlimited</value>
-  </data>
-  <data name="Desc_MarginRatio" xml:space="preserve">
-    <value>Margin ratio (0~0.45), shrink detection box to better fit keys</value>
   </data>
   <data name="Sfr_FrequencyInputError" xml:space="preserve">
     <value>Invalid frequency input</value>
@@ -989,35 +785,8 @@
   <data name="PseudoColor_CurrentPseudoColor" xml:space="preserve">
     <value>Current Pseudo Color</value>
   </data>
-  <data name="PseudoColor_CurrentDescription" xml:space="preserve">
-    <value>Controls the pseudo color enable state, color map, and range for the current canvas. Changes take effect immediately and are not written back to defaults.</value>
-  </data>
   <data name="PseudoColor_DefaultPseudoColor" xml:space="preserve">
     <value>Pseudo Color Defaults</value>
-  </data>
-  <data name="PseudoColor_DefaultDescription" xml:space="preserve">
-    <value>Controls the default pseudo color type and auto-range setting for new images or after reset. Does not directly override the current canvas state.</value>
-  </data>
-  <data name="PseudoColor_Enable" xml:space="preserve">
-    <value>Enable Pseudo Color</value>
-  </data>
-  <data name="PseudoColor_AutoRange" xml:space="preserve">
-    <value>Auto Range</value>
-  </data>
-  <data name="PseudoColor_Type" xml:space="preserve">
-    <value>Pseudo Color Type</value>
-  </data>
-  <data name="PseudoColor_MinValue" xml:space="preserve">
-    <value>Minimum Value</value>
-  </data>
-  <data name="PseudoColor_MaxValue" xml:space="preserve">
-    <value>Maximum Value</value>
-  </data>
-  <data name="PseudoColor_DefaultType" xml:space="preserve">
-    <value>Default Pseudo Color Type</value>
-  </data>
-  <data name="PseudoColor_DefaultAutoRange" xml:space="preserve">
-    <value>Default Auto Range</value>
   </data>
   <data name="Artculation_MenuHeader" xml:space="preserve">
     <value>Sharpness Evaluation</value>

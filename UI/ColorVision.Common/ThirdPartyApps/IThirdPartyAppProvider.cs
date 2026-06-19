@@ -11,4 +11,9 @@ namespace ColorVision.Common.ThirdPartyApps
     {
         IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps();
     }
+
+    public interface IThirdPartyAppCacheAwareProvider : IThirdPartyAppProvider
+    {
+        IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps(bool forceRefresh);
+    }
 }

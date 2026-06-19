@@ -108,14 +108,13 @@ namespace ColorVision.ImageEditor.Draw.Ruler
     {
         public const string CalibrationSourceKeyProperty = "CalibrationSourceKey";
 
-        public static string ResolveCalibrationKey(EditorContext? editorContext)
+        public static string ResolveCalibrationKey(ImageViewConfig? config)
         {
-            if (editorContext == null)
+            if (config == null)
             {
                 return ImageCalibrationConfig.DefaultKey;
             }
 
-            var config = editorContext.Config;
             string? configuredKey = config.GetProperties<string>(CalibrationSourceKeyProperty);
             if (!string.IsNullOrWhiteSpace(configuredKey))
             {
@@ -132,18 +131,18 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             return ImageCalibrationConfig.DefaultKey;
         }
 
-        public static void ApplyToDefault(EditorContext? editorContext)
+        public static void ApplyToDefault(ImageViewConfig? config)
         {
-            var key = ResolveCalibrationKey(editorContext);
-            editorContext?.Config.SetViewState(CalibrationSourceKeyProperty, key, nameof(ImageCalibrationConfig), "当前视窗使用的标定档案键");
+            var key = ResolveCalibrationKey(config);
+            config?.SetViewState(CalibrationSourceKeyProperty, key, nameof(ImageCalibrationConfig), "当前视窗使用的标定档案键");
 
             var profile = ImageCalibrationConfig.Instance.GetOrCreateProfile(key);
             profile.ApplyTo(DefalutTextAttribute.Defalut);
         }
 
-        public static void SaveCurrent(EditorContext? editorContext)
+        public static void SaveCurrent(ImageViewConfig? config)
         {
-            var key = ResolveCalibrationKey(editorContext);
+            var key = ResolveCalibrationKey(config);
             var attribute = DefalutTextAttribute.Defalut;
             ImageCalibrationConfig.Instance.SaveProfile(key, attribute);
 

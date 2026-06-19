@@ -1,50 +1,43 @@
-# プラグインとステータス ページ
+# 既存プラグイン機能
 
-この章には、次の 2 つのカテゴリのコンテンツのみが含まれます。
+この章では、現在の `Plugins/` ディレクトリに実在するプラグインだけを現在の機能として扱います。`Plugins/<Name>/`、`.csproj`、`manifest.json` がない名前は、現在のプラグイン入口には入れません。
 
-- 現在のワークスペースのソース コード プラグイン ページに引き続き直接アクセスできます。
-- 対応するソース コードが欠落しているか、完全にメンテナンスされていないため、古いプラグイン ページが「履歴ステータスの説明」として書き換えられます。
+## 現在のプラグイン
 
-これは「完全なプラグイン ディレクトリ」の役割を引き受けなくなりました。また、ここにリストされているすべてのページが現在のソース ツリーで直接開発できるプラグイン プロジェクトを表すこともデフォルトではありません。
+| プラグイン | ソース | manifest Id | 主な機能 | ドキュメント |
+| --- | --- | --- | --- | --- |
+| Conoscope | `Plugins/Conoscope/` | `Conoscope` | VAM/コノスコープ画像、フォーカスポイント、色域、コントラスト分析 | [Conoscope](./standard-plugins/conoscope.md) |
+| Spectrum | `Plugins/Spectrum/` | `Spectrum` | 分光器接続、校正、測定、EQE、SQLite 結果 | [Spectrum](./standard-plugins/spectrum.md) |
+| SystemMonitor | `Plugins/SystemMonitor/` | `SystemMonitor` | 性能監視、ステータスバー、ディスク/ネットワーク/プロセス情報 | [SystemMonitor](./standard-plugins/system-monitor.md) |
+| EventVWR | `Plugins/EventVWR/` | `EventVWR` | Windows イベントエラー表示、Dump 設定 | [EventVWR](./standard-plugins/eventvwr.md) |
+| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | `WindowsServicePlugin` | CVWindowsService インストール、登録、MySQL/MQTT 設定 | [WindowsServicePlugin](./standard-plugins/windows-service.md) |
 
-## まずこの章の境界を理解してください
+## 最初に読むページ
 
-- 現在のプラグイン読み込みモデルは、`manifest.json` および `UI/ColorVision.UI/Plugins/PluginLoader.cs` の実際の実装に基づいている必要があります。
-- プラグイン API リファレンス ページでは、現在のドキュメントで閉じられているいくつかのトピックのみが取り上げられており、`Plugins/` ディレクトリの完全なミラーではありません。
-- ドキュメントの説明が現在のソース コード ディレクトリと一致しない場合は、ソース コード ディレクトリとランタイムの読み込み動作が優先される必要があります。
+| 目的 | ページ |
+| --- | --- |
+| 現在のプラグインと文書の対応確認 | [現在のプラグイン文書カバレッジ](./current-plugin-coverage.md) |
+| 機能、入口、リスクの横比較 | [プラグイン機能と引き継ぎマトリクス](./plugin-capability-matrix.md) |
+| ロード、DLL、権限、Socket、パッケージの調査 | [プラグイン実行と引き継ぎプレイブック](./plugin-handoff-playbook.md) |
+| リリースまたは現地置換の検収 | [既存プラグイン現地検収チェックリスト](./plugin-field-acceptance.md) |
+| manifest、DLL version、`.cvxp`、native file、rollback を記録 | [プラグインリリース証跡とバージョン確認表](./plugin-release-evidence.md) |
+| 新規プラグイン開発 | [プラグイン開発マニュアル](../../02-developer-guide/plugin-development/README.md) |
 
-## 現在含まれているページはどれですか?
+## ロードと納品モデル
 
-### ソース コードに直接リンクできるトピック
+プラグインは `UI/ColorVision.UI/Plugins/PluginLoader.cs` によりロードされます。出力ディレクトリの `Plugins/` 直下をスキャンし、`manifest.json`、`dllpath`、必要に応じて `.deps.json` の `ColorVision.*` 依存関係を確認してから `Assembly.LoadFrom(...)` で読み込みます。
 
-- [スペクトラムプラグイン](./standard-plugins/spectrum.md)
-- [SystemMonitorプラグイン](./standard-plugins/system-monitor.md)
-- [EventVWR プラグイン](./standard-plugins/eventvwr.md)
-- [Windows サービス プラグイン](./standard-plugins/windows-service.md)
+推奨される納品形態:
 
-### 過去のステータスの説明ページ
+```text
+ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/<PluginName>/
+  <PluginName>.dll
+  manifest.json
+  README.md
+  CHANGELOG.md
+  PackageIcon.png        # optional
+```
 
-- [パターン/絵カード生成機能](./standard-plugins/pattern.md)
-- [ImageProjector (過去の状態)](./standard-plugins/image-projector.md)
-- [ScreenRecorder (履歴ステータス)](./standard-plugins/screen-recorder.md)
+## 現在の一覧に含めない名前
 
-これらのページを保持する目的は、機能を約束するページとして機能し続けるのではなく、「ソース コードが現在のウェアハウスで引き続き照合できるかどうか、および現状をどこで確認できるか」を説明することです。
-
-## この章をより効果的に読む方法
-
-1. まず、[プラグイン開発の概要](../../02-developer-guide/plugin-development/overview.md) を読み、プラグイン エントリ、製品形式、およびランタイムの境界を理解します。
-2. 対象のプラグインの対応するソース コードが現在 `Plugins/` ディレクトリに存在するかどうかを再度確認します。
-3. ページに「歴史的状況」と明確に書かれている場合、それは現在の開発マニュアルではなく、現在の状況の説明と見なされるべきです。
-4. ランタイムのロード チェーンをトレースしたい場合は、各プラグイン ディレクトリの `PluginLoader` と `manifest.json` に戻り、それらを相互に読み取ります。
-
-## 現在知られているブランク
-
-- 現在の API リファレンスは、`Plugins/` ディレクトリ内のすべての実際のプロジェクトをカバーしているわけではありません。
-- Conscope など、ソース コードがまだあるプラグインには、現時点では個別の API リファレンス ページがありません。
-- したがって、この章は、「完全なプラグイン索引」としてではなく、「整理されたトピックのエントリー」としてより適切です。
-
-## 続きを読む
-
-- [APIリファレンス概要](../README.md)
-- [プラグイン開発の概要](../../02-developer-guide/plugin-development/overview.md)
-- [FlowEngineLib ノード拡張機能](../extensions/flow-node.md)
+Pattern、ImageProjector、ScreenRecorder は、現在 `Plugins/<Name>/` ソース、`.csproj`、`manifest.json` がないため、現在の機能入口ではありません。復帰させる場合は、ソース、manifest、README、CHANGELOG、ビルドコピー、パッケージ検証を先に復元してください。

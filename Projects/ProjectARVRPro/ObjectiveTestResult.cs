@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
@@ -65,6 +66,12 @@ namespace ProjectARVRPro
         /// 用于动态添加MTF等测试结果，无需静态声明属性，与现有静态属性导出兼容。
         /// </summary>
         public Dictionary<string, ObservableCollection<ObjectiveTestItem>> DynamicTestResults { get; set; } = new Dictionary<string, ObservableCollection<ObjectiveTestItem>>();
+
+        /// <summary>
+        /// 动态关注点结果字典，Key为测试画面名称，Value为关注点集合。
+        /// 用于动态添加 POI_XYZ 关注点结果，无需静态声明属性。
+        /// </summary>
+        public Dictionary<string, ObservableCollection<PoixyuvData>> DynamicPoixyuvDatas { get; set; } = new Dictionary<string, ObservableCollection<PoixyuvData>>();
 
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）

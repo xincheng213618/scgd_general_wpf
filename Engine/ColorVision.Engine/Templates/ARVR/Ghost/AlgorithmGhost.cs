@@ -49,11 +49,8 @@ namespace ColorVision.Engine.Templates.Ghost
         public CVOLEDCOLOR CVOLEDCOLOR { get => _CVOLEDCOLOR; set { _CVOLEDCOLOR = value; OnPropertyChanged(); } }
         private CVOLEDCOLOR _CVOLEDCOLOR;
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, GhostParam ghostParam, string serialNumber)
+        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, GhostParam ghostParam)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
@@ -64,7 +61,7 @@ namespace ColorVision.Engine.Templates.Ghost
             MsgSend msg = new()
             {
                 EventName = "Ghost",
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

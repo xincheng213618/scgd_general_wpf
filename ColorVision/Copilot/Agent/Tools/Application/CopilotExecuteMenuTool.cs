@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "ExecuteMenu";
 
-        public string Description => "按菜单名称或菜单路径执行主菜单命令，例如 选项、VAM、检查更新、深色主题、英文。input.query 直接填写目标菜单即可。";
+        public string Description => "Execute a main-menu command by menu name or path, such as Options, VAM, Check for Updates, Dark Theme, or English. Put the target menu directly in input.query.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {

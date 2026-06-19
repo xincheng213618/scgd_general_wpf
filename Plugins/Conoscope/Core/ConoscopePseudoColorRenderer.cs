@@ -1,3 +1,4 @@
+#pragma warning disable OCVS002
 using ColorVision.Core;
 using OpenCvSharp.WpfExtensions;
 using System;

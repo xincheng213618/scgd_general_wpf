@@ -1,16 +1,22 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1051,CA1707,CA1863
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Camera.Templates.HDR;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.Jsons.HDR;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.Realtime;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -21,6 +27,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -47,6 +54,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public double CloseTime { get; set; } = 10;
         public double LocalVideoOpenTime { get; set; } = 3000;
 
+        [DisplayName("清晰度区域")]
+        public Rect LocalVideoRoi
+        {
+            get => _LocalVideoRoi;
+            set
+            {
+                Rect normalized = NormalizeLocalVideoRoi(value);
+                if (_LocalVideoRoi == normalized) return;
+                _LocalVideoRoi = normalized;
+                OnPropertyChanged();
+            }
+        }
+        private Rect _LocalVideoRoi = new(50, 50, 100, 100);
+
         public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
         private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
 
@@ -58,6 +79,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; OnPropertyChanged(); } }
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
+
+        public int LocalVideoTransform { get => _LocalVideoTransform; set { _LocalVideoTransform = value; OnPropertyChanged(); } }
+        private int _LocalVideoTransform = RealtimeFramePresenter.TransformNone;
 
         public double ExpTime { get => _ExpTime; set { _ExpTime = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeLog)); } }
         private double _ExpTime = 100;
@@ -90,9 +114,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; OnPropertyChanged(); } }
         private double _SaturationB = -1;
 
+        [Browsable(false)]
+        public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
+        private DisplayShaderFilterState _DisplayShaderFilter = new DisplayShaderFilterState();
+
         [JsonIgnore]
         public bool IsLocalVideoOpen { get => _IsLocalVideoOpen; set { _IsLocalVideoOpen = value; OnPropertyChanged(); } }
         private bool _IsLocalVideoOpen;
+
+        private static Rect NormalizeLocalVideoRoi(Rect value)
+        {
+            if (value.IsEmpty) return new Rect(0, 0, 0, 0);
+
+            return new Rect(
+                Math.Max(0, value.X),
+                Math.Max(0, value.Y),
+                Math.Max(0, value.Width),
+                Math.Max(0, value.Height));
+        }
     }
 
 
@@ -112,19 +151,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
         // Video display related fields
         private readonly CameraRealtimeFramePipeline _localRealtimePipeline;
         private bool _isOpeningLocalVideo;
+        private DVRectangleText? _localVideoRoiVisual;
+        private bool _isSyncingLocalVideoRoi;
+        private bool _hasLocalVideoImageEditModeSnapshot;
+        private bool _localVideoImageEditModeSnapshot;
+        private bool _isLocalVideoRoiVisualRemoveSubscribed;
 
         public DisplayCamera(DeviceCamera device)
         {
             Device = device;
             View = Device.View;
+            _localRealtimePipeline = new CameraRealtimeFramePipeline();
             InitializeComponent();
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromMilliseconds(100);
             _timer.Tick += Timer_Tick;
             CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
-
-            // Initialize video display components
-            _localRealtimePipeline = new CameraRealtimeFramePipeline();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -159,14 +201,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboBoxHDRTemplate.SelectedIndex = 0;
             ComboBoxHDRTemplate.DataContext = Device.DisplayConfig;
 
+            InitializeLocalVideoRoiEditor();
+            DisplayCameraConfig.PropertyChanged += DisplayCameraConfig_PropertyChanged;
+            ApplyLocalVideoRoiToRealtimeConfig();
+
             CBFilp.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
                                  select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
             CBFilp1.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
                                   select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
-            CBFilp2.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
-                                  select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
+            CBFilp2.ItemsSource = new[]
+            {
+                new KeyValuePair<int, string>(RealtimeFramePresenter.TransformNone, "None"),
+                new KeyValuePair<int, string>(RealtimeFramePresenter.TransformFlipX, "FlipX"),
+                new KeyValuePair<int, string>(RealtimeFramePresenter.TransformFlipY, "FlipY"),
+                new KeyValuePair<int, string>(RealtimeFramePresenter.TransformFlipXY, "FlipXY")
+            };
 
 
             DService_DeviceStatusChanged(sender, DService.DeviceStatus);
@@ -181,6 +232,251 @@ namespace ColorVision.Engine.Services.Devices.Camera
             vb.ConverterParameter = DeviceStatusType.Closed;
             LocalVideo.SetBinding(StackPanel.VisibilityProperty, vb);
 
+        }
+
+        private void InitializeLocalVideoRoiEditor()
+        {
+            LocalVideoRoiEditorHost.Children.Clear();
+            LocalVideoRoiEditorHost.Children.Add(PropertyEditorHelper.GenProperties(DisplayCameraConfig, nameof(DisplayCameraConfig.LocalVideoRoi)));
+        }
+
+        private void DisplayCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_isSyncingLocalVideoRoi) return;
+
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DisplayCameraConfig.LocalVideoRoi))
+            {
+                ApplyLocalVideoRoiToRealtimeConfig();
+                RefreshLocalVideoRoiVisual(selectNewVisual: true);
+                SaveDisplayConfig();
+            }
+        }
+
+        private void ApplyLocalVideoRoiToRealtimeConfig()
+        {
+            DefaultRealtimeCameraConfig.Current.RectangleTextProperties.Rect = DisplayCameraConfig.LocalVideoRoi;
+        }
+
+        private static bool IsVisibleLocalVideoRoi(Rect rect) => rect.Width > 0 && rect.Height > 0;
+
+        private static RectangleTextProperties CreateLocalVideoRoiVisualProperties(Rect rect)
+        {
+            return new RectangleTextProperties
+            {
+                Rect = rect,
+                Brush = Brushes.Transparent,
+                Pen = new Pen(Brushes.LimeGreen, 1),
+                Foreground = Brushes.LimeGreen,
+                Text = "清晰度区域",
+                Position = RectangleTextPosition.Top,
+                IsShowText = true
+            };
+        }
+
+        private void RefreshLocalVideoRoiVisual(bool selectNewVisual = false)
+        {
+            if (!Device.DisplayConfig.IsLocalVideoOpen)
+            {
+                SyncLocalVideoRoiVisualFromConfig();
+                return;
+            }
+
+            if (IsVisibleLocalVideoRoi(DisplayCameraConfig.LocalVideoRoi))
+            {
+                EnsureLocalVideoRoiVisual(selectNewVisual && _localVideoRoiVisual == null);
+            }
+            else
+            {
+                RemoveLocalVideoRoiVisual(restoreImageEditMode: false);
+            }
+        }
+
+        private void EnsureLocalVideoRoiVisual(bool select = true)
+        {
+            var imageView = Device.View.ImageView;
+            if (!imageView.Dispatcher.CheckAccess())
+            {
+                imageView.Dispatcher.Invoke(() => EnsureLocalVideoRoiVisual(select));
+                return;
+            }
+
+            Rect roi = DisplayCameraConfig.LocalVideoRoi;
+            if (!IsVisibleLocalVideoRoi(roi))
+            {
+                RemoveLocalVideoRoiVisual(restoreImageEditMode: false);
+                return;
+            }
+
+            if (_localVideoRoiVisual == null)
+            {
+                RectangleTextProperties properties = CreateLocalVideoRoiVisualProperties(roi);
+                _localVideoRoiVisual = new DVRectangleText(properties);
+                _localVideoRoiVisual.TextAttribute.FontSize = Math.Max(_localVideoRoiVisual.Pen.Thickness * 10, 12);
+                _localVideoRoiVisual.Render();
+                properties.PropertyChanged += LocalVideoRoiVisual_PropertyChanged;
+            }
+
+            SyncLocalVideoRoiVisualFromConfig();
+
+            if (!imageView.ImageShow.ContainsVisual(_localVideoRoiVisual))
+            {
+                imageView.ImageShow.AddVisual(_localVideoRoiVisual);
+                SubscribeLocalVideoRoiRemoveEvent();
+            }
+
+            imageView.ImageShow.TopVisual(_localVideoRoiVisual);
+
+            if (select)
+            {
+                CaptureLocalVideoImageEditMode(imageView);
+                if (!imageView.ImageEditMode)
+                {
+                    imageView.ImageEditMode = true;
+                }
+                imageView.EditorContext.DrawEditorContext.SelectionVisual.SetRender(_localVideoRoiVisual);
+            }
+        }
+
+        private void SyncLocalVideoRoiVisualFromConfig()
+        {
+            if (_localVideoRoiVisual == null) return;
+
+            Rect roi = DisplayCameraConfig.LocalVideoRoi;
+            if (_localVideoRoiVisual.Rect == roi) return;
+
+            try
+            {
+                _isSyncingLocalVideoRoi = true;
+                _localVideoRoiVisual.Rect = roi;
+                _localVideoRoiVisual.Render();
+            }
+            finally
+            {
+                _isSyncingLocalVideoRoi = false;
+            }
+        }
+
+        private void LocalVideoRoiVisual_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_isSyncingLocalVideoRoi || _localVideoRoiVisual == null) return;
+            if (!string.IsNullOrEmpty(e.PropertyName) && e.PropertyName != nameof(RectangleProperties.Rect)) return;
+
+            try
+            {
+                _isSyncingLocalVideoRoi = true;
+                DisplayCameraConfig.LocalVideoRoi = _localVideoRoiVisual.Rect;
+            }
+            finally
+            {
+                _isSyncingLocalVideoRoi = false;
+            }
+
+            ApplyLocalVideoRoiToRealtimeConfig();
+            SyncLocalVideoRoiVisualFromConfig();
+            SaveDisplayConfig();
+        }
+
+        private void CaptureLocalVideoImageEditMode(ColorVision.ImageEditor.ImageView imageView)
+        {
+            if (_hasLocalVideoImageEditModeSnapshot) return;
+
+            _localVideoImageEditModeSnapshot = imageView.ImageEditMode;
+            _hasLocalVideoImageEditModeSnapshot = true;
+        }
+
+        private void RestoreLocalVideoImageEditMode(ColorVision.ImageEditor.ImageView imageView)
+        {
+            if (!_hasLocalVideoImageEditModeSnapshot) return;
+
+            imageView.ImageEditMode = _localVideoImageEditModeSnapshot;
+            _hasLocalVideoImageEditModeSnapshot = false;
+        }
+
+        private void SubscribeLocalVideoRoiRemoveEvent()
+        {
+            if (_isLocalVideoRoiVisualRemoveSubscribed) return;
+
+            Device.View.ImageView.ImageShow.VisualsRemove += ImageShow_VisualsRemoveLocalVideoRoi;
+            _isLocalVideoRoiVisualRemoveSubscribed = true;
+        }
+
+        private void UnsubscribeLocalVideoRoiRemoveEvent()
+        {
+            if (!_isLocalVideoRoiVisualRemoveSubscribed) return;
+
+            Device.View.ImageView.ImageShow.VisualsRemove -= ImageShow_VisualsRemoveLocalVideoRoi;
+            _isLocalVideoRoiVisualRemoveSubscribed = false;
+        }
+
+        private void ImageShow_VisualsRemoveLocalVideoRoi(object? sender, VisualChangedEventArgs e)
+        {
+            if (!ReferenceEquals(e.Visual, _localVideoRoiVisual) || _localVideoRoiVisual == null) return;
+
+            _localVideoRoiVisual.Attribute.PropertyChanged -= LocalVideoRoiVisual_PropertyChanged;
+            _localVideoRoiVisual = null;
+            UnsubscribeLocalVideoRoiRemoveEvent();
+
+            if (_isSyncingLocalVideoRoi) return;
+
+            try
+            {
+                _isSyncingLocalVideoRoi = true;
+                DisplayCameraConfig.LocalVideoRoi = new Rect(0, 0, 0, 0);
+            }
+            finally
+            {
+                _isSyncingLocalVideoRoi = false;
+            }
+
+            ApplyLocalVideoRoiToRealtimeConfig();
+            SaveDisplayConfig();
+        }
+
+        private void RemoveLocalVideoRoiVisual(bool restoreImageEditMode)
+        {
+            var imageView = Device.View.ImageView;
+            if (!imageView.Dispatcher.CheckAccess())
+            {
+                imageView.Dispatcher.Invoke(() => RemoveLocalVideoRoiVisual(restoreImageEditMode));
+                return;
+            }
+
+            DVRectangleText? visual = _localVideoRoiVisual;
+            _localVideoRoiVisual = null;
+            UnsubscribeLocalVideoRoiRemoveEvent();
+
+            if (visual != null)
+            {
+                visual.Attribute.PropertyChanged -= LocalVideoRoiVisual_PropertyChanged;
+                if (ReferenceEquals(imageView.EditorContext.DrawEditorContext.SelectionVisual.PrimarySelectedVisual, visual))
+                {
+                    imageView.EditorContext.DrawEditorContext.SelectionVisual.ClearRender();
+                }
+                if (imageView.ImageShow.ContainsVisual(visual))
+                {
+                    imageView.ImageShow.RemoveVisual(visual);
+                }
+            }
+
+            if (restoreImageEditMode)
+            {
+                RestoreLocalVideoImageEditMode(imageView);
+            }
+        }
+
+        private void LocalVideoRoiDefault_Click(object sender, RoutedEventArgs e)
+        {
+            DisplayCameraConfig.LocalVideoRoi = new Rect(50, 50, 100, 100);
+            if (Device.DisplayConfig.IsLocalVideoOpen)
+            {
+                EnsureLocalVideoRoiVisual();
+            }
+        }
+
+        private void LocalVideoRoiFull_Click(object sender, RoutedEventArgs e)
+        {
+            DisplayCameraConfig.LocalVideoRoi = new Rect(0, 0, 0, 0);
+            RemoveLocalVideoRoiVisual(restoreImageEditMode: false);
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
@@ -558,53 +854,45 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (!DService.IsVideoOpen)
                 {
                     DService.CurrentTakeImageMode = TakeImageMode.Live;
-                    string host = Device.Config.VideoConfig.Host;
-                    int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
-                    if (port > 0)
-                    {
-                        MsgRecord msgRecord = DService.OpenVideo(host, port);
-                        EnsureTimedButtonOperations();
-                        ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
-                        {
-                            if (state == MsgRecordState.Success)
-                            {
-                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(record.MsgReturn.Data));
-                                string mapName = Device.Code;
-                                if (pm_live.IsLocal) mapName = pm_live.MapName;
-                                if (string.IsNullOrEmpty(mapName))
-                                {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "CameraID is empty, cannot start video", "ColorVision");
-                                    DService.IsVideoOpen = false;
-                                    return;
-                                }
-                                Device.CameraVideoControl.Startup(mapName, View.ImageView);
 
-                                DService.IsVideoOpen = true;
-                                ButtonOpen.Visibility = Visibility.Collapsed;
-                                ButtonClose.Visibility = Visibility.Visible;
-                                StackPanelOpen.Visibility = Visibility.Visible;
+                    MsgRecord msgRecord = DService.OpenVideo();
+                    EnsureTimedButtonOperations();
+                    ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
+                    {
+                        if (state == MsgRecordState.Success)
+                        {
+                            DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(record.MsgReturn.Data));
+                            string mapName = Device.Code;
+                            if (pm_live.IsLocal) mapName = pm_live.MapName;
+                            if (string.IsNullOrEmpty(mapName))
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "CameraID is empty, cannot start video", "ColorVision");
+                                DService.IsVideoOpen = false;
                                 return;
                             }
+                            Device.CameraVideoControl.Startup(mapName, View.ImageView);
 
-                            if (state == MsgRecordState.Fail)
-                            {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
-                            }
-                            else if (state == MsgRecordState.Timeout)
-                            {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.VideoCaptureTimeoutCheckLog, "ColorVision");
-                            }
+                            DService.IsVideoOpen = true;
+                            ButtonOpen.Visibility = Visibility.Collapsed;
+                            ButtonClose.Visibility = Visibility.Visible;
+                            StackPanelOpen.Visibility = Visibility.Visible;
+                            return;
+                        }
 
-                            Device.CameraVideoControl.Close();
-                            DService.Close();
-                            DService.IsVideoOpen = false;
-                        });
-                    }
-                    else
-                    {
-                        MessageBox1.Show(Properties.Resources.LocalPortOpenFailedInVideoMode);
-                        logger.Debug($"Local socket open failed.{host}:{port}");
-                    }
+                        if (state == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{record.MsgReturn.Message}", "ColorVision");
+                        }
+                        else if (state == MsgRecordState.Timeout)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.VideoCaptureTimeoutCheckLog, "ColorVision");
+                        }
+
+                        Device.CameraVideoControl.Close();
+                        DService.Close();
+                        DService.IsVideoOpen = false;
+                    });
+
                 }
             }
         }
@@ -644,12 +932,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             ServicesHelper.SendCommand(sender, msgRecord);
 
-        }
-
-
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
@@ -815,6 +1097,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            DisplayCameraConfig.PropertyChanged -= DisplayCameraConfig_PropertyChanged;
+            RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
 
             // Clean up video display resources
             _localRealtimePipeline.Dispose();
@@ -861,67 +1145,50 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
-            operations.Register(
-                TakePhotoButton,
-                "take-photo",
-                Properties.Resources.Capture,
-                Properties.Resources.Capture,
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay),
-                onSuccessfulCompletion: elapsed => DisplayCameraConfig.TakePictureDelay = Math.Max(0, elapsed - Device.DisplayConfig.ExpTime),
-                persistStatsImmediately: false);
+            operations.Register(TakePhotoButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay);
+                options.OnSuccessfulCompletion = elapsed => DisplayCameraConfig.TakePictureDelay = Math.Max(0, elapsed - Device.DisplayConfig.ExpTime);
+                options.PersistStatsImmediately = false;
+            });
 
-            operations.Register(
-                OpenButton,
-                "open",
-                Properties.Resources.Open,
-                Properties.Resources.OpenCamera,
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.OpenTime),
-                onSuccessfulCompletion: elapsed =>
+            operations.Register(OpenButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, DisplayCameraConfig.OpenTime);
+                options.OnSuccessfulCompletion = elapsed =>
                 {
                     DisplayCameraConfig.OpenTime = elapsed;
                     SaveDisplayConfig();
-                });
+                };
+            });
 
-            operations.Register(
-                VideoButton,
-                "video-open",
-                Properties.Resources.Video,
-                Properties.Resources.VideoCaptureMode,
-                Brushes.Red);
+            operations.Register(VideoButton);
 
-            operations.Register(
-                CloseButton,
-                "close",
-                Properties.Resources.Close,
-                Properties.Resources.CloseCamera,
-                Brushes.Green,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.CloseTime),
-                onSuccessfulCompletion: elapsed =>
+            operations.Register(CloseButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, DisplayCameraConfig.CloseTime);
+                options.OnSuccessfulCompletion = elapsed =>
                 {
                     DisplayCameraConfig.CloseTime = elapsed;
                     SaveDisplayConfig();
-                });
+                };
+            });
 
-            operations.Register(
-                LocalVideoButton,
-                "local-video-open",
-                "LocalVideo",
-                Properties.Resources.LocalVideo,
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, DisplayCameraConfig.LocalVideoOpenTime),
-                onSuccessfulCompletion: elapsed =>
+            operations.Register(LocalVideoButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, DisplayCameraConfig.LocalVideoOpenTime);
+                options.OnSuccessfulCompletion = elapsed =>
                 {
                     DisplayCameraConfig.LocalVideoOpenTime = elapsed;
                     SaveDisplayConfig();
-                },
-                contentFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                };
+                options.ContentFactory = stats => Device.DisplayConfig.IsLocalVideoOpen
                     ? "Close Video"
-                    : TimedButtonOperationTextFormatter.BuildCompactContent("LocalVideo", stats),
-                tooltipFactory: stats => Device.DisplayConfig.IsLocalVideoOpen
+                    : TimedButtonOperationTextFormatter.BuildCompactContent("LocalVideo", stats);
+                options.ToolTipFactory = stats => Device.DisplayConfig.IsLocalVideoOpen
                     ? Properties.Resources.CloseLocalVideo
-                    : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.LocalVideo, stats));
+                    : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.LocalVideo, stats);
+            });
 
             return operations;
         }
@@ -966,6 +1233,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 try
                 {
                     Device.DisplayConfig.IsLocalVideoOpen = false;
+                    SetLocalVideoPoiTemplateSupported(false);
+                    RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
                     _localRealtimePipeline.Stop(resetRealtime: true);
 
                     (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync();
@@ -1007,7 +1276,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
 
                 button.Content = "Close Video";
-                _localRealtimePipeline.Start(Device.View.ImageView, flipModeProvider: () => Device.DisplayConfig.FlipMode);
+                ApplyLocalVideoRoiToRealtimeConfig();
+                _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform);
+                EnsureLocalVideoRoiVisual();
+                SetLocalVideoPoiTemplateSupported(true);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
                 localVideoOpened = true;
                 logger.Info("视频模式初始化结束");
@@ -1056,13 +1328,47 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return (false, szMsg);
             }
 
-            cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
+            if (Device.PhyCamera?.Config?.CameraCfg?.IsRoiConfigured == true)
+            {
+                cvCameraCSLib.CM_Close(m_hCamHandle);
+                if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+                {
+                    string szMsg = string.Empty;
+                    cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
+                    return (false, szMsg);
+                }
+            }
+
             cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
             cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
             callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
             cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
 
             return (true, string.Empty);
+        }
+
+        private void SetLocalVideoPoiTemplateSupported(bool isSupported)
+        {
+            var imageView = Device.View.ImageView;
+
+            void Apply()
+            {
+                imageView.Config.SetViewState(
+                    PoiImageViewComponent.IsTemplateSupportedRuntimeKey,
+                    isSupported,
+                    nameof(DisplayCamera),
+                    "本地视频模式是否允许选择 POI 模板");
+                imageView.ImageShow.RaiseImageInitialized();
+            }
+
+            if (imageView.Dispatcher.CheckAccess())
+            {
+                Apply();
+            }
+            else
+            {
+                imageView.Dispatcher.BeginInvoke(new Action(Apply));
+            }
         }
 
         private string ResolveLocalCameraId()
@@ -1116,9 +1422,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void CBFilp2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
+            if (sender is ComboBox { SelectedValue: int transform })
+            {
+                _localRealtimePipeline.Transform = transform;
+                return;
+            }
 
+            _localRealtimePipeline.Transform = Device.DisplayConfig.LocalVideoTransform;
         }
+
     }
 }
 

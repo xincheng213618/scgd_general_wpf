@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8601,CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -13,6 +14,8 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Batch
 {
@@ -26,7 +29,7 @@ namespace ColorVision.Engine.Batch
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this).ShowDialog());
         }
 
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DefaultSavePath"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        [LocalizedDisplayName(nameof(Resources.DefaultSavePath)), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string SavePath { get => _SavePath; set { _SavePath = value; OnPropertyChanged(); } }
         private string _SavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Batch"); 
     }

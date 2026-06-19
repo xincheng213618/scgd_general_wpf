@@ -1,3 +1,4 @@
+#pragma warning disable CA1707,CA1861
 using ColorVision.Copilot;
 using ColorVision.UI;
 using System.IO;
@@ -31,7 +32,7 @@ public class CopilotBusinessContextTests
 
         var request = new CopilotAgentRequest
         {
-            UserText = "帮我诊断流程失败",
+            UserText = "Help diagnose why the flow failed",
             Profile = new CopilotProfileConfig(),
             Mode = CopilotAgentMode.Diagnose,
             ContextItems = new[] { contextItem },
@@ -43,16 +44,16 @@ public class CopilotBusinessContextTests
             {
                 ToolName = "GetRecentLog",
                 Success = true,
-                Summary = "读到最近日志",
+                Summary = "Recent logs were read",
                 Content = "Camera timeout",
             },
         });
 
-        Assert.Contains("# 可用上下文", prepared.PreparedUserMessageContent);
+        Assert.Contains("# Available context", prepared.PreparedUserMessageContent);
         Assert.Contains("Flow context", prepared.PreparedUserMessageContent);
         Assert.Contains("ARVR_Check", prepared.PreparedUserMessageContent);
         Assert.Contains("Camera timeout", prepared.PreparedUserMessageContent);
-        Assert.Contains("优先结合最近日志", prepared.PreparedUserMessageContent);
+        Assert.Contains("Prioritize recent logs", prepared.PreparedUserMessageContent);
     }
 
     [Fact]
@@ -65,7 +66,7 @@ public class CopilotBusinessContextTests
         var builder = new CopilotAgentContextBuilder();
         var request = new CopilotAgentRequest
         {
-            UserText = "分析这个目录",
+            UserText = "Analyze this directory",
             Profile = new CopilotProfileConfig(),
             Mode = CopilotAgentMode.Code,
             ReadableLocalDirectoryPaths = new[] { temp.Path },
@@ -73,7 +74,7 @@ public class CopilotBusinessContextTests
 
         var messages = builder.BuildPlannerMessages(
             request,
-            new[] { new FakeCopilotTool("ListDirectory", "列出目录") },
+            new[] { new FakeCopilotTool("ListDirectory", "List directory contents") },
             Array.Empty<CopilotAgentStepRecord>(),
             new string[] { filePath });
 
@@ -131,7 +132,7 @@ public class CopilotBusinessContextTests
             new CopilotAgentToolInput { Path = outsidePath },
             CancellationToken.None);
         Assert.False(rejectedRead.Success);
-        Assert.Contains("不在当前允许读取列表", rejectedRead.ErrorMessage);
+        Assert.Contains("not in the current allowed read list", rejectedRead.ErrorMessage);
 
         var listResult = await new CopilotListDirectoryTool().ExecuteAsync(
             request,
@@ -146,7 +147,7 @@ public class CopilotBusinessContextTests
             new CopilotAgentToolInput { Path = Path.GetTempPath() },
             CancellationToken.None);
         Assert.False(rejectedList.Success);
-        Assert.Contains("不在当前允许访问列表", rejectedList.ErrorMessage);
+        Assert.Contains("not in the current allowed access list", rejectedList.ErrorMessage);
     }
 
     [Fact]

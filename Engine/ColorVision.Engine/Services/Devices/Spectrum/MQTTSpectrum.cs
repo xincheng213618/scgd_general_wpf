@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CA1507,CS8602
+using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
@@ -43,6 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public MQTTSpectrum(DeviceSpectrum DeviceSpectrum) : base(DeviceSpectrum.Config)
         {
             this.Device = DeviceSpectrum;
+            MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
         }
 
@@ -174,8 +176,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    log.Error(ex);
                     return Task.CompletedTask;
                 }
             }

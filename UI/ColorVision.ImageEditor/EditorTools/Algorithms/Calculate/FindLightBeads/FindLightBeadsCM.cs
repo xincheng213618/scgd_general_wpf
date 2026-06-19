@@ -1,3 +1,4 @@
+#pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -6,7 +7,6 @@ using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,20 +14,19 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBeads
 {
-    public record FindLightBeads(EditorContext Context)
+    public record FindLightBeads(ImageProcessingContext ImageContext, DrawEditorContext DrawContext)
     {
         public void Execute(FindLightBeadsConfig config, RoiRect roiRect)
         {
-            if (Context.ImageView.HImageCache == null) return;
+            if (ImageContext.HImageCache == null) return;
 
             string configJson = config.ToJsonN();
             Task.Run(() =>
             {
-                int length = OpenCVMediaHelper.M_FindLightBeads((HImage)Context.ImageView.HImageCache, roiRect, configJson, out IntPtr resultPtr);
+                int length = OpenCVMediaHelper.M_FindLightBeads((HImage)ImageContext.HImageCache, roiRect, configJson, out IntPtr resultPtr);
                 if (length > 0)
                 {
-                    string result = Marshal.PtrToStringAnsi(resultPtr);
-                    OpenCVMediaHelper.FreeResult(resultPtr);
+                    string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {
@@ -49,10 +48,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                             DVCircle circle = new DVCircle();
                             circle.Attribute.Center = new Point(cx, cy);
                             circle.Attribute.Radius = config.Radius;
-                            circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Context.Zoombox.ContentMatrix.M11);
+                            circle.Attribute.Pen = new Pen(Brushes.Red, 1 / DrawContext.Zoombox.ContentMatrix.M11);
                             circle.Attribute.Brush = Brushes.Transparent;
                             circle.Render();
-                            Context.ImageView.ImageShow.AddVisualCommand(circle);
+                            DrawContext.DrawCanvas.AddVisualCommand(circle);
                         }
 
                         foreach (var blackCenter in blackCenters)
@@ -63,10 +62,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                             DVCircle circle = new DVCircle();
                             circle.Attribute.Center = new Point(cx, cy);
                             circle.Attribute.Radius = config.Radius;
-                            circle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Context.Zoombox.ContentMatrix.M11);
+                            circle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / DrawContext.Zoombox.ContentMatrix.M11);
                             circle.Attribute.Brush = Brushes.Transparent;
                             circle.Render();
-                            Context.ImageView.ImageShow.AddVisualCommand(circle);
+                            DrawContext.DrawCanvas.AddVisualCommand(circle);
                         }
 
                         // 显示统计信息
@@ -101,16 +100,27 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
 
     public class DVCMFindLightBeads : IDVContextMenu
     {
+        private readonly ImageProcessingContext _imageContext;
+        private readonly DrawEditorContext _drawContext;
+        private readonly ImageViewConfig _config;
+
+        public DVCMFindLightBeads(ImageProcessingContext imageContext, DrawEditorContext drawContext, ImageViewConfig config)
+        {
+            _imageContext = imageContext;
+            _drawContext = drawContext;
+            _config = config;
+        }
+
         public Type ContextType => typeof(IRectangle);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            if (context.ImageView.HImageCache is not HImage hImage) return menuItems;
-            double DpiX = context.Config.GetProperties<double>("DpiX");
-            double DpiY = context.Config.GetProperties<double>("DpiY");
+            if (_imageContext.HImageCache is not HImage hImage) return menuItems;
+            double DpiX = _config.GetProperties<double>("DpiX");
+            double DpiY = _config.GetProperties<double>("DpiY");
 
             double DpiScaleX = DpiX / 96.0;
             double DpiScaleY = DpiY / 96.0;
@@ -156,7 +166,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                 var PropertyEditorWindow = new PropertyEditorWindow(config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 PropertyEditorWindow.Submited += (_, _) =>
                 {
-                    new FindLightBeads(context).Execute(config, new RoiRect(roiX, roiY, roiW, roiH));
+                    new FindLightBeads(_imageContext, _drawContext).Execute(config, new RoiRect(roiX, roiY, roiW, roiH));
                 };
                 PropertyEditorWindow.ShowDialog();
             };
@@ -165,7 +175,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
         }
     }
 
-    public record class CMFindLightBeads(EditorContext Context) : IIEditorToolContextMenu
+    public record class CMFindLightBeads(ImageProcessingContext ImageContext, DrawEditorContext DrawContext) : IIEditorToolContextMenu
     {
         public List<MenuItemMetadata> GetContextMenuItems()
         {
@@ -177,7 +187,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                 var PropertyEditorWindow = new PropertyEditorWindow(config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 PropertyEditorWindow.Submited += (_, _) =>
                 {
-                    new FindLightBeads(Context).Execute(config, new RoiRect());
+                    new FindLightBeads(ImageContext, DrawContext).Execute(config, new RoiRect());
                 };
                 PropertyEditorWindow.ShowDialog();
             });

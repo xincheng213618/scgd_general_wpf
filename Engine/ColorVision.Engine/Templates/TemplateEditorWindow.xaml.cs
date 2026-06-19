@@ -150,6 +150,26 @@ namespace ColorVision.Engine.Templates
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
 
+        private void ContextMenuItem_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu contextMenu)
+                return;
+
+            if (contextMenu.PlacementTarget is FrameworkElement { DataContext: TemplateBase templateModel })
+                ListView1.SelectedItem = templateModel;
+
+            foreach (var menuItem in contextMenu.Items.OfType<MenuItem>())
+            {
+                if (Equals(menuItem.Tag, "SetJsonAsDefault"))
+                    menuItem.Visibility = ITemplate.CanSetJsonAsDefault ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        private void MenuItem_SetJsonAsDefault_Click(object sender, RoutedEventArgs e)
+        {
+            SetJsonAsDefault();
+        }
+
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
@@ -533,6 +553,37 @@ namespace ColorVision.Engine.Templates
             else
             {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "已是最后一个，无法下移", "ColorVision");
+            }
+        }
+
+        private void SetJsonAsDefault()
+        {
+            if (ListView1.SelectedIndex < 0)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                return;
+            }
+
+            if (MessageBox1.Show(
+                    Application.Current.GetActiveWindow(),
+                    "将把当前模板的 JSON 设置为默认参数，新建或重置模板时会使用该 JSON。是否继续？",
+                    "ColorVision",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning) != MessageBoxResult.OK)
+                return;
+
+            int selectedIndex = ListView1.SelectedIndex;
+            if (ITemplate.SetJsonAsDefault(selectedIndex, out string message))
+            {
+                ITemplate.Load();
+                if (selectedIndex > -1 && selectedIndex < ITemplate.Count)
+                    ListView1.SelectedIndex = selectedIndex;
+
+                HandyControl.Controls.Growl.SuccessGlobal(message);
+            }
+            else
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), message, "ColorVision");
             }
         }
     }

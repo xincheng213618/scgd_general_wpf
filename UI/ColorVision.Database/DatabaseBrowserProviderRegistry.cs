@@ -1,5 +1,4 @@
 #pragma warning disable CA1510
-using ColorVision.Database.SqliteLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,7 +53,6 @@ namespace ColorVision.Database
                 if (_defaultsRegistered) return;
 
                 RegisterCore(MySqlControl.CreateBrowserProvider());
-                RegisterCore(SqliteLogManager.CreateBrowserProvider());
                 _defaultsRegistered = true;
             }
         }

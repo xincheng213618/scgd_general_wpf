@@ -11,7 +11,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 {
 
 
-    public record class ZoomEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
+    public record class ZoomEditorToolContextMenu(ImageViewConfig config, DrawEditorContext drawContext) : IIEditorToolContextMenu
     {
         public List<MenuItemMetadata> GetContextMenuItems()
         {
@@ -21,21 +21,11 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = Properties.Resources.Open, Command = ApplicationCommands.Open , Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = Properties.Resources.SaveAsImage, Command = ApplicationCommands.SaveAs ,Icon = MenuItemIcon.TryFindResource("DISave") });
 
-            RelayCommand importAnnotationsCommand = new RelayCommand(a => context.ImageView?.ImportAnnotations());
-            RelayCommand exportAnnotationsCommand = new RelayCommand(a => context.ImageView?.ExportAnnotations());
-            RelayCommand openSettingsCommand = new RelayCommand(a => context.ImageView?.OpenSettingsWindow());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ImportAnnotations", Order = 301, Header = Properties.Resources.Graphic_ImportAnnotationsMenu, Command = importAnnotationsCommand, Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ExportAnnotations", Order = 302, Header = Properties.Resources.Graphic_ExportAnnotationsMenu, Command = exportAnnotationsCommand, Icon = MenuItemIcon.TryFindResource("DISave") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = Properties.Resources.Graphic_ImageViewSettings, Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") });
-
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = Properties.Resources.Clear, Command = ApplicationCommands.Close, Icon = MenuItemIcon.TryFindResource("DIDelete") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = Properties.Resources.Print, Command = ApplicationCommands.Print, Icon = MenuItemIcon.TryFindResource("DIPrint"), InputGestureText = "Ctrl+P" });
 
             RelayCommand askCopilotImageCommand = new RelayCommand(a => AskCopilotAboutImage());
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotAboutImage", Order = 310, Header = "问 AI 分析当前图像", Command = askCopilotImageCommand });
-
-            RelayCommand relayCommand = new RelayCommand(a => { MessageBox.Show(context.Config.GetPropertyString()); });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 99999, Header = Properties.Resources.Property, Command = relayCommand });
 
             return MenuItemMetadatas;
         }
@@ -53,7 +43,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
                 SendNow = true,
                 AttachContextSnapshot = true,
                 ContextAttachmentTitle = contextItem.Title,
-                ContextAttachmentSourceId = $"image-editor:{context.Id:N}",
+                ContextAttachmentSourceId = $"image-editor:{drawContext.Id:N}",
                 ContextItems = new[] { contextItem },
             });
 
@@ -71,7 +61,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
                 var contextItem = CopilotBusinessContextBuilder.BuildImageContextItem(BuildImageSnapshot());
                 CopilotLiveContextRegistry.Publish(new CopilotLiveContext
                 {
-                    SourceId = $"image-editor:{context.Id:N}",
+                    SourceId = $"image-editor:{drawContext.Id:N}",
                     Title = contextItem.Title,
                     Summary = contextItem.Summary,
                     AttachmentTitle = contextItem.Title,
@@ -85,7 +75,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
         private CopilotImageContextSnapshot BuildImageSnapshot()
         {
-            var metadata = context.Config.GetPropertyEntries()
+            var metadata = config.GetPropertyEntries()
                 .OrderBy(entry => entry.Scope)
                 .ThenBy(entry => entry.Key, System.StringComparer.Ordinal)
                 .Select(entry => new CopilotContextProperty
@@ -95,13 +85,13 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
                 })
                 .ToArray();
 
-            var annotations = context.DrawingVisualLists?
+            var annotations = drawContext.DrawingVisualLists?
                 .Select(DescribeDrawingVisual)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Take(30)
                 .ToArray() ?? System.Array.Empty<string>();
 
-            var selectedRegions = context.SelectionVisual?.SelectVisuals?
+            var selectedRegions = drawContext.SelectionVisual?.SelectVisuals?
                 .Select(DescribeSelectedRegion)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Take(20)
@@ -109,7 +99,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
             return new CopilotImageContextSnapshot
             {
-                SourceId = $"image-editor:{context.Id:N}",
+                SourceId = $"image-editor:{drawContext.Id:N}",
                 Title = "Current image editor image",
                 ImagePath = GetPropertyValue(ImageViewPropertyKeys.FilePath),
                 FileName = GetPropertyValue(ImageViewPropertyKeys.FileName),
@@ -121,14 +111,14 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
                 Dpi = BuildDpi(),
                 Metadata = metadata,
                 SelectedRegions = selectedRegions,
-                AnnotationCount = context.DrawingVisualLists?.Count ?? 0,
+                AnnotationCount = drawContext.DrawingVisualLists?.Count ?? 0,
                 AnnotationSummaries = annotations,
             };
         }
 
         private string GetPropertyValue(string key)
         {
-            return context.Config.Properties.TryGetValue(key, out var value)
+            return config.Properties.TryGetValue(key, out var value)
                 ? ImageViewConfig.FormatPropertyValue(value)
                 : string.Empty;
         }
@@ -186,5 +176,17 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
         }
     }
 
+    public record class ImageViewSettingsEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
+    {
+        public List<MenuItemMetadata> GetContextMenuItems()
+        {
+            RelayCommand openSettingsCommand = new RelayCommand(a => context.OpenSettingsWindow(Properties.Resources.Settings_GroupContext));
+
+            return new List<MenuItemMetadata>
+            {
+                new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = "设置", Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") },
+            };
+        }
+    }
 
 }

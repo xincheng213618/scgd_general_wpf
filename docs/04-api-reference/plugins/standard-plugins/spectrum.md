@@ -195,8 +195,41 @@
 
 这样能先看到宿主入口，再看到状态中心、设备链和结果落点。
 
+## 交接验收表
+
+| 验收项 | 操作 | 通过标准 |
+| --- | --- | --- |
+| 插件装载 | 检查 `manifest.json`、`dllpath` 和 Tool 菜单 | Tool 菜单出现 Spectrum 入口，能打开 `MainWindow` |
+| 窗口扩展 | 打开 Spectrum 窗口 | `TargetName = "Spectrum"` 的窗口菜单和状态栏加载，状态栏显示连接、型号、SN、标定组和测量模式 |
+| 交付资源 | 检查构建或 `.cvxp` 包内容 | `Spectrum.dll`、`manifest.json`、`README.md`、`CHANGELOG.md`、标定文件和必要 native DLL 存在 |
+| 许可证同步 | 连接前打开许可证管理或执行连接 | `LicenseDatabase` 能同步全局和本地许可证；许可证异常时能引导到许可证管理 |
+| 设备连接 | 使用现场 USB/COM 配置连接已知光谱仪 | 成功创建句柄，读出型号、SN，并加载当前 SN 的标定分组 |
+| 标定分组 | 编辑分组后保存，再关闭重开 | 保存的分组能按 SN 恢复；未保存关闭不会污染配置 |
+| 单次测量 | 执行标准测量模式 | 曲线刷新，结果列表新增记录，步骤耗时和输入快照写入测量画像 |
+| EQE 测量 | 配置 SMU 后执行 EQE 模式 | 电压、电流、EQE 字段写入结果对象并能导出 |
+| 数据落库 | 检查 `AppData\Spectromer\Config\Spectrum.db` | 存在 `SprectrumModel`、`SpectrumMeasurementProfile` 和测量步骤 JSON |
+| 导出与列表 | 执行 CSV/EQE CSV、复制可见列、删除/清空 | 文件列正确，列表和数据库操作符合窗口提示 |
+| Socket 指令 | 在启用 Socket 的环境调用测量相关 handler | 连接、状态、测量、暗场和自动积分指令返回可判读状态 |
+
+## 故障首查
+
+| 现象 | 先查什么 |
+| --- | --- |
+| Tool 菜单没有 Spectrum | 插件目录、`manifest.json` 的 `Id/dllpath/requires`、`Spectrum.dll` 是否复制到主程序插件目录 |
+| 窗口状态栏为空 | `SpectrumStatusBarProvider` 是否注册，`LoadMenuForWindow("Spectrum", ...)` 和 `StatusBarManager.Init(..., "Spectrum")` 是否执行 |
+| 连接失败 | 许可证同步、USB/COM 配置、设备列表、native SDK DLL、设备占用和管理员/驱动状态 |
+| SN 为空或标定加载失败 | 设备序列号读取、SN 对应标定分组、`WavaLength.dat` 和 `Magiude.dat` 路径 |
+| 自动校零无法继续 | `ShutterController` 连接状态、暗场流程、自动校零前置检查结果 |
+| 测量超时或曲线不刷新 | 积分时间、同步频率模式、SDK 返回码、重试结果和图表刷新链 |
+| 结果列表有数据但数据库没有 | `ViewResultManager` 配置、SQLite 路径、写入异常和 `SpectrumMeasurementProfile` 保存 |
+| EQE 字段为 0 | `SmuController` 配置、窗口测量模式、EQE 字段回写和二次计算更新 |
+| Socket 无响应 | Socket handler 是否启用，命令是否落到当前 `MainWindow.ViewResultManager` 和 `SpectrometerManager` 状态 |
+| 导出为空 | 当前列表筛选、相对/绝对光谱切换、可见列和导出模型 |
+
 ## 继续阅读
 
+- [现有插件现场验收与交接清单](../plugin-field-acceptance.md)
+- [插件能力与交接矩阵](../plugin-capability-matrix.md)
 - [Plugins/README.md](../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
 - [docs/04-api-reference/plugins/standard-plugins/system-monitor.md](./system-monitor.md)

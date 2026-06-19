@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/schema-index.schema.json",
+  "title": "ColorVision JSON Parameter Schema Index",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "generatedAt": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "database": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        }
+      }
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "mode": {
+          "type": "string"
+        },
+        "indexLocation": {
+          "type": "string"
+        },
+        "filePathBase": {
+          "type": "string"
+        },
+        "fileIsRelativeTo": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file": {
+            "type": "string"
+          },
+          "templateFolder": {
+            "type": "string"
+          },
+          "schemaFile": {
+            "type": "string"
+          },
+          "providerMaintained": {
+            "type": "boolean"
+          },
+          "providerReference": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "sourceSet": {
+                "type": "string"
+              },
+              "testCaseFolder": {
+                "type": "string"
+              },
+              "defaultParamFile": {
+                "type": "string"
+              },
+              "docFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

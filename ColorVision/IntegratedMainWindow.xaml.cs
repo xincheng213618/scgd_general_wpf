@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CS8602
 using AvalonDock.Layout;
 using AvalonDock.Themes.VS2013.Themes;
 using ColorVision.Common.Utilities;
@@ -242,7 +243,8 @@ namespace ColorVision
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
-            layoutManager.LoadLayout();
+            if (!layoutManager.LoadLayout())
+                layoutManager.ResetLayout();
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
             DockViewManager.ShowAllViews();
             HookAcquirePanelActivation();

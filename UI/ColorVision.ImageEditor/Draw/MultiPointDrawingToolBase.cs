@@ -66,7 +66,7 @@ namespace ColorVision.ImageEditor.Draw
         protected virtual bool CompleteOnMouseUp => false;
         protected virtual bool SelectOnMouseUp => false;
 
-        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context) => BuildCompactInspectorItems();
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems() => BuildCompactInspectorItems();
 
         protected virtual IEnumerable<CompactInspectorItem> BuildCompactInspectorItems()
         {

@@ -1,3 +1,4 @@
+#pragma warning disable CS8602
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -17,8 +18,6 @@ namespace Conoscope
 {
     public partial class ConoscopeWindow
     {
-        private const string FlowRunOperationActionKey = "flow-run";
-        private const string CameraCaptureOperationActionKey = "camera-capture";
         private const double DefaultFlowExpectedDurationMs = 20000;
         private const double DefaultCameraCaptureExpectedDurationMs = 20000;
 
@@ -105,39 +104,19 @@ namespace Conoscope
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildTimedOperationKey);
 
-            if (!operations.Contains(btnRunFlow))
+            operations.Register(btnRunFlow, options =>
             {
-                object? originalContent = btnRunFlow.Content;
-                operations.Register(
-                    btnRunFlow,
-                    new TimedButtonOperationOptions
-                    {
-                        OperationKey = BuildTimedOperationKey(FlowRunOperationActionKey),
-                        RunningText = Properties.Resources.StatusExecuting,
-                        ProgressForeground = Brushes.DodgerBlue,
-                        ExpectedDurationProvider = () => GetTimedOperationExpectedDurationMs(FlowRunOperationActionKey, DefaultFlowExpectedDurationMs),
-                        ContentFactory = _ => originalContent ?? Properties.Resources.BtnExecute,
-                        ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.TipExecuteFlow, stats),
-                        MinimumExpectedDurationMs = 2000
-                    });
-            }
+                options.RunningText = Properties.Resources.StatusExecuting;
+                options.ProgressForeground = Brushes.DodgerBlue;
+                options.MinimumExpectedDurationMs = DefaultFlowExpectedDurationMs;
+            });
 
-            if (!operations.Contains(btnCaptureCamera))
+            operations.Register(btnCaptureCamera, options =>
             {
-                object? originalContent = btnCaptureCamera.Content;
-                operations.Register(
-                    btnCaptureCamera,
-                    new TimedButtonOperationOptions
-                    {
-                        OperationKey = BuildTimedOperationKey(CameraCaptureOperationActionKey),
-                        RunningText = Properties.Resources.StatusCapturing,
-                        ProgressForeground = Brushes.DodgerBlue,
-                        ExpectedDurationProvider = () => GetTimedOperationExpectedDurationMs(CameraCaptureOperationActionKey, DefaultCameraCaptureExpectedDurationMs),
-                        ContentFactory = _ => originalContent ?? Properties.Resources.BtnCapturePhoto,
-                        ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.TipCapturePhoto, stats),
-                        MinimumExpectedDurationMs = 2000
-                    });
-            }
+                options.RunningText = Properties.Resources.StatusCapturing;
+                options.ProgressForeground = Brushes.DodgerBlue;
+                options.MinimumExpectedDurationMs = DefaultCameraCaptureExpectedDurationMs;
+            });
 
             return operations;
         }
@@ -147,44 +126,9 @@ namespace Conoscope
             return $"conoscope:capture:{actionKey}";
         }
 
-        private static double NormalizeExpectedDuration(double durationMs, double fallbackMs)
-        {
-            double resolved = durationMs > 0 ? durationMs : fallbackMs;
-            return Math.Max(1000, resolved);
-        }
-
-        private static double GetTimedOperationExpectedDurationMs(string actionKey, double fallbackMs)
-        {
-            string operationKey = BuildTimedOperationKey(actionKey);
-            TimedButtonOperationStats? stats = TimedButtonOperationStatsManager.GetAll()
-                .FirstOrDefault(item => string.Equals(item.OperationKey, operationKey, StringComparison.Ordinal))
-                ?.Stats;
-
-            if (stats != null)
-            {
-                if (stats.SuccessCount > 1 && stats.AverageElapsedMs > 0)
-                {
-                    return NormalizeExpectedDuration(stats.AverageElapsedMs, fallbackMs);
-                }
-
-                if (stats.LastElapsedMs > 0)
-                {
-                    return NormalizeExpectedDuration(stats.LastElapsedMs, fallbackMs);
-                }
-
-                if (stats.WarmupElapsedMs > 0)
-                {
-                    return NormalizeExpectedDuration(stats.WarmupElapsedMs, fallbackMs);
-                }
-            }
-
-            return NormalizeExpectedDuration(fallbackMs, fallbackMs);
-        }
-
-        private TimedButtonOperationScope? BeginTrackedOperation(Button button, string actionKey, string progressLabel, double fallbackExpectedDurationMs)
+        private TimedButtonOperationScope? BeginTrackedOperation(Button button, string progressLabel, double expectedDurationMs)
         {
             TimedButtonOperationRegistry operations = EnsureCaptureTimedButtonOperations();
-            double expectedDurationMs = GetTimedOperationExpectedDurationMs(actionKey, fallbackExpectedDurationMs);
             TimedButtonOperationScope? operationScope = operations.Begin(button, expectedDurationMs, progressLabel);
             StartOperationProgress(progressLabel, expectedDurationMs);
             return operationScope;
@@ -244,7 +188,7 @@ namespace Conoscope
 
             try
             {
-                operationScope = BeginTrackedOperation(btnRunFlow, FlowRunOperationActionKey, Properties.Resources.BtnExecute, DefaultFlowExpectedDurationMs);
+                operationScope = BeginTrackedOperation(btnRunFlow, Properties.Resources.BtnExecute, DefaultFlowExpectedDurationMs);
                 SetOperationBusy(true);
 
                 ConoscopeFlowCaptureResult result = await ConoscopeCaptureWorkflow.RunFlowAsync(flowTemplate);
@@ -295,7 +239,7 @@ namespace Conoscope
 
             try
             {
-                operationScope = BeginTrackedOperation(btnCaptureCamera, CameraCaptureOperationActionKey, Properties.Resources.BtnCapturePhoto, DefaultCameraCaptureExpectedDurationMs);
+                operationScope = BeginTrackedOperation(btnCaptureCamera, Properties.Resources.BtnCapturePhoto, DefaultCameraCaptureExpectedDurationMs);
                 SetOperationBusy(true);
 
                 ConoscopeCameraCaptureResult result = await ConoscopeCaptureWorkflow.CaptureCameraAsync(camera, GetSelectedCalibrationParam());

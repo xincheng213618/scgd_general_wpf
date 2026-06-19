@@ -86,10 +86,6 @@
                             <Button Margin="6,0,0,0"
                                     Command="{Binding OpenSettingDirectoryCommand}"
                                     Content="{x:Static properties:Resources.OpenConfigFolder}"/>
-                            <Button Width="30" Margin="6,0,0,0"
-                                    Click="Help_Click"
-                                    Content="&#x2753;"
-                                    ToolTip="{x:Static properties:Resources.ToolTipOpenCalibrationHelp}"/>
                         </WrapPanel>
                         <hc:ComboBox x:Name="ComboBoxList"
                                      Grid.Row="1"

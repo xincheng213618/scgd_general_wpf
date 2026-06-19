@@ -143,12 +143,6 @@
                                 <TextBlock Text="{x:Static properties:Resources.InstallPackage}" VerticalAlignment="Center" FontSize="12"/>
                             </StackPanel>
                         </Button>
-                        <Button Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,3,0" Padding="6,2" ToolTip="{x:Static properties:Resources.OpenViewDllViersion}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock Text="{x:Static properties:Resources.OpenViewDllViersion}" VerticalAlignment="Center" FontSize="12"/>
-                            </StackPanel>
-                        </Button>
                         <Button Command="{Binding RestartCommand}" Margin="0,0,3,0" Padding="6,2" ToolTip="{x:Static properties:Resources.Restart}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
@@ -319,22 +313,13 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <WrapPanel Margin="5,5,5,3">
-                            <TextBox Width="160" Margin="0,0,6,0" VerticalContentAlignment="Center" Text="{Binding Catalog.Keyword, UpdateSourceTrigger=PropertyChanged}" ToolTip="{x:Static properties:Resources.MarketplaceKeyword}" />
-                            <TextBox Width="120" Margin="0,0,6,0" VerticalContentAlignment="Center" Text="{Binding Catalog.Author, UpdateSourceTrigger=PropertyChanged}" ToolTip="{x:Static properties:Resources.MarketplaceAuthor}" />
-                            <ComboBox Width="120" Margin="0,0,6,0" ItemsSource="{Binding Catalog.Categories}" SelectedItem="{Binding Catalog.SelectedCategory, Mode=TwoWay}" DisplayMemberPath="DisplayName" />
-                            <ComboBox Width="110" Margin="0,0,6,0" ItemsSource="{Binding Catalog.SortOptions}" SelectedItem="{Binding Catalog.SelectedSortOption, Mode=TwoWay}" DisplayMemberPath="DisplayName" />
-                            <Button Command="{Binding Catalog.RefreshCommand}" Padding="8,2" Content="{x:Static properties:Resources.Refresh}" />
-                        </WrapPanel>
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5,0,5,3">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5,5,5,3">
                             <TextBlock Text="{Binding Catalog.StatusText}" FontStyle="Italic" Foreground="{DynamicResource MarketplaceMutedTextBrush}"/>
                             <TextBlock Text="{x:Static properties:Resources.MarketplaceOffline}" Foreground="{DynamicResource MarketplaceErrorBrush}" Visibility="{Binding Catalog.IsOffline, Converter={StaticResource bool2VisibilityConverter}}"/>
                         </StackPanel>
-                        <Grid Grid.Row="2">
+                        <Grid Grid.Row="1">
                             <ListBox x:Name="ListViewMarketplace" Background="Transparent" ItemsSource="{Binding Catalog.MarketplacePlugins}" SelectedItem="{Binding Catalog.SelectedPlugin, Mode=TwoWay}" Padding="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True" Visibility="{Binding Catalog.HasItems, Converter={StaticResource bool2VisibilityConverter}}">
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListBoxItem}">
@@ -396,18 +381,6 @@
                                                        MaxHeight="34" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
 
                                             <WrapPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0">
-                                                <Border Background="{DynamicResource MarketplaceAccentNeutralBackgroundBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="9" VerticalAlignment="Center" Margin="0,0,3,0" Foreground="{DynamicResource MarketplaceAccentNeutralBrush}"/>
-                                                        <TextBlock Text="{Binding Author}" FontSize="10" Foreground="{DynamicResource MarketplaceAccentNeutralBrush}"/>
-                                                    </StackPanel>
-                                                </Border>
-                                                <Border Background="{DynamicResource MarketplaceAccentBlueBackgroundBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="&#xE8EC;" FontFamily="Segoe MDL2 Assets" FontSize="9" VerticalAlignment="Center" Margin="0,0,3,0" Foreground="{DynamicResource MarketplaceAccentBlueBrush}"/>
-                                                        <TextBlock Text="{Binding Category}" FontSize="10" Foreground="{DynamicResource MarketplaceAccentBlueBrush}"/>
-                                                    </StackPanel>
-                                                </Border>
                                                 <Border Background="{DynamicResource MarketplaceAccentGreenBackgroundBrush}" CornerRadius="4" Padding="6,2">
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="9" VerticalAlignment="Center" Margin="0,0,3,0" Foreground="{DynamicResource MarketplaceAccentGreenBrush}"/>
@@ -430,11 +403,6 @@
                                 <TextBlock Text="{x:Static properties:Resources.MarketplaceNoMatches}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MarketplaceMutedTextBrush}" FontStyle="Italic"/>
                             </Border>
                         </Grid>
-                        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,4,5,5">
-                            <Button Command="{Binding Catalog.PreviousPageCommand}" Content="{x:Static properties:Resources.Previous}" Padding="8,2" Margin="0,0,6,0"/>
-                            <TextBlock Text="{Binding Catalog.PageDisplayText}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <Button Command="{Binding Catalog.NextPageCommand}" Content="{x:Static properties:Resources.Next}" Padding="8,2"/>
-                        </StackPanel>
                     </Grid>
                 </TabItem>
             </TabControl>

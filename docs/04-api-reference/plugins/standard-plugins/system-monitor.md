@@ -110,6 +110,20 @@
 
 这些命令对应的真实行为分别是清理应用数据与日志目录、重载磁盘列表、重载网络接口列表、重载高占用进程列表。
 
+## 运行时刷新模型
+
+`SystemMonitors` 构造时会启动一个 `Timer`，刷新间隔来自 `SystemMonitorSetting.UpdateSpeed`，当前配置要求值不小于 `100`。性能计数器初始化在后台任务里执行，磁盘、网络和进程列表则通过显式加载函数刷新。
+
+这意味着交接时要把状态分成两类看：
+
+| 数据 | 刷新方式 | 维护重点 |
+| --- | --- | --- |
+| CPU/RAM/时间/运行时长 | 定时器刷新 | 性能计数器失败时应降级，不应拖垮插件 |
+| 磁盘列表 | 初始化和 `RefreshDrivesCommand` | 只展示 ready drive，清理缓存前确认目录 |
+| 网络接口 | 初始化和 `RefreshNetworkCommand` | 排除 loopback/tunnel，只取 IPv4 地址 |
+| 高内存进程 | 初始化和 `RefreshProcessesCommand` | 读取进程可能因权限失败，代码会跳过异常项 |
+| CUDA 信息 | 构造时读取 `ConfigCuda.Instance` | CUDA 不可用时显示为空，不应作为插件失败 |
+
 ## 当前几个最容易写错的点
 
 ### 它不是独立窗口程序为中心的插件
@@ -137,8 +151,31 @@
 
 这样能先抓住真实控制面，再回到菜单、状态栏和装载信息。
 
+## 交接验收表
+
+| 验收项 | 操作 | 通过标准 |
+| --- | --- | --- |
+| 设置页 | 打开设置中的系统监控项 | `SystemMonitorControl` 显示同一份单例数据 |
+| 工具菜单 | Tool 菜单打开性能监控窗口 | 窗口能显示 CPU/RAM/磁盘/网络/进程等信息 |
+| 状态栏开关 | 切换时间、CPU、RAM、运行时长、磁盘开关 | 状态栏项能动态增删，`StatusBarItemsChanged` 被触发 |
+| 刷新命令 | 点击刷新磁盘、网络、进程 | 对应列表重新加载，异常项不会导致窗口关闭 |
+| 缓存清理 | 点击清理缓存前确认目录 | 只清理应用数据/日志相关目录，权限失败有可见提示 |
+| 降级场景 | 在性能计数器异常环境启动 | 插件仍能打开，CPU/RAM 可为空或不刷新 |
+
+## 故障首查
+
+| 现象 | 首查点 | 处理 |
+| --- | --- | --- |
+| 状态栏不刷新 | `SystemMonitorIStatusBarProvider` 是否监听配置变更 | 重点查 `StatusBarItemsChanged` 是否触发 |
+| CPU/RAM 为空 | Windows 性能计数器初始化是否失败 | 这是可降级项，继续查日志而不是判定插件加载失败 |
+| 磁盘列表为空 | drive 是否 ready、权限是否可读 | 可用刷新命令重载 |
+| 网络信息缺失 | 是否被 loopback/tunnel 过滤、是否有 IPv4 地址 | 文档不要承诺所有网卡都显示 |
+| 清理缓存失败 | 目标目录权限、文件是否被占用 | 不应扩大到任意目录删除 |
+
 ## 继续阅读
 
+- [现有插件现场验收与交接清单](../plugin-field-acceptance.md)
+- [插件能力与交接矩阵](../plugin-capability-matrix.md)
 - [Plugins/README.md](../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
-- [docs/04-api-reference/plugins/standard-plugins/pattern.md](./pattern.md)
+- [docs/04-api-reference/plugins/standard-plugins/conoscope.md](./conoscope.md)

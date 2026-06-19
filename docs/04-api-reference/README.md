@@ -1,50 +1,44 @@
-# API 参考
+# 模块参考
 
-本章节现在只保留已经收束成“当前实现导读”的稳定入口，不再继续把所有专题页平铺成一层目录。
+本章是源码模块参考入口。项目业务说明已经提升到 [项目说明](../00-projects/README.md)，现有插件能力已经提升到 [现有插件能力说明](./plugins/README.md)。这里重点保留 UI、Engine、算法模板和扩展点这些需要回到源码模块的交接资料。
 
-## 推荐入口
+- UI DLL 怎么发布、怎么被其他模块引用、哪些资源会进入包，以及菜单、设置、插件加载、ImageEditor 等运行时组件如何交接。
+- Engine 的设备、模板、流程、MQTT、结果和数据库业务链路怎么串起来。
+- 现有插件从 manifest、菜单、外部依赖、现场验收到回退记录怎么交接。
+- 算法模板、Flow 节点、扩展点和源码目录之间怎么对应。
 
-### UI 与客户端层
+## 推荐阅读顺序
 
-- [UI 组件总览](./ui-components/README.md)
+1. [UI 组件与 DLL 发布](./ui-components/README.md)：先确认 UI 类库的发布形态和依赖关系。
+2. [Engine 组件与业务交接](./engine-components/README.md)：再理解设备、模板、流程和结果处理的主链路。
+3. [算法与模板](./algorithms/README.md)：需要细看算法模板和结果处理时再进入。
+4. [扩展点概览](./extensions/README.md)：需要新增流程节点或扩展宿主能力时再进入。
+5. [项目说明](../00-projects/README.md)：需要接手客户项目时从这里进入。
+6. [现有插件能力说明](./plugins/README.md)：需要确认通用插件能力、现场验收和交付边界时从这里进入。
 
-### Engine 与运行时层
+## 当前章节地图
 
-- [Engine 组件总览](./engine-components/README.md)
+| 章节 | 覆盖源码 | 交接重点 |
+| --- | --- | --- |
+| [UI 组件](./ui-components/README.md) | `UI/` | DLL/NuGet 发布、运行时发现、组件交接、资源打包、宿主引用 |
+| [Engine 组件](./engine-components/README.md) | `Engine/` | 业务主链路、设备服务、模板、流程、MQTT、结果 |
+| [现有插件](./plugins/README.md) | `Plugins/` | manifest、入口、依赖、能力矩阵、现场验收和回退 |
+| [算法与模板](./algorithms/README.md) | `Engine/ColorVision.Engine/Templates/` | 算法模板、JSON 模板、POI/ROI、结果解析 |
+| [扩展点](./extensions/README.md) | `Engine/FlowEngineLib/`、`UI/ColorVision.UI/` | Flow 节点和插件扩展入口 |
 
-### 模板与算法接入层
+## 交接时先确认的事实
 
-- [算法与模板概览](./algorithms/README.md)
-- [算法系统概览](./algorithms/overview.md)
+- 主程序输出目录是插件和项目包运行时的装载根。
+- UI 类库多数启用了 `GeneratePackageOnBuild`，不仅是源码引用，也可以作为 DLL/NuGet 包发布。
+- `Engine/ColorVision.Engine` 在源码存在时引用 UI 项目；源码缺失时部分 UI 模块会回退到 `ColorVision.*` 包引用。
+- 插件与项目包通过 `manifest.json` 暴露 `Id`、`name`、`version`、`dllpath`、`requires`。
+- 构建插件和项目包时，PostBuild 会把 DLL、`manifest.json`、`README.md`、`CHANGELOG.md` 复制到主程序 `Plugins/<Name>/`。
+- `Scripts/package_plugin.bat` 和 `Scripts/package_project.bat` 会调用 `Scripts/package_cvxp.py` 生成 `.cvxp` 包。
 
-### 插件与扩展层
+## 不再作为主入口的内容
 
-- [插件与现状页](./plugins/README.md)
-- [扩展点概览](./extensions/README.md)
+- 与当前源码目录对不上的历史插件功能页。
+- 只描述理想架构、但无法回到具体类和文件的旧式说明。
+- 和用户手册重复的操作步骤。
 
-## 当前整理原则
-
-- 顶层首页只挂经过收束的总览页，不再把所有单页都当成首屏入口。
-- 细分专题页仍保留在各自目录中，但默认需要和源码对照阅读。
-- 如果文档与实现不一致，以源码、XML 注释和实际运行行为为准。
-
-## 当前章节边界
-
-- `ui-components/` 主要覆盖 WPF UI 侧模块与桌面壳层。
-- `engine-components/` 主要覆盖 Engine 目录下的运行时模块，而不是完整算法百科。
-- `algorithms/` 主要覆盖 Templates 系统和算法接入链，而不是所有底层图像算子目录。
-- `plugins/` 主要覆盖当前工作区里仍能对上源码的标准插件，以及少量历史残留插件的现状说明页。
-- `extensions/` 当前主要保留 Flow 节点扩展这一类和实际代码能直接对上的扩展点专题。
-
-## 补充阅读方式
-
-- `plugins/` 下的页面同时包含“当前源码可对上”的插件专题和“历史状态说明”页，进入单页前应先看章节概览。
-- `extensions/` 当前覆盖范围很窄，主要是 Flow 节点扩展这类可以直接和代码锚点对上的专题，不是完整扩展机制百科。
-- 这两类页面都更适合作为按需查阅入口，而不是替代用户指南或开发指南的总入口。
-
-## 建议阅读顺序
-
-1. 先看 [UI 组件总览](./ui-components/README.md)，理解客户端壳层和 UI 基础设施。
-2. 再看 [Engine 组件总览](./engine-components/README.md)，理解服务、模板和流程运行时。
-3. 最后看 [算法与模板概览](./algorithms/README.md) 与 [算法系统概览](./algorithms/overview.md)，把模板和算法接入链串起来。
-4. 需要查看插件现状或扩展点时，再进入 [插件与现状页](./plugins/README.md) 和 [扩展点概览](./extensions/README.md)。
+如果文档与源码不一致，以当前源码、项目文件和运行时装载行为为准，并优先更新本章对应页面。

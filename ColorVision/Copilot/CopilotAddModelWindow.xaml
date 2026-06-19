@@ -1,0 +1,420 @@
+<Window x:Class="ColorVision.Copilot.CopilotAddModelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:ColorVision.Copilot"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:data="clr-namespace:System.Windows.Data;assembly=PresentationFramework"
+        Title="{x:Static properties:Resources.CopilotAddModel}"
+        Width="720"
+        Height="560"
+        MinWidth="640"
+        MinHeight="480"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <CollectionViewSource x:Key="VisibleProviderOptionsView"
+                              Source="{Binding VisibleConnectProviderOptions}">
+            <CollectionViewSource.GroupDescriptions>
+                <data:PropertyGroupDescription PropertyName="GroupName" />
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+
+        <Style x:Key="CardButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#F2F2F2" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#E8E8E8" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ProviderRowButtonStyle" TargetType="Button" BasedOn="{StaticResource CardButtonStyle}">
+            <Setter Property="Height" Value="42" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="12,0" />
+        </Style>
+
+        <Style x:Key="ProviderIconTextStyle" TargetType="TextBlock">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#888888" />
+            <Setter Property="TextAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="ProviderLabelTextStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Foreground" Value="#1E1E1E" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style x:Key="MutedTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#8B8B8B" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style x:Key="ProviderBadgeBorderStyle" TargetType="Border">
+            <Setter Property="Margin" Value="14,0,0,0" />
+            <Setter Property="Padding" Value="7,1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="BorderBrush" Value="#D9D9D9" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+
+        <Style x:Key="PageGridStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Visible" />
+        </Style>
+
+        <Style x:Key="PickerPageGridStyle" TargetType="Grid" BasedOn="{StaticResource PageGridStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsConnectProviderPickerVisible}" Value="False">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ConnectPageGridStyle" TargetType="Grid" BasedOn="{StaticResource PageGridStyle}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsConnectProviderFormVisible}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SearchPlaceholderStyle" TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+            <Setter Property="Margin" Value="42,0,0,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasConnectProviderSearchText}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SubmitButtonStyle" TargetType="Button">
+            <Setter Property="MinWidth" Value="58" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="Background" Value="#111111" />
+            <Setter Property="BorderBrush" Value="#111111" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#242424" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#000000" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Background" Value="#CFCFCF" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="#CFCFCF" />
+                                <Setter Property="Foreground" Value="#777777" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Margin="14"
+            Background="White"
+            BorderBrush="#D8D8D8"
+            BorderThickness="1"
+            CornerRadius="12">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="24"
+                              Opacity="0.18"
+                              ShadowDepth="6"
+                              Color="#000000" />
+        </Border.Effect>
+
+        <Grid Margin="22">
+            <Grid Style="{StaticResource PickerPageGridStyle}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="56" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,4,0,22" MouseLeftButtonDown="WindowChrome_MouseLeftButtonDown">
+                    <TextBlock VerticalAlignment="Center"
+                               FontSize="19"
+                               Foreground="#1E1E1E"
+                               Text="连接提供商" />
+                    <Button HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Width="34"
+                            Height="34"
+                            Click="CloseButton_Click"
+                            Content="×"
+                            FontSize="24"
+                            Foreground="#8A8A8A"
+                            IsCancel="True"
+                            Style="{StaticResource CardButtonStyle}" />
+                </Grid>
+
+                <Border Grid.Row="1"
+                        Height="40"
+                        Background="#F6F6F6"
+                        CornerRadius="8">
+                    <Grid>
+                        <TextBlock Margin="16,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="#909090"
+                                   Text="&#xE721;" />
+                        <TextBlock Style="{StaticResource SearchPlaceholderStyle}" Text="搜索提供商" />
+                        <TextBox x:Name="SearchTextBox"
+                                 Margin="42,0,42,0"
+                                 VerticalContentAlignment="Center"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 FontSize="16"
+                                 Foreground="#1E1E1E"
+                                 Text="{Binding ConnectProviderSearchText, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button HorizontalAlignment="Right"
+                                Width="34"
+                                Margin="0,3,8,3"
+                                Command="{Binding ClearConnectProviderSearchCommand}"
+                                Content="×"
+                                FontSize="16"
+                                Foreground="#9A9A9A"
+                                Style="{StaticResource CardButtonStyle}"
+                                Visibility="{Binding HasConnectProviderSearchText, Converter={StaticResource BoolToVisibility}}" />
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="2" Margin="0,20,0,0">
+                    <ListBox Background="Transparent"
+                             BorderThickness="0"
+                             ItemsSource="{Binding Source={StaticResource VisibleProviderOptionsView}}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0,0,0,2" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <ContentPresenter />
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="12,14,0,8"
+                                                   FontSize="15"
+                                                   Foreground="#8B8B8B"
+                                                   Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListBox.GroupStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type local:CopilotConnectProviderOption}">
+                                <Button Command="{Binding DataContext.SelectConnectProviderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource ProviderRowButtonStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="24" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Style="{StaticResource ProviderIconTextStyle}"
+                                                   Text="{Binding IconText}" />
+                                        <TextBlock Grid.Column="1"
+                                                   Margin="8,0,0,0"
+                                                   Style="{StaticResource ProviderLabelTextStyle}"
+                                                   Text="{Binding Label}" />
+                                        <TextBlock Grid.Column="2"
+                                                   Margin="16,0,0,0"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Text="{Binding Description}" />
+                                        <Border Grid.Column="3"
+                                                Style="{StaticResource ProviderBadgeBorderStyle}"
+                                                Visibility="{Binding HasBadge, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock FontSize="13"
+                                                       Foreground="#777777"
+                                                       Text="{Binding BadgeText}" />
+                                        </Border>
+                                        <TextBlock Grid.Column="5"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="21"
+                                                   Foreground="#2E2E2E"
+                                                   Text="+" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="16"
+                               Foreground="#8B8B8B"
+                               Text="没有匹配的提供商">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasVisibleConnectProviders}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="ConnectPageGrid"
+                  IsVisibleChanged="ConnectPageGrid_IsVisibleChanged"
+                  Style="{StaticResource ConnectPageGridStyle}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" MouseLeftButtonDown="WindowChrome_MouseLeftButtonDown">
+                    <Button HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Width="34"
+                            Height="34"
+                            Command="{Binding BackToConnectProviderPickerCommand}"
+                            Content="‹"
+                            FontSize="28"
+                            Foreground="#8A8A8A"
+                            Style="{StaticResource CardButtonStyle}" />
+                    <Button HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Width="34"
+                            Height="34"
+                            Click="CloseButton_Click"
+                            Content="×"
+                            FontSize="24"
+                            Foreground="#8A8A8A"
+                            IsCancel="True"
+                            Style="{StaticResource CardButtonStyle}" />
+                </Grid>
+
+                <StackPanel Grid.Row="1" Margin="10,42,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Width="34"
+                                   VerticalAlignment="Center"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1E1E1E"
+                                   Text="{Binding ConnectProviderIconText}" />
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="20"
+                                   Foreground="#1E1E1E"
+                                   Text="{Binding ConnectProviderTitle}" />
+                    </StackPanel>
+
+                    <TextBlock Margin="0,46,0,0"
+                               FontSize="16"
+                               Foreground="#707070"
+                               Text="{Binding ConnectProviderDescription}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Margin="0,38,0,10"
+                               FontSize="15"
+                               Foreground="#7A7A7A"
+                               Text="{Binding ConnectProviderApiKeyLabel}" />
+
+                    <PasswordBox x:Name="ApiKeyPasswordBox"
+                                 Height="38"
+                                 Padding="12,0"
+                                 VerticalContentAlignment="Center"
+                                 BorderBrush="#D2D2D2"
+                                 BorderThickness="1"
+                                 FontSize="16"
+                                 local:PasswordBoxBinding.BindPassword="True"
+                                 local:PasswordBoxBinding.BoundPassword="{Binding NewProfileApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Button Margin="0,24,0,0"
+                            HorizontalAlignment="Left"
+                            Click="SubmitButton_Click"
+                            Content="提交"
+                            IsDefault="True"
+                            IsEnabled="{Binding CanAddAndUseProfile}"
+                            Style="{StaticResource SubmitButtonStyle}" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

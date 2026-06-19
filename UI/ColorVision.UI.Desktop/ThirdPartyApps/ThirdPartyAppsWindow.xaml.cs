@@ -33,6 +33,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         private List<ThirdPartyAppGroupItem> _groups = new();
         private string _allGroupsLabel = string.Empty;
         private CustomAppsConfig _customConfig = null!;
+        private CancellationTokenSource? _loadCancellation;
 
         public ThirdPartyAppsWindow()
         {
@@ -40,7 +41,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             this.ApplyCaption();
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private async void Window_Initialized(object sender, EventArgs e)
         {
             _customConfig = CustomAppsConfig.Instance;
             _allGroupsLabel = GetResourceString("ThirdPartyAppsAll", "All");
@@ -51,9 +52,8 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             BtnRefresh.ToolTip = Properties.Resources.Refresh;
             GroupsLabelText.Text = Properties.Resources.CustomApp_Category;
 
-            var manager = ThirdPartyAppManager.GetInstance();
-            _allApps = manager.Apps;
-            RefreshGroups();
+            _allApps = ThirdPartyAppManager.GetInstance().Apps;
+            await ReloadAllAppsAsync();
         }
 
         private void RefreshGroups()
@@ -169,7 +169,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                     contextMenu.Items.Add(new Separator());
 
                     MenuItem editItem = new MenuItem { Header = Properties.Resources.Edit };
-                    editItem.Click += (s, args) => EditCustomApp(customEntry, app);
+                    editItem.Click += async (s, args) => await EditCustomAppAsync(customEntry, app);
                     contextMenu.Items.Add(editItem);
 
                     MenuItem deleteItem = new MenuItem { Header = Properties.Resources.Delete };
@@ -202,7 +202,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             }
         }
 
-        private void EditCustomApp(CustomAppEntry entry, ThirdPartyAppInfo app)
+        private async Task EditCustomAppAsync(CustomAppEntry entry, ThirdPartyAppInfo app)
         {
             var dlg = new AddCustomAppWindow(entry) { Owner = this };
             if (dlg.ShowDialog() == true && dlg.Result != null)
@@ -214,7 +214,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 entry.Group = dlg.Result.Group;
                 entry.AppType = dlg.Result.AppType;
 
-                ReloadAllApps();
+                await ReloadAllAppsAsync(forceReload: true);
             }
         }
 
@@ -234,22 +234,22 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             }
         }
 
-        private void BtnRefresh_Click(object sender, RoutedEventArgs e)
+        private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
-            ReloadAllApps();
+            await ReloadAllAppsAsync(forceReload: true, forceProviderRefresh: true);
         }
 
-        private void BtnAddApp_Click(object sender, RoutedEventArgs e)
+        private async void BtnAddApp_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new AddCustomAppWindow { Owner = this };
             if (dlg.ShowDialog() == true && dlg.Result != null)
             {
                 _customConfig.Entries.Add(dlg.Result);
-                ReloadAllApps();
+                await ReloadAllAppsAsync(forceReload: true);
             }
         }
 
-        private void BtnAddScript_Click(object sender, RoutedEventArgs e)
+        private async void BtnAddScript_Click(object sender, RoutedEventArgs e)
         {
             var entry = new CustomAppEntry { AppType = CustomAppType.CmdScript };
             var dlg = new AddCustomAppWindow(entry) { Owner = this };
@@ -257,15 +257,80 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             if (dlg.ShowDialog() == true && dlg.Result != null)
             {
                 _customConfig.Entries.Add(dlg.Result);
-                ReloadAllApps();
+                await ReloadAllAppsAsync(forceReload: true);
             }
         }
 
-        private void ReloadAllApps()
+        private async Task ReloadAllAppsAsync(bool forceReload = false, bool forceProviderRefresh = false)
         {
-            ThirdPartyAppManager.GetInstance().LoadApps();
-            _allApps = ThirdPartyAppManager.GetInstance().Apps;
-            RefreshGroups();
+            var manager = ThirdPartyAppManager.GetInstance();
+            if (!forceReload && manager.IsLoaded)
+            {
+                _allApps = manager.Apps;
+                RefreshGroups();
+                ApplyFilter();
+                return;
+            }
+
+            _loadCancellation?.Cancel();
+            var cancellation = new CancellationTokenSource();
+            _loadCancellation = cancellation;
+
+            SetLoadingState(true);
+
+            try
+            {
+                await manager.LoadAppsAsync(
+                    forceReload: forceReload,
+                    forceProviderRefresh: forceProviderRefresh,
+                    cancellationToken: cancellation.Token);
+                if (cancellation.IsCancellationRequested)
+                    return;
+
+                _allApps = manager.Apps;
+                RefreshGroups();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (_loadCancellation == cancellation)
+                {
+                    _loadCancellation = null;
+                    SetLoadingState(false);
+                    ApplyFilter();
+                }
+
+                cancellation.Dispose();
+            }
+        }
+
+        private void SetLoadingState(bool isLoading)
+        {
+            BtnRefresh.IsEnabled = !isLoading;
+            BtnAddApp.IsEnabled = !isLoading;
+            BtnAddScript.IsEnabled = !isLoading;
+            SearchBox.IsEnabled = !isLoading;
+
+            if (isLoading)
+            {
+                AppCountText.Text = $"{Properties.Resources.Loading}...";
+                CurrentGroupText.Text = Properties.Resources.Loading;
+                AppsListBox.ItemsSource = null;
+                GroupListBox.Items.Clear();
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _loadCancellation?.Cancel();
+            _loadCancellation = null;
+            base.OnClosed(e);
         }
 
         private static string GetResourceString(string key, string fallback)

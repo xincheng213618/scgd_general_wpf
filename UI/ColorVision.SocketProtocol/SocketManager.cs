@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -518,15 +519,12 @@ namespace ColorVision.SocketProtocol
         {
             if (obj is not TcpClient client) return;
 
-            NetworkStream stream = client.GetStream();
-            // Use RemoteEndPoint if available, otherwise use LocalEndPoint with a unique hash
-            string clientEndPoint = client.Client.RemoteEndPoint?.ToString()
-                ?? $"Local:{client.Client.LocalEndPoint}:{client.GetHashCode():X8}";
-
-            byte[] buffer = Config.SocketBufferSize > 1024 ? new byte[Config.SocketBufferSize] : new byte[1024];
+            string clientEndPoint = GetClientEndPoint(client);
             int bytesRead;
             try
             {
+                NetworkStream stream = client.GetStream();
+                byte[] buffer = Config.SocketBufferSize > 1024 ? new byte[Config.SocketBufferSize] : new byte[1024];
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
@@ -661,6 +659,18 @@ namespace ColorVision.SocketProtocol
 
                 }
             }
+            catch (IOException ex) when (IsClientDisconnect(ex))
+            {
+                log.Info("Socket client disconnected: " + clientEndPoint + ". " + ex.Message);
+            }
+            catch (SocketException ex) when (IsClientDisconnect(ex))
+            {
+                log.Info("Socket client disconnected: " + clientEndPoint + ". " + ex.Message);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                log.Info("Socket client disposed: " + clientEndPoint + ". " + ex.Message);
+            }
             catch (Exception ex)
             {
                 log.Error("Client handling error: " + ex);
@@ -668,12 +678,68 @@ namespace ColorVision.SocketProtocol
             }
             finally
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    TcpClients.Remove(client);
-                });
-                client?.Dispose();
+                RemoveClient(client);
+                DisposeClient(client);
             }
+        }
+
+        private static string GetClientEndPoint(TcpClient client)
+        {
+            try
+            {
+                return client.Client?.RemoteEndPoint?.ToString()
+                    ?? client.Client?.LocalEndPoint?.ToString()
+                    ?? $"Client:{client.GetHashCode():X8}";
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Unable to get socket client endpoint.", ex);
+                return $"Client:{client.GetHashCode():X8}";
+            }
+        }
+
+        private void RemoveClient(TcpClient client)
+        {
+            try
+            {
+                RunOnUiThread(() => TcpClients.Remove(client));
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Error removing socket client.", ex);
+            }
+        }
+
+        private static void DisposeClient(TcpClient client)
+        {
+            try
+            {
+                client.Close();
+                client.Dispose();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Error disposing socket client.", ex);
+            }
+        }
+
+        private static bool IsClientDisconnect(Exception ex)
+        {
+            if (ex is SocketException socketException)
+            {
+                return IsClientDisconnect(socketException.SocketErrorCode);
+            }
+
+            return ex.InnerException is SocketException innerSocketException
+                && IsClientDisconnect(innerSocketException.SocketErrorCode);
+        }
+
+        private static bool IsClientDisconnect(SocketError error)
+        {
+            return error == SocketError.ConnectionReset
+                || error == SocketError.ConnectionAborted
+                || error == SocketError.Shutdown
+                || error == SocketError.OperationAborted;
         }
     }
 }

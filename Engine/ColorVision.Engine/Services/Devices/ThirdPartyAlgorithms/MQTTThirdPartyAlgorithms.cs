@@ -31,16 +31,14 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
 
 
-        public MsgRecord CallFunction(TemplateJsonParam modparam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
+        public MsgRecord CallFunction(TemplateJsonParam modparam, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
         {
-            serialNumber = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : serialNumber;
-            
-            var Params = new Dictionary<string, object>() { { "InputParam", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+var Params = new Dictionary<string, object>() { { "InputParam", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = modparam.Id, Name = modparam.Name });
             MsgSend msg = new()
             {
                 EventName = modparam.ModThirdPartyAlgorithmsModel.Code ?? string.Empty,
-                SerialNumber = serialNumber,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

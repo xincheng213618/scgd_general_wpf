@@ -1,9 +1,13 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1822
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using MQTTMessageLib.Camera;
@@ -43,6 +47,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
+            AttachDisplayFilterConfig();
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
             {
                 toolReferenceLine.ReferenceLine = new ReferenceLine(Device.DisplayConfig.ReferenceLineParam);
@@ -62,6 +67,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+        }
+
+        private void AttachDisplayFilterConfig()
+        {
+            if (ImageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool filterService)
+            {
+                filterService.AttachPersistence(Device.DisplayConfig.DisplayShaderFilter, SaveDisplayFilterConfig);
+            }
+        }
+
+        private static void SaveDisplayFilterConfig()
+        {
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
         private void Delete()

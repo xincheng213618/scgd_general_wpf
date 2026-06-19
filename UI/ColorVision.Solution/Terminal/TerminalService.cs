@@ -96,7 +96,7 @@ namespace ColorVision.Solution.Terminal
 
             TerminalService.GetInstance().SetTerminalControl(terminalControl);
 
-            layoutManager.RegisterPanel(TerminalService.PanelId, grid, "终端", PanelPosition.Bottom);
+            layoutManager.RegisterPanel(TerminalService.PanelId, grid, "终端", PanelPosition.Bottom, isDefaultVisible: false);
         }
     }
 }

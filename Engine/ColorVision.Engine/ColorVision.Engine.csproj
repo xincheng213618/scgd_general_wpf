@@ -25,11 +25,9 @@
 		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260602" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260602" />
-		<PackageReference Include="QRCoder.Xaml" Version="1.8.0" />
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.8" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.8" />
-		<PackageReference Include="YamlDotNet" Version="18.0.0" />
 	</ItemGroup>
 
 
@@ -44,8 +42,8 @@
 		<None Remove="Assets\Image\归档查询.png" />
 		<None Remove="Assets\Image\综合查询.png" />
 		<None Remove="Assets\png\PowerToy.png" />
-		<None Remove="Assets\Sounds\error.wav" />
-		<None Remove="Assets\Sounds\success.wav" />
+		<None Remove="Templates\Jsons\**\*.schema.json" />
+		<None Remove="Templates\Jsons\Schemas\schema-index.json" />
 		<None Remove="ToolPlugins\UsbTreeView.exe" />
 	</ItemGroup>
 
@@ -99,8 +97,6 @@
 		<Resource Include="Assets\Image\归档查询.png" />
 		<Resource Include="Assets\Image\综合查询.png" />
 		<Resource Include="Assets\png\PowerToy.png" />
-		<Resource Include="Assets\Sounds\error.wav" />
-		<Resource Include="Assets\Sounds\success.wav" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -175,6 +171,12 @@
 		<None Update="Assets\Tool\UsbTreeView.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<EmbeddedResource Include="Templates\Jsons\**\*.schema.json">
+		  <LogicalName>Templates/Jsons/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Templates\Jsons\Schemas\schema-index.json">
+		  <LogicalName>Templates/Jsons/Schemas/schema-index.json</LogicalName>
+		</EmbeddedResource>
 		<None Update="Properties\Settings.settings">
 			<Generator>PublicSettingsSingleFileGenerator</Generator>
 			<LastGenOutput>Settings.Designer.cs</LastGenOutput>

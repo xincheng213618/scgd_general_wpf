@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Messages;
+﻿#pragma warning disable CA1816
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
 using System;
@@ -141,11 +142,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     }
                 };
             }
-        }
-
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
 
         private void CameraOffline_Click(object sender, RoutedEventArgs e)

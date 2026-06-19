@@ -372,7 +372,7 @@ public class CVBaseServerNode : CVCommonNode
 			}
 			else
 			{
-				cVTransAction.NodeFailed("Build MQTT Request failed", base.DeviceCode);
+				cVTransAction.NodeFailed("Build MQTT Request failed", GetFullNodeName());
 			}
 		}
 	}
@@ -518,6 +518,22 @@ public class CVBaseServerNode : CVCommonNode
 				{
 					logger.DebugFormat("[{0}]DoServerTransfer => {1}", ToShortString(), cVStartCFC.ToShortString());
 				}
+				cVStartCFC.NormalizeStopStatus();
+				if (ShouldEndFlowImmediately(cVStartCFC))
+				{
+					FinishFlow(cVStartCFC);
+					if (cVTransByEvent != null)
+					{
+						cVTransByEvent.Cancel();
+						Reset(cVTransByEvent);
+					}
+					else
+					{
+						Reset(cVStartCFC);
+					}
+					m_op_end.TransferData(e.TargetOption.Data);
+					return;
+				}
 				if (cVStartCFC.FlowStatus == StatusTypeEnum.Runing)
 				{
 					if (cVTransByEvent != null)
@@ -634,7 +650,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
-			trans.NodeFailed(cmd.resp.Message, base.DeviceCode);
+			trans.NodeFailed(cmd.resp.Message, GetFullNodeName());
 			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
 		}
 
@@ -731,6 +747,19 @@ public class CVBaseServerNode : CVCommonNode
 		return trans.trans_action.FlowStatus == StatusTypeEnum.Paused;
 	}
 
+	private static bool ShouldEndFlowImmediately(CVStartCFC start)
+	{
+		return start.TryGetStopStatus(out _);
+	}
+
+	private static void FinishFlow(CVStartCFC start)
+	{
+		if (start.TryDoFinishing())
+		{
+			start.FireFinished();
+		}
+	}
+
 	protected void RemoveActionCmd(CVTransAction trans, string key)
 	{
 		if (trans.m_sever_actionEvent.ContainsKey(key))
@@ -757,13 +786,29 @@ public class CVBaseServerNode : CVCommonNode
 		});
 	}
 
-	private async void DoNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
+	private void DoNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
 	{
-		CVServerResponse resp = cmd.resp;
-		DoTransNodeEndOut(trans, cmd);
-		if (m_op_svr_out_act != null)
+		try
 		{
-			m_op_svr_out_act.TransferData(null);
+			DoTransNodeEndOut(trans, cmd);
+		}
+		catch (Exception ex)
+		{
+			logger.ErrorFormat("[{0}]DoNodeCompleted transfer failed => {1}", ToShortString(), ex);
+		}
+		finally
+		{
+			if (m_op_svr_out_act != null)
+			{
+				try
+				{
+					m_op_svr_out_act.TransferData(null);
+				}
+				catch (Exception ex)
+				{
+					logger.ErrorFormat("[{0}]DoNodeCompleted clear server output failed => {1}", ToShortString(), ex);
+				}
+			}
 		}
 	}
 

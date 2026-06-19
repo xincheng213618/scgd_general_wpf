@@ -17,8 +17,8 @@ namespace ColorVision.Themes
         /// <summary>
         /// 主题
         /// </summary>
-        [ConfigSetting]
-        [Description("ThemeDescription")]
+        [ConfigSetting(Order = -40, Section = ConfigSettingConstants.SectionBasic, Description = "选择应用界面的颜色主题。")]
+        [Description("选择应用界面的颜色主题。")]
         [PropertyEditorType(typeof(ThemePropertiesEditor))]
         public Theme Theme { get; set; } = Theme.UseSystem;
 

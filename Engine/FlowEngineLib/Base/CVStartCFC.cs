@@ -7,8 +7,18 @@ namespace FlowEngineLib.Base;
 
 public class CVStartCFC : CVBaseCFC
 {
+	private sealed class FlowFinishState
+	{
+		public readonly object Lock = new object();
+
+		public bool IsFinished;
+	}
+
 	[JsonIgnore]
 	private BaseStartNode StartNode;
+
+	[JsonIgnore]
+	private FlowFinishState finishState = new FlowFinishState();
 
 	public CVStartCFC()
 		: this("")
@@ -23,6 +33,16 @@ public class CVStartCFC : CVBaseCFC
 	public CVStartCFC(CVStartCFC startCFC)
 		: this(startCFC.FlowStatus, startCFC.Data)
 	{
+		StartNode = startCFC.StartNode;
+		finishState = startCFC.finishState;
+		StartTime = startCFC.StartTime;
+		EndTime = startCFC.EndTime;
+		Id = startCFC.Id;
+		SerialNumber = startCFC.SerialNumber;
+		IsDel = startCFC.IsDel;
+		TTL = startCFC.TTL;
+		SetActionType(startCFC.GetActionType());
+		FlowStatus = startCFC.FlowStatus;
 	}
 
 	public CVStartCFC(string sn)
@@ -43,16 +63,41 @@ public class CVStartCFC : CVBaseCFC
 
 	public void DoFinishing()
 	{
+		lock (finishState.Lock)
+		{
+			if (finishState.IsFinished)
+			{
+				return;
+			}
+			finishState.IsFinished = true;
+			DoFinishingCore();
+		}
+	}
+
+	public bool TryDoFinishing()
+	{
+		lock (finishState.Lock)
+		{
+			if (finishState.IsFinished)
+			{
+				return false;
+			}
+			finishState.IsFinished = true;
+			DoFinishingCore();
+			return true;
+		}
+	}
+
+	private void DoFinishingCore()
+	{
 		IsDel = true;
 		EndTime = DateTime.Now;
+		NormalizeStopStatus();
 		if (FlowStatus == StatusTypeEnum.Runing)
 		{
 			FlowStatus = StatusTypeEnum.Completed;
 		}
-		if (StartNode != null)
-		{
-			StartNode?.DoFinishing(this);
-		}
+		StartNode?.DoFinishing(this);
 	}
 
 	public BaseStartNode GetStartNode()

@@ -225,7 +225,7 @@ namespace ColorVision.Solution.Explorer
         {
             if (!string.IsNullOrEmpty(FullPath))
             {
-                Common.NativeMethods.Clipboard.SetText(FullPath);
+                Common.Clipboard.SetText(FullPath);
             }
         }
 
@@ -266,6 +266,20 @@ namespace ColorVision.Solution.Explorer
             else if (obj == this) return 0;
             else if (obj is SolutionNode node) return Common.NativeMethods.Shlwapi.CompareLogical(Name, node.Name);
             else return -1;
+        }
+    }
+
+    public sealed class LazyLoadingNode : SolutionNode
+    {
+        public LazyLoadingNode()
+        {
+            Name1 = "Loading...";
+            CanAdd = false;
+            CanCopy = false;
+            CanCut = false;
+            CanDelete = false;
+            CanPaste = false;
+            CanReName = false;
         }
     }
 }

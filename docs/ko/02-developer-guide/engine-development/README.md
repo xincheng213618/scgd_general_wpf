@@ -1,102 +1,41 @@
-# 엔진 개발 가이드
+# Engine 개발 가이드
 
-ColorVision 엔진 레이어의 기능을 개발하고 확장하는 방법을 설명합니다.
+Engine 개발은 먼저 어떤 업무 체인을 변경하는지 확인하는 것부터 시작합니다. 장치 서비스, 템플릿, Flow 노드, 알고리즘 결과, 고객 프로젝트 판정을 한 곳에서 섞어 수정하지 마세요.
 
-## 개요
+## 먼저 읽기
 
-ColorVision.Engine은 시스템의 핵심 엔진 레이어이며 다음을 담당합니다.
+- [Engine 업무 인수인계](../../04-api-reference/engine-components/business-handoff.md)
+- [Engine 구성요소 및 업무 인수인계](../../04-api-reference/engine-components/README.md)
+- [Engine 런타임 객체 맵](../../04-api-reference/engine-components/runtime-object-map.md)
 
-- 🔧 장비 서비스 관리
-- 🔄 프로세스 엔진
-- 📐 알고리즘 템플릿 시스템
-- 📡 MQTT 메시지 처리
-- 🖼️ OpenCV 이미지 처리
+이 디렉터리의 페이지는 구체 개발 주제의 코드 진입점입니다.
 
-## 엔진 아키텍처
+## 자주 바꾸는 위치
 
+| 목표 | 주요 디렉터리 | 먼저 볼 문서 |
+| --- | --- | --- |
+| 장치 서비스 추가/유지보수 | `Engine/ColorVision.Engine/Services/Devices/` | [서비스 개발 인수인계](./services.md) |
+| 템플릿 추가/유지보수 | `Engine/ColorVision.Engine/Templates/` | [템플릿 시스템 개발 인수인계](./templates.md) |
+| Flow 노드 추가/유지보수 | `Engine/ColorVision.Engine/Templates/Flow/`, `Engine/FlowEngineLib/` | [Engine 템플릿 및 Flow 체인](../../04-api-reference/engine-components/template-flow-chain.md) |
+| MQTT 변경 | `Engine/ColorVision.Engine/MQTT/`, 장치 서비스 폴더 | [MQTT 메시지 처리 인수인계](./mqtt.md) |
+| OpenCV/native 변경 | `Engine/cvColorVision/`, `UI/ColorVision.Core/`, `Engine/ColorVision.Engine/Media/` | [OpenCV 및 native 통합 인수인계](./opencv-integration.md) |
+| 결과 표시 변경 | `Templates/*/ViewHandle*.cs`, `UI/ColorVision.ImageEditor/` | [Engine 결과 표시 및 프로젝트 인수인계](../../04-api-reference/engine-components/result-handoff-chain.md) |
+| 검증 명령 선택 | `Test/`, backend, scripts, docs | [테스트 및 검증 인수인계](../testing.md) |
+
+## 개발 검증
+
+최소한 수정한 모듈, 호스트, 하나의 end-to-end 시나리오를 검증합니다.
+
+```powershell
+dotnet build Engine/ColorVision.Engine/ColorVision.Engine.csproj -c Release -p:Platform=x64
+dotnet build ColorVision/ColorVision.csproj -c Release -p:Platform=x64
 ```
-ColorVision.Engine
-├── 서비스/ # 장비 및 서비스
-├── 템플릿/ # 템플릿 시스템
-├── MQTT/ # MQTT 메시지 처리
-├── 알고리즘/ # 알고리즘 구현
-└── 유틸리티/ # 도구
-```
-## 주요 구성 요소
 
-### 1. 서비스 시스템
+native/OpenCV 변경은 [OpenCV 및 native 통합 인수인계](./opencv-integration.md)의 명령도 사용합니다. 문서 변경은 `npm run docs:build`를 실행합니다.
 
-자세한 내용은 [서비스 개발 가이드](./services.md)를 참조하세요.
+## 유지보수 원칙
 
-### 2. 템플릿 시스템
-
-자세한 내용은 [템플릿 시스템 개발](./templates.md)을 참조하세요.
-
-### 3. MQTT 메시지 처리
-
-자세한 내용은 [MQTT 메시지 처리](./mqtt.md)를 참조하세요.
-
-### 4. OpenCV 통합
-
-자세한 내용은 [OpenCV 통합 개발](./opencv-integration.md)을 참조하세요.
-
-## 개발 과정
-
-### 1. 서비스 생성
-
-```csharp
-공개 클래스 MyDeviceService : DeviceService
-{
-    공개 재정의 문자열 ServiceName => "내 장치";
-    
-    보호된 재정의 작업 OnStartAsync()
-    {
-        //장치 초기화
-        Task.CompletedTask를 반환합니다.
-    }
-    
-    보호된 재정의 작업 OnStopAsync()
-    {
-        // 장치를 중지합니다
-        Task.CompletedTask를 반환합니다.
-    }
-}
-```
-### 2. 등록 서비스
-
-```csharp
-ServiceManager.GetInstance().Add\<IMyDeviceService, MyDeviceService>();
-```
-### 3. 서비스 이용하기
-
-```csharp
-var service = ServiceManager.GetInstance().GetService\<IMyDeviceService>();
-service.StartAsync()를 기다립니다.
-```
-## 모범 사례
-
-1. **인터페이스 정의**: 각 서비스에 대한 인터페이스를 정의합니다.
-2. **종속성 주입**: ServiceManager를 사용하여 종속성 관리
-3. **비동기 작업**: 시간이 많이 걸리는 작업에는 async/await를 사용하세요.
-4. **예외 처리**: 예외를 적절하게 처리하고 로그를 기록합니다.
-5. **리소스 관리**: IDisposable을 구현하여 리소스 해제
-
-## 관련 문서
-
-- [서비스 개발 가이드](./services.md)
-- [템플릿 시스템 개발](./templates.md)
-- [MQTT 메시지 처리](./mqtt.md)
-- [OpenCV 통합 개발](./opencv-integration.md)
-- [엔진 API 레퍼런스](/ko/04-api-reference/engine-comComponents/README.md)
-
-## 샘플 코드
-
-참조:
-
-- `Engine/ColorVision.Engine/Services/` - 서비스 구현
-- `Engine/ColorVision.Engine/Templates/` - 템플릿 시스템
-- `Engine/ColorVision.Engine/MQTT/` - MQTT 구현
-
----
-
-*자세한 기술적인 내용은 각 하위주제 문서를 참고하세요. *
+- 장치 서비스는 상태, 명령, 설정, UI를 담당하며 고객 판정은 담당하지 않습니다.
+- 템플릿은 파라미터, 편집, 저장, 알고리즘 입력을 담당하며 최종 CSV/PDF/MES 형식은 담당하지 않습니다.
+- Flow 노드는 visual execution unit입니다. 결과 해석은 템플릿, 결과, 프로젝트 계층에 둡니다.
+- 프로젝트 패키지가 고객 Process, Recipe, Fix, protocol, exporter를 담당합니다.

@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CA1863
+using ColorVision.Database;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using Newtonsoft.Json;
@@ -192,11 +193,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             {
                 groupResource.IsEditMode = false;
             }
-        }
-
-        private void Help_Click(object sender, RoutedEventArgs e)
-        {
-            CalibrationHelpWindow.ShowHelp(this);
         }
 
         private void Export_Click(object sender, RoutedEventArgs e)

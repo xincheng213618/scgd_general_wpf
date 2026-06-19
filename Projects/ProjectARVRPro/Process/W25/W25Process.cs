@@ -1,3 +1,4 @@
+#pragma warning disable CS8601
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Media;
@@ -37,11 +38,11 @@ namespace ProjectARVRPro.Process.W25
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            poi.Y *= recipeConfig.CenterLunimance.Fix;
-                            poi.x *= recipeConfig.CenterCIE1931ChromaticCoordinatesx.Fix;
-                            poi.y *= recipeConfig.CenterCIE1931ChromaticCoordinatesy.Fix;
-                            poi.u *= recipeConfig.CenterCIE1976ChromaticCoordinatesu.Fix;
-                            poi.v *= recipeConfig.CenterCIE1976ChromaticCoordinatesv.Fix;
+                            poi.Y = recipeConfig.CenterLunimance.Apply(poi.Y);
+                            poi.x = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Apply(poi.x);
+                            poi.y = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Apply(poi.y);
+                            poi.u = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Apply(poi.u);
+                            poi.v = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Apply(poi.v);
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
 

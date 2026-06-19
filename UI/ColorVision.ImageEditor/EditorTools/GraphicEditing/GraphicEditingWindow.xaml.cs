@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
@@ -397,13 +396,16 @@ namespace ColorVision.ImageEditor
     {
         GraphicEditingConfig Config { get; set; }
 
-        public EditorContext EditorContext { get; set; }
-        DrawCanvas ImageShow => EditorContext.DrawCanvas;
+        private readonly EditorContext _context;
+        private DrawEditorContext DrawContext => _context.DrawEditorContext;
+        private ImageProcessingContext ImageContext => _context.ProcessingContext;
+        private ImageViewConfig ImageConfig => _context.Config;
+        DrawCanvas ImageShow => _context.DrawCanvas;
 
         string TagName = "Poi";
         public GraphicEditingWindow(EditorContext context)
         {
-            EditorContext = context;
+            _context = context;
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -421,17 +423,16 @@ namespace ColorVision.ImageEditor
         DVDatumPolygon Polygon;
         private void FindLuminousAreaCorner_Click(object sender, RoutedEventArgs e)
         {
-            if (EditorContext.ImageView.HImageCache != null)
+            if (ImageContext.HImageCache != null)
             {
                 string FindLuminousAreajson = Config.FindLuminousAreaCorner.ToJsonN();
                 Task.Run(() =>
                 {
-                    int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)EditorContext.ImageView.HImageCache, new RoiRect(), FindLuminousAreajson, out IntPtr resultPtr);
+                    int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageContext.HImageCache, new RoiRect(), FindLuminousAreajson, out IntPtr resultPtr);
                     if (length > 0)
                     {
-                        string result = Marshal.PtrToStringAnsi(resultPtr);
+                        string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
                         Console.WriteLine("Result: " + result);
-                        OpenCVMediaHelper.FreeResult(resultPtr);
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
@@ -474,7 +475,7 @@ namespace ColorVision.ImageEditor
                             List<Point> result1 = Helpers.SortPolyPoints(pts_src);
                             ImageShow.RemoveVisualCommand(Polygon);
                             Polygon = new DVDatumPolygon() { IsComple = true };
-                            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / EditorContext.Zoombox.ContentMatrix.M11);
+                            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
                             Polygon.Attribute.Brush = Brushes.Transparent;
                             Polygon.Attribute.Points.Add(result1[0]);
                             Polygon.Attribute.Points.Add(result1[1]);
@@ -546,7 +547,7 @@ namespace ColorVision.ImageEditor
             List<Point> result1 = Helpers.SortPolyPoints(scaledPolygon);
             ImageShow.RemoveVisualCommand(Polygon);
             Polygon = new DVDatumPolygon() { IsComple = true };
-            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / EditorContext.Zoombox.ContentMatrix.M11);
+            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
             Polygon.Attribute.Brush = Brushes.Transparent;
             Polygon.Attribute.Points.Add(result1[0]);
             Polygon.Attribute.Points.Add(result1[1]);
@@ -732,11 +733,11 @@ namespace ColorVision.ImageEditor
             bool IsUseTextMax = rows * cols >= 10000;
             if (IsUseTextMax)
             {
-                EditorContext.Config.IsLayoutUpdated = false;
-                EditorContext.Config.IsShowText = false;
+                ImageConfig.IsLayoutUpdated = false;
+                ImageConfig.IsShowText = false;
             }
 
-            bool IsUseText = EditorContext.Config.IsShowText;
+            bool IsUseText = ImageConfig.IsShowText;
 
             bool useGlobalBitmap = rows * cols >= 50000;
 
@@ -916,7 +917,7 @@ namespace ColorVision.ImageEditor
                     break;
             }
 
-            var result = await EditorContext.ImageView.BeginSelectAsync(shapeType);
+            var result = await _context.BeginSelectAsync(shapeType);
             if (result == null) return;
 
             if (result.ShapeType == SelectShapeType.Circle)
@@ -960,7 +961,7 @@ namespace ColorVision.ImageEditor
             List<Point> sorted = Helpers.SortPolyPoints(pts_src);
             ImageShow.RemoveVisualCommand(Polygon);
             Polygon = new DVDatumPolygon() { IsComple = true };
-            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / EditorContext.Zoombox.ContentMatrix.M11);
+            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
             Polygon.Attribute.Brush = Brushes.Transparent;
             Polygon.Attribute.Points.Add(sorted[0]);
             Polygon.Attribute.Points.Add(sorted[1]);
@@ -1049,17 +1050,7 @@ namespace ColorVision.ImageEditor
 
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
-            EditorContext.ImageView.ClearAnnotations();
-        }
-
-        private void ExportAnnotations_Click(object sender, RoutedEventArgs e)
-        {
-            EditorContext.ImageView.ExportAnnotations();
-        }
-
-        private void ImportAnnotations_Click(object sender, RoutedEventArgs e)
-        {
-            EditorContext.ImageView.ImportAnnotations();
+            _context.ClearAnnotations();
         }
     }
 }

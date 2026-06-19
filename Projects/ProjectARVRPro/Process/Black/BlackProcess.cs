@@ -1,3 +1,4 @@
+#pragma warning disable CS8601
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Media;
@@ -60,7 +61,7 @@ namespace ProjectARVRPro.Process.Black
                                     contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.ViewPoixyuvDatas[0].Y;
                             }
 
-                            contrast *= recipeConfig.FOFOContrast.Fix;
+                            contrast = recipeConfig.FOFOContrast.Apply(contrast);
                             testResult.FOFOContrast.LowLimit = recipeConfig.FOFOContrast.Min;
                             testResult.FOFOContrast.UpLimit = recipeConfig.FOFOContrast.Max;
                             testResult.FOFOContrast.Value = contrast;

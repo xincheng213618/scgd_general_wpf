@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Properties;
+﻿#pragma warning disable CA1707
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;

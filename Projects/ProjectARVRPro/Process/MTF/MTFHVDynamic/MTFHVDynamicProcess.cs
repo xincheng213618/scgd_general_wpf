@@ -113,7 +113,7 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
         private ObjectiveTestItem BuildItem(string axis, string pointName, double value, RecipeBase recipe)
         {
             string itemName = $"MTF_HV_{axis}_{NormalizePointName(pointName)}";
-            double fixedValue = value * recipe.Fix;
+            double fixedValue = recipe.Apply(value);
             return new ObjectiveTestItem
             {
                 Name = itemName,

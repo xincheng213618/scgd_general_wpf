@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CA1863
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -12,6 +13,43 @@ namespace ColorVision.Core
     {
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
+
+        private static bool TryGetRowCopyLayout(HImage hImage, out int bytesPerRow, out int sourceStride)
+        {
+            bytesPerRow = 0;
+            sourceStride = 0;
+
+            if (hImage.pData == IntPtr.Zero ||
+                hImage.rows <= 0 ||
+                hImage.cols <= 0 ||
+                hImage.channels <= 0 ||
+                hImage.depth <= 0 ||
+                hImage.depth % 8 != 0)
+            {
+                return false;
+            }
+
+            long rowBytes = (long)hImage.cols * hImage.channels * (hImage.depth / 8);
+            if (rowBytes <= 0 || rowBytes > int.MaxValue) {
+                return false;
+            }
+
+            bytesPerRow = (int)rowBytes;
+            sourceStride = hImage.stride > 0 ? hImage.stride : bytesPerRow;
+            return sourceStride >= bytesPerRow;
+        }
+
+        public static WriteableBitmap ToWriteableBitmapAndDispose(this HImage hImage, double DpiX = 96, double DpiY = 96)
+        {
+            try
+            {
+                return hImage.ToWriteableBitmap(DpiX, DpiY);
+            }
+            finally
+            {
+                hImage.Dispose();
+            }
+        }
 
         public static PixelFormat ToPixelFormat(this HImage hImage)
         {
@@ -62,6 +100,12 @@ namespace ColorVision.Core
             if (writeableBitmap.PixelHeight != hImage.rows || writeableBitmap.PixelWidth != hImage.cols)
                 return false;
 
+            if (!TryGetRowCopyLayout(hImage, out int bytesPerRow, out int sourceStride) ||
+                writeableBitmap.BackBufferStride < bytesPerRow)
+            {
+                return false;
+            }
+
             // Update the WriteableBitmap
             writeableBitmap.Lock();
             try
@@ -73,8 +117,8 @@ namespace ColorVision.Core
 
                     for (int y = 0; y < hImage.rows; y++)
                     {
-                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
-                        src += hImage.stride;
+                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)bytesPerRow);
+                        src += sourceStride;
                         dst += writeableBitmap.BackBufferStride;
                     }
                 }
@@ -116,9 +160,11 @@ namespace ColorVision.Core
             int cols = hImage.cols;
             int channels = hImage.channels;
             int depth = hImage.depth;
-            int bytesPerRow = cols * channels * (depth / 8);
-            int srcStride = hImage.stride;
             IntPtr srcData = hImage.pData;
+            if (!TryGetRowCopyLayout(hImage, out int bytesPerRow, out int srcStride))
+            {
+                return false;
+            }
 
             // 1. Validation & Lock (必须在 UI 线程)
             // 无论此方法从哪个线程被调用，都能保证安全跑到主线程验证和上锁
@@ -130,11 +176,18 @@ namespace ColorVision.Core
                     writeableBitmap.PixelHeight == rows &&
                     writeableBitmap.PixelWidth == cols)
                 {
-                    isValid = true;
                     writeableBitmap.Lock();
                     // 提取指针和步长供后台线程使用
                     backBuffer = writeableBitmap.BackBuffer;
                     backBufferStride = writeableBitmap.BackBufferStride;
+                    if (backBufferStride >= bytesPerRow)
+                    {
+                        isValid = true;
+                    }
+                    else
+                    {
+                        writeableBitmap.Unlock();
+                    }
                 }
             });
 
@@ -201,49 +254,60 @@ namespace ColorVision.Core
             PixelFormat format = hImage.ToPixelFormat();
             int width = hImage.cols;
             int height = hImage.rows;
+            if (!TryGetRowCopyLayout(hImage, out int bytesPerLine, out int strideSrc))
+            {
+                throw new ArgumentException("Invalid HImage layout.", nameof(hImage));
+            }
 
             // Create the bitmap on the calling thread (usually UI thread)
             var writeableBitmap = new WriteableBitmap(width, height, DpiX, DpiY, format, null);
 
             // Calculate parameters needed for the copy
-            int strideSrc = hImage.stride;
             int strideDest = writeableBitmap.BackBufferStride;
             long pDataSrc = (long)hImage.pData; // Store pointer as long to safely pass to task
-            long pDataDest = (long)writeableBitmap.BackBuffer;
-            int bytesPerLine = width * hImage.channels * (hImage.depth / 8);
+            if (strideDest < bytesPerLine)
+            {
+                throw new ArgumentException("Invalid destination bitmap stride.", nameof(hImage));
+            }
 
             // 2. Background Thread: Perform the heavy memory copy
-            await Task.Run(() =>
-            {
-
-                var parallelOptions = new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
-                };
-
-                unsafe
-                {
-                    byte* pSrcBase = (byte*)pDataSrc;
-                    byte* pDstBase = (byte*)pDataDest;
-
-                    Parallel.For(0, height, parallelOptions, y =>
-                    {
-                        // 指针运算：使用 long 避免 32位 溢出（虽然行偏移通常不会溢出，但习惯要好）
-                        byte* src = pSrcBase + ((long)y * strideSrc);
-                        byte* dst = pDstBase + ((long)y * strideDest);
-
-                        // Copy
-                        // 参数3: destinationSizeInBytes。这里传 bytesPerLine 是因为我们只操作这一行，
-                        // 只要保证 bytesPerLine <= strideDest 即可，这是安全的。
-                        Buffer.MemoryCopy(src, dst, bytesPerLine, bytesPerLine);
-                    });
-                }
-            });
-
-            // 3. UI Thread: Mark as dirty and return
             writeableBitmap.Lock();
-            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-            writeableBitmap.Unlock();
+            try
+            {
+                long pDataDest = (long)writeableBitmap.BackBuffer;
+                await Task.Run(() =>
+                {
+                    var parallelOptions = new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
+                    };
+
+                    unsafe
+                    {
+                        byte* pSrcBase = (byte*)pDataSrc;
+                        byte* pDstBase = (byte*)pDataDest;
+
+                        Parallel.For(0, height, parallelOptions, y =>
+                        {
+                            // 指针运算：使用 long 避免 32位 溢出（虽然行偏移通常不会溢出，但习惯要好）
+                            byte* src = pSrcBase + ((long)y * strideSrc);
+                            byte* dst = pDstBase + ((long)y * strideDest);
+
+                            // Copy
+                            // 参数3: destinationSizeInBytes。这里传 bytesPerLine 是因为我们只操作这一行，
+                            // 只要保证 bytesPerLine <= strideDest 即可，这是安全的。
+                            Buffer.MemoryCopy(src, dst, bytesPerLine, bytesPerLine);
+                        });
+                    }
+                });
+
+                // 3. UI Thread: Mark as dirty and return
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+            }
+            finally
+            {
+                writeableBitmap.Unlock();
+            }
 
             return writeableBitmap;
         }
@@ -251,7 +315,16 @@ namespace ColorVision.Core
         public static WriteableBitmap ToWriteableBitmap(this HImage hImage,double DpiX = 96, double DpiY =96)
         {
             PixelFormat format = hImage.ToPixelFormat();
+            if (!TryGetRowCopyLayout(hImage, out int bytesPerRow, out int sourceStride))
+            {
+                throw new ArgumentException("Invalid HImage layout.", nameof(hImage));
+            }
+
             WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, DpiX, DpiY, format, null);
+            if (writeableBitmap.BackBufferStride < bytesPerRow)
+            {
+                throw new ArgumentException("Invalid destination bitmap stride.", nameof(hImage));
+            }
 
             writeableBitmap.Lock();
 
@@ -262,8 +335,8 @@ namespace ColorVision.Core
 
                 for (int y = 0; y < hImage.rows; y++)
                 {
-                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
-                    src += hImage.stride;
+                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)bytesPerRow);
+                    src += sourceStride;
                     dst += writeableBitmap.BackBufferStride;
                 }
             }
@@ -337,7 +410,8 @@ namespace ColorVision.Core
                 channels = channels,
                 depth = depth, // You might need to adjust this based on the actual bits per pixel
                 pData = writeableBitmap.BackBuffer,
-                stride = writeableBitmap.BackBufferStride
+                stride = writeableBitmap.BackBufferStride,
+                isDispose = true
             };
             return hImage;
         }
@@ -397,6 +471,7 @@ namespace ColorVision.Core
                 cols = writeableBitmap.PixelWidth,
                 channels = channels,
                 depth = depth, // You might need to adjust this based on the actual bits per pixel
+                stride = stride,
                 pData = Marshal.AllocCoTaskMem(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels* (depth/8))
             };
 

@@ -27,7 +27,7 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在安装 MySQL...");
             try
             {
-                bool result = await MySqlManager.InstallFromZipAsync(dlg.FileName, basePath, AddLog);
+                bool result = await MySqlManager.InstallFromZipViaServiceHostAsync(dlg.FileName, basePath, AddLog);
                 if (result)
                 {
                     AddLog("MySQL 安装成功");
@@ -48,6 +48,97 @@ namespace WindowsServicePlugin.ServiceManager
         private void DoMySqlBackup()
         {
             MySqlManager.BackupDatabase(AddLog);
+        }
+
+        private async Task RegisterExistingMySqlServiceAsync()
+        {
+            SetBusy(true, "正在通过后台服务注册 MySQL 服务...");
+            try
+            {
+                bool ok = await MySqlManager.RegisterExistingServiceViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                if (ok)
+                {
+                    AddLog("MySQL 服务注册完成");
+                    SyncLegacyAppConfig();
+                }
+                else
+                {
+                    AddLog("MySQL 服务注册失败");
+                }
+            }
+            finally
+            {
+                SetBusy(false);
+                RefreshAll();
+            }
+        }
+
+        private async Task RepairMySqlServicePreferServiceHostAsync()
+        {
+            SetBusy(true, "正在通过后台服务修复 MySQL...");
+            try
+            {
+                bool ok = await MySqlManager.RepairOrRestartViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                if (ok)
+                {
+                    AddLog("MySQL 后台修复/重启完成");
+                    SyncLegacyAppConfig();
+                }
+                else
+                {
+                    AddLog("MySQL 后台修复/重启失败");
+                }
+            }
+            finally
+            {
+                SetBusy(false);
+                RefreshAll();
+            }
+        }
+
+        private async Task StartMySqlServiceAsync()
+        {
+            SetBusy(true, "正在通过后台服务启动 MySQL...");
+            try
+            {
+                bool ok = await MySqlManager.StartViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                AddLog(ok ? "MySQL 服务启动完成" : "MySQL 服务启动失败");
+            }
+            finally
+            {
+                SetBusy(false);
+                RefreshAll();
+            }
+        }
+
+        private async Task StopMySqlServiceAsync()
+        {
+            SetBusy(true, "正在通过后台服务停止 MySQL...");
+            try
+            {
+                bool ok = await MySqlManager.StopViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                AddLog(ok ? "MySQL 服务停止完成" : "MySQL 服务停止失败");
+            }
+            finally
+            {
+                SetBusy(false);
+                RefreshAll();
+            }
+        }
+
+        private async Task UninstallMySqlServiceAsync()
+        {
+            SetBusy(true, "正在通过后台服务卸载 MySQL...");
+            try
+            {
+                bool ok = await MySqlManager.UninstallViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                AddLog(ok ? "MySQL 服务卸载完成" : "MySQL 服务卸载失败");
+            }
+            finally
+            {
+                SetBusy(false);
+                RefreshAll();
+            }
         }
 
         private void DoMySqlRestore()
@@ -86,6 +177,52 @@ namespace WindowsServicePlugin.ServiceManager
             if (string.IsNullOrEmpty(filePath)) return;
 
             MySqlManager.ExecuteSqlFile(filePath, AddLog);
+        }
+
+        private async Task ResetDatabaseAsync()
+        {
+            if (string.IsNullOrWhiteSpace(MySqlManager.Config.RootPassword))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "请先填写 root 密码。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string? sqlFilePath = MySqlServiceManager.ResolveResetDatabaseSqlPath();
+            if (string.IsNullOrWhiteSpace(sqlFilePath))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "未找到 color_vision_all.sql，请确认服务安装目录下存在 SQL 目录。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                $"将使用 root 账号执行数据库重置脚本：\n{sqlFilePath}\n\n该脚本会重建/覆盖部分数据库表，是否继续？",
+                "重置数据库",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            SetBusy(true, "正在重置数据库...");
+            try
+            {
+                bool ok = await Task.Run(() => MySqlManager.ResetDatabaseFromServiceSql(AddLog));
+                if (ok)
+                {
+                    AddLog("数据库重置完成");
+                    SyncManagedServiceConfigs();
+                    SyncLegacyAppConfig();
+                }
+                else
+                {
+                    AddLog("数据库重置失败");
+                }
+            }
+            finally
+            {
+                SetBusy(false);
+                RefreshAll();
+            }
         }
 
         private void DoSetRootPassword()

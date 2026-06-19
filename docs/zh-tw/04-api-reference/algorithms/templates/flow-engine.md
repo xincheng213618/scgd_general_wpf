@@ -85,6 +85,43 @@
 
 因此把流程模板簡單寫成“只是一張節點圖檔案”，會漏掉當前包匯出的能力。
 
+### 儲存路徑要分清資料庫和本地檔案
+
+`FlowEngineToolWindow.Save()` 目前有兩條明確路徑：
+
+| 場景 | 當前行為 | 交接時要說清楚 |
+| --- | --- | --- |
+| 本地 `.stn` 檔案 | `SaveToFile(FileFlow)` 直接把畫布 bytes 寫回檔案 | 只更新磁碟檔案，不會更新模板資料庫 |
+| `FlowParam` 模板 | `CheckFlow()` -> `GetCanvasData()` -> Base64 -> `TemplateFlow.Save2DB(...)` | 寫入 `ModMasterModel`、明細表和 `SysResourceModel` |
+
+也就是說，流程編輯器不等於簡單檔案編輯器。從模板管理入口打開時，主資料來源是資料庫；從檔案入口打開時，保存才回到本地 `.stn`。
+
+### `.cvflow` 包結構
+
+單選流程匯出成 `.cvflow` 時，`FlowPackageHelper` 會建立 ZIP 包：
+
+| 檔案 | 作用 |
+| --- | --- |
+| `flow.stn` | 節點畫布二進位內容 |
+| `manifest.json` | `FlowPackageManifest`，記錄流程名、版本和關聯模板 |
+
+關聯模板不是人工列清單，而是從流程節點屬性裡掃描模板引用，例如 `TempName`、`TemplateName`、`CalibTempName`、`POITempName`、`FilterTemplateName`、`ReviseTemplateName`、`XRTempName`、`CamTempName`、`AlgTempName`、`LayoutROITemplate` 等欄位。匯入時如果名稱衝突，會根據流程名產生新模板名，再回寫流程裡的引用。
+
+多選匯出仍然是舊式 `.zip`，包內是多個 `.stn`，不包含 `manifest.json`，也不會遞迴收集關聯模板。交接時要把這兩種匯出能力分開寫。
+
+## 執行與排程鏈路
+
+流程模板不只被編輯，也會被正式執行。
+
+1. 使用者或呼叫方選中 `DisplayFlow.TemplateCombox` 裡的流程模板。
+2. `DisplayFlow.RunFlow(sn)` 建立 `MeasureBatchModel`，其中 `TId` 來自 `TemplateFlow.Params[selectedIndex].Id`。
+3. `FlowControl.Start(sn)` 啟動節點圖。
+4. `FlowControl_FlowCompleted(...)` 更新批次狀態、總耗時、結果，並觸發 `FlowExecutionCompleted`。
+5. `RunFlowAndWaitAsync()` 把事件包裝成可等待任務，供外部排程使用。
+6. `FlowJob` 在 Quartz 任務裡切回 WPF Dispatcher，呼叫 `DisplayFlow.RunFlowAndWaitAsync()`，再把結果整理成 `FlowJobResult`。
+
+交接人如果要追“定時任務為什麼能跑流程”，不要只看 Quartz，也要一起看 `DisplayFlow` 和 `FlowExecutionCompleted` 事件。
+
 ## 當前幾個最容易寫錯的點
 
 ### 這頁不是 FlowEngineLib 重複頁
@@ -102,6 +139,17 @@
 ### 視窗行為和一般模板編輯器不同
 
 普通模板多半在 `TemplateEditorWindow` 右側編輯；流程模板當前走的是“列表視窗 + 獨立流程編輯器視窗”的路徑。繼續沿用一般模板的敘述會誤導讀者。
+
+### 匯入匯出有兩套相容路徑
+
+`.cvflow` 走包匯入，會讀 `manifest.json` 並導入關聯模板；其它檔案則回退為讀取 bytes、轉 Base64、建立 `FlowParam`。如果只測 `.stn`，會漏掉模板關聯替換這條主交接鏈。
+
+## 驗收建議
+
+- 從模板管理器新增一個流程，保存後確認 `ModMasterModel` 和 `SysResourceModel` 都有記錄。
+- 匯出單個流程為 `.cvflow`，打開 ZIP 確認包含 `flow.stn` 和 `manifest.json`。
+- 匯入同名流程包，確認關聯模板名稱衝突時會被重新命名，流程節點引用也同步替換。
+- 透過 `DisplayFlow.RunFlowAndWaitAsync()` 或 `FlowJob` 跑一次流程，確認批次狀態和結果被更新。
 
 ## 推薦閱讀順序
 

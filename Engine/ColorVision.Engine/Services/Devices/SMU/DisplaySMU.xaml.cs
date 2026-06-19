@@ -225,32 +225,19 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
-            operations.Register(
-                ButtonSourceMeter1,
-                "open-close",
-                Properties.Resources.Open,
-                Properties.Resources.SourceMeterSwitch,
-                System.Windows.Media.Brushes.Red,
-                contentFactory: stats => DService.DeviceStatus == DeviceStatusType.Opened
+            operations.Register(ButtonSourceMeter1, options =>
+            {
+                options.ContentFactory = stats => DService.DeviceStatus == DeviceStatusType.Opened
                     ? ColorVision.Engine.Properties.Resources.Close
-                    : TimedButtonOperationTextFormatter.BuildCompactContent(ColorVision.Engine.Properties.Resources.Open, stats),
-                tooltipFactory: stats => DService.DeviceStatus == DeviceStatusType.Opened
+                    : TimedButtonOperationTextFormatter.BuildCompactContent(ColorVision.Engine.Properties.Resources.Open, stats);
+                options.ToolTipFactory = stats => DService.DeviceStatus == DeviceStatusType.Opened
                     ? Properties.Resources.CloseSourceMeter
-                    : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.OpenSourceMeter, stats));
+                    : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.OpenSourceMeter, stats);
+            });
 
-            operations.Register(
-                MeasureDataButton,
-                "measure-data",
-                Properties.Resources.Ignite,
-                Properties.Resources.IgniteMeasurement,
-                System.Windows.Media.Brushes.Red);
+            operations.Register(MeasureDataButton);
 
-            operations.Register(
-                VIScanButton,
-                "vi-scan",
-                Properties.Resources.Scan,
-                Properties.Resources.VIScan,
-                System.Windows.Media.Brushes.Red);
+            operations.Register(VIScanButton);
 
             return operations;
         }
@@ -260,11 +247,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             return $"smu:{Device.Config.Code}:{actionKey}";
         }
 
-
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
-        }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {

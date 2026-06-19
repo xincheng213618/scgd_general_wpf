@@ -47,13 +47,6 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resources.Status}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                <TextBlock Text="{ Binding  DService.IsAlive}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
                     <GridViewColumn   Width="60">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type terminal:TerminalService}">

@@ -37,6 +37,7 @@ namespace ColorVision.Engine.Templates.Flow
         private string _SerialNumber;
 
         public string StartNodeName { get; set; }
+        public string ErrorNodeName { get; set; }
         public string Message { get; set; }
 
         public StatusTypeEnum Status { get; set; }
@@ -121,7 +122,7 @@ namespace ColorVision.Engine.Templates.Flow
         public void FinishedAsync(object sender, FlowEngineEventArgs e)
         {
             IsFlowRun = false;
-            FlowControlData data = new FlowControlData() { StartNodeName = e.StartNodeName, SerialNumber = e.SerialNumber, EventName = e.Status.ToString() , Status= e.Status, Params = e.Message };
+            FlowControlData data = new FlowControlData() { StartNodeName = e.StartNodeName, ErrorNodeName = e.ErrorNodeName, SerialNumber = e.SerialNumber, EventName = e.Status.ToString() , Status= e.Status, TotalTime = e.TotalTime, Message = e.Message, Params = e.Message };
             try
             {
                 Application.Current.Dispatcher.BeginInvoke(() =>

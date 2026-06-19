@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CS8604
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Menus;

@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 
 using ColorVision.Common.MVVM;
 using ProjectARVRPro.Recipe;
@@ -12,6 +13,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         private RecipeBase _MTF058_H_Center_0F = new RecipeBase(0.5, 0);
 
         [Category("MTF058")]
+        public RecipeBase MTF_HV_Center_0F { get => _MTF_HV_Center_0F; set { _MTF_HV_Center_0F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_Center_0F = new RecipeBase(0.5, 0);
+
+        [Category("MTF058")]
         public RecipeBase MTF058_V_Center_0F { get => _MTF058_V_Center_0F; set { _MTF058_V_Center_0F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF058_V_Center_0F = new RecipeBase(0.5, 0);
 
@@ -19,6 +24,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         [Category("MTF_HV_058")]
         public RecipeBase MTF_HV_H_LeftUp_0_5F { get => _MTF_HV_H_LeftUp_0_5F; set { _MTF_HV_H_LeftUp_0_5F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF_HV_H_LeftUp_0_5F = new RecipeBase(0.5, 0);
+
+        [Category("MTF_HV_058")]
+        public RecipeBase MTF_HV_LeftUp_0_5F { get => _MTF_HV_LeftUp_0_5F; set { _MTF_HV_LeftUp_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_LeftUp_0_5F = new RecipeBase(0.5, 0);
 
         [Category("MTF_HV_058")]
         public RecipeBase MTF_HV_V_LeftUp_0_5F { get => _MTF_HV_V_LeftUp_0_5F; set { _MTF_HV_V_LeftUp_0_5F = value; OnPropertyChanged(); } }
@@ -29,6 +38,9 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         public RecipeBase MTF_HV_H_RightUp_0_5F { get => _MTF_HV_H_RightUp_0_5F; set { _MTF_HV_H_RightUp_0_5F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF_HV_H_RightUp_0_5F = new RecipeBase(0.5, 0);
         [Category("MTF_HV_058")]
+        public RecipeBase MTF_HV_RightUp_0_5F { get => _MTF_HV_RightUp_0_5F; set { _MTF_HV_RightUp_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_RightUp_0_5F = new RecipeBase(0.5, 0);
+        [Category("MTF_HV_058")]
         public RecipeBase MTF_HV_V_RightUp_0_5F { get => _MTF_HV_V_RightUp_0_5F; set { _MTF_HV_V_RightUp_0_5F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF_HV_V_RightUp_0_5F = new RecipeBase(0.5, 0);
 
@@ -36,6 +48,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         [Category("MTF_HV_058")]
         public RecipeBase MTF_HV_H_RightDown_0_5F { get => _MTF_HV_H_RightDown_0_5F; set { _MTF_HV_H_RightDown_0_5F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF_HV_H_RightDown_0_5F = new RecipeBase(0.5, 0);
+
+        [Category("MTF_HV_058")]
+        public RecipeBase MTF_HV_RightDown_0_5F { get => _MTF_HV_RightDown_0_5F; set { _MTF_HV_RightDown_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_RightDown_0_5F = new RecipeBase(0.5, 0);
 
         [Category("MTF_HV_058")]
         public RecipeBase MTF_HV_V_RightDown_0_5F { get => _MTF_HV_V_RightDown_0_5F; set { _MTF_HV_V_RightDown_0_5F = value; OnPropertyChanged(); } }
@@ -48,6 +64,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         private RecipeBase _MTF_HV_H_LeftDown_0_5F = new RecipeBase(0.5, 0);
 
         [Category("MTF_HV_058")]
+        public RecipeBase MTF_HV_LeftDown_0_5F { get => _MTF_HV_LeftDown_0_5F; set { _MTF_HV_LeftDown_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_LeftDown_0_5F = new RecipeBase(0.5, 0);
+
+        [Category("MTF_HV_058")]
         public RecipeBase MTF_HV_V_LeftDown_0_5F { get => _MTF_HV_V_LeftDown_0_5F; set { _MTF_HV_V_LeftDown_0_5F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF_HV_V_LeftDown_0_5F = new RecipeBase(0.5, 0);
 
@@ -56,6 +76,9 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         [Category("MTF058")]
         public RecipeBase MTF058_H_LeftUp_0_8F { get => _MTF058_H_LeftUp_0_8F; set { _MTF058_H_LeftUp_0_8F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF058_H_LeftUp_0_8F = new RecipeBase(0.5, 0);
+        [Category("MTF058")]
+        public RecipeBase MTF_HV_LeftUp_0_8F { get => _MTF_HV_LeftUp_0_8F; set { _MTF_HV_LeftUp_0_8F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_LeftUp_0_8F = new RecipeBase(0.5, 0);
         [Category("MTF058")]
         public RecipeBase MTF058_V_LeftUp_0_8F { get => _MTF058_V_LeftUp_0_8F; set { _MTF058_V_LeftUp_0_8F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF058_V_LeftUp_0_8F = new RecipeBase(0.5, 0);
@@ -66,6 +89,10 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
 
 
         [Category("MTF058")]
+        public RecipeBase MTF_HV_RightUp_0_8F { get => _MTF_HV_RightUp_0_8F; set { _MTF_HV_RightUp_0_8F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_RightUp_0_8F = new RecipeBase(0.5, 0);
+
+        [Category("MTF058")]
         public RecipeBase MTF058_V_RightUp_0_8F { get => _MTF058_V_RightUp_0_8F; set { _MTF058_V_RightUp_0_8F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF058_V_RightUp_0_8F = new RecipeBase(0.5, 0);
 
@@ -73,12 +100,19 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         public RecipeBase MTF058_H_RightDown_0_8F { get => _MTF058_H_RightDown_0_8F; set { _MTF058_H_RightDown_0_8F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF058_H_RightDown_0_8F = new RecipeBase(0.5, 0);
         [Category("MTF058")]
+        public RecipeBase MTF_HV_RightDown_0_8F { get => _MTF_HV_RightDown_0_8F; set { _MTF_HV_RightDown_0_8F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_RightDown_0_8F = new RecipeBase(0.5, 0);
+        [Category("MTF058")]
         public RecipeBase MTF058_V_RightDown_0_8F { get => _MTF058_V_RightDown_0_8F; set { _MTF058_V_RightDown_0_8F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF058_V_RightDown_0_8F = new RecipeBase(0.5, 0);
 
         [Category("MTF058")]
         public RecipeBase MTF058_H_LeftDown_0_8F { get => _MTF058_H_LeftDown_0_8F; set { _MTF058_H_LeftDown_0_8F = value; OnPropertyChanged(); } }
         private RecipeBase _MTF058_H_LeftDown_0_8F = new RecipeBase(0.5, 0);
+
+        [Category("MTF058")]
+        public RecipeBase MTF_HV_LeftDown_0_8F { get => _MTF_HV_LeftDown_0_8F; set { _MTF_HV_LeftDown_0_8F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_LeftDown_0_8F = new RecipeBase(0.5, 0);
 
         [Category("MTF058")]
         public RecipeBase MTF058_V_LeftDown_0_8F { get => _MTF058_V_LeftDown_0_8F; set { _MTF058_V_LeftDown_0_8F = value; OnPropertyChanged(); } }

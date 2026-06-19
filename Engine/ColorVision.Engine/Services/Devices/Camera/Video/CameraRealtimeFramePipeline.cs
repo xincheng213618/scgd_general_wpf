@@ -1,28 +1,13 @@
 using ColorVision.Core;
-using ColorVision.Engine.Media;
-using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
-using FlowEngineLib.Algorithm;
 using System;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
-    internal readonly record struct CameraRealtimeFrameLayout(
-        int Width,
-        int Height,
-        int Channels,
-        int BitsPerPixel,
-        int Stride,
-        int BufferLength)
-    {
-        public System.Windows.Media.PixelFormat PixelFormat => RealtimeFramePresenter.GetPixelFormat(Channels, BitsPerPixel);
-    }
-
     internal sealed class CameraRealtimeFramePipeline : IDisposable
     {
         private readonly DefaultRealtimeCameraConfig _config = DefaultRealtimeCameraConfig.Current;
@@ -34,43 +19,42 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private readonly System.Diagnostics.Stopwatch _fpsTimer = new();
         private double _lastFps;
         private double _articulation;
-        private bool _firstFrame = true;
         private bool _overlaysAdded;
         private bool _disposed;
-        private readonly object _displayBufferGate = new();
-        private IntPtr _displayBuffer = IntPtr.Zero;
-        private int _displayBufferSize;
         private bool _configSubscribed;
         private bool _isRunning;
-        private Func<CVImageFlipMode>? _flipModeProvider;
+        private int _transform = RealtimeFramePresenter.TransformNone;
 
         public CameraRealtimeFramePipeline()
         {
             _overlayVisual = new RealtimeCameraOverlayVisual(_config);
         }
 
-        public void Start(ImageView imageView, Func<CVImageFlipMode>? flipModeProvider = null)
+        public int Transform
+        {
+            get => System.Threading.Volatile.Read(ref _transform);
+            set => System.Threading.Volatile.Write(ref _transform, value & RealtimeFramePresenter.TransformFlipXY);
+        }
+
+        public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone)
         {
             ArgumentNullException.ThrowIfNull(imageView);
             ThrowIfDisposed();
 
             if (!imageView.Dispatcher.CheckAccess())
             {
-                imageView.Dispatcher.Invoke(() => Start(imageView, flipModeProvider));
+                imageView.Dispatcher.Invoke(() => Start(imageView, transform));
                 return;
             }
 
             _imageView = imageView;
-            _flipModeProvider = flipModeProvider;
+            Transform = transform;
             _isRunning = true;
-            _processor ??= new VideoFrameProcessor(HandleProcessedFrame);
             _frameCount = 0;
             _lastFps = 0;
             _articulation = 0;
-            _firstFrame = true;
             _fpsTimer.Restart();
             EnsureConfigSubscription();
-            _overlayVisual.Attach();
 
             imageView.Realtime.Configure(new RealtimeFrameOptions
             {
@@ -79,13 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 UpdateImageMetadata = true
             });
 
-            if (!_overlaysAdded)
-            {
-                imageView.Realtime.AddOverlayVisual(_overlayVisual);
-                _overlaysAdded = true;
-            }
-
-            _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+            UpdateOverlayVisibility(imageView);
         }
 
         public void Stop(bool resetRealtime = false, bool clearImageSource = false)
@@ -94,7 +72,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             ImageView? imageView = _imageView;
             _imageView = null;
             _isRunning = false;
-            _flipModeProvider = null;
             ReleaseConfigSubscription();
             _overlayVisual.Detach();
 
@@ -104,7 +81,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             if (imageView == null)
             {
                 _overlaysAdded = false;
-                ReleaseDisplayBuffer();
                 return;
             }
 
@@ -112,7 +88,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             {
                 if (_overlaysAdded)
                 {
-                    imageView.Realtime.RemoveOverlayVisual(_overlayVisual);
+                    imageView.ImageShow.RemoveOverlayVisual(_overlayVisual);
                     _overlaysAdded = false;
                 }
 
@@ -131,7 +107,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 imageView.Dispatcher.BeginInvoke(new Action(StopCore));
             }
 
-            ReleaseDisplayBuffer();
         }
 
         public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int bitsPerPixel, int stride)
@@ -142,10 +117,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
-            SubmitFrameInternal(
-                new CameraRealtimeFrameLayout(width, height, channels, bitsPerPixel, stride, length),
-                submitProcessing: request => _processor?.SubmitFrame(sourceBuffer, length, width, height, channels, bitsPerPixel, stride, request),
-                submitDisplay: imageView => imageView.Realtime.SubmitFrame(sourceBuffer, width, height, RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel), stride, length));
+            ImageView? imageView = _imageView;
+            if (imageView == null)
+            {
+                return;
+            }
+
+            if (TryCreateProcessingRequest(width, height, out VideoFrameProcessingRequest request))
+            {
+                EnsureProcessor().SubmitFrame(sourceBuffer, length, width, height, channels, bitsPerPixel, stride, request);
+            }
+
+            imageView.Realtime.SubmitFrame(
+                sourceBuffer,
+                width,
+                height,
+                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel),
+                stride,
+                length,
+                Transform);
+            RecordFrameRate();
         }
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int bitsPerPixel, int stride)
@@ -155,69 +146,70 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
-            CameraRealtimeFrameLayout layout = new(width, height, channels, bitsPerPixel, stride, length);
-            SubmitFrameInternal(
-                layout,
-                submitProcessing: request => _processor?.SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride, request),
-                submitDisplay: imageView => SubmitPointerDisplayFrame(imageView, sourcePointer, layout));
-        }
-
-        private void SubmitFrameInternal(
-            CameraRealtimeFrameLayout layout,
-            Action<VideoFrameProcessingRequest> submitProcessing,
-            Action<ImageView> submitDisplay)
-        {
             ImageView? imageView = _imageView;
-            if (!_isRunning || imageView == null)
+            if (imageView == null)
             {
                 return;
             }
 
-            bool enablePseudo = imageView.PseudoColorService.IsEnabled;
-
-            if (TryBuildProcessingRequest(imageView, layout.Width, layout.Height, enablePseudo, out VideoFrameProcessingRequest? request))
+            if (TryCreateProcessingRequest(width, height, out VideoFrameProcessingRequest request))
             {
-                submitProcessing(request);
+                EnsureProcessor().SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride, request);
             }
 
-            if (!enablePseudo)
-            {
-                submitDisplay(imageView);
-                if (_firstFrame)
-                {
-                    _firstFrame = false;
-                }
-            }
-
+            imageView.Realtime.SubmitFrame(
+                sourcePointer,
+                width,
+                height,
+                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel),
+                stride,
+                length,
+                Transform);
             RecordFrameRate();
         }
 
-        private bool TryBuildProcessingRequest(ImageView imageView, int width, int height, bool enablePseudo, out VideoFrameProcessingRequest? request)
+        private bool TryCreateProcessingRequest(int width, int height, out VideoFrameProcessingRequest request)
         {
-            request = null;
-
-            bool enableArticulation = _config.IsUseCacheFile && _config.IsCalArtculation;
-            if (!enablePseudo && !enableArticulation)
-            {
-                return false;
-            }
+            request = default;
+            if (!IsArticulationEnabled) return false;
 
             Rect rect = _overlayVisual.GetProcessingRoi(width, height);
 
-            PseudoColorFrameRequest? pseudoColorRequest = null;
-            if (enablePseudo && imageView.PseudoColorService.TryCreateRequest(out var capturedRequest, 0))
+            request = new VideoFrameProcessingRequest(_config.EvaFunc, new RoiRect(rect));
+            return true;
+        }
+
+        private bool IsArticulationEnabled => _config.IsUseCacheFile && _config.IsCalArtculation;
+
+        private void UpdateOverlayVisibility(ImageView imageView)
+        {
+            if (IsArticulationEnabled)
             {
-                pseudoColorRequest = capturedRequest;
+                _overlayVisual.Attach();
+                if (!_overlaysAdded)
+                {
+                    imageView.ImageShow.AddOverlayVisual(_overlayVisual);
+                    _overlaysAdded = true;
+                }
+                _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+                return;
             }
 
-            request = new VideoFrameProcessingRequest
+            _processor?.Dispose();
+            _processor = null;
+            _overlayVisual.ResetMetrics();
+            _overlayVisual.Detach();
+            if (_overlaysAdded)
             {
-                EnableArticulation = enableArticulation,
-                FocusAlgorithm = _config.EvaFunc,
-                Roi = new RoiRect(rect),
-                PseudoColor = pseudoColorRequest
-            };
-            return true;
+                imageView.ImageShow.RemoveOverlayVisual(_overlayVisual);
+                _overlaysAdded = false;
+            }
+        }
+
+        private VideoFrameProcessor EnsureProcessor()
+        {
+            ThrowIfDisposed();
+            return _processor ??= new VideoFrameProcessor(HandleProcessedFrame);
         }
 
         private void HandleProcessedFrame(VideoFrameProcessingResult result)
@@ -227,36 +219,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 ImageView? imageView = _imageView;
                 if (!_isRunning || imageView == null)
                 {
-                    DisposePseudoImage(result.PseudoImage);
                     return;
                 }
 
-                if (result.Articulation is double articulation)
-                {
-                    _articulation = articulation;
-                }
+                _articulation = result.Articulation;
 
-                if (result.PseudoImage is HImage pseudoImage)
-                {
-                    if (imageView.PseudoColorService.IsEnabled)
-                    {
-                        imageView.PseudoColorService.ApplyProcessedImage(pseudoImage);
-                        if (_firstFrame)
-                        {
-                            _firstFrame = false;
-                            if (imageView.Realtime.Options.AutoZoomOnFirstFrame)
-                            {
-                                imageView.Zoombox1.ZoomUniform();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        pseudoImage.Dispose();
-                    }
-                }
-
-                _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+                if (IsArticulationEnabled) _overlayVisual.UpdateMetrics(_articulation, _lastFps);
             }));
         }
 
@@ -271,7 +239,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _lastFps = (double)_frameCount * 1000 / _fpsTimer.ElapsedMilliseconds;
             System.Threading.Interlocked.Exchange(ref _frameCount, 0);
             _fpsTimer.Restart();
-            _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+            if (IsArticulationEnabled) _overlayVisual.UpdateMetrics(_articulation, _lastFps);
         }
 
         private void EnsureConfigSubscription()
@@ -298,90 +266,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(DefaultRealtimeCameraConfig.MaxDisplayFps))
-            {
-                return;
-            }
-
             ImageView? imageView = _imageView;
-            if (imageView == null)
-            {
-                return;
-            }
+            if (imageView == null) return;
 
-            void ApplyMaxDisplayFps()
+            void ApplyConfigChange()
             {
-                imageView.Realtime.Options.MaxDisplayFps = _config.MaxDisplayFps;
+                if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DefaultRealtimeCameraConfig.MaxDisplayFps))
+                    imageView.Realtime.Options.MaxDisplayFps = _config.MaxDisplayFps;
+
+                if (string.IsNullOrEmpty(e.PropertyName)
+                    || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsUseCacheFile)
+                    || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsCalArtculation))
+                    UpdateOverlayVisibility(imageView);
             }
 
             if (imageView.Dispatcher.CheckAccess())
             {
-                ApplyMaxDisplayFps();
+                ApplyConfigChange();
             }
             else
             {
-                imageView.Dispatcher.BeginInvoke(new Action(ApplyMaxDisplayFps));
-            }
-        }
-
-        private void SubmitPointerDisplayFrame(ImageView imageView, IntPtr sourcePointer, CameraRealtimeFrameLayout layout)
-        {
-            var pixelFormat = layout.PixelFormat;
-            CVImageFlipMode flipMode = _flipModeProvider?.Invoke() ?? CVImageFlipMode.None;
-            if (flipMode == CVImageFlipMode.None)
-            {
-                imageView.Realtime.SubmitFrame(sourcePointer, layout.Width, layout.Height, pixelFormat, layout.Stride, layout.BufferLength);
-                return;
-            }
-
-            int targetStride = RealtimeFramePresenter.GetDefaultStride(layout.Width, pixelFormat);
-            int targetBytes = targetStride * layout.Height;
-            lock (_displayBufferGate)
-            {
-                EnsureDisplayBuffer(targetBytes);
-                OpenCvSharp.MatType matType = pixelFormat.GetPixelFormat();
-                using var srcMat = OpenCvSharp.Mat.FromPixelData(layout.Height, layout.Width, matType, sourcePointer, layout.Stride);
-                using var dstMat = OpenCvSharp.Mat.FromPixelData(layout.Height, layout.Width, matType, _displayBuffer, targetStride);
-                OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)flipMode);
-                imageView.Realtime.SubmitFrame(_displayBuffer, layout.Width, layout.Height, pixelFormat, targetStride, targetBytes);
-            }
-        }
-
-        private void EnsureDisplayBuffer(int requiredBytes)
-        {
-            if (_displayBuffer != IntPtr.Zero && _displayBufferSize >= requiredBytes)
-            {
-                return;
-            }
-
-            if (_displayBuffer != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(_displayBuffer);
-            }
-
-            _displayBuffer = Marshal.AllocHGlobal(requiredBytes);
-            _displayBufferSize = requiredBytes;
-        }
-
-        private void ReleaseDisplayBuffer()
-        {
-            lock (_displayBufferGate)
-            {
-                if (_displayBuffer != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(_displayBuffer);
-                    _displayBuffer = IntPtr.Zero;
-                }
-
-                _displayBufferSize = 0;
-            }
-        }
-
-        private static void DisposePseudoImage(HImage? image)
-        {
-            if (image is HImage pseudoImage)
-            {
-                pseudoImage.Dispose();
+                imageView.Dispatcher.BeginInvoke(new Action(ApplyConfigChange));
             }
         }
 

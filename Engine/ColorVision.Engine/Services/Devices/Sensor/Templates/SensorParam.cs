@@ -6,6 +6,7 @@ using ColorVision.Engine.Templates.SysDictionary;
 using log4net;
 using log4net.Util;
 using MQTTMessageLib.Sensor;
+using Newtonsoft.Json;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -149,10 +150,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
     public class SensorCommand : ViewModelBase
     {
-        public ModDetailModel Model { get; set; }
+        public ModDetailModel Model { get; set; } = new ModDetailModel();
         public SensorCommand(ModDetailModel modDetailModel)
         {
-            Model = modDetailModel;
+            Model = modDetailModel ?? new ModDetailModel();
             ParseRequestString();
         }
 
@@ -232,10 +233,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
     public class SensorParam : ParamModBase
     {
+        [JsonIgnore]
         public ObservableCollection<SensorCommand> SensorCommands { get; set; }
         public SensorParam()
         {
-
+            SensorCommands = new ObservableCollection<SensorCommand>();
         }
         public SensorParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {

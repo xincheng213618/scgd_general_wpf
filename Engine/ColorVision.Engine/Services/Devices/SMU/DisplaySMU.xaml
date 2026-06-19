@@ -1,110 +1,109 @@
 ﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.SMU.DisplaySMU"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.SMU"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:DeviceSMU}"
-             d:DesignWidth="300" ContextMenu="{Binding ContextMenu}"  Initialized="UserControl_Initialized">
+             d:DesignWidth="300"
+             ContextMenu="{Binding ContextMenu}"
+             Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
         </Style>
-        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
+        <Style BasedOn="{StaticResource TextBox.Small}" TargetType="{x:Type TextBox}" />
     </UserControl.Resources>
     <StackPanel>
         <DockPanel Margin="0,0,5,0">
-            <Grid DockPanel.Dock="Right" >
-                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
-                <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
+            <Grid DockPanel.Dock="Right">
+                <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
+                <Image Height="18" Margin="0,0,0,0" Source="{DynamicResource DrawingImageProperty}" />
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
-            <Button DockPanel.Dock="Right" Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" Padding="3">
+            <Button Padding="3" Background="Transparent" BorderThickness="0" Command="{Binding RefreshCommand}" DockPanel.Dock="Right">
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
                             </Storyboard>
                         </BeginStoryboard>
                     </EventTrigger>
                 </Button.Triggers>
-                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="{x:Static properties:Resources.Refresh}">
+                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE72C;" ToolTip="{x:Static properties:Resources.Refresh}">
                     <TextBlock.RenderTransform>
-                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
+                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6" />
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
 
-            <Grid ToolTip="{Binding DService.DeviceStatus}">
-                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
-                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
-            </Grid>
+            <ToggleButton Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
-        <Border  x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" Command="{Binding EditCommand}"/>
-                <TextBlock x:Name="TextBlockOffLine" Text="{x:Static properties:Resources.offline}"  HorizontalAlignment="Center"/>
-                <DockPanel x:Name="StackPanelContent" Margin="0,0,0,3" >
-                    <Button x:Name="ButtonSourceMeter1" Content="{x:Static properties:Resources.Open}"  Click="ButtonSourceMeter1_Click"/>
+                <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
+                <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Center" Text="{x:Static properties:Resources.offline}" />
+                <DockPanel x:Name="StackPanelContent" Margin="0,0,0,3">
+                    <Button x:Name="ButtonSourceMeter1" Click="ButtonSourceMeter1_Click" Content="{x:Static properties:Resources.Open}" />
                 </DockPanel>
-                <StackPanel  x:Name="StackPanelOpen" >
+                <StackPanel x:Name="StackPanelOpen">
 
-                    <DockPanel Margin="0,0,0,3" >
-                        <ComboBox Name="CbChannel" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding DisplayConfig.Channel}"   Width="80" />
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <RadioButton Content="{x:Static properties:Resources.V}" IsChecked="{Binding DisplayConfig.IsSourceV}"  Margin="0,0,3,0"  />
-                            <RadioButton Content="{x:Static properties:Resources.I}" IsChecked="{Binding DisplayConfig.IsSourceV,Converter={StaticResource inverseBooleanConverter}}" />
+                    <DockPanel Margin="0,0,0,3">
+                        <ComboBox Name="CbChannel" Width="80" SelectedValue="{Binding DisplayConfig.Channel}" Style="{StaticResource ComboBox.Small}" />
+                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                            <RadioButton Margin="0,0,3,0" Content="{x:Static properties:Resources.V}" IsChecked="{Binding DisplayConfig.IsSourceV}" />
+                            <RadioButton Content="{x:Static properties:Resources.I}" IsChecked="{Binding DisplayConfig.IsSourceV, Converter={StaticResource inverseBooleanConverter}}" />
                         </StackPanel>
 
                     </DockPanel>
 
                     <StackPanel Margin="0,0,0,3">
-                        <DockPanel  Margin="0,0,0,3" >
-                            <TextBlock Text="{x:Static properties:Resources.SourceValue}" Margin="0,0,3,0"  Width="60"/>
-                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="V"/>
-                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="mA"/>
-                            <TextBox Text="{Binding DisplayConfig.CurrentSourceConfig.MeasureVal}" BorderThickness="0,0,0,1" />
+                        <DockPanel Margin="0,0,0,3">
+                            <TextBlock Width="60" Margin="0,0,3,0" Text="{x:Static properties:Resources.SourceValue}" />
+                            <TextBlock DockPanel.Dock="Right" Text="V" Visibility="{Binding DisplayConfig.IsSourceV, Converter={StaticResource bool2VisibilityConverter}}" />
+                            <TextBlock DockPanel.Dock="Right" Text="mA" Visibility="{Binding DisplayConfig.IsSourceV, Converter={StaticResource bool2VisibilityConverter1}}" />
+                            <TextBox BorderThickness="0,0,0,1" Text="{Binding DisplayConfig.CurrentSourceConfig.MeasureVal}" />
                         </DockPanel>
-                        <DockPanel  Margin="0,0,0,3" >
-                            <TextBlock Text="{x:Static properties:Resources.LimitValue}" Margin="0,0,3,0"   Width="60"/>
-                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter1}}" Text="V"/>
-                            <TextBlock DockPanel.Dock="Right"  Visibility="{Binding DisplayConfig.IsSourceV,Converter={StaticResource bool2VisibilityConverter}}" Text="mA"/>
-                            <TextBox Text="{Binding DisplayConfig.CurrentSourceConfig.LmtVal}" BorderThickness="0,0,0,1"/>
+                        <DockPanel Margin="0,0,0,3">
+                            <TextBlock Width="60" Margin="0,0,3,0" Text="{x:Static properties:Resources.LimitValue}" />
+                            <TextBlock DockPanel.Dock="Right" Text="V" Visibility="{Binding DisplayConfig.IsSourceV, Converter={StaticResource bool2VisibilityConverter1}}" />
+                            <TextBlock DockPanel.Dock="Right" Text="mA" Visibility="{Binding DisplayConfig.IsSourceV, Converter={StaticResource bool2VisibilityConverter}}" />
+                            <TextBox BorderThickness="0,0,0,1" Text="{Binding DisplayConfig.CurrentSourceConfig.LmtVal}" />
                         </DockPanel>
 
-                        <UniformGrid  Columns="3"  Margin="0,0,0,3">
-                            <Button x:Name="MeasureDataButton" Content="{x:Static properties:Resources.Ignite}" Click="MeasureData_Click"/>
-                            <Button x:Name="StepMeasureDataButton" Content="{x:Static properties:Resources.Settings}" Click="StepMeasureData_Click"/>
-                            <Button Content="{x:Static properties:Resources.Extinguish}" Click="MeasureDataClose_Click" />
+                        <UniformGrid Margin="0,0,0,3" Columns="3">
+                            <Button x:Name="MeasureDataButton" Click="MeasureData_Click" Content="{x:Static properties:Resources.Ignite}" />
+                            <Button x:Name="StepMeasureDataButton" Click="StepMeasureData_Click" Content="{x:Static properties:Resources.Settings}" />
+                            <Button Click="MeasureDataClose_Click" Content="{x:Static properties:Resources.Extinguish}" />
                         </UniformGrid>
-                        <UniformGrid Columns="2"  Margin="0,0,0,3">
-                            <DockPanel  Margin="0,0,5,0" >
-                                <TextBlock  Text="{x:Static properties:Resources.CurrentVoltageV}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                <TextBox x:Name="TextSourceMeterV" Text="{Binding DisplayConfig.CurrentChannelConfig.V, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
+                        <UniformGrid Margin="0,0,0,3" Columns="2">
+                            <DockPanel Margin="0,0,5,0">
+                                <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.CurrentVoltageV}" />
+                                <TextBox x:Name="TextSourceMeterV" BorderThickness="0,0,0,1" IsEnabled="False" Text="{Binding DisplayConfig.CurrentChannelConfig.V, StringFormat={}{0:F4}}" />
                             </DockPanel>
-                            <DockPanel Margin="0,0,5,0" >
-                                <TextBlock  Text="{x:Static properties:Resources.CurrentCurrentMA}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                <TextBox x:Name="TextSourceMeterI" Text="{Binding DisplayConfig.CurrentChannelConfig.I, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
+                            <DockPanel Margin="0,0,5,0">
+                                <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.CurrentCurrentMA}" />
+                                <TextBox x:Name="TextSourceMeterI" BorderThickness="0,0,0,1" IsEnabled="False" Text="{Binding DisplayConfig.CurrentChannelConfig.I, StringFormat={}{0:F4}}" />
                             </DockPanel>
                         </UniformGrid>
                     </StackPanel>
 
 
-                    <StackPanel  x:Name="StackPanelVITemplate">
-                        <DockPanel >
-                            <Button x:Name="VIScanButton" DockPanel.Dock="Right" Content="{x:Static properties:Resources.Scan}" Click="VIScan_Click" Margin="5,0,0,0" />
+                    <StackPanel x:Name="StackPanelVITemplate">
+                        <DockPanel>
+                            <Button x:Name="VIScanButton" Margin="5,0,0,0" Click="VIScan_Click" Content="{x:Static properties:Resources.Scan}" DockPanel.Dock="Right" />
                             <Grid Width="20" Margin="5,0,0,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SMUParam" Click="MenuItem_Template"/>
+                                <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE713;" />
+                                <Button Width="20" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Click="MenuItem_Template" Tag="SMUParam" />
                             </Grid>
-                            <ComboBox  x:Name="ComboxVITemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Margin="0,0,0,0"/>
+                            <ComboBox x:Name="ComboxVITemplate" Margin="0,0,0,0" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
                         </DockPanel>
                     </StackPanel>
 

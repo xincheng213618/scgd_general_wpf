@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using ProjectKB.Auth;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
@@ -124,6 +125,8 @@ namespace ProjectKB
 
         public void Edit()
         {
+            if (!KBAuthManager.GetInstance().RequireAdmin(Application.Current.GetActiveWindow())) return;
+
             new PropertyEditorWindow(Summary) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner }.ShowDialog();
             this.Save();
         }

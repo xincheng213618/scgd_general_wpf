@@ -1,3 +1,4 @@
+#pragma warning disable CA1805,CA1822,CA1859,CA1863,CS0414
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using Newtonsoft.Json;

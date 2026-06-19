@@ -1,69 +1,57 @@
 ﻿#pragma warning disable CA1863
-using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Json;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 
 namespace ColorVision.UI
 {
-    [Display(Name = "Config_Parameters", ResourceType = typeof(Properties.Resources))]
-    public class ConfigOptions:ViewModelBase, IConfig
+    public class ConfigHandler : IConfigService
     {
-        [Display(Name = "Config_EnableBackup", ResourceType = typeof(Properties.Resources))]
-        public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; OnPropertyChanged(); } }
-        private bool _EnableBackup = true;
-    }
+        private const string BackupFolderName = "Backup";
+        private const int MaxBackupCount = 10;
+        private static readonly string[] ObsoleteConfigSectionNames =
+        {
+            "ConfigOptions",
+            "MarketplaceServiceConfig"
+        };
 
-
-    public class ConfigHandler: IConfigService
-    {
-        private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));
-        private static ConfigHandler _instance;
+        private static readonly ILog log = LogManager.GetLogger(typeof(ConfigHandler));
+        private static ConfigHandler? _instance;
         private static readonly object _locker = new();
-        public static ConfigHandler GetInstance() 
+
+        public static ConfigHandler GetInstance() => GetInstance(null);
+
+        public static ConfigHandler GetInstance(string? ConfigDIFileName)
         {
             if (_instance != null) return _instance;
             lock (_locker)
             {
-                if (_instance != null) return _instance;
-                _instance = new ConfigHandler();
-                _instance.Load();
-                ConfigService.SetInstance(_instance);
-                AssemblyHandler.GetInstance();
+                _instance ??= CreateInstance(ConfigDIFileName);
                 return _instance;
             }
         }
-        public static ConfigHandler GetInstance(string ConfigDIFileName)
+
+        private static ConfigHandler CreateInstance(string? configDIFileName)
         {
-            if (_instance != null) return _instance;
-            lock (_locker)
-            {
-                if (_instance != null) return _instance;
-                _instance = new ConfigHandler();
-                _instance.ConfigDIFileName = ConfigDIFileName;
-                _instance.Load();
-                ConfigService.SetInstance(_instance);
-                AssemblyHandler.GetInstance();
-                return _instance;
-            }
+            var instance = new ConfigHandler { ConfigDIFileName = configDIFileName };
+            instance.Load();
+            ConfigService.SetInstance(instance);
+            AssemblyHandler.GetInstance();
+            return instance;
         }
 
-        public ConfigOptions Options => GetRequiredService<ConfigOptions>();
-
-        public string ConfigFilePath { get; set; }
-        public string BackupFolderPath { get; set; }
+        public string ConfigFilePath { get; set; } = string.Empty;
+        public string BackupFolderPath { get; set; } = string.Empty;
 
         public DateTime InitDateTime { get; set; }
 
-        public string ConfigDIFileName { get; set; }
+        public string? ConfigDIFileName { get; set; }
 
         public ConfigHandler()
         {
@@ -71,51 +59,71 @@ namespace ColorVision.UI
 
         public void Load()
         {
-            JsonSerializerSettings = new JsonSerializerSettings { Formatting = Formatting.Indented };
-            JsonSerializerSettings.Converters.Add(new BrushJsonConverter());
-            JsonSerializerSettings.ContractResolver = new WpfContractResolver();
-
-
+            JsonSerializerSettings = CreateJsonSerializerSettings();
             InitDateTime = DateTime.Now;
-            string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? Assembly.GetEntryAssembly()?.GetName().Name;
-            if (ConfigDIFileName == null)
-            {
-                ConfigDIFileName = $"{Assembly.GetEntryAssembly()?.GetName().Name ?? AssemblyCompany}Config";
-            }
-            string backupDirName = "Backup";
-            if (Directory.Exists("Config"))
-            {
-                ConfigFilePath = $"Config\\{ConfigDIFileName}.json";
-                BackupFolderPath = $"Config\\{backupDirName}\\";
-            }
-            else
-            {
-                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{AssemblyCompany}\\Config\\";
-                if (!Directory.Exists(DirectoryPath))
-                    Directory.CreateDirectory(DirectoryPath);
-                ConfigFilePath = DirectoryPath + ConfigDIFileName + ".json";
-                BackupFolderPath = DirectoryPath + backupDirName + "\\";
-            }
 
-            if (!Directory.Exists(BackupFolderPath))
-                Directory.CreateDirectory(BackupFolderPath);
+            InitializePaths();
             LoadConfigs(ConfigFilePath);
-            if (IsAutoSave && Options.EnableBackup)
-            {
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(TimeSpan.FromMinutes(2));
-                    BackupConfigs();
-                });
-            }
+            ScheduleBackup();
 
             Authorization.Instance = GetRequiredService<Authorization>();
 
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
                 if (IsAutoSave)
-                    SaveConfigs(ConfigFilePath);
+                    SaveConfigs();
             };
+        }
+
+        private void ScheduleBackup()
+        {
+            if (!IsAutoSave)
+                return;
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TimeSpan.FromMinutes(2));
+                BackupConfigs();
+            });
+        }
+
+        private static JsonSerializerSettings CreateJsonSerializerSettings()
+        {
+            var settings = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented,
+                ContractResolver = new WpfContractResolver()
+            };
+            settings.Converters.Add(new BrushJsonConverter());
+            return settings;
+        }
+
+        private void InitializePaths()
+        {
+            Assembly? entryAssembly = Assembly.GetEntryAssembly();
+            string assemblyName = entryAssembly?.GetName().Name ?? "ColorVision";
+            string assemblyCompany = entryAssembly?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? assemblyName;
+
+            ConfigDIFileName ??= $"{assemblyName}Config";
+
+            if (Directory.Exists("Config"))
+            {
+                ConfigFilePath = Path.Combine("Config", $"{ConfigDIFileName}.json");
+                BackupFolderPath = Path.Combine("Config", BackupFolderName);
+            }
+            else
+            {
+                string directoryPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    assemblyCompany,
+                    "Config");
+                Directory.CreateDirectory(directoryPath);
+
+                ConfigFilePath = Path.Combine(directoryPath, $"{ConfigDIFileName}.json");
+                BackupFolderPath = Path.Combine(directoryPath, BackupFolderName);
+            }
+
+            Directory.CreateDirectory(BackupFolderPath);
         }
 
 
@@ -129,7 +137,7 @@ namespace ColorVision.UI
 
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);
 
-        internal JsonSerializerSettings JsonSerializerSettings { get; set; }
+        internal JsonSerializerSettings JsonSerializerSettings { get; set; } = CreateJsonSerializerSettings();
 
         public ConcurrentDictionary<Type, IConfig> Configs { get; set; } = new();
 
@@ -140,171 +148,211 @@ namespace ColorVision.UI
             if (!typeof(IConfig).IsAssignableFrom(type))
                 throw new ArgumentException("Type must implement IConfig.", nameof(type));
 
-            if (Configs.TryGetValue(type, out var service))
-                return service;
+            return Configs.GetOrAdd(type, CreateConfig);
+        }
 
-            IConfig result;
+        private IConfig CreateConfig(Type type)
+        {
             try
             {
-                if (jsonObject.TryGetValue(type.Name, out JToken configToken))
+                if (jsonObject.TryGetValue(type.Name, out JToken? configToken))
                 {
-                    var config = configToken.ToObject(type, JsonSerializer.Create(JsonSerializerSettings));
-                    if (config is IConfigSecure configSecure)
+                    var config = configToken.ToObject(type, JsonSerializer.Create(JsonSerializerSettings)) as IConfig;
+                    if (config != null)
                     {
-                        configSecure.Decrypt();
-                        result = configSecure;
+                        if (config is IConfigSecure configSecure)
+                            configSecure.Decrypt();
+
+                        return config;
                     }
-                    else if (config is IConfig configInstance)
-                    {
-                        result = configInstance;
-                    }
-                    else
-                    {
-                        result = (IConfig)Activator.CreateInstance(type)!;
-                    }
-                }
-                else
-                {
-                    result = (IConfig)Activator.CreateInstance(type)!;
                 }
             }
             catch (Exception ex)
             {
                 log.Warn(ex);
-                result = (IConfig)Activator.CreateInstance(type)!;
             }
 
-            Configs[type] = result;
-            return result;
+            return CreateDefaultConfig(type);
         }
 
-        public T1 GetRequiredService<T1>() where T1 : IConfig  => (T1)GetRequiredService(typeof(T1));
+        private static IConfig CreateDefaultConfig(Type type) => (IConfig)Activator.CreateInstance(type)!;
+
+        public T1 GetRequiredService<T1>() where T1 : IConfig => (T1)GetRequiredService(typeof(T1));
 
         public void SaveConfigs(string fileName)
         {
-            var jObject = new JObject();
-            if (File.Exists(fileName))
+            var jObject = ReadExistingConfigFile(fileName);
+            RemoveObsoleteConfigSections(jObject);
+            var jsonSerializer = JsonSerializer.Create(JsonSerializerSettings);
+
+            foreach (var configPair in Configs.ToArray())
             {
-                string json = File.ReadAllText(fileName);
                 try
                 {
-                    jObject = JObject.Parse(json);
+                    SaveConfig(jObject, configPair.Key, configPair.Value, jsonSerializer);
                 }
                 catch (Exception ex)
-                {
-                    log.Error(ex);
-                }
-            }
-
-            //防止被修改
-            var configsSnapshot = Configs.ToArray();
-            JsonSerializer jsonSerializer = JsonSerializer.Create(JsonSerializerSettings);
-            foreach (var configPair in configsSnapshot)
-            {
-                try
-                {
-                    if (Application.Current == null)
-                    {
-                        if (configPair.Value is IConfigSecure configSecure)
-                        {
-                            configSecure.Encryption();
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
-                            configSecure.Decrypt();
-                        }
-                        else
-                        {
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
-                        }
-                    }
-                    else if (Application.Current.Dispatcher.CheckAccess())
-                    {
-                        if (configPair.Value is IConfigSecure configSecure)
-                        {
-                            configSecure.Encryption();
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
-                            configSecure.Decrypt();
-                        }
-                        else
-                        {
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
-                        }
-                    }
-                    else
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (configPair.Value is IConfigSecure configSecure)
-                            {
-                                configSecure.Encryption();
-                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
-                                configSecure.Decrypt();
-                            }
-                            else
-                            {
-                               jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
-                            }
-
-                        });
-                    }
-
-
-
-                }
-                catch(Exception ex)
                 {
                     log.Info(configPair.Key);
                     log.Error(ex);
                 }
             }
 
-            using (StreamWriter file = File.CreateText(fileName))
+            WriteConfigFile(fileName, jObject);
+        }
+
+        private static void SaveConfig(JObject jObject, Type configType, IConfig config, JsonSerializer serializer)
+        {
+            InvokeOnApplicationDispatcher(() =>
+                WriteConfigToken(jObject, configType.Name, config, serializer));
+        }
+
+        private static void InvokeOnApplicationDispatcher(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
             {
-                using (JsonTextWriter writer = new JsonTextWriter(file))
-                {
-                    jObject.WriteTo(writer);
-                }
+                action();
+                return;
             }
+
+            dispatcher.Invoke(action);
+        }
+
+        private static void WriteConfigToken(JObject jObject, string configName, IConfig config, JsonSerializer serializer)
+        {
+            if (config is not IConfigSecure configSecure)
+            {
+                jObject[configName] = JToken.FromObject(config, serializer);
+                return;
+            }
+
+            configSecure.Encryption();
+            try
+            {
+                jObject[configName] = JToken.FromObject(config, serializer);
+            }
+            finally
+            {
+                configSecure.Decrypt();
+            }
+        }
+
+        private static JObject ReadExistingConfigFile(string fileName)
+        {
+            return TryReadConfigFile(fileName, out var jObject, ex => log.Error(ex))
+                ? jObject
+                : new JObject();
+        }
+
+        private static void RemoveObsoleteConfigSections(JObject jObject)
+        {
+            foreach (string sectionName in ObsoleteConfigSectionNames)
+            {
+                jObject.Remove(sectionName);
+            }
+        }
+
+        private static bool TryReadConfigFile(string fileName, out JObject jObject, Action<Exception> logException)
+        {
+            jObject = new JObject();
+            if (!File.Exists(fileName))
+                return false;
+
+            try
+            {
+                using StreamReader file = File.OpenText(fileName);
+                using JsonTextReader reader = new(file);
+                jObject = JObject.Load(reader);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logException(ex);
+                return false;
+            }
+        }
+
+        private static void WriteConfigFile(string fileName, JObject jObject)
+        {
+            string? directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
+
+            using StreamWriter file = File.CreateText(fileName);
+            using JsonTextWriter writer = new(file);
+            jObject.WriteTo(writer);
         }
 
         public void LoadDefaultConfigs()
         {
             try
             {
-                var files = Directory.GetFiles(BackupFolderPath, $"{ConfigDIFileName}Backup_*.json")
-                    .OrderByDescending(f => f)
-                    .ToList();
-                if (files.Count !=0)
-                {
-                    LoadConfigs(files.First());
-                    File.Copy(files.First(), ConfigFilePath, true);
-                }
-                else
-                {
-                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                    {
-                        try
-                        {
-                            foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
-                            {
-                                if (Activator.CreateInstance(type) is IConfig config)
-                                {
-                                    Configs[type] = config;
-                                }
-                            }
-                        }
-                        catch
-                        {
+                if (TryRestoreLatestBackup())
+                    return;
 
-                        }
-                    }
-                }
+                LoadDefaultConfigInstances();
             }
             catch (Exception ex)
             {
                 log.Error(Properties.Resources.RestoreConfigFileFailed, ex);
             }
+        }
 
+        private bool TryRestoreLatestBackup()
+        {
+            foreach (string backupFile in GetBackupFiles())
+            {
+                if (!TryReadConfigFile(backupFile, out var backupJson, ex => log.Warn(ex)))
+                    continue;
 
+                jsonObject = backupJson;
+                Configs = new ConcurrentDictionary<Type, IConfig>();
+                File.Copy(backupFile, ConfigFilePath, true);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void LoadDefaultConfigInstances()
+        {
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (var type in GetConfigTypes(assembly))
+                {
+                    try
+                    {
+                        Configs[type] = CreateDefaultConfig(type);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<Type> GetConfigTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes()
+                    .Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract)
+                    .ToArray();
+            }
+            catch
+            {
+                return Enumerable.Empty<Type>();
+            }
+        }
+
+        private IEnumerable<string> GetBackupFiles()
+        {
+            if (string.IsNullOrEmpty(BackupFolderPath) || !Directory.Exists(BackupFolderPath))
+                return Enumerable.Empty<string>();
+
+            return Directory.GetFiles(BackupFolderPath, $"{ConfigDIFileName}Backup_*.json")
+                .OrderByDescending(f => f);
         }
 
         public void BackupConfigs()
@@ -313,8 +361,8 @@ namespace ColorVision.UI
             {
                 string backupFileName = $"{ConfigDIFileName}Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
                 string backupPath = Path.Combine(BackupFolderPath, backupFileName);
-                CleanupOldBackups();
                 SaveConfigs(backupPath);
+                CleanupOldBackups();
             }
             catch (Exception ex)
             {
@@ -326,16 +374,8 @@ namespace ColorVision.UI
         {
             try
             {
-                var files = Directory.GetFiles(BackupFolderPath, $"{ConfigDIFileName}Backup_*.json")
-                    .OrderByDescending(f => f)
-                    .ToList();
-                if (files.Count > 10)
-                {
-                    foreach (var file in files.Skip(10))
-                    {
-                        File.Delete(file);
-                    }
-                }
+                foreach (var file in GetBackupFiles().Skip(MaxBackupCount))
+                    File.Delete(file);
             }
             catch (Exception ex)
             {
@@ -349,26 +389,12 @@ namespace ColorVision.UI
         public void LoadConfigs(string fileName)
         {
             Configs = new ConcurrentDictionary<Type, IConfig>();
-            if (File.Exists(fileName))
-            {
-                try
-                {
-                    using (StreamReader file = File.OpenText(fileName))
-                    using (JsonTextReader reader = new JsonTextReader(file))
-                    {
-                        jsonObject = (JObject)JToken.ReadFrom(reader);
-                    }
-                }
-                catch(Exception ex)
-                {
-                    log.Warn(ex);
-                    LoadDefaultConfigs();
-                }
-            }
+            jsonObject = new JObject();
+
+            if (TryReadConfigFile(fileName, out var loadedJson, ex => log.Warn(ex)))
+                jsonObject = loadedJson;
             else
-            {
                 LoadDefaultConfigs();
-            }
         }
 
         public void Save<T1>() where T1 : IConfig
@@ -376,57 +402,14 @@ namespace ColorVision.UI
             var type = typeof(T1);
             var configName = type.Name;
 
-            if (Configs == null)
-            {
-                Configs = new ConcurrentDictionary<Type, IConfig>();
-            }
-
-            // Ensure the config instance exists (will load or create default)
             var configInstance = GetRequiredService<T1>();
-
-            JObject jObject = new JObject();
-            if (File.Exists(ConfigFilePath))
-            {
-                try
-                {
-                    jObject = JObject.Parse(File.ReadAllText(ConfigFilePath));
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    // If parse fails, start with a clean object to avoid corrupt carry-over
-                    jObject = new JObject();
-                }
-            }
-
-            void Persist()
-            {
-                if (configInstance is IConfigSecure secure)
-                {
-                    secure.Encryption();
-                    jObject[configName] = JToken.FromObject(configInstance, JsonSerializer.Create(JsonSerializerSettings));
-                    secure.Decrypt();
-                }
-                else
-                {
-                    jObject[configName] = JToken.FromObject(configInstance, JsonSerializer.Create(JsonSerializerSettings));
-                }
-            }
+            var jObject = ReadExistingConfigFile(ConfigFilePath);
+            RemoveObsoleteConfigSections(jObject);
+            var jsonSerializer = JsonSerializer.Create(JsonSerializerSettings);
 
             try
             {
-                if (Application.Current == null)
-                {
-                    Persist();
-                }
-                else if (Application.Current.Dispatcher.CheckAccess())
-                {
-                    Persist();
-                }
-                else
-                {
-                    Application.Current.Dispatcher.Invoke(Persist);
-                }
+                SaveConfig(jObject, type, configInstance, jsonSerializer);
             }
             catch (Exception ex)
             {
@@ -436,11 +419,7 @@ namespace ColorVision.UI
 
             try
             {
-                using (StreamWriter file = File.CreateText(ConfigFilePath))
-                using (JsonTextWriter writer = new JsonTextWriter(file))
-                {
-                    jObject.WriteTo(writer);
-                }
+                WriteConfigFile(ConfigFilePath, jObject);
             }
             catch (Exception ex)
             {

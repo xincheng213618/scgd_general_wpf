@@ -4,9 +4,15 @@
 
 ## 章節入口
 
+### 按操作目標查找
+
+- [使用手冊操作工作流矩陣](./operation-workflow-matrix.md)
+- [現場操作驗收清單](./field-operation-acceptance.md)
+
 ### 介面與基礎互動
 
 - [主視窗導覽](./interface/main-window.md)
+- [UI 元件使用手冊](./interface/ui-component-handbook.md)
 - [屬性編輯器](./interface/property-editor.md)
 - [日誌檢視器](./interface/log-viewer.md)
 - [終端](./interface/terminal.md)
@@ -46,11 +52,14 @@
 
 ## 推薦閱讀路線
 
-1. 先看 [主視窗導覽](./interface/main-window.md)，瞭解主介面佈局。
-2. 再看 [屬性編輯器](./interface/property-editor.md) 和 [影像編輯器概覽](./image-editor/overview.md)，建立基本操作路徑。
-3. 涉及硬體時進入 [裝置服務概覽](./devices/overview.md) 和對應裝置專題頁。
-4. 需要自動化時進入 [工作流程概覽](./workflow/README.md)。
-5. 遇到異常先查 [常見問題](./troubleshooting/common-issues.md)。
+1. 不確定該看哪頁時，先看 [使用手冊操作工作流矩陣](./operation-workflow-matrix.md)。
+2. 現場交付或復測時，按 [現場操作驗收清單](./field-operation-acceptance.md) 逐項確認。
+3. 先看 [主視窗導覽](./interface/main-window.md)，瞭解主介面佈局。
+4. 再看 [UI 元件使用手冊](./interface/ui-component-handbook.md)，按視窗和控件確認入口、完成標準和排查方向。
+5. 繼續看 [屬性編輯器](./interface/property-editor.md) 和 [影像編輯器概覽](./image-editor/overview.md)，建立基本操作路徑。
+6. 涉及硬體時進入 [裝置服務概覽](./devices/overview.md) 和對應裝置專題頁。
+7. 需要自動化時進入 [工作流程概覽](./workflow/README.md)。
+8. 遇到異常先查 [常見問題](./troubleshooting/common-issues.md)。
 
 ## 章節邊界
 

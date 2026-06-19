@@ -1,5 +1,7 @@
+#pragma warning disable CA1863
 using ColorVision.Common.MVVM;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -26,17 +28,62 @@ namespace ColorVision.Update
         SkipVersion = 2,
     }
 
+    public enum ApplicationUpdateMode
+    {
+        Incremental = 0,
+        Full = 1,
+    }
+
+    public sealed class ApplicationUpdateModeOption
+    {
+        public required ApplicationUpdateMode Mode { get; init; }
+        public required string DisplayText { get; init; }
+    }
+
     public class UpdatePreviewItem : ViewModelBase
     {
         public string ItemId { get; set; } = string.Empty;
-        public UpdatePreviewItemKind Kind { get; set; }
-        public string Category { get; set; } = string.Empty;
+        public UpdatePreviewItemKind Kind
+        {
+            get => _kind;
+            set => SetProperty(ref _kind, value);
+        }
+        private UpdatePreviewItemKind _kind;
+
+        public string Category
+        {
+            get => _category;
+            set => SetProperty(ref _category, value);
+        }
+        private string _category = string.Empty;
+
         public string Name { get; set; } = string.Empty;
-        public string SecondaryLabel { get; set; } = string.Empty;
+        public string SecondaryLabel
+        {
+            get => _secondaryLabel;
+            set
+            {
+                SetProperty(ref _secondaryLabel, value);
+                OnPropertyChanged(nameof(SecondaryLabelVisibility));
+            }
+        }
+        private string _secondaryLabel = string.Empty;
+
         public string CurrentVersion { get; set; } = string.Empty;
         public string TargetVersion { get; set; } = string.Empty;
         public string HostRequirement { get; set; } = string.Empty;
-        public string Summary { get; set; } = string.Empty;
+        public string Summary
+        {
+            get => _summary;
+            set => SetProperty(ref _summary, value);
+        }
+        private string _summary = string.Empty;
+
+        public IReadOnlyList<ApplicationUpdateModeOption> ApplicationUpdateModeOptions { get; } =
+        [
+            new() { Mode = ApplicationUpdateMode.Incremental, DisplayText = Resources.UpdatePreviewApplicationUpdateModeIncremental },
+            new() { Mode = ApplicationUpdateMode.Full, DisplayText = Resources.UpdatePreviewApplicationUpdateModeFull },
+        ];
 
         public bool IsSelectable
         {
@@ -46,6 +93,7 @@ namespace ColorVision.Update
                 SetProperty(ref _isSelectable, value);
                 OnPropertyChanged(nameof(SelectionVisibility));
                 OnPropertyChanged(nameof(RequiredTagVisibility));
+                OnPropertyChanged(nameof(SelectionEnabled));
             }
         }
         private bool _isSelectable = true;
@@ -56,6 +104,44 @@ namespace ColorVision.Update
             set => SetProperty(ref _isSelected, value);
         }
         private bool _isSelected = true;
+
+        public bool IsSelectionLocked
+        {
+            get => _isSelectionLocked;
+            set
+            {
+                if (value == _isSelectionLocked)
+                    return;
+
+                if (value)
+                {
+                    _selectionBeforeLock = IsSelected;
+                    IsSelected = false;
+                }
+                else
+                {
+                    IsSelected = _selectionBeforeLock;
+                }
+
+                SetProperty(ref _isSelectionLocked, value);
+                OnPropertyChanged(nameof(SelectionEnabled));
+                OnPropertyChanged(nameof(ItemOpacity));
+                OnPropertyChanged(nameof(SelectionLockMessageVisibility));
+            }
+        }
+        private bool _isSelectionLocked;
+        private bool _selectionBeforeLock = true;
+
+        public string SelectionLockMessage
+        {
+            get => _selectionLockMessage;
+            set
+            {
+                SetProperty(ref _selectionLockMessage, value);
+                OnPropertyChanged(nameof(SelectionLockMessageVisibility));
+            }
+        }
+        private string _selectionLockMessage = string.Empty;
 
         public bool IsUpdating
         {
@@ -82,6 +168,57 @@ namespace ColorVision.Update
         }
         private string _progressText = string.Empty;
 
+        public bool CanChooseApplicationUpdateMode
+        {
+            get => _canChooseApplicationUpdateMode;
+            set
+            {
+                SetProperty(ref _canChooseApplicationUpdateMode, value);
+                OnPropertyChanged(nameof(ApplicationUpdateModeSelectorVisibility));
+                OnPropertyChanged(nameof(CategoryBadgeVisibility));
+            }
+        }
+        private bool _canChooseApplicationUpdateMode;
+
+        public ApplicationUpdateMode ApplicationUpdateMode
+        {
+            get => _applicationUpdateMode;
+            set
+            {
+                if (value == _applicationUpdateMode)
+                    return;
+
+                if (SetProperty(ref _applicationUpdateMode, value))
+                {
+                    ApplyApplicationUpdateModePresentation();
+                    OnPropertyChanged(nameof(IncrementalBackupVisibility));
+                }
+            }
+        }
+        private ApplicationUpdateMode _applicationUpdateMode;
+
+        public bool CanChooseIncrementalBackup
+        {
+            get => _canChooseIncrementalBackup;
+            set
+            {
+                SetProperty(ref _canChooseIncrementalBackup, value);
+                OnPropertyChanged(nameof(IncrementalBackupVisibility));
+            }
+        }
+        private bool _canChooseIncrementalBackup;
+
+        public bool CreateBackupBeforeIncrementalUpdate
+        {
+            get => _createBackupBeforeIncrementalUpdate;
+            set => SetProperty(ref _createBackupBeforeIncrementalUpdate, value);
+        }
+        private bool _createBackupBeforeIncrementalUpdate = true;
+
+        private int _incrementalPackageCount;
+        private string _incrementalSummary = string.Empty;
+        private string _fullSummary = string.Empty;
+
         public Visibility SelectionVisibility => IsSelectable
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -89,6 +226,26 @@ namespace ColorVision.Update
         public Visibility RequiredTagVisibility => IsSelectable
             ? Visibility.Collapsed
             : Visibility.Visible;
+
+        public bool SelectionEnabled => IsSelectable && !IsSelectionLocked;
+
+        public double ItemOpacity => IsSelectionLocked ? 0.66 : 1.0;
+
+        public Visibility SelectionLockMessageVisibility => !string.IsNullOrWhiteSpace(SelectionLockMessage) && IsSelectionLocked
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        public Visibility ApplicationUpdateModeSelectorVisibility => CanChooseApplicationUpdateMode
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        public Visibility CategoryBadgeVisibility => CanChooseApplicationUpdateMode
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        public Visibility IncrementalBackupVisibility => CanChooseIncrementalBackup && ApplicationUpdateMode == ApplicationUpdateMode.Incremental
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
         public Visibility SecondaryLabelVisibility => !string.IsNullOrWhiteSpace(SecondaryLabel)
             && !string.Equals(SecondaryLabel, Name, StringComparison.OrdinalIgnoreCase)
@@ -109,6 +266,34 @@ namespace ColorVision.Update
             ? Visibility.Visible
             : Visibility.Collapsed;
 
+        public void ConfigureApplicationUpdateModePresentation(int incrementalPackageCount, string incrementalSummary, string fullSummary)
+        {
+            _incrementalPackageCount = incrementalPackageCount;
+            _incrementalSummary = incrementalSummary;
+            _fullSummary = fullSummary;
+            ApplyApplicationUpdateModePresentation();
+        }
+
+        private void ApplyApplicationUpdateModePresentation()
+        {
+            if (!CanChooseApplicationUpdateMode)
+                return;
+
+            if (ApplicationUpdateMode == ApplicationUpdateMode.Full)
+            {
+                Kind = UpdatePreviewItemKind.Application;
+                Category = Resources.UpdatePreviewApplicationUpdateCategory;
+                SecondaryLabel = Resources.UpdatePreviewApplicationFullPackageLabel;
+                Summary = _fullSummary;
+                return;
+            }
+
+            Kind = UpdatePreviewItemKind.ApplicationIncremental;
+            Category = Resources.UpdatePreviewApplicationIncrementalCategory;
+            SecondaryLabel = string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationIncrementalPackagesFormat, _incrementalPackageCount);
+            Summary = _incrementalSummary;
+        }
+
         private static string FormatVersion(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? Resources.UpdatePreviewUnknownVersion : value.Trim();
@@ -128,6 +313,8 @@ namespace ColorVision.Update
 
     public class UpdatePreviewDialogContext : ViewModelBase
     {
+        private bool _isRefreshingApplicationUpdateModeState;
+
         public UpdatePreviewDialogContext()
         {
             Items.CollectionChanged += Items_CollectionChanged;
@@ -160,6 +347,18 @@ namespace ColorVision.Update
             {
                 RefreshSelectionState();
             }
+            else if (e.PropertyName == nameof(UpdatePreviewItem.ApplicationUpdateMode))
+            {
+                RefreshApplicationUpdateModeState();
+            }
+            else if (e.PropertyName == nameof(UpdatePreviewItem.CreateBackupBeforeIncrementalUpdate))
+            {
+                RefreshSelectionState();
+            }
+            else if (e.PropertyName == nameof(UpdatePreviewItem.IsSelectionLocked))
+            {
+                RefreshSelectionState();
+            }
         }
 
         private void RefreshItemsState()
@@ -172,6 +371,7 @@ namespace ColorVision.Update
             OnPropertyChanged(nameof(EmptyStateCenteredVisibility));
             OnPropertyChanged(nameof(ConfirmButtonVisibility));
             OnPropertyChanged(nameof(FooterInfoVisibility));
+            RefreshApplicationUpdateModeState();
             RefreshSelectionState();
         }
 
@@ -185,8 +385,37 @@ namespace ColorVision.Update
             OnPropertyChanged(nameof(HasAlwaysIncludedItems));
             OnPropertyChanged(nameof(HasApplicationUpdates));
             OnPropertyChanged(nameof(AreAllSelectableItemsPlugins));
+            OnPropertyChanged(nameof(HasDeferredPluginUpdates));
             OnPropertyChanged(nameof(CanConfirm));
             OnPropertyChanged(nameof(FooterInfoVisibility));
+        }
+
+        private void RefreshApplicationUpdateModeState()
+        {
+            if (_isRefreshingApplicationUpdateModeState)
+                return;
+
+            _isRefreshingApplicationUpdateModeState = true;
+
+            bool applicationFullPackageSelected = Items.Any(item => IsApplicationUpdate(item)
+                && item.ApplicationUpdateMode == ApplicationUpdateMode.Full);
+
+            try
+            {
+                foreach (UpdatePreviewItem item in Items.Where(item => item.Kind == UpdatePreviewItemKind.Plugin))
+                {
+                    item.SelectionLockMessage = applicationFullPackageSelected
+                        ? Resources.UpdatePreviewPluginDeferredByFullApplicationUpdate
+                        : string.Empty;
+                    item.IsSelectionLocked = applicationFullPackageSelected;
+                }
+            }
+            finally
+            {
+                _isRefreshingApplicationUpdateModeState = false;
+            }
+
+            RefreshSelectionState();
         }
 
         public string Heading { get => _heading; set { _heading = value; OnPropertyChanged(); } }
@@ -289,7 +518,7 @@ namespace ColorVision.Update
         private bool _isUpdating;
 
         public string CancelButtonText { get => _cancelButtonText; set { _cancelButtonText = value; OnPropertyChanged(); } }
-    private string _cancelButtonText = Resources.UpdatePreviewLaterButtonText;
+        private string _cancelButtonText = Resources.UpdatePreviewLaterButtonText;
 
         public string? SecondaryButtonText
         {
@@ -309,9 +538,9 @@ namespace ColorVision.Update
 
         public ObservableCollection<UpdatePreviewItem> Items { get; } = new();
 
-        public int SelectableItemCount => Items.Count(item => item.IsSelectable);
+        public int SelectableItemCount => Items.Count(item => item.IsSelectable && !item.IsSelectionLocked);
 
-        public int SelectedSelectableItemCount => Items.Count(item => item.IsSelectable && item.IsSelected);
+        public int SelectedSelectableItemCount => Items.Count(item => item.IsSelectable && !item.IsSelectionLocked && item.IsSelected);
 
         public bool HasSelectableItems => SelectableItemCount > 0;
 
@@ -326,8 +555,10 @@ namespace ColorVision.Update
         public bool HasApplicationUpdates => ApplicationUpdateCount > 0;
 
         public bool AreAllSelectableItemsPlugins => !HasSelectableItems
-            || Items.Where(item => item.IsSelectable)
+            || Items.Where(item => item.IsSelectable && !item.IsSelectionLocked)
                 .All(item => item.Kind == UpdatePreviewItemKind.Plugin);
+
+        public bool HasDeferredPluginUpdates => Items.Any(item => item.Kind == UpdatePreviewItemKind.Plugin && item.IsSelectionLocked);
 
         public string HeaderSummaryText
         {
@@ -365,10 +596,13 @@ namespace ColorVision.Update
                 if (IsChecking)
                     return string.Empty;
 
+                if (HasApplicationUpdates)
+                    return Resources.UpdatePreviewSelectionRestartRequired;
+
                 Collection<string> segments = new();
 
-                if (HasApplicationUpdates)
-                    segments.Add(Resources.UpdatePreviewSelectionIncludesApplication);
+                if (HasDeferredPluginUpdates)
+                    segments.Add(Resources.UpdatePreviewSelectionDefersPluginUpdates);
 
                 if (HasSelectableItems)
                 {
@@ -381,9 +615,7 @@ namespace ColorVision.Update
                     segments.Add(Resources.UpdatePreviewSelectionIncludesRequired);
                 }
 
-                if (HasApplicationUpdates)
-                    segments.Add(Resources.UpdatePreviewSelectionRestartRequired);
-                else if (HasSelectableItems || HasAlwaysIncludedItems)
+                if (HasSelectableItems || HasAlwaysIncludedItems)
                     segments.Add(Resources.UpdatePreviewSelectionBackupAndRestart);
 
                 return string.Join(" · ", segments);
@@ -404,7 +636,7 @@ namespace ColorVision.Update
 
         public bool CanConfirm => !IsUpdating
             && !IsChecking
-            && (HasSelectableItems ? SelectedSelectableItemCount > 0 || HasAlwaysIncludedItems : Items.Count > 0);
+            && (HasSelectableItems ? SelectedSelectableItemCount > 0 || HasAlwaysIncludedItems : HasAlwaysIncludedItems);
 
         public bool CanCancel => !IsUpdating;
 

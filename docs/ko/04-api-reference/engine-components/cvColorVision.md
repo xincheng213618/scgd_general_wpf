@@ -14,12 +14,12 @@
 
 ## 현재 가장 중요한 파일
 
-- `엔진/cvColorVision/cvCameraCSLib.cs`
-- `엔진/cvColorVision/ConvertXYZ.cs`
-- `엔진/cvColorVision/CvOledDLL.cs`
--`엔진/cvColorVision/PG.cs`
--`엔진/cvColorVision/PassSx.cs`
-- `엔진/cvColorVision/Algorithms.cs`
+- `Engine/cvColorVision/cvCameraCSLib.cs`
+- `Engine/cvColorVision/ConvertXYZ.cs`
+- `Engine/cvColorVision/CvOledDLL.cs`
+- `Engine/cvColorVision/PG.cs`
+- `Engine/cvColorVision/PassSx.cs`
+- `Engine/cvColorVision/Algorithms.cs`
 
 모듈이 기본 DLL에 연결되는 방법과 현재 노출되는 기능이 무엇인지 확인하려는 경우 이러한 코드는 이미 본체를 다루었습니다.
 
@@ -105,18 +105,18 @@
 
 현재 `ColorVision.Engine`, 장치 서비스 및 일부 플러그인은 여기에 노출된 기본 인터페이스를 호출합니다. `cvColorVision` 자체는 호스트 수준 창, 템플릿 또는 작업 흐름 조정을 담당하지 않습니다.
 
-## 추천읽기순서
+## 추천 읽기 순서
 
-1.`엔진/cvColorVision/cvCameraCSLib.cs`
-2. `엔진/cvColorVision/ConvertXYZ.cs`
-3. `엔진/cvColorVision/CvOledDLL.cs`
-4. `엔진/cvColorVision/PG.cs`
-5. `엔진/cvColorVision/PassSx.cs`
+1. `Engine/cvColorVision/cvCameraCSLib.cs`
+2. `Engine/cvColorVision/ConvertXYZ.cs`
+3. `Engine/cvColorVision/CvOledDLL.cs`
+4. `Engine/cvColorVision/PG.cs`
+5. `Engine/cvColorVision/PassSx.cs`
 
 이런 방식으로 가장 두꺼운 전체 바인딩 표면을 먼저 살펴본 다음 OLED, 그래픽 카드, 소스 미터와 같은 전용 인터페이스로 확장할 수 있습니다.
 
 ## 계속 읽기
 
-- [docs/04-api-reference/engine-comComponents/ColorVision.Engine.md](./ColorVision.Engine.md)
+- [docs/04-api-reference/engine-components/ColorVision.Engine.md](./ColorVision.Engine.md)
 - [docs/03-architecture/overview/system-overview.md](../../03-architecture/overview/system-overview.md)
-- [docs/04-api-reference/engine-comComponents/ColorVision.FileIO.md](./ColorVision.FileIO.md)
+- [docs/04-api-reference/engine-components/ColorVision.FileIO.md](./ColorVision.FileIO.md)

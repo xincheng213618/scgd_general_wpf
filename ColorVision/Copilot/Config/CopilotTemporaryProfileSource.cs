@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -25,8 +26,21 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(profiles);
 
             var context = new CopilotTemporaryProfileSyncContext(profiles, nowUtc);
+            RemoveExpiredBuiltInTemporaryProfiles(context);
             SyncCore(context);
             return context.Changed;
+        }
+
+        private static void RemoveExpiredBuiltInTemporaryProfiles(CopilotTemporaryProfileSyncContext context)
+        {
+            const string expiredProfileId = "builtin-minimax-trial-20260527";
+            var existing = context.Profiles.FirstOrDefault(profile => string.Equals(profile.Id, expiredProfileId, StringComparison.Ordinal));
+
+            if (existing != null)
+            {
+                context.Profiles.Remove(existing);
+                context.Changed = true;
+            }
         }
 
         static partial void SyncCore(CopilotTemporaryProfileSyncContext context);

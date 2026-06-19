@@ -1,3 +1,4 @@
+#pragma warning disable CA1051,CA1805,CA1806,CA1826,CA1859,CS8625
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera.Video;

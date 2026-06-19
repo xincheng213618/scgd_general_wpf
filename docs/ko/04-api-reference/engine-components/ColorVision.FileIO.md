@@ -15,8 +15,8 @@
 
 ## 현재 가장 중요한 파일
 
-- `엔진/ColorVision.FileIO/CVFileUtil.cs`
-- `엔진/ColorVision.FileIO/CVCIEFile.cs`
+- `Engine/ColorVision.FileIO/CVFileUtil.cs`
+- `Engine/ColorVision.FileIO/CVCIEFile.cs`
 
 적어도 현재 모듈의 판독 가능한 구현으로 판단하면 이 두 곳에서는 핵심 형식 식별, 헤더 구문 분석 및 데이터 캐리어 정의를 다루었습니다.
 
@@ -100,15 +100,15 @@
 
 현재 코드는 소위 "핫 업데이트 비동기 파일 프레임워크"를 구현하는 대신 파일 길이, 오프셋, 배열 할당 및 예외를 집중적으로 확인합니다. 이를 이해해야만 코드가 헤더/데이터 구문 분석에 초점을 맞춘 이유를 이해할 수 있습니다.
 
-## 추천읽기순서
+## 추천 읽기 순서
 
-1. `엔진/ColorVision.FileIO/CVCIEFile.cs`
-2. `엔진/ColorVision.FileIO/CVFileUtil.cs`
+1. `Engine/ColorVision.FileIO/CVCIEFile.cs`
+2. `Engine/ColorVision.FileIO/CVFileUtil.cs`
 
 오래된 문서를 먼저 살펴보는 것보다 데이터 매체를 먼저 살펴본 다음 특정 구문 분석 논리를 살펴보는 것이 훨씬 더 효과적입니다.
 
 ## 계속 읽기
 
-- [docs/04-api-reference/engine-comComponents/cvColorVision.md](./cvColorVision.md)
-- [docs/04-api-reference/engine-comComponents/ColorVision.Engine.md](./ColorVision.Engine.md)
+- [docs/04-api-reference/engine-components/cvColorVision.md](./cvColorVision.md)
+- [docs/04-api-reference/engine-components/ColorVision.Engine.md](./ColorVision.Engine.md)
 - [docs/03-architecture/overview/system-overview.md](../../03-architecture/overview/system-overview.md)

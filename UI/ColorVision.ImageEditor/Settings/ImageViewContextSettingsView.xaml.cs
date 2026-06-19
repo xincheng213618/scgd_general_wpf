@@ -1,4 +1,5 @@
-﻿using ColorVision.ImageEditor.Properties;
+﻿#pragma warning disable CA1863
+using ColorVision.ImageEditor.Properties;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -28,20 +29,6 @@ namespace ColorVision.ImageEditor.Settings
 
         public bool IsEmpty => Sections.Count == 0;
 
-        public string SummaryText
-        {
-            get
-            {
-                int totalEntries = Sections.Sum(section => section.Entries.Count);
-                if (totalEntries == 0)
-                {
-                    return Properties.Resources.Settings_NoPropertyContext;
-                }
-
-                return string.Format(Properties.Resources.Settings_PropertyContextSummary, totalEntries, Sections.Count);
-            }
-        }
-
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private void ReloadSections()
@@ -61,26 +48,17 @@ namespace ColorVision.ImageEditor.Settings
                     {
                         Key = entry.Key,
                         Value = ImageViewConfig.FormatPropertyValue(entry.Value),
-                        Owner = entry.Owner,
-                        Description = entry.Description,
                     }));
 
                 Sections.Add(new ImageViewPropertyScopeSectionViewModel
                 {
                     ScopeName = ImageViewConfig.GetScopeDisplayName(group.Key),
-                    ScopeDescription = ImageViewConfig.GetScopeDescription(group.Key),
                     Entries = entries,
                 });
             }
 
             RaisePropertyChanged(nameof(HasEntries));
             RaisePropertyChanged(nameof(IsEmpty));
-            RaisePropertyChanged(nameof(SummaryText));
-        }
-
-        private void Refresh_Click(object sender, RoutedEventArgs e)
-        {
-            ReloadSections();
         }
 
         private void RaisePropertyChanged(string propertyName)
@@ -93,8 +71,6 @@ namespace ColorVision.ImageEditor.Settings
     {
         public string ScopeName { get; set; } = string.Empty;
 
-        public string ScopeDescription { get; set; } = string.Empty;
-
         public ObservableCollection<ImageViewPropertyEntryViewModel> Entries { get; set; } = new();
 
         public string CountText => string.Format(Properties.Resources.Settings_EntryCount, Entries.Count);
@@ -105,13 +81,5 @@ namespace ColorVision.ImageEditor.Settings
         public string Key { get; set; } = string.Empty;
 
         public string Value { get; set; } = string.Empty;
-
-        public string? Owner { get; set; }
-
-        public string? Description { get; set; }
-
-        public bool HasOwner => !string.IsNullOrWhiteSpace(Owner);
-
-        public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
     }
 }

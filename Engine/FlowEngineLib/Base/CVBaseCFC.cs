@@ -76,12 +76,86 @@ public class CVBaseCFC
 		FlowStatus = statusType;
 	}
 
+	public bool TryGetStopStatus(out StatusTypeEnum statusType)
+	{
+		statusType = FlowStatus;
+		if (IsStopStatus(FlowStatus))
+		{
+			return true;
+		}
+		if (Data != null && Data.TryGetValue("ErrorNodeName", out object errorNodeNameObj))
+		{
+			string errorNodeName = Convert.ToString(errorNodeNameObj);
+			if (!string.IsNullOrWhiteSpace(errorNodeName))
+			{
+				if (Data.TryGetValue(errorNodeName, out object nodeStatusObj))
+				{
+					string nodeStatus = Convert.ToString(nodeStatusObj);
+					if (TryParseStopStatus(nodeStatus, out statusType))
+					{
+						return true;
+					}
+				}
+				if (Data.ContainsKey("Msg"))
+				{
+					statusType = StatusTypeEnum.Failed;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public void NormalizeStopStatus()
+	{
+		if (TryGetStopStatus(out StatusTypeEnum statusType))
+		{
+			FlowStatus = statusType;
+		}
+	}
+
+	private static bool TryParseStopStatus(string status, out StatusTypeEnum statusType)
+	{
+		statusType = StatusTypeEnum.Runing;
+		if (string.Equals(status, StatusTypeEnum.Failed.ToString(), StringComparison.OrdinalIgnoreCase))
+		{
+			statusType = StatusTypeEnum.Failed;
+			return true;
+		}
+		if (string.Equals(status, StatusTypeEnum.Canceled.ToString(), StringComparison.OrdinalIgnoreCase))
+		{
+			statusType = StatusTypeEnum.Canceled;
+			return true;
+		}
+		if (string.Equals(status, StatusTypeEnum.OverTime.ToString(), StringComparison.OrdinalIgnoreCase))
+		{
+			statusType = StatusTypeEnum.OverTime;
+			return true;
+		}
+		return false;
+	}
+
+	private static bool IsStopStatus(StatusTypeEnum statusType)
+	{
+		return statusType == StatusTypeEnum.Failed
+			|| statusType == StatusTypeEnum.Canceled
+			|| statusType == StatusTypeEnum.OverTime;
+	}
+
 	public void Failed(string message, string nodeName, DateTime startTime)
 	{
 		SetStatusType(StatusTypeEnum.Failed);
-		AddData("Msg", message);
-		AddData("ErrorNodeName", nodeName);
-		AddResultStatus(nodeName, FlowStatus.ToString(), startTime);
+		string errorNodeName = nodeName ?? string.Empty;
+		AddData("Msg", message ?? string.Empty);
+		AddData("ErrorNodeName", errorNodeName);
+		if (!string.IsNullOrWhiteSpace(errorNodeName))
+		{
+			AddResultStatus(errorNodeName, FlowStatus.ToString(), startTime);
+		}
+		else
+		{
+			AddTTL(startTime);
+		}
 	}
 
 	internal ActionTypeEnum GetActionType()

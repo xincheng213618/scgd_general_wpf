@@ -1,3 +1,4 @@
+#pragma warning disable CS8601
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Templates.Jsons;
@@ -43,7 +44,7 @@ namespace ProjectARVRPro.Process.MTF
                                 {
                                     Name = mtf.name,
                                     Unit = Config.Unit,
-                                    Value = (mtf.mtfValue ?? 0) * Config.RecipeConfig.UnifiedRecipe.Fix,
+                                    Value = Config.RecipeConfig.UnifiedRecipe.Apply(mtf.mtfValue ?? 0),
                                     LowLimit = Config.RecipeConfig.UnifiedRecipe.Min,
                                     UpLimit = Config.RecipeConfig.UnifiedRecipe.Max,
                                 };

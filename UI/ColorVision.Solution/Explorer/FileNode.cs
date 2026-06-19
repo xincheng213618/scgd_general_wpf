@@ -1,3 +1,4 @@
+#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
@@ -129,9 +130,14 @@ namespace ColorVision.Solution.Explorer
         {
             try
             {
-                LogOperation($"开始删除文件: {FileInfo.FullName}");
-                File.Delete(FileInfo.FullName);
-                LogOperation($"成功删除文件: {FileInfo.FullName}");
+                LogOperation($"开始删除文件到回收站: {FileInfo.FullName}");
+                int result = ShellFileOperations.DeleteToRecycleBin(FileInfo.FullName);
+                if (result != 0)
+                {
+                    ShowUserError($"删除文件失败，Shell 返回代码: {result}");
+                    return;
+                }
+                LogOperation($"成功删除文件到回收站: {FileInfo.FullName}");
                 base.Delete();
             }
             catch (UnauthorizedAccessException ex)

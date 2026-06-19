@@ -1,0 +1,497 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/FOV.schema.json",
+  "title": "FOV_V2",
+  "description": "Provider-maintained JSON parameter schema. Defaults are sourced from the provider test-case default parameter file; the C++ JSON string interface remains unchanged.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "debugCfg": {
+      "Debug": false,
+      "debugPath": "Result\\",
+      "debugImgResize": 2
+    },
+    "ExactCorner": {
+      "qualityLevel": 0.04,
+      "cutWidth": 200,
+      "edge": 10,
+      "active": true
+    },
+    "pattern": 0,
+    "threshold": 20000,
+    "DarkRatio": 0.5,
+    "FovDist": 9576.0,
+    "cameraDegrees": 137.0,
+    "HorizontalFov": true,
+    "VerticalFov": true,
+    "AnglesFov": true,
+    "aaLocationWay": 1,
+    "Distortion": {
+      "enable": false,
+      "w_original": 0,
+      "h_original": 0,
+      "cameraMatrix_1": 0.0,
+      "cameraMatrix_5": 0.0,
+      "distCoeffs": []
+    }
+  },
+  "properties": {
+    "debugCfg": {
+      "type": "object",
+      "title": "Debug Cfg",
+      "x-ui": {
+        "order": 10
+      },
+      "default": {
+        "Debug": false,
+        "debugPath": "Result\\",
+        "debugImgResize": 2
+      },
+      "description": "Debug 相关配置。",
+      "additionalProperties": true,
+      "properties": {
+        "Debug": {
+          "type": "boolean",
+          "title": "Debug",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否开启 debug 输出。",
+          "$comment": "Provider note: keep JSON path '$.debugCfg.Debug' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.Debug",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugPath": {
+          "type": "string",
+          "title": "Debug Path",
+          "x-ui": {
+            "order": 20
+          },
+          "default": "Result\\",
+          "description": "debug 文件输出路径。",
+          "$comment": "Provider note: keep JSON path '$.debugCfg.debugPath' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugPath",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugImgResize": {
+          "type": "integer",
+          "title": "Debug Img Resize",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 2,
+          "description": "debug 图片压缩倍率，2、3、4 生效，其他值表示不压缩。",
+          "examples": [
+            2,
+            3,
+            4
+          ],
+          "$comment": "Provider note: keep JSON path '$.debugCfg.debugImgResize' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugImgResize",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.debugCfg' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.debugCfg",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "ExactCorner": {
+      "type": "object",
+      "title": "Exact Corner",
+      "x-ui": {
+        "order": 20
+      },
+      "default": {
+        "qualityLevel": 0.04,
+        "cutWidth": 200,
+        "edge": 10,
+        "active": true
+      },
+      "description": "精定位参数。",
+      "additionalProperties": true,
+      "properties": {
+        "qualityLevel": {
+          "type": "number",
+          "title": "Quality Level",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 0.04,
+          "description": "角点精定位质量阈值，通常取 0.04 或 0.06。",
+          "examples": [
+            0.04,
+            0.06
+          ],
+          "$comment": "Provider note: keep JSON path '$.ExactCorner.qualityLevel' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.ExactCorner.qualityLevel",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "cutWidth": {
+          "type": "integer",
+          "title": "Cut Width",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 200,
+          "description": "精定位裁剪窗口尺寸。",
+          "$comment": "Provider note: keep JSON path '$.ExactCorner.cutWidth' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.ExactCorner.cutWidth",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "edge": {
+          "type": "integer",
+          "title": "Edge",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 10,
+          "description": "精定位边缘参数，通常取 10-20。",
+          "minimum": 10,
+          "maximum": 20,
+          "$comment": "Provider note: keep JSON path '$.ExactCorner.edge' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.ExactCorner.edge",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "active": {
+          "type": "boolean",
+          "title": "Active",
+          "x-ui": {
+            "order": 40
+          },
+          "default": true,
+          "description": "是否启用精定位。",
+          "$comment": "Provider note: keep JSON path '$.ExactCorner.active' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.ExactCorner.active",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.ExactCorner' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.ExactCorner",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "pattern": {
+      "type": "integer",
+      "title": "Pattern",
+      "x-ui": {
+        "order": 30
+      },
+      "default": 0,
+      "description": "图案类型，当前暂不生效。",
+      "$comment": "Provider note: keep JSON path '$.pattern' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.pattern",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "threshold": {
+      "type": "integer",
+      "title": "Threshold",
+      "x-ui": {
+        "order": 40
+      },
+      "default": 20000,
+      "description": "二值化阈值。",
+      "$comment": "Provider note: keep JSON path '$.threshold' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.threshold",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "DarkRatio": {
+      "type": "number",
+      "title": "Dark Ratio",
+      "x-ui": {
+        "order": 50
+      },
+      "default": 0.5,
+      "description": "黑区对比。",
+      "$comment": "Provider note: keep JSON path '$.DarkRatio' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.DarkRatio",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "FovDist": {
+      "type": "number",
+      "title": "Fov Dist",
+      "x-ui": {
+        "order": 60
+      },
+      "default": 9576.0,
+      "description": "FOV 计算系数。",
+      "$comment": "Provider note: keep JSON path '$.FovDist' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.FovDist",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "cameraDegrees": {
+      "type": "number",
+      "title": "Camera Degrees",
+      "x-ui": {
+        "order": 70
+      },
+      "default": 137.0,
+      "description": "相机角度计算系数。",
+      "$comment": "Provider note: keep JSON path '$.cameraDegrees' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.cameraDegrees",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "HorizontalFov": {
+      "type": "boolean",
+      "title": "Horizontal Fov",
+      "x-ui": {
+        "order": 80
+      },
+      "default": true,
+      "description": "是否计算水平 FOV。",
+      "$comment": "Provider note: keep JSON path '$.HorizontalFov' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.HorizontalFov",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "VerticalFov": {
+      "type": "boolean",
+      "title": "Vertical Fov",
+      "x-ui": {
+        "order": 90
+      },
+      "default": true,
+      "description": "是否计算垂直 FOV。",
+      "$comment": "Provider note: keep JSON path '$.VerticalFov' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.VerticalFov",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "AnglesFov": {
+      "type": "boolean",
+      "title": "Angles Fov",
+      "x-ui": {
+        "order": 100
+      },
+      "default": true,
+      "description": "是否计算对角 FOV。",
+      "$comment": "Provider note: keep JSON path '$.AnglesFov' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.AnglesFov",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "aaLocationWay": {
+      "type": "integer",
+      "title": "Aa Location Way",
+      "x-ui": {
+        "order": 110
+      },
+      "default": 1,
+      "description": "角点定位方式：0 精定位方式，1 拟合法。",
+      "enum": [
+        0,
+        1
+      ],
+      "x-enumDescriptions": [
+        "精定位方式",
+        "拟合法"
+      ],
+      "$comment": "Provider note: keep JSON path '$.aaLocationWay' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.aaLocationWay",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "Distortion": {
+      "type": "object",
+      "title": "Distortion",
+      "x-ui": {
+        "order": 120
+      },
+      "default": {
+        "enable": false,
+        "w_original": 0,
+        "h_original": 0,
+        "cameraMatrix_1": 0.0,
+        "cameraMatrix_5": 0.0,
+        "distCoeffs": []
+      },
+      "description": "畸变校正相关参数。",
+      "additionalProperties": true,
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "title": "Enable",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否启用畸变校正参数。",
+          "$comment": "Provider note: keep JSON path '$.Distortion.enable' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Distortion.enable",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "w_original": {
+          "type": "integer",
+          "title": "W Original",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "description": "原始图像宽度，来自畸变校正文件。",
+          "$comment": "Provider note: keep JSON path '$.Distortion.w_original' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Distortion.w_original",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "h_original": {
+          "type": "integer",
+          "title": "H Original",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 0,
+          "description": "原始图像高度，来自畸变校正文件。",
+          "$comment": "Provider note: keep JSON path '$.Distortion.h_original' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Distortion.h_original",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "cameraMatrix_1": {
+          "type": "number",
+          "title": "Camera Matrix 1",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0.0,
+          "description": "相机矩阵参数，来自畸变校正文件。",
+          "$comment": "Provider note: keep JSON path '$.Distortion.cameraMatrix_1' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Distortion.cameraMatrix_1",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "cameraMatrix_5": {
+          "type": "number",
+          "title": "Camera Matrix 5",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 0.0,
+          "description": "相机矩阵参数，来自畸变校正文件。",
+          "$comment": "Provider note: keep JSON path '$.Distortion.cameraMatrix_5' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Distortion.cameraMatrix_5",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "distCoeffs": {
+          "type": "array",
+          "title": "Dist Coeffs",
+          "x-ui": {
+            "order": 60
+          },
+          "default": [],
+          "description": "畸变系数，来自畸变校正文件。",
+          "items": true,
+          "$comment": "Provider note: keep JSON path '$.Distortion.distCoeffs' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.Distortion.distCoeffs",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.Distortion' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.Distortion",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T07:57:54+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 39,
+      "code": "FOV",
+      "name": "FOV_V2",
+      "version": "2.0",
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "FOV_2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "FOV参数及结果说明.docx"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from the provider-maintained test-case default parameter file.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "This schema may update default/type when the provider-maintained defaultparam.txt changes.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "defaultSource": "provider-test-case-defaultparam",
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "FOV_2.0",
+      "defaultParamFile": "defaultparam.txt",
+      "docFiles": [
+        "FOV参数及结果说明.docx"
+      ]
+    }
+  }
+}

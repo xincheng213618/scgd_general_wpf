@@ -1,6 +1,8 @@
+#pragma warning disable CA1310
 using log4net;
 using System.IO;
 using System.Text.RegularExpressions;
+using ColorVision.UI;
 
 namespace ColorVision.Solution.Terminal
 {
@@ -25,8 +27,7 @@ namespace ColorVision.Solution.Terminal
 
         public CommandHistory()
         {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            _baseDir = Path.Combine(appData, "ColorVision");
+            _baseDir = Environments.DirStateTerminal;
             Directory.CreateDirectory(_baseDir);
             EnsureContext(DefaultContext);
         }
@@ -158,8 +159,7 @@ namespace ColorVision.Solution.Terminal
 
         private string GetFilePath(string context)
         {
-            // "shell" → terminal_history.txt (backward compatible)
-            // others → terminal_history_python.txt, etc.
+            // "shell" -> terminal_history.txt, others -> terminal_history_python.txt, etc.
             string fileName = context == DefaultContext
                 ? "terminal_history.txt"
                 : $"terminal_history_{context}.txt";

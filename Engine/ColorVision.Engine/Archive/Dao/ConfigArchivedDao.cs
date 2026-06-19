@@ -5,35 +5,37 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Archive.Dao
 {
 
-    [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ArchiveConfiguration"),SugarTable("t_scgd_sys_config_archived")]
+    [LocalizedDisplayName(nameof(Resources.ArchiveConfiguration)),SugarTable("t_scgd_sys_config_archived")]
     public class ConfigArchivedModel : ViewModelBase, IEntity
     {
         [SugarColumn(ColumnName ="id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
         private int _Id;
-        [SugarColumn(ColumnName ="path"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DataDirectory"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        [SugarColumn(ColumnName ="path"), LocalizedDisplayName(nameof(Resources.DataDirectory)), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string Path { get => Regex.Replace(_Path, @"(?<!\\)\\(?!\\)", @"\\"); set { _Path = value; OnPropertyChanged(); } }
         private string _Path;
         [SugarColumn(ColumnName ="cron_expression"), DisplayName("Cron表达式"), PropertyEditorType(typeof(CronExpressionPropertiesEditor))]
         public string CronExpression { get => _CronExpression; set { _CronExpression = value; OnPropertyChanged(); } }
         private string _CronExpression;
-        [SugarColumn(ColumnName ="data_save_days"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DataRetentionDays")]
+        [SugarColumn(ColumnName ="data_save_days"), LocalizedDisplayName(nameof(Resources.DataRetentionDays))]
         public int DataSaveDays { get => _DataSaveDays; set { _DataSaveDays = value; OnPropertyChanged(); } }
         private int _DataSaveDays;
 
-        [SugarColumn(ColumnName ="data_save_hours"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DataRetentionHours")]
+        [SugarColumn(ColumnName ="data_save_hours"), LocalizedDisplayName(nameof(Resources.DataRetentionHours))]
         public int DataSaveHours { get => _DataSaveHours; set { _DataSaveHours = value; OnPropertyChanged(); } }
         private int _DataSaveHours;
 
-        [SugarColumn(ColumnName ="excluding_images"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ClearDatabaseOnly")]
+        [SugarColumn(ColumnName ="excluding_images"), LocalizedDisplayName(nameof(Resources.ClearDatabaseOnly))]
         public bool Excludingimages { get => _Excludingimages; set { _Excludingimages = value; OnPropertyChanged(); } }
         private bool _Excludingimages;
 
-        [SugarColumn(ColumnName ="del_local_file"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DeleteLocalFiles")]
+        [SugarColumn(ColumnName ="del_local_file"), LocalizedDisplayName(nameof(Resources.DeleteLocalFiles))]
         public bool DellocalFile { get => _DellocalFile; set { _DellocalFile = value; OnPropertyChanged(); } }
         private bool _DellocalFile;
 
@@ -64,7 +66,7 @@ namespace ColorVision.Engine.Archive.Dao
     }
 
 
-    [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DataBaseConfig"),SugarTable("t_scgd_sys_globle_cfg")]
+    [LocalizedDisplayName(nameof(Resources.DataBaseConfig)),SugarTable("t_scgd_sys_globle_cfg")]
     public class GlobleCfgdModel : ViewModelBase, IEntity
     {
         [SugarColumn(ColumnName ="id"), Browsable(false)]

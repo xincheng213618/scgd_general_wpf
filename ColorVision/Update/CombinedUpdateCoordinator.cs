@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;
@@ -24,6 +25,22 @@ namespace ColorVision.Update
         private static readonly SemaphoreSlim _locker = new(1, 1);
 
         private static CombinedUpdateWorkflowConfig WorkflowConfig => CombinedUpdateWorkflowConfig.Instance;
+
+        private readonly struct UpdatePreviewResult
+        {
+            public UpdatePreviewResult(UpdatePreviewAction action, ApplicationUpdateMode applicationUpdateMode, bool createBackupBeforeIncrementalUpdate)
+            {
+                Action = action;
+                ApplicationUpdateMode = applicationUpdateMode;
+                CreateBackupBeforeIncrementalUpdate = createBackupBeforeIncrementalUpdate;
+            }
+
+            public UpdatePreviewAction Action { get; }
+
+            public ApplicationUpdateMode ApplicationUpdateMode { get; }
+
+            public bool CreateBackupBeforeIncrementalUpdate { get; }
+        }
 
         public static async Task StartInteractiveAsync(CancellationToken cancellationToken = default)
         {
@@ -97,6 +114,10 @@ namespace ColorVision.Update
                     return;
                 }
 
+                ApplySelectedApplicationChoices(
+                    ref applicationPlan,
+                    GetSelectedApplicationUpdateMode(context),
+                    GetSelectedCreateBackupBeforeIncrementalUpdate(context));
                 ApplySelectedPluginUpdates(pluginPlan, context);
                 await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
             }
@@ -146,7 +167,8 @@ namespace ColorVision.Update
                 if (!HasUpdates(applicationPlan, pluginPlan))
                     return;
 
-                UpdatePreviewAction action = await ShowUpdatePreviewAsync(applicationPlan, pluginPlan, allowSkipVersion: applicationPlan != null, isStartupCheck: true);
+                UpdatePreviewResult previewResult = await ShowUpdatePreviewAsync(applicationPlan, pluginPlan, allowSkipVersion: applicationPlan != null, isStartupCheck: true);
+                UpdatePreviewAction action = previewResult.Action;
 
                 if (applicationPlan != null)
                 {
@@ -165,6 +187,10 @@ namespace ColorVision.Update
                     return;
                 }
 
+                ApplySelectedApplicationChoices(
+                    ref applicationPlan,
+                    previewResult.ApplicationUpdateMode,
+                    previewResult.CreateBackupBeforeIncrementalUpdate);
                 await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
             }
             catch (OperationCanceledException)
@@ -236,7 +262,7 @@ namespace ColorVision.Update
 
             if (applicationPlan?.IsIncremental == true && pluginPlan?.HasUpdates == true)
             {
-                StartIncrementalCombinedUpdate(applicationPlan, pluginPlan);
+                StartIncrementalCombinedUpdate(applicationPlan, pluginPlan, applicationPlan.CreateBackupBeforeUpdate);
                 await Task.CompletedTask;
                 return;
             }
@@ -332,9 +358,10 @@ namespace ColorVision.Update
             await Task.CompletedTask;
         }
 
-        private static bool StartIncrementalCombinedUpdate(AutoUpdatePlan applicationPlan, CombinedPluginUpdatePlan pluginPlan)
+        private static bool StartIncrementalCombinedUpdate(AutoUpdatePlan applicationPlan, CombinedPluginUpdatePlan pluginPlan, bool createBackupBeforeUpdate)
         {
-            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+            string applicationDownloadDir = Environments.DirApplicationIncrementalPackageCache;
+            string pluginDownloadDir = Environments.DirPluginPackageCache;
             var manager = Aria2cDownloadManager.GetInstance();
             var client = MarketplaceClient.GetInstance();
             List<Version> applicationVersions = applicationPlan.VersionsToApply.Distinct().ToList();
@@ -354,7 +381,7 @@ namespace ColorVision.Update
             foreach (Version version in applicationVersions)
             {
                 string packageFileName = AutoUpdater.GetIncrementalPackageFileName(version);
-                string cachedPath = Path.Combine(downloadDir, packageFileName);
+                string cachedPath = Path.Combine(applicationDownloadDir, packageFileName);
                 if (AutoUpdater.IsIncrementalPackageFileReady(cachedPath))
                 {
                     applicationPackagePaths[version.ToString()] = cachedPath;
@@ -370,7 +397,7 @@ namespace ColorVision.Update
             {
                 string version = item.VersionInfo.Version;
                 string? expectedHash = item.VersionInfo.FileHash;
-                string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, item.Plugin.PackageName!, version, expectedHash);
+                string? existingFile = MarketplaceClient.GetExistingFileIfValid(pluginDownloadDir, item.Plugin.PackageName!, version, expectedHash);
                 if (existingFile != null)
                 {
                     pluginPackagePaths.Add(existingFile);
@@ -412,14 +439,15 @@ namespace ColorVision.Update
                     return;
                 }
 
-                AutoUpdater.RestartIsIncrementApplication(orderedApplicationPaths, orderedPluginPaths);
+                AutoUpdater.RestartIsIncrementApplication(orderedApplicationPaths, orderedPluginPaths, createBackupBeforeUpdate);
             }
 
             if (applicationPackagesToDownload.Count == 0 && pluginsToDownload.Count == 0)
             {
                 AutoUpdater.RestartIsIncrementApplication(
                     applicationVersions.Select(version => applicationPackagePaths[version.ToString()]).ToList(),
-                    pluginPackagePaths.ToList());
+                    pluginPackagePaths.ToList(),
+                    createBackupBeforeUpdate);
                 return true;
             }
 
@@ -431,7 +459,7 @@ namespace ColorVision.Update
                 string packageFileName = AutoUpdater.GetIncrementalPackageFileName(version);
                 string downloadUrl = AutoUpdater.GetIncrementalPackageDownloadUrl(version);
 
-                manager.AddDownload(downloadUrl, downloadDir, "1:1", task =>
+                manager.AddDownload(downloadUrl, applicationDownloadDir, "1:1", task =>
                 {
                     lock (lockObj)
                     {
@@ -459,7 +487,7 @@ namespace ColorVision.Update
                 string url = client.GetDownloadUrl(item.Plugin.PackageName!, version);
                 string expectedFileName = $"{item.Plugin.PackageName}-{version}.cvxp";
 
-                manager.AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
+                manager.AddDownload(url, pluginDownloadDir, DownloadFileConfig.Instance.Authorization, task =>
                 {
                     lock (lockObj)
                     {
@@ -491,7 +519,7 @@ namespace ColorVision.Update
             return true;
         }
 
-        private static async Task<UpdatePreviewAction> ShowUpdatePreviewAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
+        private static async Task<UpdatePreviewResult> ShowUpdatePreviewAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
         {
             UpdatePreviewDialogContext context = BuildUpdatePreviewContext(applicationPlan, pluginPlan, allowSkipVersion, isStartupCheck);
 
@@ -508,7 +536,10 @@ namespace ColorVision.Update
                 ApplySelectedPluginUpdates(pluginPlan, context);
             }
 
-            return window.ResultAction;
+            return new UpdatePreviewResult(
+                window.ResultAction,
+                GetSelectedApplicationUpdateMode(context),
+                GetSelectedCreateBackupBeforeIncrementalUpdate(context));
         }
 
         private static UpdatePreviewDialogContext CreateCheckingContext()
@@ -565,6 +596,49 @@ namespace ColorVision.Update
             pluginPlan.Updates.RemoveAll(item => !selectedPluginIds.Contains(GetPluginItemId(item)));
         }
 
+        private static void ApplySelectedApplicationChoices(ref AutoUpdatePlan? applicationPlan, ApplicationUpdateMode selectedMode, bool createBackupBeforeIncrementalUpdate)
+        {
+            if (applicationPlan == null || !applicationPlan.IsIncremental)
+                return;
+
+            if (selectedMode != ApplicationUpdateMode.Full)
+            {
+                AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate = createBackupBeforeIncrementalUpdate;
+                ConfigService.Instance.SaveConfigs();
+
+                applicationPlan = new AutoUpdatePlan
+                {
+                    CurrentVersion = applicationPlan.CurrentVersion,
+                    LatestVersion = applicationPlan.LatestVersion,
+                    VersionsToApply = applicationPlan.VersionsToApply,
+                    IsIncremental = true,
+                    CreateBackupBeforeUpdate = createBackupBeforeIncrementalUpdate,
+                };
+                return;
+            }
+
+            applicationPlan = new AutoUpdatePlan
+            {
+                CurrentVersion = applicationPlan.CurrentVersion,
+                LatestVersion = applicationPlan.LatestVersion,
+                VersionsToApply = new[] { applicationPlan.LatestVersion },
+                IsIncremental = false,
+                CreateBackupBeforeUpdate = false,
+            };
+        }
+
+        private static ApplicationUpdateMode GetSelectedApplicationUpdateMode(UpdatePreviewDialogContext context)
+        {
+            return context.Items.FirstOrDefault(item => string.Equals(item.ItemId, "application", StringComparison.OrdinalIgnoreCase))?.ApplicationUpdateMode
+                ?? ApplicationUpdateMode.Incremental;
+        }
+
+        private static bool GetSelectedCreateBackupBeforeIncrementalUpdate(UpdatePreviewDialogContext context)
+        {
+            return context.Items.FirstOrDefault(item => string.Equals(item.ItemId, "application", StringComparison.OrdinalIgnoreCase))?.CreateBackupBeforeIncrementalUpdate
+                ?? AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate;
+        }
+
         private static UpdatePreviewDialogContext BuildUpdatePreviewContext(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool allowSkipVersion, bool isStartupCheck)
         {
             UpdatePreviewDialogContext context = new()
@@ -579,6 +653,8 @@ namespace ColorVision.Update
 
             if (applicationPlan != null)
             {
+                string incrementalSummary = string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationCardSummaryIncrementalFormat, applicationPlan.VersionsToApply.Count);
+                string fullSummary = Resources.UpdatePreviewApplicationCardSummaryFull;
                 UpdatePreviewItem previewItem = new()
                 {
                     ItemId = "application",
@@ -590,10 +666,15 @@ namespace ColorVision.Update
                         : Resources.UpdatePreviewApplicationFullPackageLabel,
                     CurrentVersion = applicationPlan.CurrentVersion.ToString(),
                     TargetVersion = applicationPlan.LatestVersion.ToString(),
-                    Summary = BuildApplicationCardSummary(applicationPlan),
+                    Summary = applicationPlan.IsIncremental ? incrementalSummary : fullSummary,
                     IsSelectable = false,
+                    CanChooseApplicationUpdateMode = applicationPlan.IsIncremental,
+                    CanChooseIncrementalBackup = applicationPlan.IsIncremental,
+                    ApplicationUpdateMode = applicationPlan.IsIncremental ? ApplicationUpdateMode.Incremental : ApplicationUpdateMode.Full,
+                    CreateBackupBeforeIncrementalUpdate = applicationPlan.IsIncremental && AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate,
                 };
 
+                previewItem.ConfigureApplicationUpdateModePresentation(applicationPlan.VersionsToApply.Count, incrementalSummary, fullSummary);
                 context.Items.Add(previewItem);
             }
 
@@ -648,14 +729,6 @@ namespace ColorVision.Update
                 builder.Append($" {string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummarySkippedCount, pluginPlan.SkippedIncompatiblePlugins.Count)}");
 
             return builder.ToString();
-        }
-
-        private static string BuildApplicationCardSummary(AutoUpdatePlan applicationPlan)
-        {
-            if (applicationPlan.IsIncremental)
-                return string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationCardSummaryIncrementalFormat, applicationPlan.VersionsToApply.Count);
-
-            return Resources.UpdatePreviewApplicationCardSummaryFull;
         }
 
         private static string BuildPluginCardSummary(CombinedPluginUpdateItem item)

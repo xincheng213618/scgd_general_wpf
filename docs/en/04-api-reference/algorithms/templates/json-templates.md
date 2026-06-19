@@ -24,6 +24,37 @@ Therefore, it is more like a "JSON template branch within the database" rather t
 
 If you just want to see "how JSON templates are currently stored, edited, and connected into the template window," these files already cover the main path.
 
+## Current JSON Template Catalog
+
+`Jsons/` is a family of concrete algorithm templates sharing the same JSON host.
+
+| Directory | Template identity | Runtime / result | Handoff focus |
+| --- | --- | --- | --- |
+| `LedCheck2/` | `TemplateLedCheck2`, `TemplateDicId = 18`, `Code = FindLED` | `Event_OLED_FindDotsArrayMem_GetData` | LED dot-array V2 JSON schema path. |
+| `LEDStripDetectionV2/` | `TemplateLEDStripDetectionV2`, `TemplateDicId = 26`, `Code = LEDStripDetection` | `LEDStripDetection`, `Version = 2.0`, `ViewHandleLEDStripDetectionV2` | Separate from legacy `LEDStripDetection/`. |
+| `OLEDAOI/` | `TemplateOLEDAOI`, `TemplateDicId = 28`, `Code = OLED.AOI` | `OLEDAOI`, `Version = 2.0`, `ViewHandleOLEDAOI` | Main OLED AOI template plus black-screen, quad-image, and recheck child templates. |
+| `BinocularFusion/` | `TemplateBinocularFusion`, `TemplateDicId = 35`, `Code = ARVR.BinocularFusion` | `ARVR.BinocularFusion`, `ViewHandleBinocularFusion` | ARVR binocular fusion. |
+| `SFRFindROI/` | `TemplateSFRFindROI`, `TemplateDicId = 36`, `Code = ARVR.SFR.FindROI` | `ARVR.SFR.FindROI`, `ViewHandleSFRFindROI` | SFR ROI discovery path. |
+| `BlackMura/` | `TemplateBlackMura`, `TemplateDicId = 37`, `Code = BlackMura.Caculate` | `BlackMura.Caculate`, `ViewHandleBlackMura` | BlackMura computation and display. |
+| `Ghost2/`, `FOV2/`, `Distortion2/` | `TemplateGhostQK`, `TemplateDFOV`, `TemplateDistortion2` | `Version = 2.0` handlers | V2 display depends on result version. |
+| `MTF2/`, `SFR2/` | `TemplateMTF2`, `TemplateSFR2` | `MTF` / `SFR`, `Version = 2.0` | Separate from older ARVR MTF/SFR templates. |
+| `AAFindPoints/`, `BuildPOIAA/` | `TemplateAAFindPoints`, `TemplateBuildPOIAA` | `ARVR.AA.FindPoints`, `Version = 2.0` | AA point finding and POI build path. |
+| `PoiAnalysis/`, `FindCross/` | `TemplatePoiAnalysis`, `TemplateFindCross` | `Version = 1.0` style handlers | Keep version checks in mind for result display. |
+| `ImageROI/` | `TemplateImageROI`, `TemplateDicId = 52`, `Code = Image.ROI` | `Image.ROI` | JSON ROI, not the strong-typed ImageCropping path. |
+| `KB/` | `TemplateKB`, `TemplateDicId = 150`, `Code = KB` | `KB`, `ViewHandleKB` | KB project/algorithm template. |
+| `Deprecated/` | `TemplateCaliAngleShift`, `TemplateCompoundImg` | Legacy events and handlers | Compatibility only; do not use as the first choice for new work. |
+
+`Schemas/schema-index.json` is the schema catalog. When adding or changing a JSON template, check both the concrete schema file and the schema index.
+
+## V2 And Legacy Boundaries
+
+| Family | JSON path | Legacy / strong-typed path | Boundary |
+| --- | --- | --- | --- |
+| LED | `LedCheck2/`, `LEDStripDetectionV2/` | `LedCheck/`, `LEDStripDetection/` | V2 uses JSON schema and often sends `Version = 2.0`. |
+| ARVR quality | `MTF2/`, `SFR2/`, `FOV2/`, `Ghost2/`, `Distortion2/` | ARVR strong-typed folders | Result handlers commonly check `result.Version`. |
+| ROI / cropping | `ImageROI/`, `SFRFindROI/` | `ImageCropping/`, `FindLightArea/`, `POI/` | Parameter sources and result tables differ. |
+| OLED AOI | `OLEDAOI/` and child folders | Project/OLED legacy paths | Shared domain, different event names and schemas. |
+
 ## How the Current Main Chain Runs
 
 ### Host Base Class
@@ -98,6 +129,20 @@ Current `EditTemplateJson` already supports switching between property mode and 
 ### "Validation" Is Currently Mainly Event-Triggered, Not a Complete Compiler
 
 `CheckCommand` triggers the `JsonValueChanged` event chain; how it responds specifically depends on the caller. Do not write it as an independent JSON rule engine.
+
+### Deprecated Is Not the New Feature Entry
+
+`Deprecated/` still keeps old templates and handlers such as `CaliAngleShift` and `CompoundImg`. Use it for historical compatibility, not as the default extension point for new project work.
+
+## Acceptance Checklist
+
+| Scenario | Required check |
+| --- | --- |
+| Edit JSON | Text mode and property mode preserve the same JSON fields |
+| Maintain schema | The schema file and `Schemas/schema-index.json` both point to the template |
+| Run V2 algorithm | `TemplateParam`, `Version`, event name, and service expectation match |
+| Display result | `ViewHandle*.cs` version checks match actual result data |
+| Import/export | Name, `Code`, defaults, and JSON content survive a round trip |
 
 ## Recommended Reading Order
 

@@ -20,6 +20,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "secret_key": "change-this-in-production",
     "app_release_keep_count": 5,
     "plugin_package_keep_count": 3,
+    "transfer_upload_dir": "Transfer",
     "upload_auth": {"username": "admin", "password": "admin"},
 }
 

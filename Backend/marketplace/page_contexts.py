@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from storage_browser import build_storage_page_context
+import storage_browser
 from update_retention import build_update_summary, scan_update_packages, scan_update_preview_fast
 
 
@@ -287,7 +287,7 @@ def build_index_page_context(
     if update_packages is None:
         update_packages, update_summary = scan_update_preview_fast(storage)
 
-    tools_context = get_tool_preview() if get_tool_preview is not None else build_storage_page_context(storage, "Tool")
+    tools_context = get_tool_preview() if get_tool_preview is not None else storage_browser.build_storage_page_context(storage, "Tool")
     filesystem_spotlight = _build_filesystem_spotlight(overview)
     recent_change_dashboard, recent_change_summary = _build_recent_change_dashboard(
         app_info,
@@ -398,7 +398,7 @@ def build_tools_page_context(storage: Path, *, cache_manager=None) -> dict[str, 
         except Exception as exc:
             print(f"[tool_index] page read fallback: {exc}")
 
-    context = build_storage_page_context(storage, "Tool")
+    context = storage_browser.build_storage_page_context(storage, "Tool")
     return {
         "items": context["items"],
         "summary": context["summary"],
@@ -433,7 +433,7 @@ def build_browse_page_context(
     limit: int | None = None,
     offset: int = 0,
 ) -> dict[str, Any]:
-    context = build_storage_page_context(storage, relative_path, limit=limit, offset=offset)
+    context = storage_browser.build_storage_page_context(storage, relative_path, limit=limit, offset=offset)
     return {
         "items": context["items"],
         "summary": context["summary"],

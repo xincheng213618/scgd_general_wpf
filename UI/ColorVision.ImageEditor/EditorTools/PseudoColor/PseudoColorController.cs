@@ -1,6 +1,6 @@
+#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
-using ColorVision.ImageEditor.Abstractions;
 using log4net;
 using System;
 using System.ComponentModel;
@@ -13,19 +13,31 @@ using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 {
+    internal readonly record struct PseudoColorFrameRequest(
+        uint Min,
+        uint Max,
+        ColormapTypes ColormapTypes,
+        int Channel,
+        bool IsAutoRangeEnabled,
+        uint DataMin,
+        uint DataMax)
+    {
+        public bool HasValidAutoRange => IsAutoRangeEnabled && DataMin < DataMax;
+    }
+
     internal readonly record struct PseudoColorPreviewRequest(int Version, bool IsEnabled, PseudoColorFrameRequest? Request);
 
-    internal sealed class PseudoColorController : IPseudoColorService, IDisposable
+    internal sealed class PseudoColorController : IDisposable
     {
         private const string RenderTaskKey = "PseudoColorRender";
 
         private static readonly ILog log = LogManager.GetLogger(typeof(PseudoColorController));
 
-        private readonly ImageView _owner;
+        private readonly ImageProcessingContext _owner;
         private readonly PseudoColorToolState _state;
         private int _renderVersion;
 
-        public PseudoColorController(ImageView owner, PseudoColorToolState state)
+        public PseudoColorController(ImageProcessingContext owner, PseudoColorToolState state)
         {
             _owner = owner;
             _state = state;
@@ -96,7 +108,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             });
         }
 
-        public bool TryCreateRequest(out PseudoColorFrameRequest request, int? channelOverride = null)
+        private bool TryCreateRequest(out PseudoColorFrameRequest request, int? channelOverride = null)
         {
             var snapshot = InvokeOnUiThread(() =>
             {
@@ -106,27 +118,6 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
             request = snapshot.Request;
             return snapshot.IsEnabled;
-        }
-
-        public void ApplyProcessedImage(HImage pseudoImage)
-        {
-            if (!IsEnabled)
-            {
-                pseudoImage.Dispose();
-                return;
-            }
-
-            if (!HImageExtension.UpdateWriteableBitmap(_owner.FunctionImage, pseudoImage))
-            {
-                var image = pseudoImage.ToWriteableBitmap();
-                pseudoImage.Dispose();
-                _owner.FunctionImage = image;
-            }
-
-            if (IsEnabled)
-            {
-                _owner.ImageShow.Source = _owner.FunctionImage;
-            }
         }
 
         public void RestoreSource()
@@ -335,11 +326,11 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
             if (frameRequest.HasValidAutoRange)
             {
-                ret = OpenCVMediaHelper.M_PseudoColorAutoRange((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel, frameRequest.DataMin, frameRequest.DataMax);
+                ret = OpenCVMediaHelper.ApplyPseudoColorAutoRange((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel, frameRequest.DataMin, frameRequest.DataMax);
             }
             else
             {
-                ret = OpenCVMediaHelper.M_PseudoColor((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel);
+                ret = OpenCVMediaHelper.ApplyPseudoColor((HImage)sourceImage, out hImageProcessed, frameRequest.Min, frameRequest.Max, frameRequest.ColormapTypes, frameRequest.Channel);
             }
 
             var algoMs = stopwatch.Elapsed.TotalMilliseconds;

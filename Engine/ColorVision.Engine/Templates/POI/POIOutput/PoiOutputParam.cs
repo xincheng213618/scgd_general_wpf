@@ -1,4 +1,5 @@
-﻿
+﻿#pragma warning disable CA1708
+
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.POI.POIOutput

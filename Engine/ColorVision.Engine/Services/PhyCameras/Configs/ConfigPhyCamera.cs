@@ -49,6 +49,33 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Fileversion { get => _Fileversion; set { _Fileversion = value; OnPropertyChanged(); } }
         private int _Fileversion = 2;
 
+        public bool TryGetHkRoiAlignmentWarning(out string warning)
+        {
+            warning = string.Empty;
+            if (CameraCfg == null || !RequiresHkRoiAlignment())
+            {
+                return false;
+            }
+
+            var invalidFields = CameraCfg.GetRoiSizeMisalignedFields();
+            if (invalidFields.Count == 0)
+            {
+                return false;
+            }
+
+            warning =
+                $"HK相机ROI宽高需要按{PhyCameraCfg.HkRoiAlignment}像素步进设置，不能只保证为整数。{Environment.NewLine}{Environment.NewLine}" +
+                $"当前ROI：Width={CameraCfg.Width}, Height={CameraCfg.Height}{Environment.NewLine}" +
+                $"不符合项：{string.Join("、", invalidFields)}{Environment.NewLine}{Environment.NewLine}" +
+                $"请将上述值调整为{PhyCameraCfg.HkRoiAlignment}的倍数后再保存。";
+            return true;
+        }
+
+        private bool RequiresHkRoiAlignment()
+        {
+            return CameraModel is CameraModel.HK_USB or CameraModel.HK_CARD or CameraModel.HK_FG_CARD;
+        }
+
         public void ApplyTo(ConfigCamera target, bool includeCameraId = true, bool includeCameraType = true)
         {
             ArgumentNullException.ThrowIfNull(target);
@@ -79,48 +106,48 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
     }
 
-    [LocalizedDisplayName(typeof(Resources), "SectionParamLimits")]
+    [LocalizedDisplayName(nameof(Resources.SectionParamLimits))]
     public class CameraParameterLimit : ViewModelBase
     {
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.DefaultGain))]
+        [LocalizedDisplayName(nameof(Resources.DefaultGain))]
         public float GainDefault { get => _GainDefault; set { _GainDefault = value; OnPropertyChanged(); } }
         private float _GainDefault = 10;
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.MinGain))]
+        [LocalizedDisplayName(nameof(Resources.MinGain))]
         public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
         private float _GainMin;
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.MaxGain))]
+        [LocalizedDisplayName(nameof(Resources.MaxGain))]
         public float GainMax { get => _GainMax; set { _GainMax = value; OnPropertyChanged(); } }
         private float _GainMax = 100;
 
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.DefaultExpTime))]
+        [LocalizedDisplayName(nameof(Resources.DefaultExpTime))]
         public float ExpDefalut { get => _ExpDefalut; set { _ExpDefalut = value; OnPropertyChanged(); } }
         private float _ExpDefalut = 100;
 
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.MinExpTime))]
+        [LocalizedDisplayName(nameof(Resources.MinExpTime))]
         public float ExpMin { get => _ExpMin; set { _ExpMin = value; OnPropertyChanged(); } }
         private float _ExpMin = 1;
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.MaxExpTime))]
+        [LocalizedDisplayName(nameof(Resources.MaxExpTime))]
         public float ExpMax { get => _ExpMax; set { _ExpMax = value; OnPropertyChanged(); } }
         private float _ExpMax = 60000;
 
     }
 
-    [LocalizedDisplayName(typeof(Resources), "SectionFileService")]
+    [LocalizedDisplayName(nameof(Resources.SectionFileService))]
     public class FileSeviceConfig :ViewModelBase
     {
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.DataSavePath)), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        [LocalizedDisplayName(nameof(Resources.DataSavePath)), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; OnPropertyChanged(); } }
         private string _FileBasePath = "D:\\CVTest";
         /// <summary>
         /// 端口地址
         /// </summary>
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.PortAddress))]
+        [LocalizedDisplayName(nameof(Resources.PortAddress))]
         public string Endpoint { get => _Endpoint; set { _Endpoint = value; OnPropertyChanged(); } }
         private string _Endpoint = "127.0.0.1";
         /// <summary>
         /// 端口范围
         /// </summary>
-        [LocalizedDisplayName(typeof(Resources), nameof(Resources.PortRange))]
+        [LocalizedDisplayName(nameof(Resources.PortRange))]
         public string PortRange { get => _PortRange; set { _PortRange = value; OnPropertyChanged(); } }
         private string _PortRange = ((Func<string>)(() => { int fromPort = Math.Abs(new Random().Next()) % 99 + 6600; return string.Format("{0}-{1}", fromPort, fromPort + 5); }))();
 

@@ -358,27 +358,37 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public void FireFinished(CVStartCFC startAction)
 	{
+		if (startAction == null)
+		{
+			logger.WarnFormat("Fire Flow Finished ignored because start action is null");
+			return;
+		}
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
-		string text = string.Empty;
+		string message = string.Empty;
+		string errorNodeName = string.Empty;
 		if (flowStatus == StatusTypeEnum.Failed || flowStatus == StatusTypeEnum.OverTime)
 		{
-			string text2 = string.Empty;
-			if (startAction.Data.ContainsKey("ErrorNodeName"))
+			Dictionary<string, object> data = startAction.Data;
+			errorNodeName = GetDataString(data, "ErrorNodeName");
+			message = GetDataString(data, "Msg");
+			if (string.IsNullOrWhiteSpace(message) && !string.IsNullOrWhiteSpace(errorNodeName) && data != null && data.TryGetValue(errorNodeName, out object nodeStatusObj))
 			{
-				text2 = startAction.Data["ErrorNodeName"].ToString();
+				message = Convert.ToString(nodeStatusObj) ?? string.Empty;
 			}
-			if (startAction.Data.ContainsKey(text2))
+			if (string.IsNullOrWhiteSpace(message))
 			{
-				string text3 = startAction.Data[text2].ToString();
-				text = text2 + ":" + text3;
-			}
-			if (string.IsNullOrEmpty(text) && startAction.Data.ContainsKey("Msg"))
-			{
-				text = startAction.Data["Msg"].ToString();
+				message = flowStatus.ToString();
 			}
 		}
-		logger.InfoFormat("Fire Flow Finished Before");
-		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, text));
-		logger.InfoFormat("Fire Flow Finished End");
+		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message, errorNodeName));
+	}
+
+	private static string GetDataString(Dictionary<string, object> data, string key)
+	{
+		if (data != null && data.TryGetValue(key, out object value))
+		{
+			return Convert.ToString(value) ?? string.Empty;
+		}
+		return string.Empty;
 	}
 }

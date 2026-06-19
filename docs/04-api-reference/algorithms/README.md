@@ -18,10 +18,11 @@
 ### 入口页
 
 - [算法系统概览](./overview.md)：当前实现链的整体说明，先看这页最省时间。
+- [当前算法模板覆盖清单](./current-algorithm-template-coverage.md)：把 `Templates/` 实际目录逐项映射到文档入口和后续补齐重点。
 
 ### 专题目录
 
-- `templates/`：模板管理、流程模板、JSON 模板、POI/ARVR 等专题页。
+- `templates/`：模板管理、流程模板、JSON 模板、POI/ARVR、FindLightArea、JND、LED 检测、BuzProduct、Validate、Compliance、DataLoad、Matching、SysDictionary、FocusPoints、ImageCropping、模板菜单等专题页。
 - `detectors/`：少量缺陷/检测类专题。
 - `primitives/`：少量基础构件说明。
 
@@ -49,6 +50,7 @@
 ## 推荐阅读顺序
 
 1. 先看 [算法系统概览](./overview.md)，建立运行时主链认知。
-2. 再对照 [Templates 模块分析](../../03-architecture/components/templates/analysis.md)，理解目录和注册入口。
-3. 如果关注流程模板，再看 [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md)。
-4. 最后按具体业务域进入 `templates/` 下的单页，并始终与源码对照阅读。
+2. 再看 [当前算法模板覆盖清单](./current-algorithm-template-coverage.md)，确认每个 `Templates/` 子目录的文档入口。
+3. 再对照 [Templates 模块分析](../../03-architecture/components/templates/analysis.md)，理解目录和注册入口。
+4. 如果关注流程模板，再看 [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md)。
+5. 最后按具体业务域进入 `templates/` 下的单页，例如 [FindLightArea 发光区定位模板](./templates/find-light-area.md)、[JND 模板](./templates/jnd-template.md)、[LED 检测模板](./templates/led-detection.md)、[BuzProduct 产品业务参数模板](./templates/buz-product-template.md)、[Validate 判定规则模板](./templates/validate-rules.md)、[Compliance 结果交接](./templates/compliance-results.md)、[DataLoad 数据加载模板](./templates/data-load-template.md)、[Matching 模板匹配](./templates/matching-template.md)、[SysDictionary 系统字典模板](./templates/sys-dictionary-template.md)、[FocusPoints 关注点模板](./templates/focus-points-template.md)、[ImageCropping 图像裁剪模板](./templates/image-cropping-template.md)、[模板菜单入口](./templates/template-menu-entries.md)，并始终与源码对照阅读。

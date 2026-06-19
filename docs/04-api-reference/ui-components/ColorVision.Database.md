@@ -20,7 +20,6 @@
 - `IDatabaseBrowserProvider.cs`：浏览器 Provider 契约
 - `DatabaseBrowserModels.cs`：库、表、列、分页模型
 - `MySqlControl.cs`：MySQL 配置和 Provider 创建
-- `SqliteLog/SqliteLogManager.cs`：SQLite 日志数据库和 Provider 创建
 - `BaseTableDao.cs`、`EntityBase.cs`、`ViewEntity.cs`：业务实体访问层基础类型
 
 ## 关键入口类型
@@ -41,7 +40,6 @@
 `DatabaseBrowserProviderRegistry` 负责统一管理可浏览的数据源。它当前会懒加载默认 Provider，并向浏览器暴露：
 
 - MySQL 默认 Provider
-- SQLite 日志 Provider
 - 其他调用方自行注册的 Provider
 
 因此它是当前数据库浏览器体系的调度入口。
@@ -68,12 +66,6 @@
 
 因此 MySQL 相关入口应直接顺着它去看，而不是只看 `BaseTableDao<T>`。
 
-### SqliteLogManager
-
-`SqliteLogManager` 既是 SQLite 日志管理器，也是浏览器体系里的一个实际 Provider 来源。它会提供日志数据库路径和对应的 SQLite 浏览入口。
-
-这也说明 `ColorVision.Database` 当前并不是只服务“业务数据”，还承接了一部分运行日志落地与浏览职责。
-
 ### BaseTableDao / EntityBase / ViewEntity
 
 这些类型仍然是当前业务层实体访问的基础：
@@ -94,6 +86,49 @@
 3. 浏览器按表结构动态展示 `DataTable` 结果。
 4. 新增、编辑、删除通过 Provider 的通用写接口落回数据库。
 5. 对于业务代码，实体和 DAO 体系仍可以并行使用，但不再控制浏览器 UI。
+
+## 作为 DLL 使用时
+
+### 应该引用它的场景
+
+- 业务模块需要 `BaseTableDao<T>`、`EntityBase`、`ViewEntity` 这类 DAO/实体基础。
+- 插件或项目包需要 MySQL 配置、连接窗口或状态栏入口。
+- 需要把某种数据库暴露给统一数据库浏览器。
+- 需要通过 `SqlSugarCore` 访问现有业务表。
+
+### 新增数据库浏览 Provider
+
+1. 实现 `IDatabaseBrowserProvider`。
+2. 实现库、表、列、分页查询、插入、更新、删除。
+3. 在合适的初始化位置注册到 `DatabaseBrowserProviderRegistry`。
+4. 打开 `DatabaseBrowserWindow` 验证库表树、分页、编辑和删除。
+
+### 发布注意
+
+数据库模块本身不携带数据库服务。现场问题要区分三件事：DLL 是否加载、数据库配置是否正确、目标 MySQL/SQLite 文件或服务是否可访问。
+
+### DLL 发布验收表
+
+| 验收项 | 要查什么 | 通过标准 |
+| --- | --- | --- |
+| 目标框架产物 | `net8.0-windows7.0`、`net10.0-windows7.0` | 两个 TFM 都能生成 DLL、`.nupkg`、`.snupkg` |
+| 包依赖 | `SqlSugarCore`、`Newtonsoft.Json`、`log4net`、`ColorVision.UI` | NuGet 包和宿主输出目录能解析这些依赖 |
+| 包内说明 | `README.md`、`.csproj` 的 `PackageReadmeFile` | 包内 README 与当前数据库浏览器能力一致 |
+| MySQL 配置 | `MySqlControl`、设置窗口 | 连接字符串、数据库名、超时和连接测试能按现场配置工作 |
+| Provider 注册 | `DatabaseBrowserProviderRegistry` | 默认 MySQL Provider 和调用方注册的 Provider 都能在浏览器里出现 |
+| 通用浏览 | `DatabaseBrowserWindow` | 库、表、列、分页、搜索、排序能展示真实数据库结构 |
+| 通用写入 | `IDatabaseBrowserProvider` | 有主键表能新增、修改、删除；无主键或无权限时给出明确失败 |
+
+### 现场故障首查
+
+| 现象 | 第一检查点 |
+| --- | --- |
+| 数据库浏览器没有数据源 | 检查 `DatabaseBrowserProviderRegistry.GetProviders()` 是否加载默认 Provider，以及 MySQL 配置是否可用 |
+| MySQL 连接失败 | 先查 `MySqlControl.GetConnectionString(...)` 生成内容、账号权限、网络和数据库服务 |
+| 表能看不能改 | 检查 Provider 的主键识别、数据库账号写权限和 `CanWriteCurrentTable` 判断 |
+| 保存时报 SQL 错误 | 先看 `IDatabaseBrowserProvider.Insert/Update/Delete` 的参数映射和字段类型 |
+| 运行时找不到 SqlSugar | 检查发布包和宿主输出目录是否包含 `SqlSugarCore` 及其传递依赖 |
+| SQLite 或 MySQL 文件被占用 | 区分数据库服务锁、文件权限和 UI 窗口未释放连接 |
 
 ## 当前实现有哪些边界
 
@@ -119,12 +154,11 @@
 - `DatabaseBrowserProviderRegistry.cs`
 - `IDatabaseBrowserProvider.cs`
 
-### 想看 MySQL 和 SQLite 的实际接入
+### 想看 MySQL 的实际接入
 
 先看：
 
 - `MySqlControl.cs`
-- `SqliteLog/SqliteLogManager.cs`
 
 ### 想看业务实体访问层
 

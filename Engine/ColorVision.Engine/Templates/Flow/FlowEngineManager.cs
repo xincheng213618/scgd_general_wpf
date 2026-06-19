@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1822,CA1859,CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;

@@ -1,10 +1,10 @@
 # ARVR テンプレート
 
-このページでは、現在のウェアハウスに実際に表示されている ARVR テンプレート ファミリについてのみ説明しており、「光アルゴリズムの教科書 + 統一パラメータ マニュアル」の古いドラフトは現在メンテナンスされていません。
+このページは、現在のリポジトリに実在する ARVR テンプレート群だけを扱います。光学アルゴリズムの教材や汎用パラメータ表ではなく、交代担当者が現在の実装を追えるための地図です。
 
-## このテンプレート ファミリは現在何をしているのでしょうか?
+## 現在の役割
 
-現在のソース コードの状況によると、ARVR は単一のテンプレートではなく、並列して存在する一連のテンプレートと表示アルゴリズムです。
+現在の ARVR は単一テンプレートではなく、複数の伝統的テンプレート、JSON V2 テンプレート、POI テンプレート、Flow ノードが組み合わさった実行面です。
 
 - `MTF`
 - `SFR`
@@ -12,149 +12,110 @@
 - `Distortion`
 - `Ghost`
 
-これらの実装は同じホスト フレームワークを共有していますが、パラメータ モデル、結果のパフォーマンス、POI に依存するかどうかは統一されていません。さらに Flow ノードに進むと、`SFR_FindROI` などのテンプレートなどの JSON バリアントも混合します。
+これらは似た宿主構造を使いますが、パラメータ、結果表示、POI 依存は同じではありません。Flow ではさらに `SFR_FindROI`、`ARVR.BinocularFusion`、`FindCross` などの JSON 分岐も混ざります。
 
-したがって、このページは、汎用パラメータ テーブルを維持しようとするよりも、「ARVR ファミリ マップ」としての方が適しています。
-
-## 現時点で最も重要なファイル
+## 重要なファイル
 
 - `Engine/ColorVision.Engine/Templates/ARVR/MTF/TemplateMTF.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/MTF/MTFParam.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/MTF/AlgorithmMTF.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/MTF/ViewHandleMTF.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/SFR/SFRParam.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/SFR/AlgorithmSFR.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/SFR/WindowSFR.xaml.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/FOV/FOVParam.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/FOV/AlgorithmFOV.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/FOV/DisplayFOV.xaml.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/Distortion/DistortionParam.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/Distortion/AlgorithmDistortion.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/Distortion/ViewResultDistortion.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs`
 - `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/AlgorithmNodeConfigurators.cs`
 - `Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs`
 
-## 現在のメインチェーンを分割する方法
+## 現在のテンプレートマトリクス
 
-###MTF
+| ファミリ | 伝統的テンプレート | 辞書/コード | 実行イベント | 主要リクエストパラメータ | 結果入口 |
+| --- | --- | --- | --- | --- | --- |
+| `FOV` | `TemplateFOV` | `TemplateDicId = 6`, `Code = FOV` | `Event_FOV_GetData` | `TemplateParam` | `ViewHandleFOV`, `ViewResultAlgType.FOV` |
+| `Ghost` | `TemplateGhost` | `TemplateDicId = 7`, `Code = ghost` | `Ghost` | `TemplateParam`, `Color` | `ViewHandleGhost`, `ViewResultAlgType.Ghost` |
+| `MTF` | `TemplateMTF` | `TemplateDicId = 8`, `Code = MTF` | `Event_MTF_GetData` | `TemplateParam`, `POITemplateParam` | `ViewHandleMTF`, `ViewResultAlgType.MTF` |
+| `SFR` | `TemplateSFR` | `TemplateDicId = 9`, `Code = SFR` | `Event_SFR_GetData` | `TemplateParam`, `POITemplateParam` | `ViewHandleSFR`, `ViewResultAlgType.SFR` |
+| `Distortion` | `TemplateDistortionParam` | `TemplateDicId = 10`, `Code = distortion` | `Distortion` | `TemplateParam` | `ViewHandleDistortion`, `ViewResultAlgType.Distortion` |
+| `AOI` | `TemplateAOIParam` | `TemplateDicId = 12`, `Code = AOI` | 現時点では独立した主実行入口ではない | テンプレート設定 | 主に ARVR/AOI パラメータ設定 |
 
-`TemplateMTF` は、現在次のような古典的なパラメータ テンプレートです。
+この表のイベントは手動アルゴリズムクラスから見える経路です。Flow の `operatorCode` は JSON 分岐も含むため、次の Flow 表も必ず確認してください。
 
-- `Code = MTF`
-- `TemplateDicId = 8`
+## 主な手動実行チェーン
 
-`MTFParam` で現在最も直接表示されるパラメータは次のとおりです。
+### MTF
 
-- `MTF_dRatio`
-- `eEvaFunc`
-- `dx`
-- `dy`
-- `ksize`
+`TemplateMTF` は `TemplateDicId = 8`、`Code = MTF` の伝統的テンプレートです。`AlgorithmMTF` はローカルで数値計算を完結するのではなく、`TemplateMTF` と `TemplatePoi` を選択し、`TemplateParam` と `POITemplateParam` を含む `Event_MTF_GetData` を送ります。
 
-`AlgorithmMTF` の実際の動作はネイティブ グラフではありませんが、次のようになります。
-
-- `TemplateMTF` を開きます
-- `TemplatePoi` を開きます
-- `POITemplateParam` の組み立て
-- `Event_MTF_GetData` をリリース
-
-これは、現在の MTF 実行チェーンが POI から独立して存在するのではなく、POI テンプレートに明示的に依存していることを示しています。
-
-結果側で最も興味深いのは、パラメーター クラスではなく、`ViewHandleMTF` です。それは次のことを行います:
-
-- 結果をCSVにエクスポート
-- 統計的な最大値、最小値、平均値、分散、均一性
-- `ViewResultAlgType.MTF` プロセッサとして UI にアクセス
+結果側では `ViewHandleMTF` が `ViewResultAlgType.MTF` を処理し、CSV エクスポート、最大/最小/平均/分散/均一性の集計を担当します。
 
 ### SFR
 
-`SFRParam` は現在、古いドキュメントよりもはるかに単純で、直接表示できるコア パラメーターは `Gamma` のみです。実際の表示と結果の相互作用は次の点に当てはまります。
+`TemplateSFR` は `TemplateDicId = 9`、`Code = SFR` です。`AlgorithmSFR` も POI を必要とし、`Event_SFR_GetData` を送ります。結果表示では `WindowSFR` が `Pdfrequency` と `PdomainSamplingData` を曲線に戻し、閾値や周波数変換を扱います。
 
-- `AlgorithmSFR`
-- `WindowSFR`
+### FOV
 
-`AlgorithmSFR` は MTF と同じであり、`Event_SFR_GetData` を発行する前にさらに `TemplatePoi` が必要です。 `WindowSFR` は、結果の `Pdfrequency` と `PdomainSamplingData` を曲線にデシリアライズし、しきい値と周波数の変換を提供します。
+`TemplateFOV` は `TemplateDicId = 6`、`Code = FOV` です。`AlgorithmFOV` は `Event_FOV_GetData` を送ります。`DisplayFOV` はサービスマネージャから画像ソースを取り、バッチ、Raw ファイル、ローカル画像の入力を扱います。
 
-したがって、現在の SFR ドキュメントでは、テンプレート パラメーターについてのみ説明するだけでなく、結果ウィンドウも含めることができます。
+### Distortion
 
-### 視野
+`TemplateDistortionParam` は `TemplateDicId = 10`、`Code = distortion` です。`AlgorithmDistortion` は `Distortion` イベントを送ります。`ViewResultDistortion` は enum と最終点列を表示用モデルに変換するため、結果表示の調査では必ず確認します。
 
-`FOVParam` は現在、比較的完全なパラメーター モデルであり、次のものが直接含まれています。
+### Ghost
 
-- `Radio`
-- `CameraDegrees`
-- `ThresholdValus`
-- `DFovDist`
-- `FovPattern`
-- `FovType`
-- `Xc`、`Yc`、`Xp`、`Yp`
+`TemplateGhost` は `TemplateDicId = 7`、`Code = ghost` です。`AlgorithmGhost` は `TemplateParam` に加えて `Color` を送り、`Ghost` イベントを発行します。色チャンネルは補助情報ではなく、現在の Ghost チェーンの正式な入力です。
 
-`AlgorithmFOV` は `Event_FOV_GetData` のパッケージ化を担当し、`DisplayFOV` は現在の非常に実用的な作業層を担当します。
+## Flow での接続
 
-- サービスマネージャーから画像ソースデバイスを取得します
-- バッチ、オリジナル ファイル、ローカル イメージの 3 つの入力をサポートします。
-- Raw ファイルのリストを取得し、直接開くことを許可します
+| Flow 算子 | `operatorCode` | 設定器が接続するテンプレート | 引き継ぎポイント |
+| --- | --- | --- | --- |
+| `MTF` | `MTF` | `TemplateMTF` + `TemplatePoi` | POI が無いと `POITemplateParam` が欠け、点位の意味が不完全になる。 |
+| `SFR` | `SFR` | `TemplateSFR` + `TemplatePoi` | SFR 曲線は ROI/POI の空間定義に依存する。 |
+| `FOV` | `FOV` | `TemplateDFOV` + `TemplateFOV` | 同じスロットに JSON V2 と伝統テンプレートが出るため、実際の選択元を見る。 |
+| `Distortion` | `Distortion` | `TemplateDistortion2` + `TemplateDistortionParam` | JSON V2 と伝統パラメータが共存する。 |
+| `SFR_FindROI` | `ARVR.SFR.FindROI` | `TemplateSFRFindROI` + `TemplatePoi` | 伝統的 `TemplateSFR` ではなく JSON ROI 検出チェーン。 |
+| `BinocularFusion` | `ARVR.BinocularFusion` | `TemplateBinocularFusion` | JSON テンプレート経路。 |
+| `FindCross` | `FindCross` | `TemplateFindCross` + `TemplatePoi` | UI 表示が ROI でも、選択器は `TemplatePoi` を使う。 |
 
-これは、FOV が現時点では「パラメータを設定してアルゴリズムを実行するだけ」の最小限のテンプレートではないことを示しています。
+`AlgorithmARVRNode.getBaseEventData(...)` は `BufferLen`、色、前段画像パラメータ、SMU 結果もリクエストに入れます。手動実行だけが成功する場合は、手動アルゴリズムのリクエストと Flow が生成したリクエストを比較してください。
 
-### ディストーション
+## 結果保存と表示
 
-`DistortionParam` は現在、非常に大きなパラメーター オブジェクトであり、次のような BLOB しきい値、エリア フィルター、形状フィルター、およびグローバル ポリシー項目の複数のセットが含まれています。
+| 結果 | 結果表/フィールド | 表示入口 | 調査ポイント |
+| --- | --- | --- | --- |
+| `FOV` | `t_scgd_algorithm_result_detail_fov`, `pattern`, `radio`, `camera_degrees`, `dist`, `threshold`, `degrees` | `ViewHandleFOV` | 画像入力、テンプレート、角度/距離フィールドを一緒に見る。 |
+| `Ghost` | `t_scgd_algorithm_result_detail_ghost`, `rows`, `cols`, `radius`, `led_centers`, `ghost_pixels` | `ViewHandleGhost` | 色チャンネルと点列数が overlay に影響する。 |
+| `SFR` | `t_scgd_algorithm_result_detail_sfr`, ROI, `gamma`, `pdfrequency`, `pdomain_sampling_data` | `ViewHandleSFR`, `WindowSFR` | 曲線表示はサンプリングデータの復元結果。 |
+| `Distortion` | `t_scgd_algorithm_result_detail_distortion`, `layout_type`, `slope_type`, `corner_type`, `max_ratio`, `final_points` | `ViewHandleDistortion`, `ViewResultDistortion` | enum マッピングと最終点列を合わせて確認する。 |
 
-- `filterByColor`
-- `minThreshold` / `maxThreshold`
-- `minArea` / `maxArea`
-- `filterByCircularity`
-- `filterByConvexity`
-- `filterByInertia`
-- `CornerType`
-- `SlopeType`
-- `LayoutType`
-- `DistortionType`
+## よくある誤解
 
-`AlgorithmDistortion` は `Distortion` イベントの発行を担当し、`ViewResultDistortion` は列挙値と最終的なラティス結果を表示可能な記述オブジェクトに再マップします。
+### ARVR は統一 schema ではない
 
-###ゴースト
+各ディレクトリは似た宿主を共有しますが、同じ JSON schema や同じパラメータ構造を共有しているわけではありません。
 
-`GhostParam` 現在表示されているコア パラメーターは複雑ではなく、主に検出格子を中心に展開します。
+### アルゴリズムクラスは主にホストとコマンドアダプタ
 
-- `Ghost_radius`
-- `Ghost_cols`
-- `Ghost_rows`
-- `Ghost_ratioH`
-- `Ghost_ratioL`
+`AlgorithmMTF`、`AlgorithmSFR`、`AlgorithmFOV`、`AlgorithmDistortion`、`AlgorithmGhost` は、画面を開き、入力を集め、MQTT リクエストを送る役割が中心です。
 
-`AlgorithmGhost` には追加の `Color` パラメーターが付属しており、`Ghost` イベントを発行します。つまり、カラー チャネルは現在、ゴースト チェーンのファースト クラスの入力であり、ページ アノテーションの追加アイテムではありません。
+### POI は脇役ではない
 
-## フローにアクセスするにはどうすればよいですか?
+MTF、SFR、SFR_FindROI は明示的に `TemplatePoi` を使います。POI を無視すると現在の ARVR 実行チェーンは説明できません。
 
-`AlgorithmARVRNode` と `AlgorithmNodeConfigurators` は、Flow での現在の ARVR ファミリの実際の使用法を共同で明らかにします。
+### 伝統テンプレートと JSON V2 は単純な置換関係ではない
 
-- `MTF`、`SFR` ノードにはパラメーター テンプレートと `POI` テンプレートの両方が必要です。
-- `FOV`、`畸变` ノードは、クラシック パラメーター テンプレートと JSON バリアントの両方を受け入れることができます。
-- `SFR_FindROI` このタイプのブランチは、`TemplateSFRFindROI` と `TemplatePoi` の両方に接続されます。
+FOV、Ghost、Distortion、SFR_FindROI などは Flow で伝統テンプレートと JSON テンプレートを同時に見せます。`operatorCode`、テンプレート種別、結果バージョンを確認してください。
 
-したがって、現在の ARVR ファミリはフラット ディレクトリではなく、従来のテンプレート、JSON テンプレート、POI テンプレート、およびフロー ノードで構成される実行サーフェスです。
+## 受け入れ確認
 
-## 現在、最もよくある間違いのいくつかが犯されています
-
-### ARVR は統一されたスキーマではありません
-
-各サブディレクトリは、同じパラメータ フィールドのセットではなく、テンプレート ホストと表示アルゴリズム スタイルを共有します。
-
-### ほとんどのアルゴリズム クラスはホストとコマンド アダプターです
-
-`AlgorithmMTF`、`AlgorithmSFR`、`AlgorithmFOV`、`AlgorithmDistortion`、`AlgorithmGhost` は、数値計算をローカルで直接完了するのではなく、主にウィンドウを開いたり、入力を取得したり、MQTT リクエストを作成したりする役割を果たします。
-
-### POI は ARVR の残り物ではありません
-
-少なくとも MTF、SFR、SFR_FindROI は現在、すべて明示的に `TemplatePoi` に依存しています。 POI を省略した場合、このページでは現在の実行チェーンについて説明しません。
-
-### 結果処理コードも重要です
-
-`ViewHandleMTF`、`WindowSFR`、`ViewResultDistortion` などの結果層の実装は、ユーザーが最終的に見るものを理解するための重要な入り口であり、古いドキュメントから省略すべきではありません。
+| 場面 | 必須確認 |
+| --- | --- |
+| 手動 MTF/SFR | `TemplateParam` と `POITemplateParam` の両方が送られ、結果が対応する `ViewHandle*` に入る。 |
+| Flow ARVR ノード | 算子を切り替えるとテンプレート選択器が切り替わり、`operatorCode` も一致する。 |
+| FOV/Distortion V2 | 伝統テンプレートと JSON テンプレートが混線せず、結果 handler も誤らない。 |
+| SFR 曲線 | `WindowSFR` が曲線を開き、CSV と `pdomain_sampling_data` が対応する。 |
+| Ghost | リクエストに `Color` があり、結果表の点列数と overlay が一致する。 |
 
 ## 推奨される読む順序
 
@@ -166,6 +127,6 @@
 
 ## 続きを読む
 
-- [POIテンプレート](./poi-template.md)
+- [POI テンプレート](./poi-template.md)
 - [JSON テンプレート](./json-templates.md)
-- [プロセスエンジン](./flow-engine.md)
+- [Flow エンジン](./flow-engine.md)

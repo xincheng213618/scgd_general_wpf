@@ -1,3 +1,4 @@
+#pragma warning disable CA1863,CS4014
 using AvalonDock.Layout;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
@@ -18,7 +19,7 @@ namespace ColorVision.Solution.MultiImageViewer
         {
             var MenuItemMetadatas = new List<MenuItemMetadata>();
             string filepath = context.Config.FilePath;
-            if (filepath != null)
+            if (File.Exists(filepath))
             {
                 string DirectoryPath = Directory.GetParent(filepath)?.FullName;
                 if (DirectoryPath != null)

@@ -1,0 +1,41 @@
+<Window x:Class="ColorVision.ServiceHost.ServiceHostManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ColorVision Service Host"
+        Width="720"
+        Height="460"
+        MinWidth="620"
+        MinHeight="420">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Vertical">
+            <TextBlock Text="ColorVision Service Host" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock x:Name="StatusText" Margin="0,6,0,0" Text="Status: checking..." />
+            <TextBlock x:Name="PathText" Margin="0,2,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <WrapPanel Grid.Row="1" Margin="0,14,0,12">
+            <Button x:Name="RefreshButton" Content="Refresh" MinWidth="88" Margin="0,0,8,8" Padding="10,5" Click="RefreshButton_Click" />
+            <Button x:Name="InstallButton" Content="Install" MinWidth="88" Margin="0,0,8,8" Padding="10,5" Click="InstallButton_Click" />
+            <Button x:Name="UninstallButton" Content="Uninstall" MinWidth="88" Margin="0,0,8,8" Padding="10,5" Click="UninstallButton_Click" />
+            <Button x:Name="PingButton" Content="Ping" MinWidth="88" Margin="0,0,8,8" Padding="10,5" Click="PingButton_Click" />
+            <Button x:Name="FileAssociationButton" Content="File Association" MinWidth="124" Margin="0,0,8,8" Padding="10,5" Click="FileAssociationButton_Click" />
+            <Button x:Name="RegisterThumbnailButton" Content="Register Thumbnail" MinWidth="136" Margin="0,0,8,8" Padding="10,5" Click="RegisterThumbnailButton_Click" />
+            <Button x:Name="UnregisterThumbnailButton" Content="Unregister Thumbnail" MinWidth="144" Margin="0,0,8,8" Padding="10,5" Click="UnregisterThumbnailButton_Click" />
+        </WrapPanel>
+
+        <TextBox x:Name="LogBox"
+                 Grid.Row="2"
+                 FontFamily="Consolas"
+                 FontSize="12"
+                 IsReadOnly="True"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto" />
+    </Grid>
+</Window>

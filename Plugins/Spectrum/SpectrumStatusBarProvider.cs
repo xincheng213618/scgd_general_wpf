@@ -1,3 +1,4 @@
+#pragma warning disable CA1859
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System.ComponentModel;

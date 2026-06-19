@@ -4,9 +4,15 @@ This chapter is organized in the order of "learn to use first, then dive deeper,
 
 ## Chapter Entry Points
 
+### Find by Operation Goal
+
+- [User Operation Workflow Matrix](./operation-workflow-matrix.md)
+- [Field Operation Acceptance Checklist](./field-operation-acceptance.md)
+
 ### Interface & Basic Interaction
 
 - [Main Window Tour](./interface/main-window.md)
+- [UI Component User Handbook](./interface/ui-component-handbook.md)
 - [Property Editor](./interface/property-editor.md)
 - [Log Viewer](./interface/log-viewer.md)
 - [Terminal](./interface/terminal.md)
@@ -46,14 +52,17 @@ This chapter is organized in the order of "learn to use first, then dive deeper,
 
 ## Recommended Reading Path
 
-1. Start with [Main Window Tour](./interface/main-window.md) to understand the main interface layout.
-2. Then read [Property Editor](./interface/property-editor.md) and [Image Editor Overview](./image-editor/overview.md) to establish basic operation paths.
-3. For hardware, proceed to [Device Service Overview](./devices/overview.md) and the corresponding device topic pages.
-4. For automation, proceed to [Workflow Overview](./workflow/README.md).
-5. For exceptions, first check [Common Issues](./troubleshooting/common-issues.md).
+1. If you do not know which page to read, start with [User Operation Workflow Matrix](./operation-workflow-matrix.md).
+2. For delivery or retest, follow [Field Operation Acceptance Checklist](./field-operation-acceptance.md).
+3. Start with [Main Window Tour](./interface/main-window.md) to understand the main interface layout.
+4. Then read [UI Component User Handbook](./interface/ui-component-handbook.md) to confirm entries, pass standards, and troubleshooting direction by window/control.
+5. Continue with [Property Editor](./interface/property-editor.md) and [Image Editor Overview](./image-editor/overview.md) to establish basic operation paths.
+6. For hardware, proceed to [Device Service Overview](./devices/overview.md) and the corresponding device topic pages.
+7. For automation, proceed to [Workflow Overview](./workflow/README.md).
+8. For exceptions, first check [Common Issues](./troubleshooting/common-issues.md).
 
 ## Chapter Boundaries
 
 - Implementation and extension mechanism content has been moved to [Developer Guide](../02-developer-guide/README.md).
-- Class libraries, interfaces, and module-level descriptions have been moved to [API Reference](../04-api-reference/README.md).
+- Class libraries, implementation anchors, and module-level descriptions have been moved to [Module Handbook](../04-api-reference/README.md).
 - For an overall understanding of system design, go directly to [Architecture Design](../03-architecture/README.md).

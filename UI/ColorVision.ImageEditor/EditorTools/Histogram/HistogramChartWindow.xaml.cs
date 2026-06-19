@@ -1,4 +1,5 @@
-﻿using ColorVision.ImageEditor.EditorTools.Histogram;
+﻿#pragma warning disable CA1805
+using ColorVision.ImageEditor.EditorTools.Histogram;
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI;

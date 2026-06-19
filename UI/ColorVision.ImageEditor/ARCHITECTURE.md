@@ -16,20 +16,21 @@
 
 ```text
 ImageView
-  -> ImageViewModel
-      -> EditorContext
+  -> EditorContext
+      -> DrawEditorContext
           -> DrawCanvas
           -> Zoombox
-          -> ImageViewConfig
           -> DrawEditorManager
-          -> IEditorToolFactory
+      -> ImageProcessingContext
+      -> ImageViewConfig
+      -> IEditorToolFactory
 ```
 
 可以把它理解为四层：
 
-1. `ImageView` 是宿主层，负责初始化、载图、状态栏、标注导入导出、工具栏区域和大部分编排逻辑。
-2. `ImageViewModel` 是交互层，负责编辑态切换、右键菜单组装、缩放联动、选择属性面板。
-3. `EditorContext` 是每个视图实例的运行时容器，保存当前 `ImageView` 关联的主要对象与少量服务。
+1. `ImageView` 是宿主层，负责初始化、载图、编辑态切换、右键菜单、状态栏、标注导入导出、工具栏区域和大部分编排逻辑。
+2. `EditorContext` 是每个视图实例的运行时容器，保存当前 `ImageView` 关联的主要对象与少量服务。
+3. `DrawEditorContext` 和 `ImageProcessingContext` 分别收拢绘图上下文、图像处理上下文。
 4. `DrawCanvas` 和各类 `IEditorTool` / `IImageOpen` / `IDVContextMenu` 实现是具体能力层。
 
 ## 2. 生命周期和主链路
@@ -40,19 +41,18 @@ ImageView
 
 `ImageView.UserControl_Initialized` 会做这些事：
 
-1. 创建 `ImageViewModel`。
-2. 由 `ImageViewModel` 创建 `EditorContext`。
-3. 由 `ImageViewModel` 初始化 `EditorContext` 的运行时 UI 状态，包括 `SelectionVisual`、选择属性面板宿主和编辑态标记；随后再创建 `Crosshair` 和 `IEditorToolFactory`。
-4. 由 `IEditorToolFactory` 反射扫描并实例化：
+1. 创建 `EditorContext`、`DrawEditorContext` 和 `ImageProcessingContext`。
+2. 初始化 `EditorContext` 的运行时 UI 状态，包括 `SelectionVisual`、选择属性面板宿主和编辑态标记；随后再创建 `Crosshair` 和 `IEditorToolFactory`。
+3. 由 `IEditorToolFactory` 反射扫描并实例化：
    - `IEditorTool`
    - `IIEditorToolContextMenu`
    - `IDVContextMenu`
    - `IImageComponent`
    - `IImageOpen`
-5. `ImageView` 遍历 `IImageComponents` 执行一次性初始化。
-6. `ImageView` 继续接线 `Config`、`Zoombox`、`DrawCanvas`、`PixelValueOverlay`、标准命令和设置窗口提供者。
+4. `ImageView` 遍历 `IImageComponents` 执行一次性初始化。
+5. `ImageView` 继续接线 `Config`、`Zoombox`、`DrawCanvas`、`PixelValueOverlay`、标准命令和设置窗口提供者。
 
-结论：这个模块的初始化不是显式注册式，而是“主控件创建后反射拉起全部扩展点”。后续要优化启动复杂度，首先要看 `ImageViewModel` 构造函数和 `EditorToolFactory` 构造函数。
+结论：这个模块的初始化不是显式注册式，而是“主控件创建后反射拉起全部扩展点”。后续要优化启动复杂度，首先要看 `ImageView.UserControl_Initialized`、`ImageView.CreateEditorContext` 和 `EditorToolFactory` 构造函数。
 
 ### 2.2 载图链路
 
@@ -80,7 +80,7 @@ ImageView
 
 ### 2.3 编辑态链路
 
-编辑态对外入口仍然是 `ImageViewModel.ImageEditMode`，但实际运行时状态已经落到 `EditorContext.IsImageEditMode`。
+编辑态对外入口是 `ImageView.ImageEditMode`，实际运行时状态落到 `EditorContext.IsImageEditMode`。
 
 打开编辑态后：
 
@@ -137,7 +137,7 @@ ImageView
 
 ### 2.5 临时选区链路
 
-`TransientSelectMode.cs` 提供一套不入图元栈、不进撤销栈的临时选择模式。
+`TransientRoiSelectionSession.cs` 提供一套不入图元栈、不进撤销栈的临时选择模式。
 
 它支持：
 
@@ -155,13 +155,12 @@ ImageView
 | 位置 | 主要职责 |
 | --- | --- |
 | `ImageView.xaml` | 定义 UI 宿主骨架：`Zoombox`、`DrawCanvas`、像素值 overlay、各方向工具栏、底部 `CompactInspectorBar` |
-| `ImageView.xaml.cs` | 初始化编排、载图、清理、保存、状态栏、注释导入导出、通道切换、缩放刷新 |
-| `ImageViewModel.cs` | 编辑态入口、右键菜单、上下文菜单聚合、缩放比绑定 |
+| `ImageView.xaml.cs` | 初始化编排、编辑态入口、右键菜单、载图、清理、保存、状态栏、注释导入导出、通道切换、缩放刷新 |
 | `EditorContext.cs` | 当前 `ImageView` 的运行时容器、轻量服务注册表、`CompactInspectorPresenter`、编辑态运行时状态 |
 | `ImageViewConfig.cs` | 当前视图配置与属性字典，区分 `ImageMetadata` / `ViewState` / `OpenerRuntime` / `Legacy` |
 | `DrawCanvas.cs` | 图像画布、视觉树、Undo/Redo、命中测试 |
 | `EditorToolFactory.cs` | 反射发现工具/菜单/打开器/初始化组件，维护“全局工具 + 当前 opener runtime tools”的生效视图，并重建受管工具栏 |
-| `EditorToolVisibilityConfig.cs` | 工具显示隐藏的持久化配置 |
+| `ImageViewWorkspaceSettingsView*` | 工作台设置：工具栏区域开关与打开器列表 |
 
 ### 3.2 抽象接口层
 
@@ -370,7 +369,7 @@ ImageView
 | 功能 | 主要位置 |
 | --- | --- |
 | 普通图片打开 | `Tif/CommonImageOpen.cs` |
-| TIFF / 高位深 / Gray32Float | `Tif/Opentif.cs`, `Tif/TifOpenConfig.cs`, `Tif/TiffReader.cs` |
+| TIFF / 高位深 / Gray32Float | `Tif/Opentif.cs`, `Tif/TifOpenConfig.cs` |
 | 视频播放 | `Video/VideoOpen.cs` |
 | 缩放、适应窗口、缩放比显示 | `Zoombox.cs`, `ZoomCommands.cs`, `EditorTools/Zoom/*` |
 | 图层切换（Src/R/G/B） | `ImageView.ComboBoxLayersSelectionChanged`, `ImageView.ExtractChannel` |
@@ -392,7 +391,7 @@ ImageView
 | 当前图像上下文查看 | `Settings/ImageViewContextSettingsView*` |
 | 工作台设置（工具可见性/打开器列表） | `Settings/ImageViewWorkspaceSettingsView*` |
 | 像素值叠层 | `PixelValueOverlay.cs`, `Settings/DefaultImageViewDisplayConfig.cs` |
-| 临时 ROI 选择 | `TransientSelectMode.cs`, `ImageView.BeginSelectAsync` |
+| 临时 ROI 选择 | `TransientRoiSelectionSession.cs`, `ImageView.BeginSelectAsync` |
 
 ## 6. 复杂度热点
 
@@ -498,22 +497,21 @@ ImageView
 
 如果你接下来要继续优化，我建议优先顺序如下：
 
-1. 先把 `ImageView.xaml.cs` 按职责拆成局部类或专用 coordinator，最先拆载图链和注释链。
-2. 把 `EditorToolFactory` 分成“类型发现缓存”和“实例装配”，避免每个视图都全量反射。
-3. 为绘图工具提炼统一的交互骨架，减少每个 manager 自己挂事件。
-4. 进一步明确状态归属，避免新功能继续往 `Config.Properties` 或 `EditorContext` 里随手塞数据。
-5. 在不改变外部行为的前提下，逐步收口 `SetImageSource` 的副作用。
+1. 先清掉过期文档、死代码、明显拼写和错文件名，保证读到的东西就是当前源码事实。
+2. 进一步明确状态归属，避免新功能继续往 `Config.Properties` 或 `EditorContext` 里随手塞数据。
+3. 把 `EditorToolFactory` 的“类型发现缓存”和“实例装配”边界理清，避免每个视图都全量反射。
+4. 在不改变外部行为的前提下，逐步收口 `SetImageSource` 的副作用。
+5. `ImageView.xaml.cs` 是否拆成 partial，要等上面几步稳定后单独评估。
 
 ## 8. 读代码建议
 
 如果后面你要继续追一条具体功能，推荐的阅读顺序是：
 
 1. 先看 `ImageView.xaml.cs` 有没有直接编排。
-2. 再看 `ImageViewModel.cs` 是否在处理交互态或右键菜单。
-3. 再看 `EditorToolFactory.cs` 是否通过反射把实现挂进来了。
-4. 如果是绘图能力，进入 `Draw/<模块>/`。
-5. 如果是视图工具，进入 `EditorTools/<模块>/`。
-6. 如果是载图行为，优先看 `IImageOpen` 实现。
-7. 如果是设置项，先看 `Settings/ImageViewSettingMetadata.cs` 和对应 provider。
+2. 再看 `EditorToolFactory.cs` 是否通过反射把实现挂进来了。
+3. 如果是绘图能力，进入 `Draw/<模块>/`。
+4. 如果是视图工具，进入 `EditorTools/<模块>/`。
+5. 如果是载图行为，优先看 `IImageOpen` 实现。
+6. 如果是设置项，先看 `Settings/ImageViewSettingMetadata.cs` 和对应 provider。
 
 这样读，通常能避开“从 UI 一路跟到随机工具类里”的迷路状态。

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Properties;
 using ColorVision.Themes;
@@ -49,22 +48,20 @@ namespace ColorVision
         }
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
-            log.Fatal(e.Exception);
-            ShowUnhandledException(e.Exception, "UI Dispatcher");
+            log.Fatal("捕获到 UI Dispatcher 未处理异常，已静默记录。", e.Exception);
             //使用这一行代码告诉运行时，该异常被处理了，不再作为UnhandledException抛出了。
             e.Handled = true;
         }
 
         void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            log.Fatal(e.ExceptionObject);
-
-            if (e.IsTerminating || Application.Current?.Dispatcher == null)
-                return;
-
             if (e.ExceptionObject is Exception exception)
             {
-                Application.Current.Dispatcher.BeginInvoke(() => ShowUnhandledException(exception, "AppDomain"));
+                log.Fatal("捕获到 AppDomain 未处理异常，已静默记录。", exception);
+            }
+            else
+            {
+                log.Fatal($"捕获到 AppDomain 未处理异常，已静默记录。ExceptionObject: {e.ExceptionObject}");
             }
         }
 
@@ -73,28 +70,6 @@ namespace ColorVision
             log.Fatal(e.Exception);
             e.SetObserved();
         }
-
-        private static void ShowUnhandledException(Exception exception, string source)
-        {
-            try
-            {
-                CopilotExceptionReporter.ShowException(exception, source);
-            }
-            catch (Exception ex)
-            {
-                log.Error("显示异常窗口失败", ex);
-
-                try
-                {
-                    MessageBox.Show(exception.Message, "ColorVision");
-                }
-                catch (Exception messageBoxException)
-                {
-                    log.Error("显示异常消息框失败", messageBoxException);
-                }
-            }
-        }
-
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {

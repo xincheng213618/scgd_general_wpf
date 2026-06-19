@@ -133,24 +133,6 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
-        ///   查找类似 连接的客户端 的本地化字符串。
-        /// </summary>
-        public static string ConnectedClients {
-            get {
-                return ResourceManager.GetString("ConnectedClients", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 连接状态 的本地化字符串。
-        /// </summary>
-        public static string ConnectionStatus {
-            get {
-                return ResourceManager.GetString("ConnectionStatus", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 内容 的本地化字符串。
         /// </summary>
         public static string Content {
@@ -304,15 +286,6 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
-        ///   查找类似 本地地址 的本地化字符串。
-        /// </summary>
-        public static string LocalEndPoint {
-            get {
-                return ResourceManager.GetString("LocalEndPoint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 {0} 条消息 的本地化字符串。
         /// </summary>
         public static string MessageCountFormat {
@@ -367,15 +340,6 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开 的本地化字符串。
-        /// </summary>
-        public static string OpenDb {
-            get {
-                return ResourceManager.GetString("OpenDb", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 打开失败 的本地化字符串。
         /// </summary>
         public static string OpenFailed {
@@ -426,15 +390,6 @@ namespace ColorVision.SocketProtocol.Properties {
         public static string Query {
             get {
                 return ResourceManager.GetString("Query", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 远程地址 的本地化字符串。
-        /// </summary>
-        public static string RemoteEndPoint {
-            get {
-                return ResourceManager.GetString("RemoteEndPoint", resourceCulture);
             }
         }
         
@@ -516,15 +471,6 @@ namespace ColorVision.SocketProtocol.Properties {
         public static string ServiceSettings {
             get {
                 return ResourceManager.GetString("ServiceSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置 的本地化字符串。
-        /// </summary>
-        public static string Settings {
-            get {
-                return ResourceManager.GetString("Settings", resourceCulture);
             }
         }
         

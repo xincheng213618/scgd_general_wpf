@@ -121,6 +121,58 @@ So a more accurate description is:
 - It coexists with the global `PermissionMode`
 - The entire solution tree, all editors, and all file operations cannot be described as having been fully integrated with fine-grained permission code control
 
+## Using It as a DLL
+
+### When to Reference It
+
+- `.cvsln` workspace, file tree, recent files, or workspace status-bar support is needed.
+- Pluggable file editors, folder editors, or generic editors are needed.
+- AvalonDock document area, layout save/restore, or panel Providers are needed.
+- Built-in terminal, Markdown preview, multi-image preview, or local RBAC management windows are needed.
+
+### Adding a File Editor
+
+1. Implement `IEditor`, usually by inheriting `EditorBase`.
+2. Add `EditorForExtensionAttribute`, `GenericEditorAttribute`, or `FolderEditorAttribute`.
+3. Confirm `EditorManager` can scan the type.
+4. Open the target file or folder and verify editor selection, default editor, and document activation.
+
+### Adding a Project or File Template
+
+1. New project templates implement `IProjectTemplate` and add `ProjectTemplateAttribute`.
+2. New file templates implement `INewItemTemplate` and add `NewItemTemplateAttribute`.
+3. Verify visibility through `AddNewProjectWindow` or `AddNewItemWindow`.
+
+### Release Notes
+
+`Solution` depends on `ImageEditor`, `UI.Desktop`, AvalonDock, AvalonEdit, WebView2, and WPFHexaEditor. After publishing, verify `.cvsln` open, file tree, text editor, image editor, terminal, and layout recovery.
+
+### DLL Release Acceptance
+
+| Check | What to Inspect | Passing Standard |
+| --- | --- | --- |
+| Target framework output | `net10.0-windows7.0` | DLL, `.nupkg`, and `.snupkg` are produced |
+| Package README | `PackageReadmeFile`, package root | `README.md` is included at the package root |
+| Project dependencies | `ColorVision.Database`, `ColorVision.ImageEditor`, `ColorVision.UI.Desktop`, `ColorVision.UI` | Workspace, database, image editor, and desktop toolkit dependencies resolve |
+| Third-party dependencies | `AvalonEdit`, `AvalonDock`, `WebView2`, `WPFHexaEditor`, `Markdig.Signed` | Text editing, docking layout, Markdown/Web, and Hex viewing load |
+| Solution entry | `SolutionManager`, `OpenSolutionWindow` | `.cvsln`, folder, and recent-file open paths work |
+| Editor registration | `EditorManager`, `EditorForExtensionAttribute`, `FolderEditorAttribute` | Text, image, Web, Hex, and folder editors can be scanned and selected |
+| Workspace layout | `WorkspaceManager`, `DockLayoutManager` | Tabs and panel layout save, load, and reset correctly |
+| Terminal and disposal | `TerminalControl`, `TerminalService` | Opening/closing terminal does not leave shell processes behind; timers/processes release on exit |
+| Local RBAC | `RbacManager`, `RbacManagerConfig` | Login/logout and user/role/permission management windows open, with clear session boundaries |
+
+### Field First Checks
+
+| Symptom | First Check |
+| --- | --- |
+| `.cvsln` does not open or recent file fails | Check `SolutionManager` path normalization, file existence, and directory permissions |
+| Double-clicked file has no suitable editor | Check whether `EditorManager` scanned the related Attribute and whether default-editor config points to an old type |
+| Tabs disappear after layout restore | Check `DockLayoutManager` layout file and whether `ContentId` is stable |
+| Terminal opens blank or cannot type | Check ConPTY initialization, shell path, current solution directory, and `TerminalControl.Dispose()` |
+| Markdown/WebView2 is blank | Check WebView2 Runtime, user-data-folder permission, and `WebEditor` initialization |
+| Multi-image viewer is slow or thumbnails fail | Check image count, extension filtering, thumbnail cache, and disposal flow |
+| RBAC login state is abnormal | Distinguish Solution local RBAC from global `PermissionMode`; start with `RbacManagerConfig` and local SQLite |
+
 ## How to Better Read This Project Currently
 
 ### To View Solution Entry Points

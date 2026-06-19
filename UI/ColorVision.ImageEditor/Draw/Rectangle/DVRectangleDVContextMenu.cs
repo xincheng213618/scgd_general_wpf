@@ -1,34 +1,38 @@
 #pragma warning disable CS8625,CS8602,CS8604,CS8600,CS0103,CS0067
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using Microsoft.Win32;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    /// <summary>
-    /// DVRectangle ”“º¸≤Àµ•£∫÷¥––≤√ºÙ≤Ÿ◊˜
-    /// ƒ£∑¬ DVLineDVContextMenu µƒΩ·ππ°£
-    /// </summary>
     public class DVRectangleDVContextMenu : IDVContextMenu
     {
+        private readonly DrawCanvas _drawCanvas;
+        private readonly ImageProcessingContext _imageContext;
+
+        public DVRectangleDVContextMenu(DrawCanvas drawCanvas, ImageProcessingContext imageContext)
+        {
+            _drawCanvas = drawCanvas;
+            _imageContext = imageContext;
+        }
+
         public Type ContextType => typeof(IRectangle);
 
-        public IEnumerable<MenuItem> GetContextMenuItems(EditorContext context, object obj)
+        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
         {
             List<MenuItem> menuItems = new();
             if (obj is not IRectangle dvRectangle) return menuItems;
 
-            // ≤√ºÙ≤¢¡Ì¥Ê
-            var cropSave = new MenuItem { Header = "≤√ºÙ≤¢¡Ì¥Ê..." };
+            var cropSave = new MenuItem { Header = "Ë£ÅÂâ™Âπ∂Âè¶Â≠ò..." };
             cropSave.Click += (s, e) =>
             {
-                if (!TryGetCropBitmap(context, dvRectangle, out BitmapSource? cropped, out string? error))
+                if (!TryGetCropBitmap(_drawCanvas, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
-                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "Ã· æ", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "ÊèêÁ§∫", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
@@ -42,91 +46,87 @@ namespace ColorVision.ImageEditor.Draw
                     try
                     {
                         EncodeAndSave(cropped, dlg.FileName);
-                        MessageBox.Show("±£¥Ê≥…π¶", "≤√ºÙ", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show("‰øùÂ≠òÊàêÂäü", "Ë£ÅÂâ™", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"±£¥Ê ß∞‹: {ex.Message}", "≤√ºÙ", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"‰øùÂ≠òÂ§±Ë¥•: {ex.Message}", "Ë£ÅÂâ™", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             };
             menuItems.Add(cropSave);
 
-            // ≤√ºÙ≤¢∏¥÷∆µΩºÙÃ˘∞Â
-            var cropClipboard = new MenuItem { Header = "≤√ºÙ∏¥÷∆µΩºÙÃ˘∞Â" };
+            var cropClipboard = new MenuItem { Header = "Ë£ÅÂâ™Â§çÂà∂Âà∞Ââ™Ë¥¥Êùø" };
             cropClipboard.Click += (s, e) =>
             {
-                if (!TryGetCropBitmap(context, dvRectangle, out BitmapSource? cropped, out string? error))
+                if (!TryGetCropBitmap(_drawCanvas, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
-                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "Ã· æ", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "ÊèêÁ§∫", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
                 try
                 {
                     Clipboard.SetImage(cropped);
-                    MessageBox.Show("“—∏¥÷∆µΩºÙÃ˘∞Â", "≤√ºÙ", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Â∑≤Â§çÂà∂Âà∞Ââ™Ë¥¥Êùø", "Ë£ÅÂâ™", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"∏¥÷∆ ß∞‹: {ex.Message}", "≤√ºÙ", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Â§çÂà∂Â§±Ë¥•: {ex.Message}", "Ë£ÅÂâ™", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             };
             menuItems.Add(cropClipboard);
 
-            // ”√≤√ºÙΩ·π˚ÃÊªªµ±«∞ÕºœÒ
-            var cropReplace = new MenuItem { Header = "≤√ºÙ≤¢ÃÊªªµ±«∞ÕºœÒ" };
+            var cropReplace = new MenuItem { Header = "Ë£ÅÂâ™Âπ∂ÊõøÊç¢ÂΩìÂâçÂõæÂÉè" };
             cropReplace.Click += (s, e) =>
             {
-                if (!TryGetCropBitmap(context, dvRectangle, out BitmapSource? cropped, out string? error))
+                if (!TryGetCropBitmap(_drawCanvas, dvRectangle, out BitmapSource? cropped, out string? error))
                 {
-                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "Ã· æ", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (!string.IsNullOrWhiteSpace(error)) MessageBox.Show(error, "ÊèêÁ§∫", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
-                context.ImageView.SetImageSource(new WriteableBitmap(cropped)) ;
-                // «Â≥˝À˘”–ªÊ÷∆‘™Àÿ£®ø…—°£©
-                context.ImageView.ImageShow.Clear();
+
+                _imageContext.SetImageSource(new WriteableBitmap(cropped));
+                _drawCanvas.Clear();
             };
             menuItems.Add(cropReplace);
 
             return menuItems;
         }
 
-        private static bool TryGetCropBitmap(EditorContext imageViewModel, IRectangle dvRectangle, out BitmapSource? cropped, out string? error)
+        private static bool TryGetCropBitmap(DrawCanvas drawCanvas, IRectangle dvRectangle, out BitmapSource? cropped, out string? error)
         {
             cropped = null;
             error = null;
-            if (imageViewModel.ImageView.ImageShow.Source is not BitmapSource source)
+            if (drawCanvas.Source is not BitmapSource source)
             {
-                error = "µ±«∞ÕºœÒ‘¥≤ªø…≤√ºÙ";
+                error = "ÂΩìÂâçÂõæÂÉèÊ∫ê‰∏çÂèØË£ÅÂâ™";
                 return false;
             }
 
             Rect r = dvRectangle.Rect;
             if (r.Width <= 0 || r.Height <= 0)
             {
-                error = "æÿ–Œ¥Û–°Œﬁ–ß";
+                error = "Áü©ÂΩ¢Â§ßÂ∞èÊó†Êïà";
                 return false;
             }
 
-            // »°’˚”Î±ﬂΩÁ≤√ºÙ
             int x = (int)Math.Floor(r.X);
             int y = (int)Math.Floor(r.Y);
             int w = (int)Math.Ceiling(r.Width);
             int h = (int)Math.Ceiling(r.Height);
 
-            // Clamp
             if (x < 0) { w -= (0 - x); x = 0; }
             if (y < 0) { h -= (0 - y); y = 0; }
             if (x >= source.PixelWidth || y >= source.PixelHeight)
             {
-                error = "æÿ–Œ≥¨≥ˆÕºœÒ∑∂Œß";
+                error = "Áü©ÂΩ¢Ë∂ÖÂá∫ÂõæÂÉèËåÉÂõ¥";
                 return false;
             }
             if (x + w > source.PixelWidth) w = source.PixelWidth - x;
             if (y + h > source.PixelHeight) h = source.PixelHeight - y;
             if (w <= 0 || h <= 0)
             {
-                error = "≤√ºÙ∑∂ŒßŒﬁ–ß";
+                error = "Ë£ÅÂâ™ËåÉÂõ¥Êó†Êïà";
                 return false;
             }
 
@@ -144,9 +144,8 @@ namespace ColorVision.ImageEditor.Draw
 
         private static void EncodeAndSave(BitmapSource bitmap, string path)
         {
-            BitmapEncoder encoder;
-            string ext = Path.GetExtension(path).ToLower();
-            encoder = ext switch
+            string ext = Path.GetExtension(path).ToLowerInvariant();
+            BitmapEncoder encoder = ext switch
             {
                 ".jpg" or ".jpeg" => new JpegBitmapEncoder { QualityLevel = 95 },
                 ".bmp" => new BmpBitmapEncoder(),

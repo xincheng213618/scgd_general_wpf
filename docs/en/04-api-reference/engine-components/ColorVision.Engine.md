@@ -114,6 +114,37 @@ From implementations like `AlgorithmPOI` and `AlgorithmMTF`, algorithm classes i
 
 In other words, algorithm objects at this layer are typically "display and command adapters," rather than pure algorithm kernels that directly perform image computation locally.
 
+## Business Handoff Acceptance
+
+When taking over `ColorVision.Engine`, do not only check whether the main project compiles. This module connects database, devices, templates, MQTT, Flow, results, and UI, so the minimum handoff must verify the chain.
+
+| Acceptance item | What to inspect | Pass condition |
+| --- | --- | --- |
+| Main target framework | `Directory.Build.props`, `ColorVision.Engine.csproj` | Main host builds on the `net10.0-windows` x64 path, and UI/Engine project references or NuGet references resolve. |
+| UI and Engine dependencies | `ColorVision.Database`, `SocketProtocol`, `ImageEditor`, `Scheduler`, `Solution`, `UI.Desktop` | Main program can open database, Socket, image, scheduler, and project workspace entries. |
+| Template initialization | `TemplateInitializer`, `TemplateControl.GetInstance()`, `MySqlInitializer` | After MySQL connects, `IITemplateLoad` implementations are scanned and `ITemplateNames` contains real template entries. |
+| JSON template editing | `ITemplateJson<T>`, `EditTemplateJson.xaml.cs`, `Templates/Jsons/**/*.schema.json` | Templates can be read, edited, saved, deleted, and schema files are published to output. |
+| Device factory | `DeviceServiceFactoryRegistry`, `ServiceTypes`, `Services/Devices/**` | Camera, PG, Spectrum, SMU, Sensor, Algorithm, Calibration, and related resource types can create service objects. |
+| MQTT command chain | `MQTTServiceBase`, `MsgRecord`, `MessagesListManager` | After sending a command, `MsgRecord` state is visible and Success/Fail/Timeout can be observed by UI or caller. |
+| RC service chain | `MqttRCService`, service token cache, RC topics | After registration-center connection, available services can refresh and Flow nodes can obtain matching service tokens. |
+| Flow bridge | `FlowEngineManager`, `DisplayFlow`, `TemplateFlow` | Flow templates can load from Base64, edit, save, run, and refresh service nodes. |
+| Result display | `IViewResult`, `IResultHandleBase`, `Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs` | Historical results open correctly, and ImageEditor overlay, detail tables, and result type match. |
+| Delivery resources | `Assets/Image/*`, `Templates/Jsons/**/*.schema.json`, tool executables | Published output includes icons, schemas, Everything/WinRAR/serial/USB tools, and other required files. |
+
+## Field First Checks
+
+| Symptom | Check first | Judgement point |
+| --- | --- | --- |
+| Template list is empty | MySQL connection, `TemplateInitializer.Dependencies`, `Application.Current.GetAssemblies()` | `TemplateControl` scans `IITemplateLoad` only after MySQL is available. |
+| A new template class exists but is invisible in UI | Whether it implements `IITemplateLoad`, whether it calls `TemplateControl.AddITemplateInstance` | A parameter class alone is not enough; it must enter the template registry. |
+| JSON template save fails | `ITemplateJson<T>` database read/write, schema output, duplicate template name | Confirm table data and schema files before debugging the editor. |
+| Device resource exists but the device tree has no service object | `SysResourceModel.Type`, `ServiceTypes`, `DeviceServiceFactoryRegistry` | Without a registered factory, a resource will not become a stable device service. |
+| Device command stays Timeout | `MQTTServiceBase` topics, service token, `MqttRCService` connection state, `MsgRecord` | Inspect message records and RC token before the device-specific window. |
+| Flow opens but nodes have no service | `FlowEngineManager`, `MqttRCService` service list, `DisplayFlow` refresh logic | Flow visualization does not prove service tokens are bound. |
+| Flow finishes but project package gets no result | `FlowCompleted`, `ViewResultAlg`, project `Process/` mapping | Engine owns generic results; customer fields are usually mapped in project packages. |
+| Result window opens but overlay is wrong | `IResultHandleBase`, template-directory DAO, `ColorVision.ImageEditor` primitives | Confirm the handler matches the result type, then check coordinate conversion and image path. |
+| Icons, schemas, or tools are missing after packaging | `ColorVision.Engine.csproj` `Resource` / `None Update` entries | Files existing in source do not prove they exist in published output. |
+
 ## Most Common Mistakes to Avoid
 
 ### It Is Not a "All Algorithms Execute Locally" Module

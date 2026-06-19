@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CS0168
+using ColorVision.Database;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using NPOI.SS.Formula.Functions;
@@ -185,10 +186,6 @@ namespace ColorVision.Engine.Archive.Dao
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
                 });
-
-                //GenericQuery<ArchivedMasterModel> genericQuery = new GenericQuery<ArchivedMasterModel>(DB, ViewResults);
-                //GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
-                //genericQueryWindow.ShowDialog();
             }
 
 

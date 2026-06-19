@@ -53,10 +53,8 @@ namespace ColorVision.Engine.Templates.LedCheck
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(LedCheckParam param, PoiParam poiParam ,string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(LedCheckParam param, PoiParam poiParam ,string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            // 序列号生成优化
-            string sn = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"): serialNumber;
 
             // 文件路径处理优化
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullPath))
@@ -82,7 +80,7 @@ namespace ColorVision.Engine.Templates.LedCheck
             var msg = new MsgSend
             {
                 EventName = MQTTAlgorithmEventEnum.Event_LED_Check_GetData,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

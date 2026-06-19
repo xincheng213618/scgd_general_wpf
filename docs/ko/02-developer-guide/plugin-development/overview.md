@@ -90,7 +90,7 @@ ColorVision의 플러그인은 기본 프로그램 실행 디렉토리 아래 `P
 1. 먼저 [플러그인 개발 개요](./README.md)를 살펴보세요.
 2. [플러그인 개발 시작하기](./getting-started.md)를 다시 살펴보세요.
 3. 로딩 및 실행 단계를 이해해야 할 경우 [플러그인 라이프사이클](./lifecycle.md)을 참조하세요.
-4. 기성 플러그인을 참고하고 싶다면 [패턴 플러그인](../../04-api-reference/plugins/standard-plugins/pattern.md)을 직접 살펴보세요.
+4. 기존 플러그인을 참고하려면 먼저 [기존 플러그인 기능](../../04-api-reference/plugins/README.md)을 보고, [Conoscope](../../04-api-reference/plugins/standard-plugins/conoscope.md), [Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md), [SystemMonitor](../../04-api-reference/plugins/standard-plugins/system-monitor.md)를 확인하세요.
 
 ## 설명
 

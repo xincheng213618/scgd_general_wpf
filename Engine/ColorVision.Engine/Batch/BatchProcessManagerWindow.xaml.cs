@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿#pragma warning disable CS8622,CS8625
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;

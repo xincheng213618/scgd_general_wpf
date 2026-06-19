@@ -1,3 +1,4 @@
+#pragma warning disable CS8601
 using ColorVision.Common.Algorithms;
 using ColorVision.Database;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
@@ -43,9 +44,9 @@ namespace ProjectARVRPro.Process.W51
                             DFovView view1 = new DFovView(algResultModels[0]);
 
 
-                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * recipeConfig.DiagonalFieldOfViewAngle.Fix;
-                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.ClolorVisionH_Fov * recipeConfig.HorizontalFieldOfViewAngle.Fix;
-                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.ClolorVisionV_Fov * recipeConfig.VerticalFieldOfViewAngle.Fix;
+                            view1.Result.result.D_Fov = recipeConfig.DiagonalFieldOfViewAngle.Apply(view1.Result.result.D_Fov);
+                            view1.Result.result.ClolorVisionH_Fov = recipeConfig.HorizontalFieldOfViewAngle.Apply(view1.Result.result.ClolorVisionH_Fov);
+                            view1.Result.result.ClolorVisionV_Fov = recipeConfig.VerticalFieldOfViewAngle.Apply(view1.Result.result.ClolorVisionV_Fov);
 
 
                             testResult.DiagonalFieldOfViewAngle.LowLimit = recipeConfig.DiagonalFieldOfViewAngle.Min;

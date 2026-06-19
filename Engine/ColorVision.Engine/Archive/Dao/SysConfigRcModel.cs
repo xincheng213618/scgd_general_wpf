@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CA1863
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -7,22 +8,24 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Archive.Dao
 {
     [SugarTable("t_scgd_sys_config_rc")]
     public class SysConfigRcModel : ViewEntity 
     {
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "Code")]
+        [LocalizedDisplayName(nameof(Resources.Code))]
         public string Code { get; set; }
 
-        [SugarColumn(ColumnName ="name"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "RCName")]
+        [SugarColumn(ColumnName ="name"), LocalizedDisplayName(nameof(Resources.RCName))]
         public string Name { get; set; }
 
         [SugarColumn(ColumnName ="platform")]
         public string Platform { get; set; }
 
-        [SugarColumn(ColumnName ="rest_address"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "RESTAddress")]
+        [SugarColumn(ColumnName ="rest_address"), LocalizedDisplayName(nameof(Resources.RESTAddress))]
         public string RestAddress { get; set; }
 
         [SugarColumn(ColumnName ="version")]
@@ -34,13 +37,13 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName ="admin_authorization")]
         public string AdminAuthorization { get; set; }
 
-        [SugarColumn(ColumnName ="monitor_id"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ServerMonitorConfig")]
+        [SugarColumn(ColumnName ="monitor_id"), LocalizedDisplayName(nameof(Resources.ServerMonitorConfig))]
         public int? MonitorId { get; set; }
 
-        [SugarColumn(ColumnName ="archived_id"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ArchiveConfiguration")]
+        [SugarColumn(ColumnName ="archived_id"), LocalizedDisplayName(nameof(Resources.ArchiveConfiguration))]
         public int? ArchivedId { get; set; }
 
-        [SugarColumn(ColumnName ="mqtt_cfg_id"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "MqttConfigId")]
+        [SugarColumn(ColumnName ="mqtt_cfg_id"), LocalizedDisplayName(nameof(Resources.MqttConfigId))]
         public int? MqttCfgId { get; set; }
 
         [SugarColumn(ColumnName ="mqtt_is_server")]
@@ -52,10 +55,10 @@ namespace ColorVision.Engine.Archive.Dao
         [SugarColumn(ColumnName ="is_delete")]
         public bool IsDelete { get; set; }
 
-        [SugarColumn(ColumnName ="tenant_id"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "TenantId")]
+        [SugarColumn(ColumnName ="tenant_id"), LocalizedDisplayName(nameof(Resources.TenantId))]
         public int? TenantId { get; set; }
 
-        [SugarColumn(ColumnName ="create_date"), ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "CreationDate")]
+        [SugarColumn(ColumnName ="create_date"), LocalizedDisplayName(nameof(Resources.CreationDate))]
         public DateTime CreateDate { get; set; } = DateTime.Now;
 
         [SugarColumn(ColumnName ="remark")]

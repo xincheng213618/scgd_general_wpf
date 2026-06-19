@@ -1,4 +1,5 @@
-﻿namespace ProjectARVRPro.Process
+﻿#pragma warning disable CA1852
+namespace ProjectARVRPro.Process
 {
     internal class ProcessMetaPersist
     {

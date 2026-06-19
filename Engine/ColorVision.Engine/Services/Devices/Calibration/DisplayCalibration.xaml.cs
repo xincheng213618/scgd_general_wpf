@@ -5,15 +5,16 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using MQTTMessageLib.FileServer;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
@@ -27,6 +28,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; OnPropertyChanged(); } }
         private double _ExpTimeB = 10;
+
+        [Browsable(false)]
+        public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
+        private DisplayShaderFilterState _DisplayShaderFilter = new DisplayShaderFilterState();
     }
 
     /// <summary>
@@ -159,13 +164,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
-            operations.Register(
-                CalibrationButton,
-                "calibration",
-                Properties.Resources.Calculate,
-                Properties.Resources.Calibration,
-                Brushes.Red,
-                expectedDurationProvider: () => Math.Max(500, Device.DisplayConfig.ExpTimeR + Device.DisplayConfig.ExpTimeG + Device.DisplayConfig.ExpTimeB));
+            operations.Register(CalibrationButton, options =>
+            {
+                options.ExpectedDurationProvider = () => Math.Max(500, Device.DisplayConfig.ExpTimeR + Device.DisplayConfig.ExpTimeG + Device.DisplayConfig.ExpTimeB);
+            });
             return operations;
         }
 
@@ -270,12 +272,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
             return true;
         }
-
-        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
-        }
-
 
         private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
         {

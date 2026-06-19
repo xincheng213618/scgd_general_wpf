@@ -152,8 +152,36 @@ namespace ColorVision.Copilot.Mcp
         {
             lock (SyncRoot)
             {
-                return RecentEntries.LastOrDefault(entry => !entry.Success);
+                return RecentEntries.LastOrDefault(IsRealFailureEntry);
             }
+        }
+
+        public static bool IsRealFailureEntry(CopilotMcpAuditEntry entry)
+        {
+            return !entry.Success && !IsApprovalFlowEntry(entry);
+        }
+
+        public static bool IsApprovalFlowEntry(CopilotMcpAuditEntry entry)
+        {
+            if (entry.Success)
+                return false;
+
+            var toolName = entry.ToolName ?? string.Empty;
+            if (string.Equals(toolName, "action_rejected", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "action_expired", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var error = entry.ErrorMessage ?? string.Empty;
+            return error.Contains("confirmation_required", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("pending_user_confirmation", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("risk_level: confirmation-required", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("risk_level=confirmation-required", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_pending", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_not_approved", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_rejected", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_expired", StringComparison.OrdinalIgnoreCase);
         }
 
         public static void ClearForTests()

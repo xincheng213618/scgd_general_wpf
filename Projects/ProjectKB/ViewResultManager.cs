@@ -1,6 +1,8 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI;
+using ProjectKB.Auth;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -107,26 +109,39 @@ namespace ProjectKB
 
         public void EditConfig()
         {
+            if (!RequireAdmin()) return;
+
             new PropertyEditorWindow(Config) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             ConfigService.Instance.SaveConfigs();
         }
+
         public void ViewReslutsClear()
         {
+            if (!RequireAdmin()) return;
+
             ViewReslutsSelectedIndex = -1;
             ViewResluts.Clear();
         }
+
         public void Query()
         {
-            Query(null,null,Config.Count);
+            if (!RequireAdmin()) return;
+
+            QueryCore(null,null,Config.Count);
         }
 
         public void Delete(int index)
         {
+            if (!RequireAdmin()) return;
+            if (index < 0 || index >= ViewResluts.Count) return;
+
             ViewResluts.RemoveAt(index);
         }
 
         public void Save()
         {
+            if (!RequireAdmin()) return;
+
             if (ViewResluts.Count >0 &&  ViewReslutsSelectedIndex > -1)
             {
                 if (ViewResluts[ViewReslutsSelectedIndex] is KBItemMaster kbItemMaster)
@@ -188,6 +203,8 @@ namespace ProjectKB
 
         public void GenericQuery()
         {
+            if (!RequireAdmin()) return;
+
             GenericQuery<KBItemMaster> genericQuery = new GenericQuery<KBItemMaster>(_db,ViewResluts);
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
@@ -197,6 +214,13 @@ namespace ProjectKB
         /// 根据条件查询，举例：根据SN或Model等
         /// </summary>
         public void Query(string model = null, string sn = null, int count = -1)
+        {
+            if (!RequireAdmin()) return;
+
+            QueryCore(model, sn, count);
+        }
+
+        private void QueryCore(string model = null, string sn = null, int count = -1)
         {
             ViewResluts.Clear();
 
@@ -214,6 +238,11 @@ namespace ProjectKB
         {
             _db?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private static bool RequireAdmin()
+        {
+            return KBAuthManager.GetInstance().RequireAdmin(Application.Current.GetActiveWindow());
         }
     }
 }

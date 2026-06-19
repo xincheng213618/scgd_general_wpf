@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.ThirdPartyApps;
+﻿#pragma warning disable CA1861
+using ColorVision.Common.ThirdPartyApps;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
         private const string Url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/navicat/navicat161_premium_cs_x64.exe";
         private const string NavicatExeFileName = "navicat.exe";
         private const string DefaultNavicatExePath = @"C:\Program Files\PremiumSoft\Navicat Premium 16\navicat.exe";
-        private static readonly string DownloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+        private static readonly string DownloadDir = Environments.DirToolPackageCache;
 
         public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
@@ -23,8 +24,8 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 new ThirdPartyAppInfo
                 {
                     Name = "Navicat",
-                    Group = Properties.Resources.InstallTools,
-                    Order = 50,
+                    Group = ThirdPartyAppGroupNames.CommonTools,
+                    Order = -897,
                     ExecutableFileName = NavicatExeFileName,
                     InstallAction = DownloadAndInstall,
                     KnownExePaths = new[]

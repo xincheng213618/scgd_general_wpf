@@ -1,3 +1,4 @@
+#pragma warning disable CA1863
 using System.Collections;
 using System.Windows;
 using System.Windows.Controls;

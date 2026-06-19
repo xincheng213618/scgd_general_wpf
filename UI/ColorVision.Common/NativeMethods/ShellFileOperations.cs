@@ -24,8 +24,10 @@ namespace ColorVision.Common.NativeMethods
     {
         public const uint FO_COPY = 0x0002;
         public const uint FO_MOVE = 0x0001; // 添加 FO_MOVE 常量
+        public const uint FO_DELETE = 0x0003;
         public const ushort FOF_NOCONFIRMATION = 0x0010;
         public const ushort FOF_NOCONFIRMMKDIR = 0x0200;
+        public const ushort FOF_ALLOWUNDO = 0x0040;
 
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
         public static extern int SHFileOperation(ref SHFILEOPSTRUCT FileOp);
@@ -54,6 +56,20 @@ namespace ColorVision.Common.NativeMethods
             };
             int result = SHFileOperation(ref fileOp);
             return result;
+        }
+
+        public static int DeleteToRecycleBin(params string[] paths)
+        {
+            if (paths == null || paths.Length == 0)
+                return 0;
+
+            SHFILEOPSTRUCT fileOp = new SHFILEOPSTRUCT
+            {
+                wFunc = FO_DELETE,
+                pFrom = string.Join('\0', paths) + "\0\0",
+                fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION
+            };
+            return SHFileOperation(ref fileOp);
         }
     }
 }

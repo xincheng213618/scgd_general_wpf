@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1863
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
 using Newtonsoft.Json;

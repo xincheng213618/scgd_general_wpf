@@ -16,6 +16,7 @@ namespace ColorVision.Copilot
         GLM,
         MiniMax,
         Xiaomi,
+        SenseNova,
     }
 
     public sealed class CopilotVendorOption
@@ -88,7 +89,7 @@ namespace ColorVision.Copilot
             new CopilotVendorPreset
             {
                 VendorType = CopilotVendorType.GLM,
-                Label = "GLM / 智谱",
+                Label = "Zhipu GLM",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://open.bigmodel.cn/api/paas/v4",
                 ModelPresets = new[] { "glm-4.5", "glm-4.5-air", "glm-4-flash" },
@@ -104,15 +105,23 @@ namespace ColorVision.Copilot
             new CopilotVendorPreset
             {
                 VendorType = CopilotVendorType.Xiaomi,
-                Label = "小米 Mimo",
+                Label = "Xiaomi Mimo",
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 AnthropicCompatibleBaseUrl = "https://api.xiaomimimo.com/anthropic",
                 ModelPresets = new[] { "mimo-v2.5-pro", "mimo-v2.5" },
             },
             new CopilotVendorPreset
             {
+                VendorType = CopilotVendorType.SenseNova,
+                Label = "SenseNova",
+                DefaultProviderType = CopilotProviderType.OpenAICompatible,
+                OpenAICompatibleBaseUrl = "https://token.sensenova.cn/v1",
+                ModelPresets = new[] { "sensenova-6.7-flash-lite" },
+            },
+            new CopilotVendorPreset
+            {
                 VendorType = CopilotVendorType.Custom,
-                Label = "自定义",
+                Label = "Custom",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 ModelPresets = Array.Empty<string>(),
             },
@@ -156,6 +165,9 @@ namespace ColorVision.Copilot
 
             if (ContainsAny(normalizedBaseUrl, "minimaxi", "minimax") || ContainsAny(normalizedModel, "minimax"))
                 return CopilotVendorType.MiniMax;
+
+            if (ContainsAny(normalizedBaseUrl, "sensenova") || ContainsAny(normalizedModel, "sensenova"))
+                return CopilotVendorType.SenseNova;
 
             if (ContainsAny(normalizedBaseUrl, "bigmodel", "zhipu") || ContainsAny(normalizedModel, "glm"))
                 return CopilotVendorType.GLM;

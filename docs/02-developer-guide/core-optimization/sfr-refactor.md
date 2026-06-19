@@ -1,8 +1,10 @@
-# SFR 模块重构完成文档
+# SFR 模块简化记录
 
 ## 重构概述
 
-SFR 模块已从分散的三层结构重构为集中式结构，符合 Core 模块的统一架构设计。
+SFR 模块已收敛为一个 native slanted-edge 实现。未被产品调用的 cylinder 分支已移除，导出层只保留稳定的 C ABI，算法细节集中在 `Native/opencv_helper/algorithm/sfr/`。
+
+当前实现以 `sfrmat5` 的数值语义为准：彩色图先按 G 通道判断是否旋转，R/G/B/L 各自进行边缘拟合，频率轴使用 luminance 边缘角修正，L 通道权重为 `0.213*R + 0.715*G + 0.072*B`。
 
 ## 目录结构变化
 
@@ -30,9 +32,7 @@ Core/opencv_helper/
 Core/opencv_helper/
 ├── algorithm/
 │   └── sfr/                   # SFR 算法实现
-│       ├── sfr_base.h/.cpp    # 基础工具函数（原 general）
-│       ├── sfr_slanted.h/.cpp # 斜边法 SFR（原 slanted）
-│       └── sfr_cylinder.h/.cpp# 圆柱法 SFR（原 cylinder）
+│       └── sfr_slanted.h/.cpp # slanted-edge SFR 主实现
 │
 ├── include/cvcore/
 │   └── sfr.h                  # 统一接口头文件
@@ -49,12 +49,6 @@ packages/sfr/                  # 标记为废弃（可删除）
 |-----------|-----------|------|
 | `::sfr` | `cvcore::sfr` | 统一到 cvcore 命名空间 |
 
-### 向后兼容
-```cpp
-// 在 sfr_base.h 中提供别名
-namespace sfr = cvcore::sfr;
-```
-
 ## API 变更
 
 ### C++ 接口
@@ -62,17 +56,12 @@ namespace sfr = cvcore::sfr;
 | 旧 API | 新 API | 说明 |
 |--------|--------|------|
 | `sfr::CalSFR()` | `cvcore::sfr::calculateSlantedEdgeSFR()` | 新名称更清晰 |
-| `sfr::circle` | `cvcore::sfr::Circle` | 类型名大写 |
-| `sfr::circle_fit()` | `cvcore::sfr::fitCircle()` | 动词开头 |
-| `sfr::esf()` | `cvcore::sfr::cylinderESF()` | 区分方法 |
-| `sfr::lsf()` | `cvcore::sfr::cylinderLSF()` | 区分方法 |
-| `sfr::mtf()` | `cvcore::sfr::cylinderMTF()` | 区分方法 |
 
 ### 新增 C++ 接口
 ```cpp
 // 结构化返回结果
 struct SFRResult {
-    double vslope;
+    double edgeSlope;
     std::vector<double> freq;
     std::vector<double> sfr;
     double mtf10_norm;
@@ -83,29 +72,12 @@ struct SFRResult {
     bool isValid() const;
 };
 
-struct CylinderSFRResult {
-    Circle circle;
-    std::vector<cv::Point2d> esf;
-    std::vector<cv::Point2d> lsf;
-    std::vector<cv::Point2d> mtf;
-    double mtf10;
-    double mtf50;
-    
-    bool isValid() const;
-};
-
 // 新的主函数
 SFRResult calculateSlantedEdgeSFR(const cv::Mat& img,
                                    double del = 1.0,
                                    int npol = 5,
                                    int nbin = 4,
-                                   double vslope = -1);
-
-CylinderSFRResult calculateCylinderSFR(const cv::Mat& mat,
-                                        int thresh = 80,
-                                        float roi = 15.0f,
-                                        float binsize = 0.032f,
-                                        int n_fit = 25);
+                                   double edgeSlope = -1);
 ```
 
 ### C 接口（保持不变）
@@ -118,12 +90,10 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(...);
 
 | 原文件 | 新文件 | 说明 |
 |--------|--------|------|
-| `packages/sfr/include/sfr/general.h` | `Core/opencv_helper/algorithm/sfr/sfr_base.h` | 重命名 |
+| `packages/sfr/include/sfr/general.h` | `Core/opencv_helper/algorithm/sfr/sfr_slanted.cpp` | 内部化，仅保留 slanted 实际使用的数学工具 |
 | `packages/sfr/include/sfr/slanted.h` | `Core/opencv_helper/algorithm/sfr/sfr_slanted.h` | 重命名 |
-| `packages/sfr/include/sfr/cylinder.h` | `Core/opencv_helper/algorithm/sfr/sfr_cylinder.h` | 重命名 |
-| `packages/sfr/src/general.cpp` | `Core/opencv_helper/algorithm/sfr/sfr_base.cpp` | 重命名 |
+| `packages/sfr/src/general.cpp` | `Core/opencv_helper/algorithm/sfr/sfr_slanted.cpp` | 内部化，仅保留 slanted 实际使用的数学工具 |
 | `packages/sfr/src/slanted.cpp` | `Core/opencv_helper/algorithm/sfr/sfr_slanted.cpp` | 重命名 |
-| `packages/sfr/src/cylinder.cpp` | `Core/opencv_helper/algorithm/sfr/sfr_cylinder.cpp` | 重命名 |
 
 ## 编译配置更新
 
@@ -142,17 +112,13 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(...);
 2. **添加源文件**
 ```xml
 <ItemGroup>
-  <ClCompile Include="algorithm\sfr\sfr_base.cpp" />
   <ClCompile Include="algorithm\sfr\sfr_slanted.cpp" />
-  <ClCompile Include="algorithm\sfr\sfr_cylinder.cpp" />
   <ClCompile Include="exports\sfr_export.cpp" />
 </ItemGroup>
 
 <ItemGroup>
   <ClInclude Include="include\cvcore\sfr.h" />
-  <ClInclude Include="algorithm\sfr\sfr_base.h" />
   <ClInclude Include="algorithm\sfr\sfr_slanted.h" />
-  <ClInclude Include="algorithm\sfr\sfr_cylinder.h" />
 </ItemGroup>
 ```
 
@@ -166,17 +132,13 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(...);
 ```cmake
 # SFR 模块
 set(SFR_SOURCES
-    algorithm/sfr/sfr_base.cpp
     algorithm/sfr/sfr_slanted.cpp
-    algorithm/sfr/sfr_cylinder.cpp
     exports/sfr_export.cpp
 )
 
 set(SFR_HEADERS
     include/cvcore/sfr.h
-    algorithm/sfr/sfr_base.h
     algorithm/sfr/sfr_slanted.h
-    algorithm/sfr/sfr_cylinder.h
 )
 
 target_sources(opencv_helper PRIVATE ${SFR_SOURCES} ${SFR_HEADERS})
@@ -233,22 +195,6 @@ if (result.isValid()) {
     std::cout << "MTF50: " << result.mtf50_cypix << " cy/pix" << std::endl;
 }
 
-// 圆柱法 SFR
-cv::Mat cylinder_img = cv::imread("circle.png", cv::IMREAD_GRAYSCALE);
-auto cyl_result = sfr::calculateCylinderSFR(cylinder_img, 80, 15.0f);
-
-if (cyl_result.isValid()) {
-    std::cout << "MTF10: " << cyl_result.mtf10 << std::endl;
-}
-```
-
-### 向后兼容（旧代码）
-```cpp
-// 仍然可以使用旧命名空间
-#include <cvcore/sfr.h>
-
-// 使用旧的调用方式
-sfr::SFRResult result = sfr::CalSFR(img, 1.0, 5, 4, -1);
 ```
 
 ## 优势
@@ -257,7 +203,7 @@ sfr::SFRResult result = sfr::CalSFR(img, 1.0, 5, 4, -1);
 2. **命名一致**: 统一使用 `cvcore::` 命名空间
 3. **接口统一**: 与其他算法模块（如融合）结构一致
 4. **易于维护**: 修改 SFR 只需在一个地方
-5. **向后兼容**: 保留旧 API，平滑迁移
+5. **性能更直接**: 多通道路径只做一次归一化和旋转判断，同时保留 sfrmat5 的逐通道边缘拟合语义
 
 ## 注意事项
 

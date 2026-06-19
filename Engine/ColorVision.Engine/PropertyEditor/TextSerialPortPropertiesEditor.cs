@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1304,CA1863
+using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.UI;
 using System;

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1720,CS8602
+﻿#pragma warning disable CA1720,CA1822,CA1863,CS4014,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.Templates;
@@ -367,6 +367,9 @@ namespace ColorVision.Engine.Services.Flow
             // Use AvalonDock panel for node property editing
             STNodeEditorHelper.UseDockPanel = true;
 
+            STNodeEditorMain.ActiveChanged += STNodeEditorMain_ActiveChangedForCanvasDragLock;
+            SetCanvasDragLock(true);
+
             // Hide the property panel when this view loses focus to another view
             this.Loaded += (s, e) => DockViewManager.GetInstance().ActiveViewChanged += OnActiveViewChanged;
             this.Unloaded += (s, e) => DockViewManager.GetInstance().ActiveViewChanged -= OnActiveViewChanged;
@@ -468,6 +471,23 @@ namespace ColorVision.Engine.Services.Flow
 
         private bool IsMouseDown;
         private System.Drawing.Point lastMousePosition;
+
+        private void SetCanvasDragLock(bool enabled)
+        {
+            if (STNodeEditorMain != null)
+            {
+                STNodeEditorMain.EnableBlankLeftDragCanvas = enabled;
+            }
+        }
+
+        private void STNodeEditorMain_ActiveChangedForCanvasDragLock(object? sender, EventArgs e)
+        {
+            if (STNodeEditorMain.ActiveNode != null && STNodeEditorMain.EnableBlankLeftDragCanvas)
+            {
+                SetCanvasDragLock(false);
+            }
+        }
+
         private void STNodeEditorMain_MouseDown(object sender, WinForms.MouseEventArgs e)
         {
             lastMousePosition = e.Location;
@@ -475,6 +495,13 @@ namespace ColorVision.Engine.Services.Flow
             m_pt_down_in_canvas.X = ((float)e.X - STNodeEditorMain.CanvasOffsetX) / STNodeEditorMain.CanvasScale;
             m_pt_down_in_canvas.Y = ((float)e.Y - STNodeEditorMain.CanvasOffsetY) / STNodeEditorMain.CanvasScale;
             NodeFindInfo nodeFindInfo = STNodeEditorMain.FindNodeFromPoint(m_pt_down_in_canvas);
+
+            if (e.Button == WinForms.MouseButtons.Left
+                && STNodeEditorMain.EnableBlankLeftDragCanvas
+                && (!string.IsNullOrEmpty(nodeFindInfo.Mark) || nodeFindInfo.Node != null || nodeFindInfo.NodeOption != null))
+            {
+                SetCanvasDragLock(false);
+            }
 
             if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
             {
@@ -501,7 +528,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private void STNodeEditorMain_MouseMove(object sender, WinForms.MouseEventArgs e)
         {
-            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
+            if (!STNodeEditorMain.EnableBlankLeftDragCanvas && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
             {        // 计算鼠标移动的距离
                 int deltaX = e.X - lastMousePosition.X;
                 int deltaY = e.Y - lastMousePosition.Y;
@@ -559,6 +586,7 @@ namespace ColorVision.Engine.Services.Flow
         public void Dispose()
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
+            STNodeEditorMain.ActiveChanged -= STNodeEditorMain_ActiveChangedForCanvasDragLock;
 
             STNodeEditorMain?.Dispose();
             winf1?.Dispose();

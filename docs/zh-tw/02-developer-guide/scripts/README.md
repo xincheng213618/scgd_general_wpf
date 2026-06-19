@@ -119,7 +119,7 @@ py Scripts\build_plugin.py -t Projects -p ProjectARVR --no-upload
 
 ### 推薦替代
 
-- 倉庫內外掛：`Scripts\package_plugin.bat Pattern --no-upload`
+- 倉庫內外掛：`Scripts\package_plugin.bat Spectrum --no-upload`
 - 倉庫內專案：`Scripts\package_project.bat ProjectARVR --no-upload`
 - 倉庫外部：`py Scripts\package_cvxp.py --src-dir C:\src\MyPlugin\bin\x64\Release\net10.0-windows --no-upload`
 
@@ -156,12 +156,12 @@ py Scripts\generate_shared_files.py `
 
 ```powershell
 # 僅本地打包
-py Scripts\package_cvxp.py --project-file Plugins\Pattern\Pattern.csproj --build --no-upload
+py Scripts\package_cvxp.py --project-file Plugins\Spectrum\Spectrum.csproj --build --no-upload
 
 # 指定編譯輸出目錄
 py Scripts\package_cvxp.py `
-    --src-dir Plugins\Pattern\bin\x64\Release\net10.0-windows `
-    --plugin-root Plugins\Pattern
+    --src-dir Plugins\Spectrum\bin\x64\Release\net10.0-windows `
+    --plugin-root Plugins\Spectrum
 
 # 僅傳編譯輸出目錄，自動推斷外掛根目錄
 py Scripts\package_cvxp.py `
@@ -205,7 +205,7 @@ py Scripts\package_cvxp.py `
 ### 用法
 
 ```powershell
-Scripts\package_plugin.bat Pattern --no-upload
+Scripts\package_plugin.bat Spectrum --no-upload
 ```
 
 ## package_project.bat - 倉庫內專案快捷入口

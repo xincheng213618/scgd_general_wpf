@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿#pragma warning disable CA1707
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Services.Devices.PG

@@ -2,14 +2,14 @@
 #include <iostream>
 #include <chrono>
 
-int main() {
-    cv::VideoCapture cap("D:\\3dsvr-1889\\twojav.com@13dsvr01889_1_8k.mp4");
+int runVideoPlayback(const char* videoPath) {
+    cv::VideoCapture cap(videoPath);
     if (!cap.isOpened()) return -1;
 
-    int total_frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
+    int total_frames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
     double fps = cap.get(cv::CAP_PROP_FPS);
-    int width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-    int height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+    int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
+    int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
 
     std::cout << "Video: " << width << "x" << height << " @ " << fps << "fps" << std::endl;
 
@@ -29,7 +29,7 @@ int main() {
             auto t2 = std::chrono::high_resolution_clock::now();
 
             if (frame.empty()) break;
-            current_pos = cap.get(cv::CAP_PROP_POS_FRAMES);
+            current_pos = static_cast<int>(cap.get(cv::CAP_PROP_POS_FRAMES));
 
             // ⚠️ 关键优化：8K 必须缩放，否则 imshow 极慢
             cv::Mat display;
@@ -67,7 +67,6 @@ int main() {
         }
     }
 
-cleanup:
     cap.release();
     cv::destroyAllWindows();
     return 0;

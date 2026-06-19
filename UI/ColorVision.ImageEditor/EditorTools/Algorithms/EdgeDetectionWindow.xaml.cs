@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using log4net;
@@ -11,12 +12,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     public partial class EdgeDetectionWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EdgeDetectionWindow));
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _image;
 
-        public EdgeDetectionWindow(ImageView imageView)
+        public EdgeDetectionWindow(ImageProcessingContext image)
         {
             InitializeComponent();
-            _imageView = imageView;
+            _image = image;
         }
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -31,24 +32,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         private void ApplyEdgeDetection(double threshold1, double threshold2)
         {
-            if (_imageView.HImageCache == null) return;
+            if (_image.HImageCache == null) return;
 
-            int ret = OpenCVMediaHelper.M_ApplyCannyEdgeDetection((HImage)_imageView.HImageCache, out HImage hImageProcessed, threshold1, threshold2);
+            int ret = OpenCVMediaHelper.M_ApplyCannyEdgeDetection((HImage)_image.HImageCache, out HImage hImageProcessed, threshold1, threshold2);
 
             if (ret == 0)
             {
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(_imageView.FunctionImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(_image.FunctionImage, hImageProcessed))
                     {
-                        double DpiX = _imageView.Config.GetProperties<double>("DpiX");
-                        double DpiY = _imageView.Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmap();
-                        hImageProcessed.Dispose();
+                        double DpiX = _image.Config.GetProperties<double>("DpiX");
+                        double DpiY = _image.Config.GetProperties<double>("DpiY");
+                        var image = hImageProcessed.ToWriteableBitmapAndDispose();
 
-                        _imageView.FunctionImage = image;
+                        _image.FunctionImage = image;
                     }
-                    _imageView.ImageShow.Source = _imageView.FunctionImage;
+                    _image.ImageShow.Source = _image.FunctionImage;
                 });
             }
         }
@@ -56,12 +56,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private void Apply_Click(object sender, RoutedEventArgs e)
         {
             // 应用更改到原始图像
-            if (_imageView.FunctionImage is System.Windows.Media.Imaging.WriteableBitmap writeableBitmap)
+            if (_image.FunctionImage is System.Windows.Media.Imaging.WriteableBitmap writeableBitmap)
             {
-                _imageView.ViewBitmapSource = writeableBitmap;
-                _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-                _imageView.HImageCache = null;
-                _imageView.FunctionImage = null;
+                _image.ViewBitmapSource = writeableBitmap;
+                _image.ImageShow.Source = _image.ViewBitmapSource;
+                _image.HImageCache = null;
+                _image.FunctionImage = null;
             }
             Close();
         }
@@ -69,9 +69,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             // 取消更改，恢复原始图像
-            _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-            _imageView.FunctionImage = null;
+            _image.ImageShow.Source = _image.ViewBitmapSource;
+            _image.FunctionImage = null;
             Close();
         }
     }
 }
+

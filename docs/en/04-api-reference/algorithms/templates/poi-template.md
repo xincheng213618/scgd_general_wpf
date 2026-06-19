@@ -23,8 +23,24 @@ Therefore, what this page really covers is not "a particular POI detection algor
 - `Engine/ColorVision.Engine/Templates/POI/POIFilters/TemplatePoiFilterParam.cs`
 - `Engine/ColorVision.Engine/Templates/POI/POIRevise/TemplatePoiReviseParam.cs`
 - `Engine/ColorVision.Engine/Templates/POI/POIOutput/TemplatePoiOutputParam.cs`
-- `Engine/ColorVision.Engine/Templates/POI/POIGenCali/TemplatePoiGenCalParam.cs`
+- `Engine/ColorVision.Engine/Templates/POI/POIGenCali/TemplatePOICalParam.cs`
 - `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/POINodeConfigurators.cs`
+
+## Current Template Matrix
+
+Only the main POI template uses the dedicated point tables. Companion templates are still dictionary templates, so do not merge them into one persistence model.
+
+| Template | Dictionary/code | Editor entry | Main purpose |
+| --- | --- | --- | --- |
+| `TemplatePoi` | `TemplateDicId = -1`, `Code = POI` | Standalone `EditPoiParam` window | Saves point sets, dimensions, corners, config JSON, and point details. |
+| `TemplateBuildPoi` | `TemplateDicId = 16`, `Code = BuildPOI` | Template/layout UI | Builds POI by rules or CAD mapping. |
+| `TemplatePoiFilterParam` | `TemplateDicId = 23`, `Code = POIFilter` | Custom filter editor | Optional filter template during POI execution. |
+| `TemplatePoiReviseParam` | `TemplateDicId = 24`, `Code = PoiRevise` | Template editor | Optional revision template during POI execution. |
+| `TemplatePoiGenCalParam` | `TemplateDicId = 25`, `Code = POIGenCali` | Custom calibration editor | Used by POI calibration/revision Flow nodes. |
+| `TemplatePoiOutputParam` | `TemplateDicId = 27`, `Code = PoiOutput` | Custom output editor | Optional file output template during POI execution. |
+| `TemplateBuildPOIAA` | `TemplateDicId = 41`, `Code = BuildPOI` | JSON template editor | JSON V2 branch that builds POI from AA point-finding results. |
+
+The main template stores real point positions. Companion templates describe how points are built, filtered, revised, and output.
 
 ## How the Current Main Chain Runs
 
@@ -60,8 +76,8 @@ So the POI template is currently closer to a combination of "point set template 
 
 The POI main template does not use the regular `ModMasterModel`/`ModDetailModel` default path. It currently uses dedicated tables:
 
-- `PoiMasterDao`
-- `PoiDetailDao`
+- `PoiMasterDao` -> `t_scgd_algorithm_poi_template_master`
+- `PoiDetailDao` -> `t_scgd_algorithm_poi_template_detail`
 
 `PoiParam.LoadPoiDetailFromDB(...)` loads point details back into `PoiPoints`; the extension method `Save2DB(...)` will:
 
@@ -70,6 +86,13 @@ The POI main template does not use the regular `ModMasterModel`/`ModDetailModel`
 - Rewrite the entire set of `PoiDetailModel` using BulkCopy
 
 This is also one of the places where POI pages are most easily written incorrectly: it is not "a set of regular detail items in the generic template table," but has its own point table.
+
+| Table | Key fields | Handoff meaning |
+| --- | --- | --- |
+| `t_scgd_algorithm_poi_template_master` | `name`, `type`, `width`, `height`, corner coordinates, `cfg_json`, `tenant_id`, `is_delete` | POI template body, canvas size, and config JSON. |
+| `t_scgd_algorithm_poi_template_detail` | `pid`, `pt_type`, `pix_x`, `pix_y`, `pix_width`, `pix_height`, `remark` | Pixel position and size for each POI point or region. |
+
+Deleting a template currently deletes the master record and removes it from the list. Copy/import resets template and point `Id` values to `-1`; if copied templates overwrite old points in the field, check this reset path first.
 
 ### Import, Copy, and Create
 
@@ -103,6 +126,16 @@ The currently sent parameters are not limited to the main template, but may also
 
 This shows that the POI runtime chain is already a "multi-template combined request," not a single template running alone.
 
+| Parameter | Source | Meaning |
+| --- | --- | --- |
+| `TemplateParam` | `TemplatePoi` | Required main POI template. |
+| `FilterTemplate` | `TemplatePoiFilterParam` | Sent when `Id != -1`. |
+| `ReviseTemplate` | `TemplatePoiReviseParam` | Sent when `Id != -1`. |
+| `OutputTemplate` | `TemplatePoiOutputParam` | Sent when `Id != -1`. |
+| `POIStorageType` | `POIStorageModel` | Sent in file mode to distinguish DB point sets from external point files. |
+| `POIPointFileName` | File picker | External point file path in file mode. |
+| `IsSubPixel`, `IsCCTWave` | Algorithm UI config | Runtime options for sub-pixel/CCT wave behavior. |
+
 ### Layout and Companion Templates
 
 `AlgorithmBuildPoi` is another key chain. It currently handles:
@@ -129,6 +162,28 @@ POI is already a shared primitive, not a private template of a single algorithm.
 2. `AlgorithmPoiAnalysis` additionally carries `POITemplateParam` alongside the JSON analysis template.
 3. Algorithms like `AlgorithmSFRFindROI` and `AlgorithmOLEDAOI` also additionally reference `TemplatePoi`.
 
+| Flow configurator branch | Device/input | Template selectors | Handoff focus |
+| --- | --- | --- | --- |
+| POI calibration revision | `DeviceAlgorithm` | `TemplatePoiGenCalParam` | Handles calibration/revision templates only; it does not directly select the main POI. |
+| POI filter/revise/output | `DeviceAlgorithm` | `TemplatePoiFilterParam`, `TemplatePoiReviseParam`, `TemplatePoiOutputParam` | Post-processing combination for existing POI results. |
+| POI execution | `DeviceAlgorithm` + image path | `TemplatePoi`, filter, revise, output | Full `Event_POI_GetData` runtime chain. |
+| BuildPOI | `DeviceAlgorithm` + image path | `TemplateBuildPoi` or `TemplateBuildPOIAA`, plus `RePOI`, `LayoutROI`, `SavePOI` | Supports both traditional layout and JSON AA layout branches. |
+| PoiAnalysis | `DeviceAlgorithm` | `TemplatePoiAnalysis` | JSON analysis templates still consume POI-related results. |
+
+## Result Persistence And Display
+
+POI results are not a single result type; handlers dispatch by `ViewResultAlgType`:
+
+| Result type | Display/export entry | Table/file clues |
+| --- | --- | --- |
+| `POI`, `POI_Y` | `ViewHanlePOIY` | CSV export; values come from POI detail results. |
+| `POI_XYZ` | `ViewHanlePOIXZY` | CSV export and XYZ result display. |
+| `POI_XYZ_File`, `POI_Y_File`, `POI_CIE_File` | `ViewHanlePOIXZY` | File-style results, often stored through `t_scgd_algorithm_result_detail_poi_cie_file`. |
+| `RealPOI`, `POI_XYZ_V2`, `POI_Y_V2`, `KB_Output_Lv`, `KB_Output_CIE` | `ViewHandleRealPOI` | V2/project output chain; always check actual `ResultType`. |
+| `BuildPOI`, `BuildPOI_File` | `ViewHandleBuildPoi`, `ViewHandleBuildPoiFile` | Layout result or file result that may generate new POI data. |
+
+Point-value detail currently includes `t_scgd_algorithm_result_detail_poi_mtf`, with fields such as `poi_id`, `poi_name`, `poi_type`, `poi_x/y`, `poi_width/height`, and `value`. If UI display and export disagree, first identify which handler handled the result type, then inspect the matching detail or file table.
+
 ## Most Common Mistakes to Avoid
 
 ### POI Is Not a Single Algorithm
@@ -146,6 +201,21 @@ The main template depends on `PoiMasterDao` and `PoiDetailDao`; continuing to ex
 ### File Mode and Database Mode Coexist
 
 `AlgorithmPoi` explicitly supports both `POIStorageModel.Db` and `POIStorageModel.File` paths. Documentation can no longer write POI as "only existing in the database."
+
+### BuildPOI and POI Execution Are Different Events
+
+`AlgorithmBuildPoi` publishes `Event_Build_POI`; `AlgorithmPoi` publishes `Event_POI_GetData`. The former focuses on generating point sets, while the latter reads/outputs values based on point sets. Do not mix their template parameters during field debugging.
+
+## Acceptance Checks
+
+| Scenario | Required check |
+| --- | --- |
+| Create/save POI | `t_scgd_algorithm_poi_template_master` has the master record and `t_scgd_algorithm_poi_template_detail` has matching point details. |
+| Copy/import POI | Template and point detail `Id` values are reset, and creating the new template does not overwrite the old one. |
+| File-mode execution | MQTT params contain `POIStorageType` and `POIPointFileName`; DB mode does not depend on external point files. |
+| Filter/revise/output | Selecting companion templates adds `FilterTemplate`, `ReviseTemplate`, and `OutputTemplate`. |
+| BuildPOI CADMapping | Request contains `LayoutPolygon` and `CADMappingParam`, with four-point ROI and CAD file path correct. |
+| Result display | The correct handler is selected by `ViewResultAlgType`, and CSV fields match table/file results. |
 
 ## Recommended Reading Order
 

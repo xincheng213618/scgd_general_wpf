@@ -1,4 +1,5 @@
-﻿using ProjectARVRPro.Process;
+﻿#pragma warning disable CS0168
+using ProjectARVRPro.Process;
 using System.Collections;
 using System.ComponentModel;
 using System.IO;
@@ -90,8 +91,9 @@ namespace ProjectARVRPro
             var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
             foreach (var prop in results.GetType().GetProperties())
             {
-                // Skip DynamicTestResults - handled separately below
-                if (prop.Name == nameof(ObjectiveTestResult.DynamicTestResults))
+                // Skip dynamic dictionaries - handled separately below
+                if (prop.Name == nameof(ObjectiveTestResult.DynamicTestResults) ||
+                    prop.Name == nameof(ObjectiveTestResult.DynamicPoixyuvDatas))
                     continue;
 
                 if (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string))
@@ -130,6 +132,22 @@ namespace ProjectARVRPro
                         {
                             rows.Add(FormatCsvRow(testScreenName, testItem.Name, testItem));
                         }
+                    }
+                }
+            }
+
+            if (results.DynamicPoixyuvDatas != null)
+            {
+                foreach (var kvp in results.DynamicPoixyuvDatas)
+                {
+                    string testScreenName = kvp.Key;
+                    foreach (var item in kvp.Value)
+                    {
+                        rows.Add($"{testScreenName},{item.Name}(Lv),{item.Y},cd/m2,0,0,None");
+                        rows.Add($"{testScreenName},{item.Name}(Cx),{item.x},None,0,0,None");
+                        rows.Add($"{testScreenName},{item.Name}(Cy),{item.y},None,0,0,None");
+                        rows.Add($"{testScreenName},{item.Name}(u'),{item.u},None,0,0,None");
+                        rows.Add($"{testScreenName},{item.Name}(v'),{item.v},None,0,0,None");
                     }
                 }
             }

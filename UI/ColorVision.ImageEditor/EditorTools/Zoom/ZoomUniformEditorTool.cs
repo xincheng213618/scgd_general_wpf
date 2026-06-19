@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using System.Windows.Input;
 
@@ -11,12 +11,8 @@ namespace ColorVision.ImageEditor.EditorTools.Zoom
 
         public int Order { get; set; } = 3;
 
-        public object Icon { get; set; } = IEditorToolFactory.TryFindResource("DrawingImage1_1");
+        public object Icon { get; set; } = IEditorToolFactory.TryFindResource("DrawingImageexpend");
 
-        public ICommand? Command { get; set; } = new RelayCommand((o) =>
-        {
-            EditorContext.Zoombox.ZoomUniform();
-        });
+        public ICommand? Command { get; set; } = new RelayCommand(_ => EditorContext.Zoombox.ZoomUniform());
     }
-
 }

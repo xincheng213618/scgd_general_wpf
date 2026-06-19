@@ -30,6 +30,7 @@ namespace ColorVision.Update
         public required Version LatestVersion { get; init; }
         public required IReadOnlyList<Version> VersionsToApply { get; init; }
         public required bool IsIncremental { get; init; }
+        public bool CreateBackupBeforeUpdate { get; init; } = true;
 
         public Version TargetVersion => VersionsToApply.Count > 0
             ? VersionsToApply[VersionsToApply.Count - 1]
@@ -55,6 +56,12 @@ namespace ColorVision.Update
         /// </summary>
         public string SkippedVersion { get => _SkippedVersion; set { _SkippedVersion = value; OnPropertyChanged(); } }
         private string _SkippedVersion = string.Empty;
+
+        /// <summary>
+        /// 增量更新前是否创建程序备份
+        /// </summary>
+        public bool CreateBackupBeforeIncrementalUpdate { get => _CreateBackupBeforeIncrementalUpdate; set { _CreateBackupBeforeIncrementalUpdate = value; OnPropertyChanged(); } }
+        private bool _CreateBackupBeforeIncrementalUpdate = true;
 
     }
 
@@ -88,6 +95,13 @@ namespace ColorVision.Update
 
         public static string GetIncrementalPackageDownloadUrl(Version version) => BuildAppApiUrl($"updates/{Uri.EscapeDataString(version.ToString())}/download");
 
+        public static string GetApplicationPackageCacheDirectory(bool isIncremental)
+        {
+            return isIncremental
+                ? Environments.DirApplicationIncrementalPackageCache
+                : Environments.DirApplicationFullPackageCache;
+        }
+
         public static void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
 
         public static void Update(Version Version, string DownloadPath,bool IsIncrement = false, Action? downloadFailedAction = null)
@@ -100,7 +114,7 @@ namespace ColorVision.Update
             {
                 if (task.Status == DownloadStatus.Completed)
                 {
-                    UpdateApplication(task.SavePath, IsIncrement);
+                    UpdateApplication(task.SavePath, IsIncrement, Version);
                 }
                 else
                 {
@@ -118,7 +132,7 @@ namespace ColorVision.Update
             if (LatestVersion == new Version()) return;
             await InvokeOnUiThreadAsync(() =>
             {
-                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
+                Update(LatestVersion, GetApplicationPackageCacheDirectory(isIncremental: false));
             });
         }
 
@@ -225,7 +239,7 @@ namespace ColorVision.Update
                         MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), msg, $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
                         if (result == MessageBoxResult.Yes)
                         {
-                            Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
+                            Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
                         }
                         else if (result == MessageBoxResult.No)
                         {
@@ -288,7 +302,7 @@ namespace ColorVision.Update
                         {
                             if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
+                                Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
                             }
                         });
                     }
@@ -298,7 +312,7 @@ namespace ColorVision.Update
                         {
                             if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
+                                Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
                             }
                         });
                     }
@@ -441,18 +455,18 @@ namespace ColorVision.Update
 
         public static void StartUpdatePlan(AutoUpdatePlan plan, Action? downloadFailedAction = null)
         {
-            string downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+            string downloadPath = GetApplicationPackageCacheDirectory(plan.IsIncremental);
 
             if (plan.IsIncremental)
             {
-                UpdateIncrementalChain(plan.VersionsToApply, downloadPath, downloadFailedAction);
+                UpdateIncrementalChain(plan.VersionsToApply, downloadPath, plan.CreateBackupBeforeUpdate, downloadFailedAction);
                 return;
             }
 
             Update(plan.TargetVersion, downloadPath, false, downloadFailedAction);
         }
 
-        private static void UpdateIncrementalChain(IReadOnlyList<Version> versions, string downloadPath, Action? downloadFailedAction)
+        private static void UpdateIncrementalChain(IReadOnlyList<Version> versions, string downloadPath, bool createBackupBeforeUpdate, Action? downloadFailedAction)
         {
             if (versions.Count == 0)
                 return;
@@ -482,7 +496,7 @@ namespace ColorVision.Update
 
             if (versionsToDownload.Count == 0)
             {
-                UpdateIncrementalApplications(orderedVersions.Select(version => downloadedPaths[version.ToString()]).ToList());
+                UpdateIncrementalApplications(orderedVersions.Select(version => downloadedPaths[version.ToString()]).ToList(), createBackupBeforeUpdate);
                 return;
             }
 
@@ -515,7 +529,7 @@ namespace ColorVision.Update
                     return;
                 }
 
-                UpdateIncrementalApplications(orderedPaths);
+                UpdateIncrementalApplications(orderedPaths, createBackupBeforeUpdate);
             }
 
             DownloadWindow.ShowInstance();
@@ -548,10 +562,10 @@ namespace ColorVision.Update
             }
         }
 
-        private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
+        private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths, bool createBackupBeforeUpdate)
         {
             ConfigHandler.GetInstance().SaveConfigs();
-            RestartIsIncrementApplication(downloadPaths);
+            RestartIsIncrementApplication(downloadPaths, null, createBackupBeforeUpdate);
         }
 
         private static List<Version> BuildIncrementalUpdateChain(Version currentVersion, Version latestVersion)
@@ -632,7 +646,7 @@ namespace ColorVision.Update
             }
         }
 
-        private static void UpdateApplication(string downloadPath, bool isIncrement)
+        private static void UpdateApplication(string downloadPath, bool isIncrement, Version? targetVersion = null)
         {
             ConfigHandler.GetInstance().SaveConfigs();
 
@@ -642,7 +656,7 @@ namespace ColorVision.Update
             }
             else
             {
-                RestartApplication(downloadPath);
+                RestartApplication(downloadPath, targetVersion);
             }
         }
 
@@ -654,10 +668,15 @@ namespace ColorVision.Update
 
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths)
         {
-            RestartIsIncrementApplication(downloadPaths, null);
+            RestartIsIncrementApplication(downloadPaths, null, AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate);
         }
 
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths)
+        {
+            RestartIsIncrementApplication(downloadPaths, pluginDownloadPaths, AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate);
+        }
+
+        public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths, bool createBackupBeforeUpdate)
         {
             // 保存数据库配置
             UpdateBackupPrepareResult? backupPrepareResult = null;
@@ -701,18 +720,34 @@ namespace ColorVision.Update
                 if (!hasAnyPackage)
                     throw new InvalidOperationException("Unable to locate incremental update package.");
 
+                int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(tempDirectory);
+                if (skippedShellExtensionFiles > 0)
+                {
+                    log.Info($"Skipped {skippedShellExtensionFiles} shell extension file(s) during incremental update.");
+                }
+
                 // 创建批处理文件内容
                 string batchFilePath = Path.Combine(tempDirectory, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
                 Version? targetVersion = TryGetTargetVersionFromPackagePaths(applicationPackagePaths);
-                backupPrepareResult = UpdateRecoveryService.Instance.PrepareBackup(
-                    tempDirectory,
-                    programDirectory,
-                    CurrentVersion,
-                    targetVersion,
-                    applicationPackagePaths,
-                    pluginPackagePaths);
+                if (createBackupBeforeUpdate)
+                {
+                    ApplicationSnapshotInfo updateSnapshot = ApplicationSnapshotService.Instance.CreateUpdateSnapshot(CurrentVersion, targetVersion);
+                    log.Info($"Created update snapshot before incremental update: {updateSnapshot.FilePath}");
+                    backupPrepareResult = UpdateRecoveryService.Instance.PrepareBackup(
+                        tempDirectory,
+                        programDirectory,
+                        CurrentVersion,
+                        targetVersion,
+                        applicationPackagePaths,
+                        pluginPackagePaths,
+                        updateSnapshot.FilePath);
+                }
+                else
+                {
+                    log.Info("Skipping backup before incremental update by user choice.");
+                }
 
                 string batchContent = CreateIncrementalUpdateBatch(tempDirectory, programDirectory, executableName, backupPrepareResult);
 
@@ -738,7 +773,9 @@ namespace ColorVision.Update
                 }
                 catch (Exception ex)
                 {
-                    UpdateRecoveryService.Instance.MarkFailed($"Failed to start update batch: {ex.Message}");
+                    if (backupPrepareResult != null)
+                        UpdateRecoveryService.Instance.MarkFailed($"Failed to start update batch: {ex.Message}");
+
                     log.Error("Failed to start incremental update batch.", ex);
                     MessageBox.Show(ex.Message);
                 }
@@ -753,7 +790,28 @@ namespace ColorVision.Update
             }
         }
 
-        private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName, UpdateBackupPrepareResult backupPrepareResult)
+        private static int RemoveShellExtensionFilesFromUpdateStage(string stageDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(stageDirectory) || !Directory.Exists(stageDirectory))
+                return 0;
+
+            int removedCount = 0;
+            foreach (string filePath in Directory.EnumerateFiles(stageDirectory, "ColorVision.ShellExtension*", SearchOption.AllDirectories))
+            {
+                FileAttributes attributes = File.GetAttributes(filePath);
+                if (attributes.HasFlag(FileAttributes.ReadOnly))
+                {
+                    File.SetAttributes(filePath, attributes & ~FileAttributes.ReadOnly);
+                }
+
+                File.Delete(filePath);
+                removedCount++;
+            }
+
+            return removedCount;
+        }
+
+        private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName, UpdateBackupPrepareResult? backupPrepareResult)
         {
             string executablePath = Path.Combine(programDirectory, executableName);
             StringBuilder sb = new();
@@ -764,24 +822,30 @@ namespace ColorVision.Update
             sb.AppendLine($"set \"TARGET={EscapeForBatchValue(programDirectory)}\"");
             sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
-            sb.AppendLine($"set \"UPDATE_STATE_PATH={EscapeForBatchValue(backupPrepareResult.StateFilePath)}\"");
-            sb.AppendLine($"set \"STATE_APPLYING={EscapeForBatchValue(backupPrepareResult.ApplyingStatePath)}\"");
-            sb.AppendLine($"set \"STATE_APPLIED={EscapeForBatchValue(backupPrepareResult.AppliedStatePath)}\"");
-            sb.AppendLine($"set \"STATE_FAILED={EscapeForBatchValue(backupPrepareResult.FailedStatePath)}\"");
-            sb.AppendLine($"set \"BACKUP={EscapeForBatchValue(backupPrepareResult.BackupPath)}\"");
-            sb.AppendLine("set \"NEED_RESTART_EXPLORER=0\"");
+            if (backupPrepareResult != null)
+            {
+                sb.AppendLine($"set \"UPDATE_STATE_PATH={EscapeForBatchValue(backupPrepareResult.StateFilePath)}\"");
+                sb.AppendLine($"set \"STATE_APPLYING={EscapeForBatchValue(backupPrepareResult.ApplyingStatePath)}\"");
+                sb.AppendLine($"set \"STATE_APPLIED={EscapeForBatchValue(backupPrepareResult.AppliedStatePath)}\"");
+                sb.AppendLine($"set \"STATE_FAILED={EscapeForBatchValue(backupPrepareResult.FailedStatePath)}\"");
+                sb.AppendLine($"set \"BACKUP={EscapeForBatchValue(backupPrepareResult.BackupPath)}\"");
+            }
+            else
+            {
+                sb.AppendLine("set \"UPDATE_STATE_PATH=\"");
+                sb.AppendLine("set \"STATE_APPLYING=\"");
+                sb.AppendLine("set \"STATE_APPLIED=\"");
+                sb.AppendLine("set \"STATE_FAILED=\"");
+                sb.AppendLine("set \"BACKUP=\"");
+            }
             sb.AppendLine();
             sb.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");
             sb.AppendLine("timeout /t 2 /nobreak >nul");
             sb.AppendLine("call :mark_state \"%STATE_APPLYING%\"");
             sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine();
-            sb.AppendLine("dir /b /s \"%STAGE%\\ColorVision.ShellExtension*\" >nul 2>nul");
-            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
-            sb.AppendLine("  call :release_shell_hosts");
-            sb.AppendLine("  call :copy_shell_extension");
-            sb.AppendLine("  if !ERRORLEVEL! NEQ 0 goto fail");
-            sb.AppendLine(")");
+            sb.AppendLine("call :skip_shell_extension_files");
+            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
             sb.AppendLine();
             sb.AppendLine("call :copy_application_files");
             sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
@@ -794,23 +858,12 @@ namespace ColorVision.Update
             sb.AppendLine("copy /y \"%~1\" \"%UPDATE_STATE_PATH%\" >nul");
             sb.AppendLine("exit /b !ERRORLEVEL!");
             sb.AppendLine();
-            sb.AppendLine(":release_shell_hosts");
-            sb.AppendLine("taskkill /f /im explorer.exe >nul 2>nul");
-            sb.AppendLine("taskkill /f /im dllhost.exe >nul 2>nul");
-            sb.AppendLine("set \"NEED_RESTART_EXPLORER=1\"");
-            sb.AppendLine("timeout /t 2 /nobreak >nul");
-            sb.AppendLine("exit /b 0");
-            sb.AppendLine();
-            sb.AppendLine(":copy_shell_extension");
-            sb.AppendLine("where robocopy >nul 2>nul");
-            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
-            sb.AppendLine("  robocopy \"%STAGE%\" \"%TARGET%\" ColorVision.ShellExtension* /E /NFL /NDL /NP /NJH /NJS /R:5 /W:1");
-            sb.AppendLine("  set \"RC=!ERRORLEVEL!\"");
-            sb.AppendLine("  if !RC! LSS 8 exit /b 0");
-            sb.AppendLine("  exit /b !RC!");
+            sb.AppendLine(":skip_shell_extension_files");
+            sb.AppendLine("for /r \"%STAGE%\" %%F in (ColorVision.ShellExtension*) do (");
+            sb.AppendLine("  del /f /q \"%%F\" >nul 2>nul");
+            sb.AppendLine("  if exist \"%%F\" exit /b 1");
             sb.AppendLine(")");
-            sb.AppendLine("copy /y \"%STAGE%\\ColorVision.ShellExtension*\" \"%TARGET%\\\" >nul");
-            sb.AppendLine("exit /b !ERRORLEVEL!");
+            sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":copy_application_files");
             sb.AppendLine("where robocopy >nul 2>nul");
@@ -838,7 +891,6 @@ namespace ColorVision.Update
             sb.AppendLine(":success");
             sb.AppendLine("call :mark_state \"%STATE_APPLIED%\"");
             sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
-            sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
             sb.AppendLine("start \"\" \"%EXEPATH%\"");
             sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%STAGE%\\\" 2>nul\"");
             sb.AppendLine("exit /b 0");
@@ -846,7 +898,6 @@ namespace ColorVision.Update
             sb.AppendLine(":fail");
             sb.AppendLine("call :mark_state \"%STATE_FAILED%\"");
             sb.AppendLine("call :rollback");
-            sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
             sb.AppendLine("start \"\" \"%EXEPATH%\"");
             sb.AppendLine("exit /b 1");
             return sb.ToString();
@@ -882,6 +933,11 @@ namespace ColorVision.Update
 
         public static void RestartApplication(string downloadPath)
         {
+            RestartApplication(downloadPath, null);
+        }
+
+        public static void RestartApplication(string downloadPath, Version? targetVersion)
+        {
             ProcessStartInfo startInfo = new();
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
@@ -894,6 +950,8 @@ namespace ColorVision.Update
             }
             try
             {
+                ApplicationSnapshotInfo updateSnapshot = ApplicationSnapshotService.Instance.CreateUpdateSnapshot(CurrentVersion, targetVersion);
+                log.Info($"Created update snapshot before full installer: {updateSnapshot.FilePath}");
                 Process p = Process.Start(startInfo);
                 Environment.Exit(0);
             }

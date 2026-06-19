@@ -59,11 +59,11 @@
 
 ### 我只是终端用户，想先会用
 
-继续进入 [用户指南](../01-user-guide/README.md)。
+继续进入 [使用手册](../01-user-guide/README.md)。
 
 ### 我要做二次开发或定位代码
 
-先看 [开发指南](../02-developer-guide/README.md)，再根据需要进入 [架构设计](../03-architecture/README.md) 或 [API 参考](../04-api-reference/README.md)。
+先看 [开发手册](../02-developer-guide/README.md)，再根据需要进入 [架构设计](../03-architecture/README.md) 或 [模块参考](../04-api-reference/README.md)。
 
 ### 我只想知道仓库里主要模块在哪
 

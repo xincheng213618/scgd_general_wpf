@@ -214,15 +214,6 @@ namespace ColorVision.Themes.Properties {
         }
         
         /// <summary>
-        ///   查找类似 透明窗口 的本地化字符串。
-        /// </summary>
-        public static string TransparentWindow {
-            get {
-                return ResourceManager.GetString("TransparentWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 拖拽到此处也可上传 的本地化字符串。
         /// </summary>
         public static string Upload_DragHint {

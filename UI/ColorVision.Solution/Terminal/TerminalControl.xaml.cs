@@ -1,3 +1,4 @@
+#pragma warning disable CA1822,CA1834
 using log4net;
 using System.Diagnostics;
 using System.IO;

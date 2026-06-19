@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿#pragma warning disable CA1863
+using System.Windows;
 using System.Windows.Controls;
 using WpfHexEditor.Core;
 

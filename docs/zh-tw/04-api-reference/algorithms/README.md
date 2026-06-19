@@ -18,10 +18,11 @@
 ### 入口頁
 
 - [演算法系統概覽](./overview.md)：當前實現鏈的整體說明，先看這頁最省時間。
+- [目前演算法模板覆蓋清單](./current-algorithm-template-coverage.md)：把 `Templates/` 實際目錄逐項映射到文件入口和後續補齊重點。
 
 ### 專題目錄
 
-- `templates/`：模板管理、流程模板、JSON 模板、POI/ARVR 等專題頁。
+- `templates/`：模板管理、流程模板、JSON 模板、POI/ARVR、FindLightArea、JND、LED 檢測、BuzProduct、Validate、Compliance、DataLoad、Matching、SysDictionary、FocusPoints、ImageCropping、模板選單等專題頁。
 - `detectors/`：少量缺陷/檢測類專題。
 - `primitives/`：少量基礎構件說明。
 
@@ -49,6 +50,7 @@
 ## 推薦閱讀順序
 
 1. 先看 [演算法系統概覽](./overview.md)，建立執行時主鏈認知。
-2. 再對照 [Templates 模組分析](../../03-architecture/components/templates/analysis.md)，理解目錄和註冊入口。
-3. 如果關注流程模板，再看 [FlowEngineLib 架構](../../03-architecture/components/engine/flow-engine.md)。
-4. 最後按具體業務域進入 `templates/` 下的單頁，並始終與原始碼對照閱讀。
+2. 再看 [目前演算法模板覆蓋清單](./current-algorithm-template-coverage.md)，確認每個 `Templates/` 子目錄的文件入口。
+3. 再對照 [Templates 模組分析](../../03-architecture/components/templates/analysis.md)，理解目錄和註冊入口。
+4. 如果關注流程模板，再看 [FlowEngineLib 架構](../../03-architecture/components/engine/flow-engine.md)。
+5. 最後按具體業務域進入 `templates/` 下的單頁，例如 [FindLightArea 發光區定位模板](./templates/find-light-area.md)、[JND 模板](./templates/jnd-template.md)、[LED 檢測模板](./templates/led-detection.md)、[BuzProduct 產品業務參數模板](./templates/buz-product-template.md)、[Validate 判定規則模板](./templates/validate-rules.md)、[Compliance 結果交接](./templates/compliance-results.md)、[DataLoad 資料載入模板](./templates/data-load-template.md)、[Matching 模板匹配](./templates/matching-template.md)、[SysDictionary 系統字典模板](./templates/sys-dictionary-template.md)、[FocusPoints 關注點模板](./templates/focus-points-template.md)、[ImageCropping 圖像裁剪模板](./templates/image-cropping-template.md)、[模板選單入口](./templates/template-menu-entries.md)，並始終與原始碼對照閱讀。

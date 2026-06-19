@@ -18,37 +18,19 @@ namespace ColorVision.UI.Desktop.Settings
         {
             var card = new Border
             {
-                CornerRadius = new CornerRadius(6),
+                CornerRadius = new CornerRadius(8),
                 BorderThickness = new Thickness(1),
-                Margin = new Thickness(0, 0, 0, 12),
+                Margin = new Thickness(0, 0, 0, 16),
                 Padding = new Thickness(0),
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             card.SetResourceReference(Border.BackgroundProperty, "GlobalBackground");
-            card.SetResourceReference(Border.BorderBrushProperty, "GlobalBorderBrush");
+            card.SetResourceReference(Border.BorderBrushProperty, "ButtonBorderBrush");
 
             var stackPanel = new StackPanel
             {
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
-            var header = new DockPanel
-            {
-                LastChildFill = true,
-                Margin = new Thickness(16, 9, 16, 3)
-            };
-
-            var title = new TextBlock
-            {
-                Text = sectionName,
-                FontSize = 12.5,
-                FontWeight = FontWeights.Normal,
-                Opacity = 0.72,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            title.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-            header.Children.Add(title);
-            stackPanel.Children.Add(header);
 
             for (int i = 0; i < entries.Count; i++)
             {
@@ -104,7 +86,7 @@ namespace ColorVision.UI.Desktop.Settings
         {
             var row = new Grid
             {
-                MinHeight = 46,
+                MinHeight = 50,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 220 });
@@ -117,8 +99,8 @@ namespace ColorVision.UI.Desktop.Settings
 
             var editorHost = new Border
             {
-                Width = 300,
-                MinWidth = 220,
+                Width = 288,
+                MinWidth = 228,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = CreatePropertyEditor(entry)
@@ -139,7 +121,7 @@ namespace ColorVision.UI.Desktop.Settings
             var title = new TextBlock
             {
                 Text = entry.Title,
-                FontSize = 13,
+                FontSize = 14,
                 FontWeight = FontWeights.Normal,
                 TextWrapping = TextWrapping.Wrap
             };
@@ -151,8 +133,8 @@ namespace ColorVision.UI.Desktop.Settings
                 var description = new TextBlock
                 {
                     Text = entry.Description,
-                    Margin = new Thickness(0, 3, 0, 0),
-                    FontSize = 12,
+                    Margin = new Thickness(0, 4, 0, 0),
+                    FontSize = 12.5,
                     Opacity = 0.68,
                     TextWrapping = TextWrapping.Wrap
                 };
@@ -167,21 +149,19 @@ namespace ColorVision.UI.Desktop.Settings
         {
             var border = new Border
             {
-                Padding = new Thickness(14, 9, 14, 9),
+                Padding = new Thickness(24, 10, 24, 10),
                 BorderThickness = new Thickness(0, 0, 0, isLast ? 0 : 1),
                 Child = child,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             border.SetResourceReference(Border.BorderBrushProperty, "ButtonBorderBrush");
             SetRowBackground(border, rowIndex);
-            border.MouseEnter += (_, _) => border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush1");
-            border.MouseLeave += (_, _) => SetRowBackground(border, rowIndex);
             return border;
         }
 
         private static void SetRowBackground(Border border, int rowIndex)
         {
-            border.SetResourceReference(Border.BackgroundProperty, rowIndex % 2 == 0 ? "GlobalBackground" : "ButtonBackground");
+            border.Background = null;
         }
 
         private static FrameworkElement CreateClassSettingsPage(SettingEntry entry, ViewModelBase viewModel, bool showTitle)
@@ -284,13 +264,13 @@ namespace ColorVision.UI.Desktop.Settings
         {
             var card = new Border
             {
-                CornerRadius = new CornerRadius(6),
+                CornerRadius = new CornerRadius(8),
                 BorderThickness = new Thickness(1),
                 Padding = new Thickness(0),
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             card.SetResourceReference(Border.BackgroundProperty, "GlobalBackground");
-            card.SetResourceReference(Border.BorderBrushProperty, "GlobalBorderBrush");
+            card.SetResourceReference(Border.BorderBrushProperty, "ButtonBorderBrush");
 
             var stackPanel = new StackPanel
             {
@@ -432,7 +412,9 @@ namespace ColorVision.UI.Desktop.Settings
                     textBox.HorizontalAlignment = HorizontalAlignment.Stretch;
                     break;
                 case ComboBox comboBox:
-                    comboBox.MinWidth = Math.Max(comboBox.MinWidth, 200);
+                    comboBox.SetResourceReference(FrameworkElement.StyleProperty, "SettingsEditorComboBoxStyle");
+                    comboBox.MinHeight = Math.Max(comboBox.MinHeight, 32);
+                    comboBox.MinWidth = Math.Max(comboBox.MinWidth, 220);
                     comboBox.HorizontalAlignment = HorizontalAlignment.Right;
                     break;
                 case ToggleButton toggleButton:

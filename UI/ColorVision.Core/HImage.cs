@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CA1051
+using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 
@@ -25,6 +26,7 @@ namespace ColorVision.Core
         public int Height;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct HImage : IDisposable
     {
         public int rows;
@@ -34,17 +36,17 @@ namespace ColorVision.Core
         public int depth; //bpp
         public int stride;
 
+        [MarshalAs(UnmanagedType.I1)]
         public bool isDispose;
 
         public IntPtr pData;
 
         public void Dispose()
         {
-            // 使用 Marshal.FreeHGlobal来释放由 Marshal.AllocHGlobal 分配的内存
             if (pData != IntPtr.Zero)
             {
                 if (!isDispose)
-                    Marshal.FreeHGlobal(pData);
+                    Marshal.FreeCoTaskMem(pData);
                 pData = IntPtr.Zero;
             }
             GC.SuppressFinalize(this);

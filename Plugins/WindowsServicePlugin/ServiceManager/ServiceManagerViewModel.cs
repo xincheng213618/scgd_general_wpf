@@ -1,8 +1,6 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using log4net;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -24,7 +22,8 @@ namespace WindowsServicePlugin.ServiceManager
 
         public static ServiceManagerViewModel Instance { get; } = new ServiceManagerViewModel();
 
-        public ServiceManagerConfig Config => ServiceManagerConfig.Instance;
+        private readonly ServiceManagerConfig _config = ServiceManagerConfig.Instance;
+        public ServiceManagerConfig Config => _config;
 
         public ObservableCollection<ServiceEntry> Services { get; set; } = [];
 
@@ -52,10 +51,7 @@ namespace WindowsServicePlugin.ServiceManager
         public string ProgressText { get => _ProgressText; set { _ProgressText = value; OnPropertyChanged(); } }
         private string _ProgressText = string.Empty;
 
-        public bool IsAdministratorMode => Tool.IsAdministrator();
-        public bool NeedsAdministratorRestart => !IsAdministratorMode;
-        public string AdministratorModeText => IsAdministratorMode ? "权限: 管理员模式" : "权限: 普通模式";
-
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as an instance property for change notification and command binding.")]
         public string LegacyConfigPath => GetLegacyAppConfigPath() ?? string.Empty;
         public bool HasLegacyConfig => !string.IsNullOrWhiteSpace(LegacyConfigPath) && File.Exists(LegacyConfigPath);
 
@@ -71,20 +67,25 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand OpenWinServiceConfigCommand { get; }
         public RelayCommand OpenMySqlConfigCommand { get; }
         public RelayCommand OpenMqttConfigCommand { get; }
-        public RelayCommand OpenLog4NetConfigCommand { get; }
         public RelayCommand OpenLegacyConfigCommand { get; }
-        public RelayCommand RestartAsAdministratorCommand { get; }
+        public RelayCommand ServiceStartCommand { get; }
+        public RelayCommand ServiceStopCommand { get; }
+        public RelayCommand ServiceRestartCommand { get; }
+        public RelayCommand ServiceTerminateCommand { get; }
         public RelayCommand MqttStartCommand { get; }
         public RelayCommand MqttStopCommand { get; }
 
         // MySQL commands
         public RelayCommand MySqlInstallZipCommand { get; }
+        public RelayCommand MySqlRepairServiceCommand { get; }
+        public RelayCommand MySqlRegisterExistingCommand { get; }
         public RelayCommand MySqlStartCommand { get; }
         public RelayCommand MySqlStopCommand { get; }
         public RelayCommand MySqlUninstallCommand { get; }
         public RelayCommand MySqlBackupCommand { get; }
         public RelayCommand MySqlRestoreCommand { get; }
         public RelayCommand MySqlRunScriptCommand { get; }
+        public RelayCommand MySqlResetDatabaseCommand { get; }
         public RelayCommand MySqlBrowseCommand { get; }
         public RelayCommand MySqlSetRootPasswordCommand { get; }
         public RelayCommand MySqlForceResetRootPasswordCommand { get; }
@@ -107,19 +108,24 @@ namespace WindowsServicePlugin.ServiceManager
             OpenWinServiceConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "WinService.config"));
             OpenMySqlConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MySql.config"));
             OpenMqttConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MQTT.config"));
-            OpenLog4NetConfigCommand = new RelayCommand(a => OpenServiceLog4Net(a as ServiceEntry));
             OpenLegacyConfigCommand = new RelayCommand(a => OpenLegacyConfigFile(), a => HasLegacyConfig);
-            RestartAsAdministratorCommand = new RelayCommand(a => RestartAsAdministrator(), a => !IsBusy && NeedsAdministratorRestart);
-            MqttStartCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Start(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsInstalled && !MqttManager.Config.IsRunning);
-            MqttStopCommand = new RelayCommand(a => _ = Task.Run(() => { MqttManager.Stop(AddLog); RefreshMqttStatus(); }), a => !IsBusy && MqttManager.Config.IsRunning);
+            ServiceStartCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Start), a => !IsBusy && a is ServiceEntry { IsInstalled: true, IsRunning: false });
+            ServiceStopCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Stop), a => !IsBusy && a is ServiceEntry { IsInstalled: true, IsRunning: true });
+            ServiceRestartCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Restart), a => !IsBusy && a is ServiceEntry { IsInstalled: true });
+            ServiceTerminateCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Terminate), a => !IsBusy && a is ServiceEntry entry && (entry.IsInstalled || !string.IsNullOrWhiteSpace(entry.ExePath)));
+            MqttStartCommand = new RelayCommand(a => _ = StartMqttServiceAsync(), a => !IsBusy && MqttManager.Config.IsInstalled && !MqttManager.Config.IsRunning);
+            MqttStopCommand = new RelayCommand(a => _ = StopMqttServiceAsync(), a => !IsBusy && MqttManager.Config.IsRunning);
 
             MySqlInstallZipCommand = new RelayCommand(a => _ = MySqlInstallZipAsync(), a => !IsBusy);
-            MySqlStartCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Start(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
-            MySqlStopCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Stop(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsRunning);
-            MySqlUninstallCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlManager.Uninstall(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && MySqlManager.Config.IsInstalled);
+            MySqlRepairServiceCommand = new RelayCommand(a => _ = RepairMySqlServicePreferServiceHostAsync(), a => !IsBusy);
+            MySqlRegisterExistingCommand = new RelayCommand(a => _ = RegisterExistingMySqlServiceAsync(), a => !IsBusy);
+            MySqlStartCommand = new RelayCommand(a => _ = StartMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
+            MySqlStopCommand = new RelayCommand(a => _ = StopMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlUninstallCommand = new RelayCommand(a => _ = UninstallMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled);
             MySqlBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlBackup()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlRestoreCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlRestore()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlRunScriptCommand = new RelayCommand(a => _ = Task.Run(() => DoRunSqlScript()), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlResetDatabaseCommand = new RelayCommand(a => _ = ResetDatabaseAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlBrowseCommand = new RelayCommand(a => BrowseMySqlPath());
             MySqlSetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoSetRootPassword()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlForceResetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoForceResetRootPassword()), a => !IsBusy);
@@ -140,13 +146,19 @@ namespace WindowsServicePlugin.ServiceManager
             // 自动检测路径
             if (string.IsNullOrEmpty(Config.BaseLocation))
             {
-                Config.TryDetectInstallPath();
+                if (Config.TryDetectInstallPath())
+                {
+                    SaveServiceManagerConfig();
+                }
             }
 
             // 尝试从CVWinSMS配置读取
             if (string.IsNullOrEmpty(Config.BaseLocation) && File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
             {
-                Config.ReadFromCVWinSMSConfig(CVWinSMSConfig.Instance.CVWinSMSPath);
+                if (Config.ReadFromCVWinSMSConfig(CVWinSMSConfig.Instance.CVWinSMSPath))
+                {
+                    SaveServiceManagerConfig();
+                }
             }
 
             MySqlManager.Initialize(Config.MySqlPort);
@@ -157,9 +169,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         public void RefreshAll()
         {
-            OnPropertyChanged(nameof(IsAdministratorMode));
-            OnPropertyChanged(nameof(NeedsAdministratorRestart));
-            OnPropertyChanged(nameof(AdministratorModeText));
             OnPropertyChanged(nameof(LegacyConfigPath));
             OnPropertyChanged(nameof(HasLegacyConfig));
 
@@ -229,42 +238,5 @@ namespace WindowsServicePlugin.ServiceManager
             });
         }
 
-        private void RestartAsAdministrator()
-        {
-            if (IsAdministratorMode)
-            {
-                return;
-            }
-
-            string? processPath = Environment.ProcessPath;
-            if (string.IsNullOrWhiteSpace(processPath))
-            {
-                processPath = Process.GetCurrentProcess().MainModule?.FileName;
-            }
-
-            if (string.IsNullOrWhiteSpace(processPath) || !File.Exists(processPath))
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "无法确定当前程序路径，不能以管理员模式重启。", "管理员模式", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = processPath,
-                    WorkingDirectory = Environment.CurrentDirectory,
-                    UseShellExecute = true,
-                    Verb = "runas"
-                });
-
-                Application.Current?.Shutdown();
-            }
-            catch (Exception ex)
-            {
-                log.Error("以管理员模式重启失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"无法以管理员模式重新启动程序：{ex.Message}", "管理员模式", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
     }
 }

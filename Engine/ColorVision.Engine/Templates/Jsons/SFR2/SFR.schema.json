@@ -1,0 +1,442 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/SFR.schema.json",
+  "title": "SFR_V2",
+  "description": "Provider-maintained JSON parameter schema. Defaults are sourced from the provider test-case default parameter file; the C++ JSON string interface remains unchanged.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "caclWay": 1,
+    "debugCfg": {
+      "Debug": false,
+      "debugPath": "Result\\",
+      "debugImgResize": 2
+    },
+    "MaskRect": {
+      "enable": false,
+      "x": 0,
+      "y": 0,
+      "w": 0,
+      "h": 0
+    },
+    "sfrAutoPoi1": {
+      "thresholdRatio": 0.6,
+      "lowThreshold": 20.0,
+      "highThreshold": 40.0,
+      "minLength": 100.0,
+      "dst_roi_w": 60,
+      "dst_roi_h": 60,
+      "active_Left": true,
+      "active_Top": true,
+      "active_Right": true,
+      "active_Bottom": true
+    }
+  },
+  "properties": {
+    "caclWay": {
+      "type": "integer",
+      "title": "Cacl Way",
+      "x-ui": {
+        "order": 10
+      },
+      "default": 1,
+      "description": "SFR 计算方式。",
+      "enum": [
+        0,
+        1
+      ],
+      "$comment": "Provider note: keep JSON path '$.caclWay' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.caclWay",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "debugCfg": {
+      "type": "object",
+      "title": "Debug Cfg",
+      "x-ui": {
+        "order": 20
+      },
+      "default": {
+        "Debug": false,
+        "debugPath": "Result\\",
+        "debugImgResize": 2
+      },
+      "description": "Debug 相关配置。",
+      "additionalProperties": true,
+      "properties": {
+        "Debug": {
+          "type": "boolean",
+          "title": "Debug",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否开启 debug 输出。",
+          "$comment": "Provider note: keep JSON path '$.debugCfg.Debug' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.Debug",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugPath": {
+          "type": "string",
+          "title": "Debug Path",
+          "x-ui": {
+            "order": 20
+          },
+          "default": "Result\\",
+          "description": "debug 文件输出路径。",
+          "$comment": "Provider note: keep JSON path '$.debugCfg.debugPath' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugPath",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "debugImgResize": {
+          "type": "integer",
+          "title": "Debug Img Resize",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 2,
+          "description": "debug 图片压缩倍率，2、3、4 生效，其他值表示不压缩。",
+          "examples": [
+            2,
+            3,
+            4
+          ],
+          "$comment": "Provider note: keep JSON path '$.debugCfg.debugImgResize' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugImgResize",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.debugCfg' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.debugCfg",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "MaskRect": {
+      "type": "object",
+      "title": "Mask Rect",
+      "x-ui": {
+        "order": 30
+      },
+      "default": {
+        "enable": false,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "description": "ROI/Mask 区域配置；启用后以左上角 (x, y) 和尺寸 (w, h) 限定计算范围。",
+      "additionalProperties": true,
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "title": "Enable",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "description": "是否启用 ROI/Mask 区域。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.enable' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.enable",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "x": {
+          "type": "integer",
+          "title": "X",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "description": "ROI 左上角 X 坐标。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.x' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.x",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "y": {
+          "type": "integer",
+          "title": "Y",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 0,
+          "description": "ROI 左上角 Y 坐标。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.y' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.y",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "w": {
+          "type": "integer",
+          "title": "W",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "description": "ROI 宽度。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.w' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.w",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "h": {
+          "type": "integer",
+          "title": "H",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 0,
+          "description": "ROI 高度。",
+          "$comment": "Provider note: keep JSON path '$.MaskRect.h' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.MaskRect.h",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.MaskRect' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.MaskRect",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    },
+    "sfrAutoPoi1": {
+      "type": "object",
+      "title": "Sfr Auto Poi1",
+      "x-ui": {
+        "order": 40
+      },
+      "default": {
+        "thresholdRatio": 0.6,
+        "lowThreshold": 20.0,
+        "highThreshold": 40.0,
+        "minLength": 100.0,
+        "dst_roi_w": 60,
+        "dst_roi_h": 60,
+        "active_Left": true,
+        "active_Top": true,
+        "active_Right": true,
+        "active_Bottom": true
+      },
+      "description": "SFR 自动 POI 查找参数。",
+      "additionalProperties": true,
+      "properties": {
+        "thresholdRatio": {
+          "type": "number",
+          "title": "Threshold Ratio",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 0.6,
+          "description": "自动阈值比例。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.thresholdRatio' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.thresholdRatio",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "lowThreshold": {
+          "type": "number",
+          "title": "Low Threshold",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 20.0,
+          "description": "低阈值。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.lowThreshold' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.lowThreshold",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "highThreshold": {
+          "type": "number",
+          "title": "High Threshold",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 40.0,
+          "description": "高阈值。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.highThreshold' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.highThreshold",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "minLength": {
+          "type": "number",
+          "title": "Min Length",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 100.0,
+          "description": "最小线段长度。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.minLength' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.minLength",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "dst_roi_w": {
+          "type": "integer",
+          "title": "Dst Roi W",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 60,
+          "description": "目标 ROI 宽度。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.dst_roi_w' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.dst_roi_w",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "dst_roi_h": {
+          "type": "integer",
+          "title": "Dst Roi H",
+          "x-ui": {
+            "order": 60
+          },
+          "default": 60,
+          "description": "目标 ROI 高度。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.dst_roi_h' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.dst_roi_h",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "active_Left": {
+          "type": "boolean",
+          "title": "Active Left",
+          "x-ui": {
+            "order": 70
+          },
+          "default": true,
+          "description": "是否启用左侧边。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.active_Left' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.active_Left",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "active_Top": {
+          "type": "boolean",
+          "title": "Active Top",
+          "x-ui": {
+            "order": 80
+          },
+          "default": true,
+          "description": "是否启用顶部边。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.active_Top' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.active_Top",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "active_Right": {
+          "type": "boolean",
+          "title": "Active Right",
+          "x-ui": {
+            "order": 90
+          },
+          "default": true,
+          "description": "是否启用右侧边。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.active_Right' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.active_Right",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        },
+        "active_Bottom": {
+          "type": "boolean",
+          "title": "Active Bottom",
+          "x-ui": {
+            "order": 100
+          },
+          "default": true,
+          "description": "是否启用底部边。",
+          "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1.active_Bottom' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+          "x-provider": {
+            "jsonPath": "$.sfrAutoPoi1.active_Bottom",
+            "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+          }
+        }
+      },
+      "$comment": "Provider note: keep JSON path '$.sfrAutoPoi1' compatible with the C++ JSON interface; update default/type only with the provider contract.",
+      "x-provider": {
+        "jsonPath": "$.sfrAutoPoi1",
+        "aiHint": "Provider-maintained field. Keep the JSON key compatible with the C++ DLL; enrich title/description/unit/range/enum/x-ui as needed."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T07:57:54+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 49,
+      "code": "SFR",
+      "name": "SFR_V2",
+      "version": "2.0",
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "SFR2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": []
+      }
+    },
+    "notes": [
+      "Defaults are sourced from the provider-maintained test-case default parameter file.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "This schema may update default/type when the provider-maintained defaultparam.txt changes.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "defaultSource": "provider-test-case-defaultparam",
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "SFR2.0",
+      "defaultParamFile": "defaultparam.txt",
+      "docFiles": []
+    }
+  }
+}

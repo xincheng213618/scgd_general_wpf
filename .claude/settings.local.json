@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(dotnet build *)",
+      "Bash(where msbuild *)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Insiders/MSBuild/Current/Bin/amd64/MSBuild.exe\" Projects/ProjectKB/ProjectKB.csproj -p:Configuration=Debug -p:Platform=x64 -restore)"
     ]
   }
 }

@@ -1,3 +1,4 @@
+#pragma warning disable CA1859
 using ColorVision.UI;
 using System.Diagnostics;
 using System.Windows;

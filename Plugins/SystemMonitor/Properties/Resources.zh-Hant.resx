@@ -131,11 +131,7 @@
   </data>
   <data name="FreeSpace" xml:space="preserve">
     <value>可用空間</value>
-  </data>
-  <data name="Used" xml:space="preserve">
-    <value>已用</value>
-  </data>
-  <data name="PerformanceMonitor" xml:space="preserve">
+  </data>  <data name="PerformanceMonitor" xml:space="preserve">
     <value>效能監控</value>
   </data>
   <data name="TotalUsage" xml:space="preserve">

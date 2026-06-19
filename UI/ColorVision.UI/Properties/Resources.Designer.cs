@@ -79,15 +79,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 升序 的本地化字符串。
-        /// </summary>
-        public static string Ascending {
-            get {
-                return ResourceManager.GetString("Ascending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 自动调整列宽 的本地化字符串。
         /// </summary>
         public static string AutoAdjustColumnWidth {
@@ -111,15 +102,6 @@ namespace ColorVision.UI.Properties {
         public static string AutoScrollToEnd {
             get {
                 return ResourceManager.GetString("AutoScrollToEnd", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 自动切换选中视图 的本地化字符串。
-        /// </summary>
-        public static string AutoSwitchSelectedView {
-            get {
-                return ResourceManager.GetString("AutoSwitchSelectedView", resourceCulture);
             }
         }
         
@@ -214,51 +196,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 是否启用定时备份 的本地化字符串。
-        /// </summary>
-        public static string Config_EnableBackup {
-            get {
-                return ResourceManager.GetString("Config_EnableBackup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置相关参数 的本地化字符串。
-        /// </summary>
-        public static string Config_Parameters {
-            get {
-                return ResourceManager.GetString("Config_Parameters", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 是否确认删除插件{0} 的本地化字符串。
-        /// </summary>
-        public static string ConfirmDeletePlugin {
-            get {
-                return ResourceManager.GetString("ConfirmDeletePlugin", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 是否更新 的本地化字符串。
-        /// </summary>
-        public static string ConfirmUpdate {
-            get {
-                return ResourceManager.GetString("ConfirmUpdate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前速度： 的本地化字符串。
-        /// </summary>
-        public static string CurrentSpeed {
-            get {
-                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
         public static string Delete {
@@ -291,15 +228,6 @@ namespace ColorVision.UI.Properties {
         public static string DependencyVersionInsufficient {
             get {
                 return ResourceManager.GetString("DependencyVersionInsufficient", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 降序 的本地化字符串。
-        /// </summary>
-        public static string Descending {
-            get {
-                return ResourceManager.GetString("Descending", resourceCulture);
             }
         }
         
@@ -453,15 +381,6 @@ namespace ColorVision.UI.Properties {
         public static string DictItemEditor_Value {
             get {
                 return ResourceManager.GetString("DictItemEditor_Value", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下载 的本地化字符串。
-        /// </summary>
-        public static string Download {
-            get {
-                return ResourceManager.GetString("Download", resourceCulture);
             }
         }
         
@@ -628,15 +547,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 发生错误 的本地化字符串。
-        /// </summary>
-        public static string ErrorOccurred {
-            get {
-                return ResourceManager.GetString("ErrorOccurred", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Everything路径 的本地化字符串。
         /// </summary>
         public static string EverythingPath {
@@ -691,7 +601,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 通用设置 的本地化字符串。
+        ///   查找类似 常规 的本地化字符串。
         /// </summary>
         public static string GeneralSettings {
             get {
@@ -777,24 +687,6 @@ namespace ColorVision.UI.Properties {
         public static string HotKeySet2 {
             get {
                 return ResourceManager.GetString("HotKeySet2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 安装 的本地化字符串。
-        /// </summary>
-        public static string Install {
-            get {
-                return ResourceManager.GetString("Install", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 自动选择 的本地化字符串。
-        /// </summary>
-        public static string IsAutoSelect {
-            get {
-                return ResourceManager.GetString("IsAutoSelect", resourceCulture);
             }
         }
         
@@ -1285,29 +1177,11 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 模板(_M) 的本地化字符串。
-        /// </summary>
-        public static string MenuTemplate {
-            get {
-                return ResourceManager.GetString("MenuTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 工具(_T) 的本地化字符串。
         /// </summary>
         public static string MenuTool {
             get {
                 return ResourceManager.GetString("MenuTool", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Treemap 查看器 的本地化字符串。
-        /// </summary>
-        public static string MenuTreemapViewer {
-            get {
-                return ResourceManager.GetString("MenuTreemapViewer", resourceCulture);
             }
         }
         
@@ -1330,29 +1204,11 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 消息日志窗口 的本地化字符串。
-        /// </summary>
-        public static string MsgList {
-            get {
-                return ResourceManager.GetString("MsgList", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Mysql工具 的本地化字符串。
         /// </summary>
         public static string MysqlTool {
             get {
                 return ResourceManager.GetString("MysqlTool", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 没有配置本地的log4输出 的本地化字符串。
-        /// </summary>
-        public static string NoLocalLog4Output {
-            get {
-                return ResourceManager.GetString("NoLocalLog4Output", resourceCulture);
             }
         }
         
@@ -1375,24 +1231,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开配置文件 的本地化字符串。
-        /// </summary>
-        public static string OpenConfigFile {
-            get {
-                return ResourceManager.GetString("OpenConfigFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开配置文件夹 的本地化字符串。
-        /// </summary>
-        public static string OpenConfigFolder {
-            get {
-                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 打开所在文件夹 的本地化字符串。
         /// </summary>
         public static string OpenContainingFolder {
@@ -1407,15 +1245,6 @@ namespace ColorVision.UI.Properties {
         public static string OpenFolder {
             get {
                 return ResourceManager.GetString("OpenFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开日志文件夹 的本地化字符串。
-        /// </summary>
-        public static string OpenLogFolder {
-            get {
-                return ResourceManager.GetString("OpenLogFolder", resourceCulture);
             }
         }
         
@@ -1452,15 +1281,6 @@ namespace ColorVision.UI.Properties {
         public static string PluginMissingId {
             get {
                 return ResourceManager.GetString("PluginMissingId", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件名称 的本地化字符串。
-        /// </summary>
-        public static string PluginName {
-            get {
-                return ResourceManager.GetString("PluginName", resourceCulture);
             }
         }
         
@@ -1834,249 +1654,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 {0} 项设置 的本地化字符串。
-        /// </summary>
-        public static string SettingsCountFormat {
-            get {
-                return ResourceManager.GetString("SettingsCountFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置项加载失败 的本地化字符串。
-        /// </summary>
-        public static string SettingsEditorLoadFailed {
-            get {
-                return ResourceManager.GetString("SettingsEditorLoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置项不可用 的本地化字符串。
-        /// </summary>
-        public static string SettingsEditorUnavailable {
-            get {
-                return ResourceManager.GetString("SettingsEditorUnavailable", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 找到 {0} 项匹配设置 的本地化字符串。
-        /// </summary>
-        public static string SettingsMatchingCountFormat {
-            get {
-                return ResourceManager.GetString("SettingsMatchingCountFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 没有匹配的设置。 的本地化字符串。
-        /// </summary>
-        public static string SettingsNoMatchingSettings {
-            get {
-                return ResourceManager.GetString("SettingsNoMatchingSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置页加载失败 的本地化字符串。
-        /// </summary>
-        public static string SettingsPageLoadFailed {
-            get {
-                return ResourceManager.GetString("SettingsPageLoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置页类型无效 的本地化字符串。
-        /// </summary>
-        public static string SettingsPageTypeInvalid {
-            get {
-                return ResourceManager.GetString("SettingsPageTypeInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 设置页不可用 的本地化字符串。
-        /// </summary>
-        public static string SettingsPageUnavailable {
-            get {
-                return ResourceManager.GetString("SettingsPageUnavailable", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 基础 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionBasic {
-            get {
-                return ResourceManager.GetString("SettingsSectionBasic", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 扩展页面 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionExtensions {
-            get {
-                return ResourceManager.GetString("SettingsSectionExtensions", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文件归档 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionFileArchive {
-            get {
-                return ResourceManager.GetString("SettingsSectionFileArchive", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 其他 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionOther {
-            get {
-                return ResourceManager.GetString("SettingsSectionOther", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 路径 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionPaths {
-            get {
-                return ResourceManager.GetString("SettingsSectionPaths", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 搜索 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionSearch {
-            get {
-                return ResourceManager.GetString("SettingsSectionSearch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 服务 的本地化字符串。
-        /// </summary>
-        public static string SettingsSectionServices {
-            get {
-                return ResourceManager.GetString("SettingsSectionServices", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启动时检查更新 的本地化字符串。
-        /// </summary>
-        public static string SettingsStartupCheckUpdates {
-            get {
-                return ResourceManager.GetString("SettingsStartupCheckUpdates", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启动应用时检查主程序、插件和主题是否有可用更新。 的本地化字符串。
-        /// </summary>
-        public static string SettingsStartupCheckUpdatesDescription {
-            get {
-                return ResourceManager.GetString("SettingsStartupCheckUpdatesDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件更新 主程序更新 启动检测 软件启动时检测更新 检查插件更新 自动更新 主题更新 的本地化字符串。
-        /// </summary>
-        public static string SettingsStartupCheckUpdatesSearchAliases {
-            get {
-                return ResourceManager.GetString("SettingsStartupCheckUpdatesSearchAliases", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 智能排序 (升序) 的本地化字符串。
-        /// </summary>
-        public static string SmartSortAscending {
-            get {
-                return ResourceManager.GetString("SmartSortAscending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 智能排序 (降序) 的本地化字符串。
-        /// </summary>
-        public static string SmartSortDescending {
-            get {
-                return ResourceManager.GetString("SmartSortDescending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 缓冲区大小 的本地化字符串。
-        /// </summary>
-        public static string SocketBufferSize {
-            get {
-                return ResourceManager.GetString("SocketBufferSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Socket管理窗口 的本地化字符串。
-        /// </summary>
-        public static string SocketManagementWindow {
-            get {
-                return ResourceManager.GetString("SocketManagementWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 按分类排序 的本地化字符串。
-        /// </summary>
-        public static string SortByCategory {
-            get {
-                return ResourceManager.GetString("SortByCategory", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 按 {0} 排序 的本地化字符串。
-        /// </summary>
-        public static string SortByColumn {
-            get {
-                return ResourceManager.GetString("SortByColumn", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 按名称排序 的本地化字符串。
-        /// </summary>
-        public static string SortByName {
-            get {
-                return ResourceManager.GetString("SortByName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 默认排序 的本地化字符串。
-        /// </summary>
-        public static string SortDefault {
-            get {
-                return ResourceManager.GetString("SortDefault", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 排序选项 的本地化字符串。
-        /// </summary>
-        public static string SortOptions {
-            get {
-                return ResourceManager.GetString("SortOptions", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
         public static string Theme {
@@ -2239,434 +1816,11 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 剩余时间： 的本地化字符串。
-        /// </summary>
-        public static string TimeLeft {
-            get {
-                return ResourceManager.GetString("TimeLeft", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 浏览目录… 的本地化字符串。
-        /// </summary>
-        public static string Treemap_BrowseDirectory {
-            get {
-                return ResourceManager.GetString("Treemap_BrowseDirectory", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 选择要扫描的目录 的本地化字符串。
-        /// </summary>
-        public static string Treemap_BrowseDirectoryTooltip {
-            get {
-                return ResourceManager.GetString("Treemap_BrowseDirectoryTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 取 消 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Cancel {
-            get {
-                return ResourceManager.GetString("Treemap_Cancel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已取消。 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Cancelled {
-            get {
-                return ResourceManager.GetString("Treemap_Cancelled", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 中止当前扫描 的本地化字符串。
-        /// </summary>
-        public static string Treemap_CancelTooltip {
-            get {
-                return ResourceManager.GetString("Treemap_CancelTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 完成。共 {0:N0} 个文件。 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Complete {
-            get {
-                return ResourceManager.GetString("Treemap_Complete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 确认删除文件：\n{0} 的本地化字符串。
-        /// </summary>
-        public static string Treemap_ConfirmDelete {
-            get {
-                return ResourceManager.GetString("Treemap_ConfirmDelete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 确认删除 的本地化字符串。
-        /// </summary>
-        public static string Treemap_ConfirmDeleteTitle {
-            get {
-                return ResourceManager.GetString("Treemap_ConfirmDeleteTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 复制路径 的本地化字符串。
-        /// </summary>
-        public static string Treemap_CopyPath {
-            get {
-                return ResourceManager.GetString("Treemap_CopyPath", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 删除失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string Treemap_DeleteFailed {
-            get {
-                return ResourceManager.GetString("Treemap_DeleteFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 删除文件{0} 的本地化字符串。
-        /// </summary>
-        public static string Treemap_DeleteFile {
-            get {
-                return ResourceManager.GetString("Treemap_DeleteFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 向下钻取（以此为根） 的本地化字符串。
-        /// </summary>
-        public static string Treemap_DrillDown {
-            get {
-                return ResourceManager.GetString("Treemap_DrillDown", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 盘符： 的本地化字符串。
-        /// </summary>
-        public static string Treemap_DriveLabel {
-            get {
-                return ResourceManager.GetString("Treemap_DriveLabel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 错误 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Error {
-            get {
-                return ResourceManager.GetString("Treemap_Error", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文件 的本地化字符串。
-        /// </summary>
-        public static string Treemap_File {
-            get {
-                return ResourceManager.GetString("Treemap_File", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文件夹 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Folder {
-            get {
-                return ResourceManager.GetString("Treemap_Folder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 返回上级 的本地化字符串。
-        /// </summary>
-        public static string Treemap_GoUp {
-            get {
-                return ResourceManager.GetString("Treemap_GoUp", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文件格式无效或为空。 的本地化字符串。
-        /// </summary>
-        public static string Treemap_InvalidFormat {
-            get {
-                return ResourceManager.GetString("Treemap_InvalidFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 加 载 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Load {
-            get {
-                return ResourceManager.GetString("Treemap_Load", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 加载扫描结果 的本地化字符串。
-        /// </summary>
-        public static string Treemap_LoadDialogTitle {
-            get {
-                return ResourceManager.GetString("Treemap_LoadDialogTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已加载：{0} 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Loaded {
-            get {
-                return ResourceManager.GetString("Treemap_Loaded", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 加载失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string Treemap_LoadFailed {
-            get {
-                return ResourceManager.GetString("Treemap_LoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 从已保存的 JSON 文件加载扫描结果 的本地化字符串。
-        /// </summary>
-        public static string Treemap_LoadTooltip {
-            get {
-                return ResourceManager.GetString("Treemap_LoadTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 节点数： 的本地化字符串。
-        /// </summary>
-        public static string Treemap_NodeCount {
-            get {
-                return ResourceManager.GetString("Treemap_NodeCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开文件 的本地化字符串。
-        /// </summary>
-        public static string Treemap_OpenFile {
-            get {
-                return ResourceManager.GetString("Treemap_OpenFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开文件夹 的本地化字符串。
-        /// </summary>
-        public static string Treemap_OpenFolder {
-            get {
-                return ResourceManager.GetString("Treemap_OpenFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 在资源管理器中打开 的本地化字符串。
-        /// </summary>
-        public static string Treemap_OpenInExplorer {
-            get {
-                return ResourceManager.GetString("Treemap_OpenInExplorer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 提示 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Prompt {
-            get {
-                return ResourceManager.GetString("Treemap_Prompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保 存 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Save {
-            get {
-                return ResourceManager.GetString("Treemap_Save", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已保存：{0} 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Saved {
-            get {
-                return ResourceManager.GetString("Treemap_Saved", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保存扫描结果 的本地化字符串。
-        /// </summary>
-        public static string Treemap_SaveDialogTitle {
-            get {
-                return ResourceManager.GetString("Treemap_SaveDialogTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保存失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string Treemap_SaveFailed {
-            get {
-                return ResourceManager.GetString("Treemap_SaveFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 将当前扫描结果保存为 JSON 文件 的本地化字符串。
-        /// </summary>
-        public static string Treemap_SaveTooltip {
-            get {
-                return ResourceManager.GetString("Treemap_SaveTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 扫 描 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Scan {
-            get {
-                return ResourceManager.GetString("Treemap_Scan", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 扫描出错：{0} 的本地化字符串。
-        /// </summary>
-        public static string Treemap_ScanError {
-            get {
-                return ResourceManager.GetString("Treemap_ScanError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已扫描 {0:N0} 个文件… 的本地化字符串。
-        /// </summary>
-        public static string Treemap_ScannedFiles {
-            get {
-                return ResourceManager.GetString("Treemap_ScannedFiles", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 扫描中… 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Scanning {
-            get {
-                return ResourceManager.GetString("Treemap_Scanning", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 扫描选定目录并显示树图 的本地化字符串。
-        /// </summary>
-        public static string Treemap_ScanTooltip {
-            get {
-                return ResourceManager.GetString("Treemap_ScanTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请选择目录并点击&quot;扫描&quot;，或点击&quot;加载&quot;读取已保存的扫描结果。 的本地化字符串。
-        /// </summary>
-        public static string Treemap_SelectDirPrompt {
-            get {
-                return ResourceManager.GetString("Treemap_SelectDirPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请先选择有效的目录。 的本地化字符串。
-        /// </summary>
-        public static string Treemap_SelectValidDir {
-            get {
-                return ResourceManager.GetString("Treemap_SelectValidDir", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 在资源管理器中显示 的本地化字符串。
-        /// </summary>
-        public static string Treemap_ShowInExplorer {
-            get {
-                return ResourceManager.GetString("Treemap_ShowInExplorer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 显示标签 的本地化字符串。
-        /// </summary>
-        public static string Treemap_ShowLabels {
-            get {
-                return ResourceManager.GetString("Treemap_ShowLabels", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 磁盘空间分析 - Treemap Viewer 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Title {
-            get {
-                return ResourceManager.GetString("Treemap_Title", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ↑ 上级 的本地化字符串。
-        /// </summary>
-        public static string Treemap_Up {
-            get {
-                return ResourceManager.GetString("Treemap_Up", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 返回父目录节点 的本地化字符串。
-        /// </summary>
-        public static string Treemap_UpTooltip {
-            get {
-                return ResourceManager.GetString("Treemap_UpTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 不支持的文件格式 的本地化字符串。
         /// </summary>
         public static string UnsupportedFileFormat {
             get {
                 return ResourceManager.GetString("UnsupportedFileFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 更新 的本地化字符串。
-        /// </summary>
-        public static string Update {
-            get {
-                return ResourceManager.GetString("Update", resourceCulture);
             }
         }
         
@@ -2712,60 +1866,6 @@ namespace ColorVision.UI.Properties {
         public static string Version {
             get {
                 return ResourceManager.GetString("Version", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图模式1 的本地化字符串。
-        /// </summary>
-        public static string ViewMode1 {
-            get {
-                return ResourceManager.GetString("ViewMode1", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图模式2 的本地化字符串。
-        /// </summary>
-        public static string ViewMode2 {
-            get {
-                return ResourceManager.GetString("ViewMode2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图模式4 的本地化字符串。
-        /// </summary>
-        public static string ViewMode4 {
-            get {
-                return ResourceManager.GetString("ViewMode4", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图模式9 的本地化字符串。
-        /// </summary>
-        public static string ViewMode9 {
-            get {
-                return ResourceManager.GetString("ViewMode9", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 隐藏 的本地化字符串。
-        /// </summary>
-        public static string WindowHidden {
-            get {
-                return ResourceManager.GetString("WindowHidden", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 独立窗口 的本地化字符串。
-        /// </summary>
-        public static string WindowSingle {
-            get {
-                return ResourceManager.GetString("WindowSingle", resourceCulture);
             }
         }
         

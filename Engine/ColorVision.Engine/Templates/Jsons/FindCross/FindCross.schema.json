@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/FindCross.schema.json",
+  "title": "十字计算",
+  "description": "Auto-generated from t_scgd_sys_dictionary_mod_master.cfg_json. Providers may maintain titles, descriptions, ranges, units, groups, and UI hints without changing the C++ JSON interface.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "debugCfg": {
+      "Debug": false,
+      "debugPath": "Result\\",
+      "debugImgResize": 2
+    },
+    "CheckLine": {
+      "rho": 5,
+      "houghV": 100,
+      "floAngle": 10,
+      "erodeTime": 1,
+      "maxLineGap": 30,
+      "erodeKernel": 2,
+      "minLineLength": 80
+    },
+    "mathMaskRect": {
+      "h": 0,
+      "w": 0,
+      "x": 0,
+      "y": 0,
+      "enable": false
+    }
+  },
+  "properties": {
+    "debugCfg": {
+      "type": "object",
+      "title": "Debug Cfg",
+      "x-ui": {
+        "order": 10
+      },
+      "default": {
+        "Debug": false,
+        "debugPath": "Result\\",
+        "debugImgResize": 2
+      },
+      "additionalProperties": true,
+      "properties": {
+        "Debug": {
+          "type": "boolean",
+          "title": "Debug",
+          "x-ui": {
+            "order": 10
+          },
+          "default": false,
+          "$comment": "Provider/AI note: keep JSON path '$.debugCfg.Debug' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.Debug",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "debugPath": {
+          "type": "string",
+          "title": "Debug Path",
+          "x-ui": {
+            "order": 20
+          },
+          "default": "Result\\",
+          "$comment": "Provider/AI note: keep JSON path '$.debugCfg.debugPath' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugPath",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "debugImgResize": {
+          "type": "integer",
+          "title": "Debug Img Resize",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 2,
+          "$comment": "Provider/AI note: keep JSON path '$.debugCfg.debugImgResize' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.debugCfg.debugImgResize",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.debugCfg' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.debugCfg",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "CheckLine": {
+      "type": "object",
+      "title": "Check Line",
+      "x-ui": {
+        "order": 20
+      },
+      "default": {
+        "rho": 5,
+        "houghV": 100,
+        "floAngle": 10,
+        "erodeTime": 1,
+        "maxLineGap": 30,
+        "erodeKernel": 2,
+        "minLineLength": 80
+      },
+      "additionalProperties": true,
+      "properties": {
+        "rho": {
+          "type": "integer",
+          "title": "Rho",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 5,
+          "$comment": "Provider/AI note: keep JSON path '$.CheckLine.rho' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.rho",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "houghV": {
+          "type": "integer",
+          "title": "Hough V",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 100,
+          "$comment": "Provider/AI note: keep JSON path '$.CheckLine.houghV' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.houghV",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "floAngle": {
+          "type": "integer",
+          "title": "Flo Angle",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 10,
+          "$comment": "Provider/AI note: keep JSON path '$.CheckLine.floAngle' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.floAngle",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "erodeTime": {
+          "type": "integer",
+          "title": "Erode Time",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 1,
+          "$comment": "Provider/AI note: keep JSON path '$.CheckLine.erodeTime' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.erodeTime",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "maxLineGap": {
+          "type": "integer",
+          "title": "Max Line Gap",
+          "x-ui": {
+            "order": 50
+          },
+          "default": 30,
+          "$comment": "Provider/AI note: keep JSON path '$.CheckLine.maxLineGap' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.maxLineGap",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "erodeKernel": {
+          "type": "integer",
+          "title": "Erode Kernel",
+          "x-ui": {
+            "order": 60
+          },
+          "default": 2,
+          "$comment": "Provider/AI note: keep JSON path '$.CheckLine.erodeKernel' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.erodeKernel",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "minLineLength": {
+          "type": "integer",
+          "title": "Min Line Length",
+          "x-ui": {
+            "order": 70
+          },
+          "default": 80,
+          "$comment": "Provider/AI note: keep JSON path '$.CheckLine.minLineLength' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.CheckLine.minLineLength",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.CheckLine' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.CheckLine",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "mathMaskRect": {
+      "type": "object",
+      "title": "Math Mask Rect",
+      "x-ui": {
+        "order": 30
+      },
+      "default": {
+        "h": 0,
+        "w": 0,
+        "x": 0,
+        "y": 0,
+        "enable": false
+      },
+      "additionalProperties": true,
+      "properties": {
+        "h": {
+          "type": "integer",
+          "title": "H",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 0,
+          "$comment": "Provider/AI note: keep JSON path '$.mathMaskRect.h' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.h",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "w": {
+          "type": "integer",
+          "title": "W",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 0,
+          "$comment": "Provider/AI note: keep JSON path '$.mathMaskRect.w' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.w",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "x": {
+          "type": "integer",
+          "title": "X",
+          "x-ui": {
+            "order": 30
+          },
+          "default": 0,
+          "$comment": "Provider/AI note: keep JSON path '$.mathMaskRect.x' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.x",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "y": {
+          "type": "integer",
+          "title": "Y",
+          "x-ui": {
+            "order": 40
+          },
+          "default": 0,
+          "$comment": "Provider/AI note: keep JSON path '$.mathMaskRect.y' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.y",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "enable": {
+          "type": "boolean",
+          "title": "Enable",
+          "x-ui": {
+            "order": 50
+          },
+          "default": false,
+          "$comment": "Provider/AI note: keep JSON path '$.mathMaskRect.enable' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.mathMaskRect.enable",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.mathMaskRect' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.mathMaskRect",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": false,
+    "generatedAt": "2026-06-04T07:32:58+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 45,
+      "code": "FindCross",
+      "name": "十字计算",
+      "version": "1.0"
+    },
+    "notes": [
+      "The default value mirrors the current database cfg_json at generation time.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys unchanged; C++ receives the JSON string by key.",
+        "Do not remove existing fields from default unless the database default and algorithm contract are updated together.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "type",
+        "default",
+        "additionalProperties"
+      ]
+    }
+  }
+}

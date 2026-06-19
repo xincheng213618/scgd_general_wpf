@@ -1,3 +1,4 @@
+#pragma warning disable CA1309
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;

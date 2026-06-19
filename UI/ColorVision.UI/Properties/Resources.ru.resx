@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -60,11 +60,7 @@
   </resheader>
   <data name="MenuFile" xml:space="preserve">
     <value>Файл(Ф)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>Шаблон(_M)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
+  </data>  <data name="MenuTool" xml:space="preserve">
     <value>Инструмент(Т)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
@@ -126,35 +122,14 @@
   </data>
   <data name="LanguageDescription" xml:space="preserve">
     <value>Выберите язык интерфейса. При следовании системе используется системный язык.</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>Автоматически переключать выбранные представления</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
+  </data>  <data name="HotKeys" xml:space="preserve">
     <value>Горячие клавиши</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>скрывать</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>независимое окно</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
+  </data>  <data name="MenuExit" xml:space="preserve">
     <value>Выход(Х)</value>
   </data>
   <data name="Log" xml:space="preserve">
     <value>Бревно</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>Открыть файл конфигурации</value>
-  </data>
-  <data name="OpenConfigFolder" xml:space="preserve">
-    <value>Открыть папку конфигурации</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>Открыть папку журнала</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
+  </data>  <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Автоматически прокручивать вниз</value>
   </data>
   <data name="AutoRefresh" xml:space="preserve">
@@ -168,17 +143,7 @@
   </data>
   <data name="Clear" xml:space="preserve">
     <value>Прозрачный</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>Произошла ошибка</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>оставшееся время:</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>Текущая скорость:</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
+  </data>  <data name="MenuOpen" xml:space="preserve">
     <value>_Открыть</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
@@ -228,74 +193,11 @@
   </data>
   <data name="MenuClose" xml:space="preserve">
     <value>Закрыть(_C)</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>Автовыбор</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
+  </data>  <data name="MenuRedo" xml:space="preserve">
     <value>Повторить</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>Размер буфера сокета</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
+  </data>  <data name="GeneralSettings" xml:space="preserve">
     <value>Общие настройки</value>
-  </data>
-  <data name="SettingsNoMatchingSettings" xml:space="preserve">
-    <value>Подходящие настройки не найдены.</value>
-  </data>
-  <data name="SettingsMatchingCountFormat" xml:space="preserve">
-    <value>Найдено настроек: {0}</value>
-  </data>
-  <data name="SettingsCountFormat" xml:space="preserve">
-    <value>Настроек: {0}</value>
-  </data>
-  <data name="SettingsEditorUnavailable" xml:space="preserve">
-    <value>Настройка недоступна</value>
-  </data>
-  <data name="SettingsEditorLoadFailed" xml:space="preserve">
-    <value>Не удалось загрузить настройку</value>
-  </data>
-  <data name="SettingsPageTypeInvalid" xml:space="preserve">
-    <value>Недопустимый тип страницы настроек</value>
-  </data>
-  <data name="SettingsPageUnavailable" xml:space="preserve">
-    <value>Страница настроек недоступна</value>
-  </data>
-  <data name="SettingsPageLoadFailed" xml:space="preserve">
-    <value>Не удалось загрузить страницу настроек</value>
-  </data>
-  <data name="SettingsStartupCheckUpdates" xml:space="preserve">
-    <value>Проверять обновления при запуске</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve">
-    <value>При запуске проверять обновления основного приложения, плагинов и тем.</value>
-  </data>
-  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve">
-    <value>обновление приложения обновление плагинов обновление темы запуск проверка автообновление check plugin updates startup update</value>
-  </data>
-  <data name="SettingsSectionBasic" xml:space="preserve">
-    <value>Основное</value>
-  </data>
-  <data name="SettingsSectionSearch" xml:space="preserve">
-    <value>Поиск</value>
-  </data>
-  <data name="SettingsSectionFileArchive" xml:space="preserve">
-    <value>Архив файлов</value>
-  </data>
-  <data name="SettingsSectionServices" xml:space="preserve">
-    <value>Службы</value>
-  </data>
-  <data name="SettingsSectionPaths" xml:space="preserve">
-    <value>Пути</value>
-  </data>
-  <data name="SettingsSectionExtensions" xml:space="preserve">
-    <value>Расширения</value>
-  </data>
-  <data name="SettingsSectionOther" xml:space="preserve">
-    <value>Другое</value>
-  </data>
-  <data name="LogLevelDescription" xml:space="preserve">
+  </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>Управляет подробностью записей в журналах приложения.</value>
   </data>
   <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
@@ -303,11 +205,7 @@
   </data>
   <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
     <value>URL службы для marketplace, проверки обновлений и API онлайн-пакетов.</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>название плагина</value>
-  </data>
-  <data name="Search" xml:space="preserve">
+  </data>  <data name="Search" xml:space="preserve">
     <value>поиск</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -357,11 +255,7 @@
   </data>
   <data name="SearchIconSettingsTooltip" xml:space="preserve">
     <value>Дважды щелкните, чтобы открыть настройки поиска</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>возобновлять</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>удалить</value>
   </data>
   <data name="Version" xml:space="preserve">
@@ -369,32 +263,11 @@
   </data>
   <data name="Options" xml:space="preserve">
     <value>Параметры</value>
-  </data>
-  <data name="NoLocalLog4Output" xml:space="preserve">
-    <value>Локальный вывод log4 не настроен</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
+  </data>  <data name="UpdateLog4NetLevel" xml:space="preserve">
     <value>Обновление уровня журнала Log4Net</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>Режим просмотра 1</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>Режим просмотра 2</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>Режим просмотра 4</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>Режим просмотра 9</value>
-  </data>
-  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+  </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Проверка дополнительных проектов</value>
-  </data>
-  <data name="Download" xml:space="preserve">
-    <value>Скачать</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>Проект {0} не найден</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
@@ -405,32 +278,7 @@
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Неподдерживаемый формат файла</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>Параметры сортировки</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>Умная сортировка (по возрастанию)</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>Умная сортировка (по убыванию)</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>Сортировать по {0}</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>По возрастанию</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>По убыванию</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>Обновить</value>
-  </data>
-  <data name="ConfirmDeletePlugin" xml:space="preserve">
-    <value>Подтвердить удаление плагина {0}?</value>
-  </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
+  </data>  <data name="CheckingCUDASupport" xml:space="preserve">
     <value>Проверка поддержки CUDA</value>
   </data>
   <data name="RestoreConfigFileFailed" xml:space="preserve">
@@ -546,11 +394,7 @@
   </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>Ресурс bool2VisibilityConverter не найден</value>
-  </data>
-  <data name="Install" xml:space="preserve">
-    <value>Установить</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
+  </data>  <data name="Rename" xml:space="preserve">
     <value>Переименовать</value>
   </data>
   <data name="ProjectSolution_P" xml:space="preserve">
@@ -558,23 +402,7 @@
   </data>
   <data name="MysqlTool" xml:space="preserve">
     <value>Инструменты MySQL</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>Окно журнала сообщений</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>Окно управления сокетами</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>Сортировка по умолчанию</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>Сортировать по имени</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>Сортировать по категории</value>
-  </data>
-  <data name="OK" xml:space="preserve">
+  </data>  <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
   <data name="Cancel" xml:space="preserve">
@@ -592,54 +420,6 @@
   <data name="ThemeDescription" xml:space="preserve">
     <value>Выберите цветовую тему интерфейса приложения.</value>
   </data>
-  <data name="MenuTreemapViewer" xml:space="preserve">
-    <value>Просмотр Treemap</value>
-  </data>
-  <data name="Treemap_Title" xml:space="preserve"><value>Disk Space Analyzer - Treemap Viewer</value></data>
-  <data name="Treemap_DriveLabel" xml:space="preserve"><value>Drive:</value></data>
-  <data name="Treemap_BrowseDirectory" xml:space="preserve"><value>Browse...</value></data>
-  <data name="Treemap_BrowseDirectoryTooltip" xml:space="preserve"><value>Select directory to scan</value></data>
-  <data name="Treemap_Scan" xml:space="preserve"><value>Scan</value></data>
-  <data name="Treemap_ScanTooltip" xml:space="preserve"><value>Scan selected directory and display treemap</value></data>
-  <data name="Treemap_Cancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Treemap_CancelTooltip" xml:space="preserve"><value>Abort current scan</value></data>
-  <data name="Treemap_Save" xml:space="preserve"><value>Save</value></data>
-  <data name="Treemap_SaveTooltip" xml:space="preserve"><value>Save current scan results as JSON file</value></data>
-  <data name="Treemap_Load" xml:space="preserve"><value>Load</value></data>
-  <data name="Treemap_LoadTooltip" xml:space="preserve"><value>Load scan results from saved JSON file</value></data>
-  <data name="Treemap_Up" xml:space="preserve"><value>↑ Up</value></data>
-  <data name="Treemap_UpTooltip" xml:space="preserve"><value>Return to parent directory node</value></data>
-  <data name="Treemap_ShowLabels" xml:space="preserve"><value>Show Labels</value></data>
-  <data name="Treemap_NodeCount" xml:space="preserve"><value>Nodes:</value></data>
-  <data name="Treemap_File" xml:space="preserve"><value>File</value></data>
-  <data name="Treemap_Folder" xml:space="preserve"><value>Folder</value></data>
-  <data name="Treemap_SelectDirPrompt" xml:space="preserve"><value>Select a directory and click "Scan", or click "Load" to read saved scan results.</value></data>
-  <data name="Treemap_Scanning" xml:space="preserve"><value>Scanning...</value></data>
-  <data name="Treemap_ScannedFiles" xml:space="preserve"><value>Scanned {0:N0} files...</value></data>
-  <data name="Treemap_Cancelled" xml:space="preserve"><value>Cancelled.</value></data>
-  <data name="Treemap_Complete" xml:space="preserve"><value>Done. {0:N0} files total.</value></data>
-  <data name="Treemap_ScanError" xml:space="preserve"><value>Scan error: {0}</value></data>
-  <data name="Treemap_SaveDialogTitle" xml:space="preserve"><value>Save Scan Results</value></data>
-  <data name="Treemap_Saved" xml:space="preserve"><value>Saved: {0}</value></data>
-  <data name="Treemap_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data>
-  <data name="Treemap_LoadDialogTitle" xml:space="preserve"><value>Load Scan Results</value></data>
-  <data name="Treemap_InvalidFormat" xml:space="preserve"><value>Invalid or empty file format.</value></data>
-  <data name="Treemap_Loaded" xml:space="preserve"><value>Loaded: {0}</value></data>
-  <data name="Treemap_LoadFailed" xml:space="preserve"><value>Load failed: {0}</value></data>
-  <data name="Treemap_OpenFile" xml:space="preserve"><value>Open File</value></data>
-  <data name="Treemap_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
-  <data name="Treemap_OpenInExplorer" xml:space="preserve"><value>Open in Explorer</value></data>
-  <data name="Treemap_ShowInExplorer" xml:space="preserve"><value>Show in Explorer</value></data>
-  <data name="Treemap_CopyPath" xml:space="preserve"><value>Copy Path</value></data>
-  <data name="Treemap_DrillDown" xml:space="preserve"><value>Drill Down (set as root)</value></data>
-  <data name="Treemap_GoUp" xml:space="preserve"><value>Go Up</value></data>
-  <data name="Treemap_DeleteFile" xml:space="preserve"><value>Delete file {0}</value></data>
-  <data name="Treemap_ConfirmDelete" xml:space="preserve"><value>Confirm delete file:\n{0}</value></data>
-  <data name="Treemap_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
-  <data name="Treemap_DeleteFailed" xml:space="preserve"><value>Delete failed: {0}</value></data>
-  <data name="Treemap_Error" xml:space="preserve"><value>Error</value></data>
-  <data name="Treemap_Prompt" xml:space="preserve"><value>Prompt</value></data>
-  <data name="Treemap_SelectValidDir" xml:space="preserve"><value>Please select a valid directory first.</value></data>
   <data name="PropEditor_SearchPlaceholder" xml:space="preserve"><value>Search properties...</value></data>
   <data name="PropEditor_ResetToDefault" xml:space="preserve"><value>Reset to Default</value></data>
   <data name="PropEditor_ResetTooltip" xml:space="preserve"><value>Reset to class default values</value></data>
@@ -680,8 +460,6 @@
   <data name="DictEditor_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
   <data name="DictEditor_ConfirmDeleteAll" xml:space="preserve"><value>Are you sure you want to delete all {0} items?</value></data>
   <data name="DictEditor_ConfirmDeleteAllTitle" xml:space="preserve"><value>Confirm Delete All</value></data>
-  <data name="Config_Parameters" xml:space="preserve"><value>Configuration Parameters</value></data>
-  <data name="Config_EnableBackup" xml:space="preserve"><value>Enable scheduled backup</value></data>
   <data name="HotKey_RestoreDefault" xml:space="preserve"><value>Restore Default</value></data>
   <data name="HotKey_SaveHotkey" xml:space="preserve"><value>Save Hotkey</value></data>
   <data name="HotKey_LoadHotkey" xml:space="preserve"><value>Load Hotkey</value></data>

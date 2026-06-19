@@ -166,10 +166,6 @@
                         <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="{x:Static properties:Resources.Graphic_Draw}" Click="Button2_Click"/>
                         <Button  Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="{x:Static properties:Resources.Graphic_ClearAll}" Click="Button3_Click"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Button Margin="5" Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left" Content="{x:Static properties:Resources.Graphic_ExportAnnotations}" Click="ExportAnnotations_Click"/>
-                        <Button Margin="5" Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left" Content="{x:Static properties:Resources.Graphic_ImportAnnotations}" Click="ImportAnnotations_Click"/>
-                    </StackPanel>
 
                 </StackPanel>
 

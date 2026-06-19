@@ -1,6 +1,8 @@
+#pragma warning disable CA1822
 using log4net;
 using SqlSugar;
 using System.IO;
+using ColorVision.UI;
 
 namespace ColorVision.Scheduler.Data
 {
@@ -15,8 +17,7 @@ namespace ColorVision.Scheduler.Data
             lock (_locker) { return _instance ??= new SchedulerDbManager(); }
         }
 
-        private static readonly string DbDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+        private static readonly string DbDirectory = Environments.DirStateScheduler;
 
         public static string DbPath { get; } = Path.Combine(DbDirectory, "SchedulerHistory.db");
 

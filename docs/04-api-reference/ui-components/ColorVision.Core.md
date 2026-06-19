@@ -94,6 +94,51 @@ ColorVision.Core 当前更接近一个原生图像和视频能力桥接层，主
 3. WPF 显示链通过 `HImageExtension` 把图像数据更新到 `WriteableBitmap`。
 4. 像 `ColorVision.ImageEditor` 这类上层模块继续围绕这些位图做交互、绘制和显示。
 
+## 作为 DLL 使用时
+
+### 应该引用它的场景
+
+- 上层图像模块需要和 `opencv_helper.dll` 交换图像缓冲区。
+- 需要将 native 图像数据转换为 WPF `WriteableBitmap`。
+- 需要调用伪彩色、图像增强、滤波、阈值、聚焦评价、SFR 或 fusion 相关 native 方法。
+- 需要把 native 日志桥接到托管日志体系。
+
+### 使用注意
+
+| 风险点 | 说明 |
+| --- | --- |
+| x64 native DLL | 必须确认 `opencv_helper.dll`、OpenCV runtime DLL 位于输出目录或 NuGet runtime 目录 |
+| 内存所有权 | `HImage` 包含非托管指针，释放边界必须清楚 |
+| 线程与 UI | native 计算结果回到 WPF 显示时，要注意 UI 线程和 bitmap 更新方式 |
+| CUDA 可选性 | `opencv_cuda.dll` 不是所有环境都有，调用前要按部署包和设备能力判断 |
+
+### 发布注意
+
+NuGet 包必须包含 `runtimes/win-x64/native` 下的 native DLL。只发布托管 DLL 会导致上层功能编译通过但运行时报错。
+
+### DLL 发布验收表
+
+| 验收项 | 要查什么 | 通过标准 |
+| --- | --- | --- |
+| 目标框架产物 | `net8.0-windows7.0`、`net10.0-windows7.0` | 两个 TFM 都能生成 DLL、`.nupkg`、`.snupkg` |
+| native runtime | NuGet 包与宿主输出目录 | `opencv_helper.dll`、OpenCV 4130 系列 DLL 位于 `runtimes/win-x64/native` 或最终输出目录 |
+| CUDA 可选包 | `opencv_cuda.dll` | 源文件存在时进入包；缺失时非 CUDA 路径不应因为它失败 |
+| P/Invoke 入口 | `OpenCVMediaHelper`、`OpenCVCuda`、`NativeLogBridge` | 不出现 `DllNotFoundException`、`EntryPointNotFoundException`、x86/x64 混用 |
+| 图像内存 | `HImage.Dispose()`、`Marshal.FreeHGlobal` | 批量转换后内存能释放，重复打开图像不持续增长 |
+| WPF 显示桥接 | `HImageExtension` | `HImage` 到 `WriteableBitmap` 的尺寸、通道、位深和 stride 对齐 |
+| 上层回归 | `ColorVision.ImageEditor` | 至少验证一张图像能打开、显示、伪彩或增强后仍可刷新 |
+
+### 现场故障首查
+
+| 现象 | 第一检查点 |
+| --- | --- |
+| 启动或调用时报 `DllNotFoundException` | 先查 `runtimes/win-x64/native` 与主程序输出目录是否有 native DLL |
+| 报 `BadImageFormatException` | 先查宿主、插件、native DLL 是否统一 x64 |
+| 图像显示黑屏或颜色错位 | 检查 `HImage` 的 rows、cols、channels、depth、stride 和 WPF `PixelFormat` 推导 |
+| 批量处理后内存上涨 | 检查 `HImage.Dispose()` 是否被调用，以及 native 输出缓冲区所有权是否清楚 |
+| CUDA fusion 不可用 | 先确认 `opencv_cuda.dll`、NVIDIA 驱动和 CUDA 运行时；再确认是否走了非 CUDA 兜底路径 |
+| 原生日志没有进入托管日志 | 检查 `NativeLogBridge` 初始化顺序和 helper/cuda DLL 是否已成功加载 |
+
 ## 当前实现有哪些边界
 
 ### 不要把它写成高层 OO API

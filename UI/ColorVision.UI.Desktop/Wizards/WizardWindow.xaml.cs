@@ -31,22 +31,31 @@ namespace  ColorVision.UI.Desktop.Wizards
         private static readonly object _locker = new();
         public static WizardManager GetInstance() { lock (_locker) { _instance ??= new WizardManager(); return _instance; } }
         public List<IWizardStep> IWizardSteps { get; private set; } = new List<IWizardStep>();
+        public List<IWizardInitializer> WizardInitializers { get; private set; } = new List<IWizardInitializer>();
 
         public void Initialized()
         {
             IWizardSteps.Clear();
+            WizardInitializers.Clear();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IWizardStep).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (var type in assembly.GetTypes().Where(t => !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IWizardStep fileHandler)
+                    if (typeof(IWizardStep).IsAssignableFrom(type) && Activator.CreateInstance(type) is IWizardStep fileHandler)
                     {
                         log.Debug(type);
                         IWizardSteps.Add(fileHandler);
                     }
+
+                    if (typeof(IWizardInitializer).IsAssignableFrom(type) && Activator.CreateInstance(type) is IWizardInitializer initializer)
+                    {
+                        log.Debug(type);
+                        WizardInitializers.Add(initializer);
+                    }
                 }
             }
             IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
+            WizardInitializers = WizardInitializers.OrderBy(handler => handler.Order).ToList();
         }
     }
 
@@ -73,23 +82,50 @@ namespace  ColorVision.UI.Desktop.Wizards
             _wizardSteps = WizardManager.GetInstance().IWizardSteps;
 
             ListWizard.ItemsSource = _wizardSteps;
-            
-            if (_wizardSteps.Count > 0)
+
+            Dispatcher.BeginInvoke(new Action(() =>
             {
-                _currentStepIndex = 0;
-                ShowCurrentStep();
+                if (RunInitializers())
+                {
+                    return;
+                }
+
+                if (_wizardSteps.Count > 0)
+                {
+                    _currentStepIndex = 0;
+                    ShowCurrentStep();
+                }
+            }));
+        }
+
+        private bool RunInitializers()
+        {
+            bool isFirstRun = !WindowConfig.WizardCompletionKey;
+            foreach (IWizardInitializer initializer in WizardManager.GetInstance().WizardInitializers)
+            {
+                WizardInitializationContext context = new(this, isFirstRun);
+                initializer.Initialize(context);
+                if (context.SkipRequested)
+                {
+                    SkipWizardConfiguration();
+                    return true;
+                }
             }
+
+            return false;
         }
 
         private void ShowCurrentStep()
         {
             if (_wizardSteps == null || _wizardSteps.Count == 0) return;
 
+            IWizardStep currentStep = _wizardSteps[_currentStepIndex];
+
             // Update progress bar
             WizardProgress.Value = (_currentStepIndex + 1) * 100.0 / _wizardSteps.Count;
 
             // Show current step content
-            BorderContent.DataContext = _wizardSteps[_currentStepIndex];
+            BorderContent.DataContext = currentStep;
             
             // Update ListView selection to show which step we're on
             ListWizard.SelectedIndex = _currentStepIndex;
@@ -109,6 +145,7 @@ namespace  ColorVision.UI.Desktop.Wizards
                 BtnNext.Visibility = Visibility.Collapsed;
                 BtnFinish.Visibility = Visibility.Visible;
             }
+
         }
 
         private void Previous_Click(object sender, RoutedEventArgs e)
@@ -160,6 +197,18 @@ namespace  ColorVision.UI.Desktop.Wizards
                 return;
             }
 
+            CompleteWizard();
+        }
+
+        private void SkipWizardConfiguration()
+        {
+            WindowConfig.WizardCompletionKey = true;
+            ConfigHandler.GetInstance().SaveConfigs();
+            CompleteWizard();
+        }
+
+        private void CompleteWizard()
+        {
             if (Application.Current.MainWindow == this)
             {
                 //这里使用件的启动路径，启动主程序

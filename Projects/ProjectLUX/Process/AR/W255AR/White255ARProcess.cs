@@ -1,3 +1,4 @@
+#pragma warning disable CA1707,CS8601,CS8602
 using ColorVision.Database;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
 using ColorVision.Engine.Media;

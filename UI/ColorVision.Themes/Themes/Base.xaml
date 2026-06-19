@@ -94,13 +94,11 @@
     </Style>
 
     <Style TargetType="{x:Type AccessText}">
-        <Setter Property="FontSize" Value="{DynamicResource {x:Static SystemFonts.MessageFontSizeKey}}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="OverridesDefaultStyle" Value="True" />
     </Style>
     <Style TargetType="{x:Type TextBlock}">
-        <Setter Property="FontSize" Value="{DynamicResource {x:Static SystemFonts.MessageFontSizeKey}}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         <Setter Property="Background" Value="Transparent"/>

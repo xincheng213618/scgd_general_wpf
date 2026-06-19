@@ -4,6 +4,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -92,6 +93,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotChatMessage : ViewModelBase
     {
+        private static readonly char[] ExecutionLineSeparators = { '\r', '\n' };
+
         public CopilotChatMessage()
         {
         }
@@ -121,7 +124,7 @@ namespace ColorVision.Copilot
         public bool IsUser => Role == CopilotChatRole.User;
 
         [JsonIgnore]
-        public string Header => IsUser ? "你" : string.IsNullOrWhiteSpace(AssistantName) ? "AI" : AssistantName;
+        public string Header => IsUser ? CopilotUiText.UserHeader : string.IsNullOrWhiteSpace(AssistantName) ? "AI" : AssistantName;
 
         public string AssistantName
         {
@@ -177,14 +180,22 @@ namespace ColorVision.Copilot
             get => _executionContent;
             set
             {
-                SetProperty(ref _executionContent, value ?? string.Empty);
-                OnPropertyChanged(nameof(HasExecutionTrace));
+                if (SetProperty(ref _executionContent, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(HasExecutionTrace));
+                    OnPropertyChanged(nameof(HasExecutionFailures));
+                    OnPropertyChanged(nameof(ExecutionSummary));
+                    OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+                }
             }
         }
         private string _executionContent = string.Empty;
 
         [JsonIgnore]
         public bool HasExecutionTrace => !string.IsNullOrWhiteSpace(ExecutionContent);
+
+        [JsonIgnore]
+        public bool HasExecutionFailures => AnalyzeExecutionTrace(ExecutionContent).FailedCount > 0;
 
         public bool IsExecutionExpanded
         {
@@ -198,14 +209,33 @@ namespace ColorVision.Copilot
             get => _isExecutionInProgress;
             set
             {
-                SetProperty(ref _isExecutionInProgress, value);
-                OnPropertyChanged(nameof(ExecutionHeader));
+                if (SetProperty(ref _isExecutionInProgress, value))
+                {
+                    OnPropertyChanged(nameof(ExecutionHeader));
+                    OnPropertyChanged(nameof(ExecutionSummary));
+                    OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+                }
             }
         }
         private bool _isExecutionInProgress;
 
         [JsonIgnore]
-        public string ExecutionHeader => IsExecutionInProgress ? "执行中" : "执行过程";
+        public string ExecutionHeader => IsExecutionInProgress ? CopilotUiText.ExecutionInProgressHeader : CopilotUiText.ExecutionHeader;
+
+        [JsonIgnore]
+        public string ExecutionSummary => BuildExecutionSummary(ExecutionContent, IsExecutionInProgress);
+
+        [JsonIgnore]
+        public string ExecutionSummaryToolTip
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(ExecutionContent))
+                    return ExecutionSummary;
+
+                return $"{ExecutionHeader}: {ExecutionSummary}{Environment.NewLine}{Environment.NewLine}{TrimForTooltip(ExecutionContent)}";
+            }
+        }
 
         public string ReasoningContent
         {
@@ -240,7 +270,7 @@ namespace ColorVision.Copilot
         private bool _isReasoningInProgress;
 
         [JsonIgnore]
-        public string ReasoningHeader => IsReasoningInProgress ? "推理中" : "推理详情";
+        public string ReasoningHeader => IsReasoningInProgress ? CopilotUiText.ReasoningInProgressHeader : CopilotUiText.ReasoningHeader;
 
         public bool EnsureValid()
         {
@@ -290,6 +320,78 @@ namespace ColorVision.Copilot
 
             return changed;
         }
+
+        private static string BuildExecutionSummary(string? content, bool isInProgress)
+        {
+            var text = content ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(text))
+                return isInProgress ? "Starting" : string.Empty;
+
+            var (toolCount, failedCount, latestTool) = AnalyzeExecutionTrace(text);
+
+            if (toolCount == 0)
+            {
+                var firstLine = text
+                    .Split(ExecutionLineSeparators, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line => line.Trim())
+                    .FirstOrDefault(line => !string.IsNullOrWhiteSpace(line));
+                return isInProgress
+                    ? TrimForInline(string.IsNullOrWhiteSpace(firstLine) ? "Running" : firstLine)
+                    : "Trace available";
+            }
+
+            var builder = new StringBuilder(isInProgress ? "Running" : "Completed");
+            builder.Append(" - ").Append(toolCount).Append(toolCount == 1 ? " tool" : " tools");
+
+            if (failedCount > 0)
+                builder.Append(" - ").Append(failedCount).Append(" failed");
+
+            if (!string.IsNullOrWhiteSpace(latestTool))
+                builder.Append(" - latest ").Append(TrimForInline(latestTool));
+
+            return builder.ToString();
+        }
+
+        private static (int ToolCount, int FailedCount, string LatestTool) AnalyzeExecutionTrace(string? content)
+        {
+            var toolCount = 0;
+            var failedCount = 0;
+            var latestTool = string.Empty;
+
+            foreach (var rawLine in (content ?? string.Empty).Split(ExecutionLineSeparators, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var line = rawLine.Trim();
+                if (line.Length > 2 && line[0] == '[')
+                {
+                    var closeIndex = line.IndexOf(']');
+                    if (closeIndex > 1)
+                    {
+                        latestTool = line[1..closeIndex].Trim();
+                        toolCount++;
+                    }
+                }
+
+                if (line.StartsWith("Status:", StringComparison.OrdinalIgnoreCase)
+                    && line.Contains("Failed", StringComparison.OrdinalIgnoreCase))
+                {
+                    failedCount++;
+                }
+            }
+
+            return (toolCount, failedCount, latestTool);
+        }
+
+        private static string TrimForInline(string value)
+        {
+            var text = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
+            return text.Length <= 48 ? text : text[..48] + "...";
+        }
+
+        private static string TrimForTooltip(string value)
+        {
+            var text = (value ?? string.Empty).Trim();
+            return text.Length <= 1600 ? text : text[..1600] + Environment.NewLine + "...";
+        }
     }
 
     public sealed class CopilotConversationRecord : ViewModelBase
@@ -306,7 +408,7 @@ namespace ColorVision.Copilot
             get => _title;
             set => SetProperty(ref _title, NormalizeText(value));
         }
-        private string _title = "新会话";
+        private string _title = CopilotUiText.NewConversationTitle;
 
         public bool HasCustomTitle
         {
@@ -334,7 +436,7 @@ namespace ColorVision.Copilot
             get => _previewText;
             set => SetProperty(ref _previewText, value ?? string.Empty);
         }
-        private string _previewText = "点击 + 新建或直接输入问题";
+        private string _previewText = CopilotUiText.EmptyConversationPreview;
 
         public string ProfileId
         {
@@ -397,10 +499,10 @@ namespace ColorVision.Copilot
         public string UpdatedLabel => UpdatedAt.Date == DateTime.Today ? UpdatedAt.ToString("HH:mm") : UpdatedAt.ToString("M/d");
 
         [JsonIgnore]
-        public string PinLabel => IsPinned ? "置顶" : string.Empty;
+        public string PinLabel => IsPinned ? CopilotUiText.PinnedLabel : string.Empty;
 
         [JsonIgnore]
-        public string PinMenuText => IsPinned ? "取消置顶" : "置顶";
+        public string PinMenuText => IsPinned ? CopilotUiText.UnpinMenuText : CopilotUiText.PinMenuText;
 
         [JsonIgnore]
         public CopilotTokenUsage LastUsage => new(LastUsageInputTokens, LastUsageOutputTokens, LastUsageTotalTokens);
@@ -465,7 +567,7 @@ namespace ColorVision.Copilot
         public void RefreshSummary()
         {
             var firstUserMessage = Messages.FirstOrDefault(message => message.Role == CopilotChatRole.User && !string.IsNullOrWhiteSpace(message.Content));
-            var generatedTitle = firstUserMessage == null ? "新会话" : BuildPreview(firstUserMessage.Content, 24);
+            var generatedTitle = firstUserMessage == null ? CopilotUiText.NewConversationTitle : BuildPreview(firstUserMessage.Content, 24);
             if (!HasCustomTitle || string.IsNullOrWhiteSpace(Title))
                 Title = generatedTitle;
 
@@ -477,8 +579,8 @@ namespace ColorVision.Copilot
             }
 
             PreviewText = Attachments.Count > 0
-                ? $"已挂载 {Attachments.Count} 个文件/上下文"
-                : "点击 + 新建或直接输入问题";
+                ? CopilotUiText.FormatAttachmentMountedCount(Attachments.Count)
+                : CopilotUiText.EmptyConversationPreview;
         }
 
         public void SetCustomTitle(string title)
@@ -500,8 +602,8 @@ namespace ColorVision.Copilot
                 HasCustomTitle = false,
                 ProfileId = profileId,
                 ProfileDisplayName = profileDisplayName,
-                Title = "新会话",
-                PreviewText = "点击 + 新建或直接输入问题",
+                Title = CopilotUiText.NewConversationTitle,
+                PreviewText = CopilotUiText.EmptyConversationPreview,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
             };
@@ -590,10 +692,10 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public string BadgeText => Type switch
         {
-            CopilotAttachmentType.File => "文件",
-            CopilotAttachmentType.Image => "图片",
-            CopilotAttachmentType.WebPage => "网页",
-            _ => "上下文",
+            CopilotAttachmentType.File => CopilotUiText.FileBadge,
+            CopilotAttachmentType.Image => CopilotUiText.ImageBadge,
+            CopilotAttachmentType.WebPage => CopilotUiText.WebPageBadge,
+            _ => CopilotUiText.ContextBadge,
         };
 
         [JsonIgnore]
@@ -662,7 +764,7 @@ namespace ColorVision.Copilot
         public bool IsStoredImageFile => Type == CopilotAttachmentType.Image && !string.IsNullOrWhiteSpace(Value);
 
         [JsonIgnore]
-        public string ImageFallbackText => HasPreviewImage ? string.Empty : "图片预览不可用";
+        public string ImageFallbackText => HasPreviewImage ? string.Empty : CopilotUiText.ImagePreviewUnavailable;
 
         [JsonIgnore]
         public string ImageMetaText => CreatedAt.ToString("M/d HH:mm");

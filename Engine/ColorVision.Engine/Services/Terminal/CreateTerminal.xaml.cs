@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿#pragma warning disable CA1863,CS8604
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;

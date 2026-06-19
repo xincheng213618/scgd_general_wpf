@@ -1,3 +1,4 @@
+#pragma warning disable CA1707,CA1826,CA1861
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System;
@@ -230,6 +231,23 @@ public sealed class CopilotMcpTests : IDisposable
             ColorVision.UI.ConfigHandler.GetInstance().Save<CopilotConfig>();
             CopilotMcpServer.Instance.ApplyConfig();
         }
+    }
+
+    [Fact]
+    public void SettingsViewModel_BuildsCodexMcpSetupSnippets()
+    {
+        var viewModel = new CopilotSettingsViewModel
+        {
+            McpPort = 38475,
+            McpBearerToken = "settings-token",
+        };
+
+        Assert.Contains("[mcp_servers.colorvision]", viewModel.CodexMcpConfigSnippet, StringComparison.Ordinal);
+        Assert.Contains("url = \"http://127.0.0.1:38475/mcp\"", viewModel.CodexMcpConfigSnippet, StringComparison.Ordinal);
+        Assert.Contains("bearer_token_env_var = \"COLORVISION_MCP_TOKEN\"", viewModel.CodexMcpConfigSnippet, StringComparison.Ordinal);
+        Assert.Equal(
+            "[Environment]::SetEnvironmentVariable(\"COLORVISION_MCP_TOKEN\", \"settings-token\", \"User\")",
+            viewModel.McpTokenEnvironmentCommandText);
     }
 
     [Fact]
@@ -980,6 +998,25 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.Equal(1, CopilotMcpConfirmationStore.Instance.PendingCount);
         Assert.False(string.IsNullOrWhiteSpace(fixture.ActionId));
         Assert.False(string.IsNullOrWhiteSpace(fixture.ArgumentsSummary));
+    }
+
+    [Fact]
+    public void ConfirmableActionPayload_ContainsConfirmActionArguments()
+    {
+        var action = CopilotMcpConfirmationStore.Instance.Create(
+            "Confirm menu command",
+            "Execute ColorVision menu command: Tools > Update",
+            "confirmation-required",
+            "execute_menu",
+            "query=Tools > Update, dry_run=False",
+            _ => Task.FromResult(CopilotMcpToolCallResult.Ok("ok")));
+
+        using var document = JsonDocument.Parse(action.ConfirmActionPayloadJson);
+        var root = document.RootElement;
+
+        Assert.Equal(action.ActionId, root.GetProperty("action_id").GetString());
+        Assert.Equal("execute_menu", root.GetProperty("tool_name").GetString());
+        Assert.Equal("query=Tools > Update, dry_run=False", root.GetProperty("arguments_summary").GetString());
     }
 
     [Fact]

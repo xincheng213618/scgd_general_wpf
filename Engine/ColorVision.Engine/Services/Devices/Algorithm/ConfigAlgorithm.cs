@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Cache;
+﻿#pragma warning disable CA1707
+using ColorVision.Engine.Cache;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm

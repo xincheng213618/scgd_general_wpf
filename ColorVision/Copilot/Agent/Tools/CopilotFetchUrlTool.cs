@@ -13,7 +13,7 @@ namespace ColorVision.Copilot
 
         public string Name => "FetchUrl";
 
-        public string Description => "抓取用户输入中出现的网页标题、描述和正文。";
+        public string Description => "Fetch the title, description, and readable body text for web pages mentioned by the user.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -40,8 +40,8 @@ namespace ColorVision.Copilot
                 {
                     ToolName = Name,
                     Success = false,
-                    Summary = "未检测到可抓取的网页地址。",
-                    ErrorMessage = "当前请求中没有可处理的网页地址；规划器可通过 input.query 提供一个完整 URL。",
+                    Summary = "No fetchable web page URL was detected.",
+                    ErrorMessage = "The current request has no processable web page URL; the planner can provide a complete URL in input.query.",
                 };
             }
 
@@ -77,10 +77,10 @@ namespace ColorVision.Copilot
                 ToolName = Name,
                 Success = successCount > 0,
                 Summary = successCount > 0
-                    ? $"已抓取 {successCount}/{urls.Length} 个网页。"
-                    : $"未能抓取网页，共 {urls.Length} 个地址。",
+                    ? $"Fetched {successCount}/{urls.Length} web pages."
+                    : $"Failed to fetch any web pages from {urls.Length} URLs.",
                 Content = builder.ToString().TrimEnd(),
-                ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("；", errors),
+                ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
             };
         }
 

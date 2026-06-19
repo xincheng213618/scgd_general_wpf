@@ -1,3 +1,4 @@
+#pragma warning disable CA1805,CA1806,CA1822,CA1863,CS0219
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Themes;
@@ -18,20 +19,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
-    /// <summary>
-    /// Menu item to open Licenses Manager
-    /// </summary>
-    public class ExportLicenseManager : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => Properties.Resources.LicenseManager;
-        public override int Order => 3;
-
-        public override void Execute()
-        {
-            new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
-        }
-    }
 
     public class LicenseManagerViewModel : ViewModelBase
     {
@@ -52,10 +39,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public RelayCommand SaveToLincenseCommand { get; set; }
 
-        public RelayCommand EditLicenseNotificationConfigCommand { get; set; }
-
-        public LicenseNotificationConfig LicenseNotificationConfig { get; set; }
-
         public string LicenseCountText => string.Format(Properties.Resources.LicenseCountFormat, Licenses.Count);
 
         public LicenseManagerViewModel()
@@ -71,20 +54,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
             SaveToLincenseCommand = new RelayCommand(a=> SaveToLincense());
 
-            LicenseNotificationConfig = ConfigService.Instance.GetRequiredService<LicenseNotificationConfig>();
-
-            EditLicenseNotificationConfigCommand = new RelayCommand(a =>
-            {
-                var window = new PropertyEditorWindow(LicenseNotificationConfig)
-                {
-                    Owner = Application.Current.GetActiveWindow(),
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                };
-                if (window.ShowDialog() == true)
-                {
-                    ConfigService.Instance.SaveConfigs();
-                }
-            });
             LoadLicenses();
         }
 
@@ -357,7 +326,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
             try
             {
-                Common.NativeMethods.Clipboard.SetText(SelectedLicense.Model.LicenseValue);
+                Common.Clipboard.SetText(SelectedLicense.Model.LicenseValue);
                 MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, Properties.Resources.CopyLicense);
             }
             catch (Exception ex)

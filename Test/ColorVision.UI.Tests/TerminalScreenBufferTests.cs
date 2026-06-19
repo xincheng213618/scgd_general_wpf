@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using ColorVision.Solution.Terminal;
 
 namespace ColorVision.UI.Tests;

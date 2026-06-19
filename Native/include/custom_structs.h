@@ -1,88 +1,222 @@
 #pragma once
+
 #include <opencv2/core.hpp>
 #include <combaseapi.h>
+#include <cstdint>
+#include <cstring>
+#include <limits>
 
 #pragma pack(push, 1)
-
-// 定义结构体
 typedef struct _RoiRect {
-	int32_t x;      // 明确使用 32 位整数，对应 C# 的 int
-	int32_t y;
-	int32_t width;
-	int32_t height;
+    int32_t x;
+    int32_t y;
+    int32_t width;
+    int32_t height;
 } RoiRect;
-#pragma pack(pop) // 恢复默认对齐，不影响后续代码
+#pragma pack(pop)
+
+static inline int HImageDepthToCvDepth(int depth) noexcept
+{
+    switch (depth) {
+    case 8:
+        return CV_8U;
+    case 16:
+        return CV_16U;
+    case 32:
+        return CV_32F;
+    case 64:
+        return CV_64F;
+    default:
+        return -1;
+    }
+}
+
+static inline int CvDepthToHImageDepth(int cvDepth) noexcept
+{
+    switch (cvDepth) {
+    case CV_8U:
+        return 8;
+    case CV_16U:
+        return 16;
+    case CV_32F:
+        return 32;
+    case CV_64F:
+        return 64;
+    default:
+        return -1;
+    }
+}
+
+static inline bool HImageIsValidChannelCount(int channels) noexcept
+{
+    return channels > 0 && channels <= CV_CN_MAX;
+}
+
+static inline bool HImageTryMultiplySize(size_t left, size_t right, size_t* result) noexcept
+{
+    if (result == nullptr) {
+        return false;
+    }
+
+    if (left != 0 && right > (std::numeric_limits<size_t>::max)() / left) {
+        *result = 0;
+        return false;
+    }
+
+    *result = left * right;
+    return true;
+}
+
+static inline bool HImageTryGetType(int depth, int channels, int* outType) noexcept
+{
+    if (outType == nullptr || !HImageIsValidChannelCount(channels)) {
+        return false;
+    }
+
+    int cvDepth = HImageDepthToCvDepth(depth);
+    if (cvDepth < 0) {
+        return false;
+    }
+
+    *outType = CV_MAKETYPE(cvDepth, channels);
+    return true;
+}
+
+static inline bool HImageTryGetRowBytes(int cols, int channels, int depth, size_t* rowBytes, int* outType = nullptr) noexcept
+{
+    if (rowBytes == nullptr || cols <= 0) {
+        return false;
+    }
+
+    int type = 0;
+    if (!HImageTryGetType(depth, channels, &type)) {
+        return false;
+    }
+
+    size_t bytes = 0;
+    if (!HImageTryMultiplySize(static_cast<size_t>(cols), CV_ELEM_SIZE(type), &bytes) || bytes == 0) {
+        return false;
+    }
+
+    *rowBytes = bytes;
+    if (outType != nullptr) {
+        *outType = type;
+    }
+    return true;
+}
+
+static inline bool HImageTryGetSpanBytes(int rows, size_t stride, size_t rowBytes, size_t* spanBytes) noexcept
+{
+    if (spanBytes == nullptr || rows <= 0 || rowBytes == 0 || stride < rowBytes) {
+        return false;
+    }
+
+    size_t skippedRows = static_cast<size_t>(rows - 1);
+    size_t prefixBytes = 0;
+    if (!HImageTryMultiplySize(skippedRows, stride, &prefixBytes)) {
+        return false;
+    }
+
+    if (prefixBytes > (std::numeric_limits<size_t>::max)() - rowBytes) {
+        *spanBytes = 0;
+        return false;
+    }
+
+    *spanBytes = prefixBytes + rowBytes;
+    return true;
+}
 
 typedef struct HImage
 {
     int rows;
     int cols;
     int channels;
-    int depth; //Bpp
+    int depth;
     int stride;
-	bool isDispose = false;
-    int type()  const {
-        int cv_depth = CV_8U;
-        switch (depth) {
-        case 8:
-            cv_depth = CV_8U;
-            break;
-        case 16:
-            cv_depth = CV_16U;
-            break;
-        case 32:
-            cv_depth = CV_32F;
-            break;
-        case 64:
-            cv_depth = CV_64F;
-            break;
-        default:
-            break;
-        }
-        return CV_MAKETYPE(cv_depth, channels);
+    bool isDispose = false;
+    int type() const
+    {
+        int cvType = -1;
+        return HImageTryGetType(depth, channels, &cvType) ? cvType : -1;
     }
-    int elemSize() const { return  ((((((((depth) & ((1 << 3) - 1)) + (((channels)-1) << 3))) & ((512 - 1) << 3)) >> 3) + 1) * ((0x28442211 >> (((((depth) & ((1 << 3) - 1)) + (((channels)-1) << 3))) & ((1 << 3) - 1)) * 4) & 15)); }
+    int elemSize() const
+    {
+        int cvType = -1;
+        return HImageTryGetType(depth, channels, &cvType) ? static_cast<int>(CV_ELEM_SIZE(cvType)) : 0;
+    }
     unsigned char* pData;
-}HImage;
+} HImage;
 
-// 封装的函数，用于从 cv::Mat 创建 HImage
-// 它会分配新的内存，并将所有权转移给调用者
-// 返回 0 表示成功，负数表示失败
+static cv::Mat HImageToMatView(const HImage& img)
+{
+    if (img.pData == nullptr || img.rows <= 0 || img.cols <= 0 || img.stride < 0) {
+        return cv::Mat();
+    }
+
+    int type = 0;
+    size_t rowBytes = 0;
+    if (!HImageTryGetRowBytes(img.cols, img.channels, img.depth, &rowBytes, &type)) {
+        return cv::Mat();
+    }
+
+    const size_t step = img.stride > 0 ? static_cast<size_t>(img.stride) : rowBytes;
+    size_t spanBytes = 0;
+    if (!HImageTryGetSpanBytes(img.rows, step, rowBytes, &spanBytes)) {
+        return cv::Mat();
+    }
+
+    return cv::Mat(img.rows, img.cols, type, img.pData, step);
+}
+
 static int MatToHImage(const cv::Mat& mat, HImage* outImage)
 {
-	if (outImage == nullptr) {
-		return -1; // 输出指针无效
-	}
-	if (mat.empty()) {
-		return -2; // 输入 Mat 为空
-	}
+    if (outImage == nullptr) {
+        return -1;
+    }
+    *outImage = HImage{};
 
-	// 为了确保 memcpy 的安全，我们需要一个连续内存的 Mat。
-	// 如果输入 mat 本身不是连续的，我们就克隆一份。
-	cv::Mat continuousMat;
-	if (mat.isContinuous()) {
-		continuousMat = mat; // 直接使用，无额外开销
-	}
-	else {
-		continuousMat = mat.clone(); // 克隆为连续内存
-	}
+    if (mat.empty()) {
+        return -2;
+    }
 
-	// 1. 【核心】计算大小并分配 COM 任务内存
-	size_t totalBytes = continuousMat.total() * continuousMat.elemSize();
-	unsigned char* pAllocatedData = static_cast<unsigned char*>(CoTaskMemAlloc(totalBytes));
-	if (pAllocatedData == nullptr) {
-		return -3; // 内存分配失败
-	}
+    const int hDepth = CvDepthToHImageDepth(mat.depth());
+    if (hDepth < 0 || !HImageIsValidChannelCount(mat.channels())) {
+        return -4;
+    }
 
-	// 2. 【核心】将图像数据拷贝到新分配的内存中
-	memcpy(pAllocatedData, continuousMat.data, totalBytes);
+    cv::Mat continuousMat;
+    if (mat.isContinuous()) {
+        continuousMat = mat;
+    }
+    else {
+        continuousMat = mat.clone();
+    }
+    if (continuousMat.empty() || !continuousMat.isContinuous()) {
+        return -5;
+    }
 
-	// 3. 【核心】填充 HImage 结构体，将内存所有权交给调用者
-	outImage->rows = continuousMat.rows;
-	outImage->cols = continuousMat.cols;
-	outImage->channels = continuousMat.channels();
-	outImage->stride = static_cast<int>(continuousMat.step);
-	outImage->depth = static_cast<int>(continuousMat.elemSize1()) * 8;
-	outImage->pData = pAllocatedData; // 指向新分配的内存
-	return 0; // 成功
+    if (continuousMat.step > static_cast<size_t>((std::numeric_limits<int>::max)())) {
+        return -6;
+    }
+
+    size_t totalBytes = 0;
+    if (!HImageTryMultiplySize(continuousMat.total(), continuousMat.elemSize(), &totalBytes) || totalBytes == 0) {
+        return -7;
+    }
+
+    unsigned char* pAllocatedData = static_cast<unsigned char*>(CoTaskMemAlloc(totalBytes));
+    if (pAllocatedData == nullptr) {
+        return -3;
+    }
+
+    std::memcpy(pAllocatedData, continuousMat.data, totalBytes);
+
+    outImage->rows = continuousMat.rows;
+    outImage->cols = continuousMat.cols;
+    outImage->channels = continuousMat.channels();
+    outImage->stride = static_cast<int>(continuousMat.step);
+    outImage->depth = hDepth;
+    outImage->isDispose = false;
+    outImage->pData = pAllocatedData;
+    return 0;
 }

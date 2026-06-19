@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/Image.ROI.schema.json",
+  "title": "图像裁剪",
+  "description": "Auto-generated from t_scgd_sys_dictionary_mod_master.cfg_json. Providers may maintain titles, descriptions, ranges, units, groups, and UI hints without changing the C++ JSON interface.",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "RHO": 60,
+    "center": {
+      "x": 3126,
+      "y": 2088
+    },
+    "pixelToAngle": 0.02645
+  },
+  "properties": {
+    "RHO": {
+      "type": "integer",
+      "title": "RHO",
+      "x-ui": {
+        "order": 10
+      },
+      "default": 60,
+      "$comment": "Provider/AI note: keep JSON path '$.RHO' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.RHO",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "center": {
+      "type": "object",
+      "title": "Center",
+      "x-ui": {
+        "order": 20
+      },
+      "default": {
+        "x": 3126,
+        "y": 2088
+      },
+      "additionalProperties": true,
+      "properties": {
+        "x": {
+          "type": "integer",
+          "title": "X",
+          "x-ui": {
+            "order": 10
+          },
+          "default": 3126,
+          "$comment": "Provider/AI note: keep JSON path '$.center.x' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.center.x",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        },
+        "y": {
+          "type": "integer",
+          "title": "Y",
+          "x-ui": {
+            "order": 20
+          },
+          "default": 2088,
+          "$comment": "Provider/AI note: keep JSON path '$.center.y' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+          "x-provider": {
+            "jsonPath": "$.center.y",
+            "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+          }
+        }
+      },
+      "$comment": "Provider/AI note: keep JSON path '$.center' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.center",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    },
+    "pixelToAngle": {
+      "type": "number",
+      "title": "Pixel To Angle",
+      "x-ui": {
+        "order": 30
+      },
+      "default": 0.02645,
+      "$comment": "Provider/AI note: keep JSON path '$.pixelToAngle' compatible with the C++ JSON interface; enrich title/description/unit/range/enum/x-ui if known.",
+      "x-provider": {
+        "jsonPath": "$.pixelToAngle",
+        "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": false,
+    "generatedAt": "2026-06-04T07:32:58+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 52,
+      "code": "Image.ROI",
+      "name": "图像裁剪",
+      "version": "1.0"
+    },
+    "notes": [
+      "The default value mirrors the current database cfg_json at generation time.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys unchanged; C++ receives the JSON string by key.",
+        "Do not remove existing fields from default unless the database default and algorithm contract are updated together.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "type",
+        "default",
+        "additionalProperties"
+      ]
+    }
+  }
+}

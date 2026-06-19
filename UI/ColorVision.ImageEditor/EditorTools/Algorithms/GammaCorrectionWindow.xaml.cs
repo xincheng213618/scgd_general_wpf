@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using log4net;
@@ -14,19 +15,19 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     public partial class GammaCorrectionWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(GammaCorrectionWindow));
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _image;
 
         // 建议：持有 Source HImage 的只读引用或克隆，视 HImageCache 生命周期而定
         // 如果 HImageCache 可能被外部 Dispose，这里最好 Clone 一份
         private readonly HImage _sourceHImage;
 
-        public GammaCorrectionWindow(ImageView imageView)
+        public GammaCorrectionWindow(ImageProcessingContext image)
         {
             InitializeComponent();
-            _imageView = imageView;
+            _image = image;
 
-            // 确保有一个源数据，如果 ImageView 没有缓存，就新建一个空的（或者根据逻辑处理）
-            _sourceHImage = imageView.HImageCache ?? new HImage();
+            // 确保有一个源数据，如果当前图像没有缓存，就新建一个空的（或者根据逻辑处理）
+            _sourceHImage = _image.HImageCache ?? new HImage();
         }
 
         private void GammaSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -84,7 +85,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 bool updateSuccess = false;
 
                 // 尝试复用现有的 WriteableBitmap
-                if (_imageView.FunctionImage is WriteableBitmap validBitmap)
+                if (_image.FunctionImage is WriteableBitmap validBitmap)
                 {
                     // 使用之前优化过的 UpdateWriteableBitmapAsync (并行拷贝)
                     updateSuccess = await HImageExtension.UpdateWriteableBitmapAsync(validBitmap, hImageProcessed);
@@ -93,21 +94,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 // 如果复用失败（尺寸不匹配或为空），创建新的
                 if (!updateSuccess)
                 {
-                    double dpiX = _imageView.Config.GetProperties<double>("DpiX");
-                    double dpiY = _imageView.Config.GetProperties<double>("DpiY");
+                    double dpiX = _image.Config.GetProperties<double>("DpiX");
+                    double dpiY = _image.Config.GetProperties<double>("DpiY");
 
                     // 使用之前优化过的 ToWriteableBitmapAsync (并行拷贝)
                     var newBitmap = await hImageProcessed.ToWriteableBitmapAsync(dpiX, dpiY);
-                    _imageView.FunctionImage = newBitmap;
+                    _image.FunctionImage = newBitmap;
 
                     // 创建新图后，源数据可以释放
                     hImageProcessed.Dispose();
                 }
 
                 // 绑定显示
-                if (_imageView.ImageShow.Source != _imageView.FunctionImage)
+                if (_image.ImageShow.Source != _image.FunctionImage)
                 {
-                    _imageView.ImageShow.Source = _imageView.FunctionImage;
+                    _image.ImageShow.Source = _image.FunctionImage;
                 }
 
                 stopwatch.Stop();
@@ -126,15 +127,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             TaskConflator.RunOrUpdate("ApplyGammaCorrection", () => Task.CompletedTask);
 
             // 应用更改到原始图像
-            if (_imageView.FunctionImage is WriteableBitmap writeableBitmap)
+            if (_image.FunctionImage is WriteableBitmap writeableBitmap)
             {
-                _imageView.ViewBitmapSource = writeableBitmap;
-                _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
+                _image.ViewBitmapSource = writeableBitmap;
+                _image.ImageShow.Source = _image.ViewBitmapSource;
 
-                // 注意：这里把 HImageCache 置空了，意味着下次进来 _imageView.HImageCache 为 null
+                // 注意：这里把 HImageCache 置空了，意味着下次进来 _image.HImageCache 为 null
                 // 确保你的系统逻辑允许这样做，或者在这里根据 FunctionImage 重新生成 HImageCache
-                _imageView.HImageCache = null;
-                _imageView.FunctionImage = null;
+                _image.HImageCache = null;
+                _image.FunctionImage = null;
             }
             Close();
         }
@@ -145,8 +146,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             TaskConflator.RunOrUpdate("ApplyGammaCorrection", () => Task.CompletedTask);
 
             // 取消更改，恢复原始图像
-            _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-            _imageView.FunctionImage = null;
+            _image.ImageShow.Source = _image.ViewBitmapSource;
+            _image.FunctionImage = null;
             Close();
         }
 

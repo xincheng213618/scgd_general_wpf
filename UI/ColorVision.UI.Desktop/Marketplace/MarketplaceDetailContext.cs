@@ -419,12 +419,31 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             if (applyAfterDownload)
             {
+                if (!ConfirmInstall(versionInfo))
+                    return;
+
                 await _packageDownloadService.InstallPackageAsync(request);
             }
             else
             {
                 await _packageDownloadService.OpenDownloadedPackageFolderAsync(request);
             }
+        }
+
+        private bool ConfirmInstall(MarketplacePluginVersionInfo versionInfo)
+        {
+            string title = string.Join(" ", new[]
+            {
+                Name ?? PackageName,
+                string.IsNullOrWhiteSpace(versionInfo.Version) ? null : $"v{versionInfo.Version}",
+            }.Where(item => !string.IsNullOrWhiteSpace(item)));
+
+            return MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                Properties.Resources.ConfirmUpdate,
+                string.IsNullOrWhiteSpace(title) ? "ColorVision" : title,
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) == MessageBoxResult.Yes;
         }
 
         private MarketplacePluginVersionInfo? FindLatestVersionInfo()

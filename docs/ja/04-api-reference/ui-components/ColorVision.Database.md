@@ -20,7 +20,6 @@
 - `IDatabaseBrowserProvider.cs`: ブラウザプロバイダ契約
 - `DatabaseBrowserModels.cs`: ライブラリ、テーブル、列、ページング モデル
 - `MySqlControl.cs`: MySQL の構成とプロバイダーの作成
-- `SqliteLog/SqliteLogManager.cs`: SQLite ログ データベースとプロバイダーの作成
 - `BaseTableDao.cs`、`EntityBase.cs`、`ViewEntity.cs`: ビジネス エンティティのアクセス層の基本タイプ
 
 ## キー入力タイプ
@@ -41,7 +40,6 @@
 `DatabaseBrowserProviderRegistry` は、ブラウズ可能なデータ ソースの統合管理を担当します。現在、デフォルトのプロバイダーを遅延ロードし、ブラウザーに公開します。
 
 - MySQL のデフォルトプロバイダー
-- SQLite ログプロバイダー
 - 他の発信者自身が登録したプロバイダー
 
 したがって、これは現在のデータベース ブラウザ システムのスケジューリング エントリ ポイントです。
@@ -67,12 +65,6 @@
 - MySQL ブラウザプロバイダの作成
 
 したがって、MySQL 関連のエントリは、`BaseTableDao<T>` だけを見るのではなく、それに沿って直接表示する必要があります。
-
-### SqliteLogManager
-
-`SqliteLogManager` は、SQLite ログ マネージャーであると同時に、ブラウザ システムの実際のプロバイダー ソースでもあります。ログ データベースのパスと、対応する SQLite 参照エントリが提供されます。
-
-これは、`ColorVision.Database` が現在「ビジネス データ」を提供するだけでなく、ログの実装と参照の実行という責任の一部も引き受けていることを示しています。
 
 ### BaseTableDao/EntityBase/ViewEntity
 
@@ -119,12 +111,11 @@
 - `DatabaseBrowserProviderRegistry.cs`
 - `IDatabaseBrowserProvider.cs`
 
-### MySQLやSQLiteへの実際のアクセスを確認したい
+### MySQL への実際のアクセスを確認したい
 
 まずはご覧ください:
 
 - `MySqlControl.cs`
-- `SqliteLog/SqliteLogManager.cs`
 
 ### ビジネスエンティティのアクセスレイヤーを確認したい
 

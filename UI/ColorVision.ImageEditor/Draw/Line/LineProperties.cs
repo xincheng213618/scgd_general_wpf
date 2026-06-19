@@ -60,7 +60,7 @@ namespace ColorVision.ImageEditor.Draw
         [Category("Line")]
         public List<Point> Points { get; set; } = new List<Point>();
 
-        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems(EditorContext context)
+        public IEnumerable<CompactInspectorItem> GetCompactInspectorItems()
         {
             return new CompactInspectorItem[]
             {

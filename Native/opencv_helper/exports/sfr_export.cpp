@@ -11,28 +11,88 @@
 #include "../include/custom_structs.h"
 #include "../include/opencv_media_export.h"
 #include <opencv2/opencv.hpp>
+#include <algorithm>
+#include <exception>
 
 using namespace cvcore;
 
-// Helper function to convert SFRResult to output parameters
-static void fillSFRResult(const sfr::SFRResult& result,
-    double* freq, double* sfr_out, int maxLen, int* outLen,
-    double* mtf10_norm, double* mtf50_norm,
-    double* mtf10_cypix, double* mtf50_cypix) {
-
-    int N = static_cast<int>(result.freq.size());
-    if (N > maxLen) N = maxLen;
-
-    for (int i = 0; i < N; ++i) {
-        freq[i] = result.freq[i];
-        sfr_out[i] = result.sfr[i];
+namespace
+{
+template <typename Func>
+int GuardSfrExport(Func func) noexcept
+{
+    try {
+        return func();
     }
+    catch (const cv::Exception&) {
+        return -4;
+    }
+    catch (const std::exception&) {
+        return -5;
+    }
+    catch (...) {
+        return -6;
+    }
+}
 
-    *outLen = N;
+void ClearInt(int* value) noexcept
+{
+    if (value != nullptr) {
+        *value = 0;
+    }
+}
+
+void ClearDouble(double* value) noexcept
+{
+    if (value != nullptr) {
+        *value = 0.0;
+    }
+}
+
+void ClearSfrMetrics(
+    double* mtf10_norm, double* mtf50_norm,
+    double* mtf10_cypix, double* mtf50_cypix) noexcept
+{
+    ClearDouble(mtf10_norm);
+    ClearDouble(mtf50_norm);
+    ClearDouble(mtf10_cypix);
+    ClearDouble(mtf50_cypix);
+}
+
+int SfrOutputLength(const sfr::SFRResult& result, int maxLen) noexcept
+{
+    int length = static_cast<int>(std::min(result.freq.size(), result.sfr.size()));
+    return std::min(length, maxLen);
+}
+
+void FillFrequency(const sfr::SFRResult& result, double* freq, int length)
+{
+    std::copy_n(result.freq.data(), length, freq);
+}
+
+void FillSfrValuesAndMetrics(const sfr::SFRResult& result,
+    double* sfr_out, int length,
+    double* mtf10_norm, double* mtf50_norm,
+    double* mtf10_cypix, double* mtf50_cypix)
+{
+    std::copy_n(result.sfr.data(), length, sfr_out);
     *mtf10_norm = result.mtf10_norm;
     *mtf50_norm = result.mtf50_norm;
     *mtf10_cypix = result.mtf10_cypix;
     *mtf50_cypix = result.mtf50_cypix;
+}
+
+void FillSFRResult(const sfr::SFRResult& result,
+    double* freq, double* sfr_out, int maxLen, int* outLen,
+    double* mtf10_norm, double* mtf50_norm,
+    double* mtf10_cypix, double* mtf50_cypix)
+{
+    int length = SfrOutputLength(result, maxLen);
+    FillFrequency(result, freq, length);
+    FillSfrValuesAndMetrics(result, sfr_out, length,
+        mtf10_norm, mtf50_norm, mtf10_cypix, mtf50_cypix);
+    *outLen = length;
+}
 }
 
 COLORVISIONCORE_API int M_CalSFR(
@@ -48,30 +108,35 @@ COLORVISIONCORE_API int M_CalSFR(
     double* mtf10_cypix,
     double* mtf50_cypix)
 {
-    if (!freq || !sfr || !outLen ||
-        !mtf10_norm || !mtf50_norm || !mtf10_cypix || !mtf50_cypix) {
-        return -1;
-    }
+    return GuardSfrExport([&]() -> int {
+        ClearInt(outLen);
+        ClearSfrMetrics(mtf10_norm, mtf50_norm, mtf10_cypix, mtf50_cypix);
 
-    cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-    if (mat.empty()) return -2;
+        if (!freq || !sfr || !outLen ||
+            !mtf10_norm || !mtf50_norm || !mtf10_cypix || !mtf50_cypix ||
+            maxLen <= 0) {
+            return -1;
+        }
 
-    cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
-    bool use_roi = (mroi.width > 0 && mroi.height > 0 &&
-        (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
-    mat = use_roi ? mat(mroi) : mat;
+        cv::Mat mat = HImageToMatView(img);
+        if (mat.empty()) return -2;
 
-    auto result = sfr::calculateSlantedEdgeSFR(mat, del, /*npol=*/5, /*nbin=*/4);
+        cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+        bool use_roi = (mroi.width > 0 && mroi.height > 0 &&
+            (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+        mat = use_roi ? mat(mroi) : mat;
 
-    if (!result.isValid()) {
-        *outLen = 0;
-        return -3;
-    }
+        auto result = sfr::calculateSlantedEdgeSFR(mat, del, /*npol=*/5, /*nbin=*/4);
 
-    fillSFRResult(result, freq, sfr, maxLen, outLen,
-        mtf10_norm, mtf50_norm, mtf10_cypix, mtf50_cypix);
+        if (!result.isValid()) {
+            return -3;
+        }
 
-    return 0;
+        FillSFRResult(result, freq, sfr, maxLen, outLen,
+            mtf10_norm, mtf50_norm, mtf10_cypix, mtf50_cypix);
+
+        return 0;
+        });
 }
 
 COLORVISIONCORE_API int M_CalSFRMultiChannel(
@@ -91,89 +156,69 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
     double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
     double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l)
 {
-    if (!freq || !sfr_l || !outLen || !channelCount ||
-        !mtf10_norm_l || !mtf50_norm_l || !mtf10_cypix_l || !mtf50_cypix_l) {
-        return -1;
-    }
+    return GuardSfrExport([&]() -> int {
+        ClearInt(outLen);
+        ClearInt(channelCount);
+        ClearSfrMetrics(mtf10_norm_r, mtf50_norm_r, mtf10_cypix_r, mtf50_cypix_r);
+        ClearSfrMetrics(mtf10_norm_g, mtf50_norm_g, mtf10_cypix_g, mtf50_cypix_g);
+        ClearSfrMetrics(mtf10_norm_b, mtf50_norm_b, mtf10_cypix_b, mtf50_cypix_b);
+        ClearSfrMetrics(mtf10_norm_l, mtf50_norm_l, mtf10_cypix_l, mtf50_cypix_l);
 
-    cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-    if (mat.empty()) return -2;
-
-    cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
-    bool use_roi = (mroi.width > 0 && mroi.height > 0 &&
-        (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
-    mat = use_roi ? mat(mroi) : mat;
-
-    cv::Mat mat8;
-    if (mat.depth() != CV_8U) {
-        cv::Mat tmp;
-        cv::normalize(mat, tmp, 0, 255, cv::NORM_MINMAX);
-        tmp.convertTo(mat8, CV_8U);
-    }
-    else {
-        mat8 = mat;
-    }
-
-    bool isRGB = (mat8.channels() == 3 || mat8.channels() == 4);
-
-    if (isRGB) {
-        *channelCount = 4;
-
-        if (!sfr_r || !sfr_g || !sfr_b ||
-            !mtf10_norm_r || !mtf50_norm_r || !mtf10_cypix_r || !mtf50_cypix_r ||
-            !mtf10_norm_g || !mtf50_norm_g || !mtf10_cypix_g || !mtf50_cypix_g ||
-            !mtf10_norm_b || !mtf50_norm_b || !mtf10_cypix_b || !mtf50_cypix_b) {
+        if (!freq || !sfr_l || !outLen || !channelCount ||
+            !mtf10_norm_l || !mtf50_norm_l || !mtf10_cypix_l || !mtf50_cypix_l ||
+            maxLen <= 0) {
             return -1;
         }
 
-        std::vector<cv::Mat> channels;
-        cv::split(mat8, channels);
+        cv::Mat mat = HImageToMatView(img);
+        if (mat.empty()) return -2;
 
-        // R channel
-        auto result_r = sfr::calculateSlantedEdgeSFR(channels[2], del, 5, 4);
-        fillSFRResult(result_r, freq, sfr_r, maxLen, outLen,
-            mtf10_norm_r, mtf50_norm_r, mtf10_cypix_r, mtf50_cypix_r);
+        cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+        bool use_roi = (mroi.width > 0 && mroi.height > 0 &&
+            (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+        mat = use_roi ? mat(mroi) : mat;
 
-        // G channel
-        auto result_g = sfr::calculateSlantedEdgeSFR(channels[1], del, 5, 4);
-        fillSFRResult(result_g, freq, sfr_g, maxLen, outLen,
-            mtf10_norm_g, mtf50_norm_g, mtf10_cypix_g, mtf50_cypix_g);
+        const bool isRGB = (mat.channels() == 3 || mat.channels() == 4);
+        if (mat.channels() != 1 && !isRGB) {
+            return -1;
+        }
 
-        // B channel
-        auto result_b = sfr::calculateSlantedEdgeSFR(channels[0], del, 5, 4);
-        fillSFRResult(result_b, freq, sfr_b, maxLen, outLen,
-            mtf10_norm_b, mtf50_norm_b, mtf10_cypix_b, mtf50_cypix_b);
+        if (isRGB) {
+            if (!sfr_r || !sfr_g || !sfr_b ||
+                !mtf10_norm_r || !mtf50_norm_r || !mtf10_cypix_r || !mtf50_cypix_r ||
+                !mtf10_norm_g || !mtf50_norm_g || !mtf10_cypix_g || !mtf50_cypix_g ||
+                !mtf10_norm_b || !mtf50_norm_b || !mtf10_cypix_b || !mtf50_cypix_b) {
+                return -1;
+            }
+        }
 
-        // L channel (Y = 0.213*R + 0.715*G + 0.072*B)
-        cv::Mat gray;
-        cv::cvtColor(mat8, gray, cv::COLOR_BGR2GRAY);
-        auto result_l = sfr::calculateSlantedEdgeSFR(gray, del, 5, 4);
-        fillSFRResult(result_l, freq, sfr_l, maxLen, outLen,
-            mtf10_norm_l, mtf50_norm_l, mtf10_cypix_l, mtf50_cypix_l);
-    }
-    else {
-        *channelCount = 1;
-        auto result = sfr::calculateSlantedEdgeSFR(mat8, del, 5, 4);
-        fillSFRResult(result, freq, sfr_l, maxLen, outLen,
-            mtf10_norm_l, mtf50_norm_l, mtf10_cypix_l, mtf50_cypix_l);
-    }
+        auto result = sfr::calculateSlantedEdgeSFRMultiChannel(mat, del, 5, 4);
+        if (!result.isValid()) {
+            *channelCount = 0;
+            return -3;
+        }
 
-    return 0;
-}
+        *channelCount = result.channelCount;
+        if (result.channelCount == 4) {
+            int length = std::min(
+                std::min(SfrOutputLength(result.red, maxLen), SfrOutputLength(result.green, maxLen)),
+                std::min(SfrOutputLength(result.blue, maxLen), SfrOutputLength(result.luminance, maxLen)));
+            FillFrequency(result.luminance, freq, length);
+            FillSfrValuesAndMetrics(result.red, sfr_r, length,
+                mtf10_norm_r, mtf50_norm_r, mtf10_cypix_r, mtf50_cypix_r);
+            FillSfrValuesAndMetrics(result.green, sfr_g, length,
+                mtf10_norm_g, mtf50_norm_g, mtf10_cypix_g, mtf50_cypix_g);
+            FillSfrValuesAndMetrics(result.blue, sfr_b, length,
+                mtf10_norm_b, mtf50_norm_b, mtf10_cypix_b, mtf50_cypix_b);
+            FillSfrValuesAndMetrics(result.luminance, sfr_l, length,
+                mtf10_norm_l, mtf50_norm_l, mtf10_cypix_l, mtf50_cypix_l);
+            *outLen = length;
+        }
+        else {
+            FillSFRResult(result.luminance, freq, sfr_l, maxLen, outLen,
+                mtf10_norm_l, mtf50_norm_l, mtf10_cypix_l, mtf50_cypix_l);
+        }
 
-// New C++ interface exports
-COLORVISIONCORE_API sfr::SFRResult CalSFR_CPP(const cv::Mat& img,
-    double del,
-    int npol,
-    int nbin,
-    double vslope) {
-    return sfr::calculateSlantedEdgeSFR(img, del, npol, nbin, vslope);
-}
-
-COLORVISIONCORE_API sfr::CylinderSFRResult CalCylinderSFR_CPP(const cv::Mat& mat,
-    int thresh,
-    float roi,
-    float binsize,
-    int n_fit) {
-    return sfr::calculateCylinderSFR(mat, thresh, roi, binsize, n_fit);
+        return 0;
+        });
 }

@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS0649,CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;

@@ -33,6 +33,8 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
     <PackageReference Include="Markdig.Signed" Version="1.2.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.8" />
 	</ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows|AnyCPU'">
@@ -125,7 +127,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-    <ProjectReference Include="..\Engine\ColorVision.ShellExtension\ColorVision.ShellExtension.csproj" />
+    <ProjectReference Include="..\Engine\ColorVision.ShellExtension\ColorVision.ShellExtension.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\src\ColorVisionServiceHost\ColorVisionServiceHost.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
@@ -148,12 +151,72 @@
 
   <Target Name="CopyShellExtensionRuntimeFiles" AfterTargets="Build">
     <ItemGroup>
-      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll')" />
-      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.deps.json" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.deps.json')" />
-      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.runtimeconfig.json" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.runtimeconfig.json')" />
+      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.*"
+                                  Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ShellExtensionRuntimeFiles)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="'@(ShellExtensionRuntimeFiles)' != ''" />
+  </Target>
+
+  <Target Name="AddShellExtensionRuntimeFilesToPublish" AfterTargets="ComputeFilesToPublish" DependsOnTargets="CopyShellExtensionRuntimeFiles">
+    <ItemGroup>
+      <ShellExtensionPublishFiles Include="$(OutputPath)ColorVision.ShellExtension.*" Condition="Exists('$(OutputPath)ColorVision.ShellExtension.comhost.dll')" />
+      <ResolvedFileToPublish Include="@(ShellExtensionPublishFiles)">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyColorVisionIconsRuntimeFile" AfterTargets="Build">
+    <PropertyGroup>
+      <ColorVisionIconsSource Condition="Exists('..\x64\$(Configuration)\ColorVisionIcons64.dll')">..\x64\$(Configuration)\ColorVisionIcons64.dll</ColorVisionIconsSource>
+      <ColorVisionIconsSource Condition="'$(ColorVisionIconsSource)' == '' and Exists('..\Native\ColorVisionIcons64\x64\$(Configuration)\ColorVisionIcons64.dll')">..\Native\ColorVisionIcons64\x64\$(Configuration)\ColorVisionIcons64.dll</ColorVisionIconsSource>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(ColorVisionIconsSource)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true"
+          Condition="'$(ColorVisionIconsSource)' != ''" />
+  </Target>
+
+  <Target Name="CopyServiceHostRuntimeFiles" AfterTargets="Build">
+    <PropertyGroup>
+      <ServiceHostOutputPath>..\src\ColorVisionServiceHost\bin\$(Platform)\$(Configuration)\$(TargetFramework)\</ServiceHostOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ServiceHostRuntimeFiles Include="$(ServiceHostOutputPath)**\*.*"
+                               Exclude="$(ServiceHostOutputPath)**\*.pdb"
+                               Condition="Exists('$(ServiceHostOutputPath)ColorVisionServiceHost.exe')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ServiceHostRuntimeFiles)"
+          DestinationFiles="@(ServiceHostRuntimeFiles->'$(OutputPath)ServiceHost\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(ServiceHostRuntimeFiles)' != ''" />
+  </Target>
+
+  <Target Name="AddServiceHostRuntimeFilesToPublish" AfterTargets="ComputeFilesToPublish" DependsOnTargets="CopyServiceHostRuntimeFiles">
+    <ItemGroup>
+      <ServiceHostPublishFiles Include="$(OutputPath)ServiceHost\**\*.*" Condition="Exists('$(OutputPath)ServiceHost\ColorVisionServiceHost.exe')" />
+      <ResolvedFileToPublish Include="@(ServiceHostPublishFiles)">
+        <RelativePath>ServiceHost\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddColorVisionIconsRuntimeFileToPublish" AfterTargets="ComputeFilesToPublish" DependsOnTargets="CopyColorVisionIconsRuntimeFile">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(OutputPath)ColorVisionIcons64.dll" Condition="Exists('$(OutputPath)ColorVisionIcons64.dll')">
+        <RelativePath>ColorVisionIcons64.dll</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
   </Target>
 
 </Project>

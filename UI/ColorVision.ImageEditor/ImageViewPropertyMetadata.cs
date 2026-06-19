@@ -2,7 +2,6 @@ namespace ColorVision.ImageEditor
 {
     public enum ImageViewPropertyScope
     {
-        Legacy,
         ImageMetadata,
         ViewState,
         OpenerRuntime,

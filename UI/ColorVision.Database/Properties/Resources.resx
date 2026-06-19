@@ -1,13 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
+  <!--
 		Microsoft ResX Schema
 
 		Version 1.3
 
-		The primary goals of this format is to allow a simple XML format 
-		that is mostly human readable. The generation and parsing of the 
-		various data types are done through the TypeConverter classes 
+		The primary goals of this format is to allow a simple XML format
+		that is mostly human readable. The generation and parsing of the
+		various data types are done through the TypeConverter classes
 		associated with the data types.
 
 		Example:
@@ -26,35 +26,35 @@
 			[base64 mime encoded string representing a byte array form of the .NET Framework object]
 		</data>
 
-		There are any number of "resheader" rows that contain simple 
+		There are any number of "resheader" rows that contain simple
 		name/value pairs.
 
-		Each data row contains a name, and value. The row also contains a 
-		type or mimetype. Type corresponds to a .NET class that support 
-		text/value conversion through the TypeConverter architecture. 
-		Classes that don't support this are serialized and stored with the 
+		Each data row contains a name, and value. The row also contains a
+		type or mimetype. Type corresponds to a .NET class that support
+		text/value conversion through the TypeConverter architecture.
+		Classes that don't support this are serialized and stored with the
 		mimetype set.
 
-		The mimetype is used for serialized objects, and tells the 
-		ResXResourceReader how to depersist the object. This is currently not 
+		The mimetype is used for serialized objects, and tells the
+		ResXResourceReader how to depersist the object. This is currently not
 		extensible. For a given mimetype the value must be set accordingly:
 
-		Note - application/x-microsoft.net.object.binary.base64 is the format 
-		that the ResXResourceWriter will generate, however the reader can 
+		Note - application/x-microsoft.net.object.binary.base64 is the format
+		that the ResXResourceWriter will generate, however the reader can
 		read any of the formats listed below.
 
 		mimetype: application/x-microsoft.net.object.binary.base64
-		value   : The object must be serialized with 
+		value   : The object must be serialized with
 			: System.Serialization.Formatters.Binary.BinaryFormatter
 			: and then encoded with base64 encoding.
 
 		mimetype: application/x-microsoft.net.object.soap.base64
-		value   : The object must be serialized with 
+		value   : The object must be serialized with
 			: System.Runtime.Serialization.Formatters.Soap.SoapFormatter
 			: and then encoded with base64 encoding.
 
 		mimetype: application/x-microsoft.net.object.bytearray.base64
-		value   : The object must be serialized into a byte array 
+		value   : The object must be serialized into a byte array
 			: using a System.ComponentModel.TypeConverter
 			: and then encoded with base64 encoding.
 	-->
@@ -141,95 +141,9 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
-  </data>
-  <data name="LogDatabase" xml:space="preserve">
-    <value>日志数据库</value>
-  </data>
-  <data name="SqliteLogWindow" xml:space="preserve">
-    <value>日志数据库查看器</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>刷新</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>清理缓存</value>
-  </data>
-  <data name="OpenFolder" xml:space="preserve">
-    <value>打开文件夹</value>
-  </data>
-  <data name="TotalRecords" xml:space="preserve">
-    <value>总记录数:</value>
-  </data>
-  <data name="Date" xml:space="preserve">
-    <value>日期</value>
-  </data>
-  <data name="Level" xml:space="preserve">
-    <value>级别</value>
-  </data>
-  <data name="Thread" xml:space="preserve">
-    <value>线程</value>
-  </data>
-  <data name="Logger" xml:space="preserve">
-    <value>记录器</value>
-  </data>
-  <data name="Message" xml:space="preserve">
-    <value>消息</value>
-  </data>
-  <data name="Exception" xml:space="preserve">
-    <value>异常</value>
-  </data>
-  <data name="LoadFailed" xml:space="preserve">
-    <value>加载失败</value>
-  </data>
-  <data name="ClearCacheConfirm" xml:space="preserve">
-    <value>确定要清理所有日志缓存吗？此操作不可恢复。</value>
-  </data>
-  <data name="ClearCacheSuccess" xml:space="preserve">
-    <value>日志缓存已清理完毕</value>
-  </data>
-  <data name="ClearCacheFailed" xml:space="preserve">
-    <value>清理缓存失败</value>
-  </data>
-  <data name="Query" xml:space="preserve">
+  </data>  <data name="Query" xml:space="preserve">
     <value>查询</value>
-  </data>
-  <data name="StartDate" xml:space="preserve">
-    <value>开始日期</value>
-  </data>
-  <data name="EndDate" xml:space="preserve">
-    <value>结束日期</value>
-  </data>
-  <data name="ShowDetail" xml:space="preserve">
-    <value>显示详情</value>
-  </data>
-  <data name="DetailInfo" xml:space="preserve">
-    <value>详细信息</value>
-  </data>
-  <data name="PageSize" xml:space="preserve">
-    <value>每页条数:</value>
-  </data>
-  <data name="Page" xml:space="preserve">
-    <value>页</value>
-  </data>
-  <data name="FirstPage" xml:space="preserve">
-    <value>第一页</value>
-  </data>
-  <data name="PrevPage" xml:space="preserve">
-    <value>上一页</value>
-  </data>
-  <data name="NextPage" xml:space="preserve">
-    <value>下一页</value>
-  </data>
-  <data name="LastPage" xml:space="preserve">
-    <value>最后一页</value>
-  </data>
-  <data name="DataSource" xml:space="preserve">
-    <value>数据源:</value>
-  </data>
-  <data name="CurrentLog" xml:space="preserve">
-    <value>当前日志</value>
-  </data>
-  <data name="MenuMySql" xml:space="preserve">
+  </data>  <data name="MenuMySql" xml:space="preserve">
     <value>MySQL</value>
   </data>
   <data name="MenuEntityBrowser" xml:space="preserve">
@@ -438,33 +352,6 @@
   </data>
   <data name="DB_Success" xml:space="preserve">
     <value>成功</value>
-  </data>
-  <data name="DB_EnableLogging" xml:space="preserve">
-    <value>启用日志记录</value>
-  </data>
-  <data name="DB_EnableLoggingDesc" xml:space="preserve">
-    <value>启用后会记录本地数据库日志。</value>
-  </data>
-  <data name="DB_EnableCompress" xml:space="preserve">
-    <value>启用压缩归档</value>
-  </data>
-  <data name="DB_EnableCompressDesc" xml:space="preserve">
-    <value>如果启用，日志超过大小限制后将被压缩保存。</value>
-  </data>
-  <data name="DB_FileSizeLimit" xml:space="preserve">
-    <value>单文件大小限制 (MB)</value>
-  </data>
-  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
-    <value>单个日志数据库文件达到该大小后触发归档，单位 MB。</value>
-  </data>
-  <data name="DB_ArchiveCount" xml:space="preserve">
-    <value>归档保留数量</value>
-  </data>
-  <data name="DB_ArchiveCountDesc" xml:space="preserve">
-    <value>超过该数量后将自动删除最旧的归档。</value>
-  </data>
-  <data name="DB_SqliteLogTable" xml:space="preserve">
-    <value>SQLite 日志</value>
   </data>
   <data name="DB_ProviderIdEmpty" xml:space="preserve">
     <value>ProviderId 不能为空。</value>

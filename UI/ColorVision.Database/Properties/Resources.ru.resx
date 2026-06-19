@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -161,95 +161,9 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Отмена</value>
-  </data>
-  <data name="LogDatabase" xml:space="preserve">
-    <value>База данных журналов</value>
-  </data>
-  <data name="SqliteLogWindow" xml:space="preserve">
-    <value>Просмотр базы данных журналов</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>Обновить</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>Очистить кэш</value>
-  </data>
-  <data name="OpenFolder" xml:space="preserve">
-    <value>Открыть папку</value>
-  </data>
-  <data name="TotalRecords" xml:space="preserve">
-    <value>Всего записей:</value>
-  </data>
-  <data name="Date" xml:space="preserve">
-    <value>Дата</value>
-  </data>
-  <data name="Level" xml:space="preserve">
-    <value>Уровень</value>
-  </data>
-  <data name="Thread" xml:space="preserve">
-    <value>Поток</value>
-  </data>
-  <data name="Logger" xml:space="preserve">
-    <value>Логгер</value>
-  </data>
-  <data name="Message" xml:space="preserve">
-    <value>Сообщение</value>
-  </data>
-  <data name="Exception" xml:space="preserve">
-    <value>Исключение</value>
-  </data>
-  <data name="LoadFailed" xml:space="preserve">
-    <value>Ошибка загрузки</value>
-  </data>
-  <data name="ClearCacheConfirm" xml:space="preserve">
-    <value>Вы уверены, что хотите очистить весь кэш журналов? Это действие нельзя отменить.</value>
-  </data>
-  <data name="ClearCacheSuccess" xml:space="preserve">
-    <value>Кэш журналов успешно очищен</value>
-  </data>
-  <data name="ClearCacheFailed" xml:space="preserve">
-    <value>Не удалось очистить кэш</value>
-  </data>
-  <data name="Query" xml:space="preserve">
+  </data>  <data name="Query" xml:space="preserve">
     <value>Поиск</value>
-  </data>
-  <data name="StartDate" xml:space="preserve">
-    <value>Дата начала</value>
-  </data>
-  <data name="EndDate" xml:space="preserve">
-    <value>Дата окончания</value>
-  </data>
-  <data name="ShowDetail" xml:space="preserve">
-    <value>Показать детали</value>
-  </data>
-  <data name="DetailInfo" xml:space="preserve">
-    <value>Подробная информация</value>
-  </data>
-  <data name="PageSize" xml:space="preserve">
-    <value>Размер страницы:</value>
-  </data>
-  <data name="Page" xml:space="preserve">
-    <value>Страница</value>
-  </data>
-  <data name="FirstPage" xml:space="preserve">
-    <value>Первая страница</value>
-  </data>
-  <data name="PrevPage" xml:space="preserve">
-    <value>Предыдущая страница</value>
-  </data>
-  <data name="NextPage" xml:space="preserve">
-    <value>Следующая страница</value>
-  </data>
-  <data name="LastPage" xml:space="preserve">
-    <value>Последняя страница</value>
-  </data>
-  <data name="DataSource" xml:space="preserve">
-    <value>Источник данных:</value>
-  </data>
-  <data name="CurrentLog" xml:space="preserve">
-    <value>Текущий журнал</value>
-  </data>
-  <data name="MenuMySql" xml:space="preserve">
+  </data>  <data name="MenuMySql" xml:space="preserve">
     <value>MySQL</value>
   </data>
   <data name="MenuEntityBrowser" xml:space="preserve">
@@ -458,33 +372,6 @@
   </data>
   <data name="DB_Success" xml:space="preserve">
     <value>Успех</value>
-  </data>
-  <data name="DB_EnableLogging" xml:space="preserve">
-    <value>Включить логирование</value>
-  </data>
-  <data name="DB_EnableLoggingDesc" xml:space="preserve">
-    <value>При включении записывает журналы локальной базы данных.</value>
-  </data>
-  <data name="DB_EnableCompress" xml:space="preserve">
-    <value>Включить сжатый архив</value>
-  </data>
-  <data name="DB_EnableCompressDesc" xml:space="preserve">
-    <value>Если включено, журналы будут сжиматься при превышении лимита размера.</value>
-  </data>
-  <data name="DB_FileSizeLimit" xml:space="preserve">
-    <value>Лимит размера файла (МБ)</value>
-  </data>
-  <data name="DB_FileSizeLimitDesc" xml:space="preserve">
-    <value>Архивирует файл базы данных журнала при достижении этого размера, в МБ.</value>
-  </data>
-  <data name="DB_ArchiveCount" xml:space="preserve">
-    <value>Количество хранимых архивов</value>
-  </data>
-  <data name="DB_ArchiveCountDesc" xml:space="preserve">
-    <value>Самые старые архивы будут удалены при превышении этого количества.</value>
-  </data>
-  <data name="DB_SqliteLogTable" xml:space="preserve">
-    <value>Журнал SQLite</value>
   </data>
   <data name="DB_ProviderIdEmpty" xml:space="preserve">
     <value>ProviderId не может быть пустым.</value>

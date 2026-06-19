@@ -1,3 +1,4 @@
+#pragma warning disable CA1507,CA1866
 using System;
 using System.Drawing;
 using FlowEngineLib.MQTT;

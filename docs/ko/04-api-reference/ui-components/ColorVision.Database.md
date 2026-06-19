@@ -20,7 +20,6 @@
 - `IDatabaseBrowserProvider.cs`: 브라우저 공급자 계약
 - `DatabaseBrowserModels.cs`: 라이브러리, 테이블, 열, 페이징 모델
 - `MySqlControl.cs`: MySQL 구성 및 공급자 생성
-- `SqliteLog/SqliteLogManager.cs`: SQLite 로그 데이터베이스 및 공급자 생성
 - `BaseTableDao.cs`, `EntityBase.cs`, `ViewEntity.cs`: 비즈니스 엔터티 액세스 계층의 기본 유형
 
 ## 키 입력 유형
@@ -41,7 +40,6 @@
 `DatabaseBrowserProviderRegistry`는 탐색 가능한 데이터 소스의 통합 관리를 담당합니다. 현재는 기본 제공자를 지연 로드하여 브라우저에 노출합니다.
 
 - MySQL 기본 공급자
-- SQLite 로깅 제공자
 - 다른 발신자가 직접 등록한 공급자
 
 따라서 이는 현재 데이터베이스 브라우저 시스템의 스케줄링 진입점입니다.
@@ -67,12 +65,6 @@
 - MySQL 브라우저 공급자 생성
 
 따라서 MySQL 관련 항목은 `BaseTableDao<T>`만 보는 것이 아니라 그에 따라 직접 보아야 합니다.
-
-### SQLiteLogManager
-
-`SqliteLogManager`는 SQLite 로그 관리자이자 브라우저 시스템의 실제 공급자 소스입니다. 이는 로그 데이터베이스 경로와 해당 SQLite 검색 항목을 제공합니다.
-
-이는 또한 `ColorVision.Database`가 현재 "비즈니스 데이터"를 제공할 뿐만 아니라 실행 중인 로그 랜딩 및 탐색 책임 중 일부를 인계한다는 것을 보여줍니다.
 
 ### BaseTableDao/EntityBase/ViewEntity
 
@@ -119,12 +111,11 @@
 -`DatabaseBrowserProviderRegistry.cs`
 - `IDatabaseBrowserProvider.cs`
 
-### MySQL과 SQLite에 대한 실제 접근을 보고 싶다
+### MySQL에 대한 실제 접근을 보고 싶다
 
 먼저 살펴보세요:
 
 -`MySqlControl.cs`
--`SqliteLog/SqliteLogManager.cs`
 
 ### 비즈니스 항목 액세스 레이어를 보고 싶습니다.
 

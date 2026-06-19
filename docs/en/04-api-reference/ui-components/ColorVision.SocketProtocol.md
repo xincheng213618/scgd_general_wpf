@@ -131,6 +131,51 @@ The existing chain is roughly:
 5. Sent and received messages are written to the SQLite database managed by `SocketMessageManager`.
 6. `SocketStatusBarProvider` and `SocketManagerWindow` read status and message lists from the manager.
 
+## Using It as a DLL
+
+### When to Reference It
+
+- A project package needs to expose a local TCP interface for customer equipment, host software, or test tools.
+- JSON requests must dispatch to business handlers by `EventName`.
+- Sent and received messages need to be stored in SQLite for on-site tracing.
+- The main UI needs a status-bar service indicator and a management window.
+
+### Adding a JSON Handler
+
+1. Add a class implementing `ISocketJsonHandler`.
+2. Set a unique `EventName`.
+3. Return `SocketResponse` or equivalent response data from the handler.
+4. Confirm the assembly is loaded so the dispatcher can scan the handler.
+5. Use `SocketManagerWindow` to inspect received requests, response codes, and message history.
+
+### Release Notes
+
+The Socket module depends on runtime configuration. After upgrading the DLL, keep or migrate `%AppData%/ColorVision/Config/SocketMessages.db` and Socket configuration. Otherwise the field symptom may look like service disabled, changed port, or missing history.
+
+### DLL Release Acceptance
+
+| Acceptance item | What to check | Pass condition |
+| --- | --- | --- |
+| Target frameworks | `ColorVision.SocketProtocol.csproj` targets `net8.0-windows7.0;net10.0-windows7.0` | The host can load the matching DLL. |
+| Package metadata | `GeneratePackageOnBuild`, `PackageReadmeFile`, `README.md` | Package README exists and version is traceable. |
+| Upper dependencies | `ColorVision.UI`, `ColorVision.Database`, `log4net`, `Newtonsoft.Json` | Runtime output contains all dependencies without load failures. |
+| Service lifecycle | `SocketInitializer`, `SocketConfig.Instance.IsServerEnabled`, `SocketManager` | Enabling listens successfully; disabling releases the port. |
+| Protocol dispatch | JSON / Text modes, `ISocketJsonHandler.EventName` | JSON events match handlers and Text mode is not accidentally removed. |
+| Message persistence | `%AppData%/ColorVision/Config/SocketMessages.db`, `SocketMessageManager` | Sent and received messages are written and visible in the window. |
+| UI integration | `SocketStatusBarProvider`, `SocketManagerWindow` | Status bar, management window, filters, and diagnostics are usable. |
+| Configuration migration | Real `SocketConfig` fields | Port, enabled state, and protocol mode persist or have an explicit migration note. |
+
+### Field First Checks
+
+| Symptom | Check first | Judgement point |
+| --- | --- | --- |
+| Service is enabled but no port is listening | `SocketConfig.IsServerEnabled`, port conflict, latest `SocketManager` error | The diagnostics tab's last error is the first evidence. |
+| JSON request does not enter business logic | `EventName`, whether the `ISocketJsonHandler` assembly is loaded | The dispatcher cannot scan handlers from unloaded assemblies. |
+| External equipment receives malformed response | `SocketResponse`, JSON serialization, exception wrapping | Inspect raw request and response in the management window. |
+| Message history is empty or lost | `SocketMessages.db` path and permissions | Upgrade packages must not overwrite or delete the field database. |
+| Resend fails | Client list, original client address, current selected client | The current logic first matches original address, then falls back to selected client. |
+| Config changes still use the old port | Config save, service restart, old listener release | Communication changes usually need the Socket service chain to restart. |
+
 ## What Boundaries the Current Implementation Has
 
 ### It Is Not a Pure JSON Protocol Library

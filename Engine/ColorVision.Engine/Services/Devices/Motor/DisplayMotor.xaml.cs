@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes.Controls;
+﻿#pragma warning disable CA1816
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System;
 using System.Windows;
@@ -125,11 +126,6 @@ namespace ColorVision.Engine.Services.Devices.Motor
                 var msgRecord = DeviceService.Close();
                 ServicesHelper.SendCommand(button, msgRecord);
             }
-        }
-
-        private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
 
         public void Dispose()

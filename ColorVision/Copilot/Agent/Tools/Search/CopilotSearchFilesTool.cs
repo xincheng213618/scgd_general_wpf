@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "SearchFiles";
 
-        public string Description => "按文件名或路径片段在当前解决方案范围内查找候选文件。";
+        public string Description => "Find candidate files in the current solution by file name or path fragment.";
 
         public bool CanHandle(CopilotAgentRequest request)
         {

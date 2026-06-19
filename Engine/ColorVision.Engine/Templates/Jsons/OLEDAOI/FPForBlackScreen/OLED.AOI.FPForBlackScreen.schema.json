@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colorvision.local/schemas/templates/jsons/OLED.AOI.FPForBlackScreen.schema.json",
+  "title": "黑画面检测",
+  "description": "OLED 黑画面亮点检测参数。默认值来自开发者维护的 aoi_m2_black.cfg，对应 provider 文档中的 AOIBlackParam。",
+  "type": "object",
+  "additionalProperties": true,
+  "default": {
+    "brightPixelLvRatioThreshold": 1.1,
+    "avgTh": 10000,
+    "brightPixelNumThreshold": 10
+  },
+  "properties": {
+    "brightPixelLvRatioThreshold": {
+      "type": "number",
+      "title": "亮点倍率阈值",
+      "description": "黑画面亮点倍率阈值。像素亮度超过该倍率条件时判定为亮点。",
+      "minimum": 0,
+      "x-ui": {
+        "order": 10
+      },
+      "default": 1.1,
+      "x-provider": {
+        "jsonPath": "$.brightPixelLvRatioThreshold",
+        "aiHint": "AOIBlackParam field from provider docs."
+      }
+    },
+    "avgTh": {
+      "type": "number",
+      "title": "平均阈值",
+      "description": "黑画面平均阈值，provider 文档标注为可选字段。",
+      "minimum": 0,
+      "x-ui": {
+        "order": 20
+      },
+      "default": 10000,
+      "x-provider": {
+        "jsonPath": "$.avgTh",
+        "aiHint": "AOIBlackParam optional field from provider docs."
+      }
+    },
+    "brightPixelNumThreshold": {
+      "type": "integer",
+      "title": "亮点数量阈值",
+      "description": "黑画面亮点数量阈值。",
+      "minimum": 0,
+      "x-ui": {
+        "order": 30
+      },
+      "default": 10,
+      "x-provider": {
+        "jsonPath": "$.brightPixelNumThreshold",
+        "aiHint": "AOIBlackParam optional field from provider docs."
+      }
+    }
+  },
+  "x-colorvision": {
+    "schemaVersion": "1.0",
+    "providerMaintained": true,
+    "generatedAt": "2026-06-04T09:36:19+08:00",
+    "source": {
+      "table": "t_scgd_sys_dictionary_mod_master",
+      "field": "cfg_json",
+      "id": 57,
+      "code": "OLED.AOI.FPForBlackScreen",
+      "name": "黑画面检测",
+      "version": null,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "AOI检测文档和参数例子",
+        "defaultParamFile": "aoi_m2_black.cfg",
+        "docFiles": [
+          "cv_oled_JSON_CONFIG_REFERENCE.pdf",
+          "CvOledInterface.h"
+        ]
+      }
+    },
+    "notes": [
+      "Defaults are sourced from provider-maintained AOI test-case config files because the database cfg_json may lag behind provider development.",
+      "additionalProperties remains true so provider DLL updates can add fields without being blocked by this schema.",
+      "This schema is intended for UI display, validation hints, and provider-maintained documentation only."
+    ],
+    "providerSchema": {
+      "owner": "algorithm-provider",
+      "purpose": "Provider-maintained UI and validation metadata for a JSON string interface.",
+      "aiInstructions": [
+        "Keep JSON property keys compatible with the C++ DLL; C++ receives the JSON string by key.",
+        "Default/type may follow provider-maintained config files when database cfg_json is stale.",
+        "Do not set additionalProperties to false; provider DLLs may add fields in later versions.",
+        "Prefer enriching title, description, unit, minimum, maximum, enum, examples, and x-ui metadata.",
+        "Use description for user-facing explanations. Use $comment or x-provider for maintainer-only notes."
+      ],
+      "editableFields": [
+        "title",
+        "description",
+        "unit",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "enum",
+        "examples",
+        "x-ui"
+      ],
+      "doNotChangeWithoutContractUpdate": [
+        "JSON property names",
+        "additionalProperties"
+      ]
+    },
+    "providerReference": {
+      "sourceSet": "算法测试用例",
+      "testCaseFolder": "AOI检测文档和参数例子",
+      "defaultParamFile": "aoi_m2_black.cfg",
+      "docFiles": [
+        "cv_oled_JSON_CONFIG_REFERENCE.pdf",
+        "CvOledInterface.h"
+      ]
+    },
+    "defaultSource": "provider-maintained-config"
+  },
+  "required": [
+    "brightPixelLvRatioThreshold"
+  ]
+}

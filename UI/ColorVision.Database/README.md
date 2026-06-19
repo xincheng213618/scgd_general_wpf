@@ -4,13 +4,13 @@
 
 ## 功能定位
 
-数据库访问层，提供统一的数据库操作接口和可视化管理工具。支持 MySQL 和 SQLite 混用，提供数据库优先的表浏览器、查询工具、连接管理等功能。
+数据库访问层，提供统一的数据库操作接口和可视化管理工具。支持 MySQL 连接，并可通过 provider 扩展浏览其他 SQLite 文件，提供数据库优先的表浏览器、查询工具、连接管理等功能。
 
 ## 主要功能
 
 ### 数据库浏览器 (DatabaseBrowserWindow)
 - **数据库优先** — 通过连接先查询库，再查询库里的表，不依赖 C# 实体
-- **双数据库支持** — 默认注册 `MySQL` 和 `SQLite 日志`，其他 SQLite 文件可通过 provider 注册
+- **可扩展数据源** — 默认注册 `MySQL`，其他 SQLite 文件可通过 provider 注册
 - **左侧树** — 按数据源、库、表展开，表节点显示估算记录数
 - **右侧表格** — `DataGrid` 直接绑定 `DataTable`，支持分页、搜索、排序、编辑、保存、删除
 - **通用 CRUD** — 通过 `IDatabaseBrowserProvider` 执行 Insert / Update / Delete，修改和删除要求表有主键
@@ -54,13 +54,7 @@ ColorVision.Database/
 ├── MySqlSetting.cs             # 设置管理
 ├── MysqlWizardStep.cs          # 配置向导步骤
 ├── IMysqlCommand.cs            # SQL 命令接口
-├── ExportMySqlInitTables.cs    # 初始化表导出
-│
-└── SqliteLog/                  # SQLite 日志子系统
-    ├── LogEntry.cs             # 日志实体
-    ├── SqliteLogManager.cs     # SQLite 连接管理 + 日志写入
-    ├── SqliteLogInitializer.cs # 初始化器
-    └── SqliteLogWindow.xaml    # 日志查看窗口
+└── ExportMySqlInitTables.cs    # 初始化表导出
 ```
 
 ## 使用方式

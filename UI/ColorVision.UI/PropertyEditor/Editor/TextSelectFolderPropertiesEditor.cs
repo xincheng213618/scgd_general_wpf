@@ -21,7 +21,13 @@ namespace System.ComponentModel
             var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };
             selectBtn.Click += (_, __) =>
             {
-                using var folderDialog = new System.Windows.Forms.FolderBrowserDialog { SelectedPath = property.GetValue(obj) as string ?? string.Empty };
+                using var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
+                var selectedPath = PathSelectionHelper.GetExistingDirectory(property.GetValue(obj) as string);
+                if (!string.IsNullOrWhiteSpace(selectedPath))
+                {
+                    folderDialog.SelectedPath = selectedPath;
+                }
+
                 if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
                     property.SetValue(obj, folderDialog.SelectedPath);
             };

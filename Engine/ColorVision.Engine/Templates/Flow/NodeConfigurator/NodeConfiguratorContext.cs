@@ -1,4 +1,6 @@
+#pragma warning disable CS8625
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.UI;
@@ -30,7 +32,11 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             STNodePropertyGrid?.Refresh();
             PropertyStackPanel?.Children.Clear();
-            PropertyStackPanel?.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Node, ST.Library.UI.Properties.Resources.ResourceManager));
+            var resourceManager = PropertyEditorHelper.GetResourceManager(Node);
+            PropertyStackPanel?.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
+                Node,
+                resourceManager,
+                metadataProvider: FlowNodePropertyMetadataProvider.Instance));
         }
 
         public void RebindNodeEvent(CVCommonNode node, string key, Action refresh)

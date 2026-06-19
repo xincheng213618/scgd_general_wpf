@@ -1,0 +1,287 @@
+{
+  "$schema": "./schema-index.schema.json",
+  "generatedAt": "2026-06-04T07:59:59+08:00",
+  "source": {
+    "database": "color_vision_4xx",
+    "table": "t_scgd_sys_dictionary_mod_master",
+    "field": "cfg_json",
+    "providerTestCases": "算法测试用例"
+  },
+  "excluded": [
+    {
+      "code": "KB",
+      "reason": "KB already has a dedicated editor window"
+    },
+    {
+      "code": "CaliAngleShift",
+      "reason": "Template folder is under Deprecated; schema is intentionally not maintained."
+    },
+    {
+      "code": "CompoundImg",
+      "reason": "Template folder is under Deprecated; schema is intentionally not maintained."
+    }
+  ],
+  "schemas": [
+    {
+      "id": 18,
+      "code": "FindLED",
+      "name": "亚像素级灯珠检测",
+      "version": "SubPixel",
+      "file": "LedCheck2/FindLED.schema.json",
+      "templateFolder": "LedCheck2",
+      "schemaFile": "FindLED.schema.json"
+    },
+    {
+      "id": 26,
+      "code": "LEDStripDetection",
+      "name": "灯条检测V2",
+      "version": "2.0",
+      "file": "LEDStripDetectionV2/LEDStripDetection.schema.json",
+      "templateFolder": "LEDStripDetectionV2",
+      "schemaFile": "LEDStripDetection.schema.json"
+    },
+    {
+      "id": 28,
+      "code": "OLED.AOI",
+      "name": "OLED AOI",
+      "version": null,
+      "file": "OLEDAOI/OLED.AOI.schema.json",
+      "templateFolder": "OLEDAOI",
+      "schemaFile": "OLED.AOI.schema.json"
+    },
+    {
+      "id": 35,
+      "code": "ARVR.BinocularFusion",
+      "name": "双目融合",
+      "version": null,
+      "file": "BinocularFusion/ARVR.BinocularFusion.schema.json",
+      "templateFolder": "BinocularFusion",
+      "schemaFile": "ARVR.BinocularFusion.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "双目融合",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "双目融合参数及结果说明.docx"
+        ]
+      }
+    },
+    {
+      "id": 36,
+      "code": "ARVR.SFR.FindROI",
+      "name": "SFR寻边",
+      "version": null,
+      "file": "SFRFindROI/ARVR.SFR.FindROI.schema.json",
+      "templateFolder": "SFRFindROI",
+      "schemaFile": "ARVR.SFR.FindROI.schema.json"
+    },
+    {
+      "id": 37,
+      "code": "BlackMura.Caculate",
+      "name": "BlackMura",
+      "version": null,
+      "file": "BlackMura/BlackMura.Caculate.schema.json",
+      "templateFolder": "BlackMura",
+      "schemaFile": "BlackMura.Caculate.schema.json"
+    },
+    {
+      "id": 38,
+      "code": "ghost",
+      "name": "鬼影V2",
+      "version": "2.0",
+      "file": "Ghost2/ghost.schema.json",
+      "templateFolder": "Ghost2",
+      "schemaFile": "ghost.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "ghost_2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "鬼影参数说明.docx"
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "code": "FOV",
+      "name": "FOV_V2",
+      "version": "2.0",
+      "file": "FOV2/FOV.schema.json",
+      "templateFolder": "FOV2",
+      "schemaFile": "FOV.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "FOV_2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "FOV参数及结果说明.docx"
+        ]
+      }
+    },
+    {
+      "id": 40,
+      "code": "distortion",
+      "name": "畸变V2",
+      "version": "2.0",
+      "file": "Distortion2/distortion.schema.json",
+      "templateFolder": "Distortion2",
+      "schemaFile": "distortion.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "distortion_2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "畸变检测算法说明.docx"
+        ]
+      }
+    },
+    {
+      "id": 41,
+      "code": "BuildPOI",
+      "name": "AA布点",
+      "version": "AA",
+      "file": "BuildPOIAA/BuildPOI.schema.json",
+      "templateFolder": "BuildPOIAA",
+      "schemaFile": "BuildPOI.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "AA",
+        "defaultParamFile": "aaParam.txt",
+        "docFiles": []
+      }
+    },
+    {
+      "id": 42,
+      "code": "FindLightArea",
+      "name": "AA发光区检测",
+      "version": "AA",
+      "file": "AAFindPoints/FindLightArea.schema.json",
+      "templateFolder": "AAFindPoints",
+      "schemaFile": "FindLightArea.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "FindLightArea_AA",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": []
+      }
+    },
+    {
+      "id": 43,
+      "code": "Camera.RunParams",
+      "name": "相机HDR参数",
+      "version": "HDR",
+      "file": "HDR/Camera.RunParams.schema.json",
+      "templateFolder": "HDR",
+      "schemaFile": "Camera.RunParams.schema.json"
+    },
+    {
+      "id": 44,
+      "code": "PoiAnalysis",
+      "name": "POI分析",
+      "version": "1.0",
+      "file": "PoiAnalysis/PoiAnalysis.schema.json",
+      "templateFolder": "PoiAnalysis",
+      "schemaFile": "PoiAnalysis.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "PoiAnalysis_1.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "数据分析参数及结果说明.docx"
+        ]
+      }
+    },
+    {
+      "id": 45,
+      "code": "FindCross",
+      "name": "十字计算",
+      "version": "1.0",
+      "file": "FindCross/FindCross.schema.json",
+      "templateFolder": "FindCross",
+      "schemaFile": "FindCross.schema.json"
+    },
+    {
+      "id": 48,
+      "code": "MTF",
+      "name": "MTF_V2",
+      "version": "2.0",
+      "file": "MTF2/MTF.schema.json",
+      "templateFolder": "MTF2",
+      "schemaFile": "MTF.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "MTF_2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": [
+          "MTF检测算法说明.docx"
+        ]
+      }
+    },
+    {
+      "id": 49,
+      "code": "SFR",
+      "name": "SFR_V2",
+      "version": "2.0",
+      "file": "SFR2/SFR.schema.json",
+      "templateFolder": "SFR2",
+      "schemaFile": "SFR.schema.json",
+      "providerMaintained": true,
+      "providerReference": {
+        "sourceSet": "算法测试用例",
+        "testCaseFolder": "SFR2.0",
+        "defaultParamFile": "defaultparam.txt",
+        "docFiles": []
+      }
+    },
+    {
+      "id": 52,
+      "code": "Image.ROI",
+      "name": "图像裁剪",
+      "version": "1.0",
+      "file": "ImageROI/Image.ROI.schema.json",
+      "templateFolder": "ImageROI",
+      "schemaFile": "Image.ROI.schema.json"
+    },
+    {
+      "id": 55,
+      "code": "OLED.AOI.FPForQuardImg",
+      "name": "亮点检测",
+      "version": null,
+      "file": "OLEDAOI/FPForQuardImg/OLED.AOI.FPForQuardImg.schema.json",
+      "templateFolder": "OLEDAOI/FPForQuardImg",
+      "schemaFile": "OLED.AOI.FPForQuardImg.schema.json"
+    },
+    {
+      "id": 56,
+      "code": "OLED.AOI.FPForRePicGradingV2",
+      "name": "缺陷检测V2",
+      "version": null,
+      "file": "OLEDAOI/FPForRePicGradingV2/OLED.AOI.FPForRePicGradingV2.schema.json",
+      "templateFolder": "OLEDAOI/FPForRePicGradingV2",
+      "schemaFile": "OLED.AOI.FPForRePicGradingV2.schema.json"
+    },
+    {
+      "id": 57,
+      "code": "OLED.AOI.FPForBlackScreen",
+      "name": "黑画面检测",
+      "version": null,
+      "file": "OLEDAOI/FPForBlackScreen/OLED.AOI.FPForBlackScreen.schema.json",
+      "templateFolder": "OLEDAOI/FPForBlackScreen",
+      "schemaFile": "OLED.AOI.FPForBlackScreen.schema.json"
+    }
+  ],
+  "layout": {
+    "mode": "schema-next-to-template-folder",
+    "indexLocation": "Schemas/schema-index.json",
+    "filePathBase": "Engine/ColorVision.Engine/Templates/Jsons",
+    "fileIsRelativeTo": "filePathBase"
+  }
+}

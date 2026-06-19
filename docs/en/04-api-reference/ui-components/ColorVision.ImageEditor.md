@@ -116,6 +116,124 @@ The existing control chain is roughly:
 6. The opener calls `SetImageSource(...)` and optionally provides its own runtime tools.
 7. `DrawCanvas`, overlays, status bar, layer switching, pseudo-color, etc., continue working around the current image context.
 
+## Using It as a DLL
+
+### When to Reference It
+
+- A window needs to embed `ImageView` for interactive image viewing.
+- Engine or project packages need to display algorithm results as ROI, POI, lines, rectangles, polygons, text, or curve overlays.
+- The UI needs annotation import/export, pseudo-color, CIE diagrams, histograms, 3D surface viewing, or realtime image display.
+- A special file type needs a custom opener or temporary toolbar.
+
+### Extending Image Opening
+
+1. Implement `IImageOpen`.
+2. Declare supported file extensions and opening logic in the opener.
+3. If toolbar behavior must be overridden, implement `IImageOpenEditorToolProvider`.
+4. If lifecycle callbacks are needed, implement `IImageOpenEditorToolLifecycle`.
+5. Open a real file and confirm `EditorToolFactory` scans and assembles the opener.
+
+### Extending Drawing or Overlay
+
+| Need | Preferred entry |
+| --- | --- |
+| Add a visual primitive | `Draw/`, `Abstractions/Draw/`, matching manager |
+| Persist a visual primitive | `Draw/Annotations/`, `AnnotationMapper` |
+| Add a toolbar tool | `EditorTools/`, `IEditorTool` |
+| Add a context menu | `IIEditorToolContextMenu` or `IDVContextMenu` |
+| Add result overlay | Reuse existing primitives and `DrawCanvas`, then connect the Engine result handler |
+
+### Release Notes
+
+`ImageEditor` contains shaders, CIE CSV, colormap images, icons, and OpenCV runtime dependencies. After publishing, verify normal image opening, CIE, pseudo-color, 3D, and annotation import/export at least once.
+
+### DLL Release Acceptance
+
+| Acceptance item | What to check | Pass condition |
+| --- | --- | --- |
+| Target framework | `ColorVision.ImageEditor.csproj` targets `net10.0-windows7.0` with `AnyCPU;x64` | The net10 host loads the DLL and x64 runtime has native dependencies. |
+| Package metadata | `GeneratePackageOnBuild`, `PackageReadmeFile`, `README.md` | Package README and symbol package exist. |
+| Core dependencies | `ColorVision.Common`, `ColorVision.Core`, `ColorVision.Themes`, `ColorVision.UI` | Shared DLL versions in the output match the ImageEditor build. |
+| Image runtime | `OpenCvSharp4`, `OpenCvSharp4.runtime.win` | Normal images, TIF, large images, and video-related entries do not report missing runtime. |
+| Resource files | `EditorTools/Filters/Shaders/*.ps`, `Assets/Colormap/colorscale_*.jpg`, `Assets/Data/CIE_cc_1931_2deg.csv` | Filters, pseudo-color, CIE background, and spectral locus render. |
+| Tool discovery | `EditorToolFactory`, `IImageOpen`, `IEditorTool` | Settings page lists tools and openers; file opening hits the expected opener. |
+| Visuals and overlay | `DrawCanvas`, `Draw/Annotations/`, `AnnotationMapper` | ROI, POI, lines, text, import/export, and coordinates match. |
+| Advanced windows | CIE, histogram, 3D, realtime image | Each window opens once and is not blank. |
+
+### Field First Checks
+
+| Symptom | Check first | Judgement point |
+| --- | --- | --- |
+| Image area is blank | Opener selection, `SetImageSource(...)`, image format | Confirm whether `EditorToolFactory` assembled an `IImageOpen`. |
+| TIF or large image fails to open | `OpenCvSharp4.runtime.win`, `ColorVision.Core` native dependencies | DLL load success does not prove native runtime is complete. |
+| Toolbar or context menu entries are missing | `IEditorToolFactory`, tool visibility settings, reflection scan result | The settings page listing is the first check. |
+| ROI/POI coordinates are offset | `DrawCanvas`, zoom scale, crop/rotate behavior | Then check whether the Engine result coordinate system was converted. |
+| Pseudo-color or filter has no effect | Shader resources and `colorscale_*.jpg` | Missing resources are more common than algorithm errors. |
+| CIE window is blank | `CIE_cc_1931_2deg.csv`, CIE image resources | Missing CSV or background image causes incomplete rendering. |
+| 3D window is blank | `Window3D`, HelixToolkit, GPU/driver | Verify with a sample image and rotation/zoom before blaming data source. |
+| Settings are not saved | `ImageViewConfig`, settings file permissions | Hide/show a tool and reopen an image to verify persistence. |
+
+## Component Details And Handoff Checks
+
+This section is organized around what a maintainer must verify after publishing `ColorVision.ImageEditor.dll` or debugging image UI issues.
+
+### Runtime Component Matrix
+
+| Component family | Key classes/windows | Source entry | Runtime role | Minimum acceptance |
+| --- | --- | --- | --- | --- |
+| Image host | `ImageView`, `ImageViewModel` | `UI/ColorVision.ImageEditor/ImageView.xaml(.cs)` | Image loading, status bar, toolbar, annotations, context menus. | Open PNG/JPG/TIF and verify zoom and pan. |
+| Runtime context | `EditorContext`, `IEditorContextService` | `EditorContext.cs`, `Abstractions/IEditorContextService.cs` | Store current image, tools, canvas, services, and opener state. | Switching images clears previous opener tools. |
+| Drawing canvas | `DrawCanvas`, `DrawEditorContext` | `DrawCanvas.cs`, `Draw/` | Display image, host visuals, hit testing, undo/redo. | Draw rectangle/line/text and undo/redo. |
+| Tool factory | `IEditorToolFactory` | `EditorToolFactory.cs` | Reflectively assemble tools, context menus, openers, image components. | Settings page lists loaded tools and openers. |
+| Openers | `IImageOpen`, `CommonImageOpen`, `Opentif`, `VideoOpen` | `Abstractions/IImageEditor.cs`, `Tif/`, `Video/` | Open images, TIF, video, and specialized files by extension. | Open one sample for each relevant opener. |
+| Toolbar | `IEditorTool`, `IEditorToggleTool`, `IEditorCustomControlTool` | `Abstractions/IEditorTool.cs`, `EditorTools/` | Zoom, save, import/export, pseudo-color, filters, histogram, 3D. | Tools show, hide, click, and save configuration. |
+| Context menus | `IDVContextMenu`, `IIEditorToolContextMenu` | `Abstractions/`, `EditorTools/*/*ContextMenu.cs` | Add context-aware menu items. | Image and tool context menus open without errors. |
+| Visuals and annotations | `Draw/`, `AnnotationMapper`, `AnnotationDocument` | `Draw/`, `Draw/Annotations/` | ROI, POI, lines, text, rulers, and annotation import/export. | Export and re-import annotations with matching positions. |
+| Pseudo-color and filters | `PseudoColorEditorTool`, `DisplayShaderFilterEditorTool` | `EditorTools/PseudoColor/`, `EditorTools/Filters/` | Show colormaps, thresholds, highlights, and shader filters. | Switch two colormaps and one shader filter. |
+| CIE | `CieDiagramEditorTool`, `CieDiagramView` | `CieDiagramEditorTool.cs`, `Cie/` | Display CIE 1931/1976 diagrams and overlays. | CIE window opens with background and data points. |
+| 3D | `View3DEditorTool`, `Window3D`, `ModelViewer3DControl` | `EditorTools/ThreeD/` | Image-surface 3D and OBJ/STL model viewing. | 3D scene is non-empty and can rotate/zoom. |
+| Realtime | `RealtimeImageViewService`, `RealtimeFramePresenter` | `Realtime/` | Present realtime frames, frame stats, and camera overlays. | Continuous frame refresh does not block the UI. |
+| Layers | `ImageLayerDescriptor`, `BitmapImageLayerController` | `Layers/` | Manage channel/layer switching and layer descriptors. | Multi-channel or layered image switching works. |
+| Settings | `ImageViewSettingsWindow`, `ImageViewWorkspaceSettingsView` | `Settings/` | Manage tool visibility, defaults, and opener support list. | Tool visibility persists after reopening an image. |
+
+### Package Resource Checks
+
+`ColorVision.ImageEditor.csproj` packages several WPF resources. Verify package contents, not only the DLL.
+
+| Resource | Project file entry | Missing symptom |
+| --- | --- | --- |
+| Shaders | `EditorTools/Filters/Shaders/*.ps` | Filters, pseudo-color highlighting, or threshold display fail. |
+| Colormaps | `Assets/Colormap/colorscale_*.jpg` | Pseudo-color list is empty or switching fails. |
+| CIE data | `Assets/Data/CIE_cc_1931_2deg.csv` | CIE background or spectral locus is incomplete. |
+| Icons/images | `Assets/Image/*.ico`, `*.png` | CIE, title, or resource icons are missing. |
+| OpenCV runtime | `OpenCvSharp4.runtime.win`, `ColorVision.Core` native dependencies | Images, video, or OpenCV tools fail to open. |
+
+### Result Overlay Boundary
+
+| Issue | Inspect ImageEditor | Inspect Engine/project |
+| --- | --- | --- |
+| Visual does not show or style is wrong | `Draw/` visuals, `DrawCanvas`, zoom/hit testing | Result handler visual parameters |
+| Result coordinates are offset | Display scale, `Zoombox`, visual layout scale | Engine result coordinate system, crop/rotate/channel conversion |
+| Annotation import/export fails | `Draw/Annotations/`, `AnnotationMapper` | Whether the project uses the same annotation format |
+| Image opens but result layer is absent | Whether the opener set image context | `IViewResult` / `IResultHandleBase` registration |
+| Project CSV lacks fields | Usually not ImageEditor | Project mapping, DAO, export logic |
+
+ImageEditor is responsible for visualizing and interacting with results. Customer OK/NG decisions, MES fields, and CSV mappings belong to project or Engine result chains.
+
+### Required Smoke Tests After Publishing
+
+| Smoke test | Action | Pass condition |
+| --- | --- | --- |
+| Normal images | Open PNG/JPG/BMP/TIF. | Display, zoom, and pan work. |
+| TIF/OpenCV | Open TIF or a large image. | No missing OpenCV runtime error. |
+| Visual editing | Draw rectangle, line, text, undo/redo. | Visual position, selection box, and property bar agree. |
+| Annotations | Export then re-import annotations. | Visual count and coordinates match. |
+| Pseudo-color/filter | Switch two colormaps and one shader filter. | Display changes correctly without missing resources. |
+| CIE | Open CIE tool. | Background, locus, and points render. |
+| 3D | Open image 3D or model viewer. | Scene is non-empty and can rotate/zoom. |
+| Result overlay | Open one real algorithm result. | ROI/POI/text layers align with the source image. |
+| Settings | Hide/show one tool in ImageView settings. | Setting persists after reopening. |
+
 ## What Boundaries the Current Implementation Has
 
 ### ImageView Is Not a Pure Display Control

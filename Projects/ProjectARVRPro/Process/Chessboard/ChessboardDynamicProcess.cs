@@ -59,7 +59,7 @@ namespace ProjectARVRPro.Process.Chessboard
                             if (view.PoiAnalysisResult?.result == null)
                                 continue;
 
-                            view.PoiAnalysisResult.result.Value *= recipeConfig.ChessboardContrast.Fix;
+                            view.PoiAnalysisResult.result.Value = recipeConfig.ChessboardContrast.Apply(view.PoiAnalysisResult.result.Value);
                             chessboardResult.ChessboardContrast = Build(
                                 "Chessboard_Contrast",
                                 view.PoiAnalysisResult.result.Value,
@@ -73,6 +73,10 @@ namespace ProjectARVRPro.Process.Chessboard
                 testResult.Items = CollectItems(chessboardResult);
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.DynamicTestResults[GetOutputName()] = testResult.Items;
+                if (Config.SaveCsv)
+                {
+                    ChessboardCsvExporter.SavePoixyuvDatas(chessboardResult.PoixyuvDatas, ctx, GetOutputName());
+                }
                 return true;
             }
             catch (Exception ex)

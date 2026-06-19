@@ -1,3 +1,4 @@
+#pragma warning disable CS8601,CS8602
 using ColorVision.Database;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
 using ColorVision.Engine.Media;
@@ -43,12 +44,12 @@ namespace ProjectARVRPro.Process.RGB.Red
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            poi.CCT *= recipeConfig.CenterCorrelatedColorTemperature.Fix;
-                            poi.Y *= recipeConfig.CenterLunimance.Fix;
-                            poi.x *= recipeConfig.CenterCIE1931ChromaticCoordinatesx.Fix;
-                            poi.y *= recipeConfig.CenterCIE1931ChromaticCoordinatesy.Fix;
-                            poi.u *= recipeConfig.CenterCIE1976ChromaticCoordinatesu.Fix;
-                            poi.v *= recipeConfig.CenterCIE1976ChromaticCoordinatesv.Fix;
+                            poi.CCT = recipeConfig.CenterCorrelatedColorTemperature.Apply(poi.CCT);
+                            poi.Y = recipeConfig.CenterLunimance.Apply(poi.Y);
+                            poi.x = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Apply(poi.x);
+                            poi.y = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Apply(poi.y);
+                            poi.u = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Apply(poi.u);
+                            poi.v = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Apply(poi.v);
 
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
@@ -112,7 +113,7 @@ namespace ProjectARVRPro.Process.RGB.Red
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
-                                view.PoiAnalysisResult.result.Value *= recipeConfig.LuminanceUniformity.Fix;
+                                view.PoiAnalysisResult.result.Value = recipeConfig.LuminanceUniformity.Apply(view.PoiAnalysisResult.result.Value);
                                 var uniform = new ObjectiveTestItem
                                 {
                                     Name = "Luminance_uniformity(%)",
@@ -131,7 +132,7 @@ namespace ProjectARVRPro.Process.RGB.Red
                             if (details.Count == 1)
                             {
                                 var view = new PoiAnalysisDetailViewReslut(details[0]);
-                                view.PoiAnalysisResult.result.Value *= recipeConfig.ColorUniformity.Fix;
+                                view.PoiAnalysisResult.result.Value = recipeConfig.ColorUniformity.Apply(view.PoiAnalysisResult.result.Value);
                                 var colorUniform = new ObjectiveTestItem
                                 {
                                     Name = "Color_uniformity",

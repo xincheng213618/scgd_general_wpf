@@ -1,3 +1,4 @@
+#pragma warning disable CS8601
 using ColorVision.Rbac.Entity;
 using ColorVision.Rbac.Exceptions;
 using SqlSugar;

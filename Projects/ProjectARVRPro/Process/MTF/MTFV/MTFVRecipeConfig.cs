@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using ColorVision.Common.MVVM;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;

@@ -1,0 +1,22 @@
+<UserControl x:Class="ColorVision.ImageEditor.EditorTools.Filters.DisplayShaderFilterToolControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <ToggleButton Width="27"
+                      Height="27"
+                      Margin="0,0,0,2"
+                      Padding="3"
+                      Content="FX"
+                      FontSize="10"
+                      FontWeight="Bold"
+                      IsChecked="{Binding State.IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      ToolTip="Shader filter" />
+        <Button Width="27"
+                Height="22"
+                Padding="0"
+                Command="{Binding OpenSettingsCommand}"
+                Content="..."
+                FontWeight="Bold"
+                ToolTip="Shader filter settings" />
+    </StackPanel>
+</UserControl>

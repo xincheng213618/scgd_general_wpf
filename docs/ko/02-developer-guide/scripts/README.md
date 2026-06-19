@@ -114,7 +114,7 @@ py Scripts\build_plugin.py -t 프로젝트 -p ProjectARVR --no-upload
 ```
 ### 권장 대안
 
-- 웨어하우스의 플러그인: `Scripts\package_plugin.bat Pattern --no-upload`
+- 웨어하우스의 플러그인: `Scripts\package_plugin.bat Spectrum --no-upload`
 - 창고의 프로젝트: `Scripts\package_project.bat ProjectARVR --no-upload`
 - 웨어하우스 외부: `py Scripts\package_cvxp.py --src-dir C:\src\MyPlugin\bin\x64\Release\net10.0-windows --no-upload`
 
@@ -148,7 +148,7 @@ py 스크립트\generate_shared_files.py `
 
 ``파워셸
 #현지 포장만 가능
-py Scripts\package_cvxp.py --project-file Plugins\Pattern\Pattern.csproj --build --no-upload
+py Scripts\package_cvxp.py --project-file Plugins\Spectrum\Spectrum.csproj --build --no-upload
 
 #컴파일 출력 디렉터리를 지정합니다.
 py 스크립트\package_cvxp.py `

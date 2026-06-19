@@ -4,6 +4,8 @@ using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using ColorVision.Engine.Utilities;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 {
@@ -15,19 +17,19 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
 
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowDataColumns"), Category("Control")]
+        [LocalizedDisplayName(nameof(Resources.ShowDataColumns)), Category("Control")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
         private bool _IsShowListView = true;
 
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "ShowSidebar"), Category("Control")]
+        [LocalizedDisplayName(nameof(Resources.ShowSidebar)), Category("Control")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView = true;
 
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "DataColumSavePath"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [LocalizedDisplayName(nameof(Resources.DataColumSavePath)), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; OnPropertyChanged(); } }
         private string _SaveSideDataDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
-        [ColorVision.Engine.Utilities.LocalizedDisplayName(typeof(ColorVision.Engine.Properties.Resources), "AutoSaveDataColum")]
+        [LocalizedDisplayName(nameof(Resources.AutoSaveDataColum))]
         public bool AutoSaveSideData { get => _AutoSaveSideData; set { _AutoSaveSideData = value; OnPropertyChanged(); } }
         private bool _AutoSaveSideData;
 

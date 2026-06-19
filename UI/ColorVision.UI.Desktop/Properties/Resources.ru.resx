@@ -1,17 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -155,15 +155,8 @@
   </data>
   <data name="ImportSettings" xml:space="preserve">
     <value>Настройки импорта</value>
-  </data>
-  <data name="OpenStore" xml:space="preserve">
-    <value>Открыть магазин</value>
-  </data>
-  <data name="InstallPackage" xml:space="preserve">
+  </data>  <data name="InstallPackage" xml:space="preserve">
     <value>Установить пакет</value>
-  </data>
-  <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>Версия OpenViewDll</value>
   </data>
   <data name="Restart" xml:space="preserve">
     <value>Перезапуск</value>
@@ -188,248 +181,37 @@
   </data>
   <data name="Install" xml:space="preserve">
     <value>Установить</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>Сортировать по {0}</value>
-  </data>
-  <data name="zh-Hant" xml:space="preserve">
+  </data>  <data name="zh-Hant" xml:space="preserve">
     <value>Традиционный китайский</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
     <value>Упрощённый китайский</value>
-  </data>
-  <data name="WriteConfigFileFailed" xml:space="preserve">
-    <value>Не удалось записать файл конфигурации {0}</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>независимое окно</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>скрывать</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>Режим просмотра 9</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>Режим просмотра 4</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>Режим просмотра 2</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>Режим просмотра 1</value>
-  </data>
-  <data name="Version" xml:space="preserve">
+  </data>  <data name="Version" xml:space="preserve">
     <value>Версия</value>
-  </data>
-  <data name="UseSystem" xml:space="preserve">
-    <value>Следовать системе</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
-    <value>Обновление уровня журнала Log4Net</value>
-  </data>
-  <data name="Update" xml:space="preserve">
+  </data>  <data name="Update" xml:space="preserve">
     <value>возобновлять</value>
-  </data>
-  <data name="UnsupportedFileFormat" xml:space="preserve">
-    <value>Неподдерживаемый формат файла</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>оставшееся время:</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>Параметры сортировки</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>Сортировка по умолчанию</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>Сортировать по имени</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>Сортировать по категории</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>Окно управления сокетами</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>Размер буфера сокета</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>Умная сортировка (по убыванию)</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>Умная сортировка (по возрастанию)</value>
-  </data>
-  <data name="SaveSingleConfigFailed" xml:space="preserve">
-    <value>Не удалось сохранить единую конфигурацию {0}</value>
-  </data>
-  <data name="ru" xml:space="preserve">
+  </data>  <data name="ru" xml:space="preserve">
     <value>Русский</value>
-  </data>
-  <data name="RestoreConfigFileFailed" xml:space="preserve">
-    <value>Не удалось восстановить файл конфигурации</value>
-  </data>
-  <data name="Reset" xml:space="preserve">
+  </data>  <data name="Reset" xml:space="preserve">
     <value>перезагрузить</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
-    <value>Переименовать</value>
-  </data>
-  <data name="RemStagePointsToTemp" xml:space="preserve">
-    <value>rem STAGE указывает на корень содержимого ColorVision во временном каталоге</value>
-  </data>
-  <data name="RemRobocopySuccess" xml:space="preserve">
-    <value>  rem Robocopy 0-7 считается успехом</value>
-  </data>
-  <data name="ProjectSolution_P" xml:space="preserve">
-    <value>Проект/Решение (П)...</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>Проект {0} не найден</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>название плагина</value>
-  </data>
-  <data name="PluginMissingId" xml:space="preserve">
-    <value>У плагина {0} отсутствует уникальный ID, пропущен</value>
-  </data>
-  <data name="PluginLoadError" xml:space="preserve">
-    <value>Ошибка загрузки плагина или манифеста: {0}</value>
-  </data>
-  <data name="PluginDllNotFound" xml:space="preserve">
-    <value>DLL плагина не найдена: {0}</value>
-  </data>
-  <data name="Options" xml:space="preserve">
+  </data>  <data name="Options" xml:space="preserve">
     <value>Параметры</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>Открыть папку журнала</value>
-  </data>
-  <data name="OpenContainingFolder" xml:space="preserve">
-    <value>Открыть содержащую папку</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>Открыть файл конфигурации</value>
-  </data>
-  <data name="OnlineCronGenerator" xml:space="preserve">
-    <value>Онлайн-генератор выражений Cron</value>
-  </data>
-  <data name="NoLocalLog4Output" xml:space="preserve">
+  </data>  <data name="NoLocalLog4Output" xml:space="preserve">
     <value>Локальный вывод log4 не настроен</value>
-  </data>
-  <data name="MysqlTool" xml:space="preserve">
-    <value>Инструменты MySQL</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>Окно журнала сообщений</value>
-  </data>
-  <data name="LoadingPlugin" xml:space="preserve">
-    <value>Загрузка плагина: {0}</value>
-  </data>
-  <data name="LoadedPluginWithoutManifest" xml:space="preserve">
-    <value>Загружен плагин без манифеста: {0}</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>Автовыбор</value>
-  </data>
-  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
+  </data>  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>Найден проект {0}, {1}, скачать?</value>
-  </data>
-  <data name="FilterSupportsRegex" xml:space="preserve">
-    <value>Фильтр поддерживает регулярные выражения</value>
-  </data>
-  <data name="ExeNameCannotBeEmpty" xml:space="preserve">
-    <value>exeName не может быть пустым</value>
-  </data>
-  <data name="Execute" xml:space="preserve">
-    <value>Выполнить</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>Произошла ошибка</value>
-  </data>
-  <data name="EchoXCOPYFailed" xml:space="preserve">
-    <value>  echo Копирование XCOPY не удалось, обновление прервано.</value>
-  </data>
-  <data name="EchoUsingXCOPY" xml:space="preserve">
-    <value>echo Использование резервного копирования XCOPY...</value>
-  </data>
-  <data name="EchoUpdateComplete" xml:space="preserve">
-    <value>echo Обновление завершено. (Очистка выполняется в фоновом режиме)</value>
-  </data>
-  <data name="EchoTerminatingProcess" xml:space="preserve">
-    <value>echo Завершение процесса: {0}</value>
-  </data>
-  <data name="EchoTargetDirNotExist" xml:space="preserve">
-    <value>  echo Целевой каталог не существует, резервное копирование пропущено.</value>
-  </data>
-  <data name="EchoStartCopyingFiles" xml:space="preserve">
-    <value>echo Начало копирования новых файлов версии...</value>
-  </data>
-  <data name="EchoSchedulingCleanup" xml:space="preserve">
-    <value>echo Планирование отложенной очистки временного каталога и скрипта...</value>
-  </data>
-  <data name="EchoRobocopyNotFound" xml:space="preserve">
-    <value>  echo Robocopy не найден, переход к XCOPY...</value>
-  </data>
-  <data name="EchoRobocopyFailed" xml:space="preserve">
-    <value>     echo Robocopy не удалось, код ошибки !RC!, попытка использовать XCOPY...</value>
-  </data>
-  <data name="EchoRestartingProgram" xml:space="preserve">
-    <value>echo Перезапуск программы...</value>
-  </data>
-  <data name="EchoCopyComplete" xml:space="preserve">
-    <value>echo Копирование завершено.</value>
-  </data>
-  <data name="EchoBackupTo" xml:space="preserve">
-    <value>  echo Резервное копирование в: %BKDIR%</value>
-  </data>
-  <data name="EchoBackupComplete" xml:space="preserve">
-    <value>  echo Резервное копирование завершено.</value>
-  </data>
-  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
-    <value>echo Резервное копирование текущей версии...</value>
-  </data>
-  <data name="Download" xml:space="preserve">
+  </data>  <data name="Download" xml:space="preserve">
     <value>Скачать</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>По убыванию</value>
-  </data>
-  <data name="DependencyVersionInsufficient" xml:space="preserve">
-    <value>Версия зависимости {0} недостаточна, требуется: {1}, фактическая: {2}</value>
-  </data>
-  <data name="DependencyDllNotFound" xml:space="preserve">
-    <value>DLL зависимости {0} не найдена: {1}</value>
-  </data>
-  <data name="DependencyCheckException" xml:space="preserve">
-    <value>Исключение при проверке версии зависимости {0}: {1}</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>удалить</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>Текущая скорость:</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
+  </data>  <data name="ConfirmUpdate" xml:space="preserve">
     <value>Обновить</value>
   </data>
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>Подтвердить удаление плагина {0}?</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>закрытие</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>Прозрачный</value>
-  </data>
-  <data name="CleanupBackupFailed" xml:space="preserve">
-    <value>Не удалось очистить файлы резервных копий</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
+  </data>  <data name="CheckPluginUpdates" xml:space="preserve">
     <value>Проверить обновления плагинов</value>
   </data>
   <data name="CheckPluginUpdatesDescription" xml:space="preserve">
@@ -437,26 +219,7 @@
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Проверка дополнительных проектов</value>
-  </data>
-  <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
-    <value>Ресурс bool2VisibilityConverter не найден</value>
-  </data>
-  <data name="BatchFilePathCannotBeEmpty" xml:space="preserve">
-    <value>batchFilePath не может быть пустым</value>
-  </data>
-  <data name="BaseDirCannotBeEmpty" xml:space="preserve">
-    <value>baseDir не может быть пустым</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>По возрастанию</value>
-  </data>
-  <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
-    <value>Application.Current не инициализирован</value>
-  </data>
-  <data name="AllFiles" xml:space="preserve">
-    <value>Все файлы (*.*)|*.*</value>
-  </data>
-  <data name="Loading" xml:space="preserve">
+  </data>  <data name="Loading" xml:space="preserve">
     <value>нагрузка</value>
   </data>
   <data name="ThirdPartyApps" xml:space="preserve">
@@ -470,11 +233,7 @@
   </data>
   <data name="SystemTools" xml:space="preserve">
     <value>Системные инструменты</value>
-  </data>
-  <data name="NotInstalled" xml:space="preserve">
-    <value>Не установлено</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
+  </data>  <data name="Refresh" xml:space="preserve">
     <value>обновить</value>
   </data>
   <data name="Password" xml:space="preserve">
@@ -497,35 +256,9 @@
   </data>
   <data name="ClearRecords" xml:space="preserve">
     <value>Очистить все записи</value>
-  </data>
-  <data name="DeleteSelected" xml:space="preserve">
-    <value>Удалить выбранное</value>
-  </data>
-  <data name="SearchButton" xml:space="preserve">
-    <value>поиск</value>
-  </data>
-  <data name="OpenDownloadFolder" xml:space="preserve">
-    <value>Откройте папку загрузок</value>
-  </data>
-  <data name="FileName" xml:space="preserve">
+  </data>  <data name="FileName" xml:space="preserve">
     <value>имя файла</value>
-  </data>
-  <data name="Progress" xml:space="preserve">
-    <value>расписание</value>
-  </data>
-  <data name="StatusHeader" xml:space="preserve">
-    <value>состояние</value>
-  </data>
-  <data name="Speed" xml:space="preserve">
-    <value>скорость</value>
-  </data>
-  <data name="FileSize" xml:space="preserve">
-    <value>размер файла</value>
-  </data>
-  <data name="CreateTimeHeader" xml:space="preserve">
-    <value>Время создания</value>
-  </data>
-  <data name="OpenFile" xml:space="preserve">
+  </data>  <data name="OpenFile" xml:space="preserve">
     <value>Открыть файл</value>
   </data>
   <data name="CopyUrl" xml:space="preserve">
@@ -596,11 +329,7 @@
   </data>
   <data name="AdvancedOptions" xml:space="preserve">
     <value>Расширенные параметры</value>
-  </data>
-  <data name="UrlSeparatorHint" xml:space="preserve">
-    <value>Несколько ссылок разделяются точкой с запятой (;).</value>
-  </data>
-  <data name="PauseDownload" xml:space="preserve">
+  </data>  <data name="PauseDownload" xml:space="preserve">
     <value>Приостановить загрузку</value>
   </data>
   <data name="ResumeDownload" xml:space="preserve">
@@ -614,11 +343,7 @@
   </data>
   <data name="Aria2cStartFailed" xml:space="preserve">
     <value>Не удалось запустить aria2c</value>
-  </data>
-  <data name="Aria2cReady" xml:space="preserve">
-    <value>Служба загрузки готова</value>
-  </data>
-  <data name="ActiveDownloads" xml:space="preserve">
+  </data>  <data name="ActiveDownloads" xml:space="preserve">
     <value>Загрузка: {0}</value>
   </data>
   <data name="Aria2cServiceStatus" xml:space="preserve">
@@ -632,11 +357,7 @@
   </data>
   <data name="ConfigApplied" xml:space="preserve">
     <value>Конфигурация применена</value>
-  </data>
-  <data name="MagnetDownload" xml:space="preserve">
-    <value>Загрузка магнет-ссылки</value>
-  </data>
-  <data name="RpcPort" xml:space="preserve">
+  </data>  <data name="RpcPort" xml:space="preserve">
     <value>RPC порт</value>
   </data>
   <data name="UrlOrMagnetHint" xml:space="preserve">
@@ -653,26 +374,11 @@
   </data>
   <data name="ThirdPartyAppsCountFormat" xml:space="preserve">
     <value>{0} прилож.</value>
-  </data>
-  <data name="ThirdPartyAppsAddCustomApp" xml:space="preserve">
-    <value>Добавить приложение</value>
-  </data>
-  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
+  </data>  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
     <value>Добавить сценарий</value>
-  </data>
-  <data name="ThirdPartyAppsGroups" xml:space="preserve">
-    <value>Категории</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
+  </data>  <data name="Edit" xml:space="preserve">
     <value>Изменить</value>
-  </data>
-  <data name="ConfirmDelete" xml:space="preserve">
-    <value>Подтвердить удаление</value>
-  </data>
-  <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
-    <value>Удалить пользовательское приложение "{0}"?</value>
-  </data>
-  <data name="MenuMenuItemManager" xml:space="preserve">
+  </data>  <data name="MenuMenuItemManager" xml:space="preserve">
     <value>Диспетчер меню</value>
   </data>
   <data name="MenuTimedButtonOperationStats" xml:space="preserve">
@@ -763,11 +469,7 @@
   <data name="CfgApp_PsDesc" xml:space="preserve"><value>PowerShell Script</value></data>
   <data name="CfgApp_ConfigTitle" xml:space="preserve"><value>Custom App Configuration</value></data>
   <data name="CfgApp_ListTitle" xml:space="preserve"><value>Custom App List</value></data>
-  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>Default Custom Group Name</value></data>
-  <data name="CfgApp_Custom" xml:space="preserve"><value>Custom</value></data>
-  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>
-  <data name="CfgApp_QuickScript" xml:space="preserve"><value>Quick Script</value></data>
-  <data name="Installed" xml:space="preserve">
+  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>Default Custom Group Name</value></data>  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>Default Script Group Name</value></data>  <data name="Installed" xml:space="preserve">
     <value>Installed</value>
   </data>
   <data name="Marketplace" xml:space="preserve">
@@ -823,27 +525,6 @@
   </data>
   <data name="SendFailed" xml:space="preserve">
     <value>Send failed: {0}</value>
-  </data>
-  <data name="ServerAddressNotConfigured" xml:space="preserve">
-    <value>Server address not configured</value>
-  </data>
-  <data name="ThirdPartyAppsLocalApps" xml:space="preserve">
-    <value>Local apps</value>
-  </data>
-  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>Сортировать по обновлению</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>Сортировать по загрузкам</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>Сортировать по имени</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>Все категории</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>Ключевое слово</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
     <value>Автор</value>
@@ -977,4 +658,49 @@
   <data name="MarketplaceSelectUpdateFile" xml:space="preserve">
     <value>Выбрать файл обновления</value>
   </data>
+  <data name="Treemap_Title" xml:space="preserve"><value>Disk Space Analyzer - Treemap Viewer</value></data>
+  <data name="Treemap_DriveLabel" xml:space="preserve"><value>Drive:</value></data>
+  <data name="Treemap_BrowseDirectory" xml:space="preserve"><value>Browse...</value></data>
+  <data name="Treemap_BrowseDirectoryTooltip" xml:space="preserve"><value>Select directory to scan</value></data>
+  <data name="Treemap_Scan" xml:space="preserve"><value>Scan</value></data>
+  <data name="Treemap_ScanTooltip" xml:space="preserve"><value>Scan selected directory and display treemap</value></data>
+  <data name="Treemap_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Treemap_CancelTooltip" xml:space="preserve"><value>Abort current scan</value></data>
+  <data name="Treemap_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Treemap_SaveTooltip" xml:space="preserve"><value>Save current scan results as JSON file</value></data>
+  <data name="Treemap_Load" xml:space="preserve"><value>Load</value></data>
+  <data name="Treemap_LoadTooltip" xml:space="preserve"><value>Load scan results from saved JSON file</value></data>
+  <data name="Treemap_Up" xml:space="preserve"><value>↑ Up</value></data>
+  <data name="Treemap_UpTooltip" xml:space="preserve"><value>Return to parent directory node</value></data>
+  <data name="Treemap_ShowLabels" xml:space="preserve"><value>Show Labels</value></data>
+  <data name="Treemap_NodeCount" xml:space="preserve"><value>Nodes:</value></data>
+  <data name="Treemap_File" xml:space="preserve"><value>File</value></data>
+  <data name="Treemap_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="Treemap_SelectDirPrompt" xml:space="preserve"><value>Select a directory and click "Scan", or click "Load" to read saved scan results.</value></data>
+  <data name="Treemap_Scanning" xml:space="preserve"><value>Scanning...</value></data>
+  <data name="Treemap_ScannedFiles" xml:space="preserve"><value>Scanned {0:N0} files...</value></data>
+  <data name="Treemap_Cancelled" xml:space="preserve"><value>Cancelled.</value></data>
+  <data name="Treemap_Complete" xml:space="preserve"><value>Done. {0:N0} files total.</value></data>
+  <data name="Treemap_ScanError" xml:space="preserve"><value>Scan error: {0}</value></data>
+  <data name="Treemap_SaveDialogTitle" xml:space="preserve"><value>Save Scan Results</value></data>
+  <data name="Treemap_Saved" xml:space="preserve"><value>Saved: {0}</value></data>
+  <data name="Treemap_SaveFailed" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="Treemap_LoadDialogTitle" xml:space="preserve"><value>Load Scan Results</value></data>
+  <data name="Treemap_InvalidFormat" xml:space="preserve"><value>Invalid or empty file format.</value></data>
+  <data name="Treemap_Loaded" xml:space="preserve"><value>Loaded: {0}</value></data>
+  <data name="Treemap_LoadFailed" xml:space="preserve"><value>Load failed: {0}</value></data>
+  <data name="Treemap_OpenFile" xml:space="preserve"><value>Open File</value></data>
+  <data name="Treemap_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
+  <data name="Treemap_OpenInExplorer" xml:space="preserve"><value>Open in Explorer</value></data>
+  <data name="Treemap_ShowInExplorer" xml:space="preserve"><value>Show in Explorer</value></data>
+  <data name="Treemap_CopyPath" xml:space="preserve"><value>Copy Path</value></data>
+  <data name="Treemap_DrillDown" xml:space="preserve"><value>Drill Down (set as root)</value></data>
+  <data name="Treemap_GoUp" xml:space="preserve"><value>Go Up</value></data>
+  <data name="Treemap_DeleteFile" xml:space="preserve"><value>Delete file {0}</value></data>
+  <data name="Treemap_ConfirmDelete" xml:space="preserve"><value>Confirm delete file:\n{0}</value></data>
+  <data name="Treemap_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
+  <data name="Treemap_DeleteFailed" xml:space="preserve"><value>Delete failed: {0}</value></data>
+  <data name="Treemap_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Treemap_Prompt" xml:space="preserve"><value>Prompt</value></data>
+  <data name="Treemap_SelectValidDir" xml:space="preserve"><value>Please select a valid directory first.</value></data>
 </root>

@@ -1,3 +1,4 @@
+#pragma warning disable CA1707
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Marketplace;

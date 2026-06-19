@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
@@ -49,6 +50,11 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 
         public void AddImagePath(Action<string> updateStorageAction, string filename, string tag = null)
         {
+            if (!FlowNodePropertyMetadataProvider.ShowDebugProperties)
+            {
+                return;
+            }
+
             tag ??= Properties.Resources.Image;
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
             dockPanel.Children.Add(CreateSignLabel(tag));
@@ -157,13 +163,9 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                 Height = 10,
                 Width = 10,
                 HorizontalAlignment = HorizontalAlignment.Center,
+                IsChecked = true,
                 IsEnabled = false
             };
-            var binding = new Binding("DService.IsAlive")
-            {
-                Mode = BindingMode.OneWay
-            };
-            toggleButton.SetBinding(ToggleButton.IsCheckedProperty, binding);
             var image = new Image
             {
                 Source = (ImageSource)Application.Current.FindResource("DrawingImageProperty"),

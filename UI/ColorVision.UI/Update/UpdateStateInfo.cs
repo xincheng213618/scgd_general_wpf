@@ -18,6 +18,7 @@ namespace ColorVision.Update
     {
         public UpdateApplyState State { get; set; }
         public string BackupPath { get; set; } = string.Empty;
+        public string SnapshotPath { get; set; } = string.Empty;
         public string StagePath { get; set; } = string.Empty;
         public string TargetPath { get; set; } = string.Empty;
         public string ExecutablePath { get; set; } = string.Empty;
@@ -33,6 +34,7 @@ namespace ColorVision.Update
     public sealed class UpdateBackupPrepareResult
     {
         public required string BackupPath { get; init; }
+        public required string SnapshotPath { get; init; }
         public required string ManifestPath { get; init; }
         public required string StateFilePath { get; init; }
         public required string ApplyingStatePath { get; init; }

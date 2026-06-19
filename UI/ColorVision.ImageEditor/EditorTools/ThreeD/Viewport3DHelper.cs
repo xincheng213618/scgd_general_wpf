@@ -1,3 +1,4 @@
+#pragma warning disable CS8602
 using HelixToolkit.Wpf;
 using Microsoft.Win32;
 using System;

@@ -12,6 +12,7 @@ ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
     'runtimes/win-x64/',
 )
+SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
 
 # ----------------------
 # 动态路径计算（去除用户名硬编码）
@@ -41,6 +42,14 @@ def should_keep_runtime_path(path_value: str) -> bool:
         return True
 
     return normalized.startswith(ALLOWED_RUNTIME_PREFIXES)
+
+
+def is_shell_extension_file(path_value: str) -> bool:
+    return os.path.basename(path_value).lower().startswith(SHELL_EXTENSION_FILE_PREFIX)
+
+def is_root_service_host_file(path_value: str) -> bool:
+    normalized = normalize_archive_relative_path(path_value).lower()
+    return '/' not in normalized and os.path.basename(normalized).startswith('colorvisionservicehost.')
 
 def upload_file(file_path, folder_name):
     return file_manager.upload_file(file_path, folder_name)
@@ -219,7 +228,7 @@ def get_file_version(file_path):
     version_info = get_file_version_from_windows_resource(file_path)
     return version_info
 
-def get_all_files(directory):
+def get_all_files(directory, include_shell_extension=True):
     """获取目录下的所有文件路径"""
     file_paths = []
     for root, dirs, files in os.walk(directory):
@@ -230,6 +239,11 @@ def get_all_files(directory):
 
             absolute_path = os.path.join(root, file)
             relative_path = os.path.relpath(absolute_path, directory)
+            if not include_shell_extension and is_shell_extension_file(relative_path):
+                continue
+            if is_root_service_host_file(relative_path):
+                continue
+
             if not should_keep_runtime_path(relative_path):
                 continue
 
@@ -248,6 +262,29 @@ def create_full_zip(version_dir, output_zip):
         for file in all_files:
             zipf.write(str(file), str(os.path.relpath(file, version_dir)))
 
+def remove_directory_best_effort(directory, retries=5, delay_seconds=0.5):
+    """清理临时目录；短暂文件占用不应阻断增量包上传。"""
+    if not os.path.exists(directory):
+        return True
+
+    last_error = None
+    for attempt in range(retries):
+        try:
+            for root, dirs, files in os.walk(directory, topdown=False):
+                for name in files:
+                    os.remove(os.path.join(root, name))
+                for name in dirs:
+                    os.rmdir(os.path.join(root, name))
+            os.rmdir(directory)
+            return True
+        except OSError as exc:
+            last_error = exc
+            if attempt < retries - 1:
+                time.sleep(delay_seconds)
+
+    print(f"Warning: could not remove temporary directory {directory}: {last_error}")
+    return False
+
 def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
     """制作增量更新包"""
     if not os.path.exists(old_zip):
@@ -256,13 +293,13 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
         return
 
     # 解压旧版本 ZIP 文件
-    old_version_dir = 'temp_old_version'
+    old_version_dir = f'temp_old_version_{os.getpid()}_{int(time.time())}'
     with zipfile.ZipFile(old_zip, 'r') as zipf:
         zipf.extractall(old_version_dir)
 
     # 获取文件列表
-    old_files = get_all_files(old_version_dir)
-    new_files = get_all_files(new_version_dir)
+    old_files = get_all_files(old_version_dir, include_shell_extension=False)
+    new_files = get_all_files(new_version_dir, include_shell_extension=False)
 
     # 创建一个相对路径的字典
     old_files_dict = {os.path.relpath(file, old_version_dir): file for file in old_files}
@@ -281,13 +318,7 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
         for file in files_to_zip:
             zipf.write(str(file), str(os.path.relpath(file, new_version_dir)))
 
-    # 清理临时目录
-    for root, dirs, files in os.walk(old_version_dir, topdown=False):
-        for name in files:
-            os.remove(os.path.join(root, name))
-        for name in dirs:
-            os.rmdir(os.path.join(root, name))
-    os.rmdir(old_version_dir)
+    remove_directory_best_effort(old_version_dir)
 
 def find_latest_zip(directory, version):
     """在目录中找到指定版本的最新 ZIP 文件"""

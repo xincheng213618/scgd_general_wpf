@@ -18,13 +18,13 @@ namespace ColorVision.Solution.Workspace
         private static readonly ILog log = LogManager.GetLogger(typeof(DockLayoutManager));
 
         private const int DefaultBottomPaneHeight = 200;
-    private const int DefaultSidePaneWidth = 303;
+        private const int DefaultSidePaneWidth = 303;
 
         /// <summary>
         /// 布局文件存储在用户 AppData 目录，避免 Program Files 等受保护目录的权限问题。
         /// </summary>
         private static string LayoutFilePath => Path.Combine(
-            Environments.DirAppData, "MainWindowDockLayout.xml");
+            Environments.DirStateLayout, "MainWindowDockLayout.xml");
 
         private readonly DockingManager _dockingManager;
 
@@ -57,10 +57,10 @@ namespace ColorVision.Solution.Workspace
         /// <param name="content">面板内容（UI 元素）</param>
         /// <param name="title">面板标题</param>
         /// <param name="position">面板默认停靠位置</param>
-        public void RegisterPanel(string contentId, object content, string title, PanelPosition position = PanelPosition.Bottom)
+        public void RegisterPanel(string contentId, object content, string title, PanelPosition position = PanelPosition.Bottom, bool isDefaultVisible = true)
         {
             _contentRegistry[contentId] = content;
-            _panelInfoRegistry[contentId] = new PanelInfo(title, position);
+            _panelInfoRegistry[contentId] = new PanelInfo(title, position, isDefaultVisible);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace ColorVision.Solution.Workspace
 
                 // 左侧面板
                 var leftPanels = _panelInfoRegistry
-                    .Where(kvp => kvp.Value.Position == PanelPosition.Left)
+                    .Where(kvp => kvp.Value.Position == PanelPosition.Left && kvp.Value.IsDefaultVisible)
                     .ToList();
 
                 if (leftPanels.Count > 0)
@@ -218,7 +218,7 @@ namespace ColorVision.Solution.Workspace
 
                 // 底部面板
                 var bottomPanels = _panelInfoRegistry
-                    .Where(kvp => kvp.Value.Position == PanelPosition.Bottom)
+                    .Where(kvp => kvp.Value.Position == PanelPosition.Bottom && kvp.Value.IsDefaultVisible)
                     .ToList();
 
                 if (bottomPanels.Count > 0)
@@ -249,7 +249,7 @@ namespace ColorVision.Solution.Workspace
 
                 // 右侧面板
                 var rightPanels = _panelInfoRegistry
-                    .Where(kvp => kvp.Value.Position == PanelPosition.Right)
+                    .Where(kvp => kvp.Value.Position == PanelPosition.Right && kvp.Value.IsDefaultVisible)
                     .ToList();
 
                 if (rightPanels.Count > 0)
@@ -388,6 +388,17 @@ namespace ColorVision.Solution.Workspace
         public IReadOnlyList<string> GetRegisteredPanelIds()
         {
             return _panelInfoRegistry.Keys.ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// 获取所有已注册面板及其元数据，供视图菜单动态生成入口。
+        /// </summary>
+        public IReadOnlyList<RegisteredPanelInfo> GetRegisteredPanels()
+        {
+            return _panelInfoRegistry
+                .Select(kvp => new RegisteredPanelInfo(kvp.Key, kvp.Value.Title, kvp.Value.Position, kvp.Value.IsDefaultVisible))
+                .ToList()
+                .AsReadOnly();
         }
 
         /// <summary>
@@ -571,7 +582,12 @@ namespace ColorVision.Solution.Workspace
     /// <summary>
     /// 面板元数据
     /// </summary>
-    public record PanelInfo(string Title, PanelPosition Position);
+    public record PanelInfo(string Title, PanelPosition Position, bool IsDefaultVisible);
+
+    /// <summary>
+    /// 已注册面板的菜单展示信息
+    /// </summary>
+    public record RegisteredPanelInfo(string ContentId, string Title, PanelPosition Position, bool IsDefaultVisible);
 
     /// <summary>
     /// 文档元数据

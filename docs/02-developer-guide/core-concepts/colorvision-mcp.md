@@ -21,7 +21,7 @@ Implemented:
 - Business context capture for template JSON editor, flow and selected flow node state, recent flow failure clues, image editor metadata without pixels, and selected solution file/folder entries.
 - Low-risk app-control helpers for opening known panels, dry-running menu resolution, executing low-risk menus, and refusing confirmation-required menu actions by default.
 - Confirmable actions with `action_id`, title, description, risk level, source tool, redacted argument summary, creation time, and expiry time. Pending actions expire after a short lifetime, currently five minutes.
-- Pending Actions UI in the Copilot panel with action id/tool name/expiry/argument summary, Copy action_id, Approve, Reject, short feedback, and automatic expiry refresh.
+- Pending Actions UI in the Copilot panel with action id/tool name/expiry/argument summary, Copy action_id, Copy confirm_action payload, Approve, Reject, short feedback, and automatic expiry refresh.
 - `confirm_action` for executing only a previously approved, non-expired, argument-matched confirmation-required action.
 - `preview_template_patch` returns a `preview_id` for the active template JSON editor; `apply_template_patch` creates a pending action and applies only after user approval plus `confirm_action`.
 - `diagnose_flow_failure` aggregates active flow, matched node, template context, and logs into a read-only diagnosis.
@@ -50,7 +50,7 @@ Codex may have its own local command-line tools depending on how the user runs C
 2. Open Copilot settings.
 3. Enable `Local MCP`.
 4. Confirm or edit the local port.
-5. Copy the endpoint and bearer token.
+5. Copy the Codex config snippet and token environment command if the endpoint will be used from Codex.
 6. Save settings. The local server applies the setting immediately.
 
 Default endpoint:
@@ -62,6 +62,8 @@ http://127.0.0.1:38473/mcp
 Use `Regenerate token` if the token may have been copied outside the local machine.
 
 ## Codex Config
+
+Copilot settings provides `Copy Codex Config` and `Copy Token Command` buttons. Use them to copy the current endpoint into a `config.toml` MCP server entry and to copy the PowerShell command that stores the bearer token in `COLORVISION_MCP_TOKEN`.
 
 For Codex builds that support streamable HTTP MCP servers, add a server entry like this to `config.toml`:
 
@@ -268,6 +270,16 @@ Lifecycle audit events:
 - `action_executed`
 
 The user approves or rejects pending actions in the Copilot panel. Approval alone does not execute the action; it only authorizes the next matching `confirm_action` call. Rejected, expired, repeated, or argument-mismatched calls fail without executing.
+
+Use `Copy Payload` in the Pending Actions UI to copy the JSON arguments expected by `confirm_action`:
+
+```json
+{
+	"action_id": "a1b2c3d4e5f6",
+	"tool_name": "execute_menu",
+	"arguments_summary": "query=Tools > Update, dry_run=False"
+}
+```
 
 ## In-App Agent Tools
 

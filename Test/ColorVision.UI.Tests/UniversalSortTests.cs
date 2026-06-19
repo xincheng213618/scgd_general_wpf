@@ -1,3 +1,4 @@
+#pragma warning disable CA1707,CA1861
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 

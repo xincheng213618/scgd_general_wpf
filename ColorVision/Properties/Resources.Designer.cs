@@ -106,15 +106,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 构建日期 的本地化字符串。
-        /// </summary>
-        public static string BuildDate {
-            get {
-                return ResourceManager.GetString("BuildDate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
         public static string Cancel {
@@ -151,24 +142,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 检测插件更新 的本地化字符串。
-        /// </summary>
-        public static string CheckPluginUpdates {
-            get {
-                return ResourceManager.GetString("CheckPluginUpdates", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 检查更新(旧) 的本地化字符串。
-        /// </summary>
-        public static string CheckUpdateOld {
-            get {
-                return ResourceManager.GetString("CheckUpdateOld", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 软件启动时检测更新 的本地化字符串。
         /// </summary>
         public static string CheckUpdatesOnStartup {
@@ -187,15 +160,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 清除安装包缓存 的本地化字符串。
-        /// </summary>
-        public static string ClearPackageCache {
-            get {
-                return ResourceManager.GetString("ClearPackageCache", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 点击是立即更新，点击否跳过该版本，点击取消稍后提醒 的本地化字符串。
         /// </summary>
         public static string ClickYesToUpdateNow {
@@ -210,15 +174,6 @@ namespace ColorVision.Properties {
         public static string Close {
             get {
                 return ResourceManager.GetString("Close", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ColorVision 更新程序 的本地化字符串。
-        /// </summary>
-        public static string ColorVisionUpdater {
-            get {
-                return ResourceManager.GetString("ColorVisionUpdater", resourceCulture);
             }
         }
         
@@ -394,24 +349,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 配置结束 的本地化字符串。
-        /// </summary>
-        public static string ConfigurationComplete {
-            get {
-                return ResourceManager.GetString("ConfigurationComplete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置管理窗口 的本地化字符串。
-        /// </summary>
-        public static string ConfigurationManagement {
-            get {
-                return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 启用实验性一体化主窗口标题栏 的本地化字符串。
         /// </summary>
         public static string ConfigUseIntegratedMainWindowChrome {
@@ -448,33 +385,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 附加上下文 的本地化字符串。
-        /// </summary>
-        public static string CopilotAdditionalContext {
-            get {
-                return ResourceManager.GetString("CopilotAdditionalContext", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [附加异常 {0}] 的本地化字符串。
-        /// </summary>
-        public static string CopilotAdditionalException {
-            get {
-                return ResourceManager.GetString("CopilotAdditionalException", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 附加异常：{0} 个 的本地化字符串。
-        /// </summary>
-        public static string CopilotAdditionalExceptionCount {
-            get {
-                return ResourceManager.GetString("CopilotAdditionalExceptionCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 + 添加模型 的本地化字符串。
         /// </summary>
         public static string CopilotAddModel {
@@ -484,74 +394,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Agent 模式已累计 planner 和最终回答的多次模型调用。 的本地化字符串。
-        /// </summary>
-        public static string CopilotAgentAccumulated {
-            get {
-                return ResourceManager.GetString("CopilotAgentAccumulated", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 AI 正在生成，已把异常上下文放到输入框。 的本地化字符串。
-        /// </summary>
-        public static string CopilotAiGenerating {
-            get {
-                return ResourceManager.GetString("CopilotAiGenerating", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前 AI 未配置，无法直接发送异常诊断请求。 的本地化字符串。
-        /// </summary>
-        public static string CopilotAiNotConfigured {
-            get {
-                return ResourceManager.GetString("CopilotAiNotConfigured", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 AI 请求 的本地化字符串。
         /// </summary>
         public static string CopilotAiRequest {
             get {
                 return ResourceManager.GetString("CopilotAiRequest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [AI 请求] 的本地化字符串。
-        /// </summary>
-        public static string CopilotAiRequestTag {
-            get {
-                return ResourceManager.GetString("CopilotAiRequestTag", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 主界面的 AI 视图尚未就绪。 的本地化字符串。
-        /// </summary>
-        public static string CopilotAiViewNotReady {
-            get {
-                return ResourceManager.GetString("CopilotAiViewNotReady", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 所有文件|*.* 的本地化字符串。
-        /// </summary>
-        public static string CopilotAllFiles {
-            get {
-                return ResourceManager.GetString("CopilotAllFiles", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 回答： 的本地化字符串。
-        /// </summary>
-        public static string CopilotAnswer {
-            get {
-                return ResourceManager.GetString("CopilotAnswer", resourceCulture);
             }
         }
         
@@ -574,83 +421,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 助手： 的本地化字符串。
-        /// </summary>
-        public static string CopilotAssistantPrefix {
-            get {
-                return ResourceManager.GetString("CopilotAssistantPrefix", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 挂载文件、图片或上下文 的本地化字符串。
-        /// </summary>
-        public static string CopilotAttachTooltip {
-            get {
-                return ResourceManager.GetString("CopilotAttachTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 附加到提问 的本地化字符串。
         /// </summary>
         public static string CopilotAttachToQuestion {
             get {
                 return ResourceManager.GetString("CopilotAttachToQuestion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Base URL 的本地化字符串。
-        /// </summary>
-        public static string CopilotBase64 {
-            get {
-                return ResourceManager.GetString("CopilotBase64", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 # 调用方附加上下文 的本地化字符串。
-        /// </summary>
-        public static string CopilotCallerContext {
-            get {
-                return ResourceManager.GetString("CopilotCallerContext", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前 AI 未配置或主界面尚未就绪，暂时不能直接询问。 的本地化字符串。
-        /// </summary>
-        public static string CopilotCannotAskAi {
-            get {
-                return ResourceManager.GetString("CopilotCannotAskAi", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 可以把当前异常与最近日志直接发送到主界面的 AI 视图。 的本地化字符串。
-        /// </summary>
-        public static string CopilotCanSendToAi {
-            get {
-                return ResourceManager.GetString("CopilotCanSendToAi", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 捕获来源： 的本地化字符串。
-        /// </summary>
-        public static string CopilotCaptureSource {
-            get {
-                return ResourceManager.GetString("CopilotCaptureSource", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 对话助手 的本地化字符串。
-        /// </summary>
-        public static string CopilotChatAssistant {
-            get {
-                return ResourceManager.GetString("CopilotChatAssistant", resourceCulture);
             }
         }
         
@@ -682,69 +457,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 内容较大，显示已截断。 的本地化字符串。
-        /// </summary>
-        public static string CopilotContentLargeTruncated {
-            get {
-                return ResourceManager.GetString("CopilotContentLargeTruncated", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ...&lt;内容已截断，仅保留最近 {0} 字符。&gt; 的本地化字符串。
-        /// </summary>
-        public static string CopilotContentTruncated {
-            get {
-                return ResourceManager.GetString("CopilotContentTruncated", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 上下文 的本地化字符串。
-        /// </summary>
-        public static string CopilotContext {
-            get {
-                return ResourceManager.GetString("CopilotContext", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 以下是当前会话挂载的附加上下文。它们是用户明确提供的参考信息，回答时请按需使用： 的本地化字符串。
-        /// </summary>
-        public static string CopilotContextInjection {
-            get {
-                return ResourceManager.GetString("CopilotContextInjection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请求上下文尚未初始化。 的本地化字符串。
-        /// </summary>
-        public static string CopilotContextNotInitialized {
-            get {
-                return ResourceManager.GetString("CopilotContextNotInitialized", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已把异常上下文放到 AI 输入框。 的本地化字符串。
-        /// </summary>
-        public static string CopilotContextPlaced {
-            get {
-                return ResourceManager.GetString("CopilotContextPlaced", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [上下文] {0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotContextTag {
-            get {
-                return ResourceManager.GetString("CopilotContextTag", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 会话 的本地化字符串。
         /// </summary>
         public static string CopilotConversations {
@@ -763,38 +475,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 复制失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotCopyFailed {
-            get {
-                return ResourceManager.GetString("CopilotCopyFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 复制当前消息 的本地化字符串。
         /// </summary>
         public static string CopilotCopyMessage {
             get {
                 return ResourceManager.GetString("CopilotCopyMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 复制消息失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotCopyMessageFailed {
-            get {
-                return ResourceManager.GetString("CopilotCopyMessageFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 说明：当前只显示接口真实返回的 usage，统计会在本次请求完成后刷新。 的本地化字符串。
-        /// </summary>
-        public static string CopilotCurrentRequestUsage {
-            get {
-                return ResourceManager.GetString("CopilotCurrentRequestUsage", resourceCulture);
             }
         }
         
@@ -808,254 +493,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 [当前窗口上下文] 的本地化字符串。
-        /// </summary>
-        public static string CopilotCurrentWindowContextTag {
-            get {
-                return ResourceManager.GetString("CopilotCurrentWindowContextTag", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 确定要删除会话&quot;{0}&quot;吗？ 的本地化字符串。
-        /// </summary>
-        public static string CopilotDeleteConversationConfirm {
-            get {
-                return ResourceManager.GetString("CopilotDeleteConversationConfirm", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请帮我分析 ColorVision WPF 客户端中的未处理异常。请基于异常内容和最近日志，给出最可能原因、优先排查点，以及最小可行修复方向；如果信息不足，请明确指出还缺什么。 的本地化字符串。
-        /// </summary>
-        public static string CopilotDiagnosticPrompt {
-            get {
-                return ResourceManager.GetString("CopilotDiagnosticPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 候选片段： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsCandidateFragments {
-            get {
-                return ResourceManager.GetString("CopilotDocsCandidateFragments", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文档域： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsDomain {
-            get {
-                return ResourceManager.GetString("CopilotDocsDomain", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 摘录： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsExcerpt {
-            get {
-                return ResourceManager.GetString("CopilotDocsExcerpt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 片段链接： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsFragmentLink {
-            get {
-                return ResourceManager.GetString("CopilotDocsFragmentLink", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 命中页面： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsHitPages {
-            get {
-                return ResourceManager.GetString("CopilotDocsHitPages", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 无法访问在线文档索引：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsIndexAccessError {
-            get {
-                return ResourceManager.GetString("CopilotDocsIndexAccessError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 在线文档索引为空，当前无法回答软件文档问题。 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsIndexEmpty {
-            get {
-                return ResourceManager.GetString("CopilotDocsIndexEmpty", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 在线文档索引格式无法识别：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsIndexFormatError {
-            get {
-                return ResourceManager.GetString("CopilotDocsIndexFormatError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 在线文档索引尚未发布，请确认 GitHub Pages 已完成最新部署。 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsIndexNotPublished {
-            get {
-                return ResourceManager.GetString("CopilotDocsIndexNotPublished", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 索引地址： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsIndexUrl {
-            get {
-                return ResourceManager.GetString("CopilotDocsIndexUrl", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [在线文档检索] 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsOnlineSearch {
-            get {
-                return ResourceManager.GetString("CopilotDocsOnlineSearch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 页面： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsPage {
-            get {
-                return ResourceManager.GetString("CopilotDocsPage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 页面链接： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsPageLink {
-            get {
-                return ResourceManager.GetString("CopilotDocsPageLink", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 查询： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsQuery {
-            get {
-                return ResourceManager.GetString("CopilotDocsQuery", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 源路径： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsSourcePath {
-            get {
-                return ResourceManager.GetString("CopilotDocsSourcePath", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 标题链： 的本地化字符串。
-        /// </summary>
-        public static string CopilotDocsTitleChain {
-            get {
-                return ResourceManager.GetString("CopilotDocsTitleChain", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 检测到同类异常重复 {0} 次，已合并到当前窗口。 的本地化字符串。
-        /// </summary>
-        public static string CopilotDuplicateException {
-            get {
-                return ResourceManager.GetString("CopilotDuplicateException", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 {0} 副本 的本地化字符串。
-        /// </summary>
-        public static string CopilotDuplicateProfile {
-            get {
-                return ResourceManager.GetString("CopilotDuplicateProfile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 输入要附加到当前会话的上下文说明 的本地化字符串。
-        /// </summary>
-        public static string CopilotEnterContextDescription {
-            get {
-                return ResourceManager.GetString("CopilotEnterContextDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 输入新的会话名称 的本地化字符串。
-        /// </summary>
-        public static string CopilotEnterNewName {
-            get {
-                return ResourceManager.GetString("CopilotEnterNewName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 输入要抓取并附加到当前会话的网页地址 的本地化字符串。
-        /// </summary>
-        public static string CopilotEnterWebPageUrl {
-            get {
-                return ResourceManager.GetString("CopilotEnterWebPageUrl", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 错误： 的本地化字符串。
-        /// </summary>
-        public static string CopilotError {
-            get {
-                return ResourceManager.GetString("CopilotError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 异常详情 的本地化字符串。
         /// </summary>
         public static string CopilotExceptionDetails {
             get {
                 return ResourceManager.GetString("CopilotExceptionDetails", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 异常详情已复制到剪贴板。 的本地化字符串。
-        /// </summary>
-        public static string CopilotExceptionDetailsCopied {
-            get {
-                return ResourceManager.GetString("CopilotExceptionDetailsCopied", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [异常详情] 的本地化字符串。
-        /// </summary>
-        public static string CopilotExceptionDetailsTag {
-            get {
-                return ResourceManager.GetString("CopilotExceptionDetailsTag", resourceCulture);
             }
         }
         
@@ -1069,29 +511,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 [异常] 的本地化字符串。
-        /// </summary>
-        public static string CopilotExceptionTag {
-            get {
-                return ResourceManager.GetString("CopilotExceptionTag", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 执行 Agent 的本地化字符串。
         /// </summary>
         public static string CopilotExecuteAgent {
             get {
                 return ResourceManager.GetString("CopilotExecuteAgent", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 执行过程： 的本地化字符串。
-        /// </summary>
-        public static string CopilotExecutionProcess {
-            get {
-                return ResourceManager.GetString("CopilotExecutionProcess", resourceCulture);
             }
         }
         
@@ -1105,173 +529,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 以下是用户显式附加的业务快照。它是在点击&quot;问 Copilot&quot;或手动附加时抓取的固定内容；回答时应优先基于这些快照分析。 的本地化字符串。
-        /// </summary>
-        public static string CopilotExplicitSnapshot {
-            get {
-                return ResourceManager.GetString("CopilotExplicitSnapshot", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 短时间内又捕获到 {0} 个额外异常，已合并到当前窗口。 的本地化字符串。
-        /// </summary>
-        public static string CopilotExtraExceptions {
-            get {
-                return ResourceManager.GetString("CopilotExtraExceptions", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 失败 的本地化字符串。
-        /// </summary>
-        public static string CopilotFailed {
-            get {
-                return ResourceManager.GetString("CopilotFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 抓取网页失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotFetchFailed {
-            get {
-                return ResourceManager.GetString("CopilotFetchFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [文件] {0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotFileAttachment {
-            get {
-                return ResourceManager.GetString("CopilotFileAttachment", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文件当前不存在，无法读取。 的本地化字符串。
-        /// </summary>
-        public static string CopilotFileNotExist {
-            get {
-                return ResourceManager.GetString("CopilotFileNotExist", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 读取失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotFileReadFailed {
-            get {
-                return ResourceManager.GetString("CopilotFileReadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ...&lt;已截断&gt; 的本地化字符串。
-        /// </summary>
-        public static string CopilotFileTruncated {
-            get {
-                return ResourceManager.GetString("CopilotFileTruncated", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [过滤关键字] {0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotFilterKeyword {
-            get {
-                return ResourceManager.GetString("CopilotFilterKeyword", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 首次来源： 的本地化字符串。
-        /// </summary>
-        public static string CopilotFirstSource {
-            get {
-                return ResourceManager.GetString("CopilotFirstSource", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Google 搜索 的本地化字符串。
         /// </summary>
         public static string CopilotGoogleSearch {
             get {
                 return ResourceManager.GetString("CopilotGoogleSearch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已在默认浏览器中打开 Google 搜索结果。 的本地化字符串。
-        /// </summary>
-        public static string CopilotGoogleSearchOpened {
-            get {
-                return ResourceManager.GetString("CopilotGoogleSearchOpened", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [图片] {0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotImageAttachment {
-            get {
-                return ResourceManager.GetString("CopilotImageAttachment", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 本地图片附件不存在：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotImageNotExist {
-            get {
-                return ResourceManager.GetString("CopilotImageNotExist", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 本地图片路径：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotImagePath {
-            get {
-                return ResourceManager.GetString("CopilotImagePath", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前版本会在界面显示图片预览，但不会自动把像素内容上传给模型。 的本地化字符串。
-        /// </summary>
-        public static string CopilotImagePreviewNote {
-            get {
-                return ResourceManager.GetString("CopilotImagePreviewNote", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 输入 tokens： 的本地化字符串。
-        /// </summary>
-        public static string CopilotInputTokens {
-            get {
-                return ResourceManager.GetString("CopilotInputTokens", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最近行数输入无效，已恢复为 {0} 行。 的本地化字符串。
-        /// </summary>
-        public static string CopilotInvalidLineCount {
-            get {
-                return ResourceManager.GetString("CopilotInvalidLineCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 网页地址格式不正确。 的本地化字符串。
-        /// </summary>
-        public static string CopilotInvalidUrl {
-            get {
-                return ResourceManager.GetString("CopilotInvalidUrl", resourceCulture);
             }
         }
         
@@ -1285,65 +547,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 最近一次：输入 {0} · 输出 {1} · 总计 {2} 的本地化字符串。
-        /// </summary>
-        public static string CopilotLatestRequest {
-            get {
-                return ResourceManager.GetString("CopilotLatestRequest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 行 的本地化字符串。
         /// </summary>
         public static string CopilotLines {
             get {
                 return ResourceManager.GetString("CopilotLines", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 说明：当前面板不再做本地预估，只显示接口真实返回的 usage。最近一次请求没有返回 usage 字段，所以这里没有可显示的输入/输出 token。 的本地化字符串。
-        /// </summary>
-        public static string CopilotLocalEstimateNote {
-            get {
-                return ResourceManager.GetString("CopilotLocalEstimateNote", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前不再做本地预估，只显示接口真实返回的 token usage。 的本地化字符串。
-        /// </summary>
-        public static string CopilotLocalEstimateRemoved {
-            get {
-                return ResourceManager.GetString("CopilotLocalEstimateRemoved", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [本地网页上下文注入] 的本地化字符串。
-        /// </summary>
-        public static string CopilotLocalWebPageContext {
-            get {
-                return ResourceManager.GetString("CopilotLocalWebPageContext", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 位置： 的本地化字符串。
-        /// </summary>
-        public static string CopilotLocation {
-            get {
-                return ResourceManager.GetString("CopilotLocation", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 日志文件： 的本地化字符串。
-        /// </summary>
-        public static string CopilotLogFile {
-            get {
-                return ResourceManager.GetString("CopilotLogFile", resourceCulture);
             }
         }
         
@@ -1357,65 +565,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 消息： 的本地化字符串。
-        /// </summary>
-        public static string CopilotMessage {
-            get {
-                return ResourceManager.GetString("CopilotMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 模型 的本地化字符串。
         /// </summary>
         public static string CopilotModel {
             get {
                 return ResourceManager.GetString("CopilotModel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 模式： 的本地化字符串。
-        /// </summary>
-        public static string CopilotModeLabel {
-            get {
-                return ResourceManager.GetString("CopilotModeLabel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 可同时保存多个模型配置；保存后，右侧 AI 面板会直接使用这里的模型列表。 的本地化字符串。
-        /// </summary>
-        public static string CopilotModelConfigDescription {
-            get {
-                return ResourceManager.GetString("CopilotModelConfigDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 模型： 的本地化字符串。
-        /// </summary>
-        public static string CopilotModelLabel {
-            get {
-                return ResourceManager.GetString("CopilotModelLabel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 挂载上下文 的本地化字符串。
-        /// </summary>
-        public static string CopilotMountContext {
-            get {
-                return ResourceManager.GetString("CopilotMountContext", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 挂载网页 的本地化字符串。
-        /// </summary>
-        public static string CopilotMountWebPage {
-            get {
-                return ResourceManager.GetString("CopilotMountWebPage", resourceCulture);
             }
         }
         
@@ -1438,209 +592,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 接口返回成功，但没有可显示的文本。 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoDisplayText {
-            get {
-                return ResourceManager.GetString("CopilotNoDisplayText", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 未提供异常消息 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoExceptionMessage {
-            get {
-                return ResourceManager.GetString("CopilotNoExceptionMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 未收到最终回答，只拿到了执行过程或推理内容。 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoFinalAnswer {
-            get {
-                return ResourceManager.GetString("CopilotNoFinalAnswer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 剪贴板里没有可挂载的图片。 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoImageInClipboard {
-            get {
-                return ResourceManager.GetString("CopilotNoImageInClipboard", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前环境没有发现可读取的日志文件。 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoLogFile {
-            get {
-                return ResourceManager.GetString("CopilotNoLogFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 未选择模型 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoModelSelected {
-            get {
-                return ResourceManager.GetString("CopilotNoModelSelected", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 未找到最近日志。 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoRecentLog {
-            get {
-                return ResourceManager.GetString("CopilotNoRecentLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前异常没有可搜索的关键词。 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoSearchKeyword {
-            get {
-                return ResourceManager.GetString("CopilotNoSearchKeyword", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 没有可发送的异常内容。 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoSendableContent {
-            get {
-                return ResourceManager.GetString("CopilotNoSendableContent", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最近一次请求未返回 token usage 的本地化字符串。
-        /// </summary>
-        public static string CopilotNoTokenUsage {
-            get {
-                return ResourceManager.GetString("CopilotNoTokenUsage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ...&lt;观察内容已截断&gt; 的本地化字符串。
-        /// </summary>
-        public static string CopilotObservationTruncated {
-            get {
-                return ResourceManager.GetString("CopilotObservationTruncated", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 发生时间： 的本地化字符串。
-        /// </summary>
-        public static string CopilotOccurredTime {
-            get {
-                return ResourceManager.GetString("CopilotOccurredTime", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开 AI 对话面板 的本地化字符串。
-        /// </summary>
-        public static string CopilotOpenAiPanel {
-            get {
-                return ResourceManager.GetString("CopilotOpenAiPanel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 输出 tokens： 的本地化字符串。
-        /// </summary>
-        public static string CopilotOutputTokens {
-            get {
-                return ResourceManager.GetString("CopilotOutputTokens", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 粘贴图片 的本地化字符串。
         /// </summary>
         public static string CopilotPasteImage {
             get {
                 return ResourceManager.GetString("CopilotPasteImage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 粘贴图片失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotPasteImageFailed {
-            get {
-                return ResourceManager.GetString("CopilotPasteImageFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 粘贴图片 {0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotPasteImageTitle {
-            get {
-                return ResourceManager.GetString("CopilotPasteImageTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 规划器判断当前上下文已足够。 的本地化字符串。
-        /// </summary>
-        public static string CopilotPlannerContextSufficient {
-            get {
-                return ResourceManager.GetString("CopilotPlannerContextSufficient", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 优先执行 {0} 获取缺失信息。 的本地化字符串。
-        /// </summary>
-        public static string CopilotPlannerExecuteTool {
-            get {
-                return ResourceManager.GetString("CopilotPlannerExecuteTool", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 规划器没有返回可解析 JSON，回退到默认工具选择。 的本地化字符串。
-        /// </summary>
-        public static string CopilotPlannerFallback {
-            get {
-                return ResourceManager.GetString("CopilotPlannerFallback", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前没有可用工具。 的本地化字符串。
-        /// </summary>
-        public static string CopilotPlannerNoTools {
-            get {
-                return ResourceManager.GetString("CopilotPlannerNoTools", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 规划器输出无法识别，回退到默认工具选择。 的本地化字符串。
-        /// </summary>
-        public static string CopilotPlannerOutputUnrecognized {
-            get {
-                return ResourceManager.GetString("CopilotPlannerOutputUnrecognized", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 规划器选择了未知工具 {0}，回退到默认工具选择。 的本地化字符串。
-        /// </summary>
-        public static string CopilotPlannerUnknownTool {
-            get {
-                return ResourceManager.GetString("CopilotPlannerUnknownTool", resourceCulture);
             }
         }
         
@@ -1654,74 +610,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 读取最近日志失败。 的本地化字符串。
-        /// </summary>
-        public static string CopilotReadLogFailed {
-            get {
-                return ResourceManager.GetString("CopilotReadLogFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已读取最近日志：{0}，按关键字 {1} 命中 {2} 行。 的本地化字符串。
-        /// </summary>
-        public static string CopilotReadRecentLog {
-            get {
-                return ResourceManager.GetString("CopilotReadRecentLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已读取当日日志：{0}，按关键字 {1} 命中 {2} 行。 的本地化字符串。
-        /// </summary>
-        public static string CopilotReadTodayLog {
-            get {
-                return ResourceManager.GetString("CopilotReadTodayLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 说明：这里显示的是接口真实返回的最近一次请求 usage。 的本地化字符串。
-        /// </summary>
-        public static string CopilotRealUsageNote {
-            get {
-                return ResourceManager.GetString("CopilotRealUsageNote", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 推理： 的本地化字符串。
-        /// </summary>
-        public static string CopilotReasoning {
-            get {
-                return ResourceManager.GetString("CopilotReasoning", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 最近日志 的本地化字符串。
         /// </summary>
         public static string CopilotRecentLogs {
             get {
                 return ResourceManager.GetString("CopilotRecentLogs", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [最近日志] 的本地化字符串。
-        /// </summary>
-        public static string CopilotRecentLogsTag {
-            get {
-                return ResourceManager.GetString("CopilotRecentLogsTag", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已读取最近日志：{0}，保留最近 {1} 行中的 {2} 行。 的本地化字符串。
-        /// </summary>
-        public static string CopilotRecentLogSummary {
-            get {
-                return ResourceManager.GetString("CopilotRecentLogSummary", resourceCulture);
             }
         }
         
@@ -1762,65 +655,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 重命名会话 的本地化字符串。
-        /// </summary>
-        public static string CopilotRenameConversation {
-            get {
-                return ResourceManager.GetString("CopilotRenameConversation", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 重复：{0} 次 的本地化字符串。
-        /// </summary>
-        public static string CopilotRepeatCount {
-            get {
-                return ResourceManager.GetString("CopilotRepeatCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已取消当前回复。 的本地化字符串。
-        /// </summary>
-        public static string CopilotReplyCancelled {
-            get {
-                return ResourceManager.GetString("CopilotReplyCancelled", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请求失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotRequestFailed {
-            get {
-                return ResourceManager.GetString("CopilotRequestFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 结果： 的本地化字符串。
-        /// </summary>
-        public static string CopilotResult {
-            get {
-                return ResourceManager.GetString("CopilotResult", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 重试 的本地化字符串。
         /// </summary>
         public static string CopilotRetry {
             get {
                 return ResourceManager.GetString("CopilotRetry", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 复用上次执行得到的上下文，未重新调用工具。 的本地化字符串。
-        /// </summary>
-        public static string CopilotReusedContext {
-            get {
-                return ResourceManager.GetString("CopilotReusedContext", resourceCulture);
             }
         }
         
@@ -1834,65 +673,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 请选择或配置模型后再发送。当前面板只显示接口真实返回的 token usage。 的本地化字符串。
-        /// </summary>
-        public static string CopilotSelectModelFirst {
-            get {
-                return ResourceManager.GetString("CopilotSelectModelFirst", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 发送 的本地化字符串。
         /// </summary>
         public static string CopilotSend {
             get {
                 return ResourceManager.GetString("CopilotSend", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 发送到 AI 失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotSendToAiFailed {
-            get {
-                return ResourceManager.GetString("CopilotSendToAiFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 说明：发送后如果接口返回 usage 字段，这里会显示真实的输入、输出和总计 tokens。 的本地化字符串。
-        /// </summary>
-        public static string CopilotSendToSeeUsage {
-            get {
-                return ResourceManager.GetString("CopilotSendToSeeUsage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已发送到主界面的 AI 视图。 的本地化字符串。
-        /// </summary>
-        public static string CopilotSentToAiView {
-            get {
-                return ResourceManager.GetString("CopilotSentToAiView", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 支持厂商预设、模型预设和手动地址输入；右侧 AI 面板发送前可直接切换模型。 的本地化字符串。
-        /// </summary>
-        public static string CopilotSettingsHint {
-            get {
-                return ResourceManager.GetString("CopilotSettingsHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 来源： 的本地化字符串。
-        /// </summary>
-        public static string CopilotSource {
-            get {
-                return ResourceManager.GetString("CopilotSource", resourceCulture);
             }
         }
         
@@ -1906,56 +691,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 堆栈： 的本地化字符串。
-        /// </summary>
-        public static string CopilotStack {
-            get {
-                return ResourceManager.GetString("CopilotStack", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 状态： 的本地化字符串。
-        /// </summary>
-        public static string CopilotStatus {
-            get {
-                return ResourceManager.GetString("CopilotStatus", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 停止生成 的本地化字符串。
         /// </summary>
         public static string CopilotStopGeneration {
             get {
                 return ResourceManager.GetString("CopilotStopGeneration", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 成功 的本地化字符串。
-        /// </summary>
-        public static string CopilotSuccess {
-            get {
-                return ResourceManager.GetString("CopilotSuccess", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 摘要： 的本地化字符串。
-        /// </summary>
-        public static string CopilotSummary {
-            get {
-                return ResourceManager.GetString("CopilotSummary", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [补充说明] {0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotSupplementaryNote {
-            get {
-                return ResourceManager.GetString("CopilotSupplementaryNote", resourceCulture);
             }
         }
         
@@ -1978,65 +718,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 你是会话标题生成器。请根据给定对话生成一个简短、自然的中文标题。只返回标题本身，不要解释。 的本地化字符串。
-        /// </summary>
-        public static string CopilotTitleGeneratorPrompt {
-            get {
-                return ResourceManager.GetString("CopilotTitleGeneratorPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 标题 的本地化字符串。
-        /// </summary>
-        public static string CopilotTitlePrefix {
-            get {
-                return ResourceManager.GetString("CopilotTitlePrefix", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请为下面这段对话生成一个简短中文会话标题。 的本地化字符串。
-        /// </summary>
-        public static string CopilotTitlePrompt {
-            get {
-                return ResourceManager.GetString("CopilotTitlePrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 要求：6 到 14 个字，直接返回标题，不要解释，不要引号，不要句号。 的本地化字符串。
-        /// </summary>
-        public static string CopilotTitleRequirements {
-            get {
-                return ResourceManager.GetString("CopilotTitleRequirements", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 当日日志 的本地化字符串。
         /// </summary>
         public static string CopilotTodayLog {
             get {
                 return ResourceManager.GetString("CopilotTodayLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已读取当日日志：{0}，共 {1} 行。 的本地化字符串。
-        /// </summary>
-        public static string CopilotTodayLogSummary {
-            get {
-                return ResourceManager.GetString("CopilotTodayLogSummary", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 发送后显示真实 token usage 的本地化字符串。
-        /// </summary>
-        public static string CopilotTokenUsageAfterSend {
-            get {
-                return ResourceManager.GetString("CopilotTokenUsageAfterSend", resourceCulture);
             }
         }
         
@@ -2050,38 +736,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 总计 tokens： 的本地化字符串。
-        /// </summary>
-        public static string CopilotTotalTokens {
-            get {
-                return ResourceManager.GetString("CopilotTotalTokens", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 类型： 的本地化字符串。
-        /// </summary>
-        public static string CopilotType {
-            get {
-                return ResourceManager.GetString("CopilotType", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 ColorVision 捕获到未处理异常 的本地化字符串。
         /// </summary>
         public static string CopilotUnhandledException {
             get {
                 return ResourceManager.GetString("CopilotUnhandledException", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 未命名模型 的本地化字符串。
-        /// </summary>
-        public static string CopilotUnnamedModel {
-            get {
-                return ResourceManager.GetString("CopilotUnnamedModel", resourceCulture);
             }
         }
         
@@ -2095,74 +754,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 用户： 的本地化字符串。
-        /// </summary>
-        public static string CopilotUserPrefix {
-            get {
-                return ResourceManager.GetString("CopilotUserPrefix", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 厂商 的本地化字符串。
         /// </summary>
         public static string CopilotVendor {
             get {
                 return ResourceManager.GetString("CopilotVendor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 先选厂商再添加；右侧仍可继续修改兼容性、地址、模型和系统提示词。 的本地化字符串。
-        /// </summary>
-        public static string CopilotVendorHint {
-            get {
-                return ResourceManager.GetString("CopilotVendorHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 正在等待接口返回真实 token usage... 的本地化字符串。
-        /// </summary>
-        public static string CopilotWaitingTokenUsage {
-            get {
-                return ResourceManager.GetString("CopilotWaitingTokenUsage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 [网页] {0} 的本地化字符串。
-        /// </summary>
-        public static string CopilotWebPageAttachment {
-            get {
-                return ResourceManager.GetString("CopilotWebPageAttachment", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 以下网页内容由本地程序在发送前实际抓取。你必须只基于这些抓取结果回答网页问题，不要再说无法浏览互联网；如果抓取失败，或抓取内容里没有相关信息，必须明确说明无法基于真实网页内容完成分析，不能假设网页包含未抓取到的信息。 的本地化字符串。
-        /// </summary>
-        public static string CopilotWebPageContextInstruction {
-            get {
-                return ResourceManager.GetString("CopilotWebPageContextInstruction", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ...&lt;网页上下文已截断&gt; 的本地化字符串。
-        /// </summary>
-        public static string CopilotWebPageContextTruncated {
-            get {
-                return ResourceManager.GetString("CopilotWebPageContextTruncated", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 以上仅是当前业务窗口的轻量摘要；若当前会话同时挂载了显式快照，请优先结合该快照回答。 的本地化字符串。
-        /// </summary>
-        public static string CopilotWindowContextNote {
-            get {
-                return ResourceManager.GetString("CopilotWindowContextNote", resourceCulture);
             }
         }
         
@@ -2176,29 +772,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 当前速度： 的本地化字符串。
-        /// </summary>
-        public static string CurrentSpeed {
-            get {
-                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 当前版本已经是最新版本 的本地化字符串。
         /// </summary>
         public static string CurrentVersionIsUpToDate {
             get {
                 return ResourceManager.GetString("CurrentVersionIsUpToDate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 数据视图 的本地化字符串。
-        /// </summary>
-        public static string DataView {
-            get {
-                return ResourceManager.GetString("DataView", resourceCulture);
             }
         }
         
@@ -2392,56 +970,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 下载BeyondCompare 的本地化字符串。
-        /// </summary>
-        public static string DownLoadBeyondCompare {
-            get {
-                return ResourceManager.GetString("DownLoadBeyondCompare", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下载已取消 的本地化字符串。
-        /// </summary>
-        public static string DownloadCancelled {
-            get {
-                return ResourceManager.GetString("DownloadCancelled", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 本地下载 的本地化字符串。
         /// </summary>
         public static string DownloadLocal {
             get {
                 return ResourceManager.GetString("DownloadLocal", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 转储文件设置 的本地化字符串。
-        /// </summary>
-        public static string DumpFileSettings {
-            get {
-                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 用时 的本地化字符串。
-        /// </summary>
-        public static string Duration {
-            get {
-                return ResourceManager.GetString("Duration", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 发生错误 的本地化字符串。
-        /// </summary>
-        public static string ErrorOccurred {
-            get {
-                return ResourceManager.GetString("ErrorOccurred", resourceCulture);
             }
         }
         
@@ -2491,15 +1024,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 加载 的本地化字符串。
-        /// </summary>
-        public static string Loading {
-            get {
-                return ResourceManager.GetString("Loading", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 日志 的本地化字符串。
         /// </summary>
         public static string Log {
@@ -2545,33 +1069,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 检查更新(_U) 的本地化字符串。
-        /// </summary>
-        public static string MenuUpdate {
-            get {
-                return ResourceManager.GetString("MenuUpdate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 重新安装当前版本 的本地化字符串。
-        /// </summary>
-        public static string MenuUpdateReInstall_重新安装当前版本 {
-            get {
-                return ResourceManager.GetString("MenuUpdateReInstall_重新安装当前版本", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 侧边栏 的本地化字符串。
-        /// </summary>
-        public static string MenuViewSidebar {
-            get {
-                return ResourceManager.GetString("MenuViewSidebar", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 状态栏 的本地化字符串。
         /// </summary>
         public static string MenuViewStatusBar {
@@ -2608,33 +1105,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开BeyondCompare 的本地化字符串。
-        /// </summary>
-        public static string OpenBeyondCompare {
-            get {
-                return ResourceManager.GetString("OpenBeyondCompare", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开缓存文件夹 的本地化字符串。
-        /// </summary>
-        public static string OpenCacheFolder {
-            get {
-                return ResourceManager.GetString("OpenCacheFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开配置文件夹 的本地化字符串。
-        /// </summary>
-        public static string OpenConfigFolder {
-            get {
-                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 系统默认打开 的本地化字符串。
         /// </summary>
         public static string OpenWithSystemDefault {
@@ -2649,15 +1119,6 @@ namespace ColorVision.Properties {
         public static string PluginLoadFailedPrompt {
             get {
                 return ResourceManager.GetString("PluginLoadFailedPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 工程 的本地化字符串。
-        /// </summary>
-        public static string Project {
-            get {
-                return ResourceManager.GetString("Project", resourceCulture);
             }
         }
         
@@ -2725,29 +1186,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 回退软件需要先卸载在安装，或者是安装后重新运行安装包； 的本地化字符串。
-        /// </summary>
-        public static string RollbackRequiresUninstallThenInstallOrRerunPackage {
-            get {
-                return ResourceManager.GetString("RollbackRequiresUninstallThenInstallOrRerunPackage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 保存 的本地化字符串。
         /// </summary>
         public static string Save {
             get {
                 return ResourceManager.GetString("Save", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保存配置 的本地化字符串。
-        /// </summary>
-        public static string SaveConfiguration {
-            get {
-                return ResourceManager.GetString("SaveConfiguration", resourceCulture);
             }
         }
         
@@ -2761,29 +1204,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 服务协议 的本地化字符串。
-        /// </summary>
-        public static string ServiceAgreement {
-            get {
-                return ResourceManager.GetString("ServiceAgreement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 未找到 Shell Extension:\n{0} 的本地化字符串。
         /// </summary>
         public static string ShellExtensionNotFound {
             get {
                 return ResourceManager.GetString("ShellExtensionNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 软件版本 的本地化字符串。
-        /// </summary>
-        public static string SoftwareVersion {
-            get {
-                return ResourceManager.GetString("SoftwareVersion", resourceCulture);
             }
         }
         
@@ -2802,33 +1227,6 @@ namespace ColorVision.Properties {
         public static string SolutionExplorer {
             get {
                 return ResourceManager.GetString("SolutionExplorer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 恢复上次退出时窗口的大小和位置 的本地化字符串。
-        /// </summary>
-        public static string StartRecoverUILayout {
-            get {
-                return ResourceManager.GetString("StartRecoverUILayout", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启动时恢复主窗口上次关闭前的位置和尺寸。 的本地化字符串。
-        /// </summary>
-        public static string StartRecoverUILayoutDescription {
-            get {
-                return ResourceManager.GetString("StartRecoverUILayoutDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 步骤 的本地化字符串。
-        /// </summary>
-        public static string Step {
-            get {
-                return ResourceManager.GetString("Step", resourceCulture);
             }
         }
         
@@ -2865,15 +1263,6 @@ namespace ColorVision.Properties {
         public static string ThumbnailUnregistered {
             get {
                 return ResourceManager.GetString("ThumbnailUnregistered", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 剩余时间： 的本地化字符串。
-        /// </summary>
-        public static string TimeLeft {
-            get {
-                return ResourceManager.GetString("TimeLeft", resourceCulture);
             }
         }
         
@@ -2923,173 +1312,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 当前版本 的本地化字符串。
-        /// </summary>
-        public static string UpdateCurrentVersion {
-            get {
-                return ResourceManager.GetString("UpdateCurrentVersion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前版本： 的本地化字符串。
-        /// </summary>
-        public static string UpdateCurrentVersionLabel {
-            get {
-                return ResourceManager.GetString("UpdateCurrentVersionLabel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 执行方式：下载完整安装包，按原来的主体更新流程安装。\n插件不参与本次自动更新。 的本地化字符串。
-        /// </summary>
-        public static string UpdateExecutionFull {
-            get {
-                return ResourceManager.GetString("UpdateExecutionFull", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 执行方式：主体增量包与插件包会先全部下载，再一次性覆盖更新。 的本地化字符串。
-        /// </summary>
-        public static string UpdateExecutionIncremental {
-            get {
-                return ResourceManager.GetString("UpdateExecutionIncremental", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 更新失败 的本地化字符串。
         /// </summary>
         public static string UpdateFailed {
             get {
                 return ResourceManager.GetString("UpdateFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 主体完整更新 的本地化字符串。
-        /// </summary>
-        public static string UpdateFullApplicationUpdate {
-            get {
-                return ResourceManager.GetString("UpdateFullApplicationUpdate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 完整安装包 的本地化字符串。
-        /// </summary>
-        public static string UpdateFullPackage {
-            get {
-                return ResourceManager.GetString("UpdateFullPackage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 宿主要求 的本地化字符串。
-        /// </summary>
-        public static string UpdateHostRequirement {
-            get {
-                return ResourceManager.GetString("UpdateHostRequirement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 宿主要求： 的本地化字符串。
-        /// </summary>
-        public static string UpdateHostRequirementLabel {
-            get {
-                return ResourceManager.GetString("UpdateHostRequirementLabel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 增量链：{0} 的本地化字符串。
-        /// </summary>
-        public static string UpdateIncrementalChain {
-            get {
-                return ResourceManager.GetString("UpdateIncrementalChain", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 主体增量包 的本地化字符串。
-        /// </summary>
-        public static string UpdateIncrementalPackage {
-            get {
-                return ResourceManager.GetString("UpdateIncrementalPackage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 更新方式 的本地化字符串。
-        /// </summary>
-        public static string UpdateMethod {
-            get {
-                return ResourceManager.GetString("UpdateMethod", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 更新说明： 的本地化字符串。
-        /// </summary>
-        public static string UpdateNotes {
-            get {
-                return ResourceManager.GetString("UpdateNotes", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 更新包数 的本地化字符串。
-        /// </summary>
-        public static string UpdatePackageCount {
-            get {
-                return ResourceManager.GetString("UpdatePackageCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件： 的本地化字符串。
-        /// </summary>
-        public static string UpdatePlugin {
-            get {
-                return ResourceManager.GetString("UpdatePlugin", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 等 {0} 个插件 的本地化字符串。
-        /// </summary>
-        public static string UpdatePluginCount {
-            get {
-                return ResourceManager.GetString("UpdatePluginCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件说明： 的本地化字符串。
-        /// </summary>
-        public static string UpdatePluginDescription {
-            get {
-                return ResourceManager.GetString("UpdatePluginDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件 ID 的本地化字符串。
-        /// </summary>
-        public static string UpdatePluginId {
-            get {
-                return ResourceManager.GetString("UpdatePluginId", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件 ID： 的本地化字符串。
-        /// </summary>
-        public static string UpdatePluginIdLabel {
-            get {
-                return ResourceManager.GetString("UpdatePluginIdLabel", resourceCulture);
             }
         }
         
@@ -3148,11 +1375,47 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 程序备份 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationSnapshotsLink {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationSnapshotsLink", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 主程序更新 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewApplicationUpdateCategory {
             get {
                 return ResourceManager.GetString("UpdatePreviewApplicationUpdateCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 完整安装包 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationUpdateModeFull {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationUpdateModeFull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 增量更新 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationUpdateModeIncremental {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationUpdateModeIncremental", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更新方式 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewApplicationUpdateModeLabel {
+            get {
+                return ResourceManager.GetString("UpdatePreviewApplicationUpdateModeLabel", resourceCulture);
             }
         }
         
@@ -3292,20 +1555,20 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 主程序版本 {0} 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewHostVersionFormat {
-            get {
-                return ResourceManager.GetString("UpdatePreviewHostVersionFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 主程序版本 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewHostVersionLabel {
             get {
                 return ResourceManager.GetString("UpdatePreviewHostVersionLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建备份 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewIncrementalBackupOption {
+            get {
+                return ResourceManager.GetString("UpdatePreviewIncrementalBackupOption", resourceCulture);
             }
         }
         
@@ -3364,6 +1627,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 完整安装包更新时，本轮不合并插件更新。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewPluginDeferredByFullApplicationUpdate {
+            get {
+                return ResourceManager.GetString("UpdatePreviewPluginDeferredByFullApplicationUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 插件下载未成功完成，请稍后重试。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewPluginDownloadFailed {
@@ -3409,11 +1681,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 包含主程序更新 的本地化字符串。
+        ///   查找类似 本轮不合并插件更新 的本地化字符串。
         /// </summary>
-        public static string UpdatePreviewSelectionIncludesApplication {
+        public static string UpdatePreviewSelectionDefersPluginUpdates {
             get {
-                return ResourceManager.GetString("UpdatePreviewSelectionIncludesApplication", resourceCulture);
+                return ResourceManager.GetString("UpdatePreviewSelectionDefersPluginUpdates", resourceCulture);
             }
         }
         
@@ -3535,65 +1807,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 更新范围 的本地化字符串。
-        /// </summary>
-        public static string UpdateScope {
-            get {
-                return ResourceManager.GetString("UpdateScope", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 目标版本 的本地化字符串。
-        /// </summary>
-        public static string UpdateTargetVersion {
-            get {
-                return ResourceManager.GetString("UpdateTargetVersion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 目标版本： 的本地化字符串。
-        /// </summary>
-        public static string UpdateTargetVersionLabel {
-            get {
-                return ResourceManager.GetString("UpdateTargetVersionLabel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 未命名插件 的本地化字符串。
         /// </summary>
         public static string UpdateUnnamedPlugin {
             get {
                 return ResourceManager.GetString("UpdateUnnamedPlugin", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 版本说明： 的本地化字符串。
-        /// </summary>
-        public static string UpdateVersionNotes {
-            get {
-                return ResourceManager.GetString("UpdateVersionNotes", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 升级 的本地化字符串。
-        /// </summary>
-        public static string Upgrade {
-            get {
-                return ResourceManager.GetString("Upgrade", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 上传文件 的本地化字符串。
-        /// </summary>
-        public static string UploadFile {
-            get {
-                return ResourceManager.GetString("UploadFile", resourceCulture);
             }
         }
         

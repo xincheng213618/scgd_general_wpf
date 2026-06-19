@@ -1,4 +1,4 @@
-#pragma warning disable CS8602
+#pragma warning disable CA1822,CA1863,CS8602
 using ColorVision.UI;
 using ColorVision.UI.Desktop;
 using log4net;

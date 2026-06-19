@@ -144,6 +144,35 @@ That layer handles:
 
 Therefore, if you only read FlowEngineLib without looking at the template layer, you would know "how to run" but not "who triggers it to run in the main program."
 
+## Flow Handoff Acceptance
+
+When taking over `FlowEngineLib`, the key is not memorizing node class names. The important proof is that canvas loading, service binding, start, node forwarding, and finished event closure all work.
+
+| Acceptance item | What to inspect | Pass condition |
+| --- | --- | --- |
+| Target frameworks and dependencies | `FlowEngineLib.csproj`, `ST.Library.UI`, `MQTTnet`, `Newtonsoft.Json`, `CsvHelper` | Both net8 and net10 build; node editor and MQTT/JSON dependencies load. |
+| Canvas loading | `FlowEngineControl.LoadFromBase64`, `LoadFromFile`, `loadedCanvas` | Base64 or file data loads nodes, and the same canvas is not loaded repeatedly. |
+| Node discovery | `NodeEditor_NodeAdded`, `BaseStartNode`, `CVBaseServerNode` | Start nodes enter `startNodeNames`; service nodes enter `services` and sync to `FlowNodeManager`. |
+| Service binding | `FlowNodeManager.UpdateDevice`, `FlowServiceManager.AddMQTTService` | Incoming `MQTTServiceInfo` values bind to service nodes. |
+| Start chain | `StartNode(...)`, `BaseStartNode.Start`, `CVStartCFC` | A serial number starts the correct start node and `IsRunning` state is correct. |
+| Node parameters | `CVBaseServerNode`, `AlgorithmNode.getBaseEventData(...)` | Template, image, color, POI, SMU, and related parameters enter request data. |
+| Finish chain | `CVEndNode`, `CVStartCFC.FireFinished()`, `BaseStartNode.Finished`, `FlowEngineControl.Finished` | Flow completion emits serial number, status, elapsed time, and message. |
+| Stop and cleanup | `StopNode(...)`, `FlowClear()`, event detachment | `_IsRunning` resets after stop and reloading does not stack old events. |
+| Host bridge | `ColorVision.Engine/Templates/Flow/DisplayFlow.xaml.cs` | The main program connects templates, service lists, and run buttons to FlowEngineLib. |
+
+## Field First Checks
+
+| Symptom | Check first | Judgement point |
+| --- | --- | --- |
+| Base64 flow loads but has no nodes | Empty Base64, `NodeEditor.LoadCanvas(rawData)`, node type availability | Confirm canvas data and node assemblies before suspecting business parameters. |
+| Opening the same flow again does not change anything | `loadedCanvas` MD5 cache | Identical raw data returns directly by current deduplication logic. |
+| Start button is clicked but flow does not run | `GetStartNodeName()`, `startNodeNames`, `BaseStartNode.Ready` | No start node or `Ready=false` means startup does not actually happen. |
+| Service node has no device | `FlowNodeManager.UpdateDevice`, incoming `MQTTServiceInfo`, node `NodeType` | Node type must match the type in the service list. |
+| Node executed but flow never finishes | Whether `CVEndNode` is connected, `CVStartCFC.IsFinished`, `FireFinished()` | Arbitrary node completion is not flow completion; it must reach the End-node chain. |
+| `Finished` fires repeatedly | Whether `clear()` detaches `BaseStartNode.Finished`, repeated NodeEditor attachment | Check for leftover canvases or old event subscriptions. |
+| Project package receives no Flow result | `FlowEngineControl.Finished`, host `FlowCompleted` subscription | FlowEngineLib only emits a generic event; project mapping lives in the host or project package. |
+| Node parameters differ from UI selection | `Templates/Flow/NodeConfigurator/`, node property objects | FlowEngineLib nodes store execution fields; host configurators write UI choices into them. |
+
 ## Most Common Mistakes to Avoid
 
 ### It Is Not the Complete Code for a Host-Level Workflow System

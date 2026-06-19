@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
+  <!--
 		Microsoft ResX Schema
 
 		Version 1.3
 
-		The primary goals of this format is to allow a simple XML format 
-		that is mostly human readable. The generation and parsing of the 
-		various data types are done through the TypeConverter classes 
+		The primary goals of this format is to allow a simple XML format
+		that is mostly human readable. The generation and parsing of the
+		various data types are done through the TypeConverter classes
 		associated with the data types.
 
 		Example:
@@ -26,35 +26,35 @@
 			[base64 mime encoded string representing a byte array form of the .NET Framework object]
 		</data>
 
-		There are any number of "resheader" rows that contain simple 
+		There are any number of "resheader" rows that contain simple
 		name/value pairs.
 
-		Each data row contains a name, and value. The row also contains a 
-		type or mimetype. Type corresponds to a .NET class that support 
-		text/value conversion through the TypeConverter architecture. 
-		Classes that don't support this are serialized and stored with the 
+		Each data row contains a name, and value. The row also contains a
+		type or mimetype. Type corresponds to a .NET class that support
+		text/value conversion through the TypeConverter architecture.
+		Classes that don't support this are serialized and stored with the
 		mimetype set.
 
-		The mimetype is used for serialized objects, and tells the 
-		ResXResourceReader how to depersist the object. This is currently not 
+		The mimetype is used for serialized objects, and tells the
+		ResXResourceReader how to depersist the object. This is currently not
 		extensible. For a given mimetype the value must be set accordingly:
 
-		Note - application/x-microsoft.net.object.binary.base64 is the format 
-		that the ResXResourceWriter will generate, however the reader can 
+		Note - application/x-microsoft.net.object.binary.base64 is the format
+		that the ResXResourceWriter will generate, however the reader can
 		read any of the formats listed below.
 
 		mimetype: application/x-microsoft.net.object.binary.base64
-		value   : The object must be serialized with 
+		value   : The object must be serialized with
 			: System.Serialization.Formatters.Binary.BinaryFormatter
 			: and then encoded with base64 encoding.
 
 		mimetype: application/x-microsoft.net.object.soap.base64
-		value   : The object must be serialized with 
+		value   : The object must be serialized with
 			: System.Runtime.Serialization.Formatters.Soap.SoapFormatter
 			: and then encoded with base64 encoding.
 
 		mimetype: application/x-microsoft.net.object.bytearray.base64
-		value   : The object must be serialized into a byte array 
+		value   : The object must be serialized into a byte array
 			: using a System.ComponentModel.TypeConverter
 			: and then encoded with base64 encoding.
 	-->
@@ -135,15 +135,8 @@
   </data>
   <data name="ImportSettings" xml:space="preserve">
     <value>导入设置</value>
-  </data>
-  <data name="OpenStore" xml:space="preserve">
-    <value>访问仓库</value>
-  </data>
-  <data name="InstallPackage" xml:space="preserve">
+  </data>  <data name="InstallPackage" xml:space="preserve">
     <value>安装包</value>
-  </data>
-  <data name="OpenViewDllViersion" xml:space="preserve">
-    <value>DLL版本</value>
   </data>
   <data name="Restart" xml:space="preserve">
     <value>重启</value>
@@ -168,254 +161,42 @@
   </data>
   <data name="Install" xml:space="preserve">
     <value>安装</value>
-  </data>
-  <data name="SortByColumn" xml:space="preserve">
-    <value>按 {0} 排序</value>
-  </data>
-  <data name="zh-Hant" xml:space="preserve">
+  </data>  <data name="zh-Hant" xml:space="preserve">
     <value>繁體中文（繁体中文）</value>
   </data>
   <data name="zh-Hans" xml:space="preserve">
     <value>简体中文</value>
-  </data>
-  <data name="WriteConfigFileFailed" xml:space="preserve">
-    <value>写入配置文件 {0} 失败</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>独立窗口</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>隐藏</value>
-  </data>
-  <data name="ViewMode9" xml:space="preserve">
-    <value>视图模式9</value>
-  </data>
-  <data name="ViewMode4" xml:space="preserve">
-    <value>视图模式4</value>
-  </data>
-  <data name="ViewMode2" xml:space="preserve">
-    <value>视图模式2</value>
-  </data>
-  <data name="ViewMode1" xml:space="preserve">
-    <value>视图模式1</value>
-  </data>
-  <data name="Version" xml:space="preserve">
+  </data>  <data name="Version" xml:space="preserve">
     <value>版本</value>
-  </data>
-  <data name="UseSystem" xml:space="preserve">
-    <value>跟随系统</value>
-  </data>
-  <data name="UpdateLog4NetLevel" xml:space="preserve">
-    <value>更新Log4Net 日志级别：</value>
-  </data>
-  <data name="Update" xml:space="preserve">
+  </data>  <data name="Update" xml:space="preserve">
     <value>更新</value>
-  </data>
-  <data name="UnsupportedFileFormat" xml:space="preserve">
-    <value>不支持的文件格式</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>剩余时间：</value>
-  </data>
-  <data name="SortOptions" xml:space="preserve">
-    <value>排序选项</value>
-  </data>
-  <data name="SortDefault" xml:space="preserve">
-    <value>默认排序</value>
-  </data>
-  <data name="SortByName" xml:space="preserve">
-    <value>按名称排序</value>
-  </data>
-  <data name="SortByCategory" xml:space="preserve">
-    <value>按分类排序</value>
-  </data>
-  <data name="SocketManagementWindow" xml:space="preserve">
-    <value>Socket管理窗口</value>
-  </data>
-  <data name="SocketBufferSize" xml:space="preserve">
-    <value>缓冲区大小</value>
-  </data>
-  <data name="SmartSortDescending" xml:space="preserve">
-    <value>智能排序 (降序)</value>
-  </data>
-  <data name="SmartSortAscending" xml:space="preserve">
-    <value>智能排序 (升序)</value>
-  </data>
-  <data name="SaveSingleConfigFailed" xml:space="preserve">
-    <value>保存单个配置 {0} 失败</value>
-  </data>
-  <data name="ru" xml:space="preserve">
+  </data>  <data name="ru" xml:space="preserve">
     <value>Русский（俄语）</value>
-  </data>
-  <data name="RestoreConfigFileFailed" xml:space="preserve">
-    <value>恢复配置文件失败</value>
-  </data>
-  <data name="Reset" xml:space="preserve">
+  </data>  <data name="Reset" xml:space="preserve">
     <value>重置</value>
-  </data>
-  <data name="Rename" xml:space="preserve">
-    <value>重命名</value>
-  </data>
-  <data name="RemStagePointsToTemp" xml:space="preserve">
-    <value>rem STAGE 指向临时目录中解压出的 ColorVision 内容根</value>
-  </data>
-  <data name="RemRobocopySuccess" xml:space="preserve">
-    <value>  rem Robocopy 0-7 视为成功</value>
-  </data>
-  <data name="ProjectSolution_P" xml:space="preserve">
-    <value>项目/解决方案(_P)...</value>
-  </data>
-  <data name="ProjectNotFound" xml:space="preserve">
+  </data>  <data name="ProjectNotFound" xml:space="preserve">
     <value>找不到项目{0}</value>
-  </data>
-  <data name="PluginName" xml:space="preserve">
-    <value>插件名称</value>
-  </data>
-  <data name="PluginMissingId" xml:space="preserve">
-    <value>插件 {0} 缺少唯一Id，已跳过</value>
-  </data>
-  <data name="PluginLoadError" xml:space="preserve">
-    <value>加载插件或manifest错误：{0}</value>
-  </data>
-  <data name="PluginDllNotFound" xml:space="preserve">
-    <value>插件DLL不存在: {0}</value>
-  </data>
-  <data name="Options" xml:space="preserve">
+  </data>  <data name="Options" xml:space="preserve">
     <value>选项</value>
-  </data>
-  <data name="OpenLogFolder" xml:space="preserve">
-    <value>打开日志文件夹</value>
-  </data>
-  <data name="OpenFolder" xml:space="preserve">
+  </data>  <data name="OpenFolder" xml:space="preserve">
     <value>打开所在文件夹</value>
-  </data>
-  <data name="OpenContainingFolder" xml:space="preserve">
-    <value>打开所在文件夹</value>
-  </data>
-  <data name="OpenConfigFile" xml:space="preserve">
-    <value>打开配置文件</value>
-  </data>
-  <data name="OnlineCronGenerator" xml:space="preserve">
-    <value>在线Cron表达式生成器</value>
-  </data>
-  <data name="OK" xml:space="preserve">
+  </data>  <data name="OK" xml:space="preserve">
     <value>确定</value>
   </data>
   <data name="NoLocalLog4Output" xml:space="preserve">
     <value>没有配置本地的log4输出</value>
-  </data>
-  <data name="MysqlTool" xml:space="preserve">
-    <value>Mysql工具</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>消息日志窗口</value>
-  </data>
-  <data name="LoadingPlugin" xml:space="preserve">
-    <value>加载插件: {0}</value>
-  </data>
-  <data name="LoadedPluginWithoutManifest" xml:space="preserve">
-    <value>加载了没有manifest的插件: {0}</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>您必须重新启动才能使用新的语言设置</value>
-  </data>
-  <data name="IsAutoSelect" xml:space="preserve">
-    <value>自动选择</value>
-  </data>
-  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
+  </data>  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>找到项目{0}，{1}，是否下载</value>
-  </data>
-  <data name="FilterSupportsRegex" xml:space="preserve">
-    <value>过滤器支持正则</value>
-  </data>
-  <data name="ExeNameCannotBeEmpty" xml:space="preserve">
-    <value>exeName 不能为空</value>
-  </data>
-  <data name="Execute" xml:space="preserve">
-    <value>执行</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>发生错误</value>
-  </data>
-  <data name="EchoXCOPYFailed" xml:space="preserve">
-    <value>  echo XCOPY 复制失败，更新中止。</value>
-  </data>
-  <data name="EchoUsingXCOPY" xml:space="preserve">
-    <value>echo 使用 XCOPY 回退复制...</value>
-  </data>
-  <data name="EchoUpdateComplete" xml:space="preserve">
-    <value>echo 更新完成。（清理在后台进行）</value>
-  </data>
-  <data name="EchoTerminatingProcess" xml:space="preserve">
-    <value>echo 正在结束进程: {0}</value>
-  </data>
-  <data name="EchoTargetDirNotExist" xml:space="preserve">
-    <value>  echo 目标目录不存在，跳过备份。</value>
-  </data>
-  <data name="EchoStartCopyingFiles" xml:space="preserve">
-    <value>echo 开始复制新版本文件...</value>
-  </data>
-  <data name="EchoSchedulingCleanup" xml:space="preserve">
-    <value>echo 安排延迟清理临时目录与脚本...</value>
-  </data>
-  <data name="EchoRobocopyNotFound" xml:space="preserve">
-    <value>  echo 未找到 Robocopy，回退到 XCOPY...</value>
-  </data>
-  <data name="EchoRobocopyFailed" xml:space="preserve">
-    <value>     echo Robocopy 失败，错误码 !RC! ，尝试使用 XCOPY 回退...</value>
-  </data>
-  <data name="EchoRestartingProgram" xml:space="preserve">
-    <value>echo 正在重新启动程序...</value>
-  </data>
-  <data name="EchoCopyComplete" xml:space="preserve">
-    <value>echo 复制完成。</value>
-  </data>
-  <data name="EchoBackupTo" xml:space="preserve">
-    <value>  echo 备份到：%BKDIR%</value>
-  </data>
-  <data name="EchoBackupComplete" xml:space="preserve">
-    <value>  echo 备份完成。</value>
-  </data>
-  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
-    <value>echo 正在备份当前版本...</value>
-  </data>
-  <data name="Download" xml:space="preserve">
+  </data>  <data name="Download" xml:space="preserve">
     <value>下载</value>
-  </data>
-  <data name="Descending" xml:space="preserve">
-    <value>降序</value>
-  </data>
-  <data name="DependencyVersionInsufficient" xml:space="preserve">
-    <value>依赖 {0} 版本不足，要求: {1}，实际: {2}</value>
-  </data>
-  <data name="DependencyDllNotFound" xml:space="preserve">
-    <value>依赖 {0} 未找到对应的dll: {1}</value>
-  </data>
-  <data name="DependencyCheckException" xml:space="preserve">
-    <value>检查依赖 {0} 版本时发生异常: {1}</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
+  </data>  <data name="Delete" xml:space="preserve">
     <value>删除</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>当前速度：</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
+  </data>  <data name="ConfirmUpdate" xml:space="preserve">
     <value>是否更新</value>
   </data>
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>是否确认删除插件{0}</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>关闭</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>清除</value>
-  </data>
-  <data name="CleanupBackupFailed" xml:space="preserve">
-    <value>清理备份文件失败</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
+  </data>  <data name="CheckPluginUpdates" xml:space="preserve">
     <value>检测插件更新</value>
   </data>
   <data name="CheckPluginUpdatesDescription" xml:space="preserve">
@@ -426,26 +207,7 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
-  </data>
-  <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
-    <value>bool2VisibilityConverter 资源未找到</value>
-  </data>
-  <data name="BatchFilePathCannotBeEmpty" xml:space="preserve">
-    <value>batchFilePath 不能为空</value>
-  </data>
-  <data name="BaseDirCannotBeEmpty" xml:space="preserve">
-    <value>baseDir 不能为空</value>
-  </data>
-  <data name="Ascending" xml:space="preserve">
-    <value>升序</value>
-  </data>
-  <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
-    <value>Application.Current 未初始化</value>
-  </data>
-  <data name="AllFiles" xml:space="preserve">
-    <value>所有文件 (*.*)|*.*</value>
-  </data>
-  <data name="Loading" xml:space="preserve">
+  </data>  <data name="Loading" xml:space="preserve">
     <value>加载</value>
   </data>
   <data name="ThirdPartyApps" xml:space="preserve">
@@ -459,11 +221,7 @@
   </data>
   <data name="SystemTools" xml:space="preserve">
     <value>系统工具</value>
-  </data>
-  <data name="NotInstalled" xml:space="preserve">
-    <value>未安装</value>
-  </data>
-  <data name="DownloadManager" xml:space="preserve">
+  </data>  <data name="DownloadManager" xml:space="preserve">
     <value>下载管理器</value>
   </data>
   <data name="AddDownload" xml:space="preserve">
@@ -471,35 +229,9 @@
   </data>
   <data name="ClearRecords" xml:space="preserve">
     <value>清除全部记录</value>
-  </data>
-  <data name="DeleteSelected" xml:space="preserve">
-    <value>删除选中</value>
-  </data>
-  <data name="SearchButton" xml:space="preserve">
-    <value>搜索</value>
-  </data>
-  <data name="OpenDownloadFolder" xml:space="preserve">
-    <value>打开下载目录</value>
-  </data>
-  <data name="FileName" xml:space="preserve">
+  </data>  <data name="FileName" xml:space="preserve">
     <value>文件名</value>
-  </data>
-  <data name="Progress" xml:space="preserve">
-    <value>进度</value>
-  </data>
-  <data name="StatusHeader" xml:space="preserve">
-    <value>状态</value>
-  </data>
-  <data name="Speed" xml:space="preserve">
-    <value>速度</value>
-  </data>
-  <data name="FileSize" xml:space="preserve">
-    <value>文件大小</value>
-  </data>
-  <data name="CreateTimeHeader" xml:space="preserve">
-    <value>创建时间</value>
-  </data>
-  <data name="OpenFile" xml:space="preserve">
+  </data>  <data name="OpenFile" xml:space="preserve">
     <value>打开文件</value>
   </data>
   <data name="CopyUrl" xml:space="preserve">
@@ -570,11 +302,7 @@
   </data>
   <data name="AdvancedOptions" xml:space="preserve">
     <value>高级选项</value>
-  </data>
-  <data name="UrlSeparatorHint" xml:space="preserve">
-    <value>多个链接用 ; 分隔</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
+  </data>  <data name="Refresh" xml:space="preserve">
     <value>刷新</value>
   </data>
   <data name="Password" xml:space="preserve">
@@ -594,11 +322,7 @@
   </data>
   <data name="Aria2cStartFailed" xml:space="preserve">
     <value>aria2c 启动失败</value>
-  </data>
-  <data name="Aria2cReady" xml:space="preserve">
-    <value>下载服务就绪</value>
-  </data>
-  <data name="ActiveDownloads" xml:space="preserve">
+  </data>  <data name="ActiveDownloads" xml:space="preserve">
     <value>正在下载: {0}</value>
   </data>
   <data name="Aria2cServiceStatus" xml:space="preserve">
@@ -612,11 +336,7 @@
   </data>
   <data name="ConfigApplied" xml:space="preserve">
     <value>配置已应用</value>
-  </data>
-  <data name="MagnetDownload" xml:space="preserve">
-    <value>磁力链接下载</value>
-  </data>
-  <data name="RpcPort" xml:space="preserve">
+  </data>  <data name="RpcPort" xml:space="preserve">
     <value>RPC 端口</value>
   </data>
   <data name="UrlOrMagnetHint" xml:space="preserve">
@@ -684,51 +404,15 @@
   </data>
   <data name="SendFailed" xml:space="preserve">
     <value>发送失败: {0}</value>
-  </data>
-  <data name="ServerAddressNotConfigured" xml:space="preserve">
-    <value>无法确定服务器地址</value>
-  </data>
-  <data name="ThirdPartyAppsAll" xml:space="preserve">
+  </data>  <data name="ThirdPartyAppsAll" xml:space="preserve">
     <value>全部</value>
   </data>
   <data name="ThirdPartyAppsCountFormat" xml:space="preserve">
     <value>{0} 个应用</value>
-  </data>
-  <data name="ThirdPartyAppsAddCustomApp" xml:space="preserve">
-    <value>添加自定义应用</value>
-  </data>
-  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
+  </data>  <data name="ThirdPartyAppsAddQuickScript" xml:space="preserve">
     <value>添加快捷脚本</value>
-  </data>
-  <data name="ThirdPartyAppsGroups" xml:space="preserve">
-    <value>分类</value>
-  </data>
-  <data name="ThirdPartyAppsLocalApps" xml:space="preserve">
-    <value>本机应用</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
+  </data>  <data name="Edit" xml:space="preserve">
     <value>编辑</value>
-  </data>
-  <data name="ConfirmDelete" xml:space="preserve">
-    <value>确认删除</value>
-  </data>
-  <data name="ThirdPartyAppsDeleteCustomAppMessage" xml:space="preserve">
-    <value>确定要删除自定义应用 "{0}" 吗？</value>
-  </data>
-  <data name="MarketplaceSortUpdated" xml:space="preserve">
-    <value>最近更新</value>
-  </data>
-  <data name="MarketplaceSortDownloads" xml:space="preserve">
-    <value>下载量</value>
-  </data>
-  <data name="MarketplaceSortName" xml:space="preserve">
-    <value>名称</value>
-  </data>
-  <data name="MarketplaceAllCategories" xml:space="preserve">
-    <value>全部分类</value>
-  </data>
-  <data name="MarketplaceKeyword" xml:space="preserve">
-    <value>关键字</value>
   </data>
   <data name="MarketplaceAuthor" xml:space="preserve">
     <value>作者</value>
@@ -846,6 +530,9 @@
   </data>
   <data name="MarketplaceBulkUpdateTitle" xml:space="preserve">
     <value>一键更新</value>
+  </data>
+  <data name="MarketplaceBulkUpdatePackageDownloadFailed" xml:space="preserve">
+    <value>插件包未全部下载成功，已取消本次批量更新。</value>
   </data>
   <data name="MarketplacePackageColumn" xml:space="preserve">
     <value>包</value>
@@ -1025,8 +712,139 @@
   <data name="CfgApp_PsDesc" xml:space="preserve"><value>PowerShell 脚本</value></data>
   <data name="CfgApp_ConfigTitle" xml:space="preserve"><value>自定义应用配置</value></data>
   <data name="CfgApp_ListTitle" xml:space="preserve"><value>自定义应用列表</value></data>
-  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>默认自定义分组名</value></data>
-  <data name="CfgApp_Custom" xml:space="preserve"><value>自定义</value></data>
-  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>默认脚本分组名</value></data>
-  <data name="CfgApp_QuickScript" xml:space="preserve"><value>快捷脚本</value></data>
-</root>
+  <data name="CfgApp_DefaultCustomGroup" xml:space="preserve"><value>默认自定义分组名</value></data>  <data name="CfgApp_DefaultScriptGroup" xml:space="preserve"><value>默认脚本分组名</value></data>
+  <data name="Treemap_Title" xml:space="preserve">
+    <value>磁盘空间分析 - Treemap Viewer</value>
+  </data>
+  <data name="Treemap_DriveLabel" xml:space="preserve">
+    <value>盘符：</value>
+  </data>
+  <data name="Treemap_BrowseDirectory" xml:space="preserve">
+    <value>浏览目录…</value>
+  </data>
+  <data name="Treemap_BrowseDirectoryTooltip" xml:space="preserve">
+    <value>选择要扫描的目录</value>
+  </data>
+  <data name="Treemap_Scan" xml:space="preserve">
+    <value>扫 描</value>
+  </data>
+  <data name="Treemap_ScanTooltip" xml:space="preserve">
+    <value>扫描选定目录并显示树图</value>
+  </data>
+  <data name="Treemap_Cancel" xml:space="preserve">
+    <value>取 消</value>
+  </data>
+  <data name="Treemap_CancelTooltip" xml:space="preserve">
+    <value>中止当前扫描</value>
+  </data>
+  <data name="Treemap_Save" xml:space="preserve">
+    <value>保 存</value>
+  </data>
+  <data name="Treemap_SaveTooltip" xml:space="preserve">
+    <value>将当前扫描结果保存为 JSON 文件</value>
+  </data>
+  <data name="Treemap_Load" xml:space="preserve">
+    <value>加 载</value>
+  </data>
+  <data name="Treemap_LoadTooltip" xml:space="preserve">
+    <value>从已保存的 JSON 文件加载扫描结果</value>
+  </data>
+  <data name="Treemap_Up" xml:space="preserve">
+    <value>↑ 上级</value>
+  </data>
+  <data name="Treemap_UpTooltip" xml:space="preserve">
+    <value>返回父目录节点</value>
+  </data>
+  <data name="Treemap_ShowLabels" xml:space="preserve">
+    <value>显示标签</value>
+  </data>
+  <data name="Treemap_NodeCount" xml:space="preserve">
+    <value>节点数：</value>
+  </data>
+  <data name="Treemap_File" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="Treemap_Folder" xml:space="preserve">
+    <value>文件夹</value>
+  </data>
+  <data name="Treemap_SelectDirPrompt" xml:space="preserve">
+    <value>请选择目录并点击"扫描"，或点击"加载"读取已保存的扫描结果。</value>
+  </data>
+  <data name="Treemap_Scanning" xml:space="preserve">
+    <value>扫描中…</value>
+  </data>
+  <data name="Treemap_ScannedFiles" xml:space="preserve">
+    <value>已扫描 {0:N0} 个文件…</value>
+  </data>
+  <data name="Treemap_Cancelled" xml:space="preserve">
+    <value>已取消。</value>
+  </data>
+  <data name="Treemap_Complete" xml:space="preserve">
+    <value>完成。共 {0:N0} 个文件。</value>
+  </data>
+  <data name="Treemap_ScanError" xml:space="preserve">
+    <value>扫描出错：{0}</value>
+  </data>
+  <data name="Treemap_SaveDialogTitle" xml:space="preserve">
+    <value>保存扫描结果</value>
+  </data>
+  <data name="Treemap_Saved" xml:space="preserve">
+    <value>已保存：{0}</value>
+  </data>
+  <data name="Treemap_SaveFailed" xml:space="preserve">
+    <value>保存失败：{0}</value>
+  </data>
+  <data name="Treemap_LoadDialogTitle" xml:space="preserve">
+    <value>加载扫描结果</value>
+  </data>
+  <data name="Treemap_InvalidFormat" xml:space="preserve">
+    <value>文件格式无效或为空。</value>
+  </data>
+  <data name="Treemap_Loaded" xml:space="preserve">
+    <value>已加载：{0}</value>
+  </data>
+  <data name="Treemap_LoadFailed" xml:space="preserve">
+    <value>加载失败：{0}</value>
+  </data>
+  <data name="Treemap_OpenFile" xml:space="preserve">
+    <value>打开文件</value>
+  </data>
+  <data name="Treemap_OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="Treemap_OpenInExplorer" xml:space="preserve">
+    <value>在资源管理器中打开</value>
+  </data>
+  <data name="Treemap_ShowInExplorer" xml:space="preserve">
+    <value>在资源管理器中显示</value>
+  </data>
+  <data name="Treemap_CopyPath" xml:space="preserve">
+    <value>复制路径</value>
+  </data>
+  <data name="Treemap_DrillDown" xml:space="preserve">
+    <value>向下钻取（以此为根）</value>
+  </data>
+  <data name="Treemap_GoUp" xml:space="preserve">
+    <value>返回上级</value>
+  </data>
+  <data name="Treemap_DeleteFile" xml:space="preserve">
+    <value>删除文件{0}</value>
+  </data>
+  <data name="Treemap_ConfirmDelete" xml:space="preserve">
+    <value>确认删除文件：\n{0}</value>
+  </data>
+  <data name="Treemap_ConfirmDeleteTitle" xml:space="preserve">
+    <value>确认删除</value>
+  </data>
+  <data name="Treemap_DeleteFailed" xml:space="preserve">
+    <value>删除失败：{0}</value>
+  </data>
+  <data name="Treemap_Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Treemap_Prompt" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="Treemap_SelectValidDir" xml:space="preserve">
+    <value>请先选择有效的目录。</value>
+  </data></root>

@@ -1,3 +1,4 @@
+#pragma warning disable CA1806,CS0414
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
 using log4net;
@@ -102,8 +103,7 @@ namespace ColorVision.ImageEditor.Video
             int ret = OpenCVMediaHelper.M_VideoReadFrame(handle, out HImage firstFrame);
             if (ret == 0)
             {
-                _writeableBitmap = firstFrame.ToWriteableBitmap();
-                firstFrame.Dispose();
+                _writeableBitmap = firstFrame.ToWriteableBitmapAndDispose();
                 context.ImageView.SetImageSource(_writeableBitmap);
                 context.ImageView.UpdateZoomAndScale();
             }
@@ -379,15 +379,25 @@ namespace ColorVision.ImageEditor.Video
         {
             if (_videoHandle <= 0 || _isPlaying) return;
 
-            _isPlaying = true;
             _droppedFrameCount = 0;
             _lastSyncFrame = 0;
-            UpdatePlayPauseButton(true);
 
             _frameCallbackDelegate = OnFrameReceived;
             _statusCallbackDelegate = OnStatusChanged;
 
-            OpenCVMediaHelper.M_VideoPlay(_videoHandle, _frameCallbackDelegate, _statusCallbackDelegate, IntPtr.Zero);
+            int ret = OpenCVMediaHelper.M_VideoPlay(_videoHandle, _frameCallbackDelegate, _statusCallbackDelegate, IntPtr.Zero);
+            if (ret != 0)
+            {
+                _isPlaying = false;
+                _frameCallbackDelegate = null;
+                _statusCallbackDelegate = null;
+                UpdatePlayPauseButton(false);
+                log.Warn($"Failed to start video playback. Native return code: {ret}");
+                return;
+            }
+
+            _isPlaying = true;
+            UpdatePlayPauseButton(true);
 
             // Start audio playback in sync
             SyncAudioPlay();
@@ -415,47 +425,64 @@ namespace ColorVision.ImageEditor.Video
             if (Interlocked.CompareExchange(ref _isProcessingFrame, 1, 0) != 0)
             {
                 Interlocked.Increment(ref _droppedFrameCount);
+                frame.Dispose();
                 return;
             }
 
+            HImage localFrame = frame;
+            int localCurrentFrame = currentFrame;
+
             try
             {
-                HImage localFrame = frame;
-                int localCurrentFrame = currentFrame;
-                // Invoke: 同步等待UI线程完成渲染
-                // 消费者被阻塞没关系 — 生产者不再等待消费者，时间稳定
-                Application.Current?.Dispatcher.Invoke(() =>
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher == null)
+                {
+                    localFrame.Dispose();
+                    Interlocked.Exchange(ref _isProcessingFrame, 0);
+                    return;
+                }
+
+                // Native now passes an owned HImage buffer. Queue UI work asynchronously
+                // so M_VideoClose never blocks behind a synchronous Dispatcher.Invoke.
+                dispatcher.BeginInvoke(new Action(() =>
                 {
                     try
                     {
-                        if (_videoHandle <= 0) return;
-
-                        UpdateFrameDisplay(localFrame);
-
-                        // Throttle slider/time updates to reduce UI overhead
-                        int count = Interlocked.Increment(ref _uiUpdateCounter);
-                        if (count % 10 == 0)
+                        if (_videoHandle > 0)
                         {
-                            if (!_isDragging)
+                            UpdateFrameDisplay(localFrame);
+
+                            // Throttle slider/time updates to reduce UI overhead
+                            int count = Interlocked.Increment(ref _uiUpdateCounter);
+                            if (count % 10 == 0)
                             {
-                                UpdateSliderPosition(localCurrentFrame);
+                                if (!_isDragging)
+                                {
+                                    UpdateSliderPosition(localCurrentFrame);
+                                }
+
+                                UpdateTimeDisplay(localCurrentFrame);
+                                UpdateFrameInfoDisplay(localCurrentFrame, localFrame);
+
+                                // Audio-video sync correction when frames are dropped
+                                CorrectAudioSync(localCurrentFrame);
                             }
-
-                            UpdateTimeDisplay(localCurrentFrame);
-                            UpdateFrameInfoDisplay(localCurrentFrame, localFrame);
-
-                            // Audio-video sync correction when frames are dropped
-                            CorrectAudioSync(localCurrentFrame);
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("Error while rendering video frame", ex);
                     }
                     finally
                     {
+                        localFrame.Dispose();
                         Interlocked.Exchange(ref _isProcessingFrame, 0);
                     }
-                });
+                }));
             }
             catch (Exception ex)
             {
+                localFrame.Dispose();
                 Interlocked.Exchange(ref _isProcessingFrame, 0);
                 log.Error("Error in video frame callback", ex);
             }
@@ -512,16 +539,34 @@ namespace ColorVision.ImageEditor.Video
             writeableBitmap.Lock();
             try
             {
-                int bytesPerRow = hImage.cols * hImage.channels * (hImage.depth / 8);
+                long rowBytes = (long)hImage.cols * hImage.channels * (hImage.depth / 8);
                 int rows = hImage.rows;
+                int dstStride = writeableBitmap.BackBufferStride;
+                if (hImage.pData == IntPtr.Zero ||
+                    hImage.rows <= 0 ||
+                    hImage.cols <= 0 ||
+                    hImage.channels <= 0 ||
+                    hImage.depth <= 0 ||
+                    hImage.depth % 8 != 0 ||
+                    rowBytes <= 0 ||
+                    rowBytes > int.MaxValue)
+                {
+                    throw new ArgumentException("Invalid HImage layout.");
+                }
+
+                int bytesPerRow = (int)rowBytes;
+                int srcStride = hImage.stride > 0 ? hImage.stride : bytesPerRow;
+                if (srcStride < bytesPerRow || dstStride < bytesPerRow)
+                {
+                    throw new ArgumentException("Invalid HImage stride.");
+                }
+
                 long totalBytes = (long)rows * bytesPerRow;
 
                 unsafe
                 {
                     byte* pSrc = (byte*)hImage.pData;
                     byte* pDst = (byte*)writeableBitmap.BackBuffer;
-                    int srcStride = hImage.stride;
-                    int dstStride = writeableBitmap.BackBufferStride;
 
                     if (totalBytes > 1024 * 1024) // > 1MB: use parallel copy
                     {
@@ -556,33 +601,47 @@ namespace ColorVision.ImageEditor.Video
 
         private void OnStatusChanged(int handle, int status, IntPtr userData)
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            try
             {
-                switch (status)
+                Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    case 0: // Paused
-                        _isPlaying = false;
-                        UpdatePlayPauseButton(false);
-                        SyncAudioPause();
-                        break;
-                    case 1: // Playing
-                        _isPlaying = true;
-                        UpdatePlayPauseButton(true);
-                        break;
-                    case 2: // Ended
-                        _isPlaying = false;
-                        UpdatePlayPauseButton(false);
-                        SyncAudioPause();
-                        // Reset to beginning
-                        if (_videoHandle > 0)
+                    try
+                    {
+                        switch (status)
                         {
-                            OpenCVMediaHelper.M_VideoSeek(_videoHandle, 0);
-                            UpdateSliderPosition(0);
-                            SyncAudioSeek(0);
+                            case 0: // Paused
+                                _isPlaying = false;
+                                UpdatePlayPauseButton(false);
+                                SyncAudioPause();
+                                break;
+                            case 1: // Playing
+                                _isPlaying = true;
+                                UpdatePlayPauseButton(true);
+                                break;
+                            case 2: // Ended
+                                _isPlaying = false;
+                                UpdatePlayPauseButton(false);
+                                SyncAudioPause();
+                                // Reset to beginning
+                                if (_videoHandle > 0)
+                                {
+                                    OpenCVMediaHelper.M_VideoSeek(_videoHandle, 0);
+                                    UpdateSliderPosition(0);
+                                    SyncAudioSeek(0);
+                                }
+                                break;
                         }
-                        break;
-                }
-            });
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("Error while handling video status", ex);
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error in video status callback", ex);
+            }
         }
 
         private void UpdatePlayPauseButton(bool isPlaying)

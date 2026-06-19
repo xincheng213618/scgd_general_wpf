@@ -1,97 +1,148 @@
 # データのエクスポートとインポート
 
-現在、ウェアハウスには、すべてのデータがインポートおよびエクスポートされる統合マスター コントロール センターがありません。より実際の状況に近いのは、異なるオブジェクトが異なる入り口を通過し、設定、プロセス テンプレート、および特定の結果データがそれぞれ独自のインポートおよびエクスポート メソッドを持っていることです。
+現在の repository には、「すべてのデータをここから import/export する」統一センターはありません。実際には、settings、Flow template、result data はそれぞれ別の入口を持ちます。
 
-## まずこのページを理解するにはどうすればよいでしょうか?
+## まず確認すること
 
-インポートとエクスポートを行う場合は、まず次の 3 つの質問に答えてください。
+import/export を行う前に、次の 3 点を確認します。
 
-1. 設定、プロセス テンプレート、または結果モジュールからのデータを扱っていますか?
-2. グローバル設定の移行または個々のビジネス オブジェクトのエクスポートが必要ですか?
-3. この機能はもともとデータ管理センターではなく特定の窓口に属しているのでしょうか？
+1. 対象は settings、Flow template、または特定 result module の data か。
+2. 必要なのは全体 config migration か、単一 business object の export か。
+3. その機能は data management center ではなく、特定 window に属していないか。
 
-## 明確に確認できる現在のエントリ
+## 現在確認できる入口
 
-### インポートとエクスポートを設定する
+### settings import/export
 
-現在、明確なメニュー エントリがあります。
+明確な menu entry があります。
 
-- [ツール] → [設定のインポートとエクスポート]
+- Tools -> Import/Export Settings
 
-ここには少なくとも 2 種類のアクションがあります。
+ここでは少なくとも次の操作を扱います。
 
-- 設定を `.cvsettings` にエクスポート
-- `.cvsettings` から設定をインポート
+- settings を `.cvsettings` に export
+- `.cvsettings` から settings を import
 
-結果データの移行ではなく、ソフトウェア構成の移行が目的の場合は、まずここから始めてください。
+目的が result data の移行ではなく software config の移行であれば、ここから始めます。
 
-### プロセステンプレートのインポートとエクスポート
+### Flow template import/export
 
-プロセス テンプレートのインポートとエクスポートはデータ管理ページでは均一に処理されず、プロセス デザイナーで個別に提供されます。
+Flow template の import/export は data management page ではなく、Flow designer 側で扱います。
 
-- 現在のプロセスをエクスポート
-- 輸入プロセス
-- インポートモジュール
+- export current Flow
+- import Flow
+- import module
 
-プロセスの内容を移行する場合は、まず [プロセス設計](../workflow/design.md) に移動します。
+Flow 内容を移行する場合は、まず [Flow 設計](../workflow/design.md) を確認します。
 
-### モジュール内で結果をエクスポートする
+### module 内 result export
 
-一部のビジネス ウィンドウは、次のような独自のエクスポート機能を提供します。
+一部の business window は独自の export を持ちます。
 
-- プロセスノード分析画面をCSVにエクスポート可能
-- 一部のプラグインまたは画像/測定ウィンドウには、独自の CSV または画像エクスポート入り口があります。
+- Flow node analysis window の CSV export
+- 一部 plugin または image/measurement window の CSV/image export
 
-このタイプのエクスポートは通常、特定のビジネス オブジェクトに強く結び付けられており、もはや統一されたグローバルな「データ エクスポート センター」として説明されるべきではありません。
+この種の export は特定 business object に強く結び付いているため、統一された global data export center として説明しません。
 
-## 一般的な使用シーケンス
+## object と entry の対応
 
-1. まず、エクスポートするオブジェクトを確認します。
-2. グローバル設定の場合は、「設定のインポートとエクスポート」に進みます。
-3. プロセスコンテンツの場合は、[プロセスデザイン](../workflow/design.md)のインポートとエクスポートに進みます。
-4. 結果データまたはビジネス データの場合は、まず対応するモジュール ウィンドウに戻り、独自のエクスポート入り口を見つけます。
-5. 実際にデータベース内のデータが関わる場合は、[データベース操作](./database.md)と連携して元のデータ範囲を確認します。
+| 交付対象 | 優先入口 | 交付前確認 |
+| --- | --- | --- |
+| software settings | Tools -> Import/Export Settings | `.cvsettings` を import でき、restart 後も key settings が残る |
+| Flow template | Flow designer import/export | import 後に start node、device binding、template parameter が正しい |
+| database record | database browser または business result page | SN、time、batch で同じ run を検索できる |
+| CSV/Excel | 対象 business window または plugin export | field order、unit、PASS/FAIL、encoding が顧客要求と一致 |
+| PDF/report | project window または plugin report entry | header、customer mark、result image、judgement item が正しい |
+| image/overlay | image editor または result window | original image、ROI/POI、annotation coordinate、file name が対応する |
+| Socket/MES response | project window、SocketProtocol、integration tool | request/response sample が保存され、status/Data field が正しい |
 
-## このページはもはや何も約束しません
+## export 交付前の受入
 
-以下の機能は、特定のモジュール ウィンドウで確認していない限り、現在のユーザー ガイド ページではデフォルトで均一に利用可能な機能として宣言されなくなりました。
+export は「button は押せるが、交付 file が違う」問題が起きやすいです。交付前に一度 end-to-end で確認します。
 
-- 統合 Excel エクスポート センター
-- 統合された JSON エクスポート センター
-- 統合 XML エクスポート センター
-- 統合 PDF レポート エクスポート センター
-- 汎用列マッピングインポートウィザード
-- ユニバーサルバッチフォルダーインポートウィザード
+| 手順 | 操作 | 合格基準 |
+| --- | --- | --- |
+| 1 | 明確な SN または test batch で最小 Flow を実行 | query、export、external response が同じ識別子を使う |
+| 2 | database または result window で source data を確認 | 空データや旧 batch ではない |
+| 3 | target window から export | file が生成され、path/name を説明できる |
+| 4 | export file を開いて fields を確認 | field order、unit、judgement、time、SN が顧客形式と一致 |
+| 5 | sample file と screenshot を保存 | upgrade 後の再テスト基準にできる |
 
-プラグインまたはウィンドウがこれらの形式をサポートしている場合は、ここで一般的に説明するのではなく、そのモジュールの独自のページで説明する必要があります。
+## export failure triage
 
-## よくある質問
+| 現象 | 先に見る | 次に見る |
+| --- | --- | --- |
+| export button が見つからない | 対象が settings、Flow、business window のどれか | plugin/project docs が export support を明記しているか |
+| file は生成されるが空 | source data があり、batch/SN が正しいか | export filter と field mapping |
+| field がない/順序が違う | 正しい object/window を export しているか | project exporter、customer format version |
+| image/overlay がずれる | result image と original image が同じ run か | ROI/POI coordinate、scaling、template version |
+| external system が受け取らない | ColorVision が完了し result を生成したか | protocol、port、project handler、response field |
+| migration 後に動作が変わる | export したのが settings だけではないか | old config、Flow template、database backup の同期 |
 
-### データをエクスポートしたいのですが、統一された入り口が見つかりません
+## Handoff Record Template
 
-- まだメインメニューを探し続けないでください
-- 最初にオブジェクトが設定、プロセス、または業務結果ウィンドウに属しているかどうかを確認します
-- 対応するモジュールのページに戻って、エクスポートの入り口を見つけます。
+```text
+export object:
+source window:
+source SN/batch/time:
+database evidence:
+export file path:
+file format/version:
+required fields:
+sample screenshot:
+external response sample:
+known limitations:
+owner/date:
+```
 
-### 設定はエクスポートされましたが、業務実績は移行されませんでした。
+## よくある利用順序
 
-- `.cvsettings` は主に構成の移行に使用され、データベース結果の移行とは異なります。
-- 実際の結果データは、[データベース操作](./database.md)と組み合わせるか、対応するビジネス モジュールによって個別に処理する必要があります。
+1. export する object を確認します。
+2. global settings なら Import/Export Settings を使います。
+3. Flow content なら [Flow 設計](../workflow/design.md) の import/export を使います。
+4. result data または business data なら、対応 module window の export entry を探します。
+5. database data が関係する場合は、[データベース操作](./database.md) で source range を確認します。
 
-### プロセスのインポートは成功しましたが、実行結果が正しくありません。
+## このページで保証しないこと
 
-- まず、インポートされたプロセスのバージョンが正しいかどうかを確認します
-- [プロセスの実行とデバッグ](../workflow/execution.md) に戻り、依存するデバイスとテンプレートを確認します。
-- モジュールのインポートを再確認し、必要に応じてパラメータを処理します
+特定 module window で確認できない限り、次の機能を統一機能として宣言しません。
 
-## 続きを読む
+- unified Excel export center
+- unified JSON export center
+- unified XML export center
+- unified PDF report export center
+- generic column mapping import wizard
+- generic batch folder import wizard
 
-- [データ管理の概要](./README.md)
+plugin または window がこれらを持つ場合は、その module 自身のページに記載します。
+
+## よくある問題
+
+### export 入口が見つからない
+
+- top-level menu を探し続ける前に、対象が settings、Flow、business result window のどれか確認します。
+- 対応 module page で export entry を確認します。
+
+### settings は export したが business result が移行されない
+
+- `.cvsettings` は主に config migration 用であり、database result migration ではありません。
+- actual result data は [データベース操作](./database.md) または対応 business module で扱います。
+
+### Flow import は成功したが結果が違う
+
+- 正しい Flow version を import したか確認します。
+- [Flow 実行とデバッグ](../workflow/execution.md) で dependent device と template を確認します。
+- 必要に応じて module import と Flow parameter を再確認します。
+
+## 続けて読む
+
+- [データ管理概要](./README.md)
 - [データベース操作](./database.md)
-- [プロセス設計](../workflow/design.md)
-- [FAQ](../troubleshooting/common-issues.md)
+- [Flow 設計](../workflow/design.md)
+- [よくある問題](../troubleshooting/common-issues.md)
+- [現場操作受入チェックリスト](../field-operation-acceptance.md)
 
 ## 説明
 
-- このページでは現在確認可能なインポートおよびエクスポートのパスのみを説明しており、一般的な Excel/JSON/XML/PDF 統合ウィザード ドキュメントは今後維持されません。
-- 設定のインポートとエクスポートの実装は主に `UI/ColorVision.UI.Desktop/Settings/ExportAndImport/` にあります。
+- このページは現在確認できる import/export path だけを扱います。
+- settings import/export の実装は主に `UI/ColorVision.UI.Desktop/Settings/ExportAndImport/` にあります。

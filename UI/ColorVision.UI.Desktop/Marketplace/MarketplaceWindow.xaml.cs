@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822,CA1863
+﻿#pragma warning disable CA1001,CA1822,CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.Desktop.NativeMethods;

@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using System.Windows;
 using System.Windows.Input;
 
@@ -16,7 +16,7 @@ namespace ColorVision.ImageEditor.EditorTools.GraphicEditing
         public ICommand? Command { get; set; } = new RelayCommand((o) =>
         {
 
-            GraphicEditingWindow graphicEditingWindow = new GraphicEditingWindow(EditorContext) { Owner = Application.Current.GetActiveWindow() };
+            GraphicEditingWindow graphicEditingWindow = new GraphicEditingWindow(EditorContext) { Owner = EditorContext.OwnerWindow };
 
             // 屏幕坐标
             var point = EditorContext.DrawCanvas.PointToScreen(new Point(EditorContext.DrawCanvas.ActualWidth, EditorContext.DrawCanvas.ActualHeight));
@@ -38,3 +38,4 @@ namespace ColorVision.ImageEditor.EditorTools.GraphicEditing
         });
     }
 }
+

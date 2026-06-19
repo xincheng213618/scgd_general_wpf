@@ -9,29 +9,201 @@
 #include <codecvt>
 #include <cmath>
 #include <combaseapi.h>
+#include <cstring>
+#include <exception>
+#include <future>
+#include <limits>
+#include <memory>
+#include <vector>
 
 using json = nlohmann::json;
 
 namespace
 {
+constexpr int ExportInvalidArgument = -1;
+constexpr int ExportAlgorithmFailed = -2;
+constexpr int ExportAllocationFailed = -3;
+constexpr int ExportInvalidJson = -4;
+constexpr int ExportOpenCvException = -5;
+constexpr int ExportStdException = -6;
+constexpr int ExportUnknownException = -7;
+
+template <typename Func>
+int GuardIntExport(Func func) noexcept
+{
+	try {
+		return func();
+	}
+	catch (const json::exception&) {
+		return ExportInvalidJson;
+	}
+	catch (const cv::Exception&) {
+		return ExportOpenCvException;
+	}
+	catch (const std::exception&) {
+		return ExportStdException;
+	}
+	catch (...) {
+		return ExportUnknownException;
+	}
+}
+
+template <typename Func>
+double GuardDoubleExport(Func func) noexcept
+{
+	try {
+		return func();
+	}
+	catch (const cv::Exception&) {
+		return -1.0;
+	}
+	catch (const std::exception&) {
+		return -1.0;
+	}
+	catch (...) {
+		return -1.0;
+	}
+}
+
+template <typename Func>
+int GuardHImageExport(HImage* outImage, Func func) noexcept
+{
+	if (outImage != nullptr) {
+		*outImage = HImage{};
+	}
+
+	return GuardIntExport([&]() -> int {
+		if (outImage == nullptr) {
+			return ExportInvalidArgument;
+		}
+
+		return func();
+		});
+}
+
 cv::Mat CreateMatView(const HImage& img)
 {
-	if (img.pData == nullptr || img.rows <= 0 || img.cols <= 0 || img.channels <= 0) {
-		return cv::Mat();
+	return HImageToMatView(img);
+}
+
+bool TryParseJson(const char* text, json& parsed)
+{
+	if (text == nullptr) {
+		return false;
 	}
 
-	switch (img.depth) {
-	case 8:
-	case 16:
-	case 32:
-	case 64:
+	parsed = json::parse(text, nullptr, false);
+	return !parsed.is_discarded();
+}
+
+bool TryParseJson(const std::string& text, json& parsed)
+{
+	parsed = json::parse(text, nullptr, false);
+	return !parsed.is_discarded();
+}
+
+int CopyJsonResult(const json& outputJson, char** result)
+{
+	if (result == nullptr) {
+		return ExportInvalidArgument;
+	}
+
+	*result = nullptr;
+	const std::string output = outputJson.dump();
+	const size_t length = output.length() + 1;
+	if (length > static_cast<size_t>(std::numeric_limits<int>::max())) {
+		return ExportAllocationFailed;
+	}
+
+	char* buffer = static_cast<char*>(CoTaskMemAlloc(static_cast<SIZE_T>(length)));
+	if (buffer == nullptr) {
+		return ExportAllocationFailed;
+	}
+
+	std::memcpy(buffer, output.c_str(), length);
+	*result = buffer;
+	return static_cast<int>(length);
+}
+
+struct CoTaskMemBufferDeleter
+{
+	void operator()(unsigned char* data) const noexcept
+	{
+		if (data != nullptr) {
+			CoTaskMemFree(data);
+		}
+	}
+};
+
+using CoTaskMemBuffer = std::unique_ptr<unsigned char, CoTaskMemBufferDeleter>;
+
+int SelectSingleChannelSource(const cv::Mat& mat, int channel, cv::Mat& temp, cv::Mat& source)
+{
+	if (mat.empty()) {
+		return -1;
+	}
+
+	if (mat.channels() == 1) {
+		source = mat;
+		return 0;
+	}
+
+	if (channel >= 0 && channel < mat.channels()) {
+		cv::extractChannel(mat, temp, channel);
+	}
+	else {
+		cv::cvtColor(mat, temp, cv::COLOR_BGR2GRAY);
+	}
+
+	source = temp;
+	return 0;
+}
+
+bool IsPseudoColorOutputCompatible(const cv::Mat& source, const cv::Mat& output)
+{
+	return !source.empty()
+		&& !output.empty()
+		&& output.rows == source.rows
+		&& output.cols == source.cols
+		&& output.type() == CV_8UC3;
+}
+
+bool TryBuildBgr8Image(const cv::Mat& mat, cv::Mat& bgr8)
+{
+	if (mat.empty()) {
+		return false;
+	}
+
+	cv::Mat bgr;
+	switch (mat.channels())
+	{
+	case 3:
+		bgr = mat;
+		break;
+	case 4:
+		cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
 		break;
 	default:
-		return cv::Mat();
+		return false;
 	}
 
-	const size_t step = img.stride > 0 ? static_cast<size_t>(img.stride) : 0;
-	return cv::Mat(img.rows, img.cols, img.type(), img.pData, step);
+	if (bgr.depth() == CV_8U) {
+		bgr8 = bgr;
+		return !bgr8.empty() && bgr8.type() == CV_8UC3;
+	}
+
+	cv::Mat source = bgr;
+	cv::Mat temp32;
+	if (bgr.depth() == CV_64F) {
+		bgr.convertTo(temp32, CV_MAKETYPE(CV_32F, bgr.channels()));
+		source = temp32;
+	}
+	if (source.depth() == CV_32F) {
+		cv::patchNaNs(source, 0.0);
+	}
+
+	cv::normalize(source, bgr8, 0, 255, cv::NORM_MINMAX, CV_8U);
+	return !bgr8.empty() && bgr8.type() == CV_8UC3;
 }
 
 cv::Mat ClipToRoi(const cv::Mat& mat, const RoiRect& roi)
@@ -49,6 +221,37 @@ cv::Mat ClipToRoi(const cv::Mat& mat, const RoiRect& roi)
 	}
 
 	return mat;
+}
+
+int LoadImagesParallel(const std::vector<std::string>& files, std::vector<cv::Mat>& images)
+{
+	if (files.empty()) {
+		return ExportInvalidArgument;
+	}
+
+	for (const auto& file : files) {
+		if (file.empty()) {
+			return ExportInvalidArgument;
+		}
+	}
+
+	std::vector<std::future<cv::Mat>> futures;
+	futures.reserve(files.size());
+	for (const auto& file : files) {
+		futures.emplace_back(std::async(std::launch::async, [file]() {
+			return cv::imread(file, cv::IMREAD_UNCHANGED);
+			}));
+	}
+
+	images.resize(files.size());
+	for (size_t i = 0; i < futures.size(); ++i) {
+		images[i] = futures[i].get();
+		if (images[i].empty()) {
+			return ExportAlgorithmFailed;
+		}
+	}
+
+	return 0;
 }
 
 bool TryConvertToGray(const cv::Mat& mat, cv::Mat& grayMat)
@@ -138,7 +341,7 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 
 COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, RoiRect roi)
 {
-	try {
+	return GuardDoubleExport([&]() -> double {
 		cv::Mat gray_mat;
 		double linearScale = 1.0;
 		double squaredScale = 1.0;
@@ -231,14 +434,13 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 		}
 
 		return std::isfinite(value) ? value : -1.0;
-	}
-	catch (const cv::Exception&) {
-		return -1.0;
-	}
+		});
 }
 
 	COLORVISIONCORE_API int FreeResult(char* result) {
-		delete[] result;
+		if (result != nullptr) {
+			CoTaskMemFree(result);
+		}
 		return 0;
 	}
 
@@ -246,161 +448,210 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 
 COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel)
 {
-	// 构造 Mat 头，不拷贝数据
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
 
-	if (mat.empty())
-		return -1;
+		if (mat.empty())
+			return -1;
 
-	cv::Mat out;
+		cv::Mat temp;
+		cv::Mat source;
+		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
+		if (sourceRet != 0)
+			return sourceRet;
 
-	// 优化通道提取
-	if (mat.channels() != 1) {
-		if (channel >= 0 && channel < mat.channels()) {
-			cv::extractChannel(mat, out, channel);
-		}
-		else {
-			cv::cvtColor(mat, out, cv::COLOR_BGR2GRAY);
-		}
-	}
-	else {
-		out = mat.clone();
-	}
+		cv::Mat out;
+		int ret = pseudoColorTo(source, out, min, max, types);
+		if (ret != 0)
+			return ret;
 
-	// 执行伪彩色变换
-	pseudoColor(out, min, max, types);
-
-	// 转回 HImage (假设 MatToHImage 负责数据拷贝或接管)
-	return MatToHImage(out, outImage);
+		return MatToHImage(out, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
 
-	if (mat.empty())
-		return -1;
+		if (mat.empty())
+			return -1;
 
-	cv::Mat out;
+		cv::Mat temp;
+		cv::Mat source;
+		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
+		if (sourceRet != 0)
+			return sourceRet;
 
-	if (mat.channels() != 1) {
-		if (channel >= 0 && channel < mat.channels()) {
-			cv::extractChannel(mat, out, channel);
-		}
-		else {
-			cv::cvtColor(mat, out, cv::COLOR_BGR2GRAY);
-		}
-	}
-	else {
-		out = mat.clone();
-	}
+		cv::Mat out;
+		int ret = pseudoColorAutoRangeTo(source, out, min, max, types, dataMin, dataMax);
+		if (ret != 0)
+			return ret;
 
-	pseudoColorAutoRange(out, min, max, types, dataMin, dataMax);
+		return MatToHImage(out, outImage);
+		});
+}
 
-	return MatToHImage(out, outImage);
+COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types, int channel)
+{
+	return GuardIntExport([&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		cv::Mat output = CreateMatView(outImage);
+
+		if (mat.empty())
+			return -1;
+
+		if (!IsPseudoColorOutputCompatible(mat, output))
+			return -2;
+
+		cv::Mat temp;
+		cv::Mat source;
+		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
+		if (sourceRet != 0)
+			return sourceRet;
+
+		return pseudoColorTo(source, output, min, max, types);
+		});
+}
+
+COLORVISIONCORE_API int M_PseudoColorAutoRangeInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax)
+{
+	return GuardIntExport([&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		cv::Mat output = CreateMatView(outImage);
+
+		if (mat.empty())
+			return -1;
+
+		if (!IsPseudoColorOutputCompatible(mat, output))
+			return -2;
+
+		cv::Mat temp;
+		cv::Mat source;
+		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
+		if (sourceRet != 0)
+			return sourceRet;
+
+		return pseudoColorAutoRangeTo(source, output, min, max, types, dataMin, dataMax);
+		});
 }
 
 COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int channel)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-
-	if (mat.empty())
-		return -1;
-
-	cv::Mat gray;
-
-	if (mat.channels() != 1) {
-		if (channel >= 0 && channel < mat.channels()) {
-			cv::extractChannel(mat, gray, channel);
+	return GuardIntExport([&]() -> int {
+		if (outMin != nullptr) {
+			*outMin = 0;
 		}
-		else {
-			cv::cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
+		if (outMax != nullptr) {
+			*outMax = 0;
 		}
-	}
-	else {
-		gray = mat;
-	}
 
-	double minVal, maxVal;
-	cv::minMaxLoc(gray, &minVal, &maxVal);
+		if (outMin == nullptr || outMax == nullptr) {
+			return ExportInvalidArgument;
+		}
 
-	*outMin = (uint)std::max(minVal, 0.0);
-	*outMax = (uint)std::max(maxVal, 0.0);
+		cv::Mat mat = CreateMatView(img);
 
-	return 0;
+		if (mat.empty())
+			return -1;
+
+		cv::Mat temp;
+		cv::Mat gray;
+		int sourceRet = SelectSingleChannelSource(mat, channel, temp, gray);
+		if (sourceRet != 0)
+			return sourceRet;
+
+		double minVal, maxVal;
+		cv::minMaxLoc(gray, &minVal, &maxVal);
+
+		*outMin = (uint)std::max(minVal, 0.0);
+		*outMax = (uint)std::max(maxVal, 0.0);
+
+		return 0;
+		});
 }
 
 COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
 
-	if (mat.empty())
-		return -1;
-	if (mat.channels() ==1 ) {
-		return -1;
-	}
-	cv::Mat out = mat.clone();
-	if (out.depth() == CV_16U) {
-		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
-	cv::Mat outMat;
-	autoLevelsAdjust(out, outMat);
-	out.release();
-	MatToHImage(outMat, outImage);
-	return 0;
+		if (mat.empty())
+			return -1;
+		cv::Mat out;
+		if (!TryBuildBgr8Image(mat, out)) {
+			return ExportInvalidArgument;
+		}
+		cv::Mat outMat;
+		autoLevelsAdjust(out, outMat);
+		return MatToHImage(outMat, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_AutomaticColorAdjustment(HImage img, HImage* outImage)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty())
-		return -1;
-	if (mat.channels() == 1) {
-		return -1;
-	}
-	cv::Mat out = mat.clone();
-
-	if (out.depth() == CV_16U) {
-		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
-	automaticColorAdjustment(out);
-	MatToHImage(out, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		cv::Mat out;
+		if (!TryBuildBgr8Image(mat, out)) {
+			return ExportInvalidArgument;
+		}
+		automaticColorAdjustment(out);
+		return MatToHImage(out, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty())
-		return -1;
-	if (mat.channels() == 1) {
-		return -1;
-	}
-	cv::Mat out = mat.clone();
-	if (mat.depth() == CV_16U) {
-		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
-	automaticToneAdjustment(out, 1);
-	MatToHImage(out, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		cv::Mat out;
+		if (!TryBuildBgr8Image(mat, out)) {
+			return ExportInvalidArgument;
+		}
+		automaticToneAdjustment(out, 1);
+		return MatToHImage(out, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, int* point , int pointCount, int thickness)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty())
-		return -1;
-	if (mat.channels() != 3) {
-		if (mat.channels() == 1) {
-			// ����ͨ��ͼ��ת��Ϊ��ͨ��
-			cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		if (radius <= 0 || thickness < -1 || pointCount < 0 || (pointCount % 2) != 0) {
+			return ExportInvalidArgument;
 		}
-	}
+		if (pointCount > 0 && point == nullptr) {
+			return ExportInvalidArgument;
+		}
+		if (mat.channels() != 3) {
+			if (mat.channels() == 1) {
+				// ����ͨ��ͼ��ת��Ϊ��ͨ��
+				cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
+			}
+			else {
+				return ExportInvalidArgument;
+			}
+		}
 
-	cv::Mat out = mat.clone();
-	drawPoiImage(out, out, radius, point, pointCount, thickness);
-	MatToHImage(out, outImage);
-	return 0;
+		cv::Mat out = mat.clone();
+		const int drawRet = drawPoiImage(out, out, radius, point, pointCount, thickness);
+		if (drawRet != 0) {
+			return ExportAlgorithmFailed;
+		}
+
+		const int convertCode = MatToHImage(out, outImage);
+		if (convertCode != 0) {
+			return ExportAllocationFailed;
+		}
+		return 0;
+		});
 }
 
 
@@ -422,118 +673,152 @@ int FindClosestFactor(int value, const int* allowedFactors, int size = 13)
 
 COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactout,int targetPixelsX, int targetPixelsY)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty())
-		return -1;
-	// ����ǲ�ɫͼ��ת��Ϊ�Ҷ�ͼ
-	if (mat.channels() == 3 || mat.channels() == 4)  // �ж��Ƿ�Ϊ��ɫͼ��BGR �� BGRA��
-	{
-		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY); // ת��Ϊ�Ҷ�ͼ
-	}
-	else
-	{
-		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
-
-	if (mat.depth() == CV_16U) {
-
-		///2025.02.07 16Ϊͼ����ֱ��ͼʱ������ֱ��ͼ���⻯����ᵼ��ͼ����Σ����Ч������ͨ������Gammmaʵ��
-		//// Ӧ������Ӧֱ��ͼ���⻯
-		//cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-		////�������ø��ˣ��ĸ��ǻᱻ��ɢ����
-		//clahe->setClipLimit(1.0); // ���öԱȶ�����
-		//clahe->apply(image, image);
-
-		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
-
-	if (mat.depth() == CV_32F) {
-		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
-
-
-	// Ŀ��ֱ�������
-	int targetPixels = targetPixelsX * targetPixelsY; // Ŀ�������������Ե�����
-	int originalWidth = mat.cols;
-	int originalHeight = mat.rows;
-
-	// �����ʼ��������
-	double initialScaleFactor = std::sqrt((double)originalWidth * originalHeight / targetPixels);
-
-	// ȷ������������ 1��2��4��8 �ȱ���
-	int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
-	int scaleFactor = FindClosestFactor((int)std::round(initialScaleFactor), allowedFactors);
-	// �����µĿ��Ⱥ͸߶�
-	int newWidth = originalWidth / scaleFactor;
-	int newHeight = originalHeight / scaleFactor;
-
-	// �����ڴ�� rowGrayPixels
-	*length = newWidth * newHeight;
-	*rowGrayPixels = new uchar[*length];
-
-	// ���д���ͼ����������
-#pragma omp parallel for
-	for (int y = 0; y < newHeight; ++y)
-	{
-		uchar* row = *rowGrayPixels + y * newWidth;
-		for (int x = 0; x < newWidth; ++x)
-		{
-			int oldX = x * scaleFactor;
-			int oldY = y * scaleFactor;
-			int oldIndex = oldY * mat.cols + oldX;
-
-			// ������ֵ�洢�� rowGrayPixels
-			row[x] = mat.data[oldIndex];
+	return GuardIntExport([&]() -> int {
+		if (rowGrayPixels != nullptr) {
+			*rowGrayPixels = nullptr;
 		}
-	}
+		if (length != nullptr) {
+			*length = 0;
+		}
+		if (scaleFactout != nullptr) {
+			*scaleFactout = 0;
+		}
 
+		if (rowGrayPixels == nullptr || length == nullptr || scaleFactout == nullptr ||
+			targetPixelsX <= 0 || targetPixelsY <= 0) {
+			return ExportInvalidArgument;
+		}
 
-	return 0;
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+
+		if (mat.channels() == 4) {
+			cv::cvtColor(mat, mat, cv::COLOR_BGRA2GRAY);
+		}
+		else if (mat.channels() == 3) {
+			cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY);
+		}
+		else if (mat.channels() != 1) {
+			return ExportInvalidArgument;
+		}
+
+		if (mat.depth() != CV_8U) {
+			cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+		}
+
+		const long long targetPixels = static_cast<long long>(targetPixelsX) * targetPixelsY;
+		const int originalWidth = mat.cols;
+		const int originalHeight = mat.rows;
+		if (targetPixels <= 0 || originalWidth <= 0 || originalHeight <= 0) {
+			return ExportInvalidArgument;
+		}
+
+		double initialScaleFactor = std::sqrt(static_cast<double>(originalWidth) * originalHeight / targetPixels);
+
+		int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
+		int scaleFactor = FindClosestFactor(static_cast<int>(std::round(initialScaleFactor)), allowedFactors);
+		if (scaleFactor <= 0) {
+			scaleFactor = 1;
+		}
+
+		const int newWidth = std::max(originalWidth / scaleFactor, 1);
+		const int newHeight = std::max(originalHeight / scaleFactor, 1);
+		const long long outputLength = static_cast<long long>(newWidth) * newHeight;
+		if (outputLength <= 0 || outputLength > std::numeric_limits<int>::max()) {
+			return ExportAllocationFailed;
+		}
+
+		CoTaskMemBuffer buffer(static_cast<uchar*>(CoTaskMemAlloc(static_cast<SIZE_T>(outputLength))));
+		if (buffer == nullptr) {
+			return ExportAllocationFailed;
+		}
+		uchar* const outputBuffer = buffer.get();
+
+#pragma omp parallel for
+		for (int y = 0; y < newHeight; ++y)
+		{
+			uchar* row = outputBuffer + static_cast<size_t>(y) * newWidth;
+			for (int x = 0; x < newWidth; ++x)
+			{
+				const int oldX = std::min(x * scaleFactor, originalWidth - 1);
+				const int oldY = std::min(y * scaleFactor, originalHeight - 1);
+				row[x] = mat.at<uchar>(oldY, oldX);
+			}
+		}
+
+		*length = static_cast<int>(outputLength);
+		*scaleFactout = scaleFactor;
+		*rowGrayPixels = buffer.release();
+		return 0;
+		});
 }
 
 COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty())
-		return -1;
-	cv::Mat outMat;
-	cv::extractChannel(mat, outMat, channel);
-	MatToHImage(outMat, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		if (channel < 0 || channel >= mat.channels()) {
+			return ExportInvalidArgument;
+		}
+		cv::Mat outMat;
+		cv::extractChannel(mat, outMat, channel);
+		return MatToHImage(outMat, outImage);
+		});
 }
 
 
 COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, double redBalance, double greenBalance, double blueBalance)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		if (mat.channels() != 3
+			|| !std::isfinite(redBalance)
+			|| !std::isfinite(greenBalance)
+			|| !std::isfinite(blueBalance)) {
+			return ExportInvalidArgument;
+		}
+		cv::Mat dst;
 
-	AdjustWhiteBalance(mat,dst, redBalance, greenBalance, blueBalance);
+		AdjustWhiteBalance(mat,dst, redBalance, greenBalance, blueBalance);
 
-	MatToHImage(dst, outImage);
-	return 0;
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_ApplyGammaCorrection(HImage img, HImage* outImage, double gamma)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		if (!std::isfinite(gamma) || gamma <= 0.0) {
+			return ExportInvalidArgument;
+		}
+		cv::Mat dst;
 
-	ApplyGammaCorrection(mat, dst, gamma);
+		ApplyGammaCorrection(mat, dst, gamma);
 
-	MatToHImage(dst, outImage);
-	return 0;
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage, double alpha, double beta)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
 
-	cv::Mat dst;
-	AdjustBrightnessContrast(mat, dst, alpha, beta);
+		cv::Mat dst;
+		AdjustBrightnessContrast(mat, dst, alpha, beta);
 
-	MatToHImage(dst, outImage);
-	return 0;
+		return MatToHImage(dst, outImage);
+		});
 }
 
 /// <summary>
@@ -544,13 +829,16 @@ COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage,
 /// <returns></returns>
 COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
 
-	cv::Mat dst;
-	cv::bitwise_not(mat, dst);
+		cv::Mat dst;
+		cv::bitwise_not(mat, dst);
 
-	MatToHImage(dst, outImage);
-	return 0;
+		return MatToHImage(dst, outImage);
+		});
 }
 
 /// <summary>
@@ -561,194 +849,199 @@ COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage)
 /// <returns></returns>
 COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh, double maxval, int type)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
 
-	cv::Mat dst;
-	cv::threshold(mat, dst, thresh, maxval, type);
+		cv::Mat dst;
+		cv::threshold(mat, dst, thresh, maxval, type);
 
-	MatToHImage(dst, outImage);
-	return 0;
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi, const char* config, char** result)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty() || !config || !result) {
-		return -1;
-	}
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
 
-	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
-	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
-	mat = use_roi ? mat(mroi) : mat;
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || config == nullptr || result == nullptr) {
+			return ExportInvalidArgument;
+		}
 
-	json j = json::parse(config);
-	int threshold = -1;
-	if (j.contains("Threshold")) {
-		threshold = j.at("Threshold").get<int>();
-	}
-	bool useRotatedRect = false;
-	if (j.contains("UseRotatedRect")) {
-		useRotatedRect = j.at("UseRotatedRect").get<bool>();
-	}
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+		mat = use_roi ? mat(mroi) : mat;
 
-	json outputJson;
-	int ret = 0;
+		json j;
+		if (!TryParseJson(config, j)) {
+			return ExportInvalidJson;
+		}
+		int threshold = -1;
+		if (j.contains("Threshold")) {
+			threshold = j.at("Threshold").get<int>();
+		}
+		bool useRotatedRect = false;
+		if (j.contains("UseRotatedRect")) {
+			useRotatedRect = j.at("UseRotatedRect").get<bool>();
+		}
 
-	if (useRotatedRect) {
-		std::vector<cv::Point2f> corners;
-		ret = findLuminousAreaCorners(mat, corners, threshold);
-		if (ret == 0 && corners.size() == 4) {
-			outputJson["Corners"] = {
-				{corners[0].x, corners[0].y},
-				{corners[1].x, corners[1].y},
-				{corners[2].x, corners[2].y},
-				{corners[3].x, corners[3].y}
-			};
+		json outputJson;
+		int ret = 0;
+
+		if (useRotatedRect) {
+			std::vector<cv::Point2f> corners;
+			ret = findLuminousAreaCorners(mat, corners, threshold);
+			if (ret == 0 && corners.size() == 4) {
+				outputJson["Corners"] = {
+					{corners[0].x, corners[0].y},
+					{corners[1].x, corners[1].y},
+					{corners[2].x, corners[2].y},
+					{corners[3].x, corners[3].y}
+				};
+			}
+			else {
+				return ExportAlgorithmFailed;
+			}
 		}
 		else {
-			return -2;
+			cv::Rect LuminousArea;
+			ret = findLuminousArea(mat, LuminousArea, threshold);
+			if (ret == 0) {
+				outputJson["X"] = LuminousArea.x;
+				outputJson["Y"] = LuminousArea.y;
+				outputJson["Width"] = LuminousArea.width;
+				outputJson["Height"] = LuminousArea.height;
+			}
+			else {
+				return ExportAlgorithmFailed;
+			}
 		}
-	}
-	else {
-		cv::Rect LuminousArea;
-		ret = findLuminousArea(mat, LuminousArea, threshold);
-		if (ret == 0) {
-			outputJson["X"] = LuminousArea.x;
-			outputJson["Y"] = LuminousArea.y;
-			outputJson["Width"] = LuminousArea.width;
-			outputJson["Height"] = LuminousArea.height;
-		}
-		else {
-			return -2;
-		}
-	}
 
-	std::string output = outputJson.dump();
-	size_t length = output.length() + 1;
-	*result = new char[length];
-	if (!*result) {
-		return -3; // �����ڴ����ʧ��
-	}
-	std::strcpy(*result, output.c_str());
-	return static_cast<int>(length);
+		return CopyJsonResult(outputJson, result);
+	});
 }
 
 COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* config, char** result)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty() || !config || !result) {
-		return -1;
-	}
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
 
-	// Validate and apply ROI
-	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
-	cv::Rect imageRect(0, 0, mat.cols, mat.rows);
-	bool hasValidRoi = (mroi.width > 0 && mroi.height > 0);
-	bool roiWithinBounds = hasValidRoi && ((mroi & imageRect) == mroi);
-	bool use_roi = hasValidRoi && roiWithinBounds;
-	
-	mat = use_roi ? mat(mroi) : mat;
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || config == nullptr || result == nullptr) {
+			return ExportInvalidArgument;
+		}
 
-	// 解析 JSON 配置
-	json j = json::parse(config);
-	int threshold = j.value("Threshold", 20);
-	int minSize = j.value("MinSize", 2);
-	int maxSize = j.value("MaxSize", 20);
-	int rows = j.value("Rows", 650);
-	int cols = j.value("Cols", 850);
+		// Validate and apply ROI
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+		bool hasValidRoi = (mroi.width > 0 && mroi.height > 0);
+		bool roiWithinBounds = hasValidRoi && ((mroi & imageRect) == mroi);
+		bool use_roi = hasValidRoi && roiWithinBounds;
 
-	std::vector<cv::Point> centers;
-	std::vector<cv::Point> blackCenters;
+		mat = use_roi ? mat(mroi) : mat;
 
-	int ret = findLightBeads(mat, centers, blackCenters, threshold, minSize, maxSize, rows, cols);
-	if (ret != 0) {
-		return -2;
-	}
+		// 解析 JSON 配置
+		json j;
+		if (!TryParseJson(config, j)) {
+			return ExportInvalidJson;
+		}
+		int threshold = j.value("Threshold", 20);
+		int minSize = j.value("MinSize", 2);
+		int maxSize = j.value("MaxSize", 20);
+		int rows = j.value("Rows", 650);
+		int cols = j.value("Cols", 850);
 
-	// 构建 JSON 输出
-	json outputJson;
-	
-	// 灯珠中心点
-	json centersArray = json::array();
-	for (const auto& center : centers) {
-		centersArray.push_back({ center.x, center.y });
-	}
-	outputJson["Centers"] = centersArray;
-	outputJson["CenterCount"] = centers.size();
+		std::vector<cv::Point> centers;
+		std::vector<cv::Point> blackCenters;
 
-	// 缺失的灯珠
-	json blackCentersArray = json::array();
-	for (const auto& blackCenter : blackCenters) {
-		blackCentersArray.push_back({ blackCenter.x, blackCenter.y });
-	}
-	outputJson["BlackCenters"] = blackCentersArray;
-	outputJson["BlackCenterCount"] = blackCenters.size();
+		int ret = findLightBeads(mat, centers, blackCenters, threshold, minSize, maxSize, rows, cols);
+		if (ret != 0) {
+			return ExportAlgorithmFailed;
+		}
 
-	// 预期数量 (使用 size_t 避免整数溢出)
-	size_t expectedCount = static_cast<size_t>(rows) * static_cast<size_t>(cols);
-	size_t actualCount = centers.size();
-	size_t missingCount = (expectedCount > actualCount) ? (expectedCount - actualCount) : 0;
-	
-	outputJson["ExpectedCount"] = expectedCount;
-	outputJson["MissingCount"] = missingCount;
+		// 构建 JSON 输出
+		json outputJson;
 
-	std::string output = outputJson.dump();
-	size_t length = output.length() + 1;
-	*result = new char[length];
-	if (!*result) {
-		return -3;
-	}
-	std::strcpy(*result, output.c_str());
-	return static_cast<int>(length);
+		outputJson["Centers"] = nlohmann::json::array();
+		for (const auto& center : centers) {
+			outputJson["Centers"].push_back({ center.x, center.y });
+		}
+		outputJson["CenterCount"] = centers.size();
+
+		outputJson["BlackCenters"] = nlohmann::json::array();
+		for (const auto& blackCenter : blackCenters) {
+			outputJson["BlackCenters"].push_back({ blackCenter.x, blackCenter.y });
+		}
+		outputJson["BlackCenterCount"] = blackCenters.size();
+
+		// 预期数量 (使用 size_t 避免整数溢出)
+		size_t expectedCount = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+		size_t actualCount = centers.size();
+		size_t missingCount = (expectedCount > actualCount) ? (expectedCount - actualCount) : 0;
+
+		outputJson["ExpectedCount"] = expectedCount;
+		outputJson["MissingCount"] = missingCount;
+
+		return CopyJsonResult(outputJson, result);
+	});
 }
 
 COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* config, char** result)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	if (mat.empty() || !config || !result) {
-		return -1;
-	}
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
 
-	// 应用ROI
-	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
-	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
-	cv::Mat workMat = use_roi ? mat(mroi) : mat;
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || config == nullptr || result == nullptr) {
+			return ExportInvalidArgument;
+		}
 
-	// 解析JSON配置
-	json j = json::parse(config);
-	int threshold = j.value("Threshold", -1);
-	int minArea = j.value("MinArea", 500);
-	int maxArea = j.value("MaxArea", 0);
-	double marginRatio = j.value("MarginRatio", 0.05);
+		// 应用ROI
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+		cv::Mat workMat = use_roi ? mat(mroi) : mat;
 
-	std::vector<cv::Rect> keyRects;
-	int ret = detectKeyRegions(workMat, keyRects, threshold, minArea, maxArea, marginRatio);
-	if (ret != 0 || keyRects.empty()) {
-		return -2;
-	}
+		// 解析JSON配置
+		json j;
+		if (!TryParseJson(config, j)) {
+			return ExportInvalidJson;
+		}
+		int threshold = j.value("Threshold", -1);
+		int minArea = j.value("MinArea", 500);
+		int maxArea = j.value("MaxArea", 0);
+		double marginRatio = j.value("MarginRatio", 0.05);
 
-	// 构建JSON输出
-	json outputJson;
-	json rectsArray = json::array();
-	for (const auto& r : keyRects) {
-		json rectObj;
-		rectObj["X"] = r.x + (use_roi ? roi.x : 0);
-		rectObj["Y"] = r.y + (use_roi ? roi.y : 0);
-		rectObj["Width"] = r.width;
-		rectObj["Height"] = r.height;
-		rectsArray.push_back(rectObj);
-	}
-	outputJson["KeyRegions"] = rectsArray;
-	outputJson["Count"] = keyRects.size();
+		std::vector<cv::Rect> keyRects;
+		int ret = detectKeyRegions(workMat, keyRects, threshold, minArea, maxArea, marginRatio);
+		if (ret != 0 || keyRects.empty()) {
+			return ExportAlgorithmFailed;
+		}
 
-	std::string output = outputJson.dump();
-	size_t length = output.length() + 1;
-	*result = new char[length];
-	if (!*result) {
-		return -3;
-	}
-	std::strcpy(*result, output.c_str());
-	return static_cast<int>(length);
+		// 构建JSON输出
+		json outputJson;
+		json rectsArray = json::array();
+		for (const auto& r : keyRects) {
+			json rectObj;
+			rectObj["X"] = r.x + (use_roi ? roi.x : 0);
+			rectObj["Y"] = r.y + (use_roi ? roi.y : 0);
+			rectObj["Width"] = r.width;
+			rectObj["Height"] = r.height;
+			rectsArray.push_back(rectObj);
+		}
+		outputJson["KeyRegions"] = rectsArray;
+		outputJson["Count"] = keyRects.size();
+
+		return CopyJsonResult(outputJson, result);
+	});
 }
 
 
@@ -811,191 +1104,239 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 	return StitchingErrorCode::SUCCESS;
 }
 
-std::string GbkToUtf8(const char* src_str)
+bool TryGbkToUtf8(const char* srcStr, std::string& output)
 {
-	int len = MultiByteToWideChar(CP_ACP, 0, src_str, -1, NULL, 0);
-	wchar_t* wstr = new wchar_t[len + 1];
-	memset(wstr, 0, len + 1);
-	MultiByteToWideChar(CP_ACP, 0, src_str, -1, wstr, len);
-	len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-	char* str = new char[len + 1];
-	memset(str, 0, len + 1);
-	WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
-	std::string strTemp = str;
-	if (wstr) delete[] wstr;
-	if (str) delete[] str;
-	return strTemp;
+	output.clear();
+	if (srcStr == nullptr || srcStr[0] == '\0') {
+		return false;
+	}
+
+	const int wideLen = MultiByteToWideChar(CP_ACP, 0, srcStr, -1, nullptr, 0);
+	if (wideLen <= 0) {
+		return false;
+	}
+
+	std::vector<wchar_t> wideBuffer(static_cast<size_t>(wideLen));
+	if (MultiByteToWideChar(CP_ACP, 0, srcStr, -1, wideBuffer.data(), wideLen) == 0) {
+		return false;
+	}
+
+	const int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wideBuffer.data(), -1, nullptr, 0, nullptr, nullptr);
+	if (utf8Len <= 0) {
+		return false;
+	}
+
+	std::vector<char> utf8Buffer(static_cast<size_t>(utf8Len));
+	if (WideCharToMultiByte(CP_UTF8, 0, wideBuffer.data(), -1, utf8Buffer.data(), utf8Len, nullptr, nullptr) == 0) {
+		return false;
+	}
+
+	output.assign(utf8Buffer.data());
+	return true;
 }
 
 COLORVISIONCORE_API int M_StitchImages(const char* config, HImage* outImage)
 {
-	if (!config) {
-		return -1;
-	}
-	json j = json::parse(GbkToUtf8(config));
+	return GuardHImageExport(outImage, [&]() -> int {
+		if (config == nullptr) {
+			return ExportInvalidArgument;
+		}
 
-	const auto& image_files = j.at("ImageFiles").get<std::vector<std::string>>();
-	if (image_files.empty()) {
-		return -1;
-	}
-	cv::Mat result;
+		std::string utf8Config;
+		if (!TryGbkToUtf8(config, utf8Config)) {
+			return ExportInvalidArgument;
+		}
 
-	StitchingErrorCode code = stitchImages(image_files, result);
+		json j;
+		if (!TryParseJson(utf8Config, j)) {
+			return ExportInvalidJson;
+		}
 
-	if (code == StitchingErrorCode::SUCCESS && !result.empty()) {
-		MatToHImage(result, outImage);
-	}
-	return static_cast<int>(code);
+		if (!j.contains("ImageFiles") || !j["ImageFiles"].is_array()) {
+			return ExportInvalidJson;
+		}
+
+		const auto image_files = j.at("ImageFiles").get<std::vector<std::string>>();
+		if (image_files.empty()) {
+			return ExportInvalidArgument;
+		}
+		cv::Mat result;
+
+		StitchingErrorCode code = stitchImages(image_files, result);
+
+		if (code != StitchingErrorCode::SUCCESS) {
+			return static_cast<int>(code);
+		}
+
+		if (result.empty()) {
+			return ExportAlgorithmFailed;
+		}
+
+		const int convertCode = MatToHImage(result, outImage);
+		if (convertCode != 0) {
+			return ExportAllocationFailed;
+		}
+		return 0;
+	});
 }
 
 
 
 COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
 
-	// ���ͼ������Ƿ�ΪCV_32FC1
-	if (mat.depth() != CV_32FC1) {
-		return -1; // ͼ����32λ��������
-	}
+		if (mat.empty() || mat.type() != CV_32FC1) {
+			return -1;
+		}
 
-	// �ҵ�ͼ���е���Сֵ�����ֵ
-	double minVal, maxVal;
-	cv::minMaxLoc(mat, &minVal, &maxVal);
+		double minVal, maxVal;
+		cv::minMaxLoc(mat, &minVal, &maxVal);
 
-	// ���minValΪ0��maxValΪ1������Ҫ���ź�ƫ�ƣ�ֱ��ת��
-	if (minVal >= 0.0 && maxVal <= 5.0) {
-		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
-		mat.convertTo(outMat, CV_16UC1, 65535);
-		// ��OpenCV��Mat����ת����HImage����
-		MatToHImage(outMat, outImage);
-	}
-	else {
-		// ����������Ӻͱ���ֵ
-		float scale = 65535 / (maxVal - minVal);
-		float delta = -minVal * scale;
-
-		// �������ͼ�����
 		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
 
-		// ��32λ����ͼ��ת��Ϊ16λ�Ҷ�ͼ��
-		mat.convertTo(outMat, CV_16UC1, scale, delta);
-		// ��OpenCV��Mat����ת����HImage����
-		MatToHImage(outMat, outImage);
-	}
+		if (minVal >= 0.0 && maxVal <= 5.0) {
+			mat.convertTo(outMat, CV_16UC1, 65535);
+		}
+		else {
+			if (maxVal <= minVal) {
+				return ExportInvalidArgument;
+			}
 
+			float scale = 65535 / static_cast<float>(maxVal - minVal);
+			float delta = static_cast<float>(-minVal) * scale;
 
-	return 0;
+			mat.convertTo(outMat, CV_16UC1, scale, delta);
+		}
+
+		return MatToHImage(outMat, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_CvtColor(HImage img, HImage* outImage, double thresh, double maxval, int type)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
 
-	cv::Mat dst;
-	cv::cvtColor(mat, dst, cv::COLOR_RGBA2GRAY);
+		cv::Mat dst;
+		cv::cvtColor(mat, dst, cv::COLOR_RGBA2GRAY);
 
-	MatToHImage(dst, outImage);
-	return 0;
+		return MatToHImage(dst, outImage);
+		});
 }
 COLORVISIONCORE_API int M_RemoveMoire(HImage img, HImage* outImage)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst = removeMoire(mat);
-	MatToHImage(dst, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		cv::Mat dst = removeMoire(mat);
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_ApplyGaussianBlur(HImage img, HImage* outImage, int kernelSize, double sigma)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst;
-	ApplyGaussianBlur(mat, dst, kernelSize, sigma);
-	MatToHImage(dst, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		cv::Mat dst;
+		ApplyGaussianBlur(mat, dst, kernelSize, sigma);
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_ApplyMedianBlur(HImage img, HImage* outImage, int kernelSize)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst;
-	ApplyMedianBlur(mat, dst, kernelSize);
-	MatToHImage(dst, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		cv::Mat dst;
+		ApplyMedianBlur(mat, dst, kernelSize);
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_ApplySharpen(HImage img, HImage* outImage)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst;
-	ApplySharpen(mat, dst);
-	MatToHImage(dst, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		cv::Mat dst;
+		ApplySharpen(mat, dst);
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_ApplyCannyEdgeDetection(HImage img, HImage* outImage, double threshold1, double threshold2)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst;
-	ApplyCannyEdgeDetection(mat, dst, threshold1, threshold2);
-	MatToHImage(dst, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		cv::Mat dst;
+		ApplyCannyEdgeDetection(mat, dst, threshold1, threshold2);
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HImage* outImage)
 {
-	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst;
-	ApplyHistogramEqualization(mat, dst);
-	MatToHImage(dst, outImage);
-	return 0;
+	return GuardHImageExport(outImage, [&]() -> int {
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty())
+			return -1;
+		cv::Mat dst;
+		ApplyHistogramEqualization(mat, dst);
+		return MatToHImage(dst, outImage);
+		});
 }
 
 COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
 {
-	std::chrono::steady_clock::time_point start, end;
-	std::chrono::microseconds duration;
-	start = std::chrono::high_resolution_clock::now();
+	return GuardHImageExport(outImage, [&]() -> int {
+		if (fusionjson == nullptr) {
+			return ExportInvalidArgument;
+		}
 
-	std::string sss = fusionjson;;
-	// ���ַ������� JSON ����
-	json j = json::parse(sss);
+		json j;
+		if (!TryParseJson(fusionjson, j)) {
+			return ExportInvalidJson;
+		}
 
-	// ��� JSON �����Ƿ�������
-	if (!j.is_array()) {
-		// ������
-		return -1;
-	}
+		// ��� JSON �����Ƿ�������
+		if (!j.is_array()) {
+			return ExportInvalidJson;
+		}
 
-	std::vector<std::string> files = j.get<std::vector<std::string>>();
-	if (files.empty()) {
-		std::cerr << "Error: No files provided in JSON array." << std::endl;
-		return -1;
-	}
-	std::vector<cv::Mat> imgs(files.size());
-	std::vector<std::thread> threads;
-	std::vector<bool> read_success(files.size(), false); // To track success of each thread
+		std::vector<std::string> files = j.get<std::vector<std::string>>();
+		if (files.empty()) {
+			std::cerr << "Error: No files provided in JSON array." << std::endl;
+			return ExportInvalidArgument;
+		}
 
-	for (size_t i = 0; i < files.size(); ++i) {
-		threads.emplace_back([i, &files, &imgs, &read_success]() {
-			imgs[i] = cv::imread(files[i]);
-			if (!imgs[i].empty()) {
-				read_success[i] = true;
-			}
-			});
-	}
+		std::vector<cv::Mat> imgs;
+		const int loadCode = LoadImagesParallel(files, imgs);
+		if (loadCode != 0) {
+			return loadCode;
+		}
 
-	// Wait for all reading threads to complete
-	for (auto& t : threads) {
-		t.join();
-	}
+		cv::Mat out = fusion(imgs, 2);
+		if (out.empty()) {
+			return ExportAlgorithmFailed;
+		}
 
-	cv::Mat out = fusion(imgs, 2);
-	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	std::cout << "fusionִ��ʱ��: " << duration.count() / 1000.0 << " ����" << std::endl;
+		const int convertCode = MatToHImage(out, outImage);
+		if (convertCode != 0) {
+			return ExportAllocationFailed;
+		}
 
-	MatToHImage(out, outImage);
-	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	std::cout << "MatToHImage: " << duration.count() / 1000.0 << " ����" << std::endl;
-	return 0;
+		return 0;
+	});
 }

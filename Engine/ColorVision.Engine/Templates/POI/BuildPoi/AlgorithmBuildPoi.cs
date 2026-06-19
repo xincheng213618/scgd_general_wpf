@@ -81,11 +81,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         public string CADPosFileName { get => _CADPosFileName; set { _CADPosFileName = value; OnPropertyChanged(); } }
         private string _CADPosFileName = string.Empty;
 
-        public MsgRecord SendCommand(ParamBuildPoi buildPOIParam, POILayoutTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(ParamBuildPoi buildPOIParam, POILayoutTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = buildPOIParam.Id, Name = buildPOIParam.Name });
@@ -114,7 +111,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
-                SerialNumber = sn,
+                SerialNumber = string.Empty,
                 Params = Params
             };
 

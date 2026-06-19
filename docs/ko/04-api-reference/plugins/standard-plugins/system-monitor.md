@@ -137,6 +137,8 @@
 
 이를 통해 먼저 실제 제어 표면을 캡처한 다음 메뉴, 상태 표시줄 및 로딩 정보로 돌아갈 수 있습니다.
 
-## 계속 읽기- [플러그인/README.md](../../../../플러그인/README.md)
+## 계속 읽기
+
+- [Plugins/README.md](../../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
-- [docs/04-api-reference/plugins/standard-plugins/pattern.md](./pattern.md)
+- [기존 플러그인 기능](../README.md)

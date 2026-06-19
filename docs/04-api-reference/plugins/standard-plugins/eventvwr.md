@@ -75,6 +75,18 @@
 
 除了注册表配置外，`SaveDump()` 还会调用 `DumpHelper.WriteMiniDump(...)`，把当前进程转储写到目标目录。
 
+## 反馈包收集边界
+
+`DumpFileCollector` 还实现了 `IFeedbackLogCollector` 风格的转储文件收集能力。它会读取 `DumpConfig` 当前解析到的 `DumpFolder`，把目录中的 `.dmp` 文件复制到临时目录，并在反馈包中以 `Dumps/<file>` 的名字提供。
+
+这条链路只收集已经存在的 dump 文件，不会主动修改注册表，也不会触发新的进程转储。现场交接时要区分：
+
+| 能力 | 入口 | 是否写系统配置 |
+| --- | --- | --- |
+| 设置 LocalDumps | Help -> Dump 设置子菜单 | 是，写 HKLM |
+| 保存当前进程 Dump | Help -> Dump 设置 -> 保存 Dmp | 否，但会写 dump 文件 |
+| 反馈包收集 Dump | 反馈/日志收集链 | 否，只复制现有 `.dmp` |
+
 ## 当前 manifest 信息
 
 按 `manifest.json`，这个插件当前公开的基本信息是：
@@ -114,12 +126,37 @@
 2. `Plugins/EventVWR/EventWindow.xaml.cs`
 3. `Plugins/EventVWR/Dump/DumpConfig.cs`
 4. `Plugins/EventVWR/Dump/MenuDump.cs`
-5. `Plugins/EventVWR/manifest.json`
+5. `Plugins/EventVWR/Dump/DumpFileCollector.cs`
+6. `Plugins/EventVWR/manifest.json`
 
 这样能先看到宿主入口，再看到窗口行为和系统级配置落点。
 
+## 交接验收表
+
+| 验收项 | 操作 | 通过标准 |
+| --- | --- | --- |
+| 插件加载 | 启动主程序并查看 Help 菜单 | 能看到事件窗口入口和 Dump 设置入口 |
+| 权限约束 | 普通权限和管理员权限分别打开事件窗口 | 普通权限被权限链拦截，管理员权限能打开 |
+| 事件读取 | 打开事件窗口 | 能读取 Windows `Application` 日志中的 Error 项，详情显示 `Message` |
+| Dump 类型设置 | 在 Dump 子菜单选择 Mini/Full/Custom 等类型 | HKLM LocalDumps 对应进程项写入 `DumpType` 和必要字段 |
+| 保存当前 Dump | 点击保存 Dmp | `DumpFolder` 下生成当前进程 `.dmp` |
+| 清理设置 | 点击清空 Dmp | 当前进程 LocalDumps 注册表项被清理 |
+| 反馈收集 | 触发反馈日志收集 | 已存在 `.dmp` 被复制到反馈包的 `Dumps/` 目录 |
+
+## 故障首查
+
+| 现象 | 首查点 | 处理 |
+| --- | --- | --- |
+| 菜单没有出现 | 插件是否加载、`manifest.json` 的 `dllpath` 是否正确 | 先查插件管理器和加载日志 |
+| 打不开事件窗口 | 当前是否管理员、权限装饰是否生效 | 事件窗口入口本身需要管理员权限 |
+| Dump 设置失败 | HKLM 写入权限、注册表路径 | 必须以管理员模式运行 |
+| 保存 Dump 没文件 | `DumpFolder` 是否存在/可写，`DumpHelper.WriteMiniDump` 是否报错 | 先手动确认目录权限 |
+| 反馈包没有 Dump | `DumpFolder` 是否已有 `.dmp` | 收集器不会主动生成 dump |
+
 ## 继续阅读
 
+- [现有插件现场验收与交接清单](../plugin-field-acceptance.md)
+- [插件能力与交接矩阵](../plugin-capability-matrix.md)
 - [Plugins/README.md](../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)
 - [docs/04-api-reference/plugins/standard-plugins/system-monitor.md](./system-monitor.md)
