@@ -44,6 +44,8 @@ export interface ReleaseArtifact {
   kind_label?: string
   era?: string
   era_label?: string
+  platform?: string
+  platform_label?: string
   size?: number
   modified?: string
   modified_display?: string
@@ -52,12 +54,19 @@ export interface ReleaseArtifact {
 export interface AppInfo {
   latest_version?: string
   latest_release?: ReleaseArtifact
+  latest_android_release?: ReleaseArtifact
   current_count?: number
   archive_count?: number
+  android_count?: number
+  current_android_count?: number
+  archive_android_count?: number
   archive_timeline_count?: number
   archive_more_count?: number
   current_preview?: ReleaseArtifact[]
   current_releases?: ReleaseArtifact[]
+  android_releases?: ReleaseArtifact[]
+  current_android_releases?: ReleaseArtifact[]
+  archived_android_releases?: ReleaseArtifact[]
   archive_recent?: ReleaseArtifact[]
   archive_timeline_groups?: ReleaseGroup[]
   release_timeline?: unknown

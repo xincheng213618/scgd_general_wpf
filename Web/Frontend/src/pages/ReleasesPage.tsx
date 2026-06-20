@@ -1,4 +1,4 @@
-import { BookOutlined, CloudDownloadOutlined, FileMarkdownOutlined, FilterOutlined } from '@ant-design/icons'
+import { BookOutlined, CloudDownloadOutlined, FileMarkdownOutlined, FilterOutlined, MobileOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Col, Collapse, Form, Row, Select, Skeleton, Space, Statistic, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -49,6 +49,7 @@ export function ReleasesPage() {
   if (loading) return <Skeleton active paragraph={{ rows: 8 }} />
   if (error) return <Alert type="error" message={error} />
   if (!data) return null
+  const androidReleases = data.app_info.android_releases || []
 
   return (
     <Space direction="vertical" size={16} className="page-stack">
@@ -62,6 +63,7 @@ export function ReleasesPage() {
           <Col>
             <Space wrap>
               <Statistic title="当前版本" value={data.app_info.current_count || 0} />
+              <Statistic title="Android" value={data.app_info.android_count || 0} />
               <Statistic title="历史制品" value={data.app_info.archive_count || 0} />
               <Statistic title="历史阶段" value={data.app_info.archive_timeline_count || 0} />
               <Button icon={<FileMarkdownOutlined />} href="/changelog">
@@ -74,6 +76,26 @@ export function ReleasesPage() {
           </Col>
         </Row>
       </Card>
+
+      {androidReleases.length > 0 && (
+        <Card title={<Space><MobileOutlined />Android 安装包</Space>}>
+          <Space direction="vertical" className="wide-space">
+            {androidReleases.map((release) => (
+              <div className="resource-row" key={release.relative_path}>
+                <div>
+                  <Text strong>{release.display_title || `ColorVision Android ${release.version || ''}`}</Text>
+                  <div className="muted-line">
+                    {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
+                  </div>
+                </div>
+                <Button type="primary" icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
+                  下载 APK
+                </Button>
+              </div>
+            ))}
+          </Space>
+        </Card>
+      )}
 
       <Card title={<Space><FilterOutlined />历史筛选</Space>}>
         <Form

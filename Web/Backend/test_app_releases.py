@@ -65,6 +65,24 @@ class AppReleasesTests(unittest.TestCase):
         self.assertEqual(releases[0]["era_label"], "压缩归档时代")
         self.assertRegex(releases[0]["modified_display"], r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}")
 
+    def test_scan_app_release_artifacts_collects_android_apk(self):
+        (self.storage / "ColorVision-Android-1.0.apk").write_bytes(b"apk")
+
+        releases = app_releases.scan_app_release_artifacts(
+            self.storage,
+            get_cache_entry=self._get_cache_entry,
+            set_cache_entry=self._set_cache_entry,
+            cache_key="releases",
+            ttl_seconds=300,
+        )
+
+        self.assertEqual(len(releases), 1)
+        self.assertEqual(releases[0]["version"], "1.0")
+        self.assertEqual(releases[0]["kind"], "APK")
+        self.assertEqual(releases[0]["kind_label"], "Android 安装包")
+        self.assertEqual(releases[0]["platform"], "android")
+        self.assertEqual(releases[0]["display_title"], "ColorVision Android 1.0")
+
     def test_scan_app_release_artifacts_reuses_cache(self):
         cached_items = [{"version": "9.9.9.9", "source": "current"}]
         self.cache["releases"] = {"value": cached_items}
@@ -126,6 +144,43 @@ class AppReleasesTests(unittest.TestCase):
         self.assertTrue(context["archive_timeline_groups"][0]["contains_archive_only_formats"])
         self.assertTrue(context["archive_timeline_groups"][0]["contains_installer_artifacts"])
         self.assertIn("压缩归档时代", context["archive_timeline_groups"][0]["era_summary"])
+
+    def test_build_app_release_context_keeps_android_separate(self):
+        releases = [
+            {
+                "version": "1.4.10.7",
+                "source": "current",
+                "branch": "1.4.10",
+                "major_minor": "1.4",
+                "kind": "EXE",
+                "kind_label": "安装包",
+                "filename": "ColorVision-1.4.10.7.exe",
+                "relative_path": "ColorVision-1.4.10.7.exe",
+                "modified": "2026-06-20T01:00:00+00:00",
+                "modified_display": "2026-06-20 01:00",
+            },
+            {
+                "version": "1.0",
+                "source": "current",
+                "branch": "1.0",
+                "major_minor": "1.0",
+                "kind": "APK",
+                "kind_label": "Android 安装包",
+                "filename": "ColorVision-Android-1.0.apk",
+                "relative_path": "ColorVision-Android-1.0.apk",
+                "modified": "2026-06-20T02:00:00+00:00",
+                "modified_display": "2026-06-20 02:00",
+            },
+        ]
+
+        context = app_releases.build_app_release_context(releases)
+
+        self.assertEqual(context["latest_release"]["version"], "1.4.10.7")
+        self.assertEqual(context["latest_android_release"]["version"], "1.0")
+        self.assertEqual(context["current_count"], 1)
+        self.assertEqual(context["android_count"], 1)
+        self.assertEqual(context["current_releases"][0]["platform"], "windows")
+        self.assertEqual(context["android_releases"][0]["platform"], "android")
 
     def test_build_archive_timeline_groups_tracks_time_range_and_formats(self):
         releases = [

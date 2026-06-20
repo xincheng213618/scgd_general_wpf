@@ -952,6 +952,20 @@ class UploadIndexRefreshTests(unittest.TestCase):
         self.assertIsNotNone(releases)
         self.assertTrue(any(r["version"] == "1.0.0.1" for r in releases))
 
+    def test_put_android_apk_refreshes_release_index(self):
+        response = self.client.put(
+            "/upload/ColorVision/ColorVision-Android-1.0.apk",
+            data=b"apk-payload",
+            headers=self._auth_headers(),
+            content_type="application/octet-stream",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        from services.artifact_index import get_releases_from_index
+        releases = get_releases_from_index(self.cache)
+        self.assertIsNotNone(releases)
+        self.assertTrue(any(r["filename"] == "ColorVision-Android-1.0.apk" for r in releases))
+
 
 class BrowsePaginationTests(unittest.TestCase):
     """Tests for /api/site/browse pagination behavior."""

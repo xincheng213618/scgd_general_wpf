@@ -6,6 +6,7 @@ import {
   FileDoneOutlined,
   FileTextOutlined,
   InboxOutlined,
+  MobileOutlined,
   ReloadOutlined,
   ToolOutlined,
 } from '@ant-design/icons'
@@ -45,18 +46,24 @@ export function HomePage() {
   if (!data) return null
 
   const latest = data.app_info.current_preview?.[0] ?? data.app_info.latest_release
+  const latestAndroid = data.app_info.latest_android_release
   const latestVersion = data.app_info.latest_version || latest?.version || '未检测'
   const currentCount = data.app_info.current_count ?? 0
+  const androidCount = data.app_info.android_count ?? 0
   const updateCount = data.update_summary.canonical_count ?? 0
   const toolCount = (data.tool_summary.directory_count ?? 0) + (data.tool_summary.file_count ?? data.tool_items.length ?? 0)
-  const entryCount = 6
-  const releaseItems = (data.app_info.current_preview || []).slice(0, 3)
+  const entryCount = latestAndroid ? 7 : 6
+  const releaseItems = [
+    ...(data.app_info.current_preview || []).slice(0, latestAndroid ? 2 : 3),
+    ...(latestAndroid ? [latestAndroid] : []),
+  ]
   const recentItems = data.recent_change_dashboard.slice(0, 3)
   const docItems = ((data.docs?.featured?.length ? data.docs.featured : data.docs?.recent) || []).slice(0, 4)
 
   const proofItems = [
     { label: '最新版本', value: latestVersion },
     { label: '安装包', value: `${currentCount}` },
+    ...(latestAndroid ? [{ label: 'Android 包', value: `${androidCount}` }] : []),
     { label: '增量包', value: `${updateCount}` },
     { label: '工具项目', value: `${toolCount}` },
     { label: '常用入口', value: `${entryCount}` },
@@ -70,6 +77,15 @@ export function HomePage() {
       icon: <FileDoneOutlined />,
       meta: `${currentCount} 个当前制品`,
     },
+    ...(latestAndroid
+      ? [{
+          title: 'Android 版',
+          desc: '移动端 WebView 安装包。',
+          href: downloadPath(latestAndroid.relative_path),
+          icon: <MobileOutlined />,
+          meta: latestAndroid.version ? `v${latestAndroid.version}` : 'APK',
+        }]
+      : []),
     {
       title: '插件市场',
       desc: '插件扩展和文档下载。',
@@ -120,6 +136,11 @@ export function HomePage() {
             <Button type="primary" size="large" shape="round" icon={<CloudDownloadOutlined />} href={downloadPath(latest?.relative_path)}>
               下载 Windows 版
             </Button>
+            {latestAndroid && (
+              <Button size="large" shape="round" icon={<MobileOutlined />} href={downloadPath(latestAndroid.relative_path)}>
+                下载 Android 版
+              </Button>
+            )}
             <Button size="large" shape="round" icon={<AppstoreOutlined />} href="/plugins">
               插件市场
             </Button>
@@ -204,11 +225,11 @@ export function HomePage() {
               {releaseItems.map((release) => (
                 <a href={downloadPath(release.relative_path)} className="home-release-item" key={release.relative_path}>
                   <span className="home-release-icon">
-                    <FileDoneOutlined />
+                    {release.platform === 'android' ? <MobileOutlined /> : <FileDoneOutlined />}
                   </span>
                   <span className="home-release-copy">
                     <strong>{release.display_title || release.version}</strong>
-                    <small>{release.kind_label} · {humanSize(release.size)}</small>
+                    <small>{release.platform_label || release.kind_label} · {release.kind_label} · {humanSize(release.size)}</small>
                   </span>
                   <span className="home-release-action">下载</span>
                 </a>

@@ -14,6 +14,9 @@ from app_changelog import base_release_version, resolve_changelog_for_release_gr
 _APP_RELEASE_CANONICAL_RE = re.compile(
     r"^ColorVision-(\d+(?:\.\d+)+)\.(exe|zip|rar)$", re.IGNORECASE
 )
+_ANDROID_RELEASE_CANONICAL_RE = re.compile(
+    r"^ColorVision-Android-(\d+(?:\.\d+)+)\.apk$", re.IGNORECASE
+)
 _APP_RELEASE_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
 
 GetCacheEntry = Callable[..., dict[str, Any] | None]
@@ -24,12 +27,19 @@ _KIND_LABELS = {
     "EXE": "安装包",
     "ZIP": "ZIP 归档",
     "RAR": "RAR 归档",
+    "APK": "Android 安装包",
     "FILE": "文件记录",
 }
 _ERA_LABELS = {
     "archive": "压缩归档时代",
     "installer": "安装包时代",
+    "android": "Android 应用",
     "other": "其他记录",
+}
+_PLATFORM_LABELS = {
+    "windows": "Windows",
+    "android": "Android",
+    "other": "其他",
 }
 
 _logger = logging.getLogger(__name__)
@@ -63,11 +73,34 @@ def _build_time_range(items: list[dict[str, Any]]) -> str:
 
 def classify_artifact_era(kind: str) -> tuple[str, str]:
     normalized = str(kind or "").upper()
+    if normalized == "APK":
+        return "android", _ERA_LABELS["android"]
     if normalized in {"ZIP", "RAR"}:
         return "archive", _ERA_LABELS["archive"]
     if normalized == "EXE":
         return "installer", _ERA_LABELS["installer"]
     return "other", _ERA_LABELS["other"]
+
+
+def classify_artifact_platform(filename: str, kind: str) -> tuple[str, str]:
+    normalized_kind = str(kind or "").upper()
+    if normalized_kind == "APK" or _ANDROID_RELEASE_CANONICAL_RE.match(filename or ""):
+        return "android", _PLATFORM_LABELS["android"]
+    if normalized_kind in {"EXE", "ZIP", "RAR"}:
+        return "windows", _PLATFORM_LABELS["windows"]
+    return "other", _PLATFORM_LABELS["other"]
+
+
+def enrich_release_artifact(item: dict[str, Any]) -> dict[str, Any]:
+    artifact = dict(item)
+    filename = str(artifact.get("filename", ""))
+    kind = str(artifact.get("kind", "")).upper()
+    platform, platform_label = classify_artifact_platform(filename, kind)
+    artifact["platform"] = platform
+    artifact["platform_label"] = platform_label
+    if not artifact.get("kind_label"):
+        artifact["kind_label"] = _KIND_LABELS.get(kind, kind or "文件记录")
+    return artifact
 
 
 def build_archive_timeline_groups(archived_releases: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -176,6 +209,9 @@ def _find_equivalent_release_copy(target_dir: Path, source_path: Path) -> Path |
 
 
 def extract_release_version(name: str) -> str | None:
+    android = _ANDROID_RELEASE_CANONICAL_RE.match(name)
+    if android:
+        return android.group(1)
     canonical = _APP_RELEASE_CANONICAL_RE.match(name)
     if canonical:
         return canonical.group(1)
@@ -225,6 +261,8 @@ def build_release_artifact(
     modified_iso, modified_display, modified_date = _format_modified(stat.st_mtime)
     kind = file_path.suffix.lstrip(".").upper() or "FILE"
     era, era_label = classify_artifact_era(kind)
+    platform, platform_label = classify_artifact_platform(file_path.name, kind)
+    display_title = f"ColorVision Android {version}" if platform == "android" else f"ColorVision {version}"
     return {
         "filename": file_path.name,
         "version": version,
@@ -233,6 +271,8 @@ def build_release_artifact(
         "kind_label": _KIND_LABELS.get(kind, kind),
         "era": era,
         "era_label": era_label,
+        "platform": platform,
+        "platform_label": platform_label,
         "source": source,
         "major_minor": major_minor,
         "branch": branch,
@@ -240,7 +280,7 @@ def build_release_artifact(
         "modified": modified_iso,
         "modified_display": modified_display,
         "modified_date": modified_date,
-        "display_title": f"ColorVision {version}",
+        "display_title": display_title,
     }
 
 
@@ -295,11 +335,21 @@ def scan_app_release_artifacts(
 
 
 def build_app_release_context(releases: list[dict[str, Any]]) -> dict[str, Any]:
-    current_releases = [item for item in releases if item["source"] == "current"]
-    archived_releases = [item for item in releases if item["source"] == "archive"]
-    latest_release = current_releases[0] if current_releases else (releases[0] if releases else None)
+    enriched_releases = sorted(
+        (enrich_release_artifact(item) for item in releases),
+        key=release_sort_key,
+        reverse=True,
+    )
+    windows_releases = [item for item in enriched_releases if item.get("platform") != "android"]
+    android_releases = [item for item in enriched_releases if item.get("platform") == "android"]
+    current_releases = [item for item in windows_releases if item["source"] == "current"]
+    archived_releases = [item for item in windows_releases if item["source"] == "archive"]
+    current_android_releases = [item for item in android_releases if item["source"] == "current"]
+    archived_android_releases = [item for item in android_releases if item["source"] == "archive"]
+    latest_release = current_releases[0] if current_releases else (windows_releases[0] if windows_releases else None)
+    latest_android_release = current_android_releases[0] if current_android_releases else (android_releases[0] if android_releases else None)
     recent_branches: list[str] = []
-    for item in releases:
+    for item in windows_releases:
         branch = str(item.get("branch", ""))
         if branch and branch not in recent_branches:
             recent_branches.append(branch)
@@ -308,8 +358,12 @@ def build_app_release_context(releases: list[dict[str, Any]]) -> dict[str, Any]:
 
     return {
         "latest_release": latest_release,
+        "latest_android_release": latest_android_release,
         "current_releases": current_releases,
         "archived_releases": archived_releases,
+        "android_releases": android_releases,
+        "current_android_releases": current_android_releases,
+        "archived_android_releases": archived_android_releases,
         "current_preview": current_releases[:6],
         "archive_preview": archived_releases[:10],
         "archive_recent": archived_releases[:120],
@@ -318,6 +372,9 @@ def build_app_release_context(releases: list[dict[str, Any]]) -> dict[str, Any]:
         "archive_timeline_count": len(archive_timeline_groups),
         "current_count": len(current_releases),
         "archive_count": len(archived_releases),
+        "android_count": len(android_releases),
+        "current_android_count": len(current_android_releases),
+        "archive_android_count": len(archived_android_releases),
         "release_branch_count": len(recent_branches),
         "archive_more_count": max(len(archived_releases) - 120, 0),
     }
