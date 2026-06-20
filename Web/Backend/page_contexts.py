@@ -293,6 +293,7 @@ def build_index_page_context(
         app_info,
         filesystem_spotlight,
     )
+    docs_summary = _build_docs_home_summary(cache_manager) if cache_manager is not None else _empty_docs_home_summary()
     return {
         "app_info": app_info,
         "overview": overview,
@@ -305,6 +306,49 @@ def build_index_page_context(
         "update_summary": update_summary,
         "tool_items": tools_context["items"][:8],
         "tool_summary": tools_context["summary"],
+        "docs": docs_summary,
+    }
+
+
+def _empty_docs_home_summary() -> dict[str, Any]:
+    return {
+        "entryUrl": "/scgd_general_wpf/",
+        "total": 0,
+        "featured": [],
+        "recent": [],
+        "categoryCounts": {},
+    }
+
+
+def _build_docs_home_summary(cache_manager) -> dict[str, Any]:
+    from services.docs_site import DOCS_BASE_PATH, get_docs_index_snapshot
+
+    index = get_docs_index_snapshot(cache_manager, refresh_if_missing=False)
+    items = list(index.get("items") or [])
+    by_path = {str(item.get("path", "")).lower(): item for item in items}
+    preferred_paths = [
+        "00-getting-started/readme.md",
+        "01-user-guide/readme.md",
+        "02-developer-guide/plugin-development/overview.md",
+        "02-developer-guide/deployment/auto-update.md",
+        "04-api-reference/plugins/plugin-capability-matrix.md",
+        "02-developer-guide/backend/readme.md",
+    ]
+    featured = [by_path[path] for path in preferred_paths if path in by_path][:4]
+    if len(featured) < 4:
+        seen = {item.get("path") for item in featured}
+        for item in items:
+            if item.get("path") in seen:
+                continue
+            featured.append(item)
+            if len(featured) >= 4:
+                break
+    return {
+        "entryUrl": DOCS_BASE_PATH,
+        "total": int((index.get("summary") or {}).get("total") or 0),
+        "featured": featured,
+        "recent": list(index.get("recent") or [])[:4],
+        "categoryCounts": (index.get("summary") or {}).get("categoryCounts") or {},
     }
 
 

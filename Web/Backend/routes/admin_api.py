@@ -8,12 +8,15 @@ Per-endpoint scope requirements:
   - GET  /cache/status        → cache:read
   - POST /cache/cleanup       → cache:refresh
   - POST /index/plugins/*     → cache:refresh
+  - POST /index/docs/refresh  → cache:refresh
   - GET  /jobs                → jobs:read
   - POST /jobs/*/run          → jobs:write
   - POST /jobs/*/enable       → jobs:write
   - POST /jobs/*/disable      → jobs:write
   - GET  /audit-log           → admin:*
   - GET  /stats/overview      → stats:read
+  - GET  /docs/status         → cache:read
+  - GET  /publish/integrity   → stats:read
   - GET  /api-keys            → admin:*
   - POST /api-keys            → admin:*
   - POST /api-keys/*/revoke   → admin:*
@@ -47,6 +50,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "refresh_all_releases": ["cache:refresh"],
     "refresh_all_updates": ["cache:refresh"],
     "refresh_all_tools": ["cache:refresh"],
+    "refresh_docs_index": ["cache:refresh"],
     "refresh_all_indexes": ["cache:refresh"],
     "index_status": ["cache:read"],
     "backup_db": ["admin:*"],
@@ -62,6 +66,8 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "rotate_api_key": ["admin:*"],
     "api_key_usage": ["admin:*"],
     "perf_summary": ["stats:read"],
+    "docs_status": ["cache:read"],
+    "publish_integrity": ["stats:read"],
 }
 
 
@@ -209,6 +215,21 @@ def cache_cleanup():
     )
 
     return jsonify({"deleted_count": deleted})
+
+
+@admin_api.route("/docs/status", methods=["GET"])
+def docs_status():
+    from services.docs_site import build_docs_status
+
+    return jsonify(build_docs_status(_get_ctx().cache))
+
+
+@admin_api.route("/publish/integrity", methods=["GET"])
+def publish_integrity():
+    ctx = _get_ctx()
+    from services.publish_integrity import build_publish_integrity_report
+
+    return jsonify(build_publish_integrity_report(ctx.storage_getter(), ctx.cache))
 
 
 # ---------------------------------------------------------------------------
@@ -365,11 +386,31 @@ def refresh_all_tools():
     return jsonify(result)
 
 
+@admin_api.route("/index/docs/refresh", methods=["POST"])
+def refresh_docs_index():
+    ctx = _get_ctx()
+    from services.docs_site import refresh_docs_index as _refresh_docs_index
+
+    result = _refresh_docs_index(ctx.cache)
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="index_refresh_docs",
+        target_type="docs_index",
+        detail=f"indexed={result.get('indexed_count', 0)} errors={len(result.get('errors', []))}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(result)
+
+
 @admin_api.route("/index/refresh-all", methods=["POST"])
 def refresh_all_indexes():
     ctx = _get_ctx()
     from services.artifact_index import refresh_all_indexes as _refresh_all
     from services.plugin_index import refresh_all_plugin_index
+    from services.docs_site import refresh_docs_index as _refresh_docs_index
 
     results = {}
 
@@ -386,6 +427,9 @@ def refresh_all_indexes():
     # Artifact indexes
     artifact_results = _refresh_all(ctx.cache, ctx.storage_getter())
     results.update(artifact_results["results"])
+
+    # Docs index
+    results["docs"] = _refresh_docs_index(ctx.cache)
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),

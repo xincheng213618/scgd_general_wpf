@@ -106,6 +106,27 @@ export interface HomePayload {
   update_summary: UpdateSummary
   tool_items: StorageItem[]
   tool_summary: StorageSummary
+  docs?: DocsHomeSummary
+}
+
+export interface DocsHomeItem {
+  title: string
+  excerpt?: string
+  path: string
+  href: string
+  category?: string
+  categoryLabel?: string
+  locale?: string
+  localeLabel?: string
+  modified?: string | null
+}
+
+export interface DocsHomeSummary {
+  entryUrl: string
+  total: number
+  featured: DocsHomeItem[]
+  recent: DocsHomeItem[]
+  categoryCounts: Record<string, number>
 }
 
 export interface ReleasesPayload {
@@ -189,15 +210,26 @@ export interface PluginListResponse {
 export interface PluginVersion {
   version: string
   requiresVersion?: string
+  changeLog?: string
+  changeLogHtml?: string
   fileSize?: number
   fileHash?: string
   createdAt?: string
   source?: string
 }
 
+export interface RelatedDocLink {
+  title: string
+  href: string
+  description?: string
+}
+
 export interface PluginDetail extends PluginSummary {
   readme?: string
+  readmeHtml?: string
   changelog?: string
+  changelogHtml?: string
+  relatedDocs?: RelatedDocLink[]
   currentPackageCount?: number
   historicalPackageCount?: number
   versions: PluginVersion[]

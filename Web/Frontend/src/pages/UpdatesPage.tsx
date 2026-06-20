@@ -1,4 +1,4 @@
-import { ReloadOutlined } from '@ant-design/icons'
+import { BookOutlined, FileMarkdownOutlined, ReloadOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Skeleton, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
@@ -65,6 +65,12 @@ export function UpdatesPage() {
           <Tag color="green">建议保留 {data.update_summary.retained_count || 0}</Tag>
           <Tag>最新 {data.update_summary.latest_version || '暂无'}</Tag>
           <Link to="/browse/Update">浏览 Update 目录</Link>
+          <Button icon={<BookOutlined />} href="/scgd_general_wpf/02-developer-guide/deployment/auto-update">
+            自动更新文档
+          </Button>
+          <Button icon={<FileMarkdownOutlined />} href="/changelog">
+            发布说明
+          </Button>
         </Space>
       </Card>
       <Card title="标准增量包">

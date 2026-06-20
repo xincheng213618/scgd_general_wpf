@@ -1,4 +1,5 @@
 import {
+  BookOutlined,
   DownloadOutlined,
   FileOutlined,
   FolderOpenOutlined,
@@ -117,6 +118,12 @@ export function ToolsPage() {
           </span>
           <Button type="primary" ghost icon={<FolderOpenOutlined />} href="/browse/Tool">
             浏览目录
+          </Button>
+          <Button icon={<BookOutlined />} href="/scgd_general_wpf/02-developer-guide/scripts/">
+            脚本文档
+          </Button>
+          <Button icon={<BookOutlined />} href="/scgd_general_wpf/02-developer-guide/backend/">
+            后端文档
           </Button>
         </div>
       </section>

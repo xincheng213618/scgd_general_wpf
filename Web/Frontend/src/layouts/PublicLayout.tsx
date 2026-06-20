@@ -1,5 +1,6 @@
 import {
   AppstoreOutlined,
+  BookOutlined,
   CloudDownloadOutlined,
   DashboardOutlined,
   FolderOpenOutlined,
@@ -21,20 +22,26 @@ import type { AuthSession } from '../types/site'
 
 const { Header, Content } = Layout
 
-const menuItems = [
+const docsUrl = '/scgd_general_wpf/'
+
+const menuItems: Array<{ key: string; icon: ReactNode; label: string; href?: string }> = [
   { key: '/', icon: <HomeOutlined />, label: '首页' },
   { key: '/plugins', icon: <AppstoreOutlined />, label: '插件市场' },
   { key: '/releases', icon: <CloudDownloadOutlined />, label: '版本中心' },
   { key: '/updates', icon: <ProductOutlined />, label: '增量更新' },
   { key: '/tools', icon: <ToolOutlined />, label: '工具下载' },
+  { key: 'docs', icon: <BookOutlined />, label: '文档中心', href: docsUrl },
   { key: '/transfer', icon: <InboxOutlined />, label: '文件中转' },
   { key: '/browse', icon: <FolderOpenOutlined />, label: '文件浏览' },
 ]
 
 function selectedKey(pathname: string) {
+  if (pathname.startsWith(docsUrl)) return 'docs'
   const match = [...menuItems].reverse().find((item) => item.key !== '/' && pathname.startsWith(item.key))
   return match?.key ?? '/'
 }
+
+const publicMenuItems = menuItems.map(({ key, icon, label }) => ({ key, icon, label }))
 
 export function PublicLayout({
   children,
@@ -90,8 +97,15 @@ export function PublicLayout({
           <Menu
             mode="horizontal"
             selectedKeys={[selectedKey(location.pathname)]}
-            items={menuItems}
-            onClick={(item) => navigate(item.key)}
+            items={publicMenuItems}
+            onClick={(item) => {
+              const target = menuItems.find((entry) => entry.key === item.key)
+              if (target?.href) {
+                window.location.href = target.href
+                return
+              }
+              navigate(item.key)
+            }}
             className="site-menu"
           />
           <Space className="site-actions">

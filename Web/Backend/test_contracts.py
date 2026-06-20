@@ -20,6 +20,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 import app as marketplace_app
 
@@ -123,9 +124,12 @@ class PublicPageContracts(ContractTestBase):
     """Contract tests for public React routes and site-data endpoints."""
 
     def assert_spa_shell(self, resp):
-        self.assertEqual(resp.status_code, 200)
-        self.assertIn("text/html", resp.content_type)
-        self.assertIn('<div id="root">', resp.get_data(as_text=True))
+        try:
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("text/html", resp.content_type)
+            self.assertIn('<div id="root">', resp.get_data(as_text=True))
+        finally:
+            resp.close()
 
     def test_home_page_returns_200(self):
         resp = self.client.get("/")
@@ -189,6 +193,34 @@ class PublicPageContracts(ContractTestBase):
         resp = self.client.get("/changelog")
         self.assert_spa_shell(resp)
 
+    def test_docs_redirect_enters_vitepress_base(self):
+        resp = self.client.get("/docs", follow_redirects=False)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.headers["Location"], "/scgd_general_wpf/")
+        path_resp = self.client.get("/docs/02-developer-guide/backend/README", follow_redirects=False)
+        self.assertEqual(path_resp.status_code, 302)
+        self.assertEqual(path_resp.headers["Location"], "/scgd_general_wpf/02-developer-guide/backend/README")
+        root_resp = self.client.get("/scgd_general_wpf", follow_redirects=False)
+        self.assertEqual(root_resp.status_code, 302)
+        self.assertEqual(root_resp.headers["Location"], "/scgd_general_wpf/")
+
+    def test_docs_site_serves_vitepress_index_and_clean_urls(self):
+        with tempfile.TemporaryDirectory() as td:
+            dist = Path(td)
+            (dist / "index.html").write_text("<html>Docs Home</html>", encoding="utf-8")
+            (dist / "guide").mkdir()
+            (dist / "guide" / "README.html").write_text("<html>Guide</html>", encoding="utf-8")
+            with mock.patch("services.docs_site.docs_dist_dir", return_value=dist):
+                home = self.client.get("/scgd_general_wpf/")
+                self.assertEqual(home.status_code, 200)
+                self.assertIn("Docs Home", home.get_data(as_text=True))
+                home.close()
+
+                guide = self.client.get("/scgd_general_wpf/guide/README")
+                self.assertEqual(guide.status_code, 200)
+                self.assertIn("Guide", guide.get_data(as_text=True))
+                guide.close()
+
 
 # ===================================================================
 # Public API Contracts
@@ -214,14 +246,21 @@ class PublicApiContracts(ContractTestBase):
         self.assertLessEqual(len(data["items"]), 2)
 
     def test_api_plugin_detail_returns_required_fields(self):
-        self.create_plugin("DetailPlugin", "3.0.0")
+        plugin_dir = self.create_plugin("DetailPlugin", "3.0.0")
+        (plugin_dir / "README.md").write_text("## 安装说明\n\n| 项目 | 说明 |\n| --- | --- |\n| A | B |", encoding="utf-8")
+        (plugin_dir / "CHANGELOG.md").write_text("## 3.0.0\n\n- 支持 Markdown", encoding="utf-8")
         resp = self.client.get("/api/plugins/DetailPlugin")
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         for field in ("pluginId", "name", "latestVersion", "versions", "archivedVersions",
-                       "readme", "changelog", "iconUrl", "totalDownloads",
+                       "readme", "readmeHtml", "changelog", "changelogHtml", "relatedDocs",
+                       "iconUrl", "totalDownloads",
                        "currentPackageCount", "historicalPackageCount"):
             self.assertIn(field, data, f"Missing field: {field}")
+        self.assertIn("<h2>", data["readmeHtml"])
+        self.assertIn("<table>", data["readmeHtml"])
+        self.assertIn("支持 Markdown", data["changelogHtml"])
+        self.assertTrue(any(doc["href"].startswith("/scgd_general_wpf/") for doc in data["relatedDocs"]))
 
     def test_api_plugin_detail_400_for_invalid_id(self):
         resp = self.client.get("/api/plugins/bad!id")
@@ -240,6 +279,28 @@ class PublicApiContracts(ContractTestBase):
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.content_type.startswith("text/plain"))
         self.assertIn("notes", resp.get_data(as_text=True))
+
+    def test_api_home_includes_public_docs_summary_when_indexed(self):
+        with tempfile.TemporaryDirectory() as td:
+            source = Path(td) / "docs"
+            source.mkdir(parents=True)
+            (source / "README.md").write_text("# Docs Home\n\nStart here.", encoding="utf-8")
+            (source / "02-developer-guide").mkdir()
+            (source / "02-developer-guide" / "plugin-development").mkdir()
+            (source / "02-developer-guide" / "plugin-development" / "overview.md").write_text(
+                "# Plugin Overview\n\nBuild plugins.", encoding="utf-8",
+            )
+            with mock.patch("services.docs_site.docs_source_dir", return_value=source):
+                from services.docs_site import refresh_docs_index
+                refresh_docs_index(marketplace_app._cache)
+                resp = self.client.get("/api/site/home")
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertIn("docs", data)
+        self.assertEqual(data["docs"]["total"], 2)
+        self.assertTrue(data["docs"]["featured"])
+        self.assertTrue(all(item["href"].startswith("/scgd_general_wpf/") for item in data["docs"]["featured"]))
 
     def test_api_health_returns_ok(self):
         resp = self.client.get("/api/health")
@@ -538,6 +599,87 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("db_path", data)
         self.assertIn("cache_entry_count", data)
+
+    def test_docs_status_returns_build_info(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = root / "docs"
+            dist = source / ".vitepress" / "dist"
+            source.mkdir(parents=True)
+            dist.mkdir(parents=True)
+            (source / "README.md").write_text("# Docs", encoding="utf-8")
+            (source / "02-developer-guide").mkdir()
+            (source / "02-developer-guide" / "backend.md").write_text("# Backend\n\nAPI and cache.", encoding="utf-8")
+            (dist / "index.html").write_text("<html>Docs</html>", encoding="utf-8")
+            (dist / "docs-search-index.json").write_text("{}", encoding="utf-8")
+
+            with mock.patch("services.docs_site.docs_source_dir", return_value=source), \
+                 mock.patch("services.docs_site.docs_dist_dir", return_value=dist):
+                resp = self.client.get("/api/admin/docs/status", headers=self.basic_auth())
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertEqual(data["entryUrl"], "/scgd_general_wpf/")
+        self.assertEqual(data["healthStatus"], "ok")
+        self.assertIn("文档", data["healthMessage"])
+        self.assertEqual(data["buildCommand"], "npm run docs:build")
+        self.assertTrue(data["sourceExists"])
+        self.assertTrue(data["built"])
+        self.assertEqual(data["sourceDocumentCount"], 2)
+        self.assertEqual(data["builtPageCount"], 1)
+        self.assertTrue(data["searchIndexExists"])
+        self.assertEqual(data["indexedDocumentCount"], 2)
+        self.assertIn("开发指南", data["categoryCounts"])
+        self.assertTrue(any(item["title"] == "Backend" for item in data["recentDocuments"]))
+
+    def test_docs_index_refresh_endpoint_updates_index_state(self):
+        with tempfile.TemporaryDirectory() as td:
+            source = Path(td) / "docs"
+            source.mkdir(parents=True)
+            (source / "README.md").write_text("# Docs Home", encoding="utf-8")
+            with mock.patch("services.docs_site.docs_source_dir", return_value=source):
+                resp = self.client.post("/api/admin/index/docs/refresh", headers=self.basic_auth())
+                status = self.client.get("/api/admin/index/status", headers=self.basic_auth())
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["indexed_count"], 1)
+        self.assertEqual(status.status_code, 200)
+        status_data = status.get_json()
+        self.assertIn("docs", status_data["states"])
+        self.assertEqual(status_data["counts"]["docs"], 1)
+
+    def test_publish_integrity_reports_missing_and_ready_items(self):
+        (self.storage / "LATEST_RELEASE").write_text("4.0.0.1", encoding="utf-8")
+        self.create_release("4.0.0.1")
+        self.create_update("4.0.0.1")
+        (self.storage / "CHANGELOG.md").write_text("## 4.0.0.1\n- release notes", encoding="utf-8")
+        self.create_plugin("MissingDocs", "1.0.0")
+        complete = self.create_plugin("CompletePlugin", "1.0.0")
+        (complete / "README.md").write_text("# Complete", encoding="utf-8")
+        (complete / "CHANGELOG.md").write_text("## 1.0.0\n- ready", encoding="utf-8")
+
+        with tempfile.TemporaryDirectory() as td:
+            source = Path(td) / "docs"
+            dist = source / ".vitepress" / "dist"
+            source.mkdir(parents=True)
+            dist.mkdir(parents=True)
+            (source / "README.md").write_text("# Docs", encoding="utf-8")
+            (dist / "index.html").write_text("<html>Docs</html>", encoding="utf-8")
+            with mock.patch("services.docs_site.docs_source_dir", return_value=source), \
+                 mock.patch("services.docs_site.docs_dist_dir", return_value=dist):
+                resp = self.client.get("/api/admin/publish/integrity", headers=self.basic_auth())
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertEqual(data["app"]["latestVersion"], "4.0.0.1")
+        self.assertGreaterEqual(data["app"]["matchedUpdateCount"], 1)
+        self.assertTrue(data["app"]["changelogMentionsLatest"])
+        self.assertEqual(data["plugins"]["total"], 2)
+        self.assertTrue(any(item["pluginId"] == "MissingDocs" for item in data["plugins"]["missingReadme"]))
+        self.assertTrue(any(item["pluginId"] == "MissingDocs" for item in data["plugins"]["missingChangelog"]))
+        self.assertTrue(any(item["key"] == "docs_site" for item in data["checks"]))
 
     def test_cache_cleanup_returns_count(self):
         resp = self.client.post("/api/admin/cache/cleanup", headers=self.basic_auth())

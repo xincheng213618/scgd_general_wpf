@@ -1,4 +1,4 @@
-import { CloudDownloadOutlined, FilterOutlined } from '@ant-design/icons'
+import { BookOutlined, CloudDownloadOutlined, FileMarkdownOutlined, FilterOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Col, Collapse, Form, Row, Select, Skeleton, Space, Statistic, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -64,6 +64,12 @@ export function ReleasesPage() {
               <Statistic title="当前版本" value={data.app_info.current_count || 0} />
               <Statistic title="历史制品" value={data.app_info.archive_count || 0} />
               <Statistic title="历史阶段" value={data.app_info.archive_timeline_count || 0} />
+              <Button icon={<FileMarkdownOutlined />} href="/changelog">
+                发布说明
+              </Button>
+              <Button icon={<BookOutlined />} href="/scgd_general_wpf/02-developer-guide/deployment/auto-update">
+                自动更新文档
+              </Button>
             </Space>
           </Col>
         </Row>

@@ -229,6 +229,7 @@ def register_all_blueprints(app, ctx, services, helpers):
     from routes.pages import register_pages
     from routes.cvws_api import register_cvws_api
     from routes.admin_api import AdminApiContext, register_admin_api_routes
+    from routes.docs_site import register_docs_site
     from routes.frontend_spa import FrontendSpaContext, register_frontend_spa
     from marketplace_api_routes import MarketplaceApiRouteContext, register_marketplace_api_routes
     from catalog_view_models import (
@@ -284,7 +285,11 @@ def register_all_blueprints(app, ctx, services, helpers):
         allowed_catalog_sorts=ALLOWED_CATALOG_SORTS,
         allowed_catalog_sort_orders=ALLOWED_CATALOG_SORT_ORDERS,
         build_plugin_search_api_result=build_plugin_search_api_result,
-        build_plugin_detail_api_result=build_plugin_detail_api_result,
+        build_plugin_detail_api_result=lambda info, *, icon_url_builder: build_plugin_detail_api_result(
+            info,
+            icon_url_builder=icon_url_builder,
+            render_markdown=helpers["render_markdown_cached"],
+        ),
         collect_catalog_categories=collect_catalog_categories,
         get_request_plugin_catalog=lambda: services.get_request_plugin_catalog(),
         build_plugin_icon_url=lambda pid: f"/plugins/{pid}/icon",
@@ -370,6 +375,8 @@ def register_all_blueprints(app, ctx, services, helpers):
         get_slow_requests=lambda: ctx.slow_requests,
     ))
 
+    register_docs_site(app)
+
     register_frontend_spa(app, FrontendSpaContext(
         check_auth=_check_admin_auth,
         dist_dir=Path(__file__).resolve().parents[1] / "Frontend" / "dist",
@@ -382,6 +389,8 @@ def register_all_blueprints(app, ctx, services, helpers):
         )
         warm_latest_version_cache(_dynamic_storage())
         warm_plugin_latest_versions_cache(_dynamic_storage(), cache)
+        from services.docs_site import get_docs_index
+        get_docs_index(cache, refresh_if_missing=True)
     except Exception as exc:
         print(f"[version_cache] startup warm failed: {exc}")
 

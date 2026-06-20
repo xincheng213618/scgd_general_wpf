@@ -22,6 +22,45 @@ export interface CacheStatus {
   storage_path: string
 }
 
+export interface DocsStatus {
+  basePath: string
+  entryUrl: string
+  redirectUrl: string
+  sourcePath: string
+  distPath: string
+  sourceExists: boolean
+  built: boolean
+  healthStatus?: 'ok' | 'warning' | 'error'
+  healthMessage?: string
+  actionHint?: string
+  buildCommand?: string
+  sourceDocumentCount: number
+  builtPageCount: number
+  lastSourceUpdate?: string | null
+  lastBuildUpdate?: string | null
+  manifestExists: boolean
+  manifestSizeBytes: number
+  searchIndexExists: boolean
+  searchIndexSizeBytes: number
+  indexCached: boolean
+  indexedDocumentCount: number
+  indexUpdatedAt?: string | null
+  categoryCounts: Record<string, number>
+  localeCounts: Record<string, number>
+  recentDocuments: Array<{
+    title: string
+    excerpt?: string
+    path: string
+    href: string
+    category: string
+    categoryLabel: string
+    locale: string
+    localeLabel: string
+    modified?: string | null
+    size?: number
+  }>
+}
+
 export interface CacheMetric {
   key: string
   name: string
@@ -116,4 +155,47 @@ export interface PublishDraftFormValues {
 export interface ThemeSettingsFormValues {
   themeMode: ThemeMode
   density: 'middle' | 'small'
+}
+
+export interface PublishIntegrityCheck {
+  key: string
+  title: string
+  status: 'ok' | 'warning' | 'error'
+  detail: string
+  actionHref?: string
+}
+
+export interface PublishIntegrityPluginIssue {
+  pluginId: string
+  name: string
+  latestVersion?: string
+}
+
+export interface PublishIntegrityReport {
+  status: 'ok' | 'warning' | 'error'
+  score: number
+  okCount: number
+  warningCount: number
+  errorCount: number
+  generatedAt: string
+  checks: PublishIntegrityCheck[]
+  app: {
+    latestVersion?: string
+    currentReleaseCount: number
+    updatePackageCount: number
+    matchedUpdateCount: number
+    changelogExists: boolean
+    changelogMentionsLatest: boolean
+  }
+  plugins: {
+    total: number
+    missingReadme: PublishIntegrityPluginIssue[]
+    missingChangelog: PublishIntegrityPluginIssue[]
+    missingPackage: PublishIntegrityPluginIssue[]
+  }
+  docs: {
+    built: boolean
+    indexedDocumentCount: number
+    indexUpdatedAt?: string | null
+  }
 }

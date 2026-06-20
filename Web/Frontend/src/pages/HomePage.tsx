@@ -1,6 +1,7 @@
 import {
   AppstoreOutlined,
   ArrowRightOutlined,
+  BookOutlined,
   CloudDownloadOutlined,
   FileDoneOutlined,
   FileTextOutlined,
@@ -48,9 +49,10 @@ export function HomePage() {
   const currentCount = data.app_info.current_count ?? 0
   const updateCount = data.update_summary.canonical_count ?? 0
   const toolCount = (data.tool_summary.directory_count ?? 0) + (data.tool_summary.file_count ?? data.tool_items.length ?? 0)
-  const entryCount = 5
+  const entryCount = 6
   const releaseItems = (data.app_info.current_preview || []).slice(0, 3)
   const recentItems = data.recent_change_dashboard.slice(0, 3)
+  const docItems = ((data.docs?.featured?.length ? data.docs.featured : data.docs?.recent) || []).slice(0, 4)
 
   const proofItems = [
     { label: '最新版本', value: latestVersion },
@@ -88,6 +90,13 @@ export function HomePage() {
       href: '/tools',
       icon: <ToolOutlined />,
       meta: `${toolCount} 个项目`,
+    },
+    {
+      title: '文档中心',
+      desc: '正式文档、开发指南和 API 参考。',
+      href: '/scgd_general_wpf/',
+      icon: <BookOutlined />,
+      meta: 'VitePress 文档站',
     },
     {
       title: '文件中转',
@@ -234,6 +243,34 @@ export function HomePage() {
           </section>
         </div>
       </section>
+
+      {docItems.length > 0 && (
+        <section className="home-curated-panel home-docs-panel">
+          <div className="home-panel-heading">
+            <div>
+              <span className="home-panel-kicker">
+                <BookOutlined />
+                文档
+              </span>
+              <Title level={3}>常用资料</Title>
+            </div>
+            <Button href={data.docs?.entryUrl || '/scgd_general_wpf/'}>文档中心</Button>
+          </div>
+          <div className="home-doc-grid">
+            {docItems.map((item) => (
+              <a href={item.href} className="home-doc-card" key={item.path}>
+                <span>{item.categoryLabel || '文档'}</span>
+                <strong>{item.title}</strong>
+                {item.excerpt && <small>{item.excerpt}</small>}
+                <em>
+                  打开
+                  <ArrowRightOutlined />
+                </em>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

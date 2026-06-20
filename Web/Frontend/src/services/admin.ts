@@ -5,6 +5,8 @@ import type {
   CacheStatus,
   CreateApiKeyPayload,
   CreateApiKeyResult,
+  DocsStatus,
+  PublishIntegrityReport,
   ScheduledJob,
 } from '../types/admin'
 import { getJson, postJson } from './request'
@@ -17,8 +19,20 @@ export function getCacheStatus() {
   return getJson<CacheStatus>('/api/admin/cache/status')
 }
 
+export function getDocsStatus() {
+  return getJson<DocsStatus>('/api/admin/docs/status')
+}
+
+export function getPublishIntegrity() {
+  return getJson<PublishIntegrityReport>('/api/admin/publish/integrity')
+}
+
 export function refreshAllIndexes() {
   return postJson('/api/admin/index/refresh-all')
+}
+
+export function refreshDocsIndex() {
+  return postJson<{ status: string; indexed_count: number; duration_ms: number; errors?: string[] }>('/api/admin/index/docs/refresh')
 }
 
 export function cleanupCache() {

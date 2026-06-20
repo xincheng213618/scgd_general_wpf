@@ -1,11 +1,14 @@
 import { CloudUploadOutlined } from '@ant-design/icons'
 import {
+  Alert,
   App,
   Button,
   Card,
   Checkbox,
   Form,
   Input,
+  List,
+  Progress,
   Space,
   Table,
   Tabs,
@@ -15,14 +18,102 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
 import { TransferPanel } from '../components/TransferPanel'
+import { getPublishIntegrity } from '../services/admin'
 import {
   getCvwsContext,
   getUploadContext,
   publishCvwsPackage,
   publishPluginPackage,
 } from '../services/site'
+import type { PublishIntegrityReport } from '../types/admin'
 import type { CvwsContext, UploadContext } from '../types/site'
 import { humanSize } from '../utils/format'
+
+const integrityStatusText = {
+  ok: '发布资料齐全',
+  warning: '存在提醒项',
+  error: '存在缺失项',
+}
+
+const integrityStatusType = {
+  ok: 'success',
+  warning: 'warning',
+  error: 'error',
+} as const
+
+function PublishIntegrityPanel() {
+  const { message } = App.useApp()
+  const [report, setReport] = useState<PublishIntegrityReport | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      setReport(await getPublishIntegrity())
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '发布完整性检查失败')
+    } finally {
+      setLoading(false)
+    }
+  }, [message])
+
+  useEffect(() => {
+    let mounted = true
+    getPublishIntegrity()
+      .then((payload) => {
+        if (mounted) setReport(payload)
+      })
+      .catch((error) => {
+        if (mounted) message.error(error instanceof Error ? error.message : '发布完整性检查失败')
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [message])
+
+  const status = report?.status || 'warning'
+
+  return (
+    <Card loading={loading} title="发布完整性">
+      {report && (
+        <Space direction="vertical" size={16} className="wide-space">
+          <Alert
+            type={integrityStatusType[status]}
+            showIcon
+            message={integrityStatusText[status]}
+            description={`安装包、增量包、发布说明、插件文档和文档站索引的当前检查结果。`}
+            action={<Button onClick={load}>重新检查</Button>}
+          />
+          <Space wrap size={18}>
+            <Progress type="circle" percent={report.score} size={86} status={report.status === 'error' ? 'exception' : undefined} />
+            <Space wrap>
+              <Tag color="green">通过 {report.okCount}</Tag>
+              <Tag color="gold">提醒 {report.warningCount}</Tag>
+              <Tag color="red">缺失 {report.errorCount}</Tag>
+              <Tag>最新版本 {report.app.latestVersion || '-'}</Tag>
+              <Tag>插件 {report.plugins.total}</Tag>
+              <Tag>文档 {report.docs.indexedDocumentCount}</Tag>
+            </Space>
+          </Space>
+          <List
+            size="small"
+            dataSource={report.checks}
+            renderItem={(item) => (
+              <List.Item actions={item.actionHref ? [<a href={item.actionHref} key="fix">处理</a>] : undefined}>
+                <List.Item.Meta
+                  title={<Space><Tag color={item.status === 'ok' ? 'green' : item.status === 'warning' ? 'gold' : 'red'}>{item.title}</Tag>{item.detail}</Space>}
+                />
+              </List.Item>
+            )}
+          />
+        </Space>
+      )}
+    </Card>
+  )
+}
 
 function PluginPublishPanel() {
   const { message } = App.useApp()
@@ -185,12 +276,15 @@ function CvwsPublishPanel() {
 
 export function PublishPage() {
   return (
-    <Tabs
-      items={[
-        { key: 'plugin', label: '插件包发布', children: <PluginPublishPanel /> },
-        { key: 'cvws', label: '服务包发布', children: <CvwsPublishPanel /> },
-        { key: 'transfer', label: '文件中转', children: <TransferPanel /> },
-      ]}
-    />
+    <Space direction="vertical" size={16} className="page-stack">
+      <PublishIntegrityPanel />
+      <Tabs
+        items={[
+          { key: 'plugin', label: '插件包发布', children: <PluginPublishPanel /> },
+          { key: 'cvws', label: '服务包发布', children: <CvwsPublishPanel /> },
+          { key: 'transfer', label: '文件中转', children: <TransferPanel /> },
+        ]}
+      />
+    </Space>
   )
 }

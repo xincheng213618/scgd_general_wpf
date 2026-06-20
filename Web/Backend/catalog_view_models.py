@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from typing import Any, Callable, Iterable
 from urllib.parse import urlencode
 
@@ -18,6 +19,56 @@ ALLOWED_CATALOG_SORTS = frozenset({"updated", "name", "downloads"})
 ALLOWED_CATALOG_SORT_ORDERS = frozenset({"asc", "desc"})
 DEFAULT_HTML_PAGE_SIZE = 12
 DEFAULT_API_PAGE_SIZE = 20
+DOCS_ENTRY_URL = "/scgd_general_wpf/"
+
+
+def _docs_link(title: str, href: str, description: str = "") -> dict[str, str]:
+    return {"title": title, "href": href, "description": description}
+
+
+def build_plugin_related_docs(plugin_id: str) -> list[dict[str, str]]:
+    docs = [
+        _docs_link(
+            "插件开发指南",
+            f"{DOCS_ENTRY_URL}02-developer-guide/plugin-development/overview",
+            "插件生命周期、开发入口和打包发布说明。",
+        ),
+        _docs_link(
+            "插件能力矩阵",
+            f"{DOCS_ENTRY_URL}04-api-reference/plugins/plugin-capability-matrix",
+            "标准插件能力、覆盖范围和验收口径。",
+        ),
+    ]
+    standard_docs = {
+        "cvwindowsservice": ("Windows Service 插件", "windows-service"),
+        "systemmonitor": ("System Monitor 插件", "system-monitor"),
+        "spectrum": ("Spectrum 插件", "spectrum"),
+        "eventvwr": ("EventVWR 插件", "eventvwr"),
+        "conoscope": ("Conoscope 插件", "conoscope"),
+    }
+    standard = standard_docs.get(str(plugin_id or "").lower())
+    if standard:
+        title, slug = standard
+        docs.insert(0, _docs_link(title, f"{DOCS_ENTRY_URL}04-api-reference/plugins/standard-plugins/{slug}", "标准插件说明文档。"))
+    return docs
+
+
+def _render_plugin_markdown(
+    plugin_id: str,
+    field: str,
+    text: str | None,
+    render_markdown: Callable[..., Any] | None,
+) -> str:
+    if not text:
+        return ""
+    if render_markdown is None:
+        return str(text)
+    signature = hashlib.sha256(str(text).encode("utf-8")).hexdigest()
+    return str(render_markdown(
+        cache_key=f"markdown:plugin:{plugin_id}:{field}:v1",
+        signature=signature,
+        text=text,
+    ))
 
 
 def normalize_catalog_sort_name(sort_by: str | None) -> str:
@@ -319,7 +370,12 @@ def build_plugin_detail_api_result(
     info: PluginItem,
     *,
     icon_url_builder: Callable[[str], str | None],
+    render_markdown: Callable[..., Any] | None = None,
 ) -> dict[str, Any]:
+    readme = info["readme"]
+    changelog = info["changelog"]
+    readme_html = _render_plugin_markdown(info["id"], "readme", readme, render_markdown)
+    changelog_html = _render_plugin_markdown(info["id"], "changelog", changelog, render_markdown)
     return {
         "pluginId": info["id"],
         "name": info["name"],
@@ -330,8 +386,11 @@ def build_plugin_detail_api_result(
         "latestVersion": info["version"],
         "requiresVersion": info["requires"],
         "iconUrl": icon_url_builder(info["id"]) if info["has_icon"] else None,
-        "readme": info["readme"],
-        "changelog": info["changelog"],
+        "readme": readme,
+        "readmeHtml": readme_html,
+        "changelog": changelog,
+        "changelogHtml": changelog_html,
+        "relatedDocs": build_plugin_related_docs(info["id"]),
         "totalDownloads": info["total_downloads"],
         "updatedAt": info["modified"],
         "currentPackageCount": len(info["current_packages"]),
@@ -340,7 +399,8 @@ def build_plugin_detail_api_result(
             {
                 "version": pkg["version"],
                 "requiresVersion": info["requires"],
-                "changeLog": info["changelog"],
+                "changeLog": changelog,
+                "changeLogHtml": changelog_html,
                 "fileSize": pkg["size"],
                 "fileHash": pkg.get("fileHash"),
                 "downloadCount": 0,
@@ -353,7 +413,8 @@ def build_plugin_detail_api_result(
             {
                 "version": pkg["version"],
                 "requiresVersion": info["requires"],
-                "changeLog": info["changelog"],
+                "changeLog": changelog,
+                "changeLogHtml": changelog_html,
                 "fileSize": pkg["size"],
                 "fileHash": pkg.get("fileHash"),
                 "downloadCount": 0,
