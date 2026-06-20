@@ -470,6 +470,182 @@ a:hover {
   font-weight: 750;
 }
 
+.home-platform-downloads {
+  width: min(1120px, calc(100% - 32px));
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: -62px auto 0;
+  position: relative;
+  z-index: 3;
+}
+
+.home-platform-card {
+  min-height: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  border: 1px solid var(--cv-border);
+  border-radius: 8px;
+  color: var(--cv-text);
+  background: rgba(255, 255, 255, 0.90);
+  box-shadow: 0 24px 68px rgba(15, 23, 42, 0.14);
+  text-decoration: none;
+  overflow: hidden;
+  position: relative;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.home-platform-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.24);
+  box-shadow: 0 30px 82px rgba(15, 23, 42, 0.18);
+}
+
+.home-platform-card.windows {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.40);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(96, 165, 250, 0.78), transparent 28%),
+    radial-gradient(circle at 18% 24%, rgba(20, 184, 166, 0.46), transparent 30%),
+    linear-gradient(135deg, #0b1020 0%, #172554 52%, #0f766e 100%);
+}
+
+.home-platform-card.android {
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.90), rgba(255, 255, 255, 0.96) 48%, rgba(239, 246, 255, 0.94)),
+    #fff;
+}
+
+.home-platform-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 52px 52px;
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+.home-platform-card.android::before {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+}
+
+.home-platform-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.home-platform-card.disabled {
+  opacity: 0.64;
+  cursor: default;
+}
+
+.platform-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.platform-card-top > span:first-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.platform-card-eyebrow {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.home-platform-card.android .platform-card-eyebrow {
+  color: var(--cv-success);
+  border-color: rgba(15, 118, 110, 0.18);
+  background: rgba(15, 118, 110, 0.10);
+}
+
+.platform-card-title {
+  color: inherit;
+  font-size: clamp(28px, 3.5vw, 46px);
+  font-weight: 760;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.platform-card-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  color: #0b1020;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 22px;
+}
+
+.home-platform-card.android .platform-card-icon {
+  color: var(--cv-success);
+  background: rgba(15, 118, 110, 0.12);
+}
+
+.platform-card-desc {
+  max-width: 560px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.home-platform-card.android .platform-card-desc {
+  color: var(--cv-muted-text);
+}
+
+.platform-card-meta {
+  margin-top: auto;
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.home-platform-card.android .platform-card-meta {
+  color: var(--cv-muted-text);
+}
+
+.platform-card-action {
+  width: max-content;
+  max-width: 100%;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: #0b1020;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.home-platform-card.android .platform-card-action {
+  color: #fff;
+  background: var(--cv-success);
+}
+
 .home-feature-stage {
   width: min(1120px, calc(100% - 32px));
   display: grid;
@@ -1326,6 +1502,10 @@ body.cv-home-light .workflow-icon {
   min-width: 0;
 }
 
+.resource-row .ant-btn {
+  flex: 0 0 auto;
+}
+
 .resource-main {
   flex: 1 1 auto;
 }
@@ -1373,6 +1553,59 @@ body.cv-home-light .workflow-icon {
   align-items: center;
   gap: 12px;
   margin-top: 14px;
+}
+
+.release-platform-grid .ant-card {
+  height: 100%;
+}
+
+.release-platform-card .ant-card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.release-platform-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.release-platform-icon {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  color: var(--cv-primary-strong);
+  background: var(--cv-primary-soft);
+  font-size: 21px;
+}
+
+.release-platform-card.android .release-platform-icon {
+  color: var(--cv-success);
+  background: rgba(15, 118, 110, 0.12);
+}
+
+.release-platform-copy {
+  min-width: 0;
+}
+
+.release-platform-copy h4 {
+  margin: 0 0 4px;
+  color: var(--cv-text);
+}
+
+.release-platform-copy .ant-typography {
+  margin-bottom: 0;
+  color: var(--cv-muted-text);
+}
+
+.release-platform-list {
+  margin-top: auto;
 }
 
 .plugin-detail-hero {
@@ -2031,6 +2264,7 @@ body.cv-home-light .workflow-icon {
     grid-template-columns: 1fr;
   }
 
+  .home-platform-downloads,
   .home-feature-stage {
     grid-template-columns: 1fr;
     margin-top: -44px;
@@ -2253,10 +2487,34 @@ body.cv-home-light .workflow-icon {
     padding-top: 26px;
   }
 
+  .home-platform-downloads,
   .home-feature-stage,
   .home-split-showcase,
   .home-docs-panel {
     width: min(100% - 20px, 1120px);
+  }
+
+  .home-platform-downloads {
+    margin-top: -18px;
+  }
+
+  .home-platform-card {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  .platform-card-title {
+    font-size: clamp(27px, 9vw, 36px);
+  }
+
+  .platform-card-top {
+    gap: 12px;
+  }
+
+  .platform-card-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
   }
 
   .home-download-feature {
@@ -2325,6 +2583,11 @@ body.cv-home-light .workflow-icon {
 
   .resource-row {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .resource-row .ant-btn {
+    width: 100%;
   }
 
   .plugin-doc-links {
@@ -2396,6 +2659,7 @@ body.cv-home-light .workflow-icon {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .home-platform-downloads,
   .home-feature-stage {
     margin-top: 14px;
   }

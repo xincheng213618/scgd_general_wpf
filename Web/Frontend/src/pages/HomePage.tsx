@@ -12,7 +12,6 @@ import {
 } from '@ant-design/icons'
 import { Alert, Button, Col, Row, Skeleton, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { getHome } from '../services/site'
 import type { HomePayload } from '../types/site'
 import { downloadPath, humanSize, shortDate } from '../utils/format'
@@ -52,40 +51,57 @@ export function HomePage() {
   const androidCount = data.app_info.android_count ?? 0
   const updateCount = data.update_summary.canonical_count ?? 0
   const toolCount = (data.tool_summary.directory_count ?? 0) + (data.tool_summary.file_count ?? data.tool_items.length ?? 0)
-  const entryCount = latestAndroid ? 7 : 6
-  const releaseItems = [
-    ...(data.app_info.current_preview || []).slice(0, latestAndroid ? 2 : 3),
-    ...(latestAndroid ? [latestAndroid] : []),
-  ]
+  const entryCount = 6
+  const releaseItems = (data.app_info.current_preview || []).slice(0, 3)
   const recentItems = data.recent_change_dashboard.slice(0, 3)
   const docItems = ((data.docs?.featured?.length ? data.docs.featured : data.docs?.recent) || []).slice(0, 4)
 
   const proofItems = [
     { label: '最新版本', value: latestVersion },
-    { label: '安装包', value: `${currentCount}` },
-    ...(latestAndroid ? [{ label: 'Android 包', value: `${androidCount}` }] : []),
+    { label: '桌面端', value: `${currentCount}` },
+    ...(latestAndroid ? [{ label: 'Android APK', value: `${androidCount}` }] : []),
     { label: '增量包', value: `${updateCount}` },
     { label: '工具项目', value: `${toolCount}` },
     { label: '常用入口', value: `${entryCount}` },
   ]
 
+  const platformDownloads = [
+    {
+      key: 'windows',
+      className: 'windows',
+      eyebrow: 'Windows 桌面端',
+      title: `ColorVision ${latestVersion}`,
+      desc: '完整桌面端软件，适合工作站、检测电脑和正式生产环境。',
+      meta: `${latest?.filename || 'ColorVision 安装包'}${latest?.size ? ` · ${humanSize(latest.size)}` : ''}`,
+      action: '下载 Windows 版',
+      href: downloadPath(latest?.relative_path),
+      icon: <FileDoneOutlined />,
+      available: Boolean(latest?.relative_path),
+    },
+    {
+      key: 'android',
+      className: 'android',
+      eyebrow: 'Android APK',
+      title: latestAndroid?.version ? `ColorVision Android ${latestAndroid.version}` : 'ColorVision Android',
+      desc: '手机端安装包，用于扫码连接局域网控制、打开移动端页面。',
+      meta: latestAndroid
+        ? `${latestAndroid.filename || 'Android APK'}${latestAndroid.size ? ` · ${humanSize(latestAndroid.size)}` : ''}`
+        : '暂无可下载 APK',
+      action: '下载 Android APK',
+      href: downloadPath(latestAndroid?.relative_path),
+      icon: <MobileOutlined />,
+      available: Boolean(latestAndroid?.relative_path),
+    },
+  ]
+
   const featureCards = [
     {
       title: '版本中心',
-      desc: '安装包与版本详情。',
+      desc: '桌面端、Android 与版本详情。',
       href: '/releases',
       icon: <FileDoneOutlined />,
-      meta: `${currentCount} 个当前制品`,
+      meta: `${currentCount} 个桌面端制品`,
     },
-    ...(latestAndroid
-      ? [{
-          title: 'Android 版',
-          desc: '移动端 WebView 安装包。',
-          href: downloadPath(latestAndroid.relative_path),
-          icon: <MobileOutlined />,
-          meta: latestAndroid.version ? `v${latestAndroid.version}` : 'APK',
-        }]
-      : []),
     {
       title: '插件市场',
       desc: '插件扩展和文档下载。',
@@ -140,11 +156,11 @@ export function HomePage() {
           <Space wrap className="landing-hero-actions">
             {latestAndroid && (
               <Button className="hero-action-android" size="large" shape="round" icon={<MobileOutlined />} href={downloadPath(latestAndroid.relative_path)}>
-                下载 Android 版
+                下载 Android APK
               </Button>
             )}
             <Button className="hero-action-windows" type="primary" size="large" shape="round" icon={<CloudDownloadOutlined />} href={downloadPath(latest?.relative_path)}>
-              下载 Windows 版
+              下载 Windows 桌面端
             </Button>
             <Button className="hero-action-plugins" size="large" shape="round" icon={<AppstoreOutlined />} href="/plugins">
               插件市场
@@ -165,31 +181,36 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="home-feature-stage">
-        <a href={downloadPath(latest?.relative_path)} className="home-download-feature">
-          <span className="feature-eyebrow">Windows 最新版</span>
-          <span className="feature-release-title">ColorVision {latestVersion}</span>
-          <span className="feature-release-meta">
-            {latest?.filename || 'ColorVision 安装包'}
-            {latest?.size ? ` · ${humanSize(latest.size)}` : ''}
-          </span>
-          <span className="feature-action">
-            立即下载
-            <CloudDownloadOutlined />
-          </span>
-        </a>
-        <div className="home-feature-stack">
-          <Link to="/plugins" className="home-mini-feature">
-            <span><AppstoreOutlined /></span>
-            <strong>插件市场</strong>
-            <small>扩展能力与安装包</small>
-          </Link>
-          <Link to="/transfer" className="home-mini-feature">
-            <span><InboxOutlined /></span>
-            <strong>文件中转</strong>
-            <small>登录后上传和下载</small>
-          </Link>
-        </div>
+      <section className="home-platform-downloads" aria-label="ColorVision 下载">
+        {platformDownloads.map((item) => {
+          const body = (
+            <>
+              <span className="platform-card-top">
+                <span>
+                  <span className="platform-card-eyebrow">{item.eyebrow}</span>
+                  <span className="platform-card-title">{item.title}</span>
+                </span>
+                <span className="platform-card-icon">{item.icon}</span>
+              </span>
+              <span className="platform-card-desc">{item.desc}</span>
+              <span className="platform-card-meta">{item.meta}</span>
+              <span className="platform-card-action">
+                {item.action}
+                <CloudDownloadOutlined />
+              </span>
+            </>
+          )
+          const className = `home-platform-card ${item.className}${item.available ? '' : ' disabled'}`
+          return item.available ? (
+            <a href={item.href} className={className} key={item.key}>
+              {body}
+            </a>
+          ) : (
+            <div className={className} key={item.key}>
+              {body}
+            </div>
+          )
+        })}
       </section>
 
       <section className="landing-workflows home-resource-hub">
@@ -222,7 +243,7 @@ export function HomePage() {
                   <CloudDownloadOutlined />
                   精选
                 </span>
-                <Title level={3}>推荐版本</Title>
+                <Title level={3}>桌面端版本</Title>
               </div>
               <Button href="/releases">版本中心</Button>
             </div>
@@ -239,7 +260,7 @@ export function HomePage() {
                   <span className="home-release-action">下载</span>
                 </a>
               ))}
-              {releaseItems.length === 0 && <Text type="secondary">暂无标准安装包。</Text>}
+              {releaseItems.length === 0 && <Text type="secondary">暂无桌面端安装包。</Text>}
             </div>
           </section>
         </div>

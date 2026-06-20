@@ -1,4 +1,4 @@
-import { BookOutlined, CloudDownloadOutlined, FileMarkdownOutlined, FilterOutlined, MobileOutlined } from '@ant-design/icons'
+import { BookOutlined, CloudDownloadOutlined, FileDoneOutlined, FileMarkdownOutlined, FilterOutlined, MobileOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Col, Collapse, Form, Row, Select, Skeleton, Space, Statistic, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -50,6 +50,9 @@ export function ReleasesPage() {
   if (error) return <Alert type="error" message={error} />
   if (!data) return null
   const androidReleases = data.app_info.android_releases || []
+  const desktopReleases = data.app_info.current_releases || []
+  const currentAndroidReleases = data.app_info.current_android_releases ?? androidReleases
+  const archivedAndroidReleases = data.app_info.archived_android_releases || []
 
   return (
     <Space direction="vertical" size={16} className="page-stack">
@@ -58,13 +61,13 @@ export function ReleasesPage() {
           <Col flex="auto">
             <Tag color="blue">版本中心</Tag>
             <Typography.Title level={2}>版本档案</Typography.Title>
-            <Typography.Paragraph type="secondary">当前根目录安装包与 History 归档制品。</Typography.Paragraph>
+            <Typography.Paragraph type="secondary">Windows 桌面端和 Android APK 分区下载，历史制品单独归档。</Typography.Paragraph>
           </Col>
           <Col>
             <Space wrap>
-              <Statistic title="当前版本" value={data.app_info.current_count || 0} />
-              <Statistic title="Android" value={data.app_info.android_count || 0} />
-              <Statistic title="历史制品" value={data.app_info.archive_count || 0} />
+              <Statistic title="桌面端" value={data.app_info.current_count || 0} />
+              <Statistic title="Android APK" value={data.app_info.android_count || 0} />
+              <Statistic title="桌面历史" value={data.app_info.archive_count || 0} />
               <Statistic title="历史阶段" value={data.app_info.archive_timeline_count || 0} />
               <Button icon={<FileMarkdownOutlined />} href="/changelog">
                 发布说明
@@ -77,27 +80,72 @@ export function ReleasesPage() {
         </Row>
       </Card>
 
-      {androidReleases.length > 0 && (
-        <Card title={<Space><MobileOutlined />Android 安装包</Space>}>
-          <Space direction="vertical" className="wide-space">
-            {androidReleases.map((release) => (
-              <div className="resource-row" key={release.relative_path}>
-                <div>
-                  <Text strong>{release.display_title || `ColorVision Android ${release.version || ''}`}</Text>
-                  <div className="muted-line">
-                    {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
-                  </div>
-                </div>
-                <Button type="primary" icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
-                  下载 APK
-                </Button>
+      <Row gutter={[16, 16]} className="release-platform-grid">
+        <Col xs={24} lg={12}>
+          <Card
+            className="release-platform-card"
+            title={<Space><FileDoneOutlined />Windows 桌面端</Space>}
+            extra={<Tag>{desktopReleases.length} 个</Tag>}
+          >
+            <div className="release-platform-summary">
+              <span className="release-platform-icon"><FileDoneOutlined /></span>
+              <div className="release-platform-copy">
+                <Typography.Title level={4}>桌面端安装包</Typography.Title>
+                <Typography.Paragraph type="secondary">用于 Windows 工作站、检测电脑和正式生产环境。</Typography.Paragraph>
               </div>
-            ))}
-          </Space>
-        </Card>
-      )}
+            </div>
+            <Space direction="vertical" className="wide-space release-platform-list">
+              {desktopReleases.map((release) => (
+                <div className="resource-row" key={release.relative_path}>
+                  <div>
+                    <Text strong>{release.display_title}</Text>
+                    <div className="muted-line">
+                      {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
+                    </div>
+                  </div>
+                  <Button type="primary" icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
+                    下载桌面端
+                  </Button>
+                </div>
+              ))}
+              {desktopReleases.length === 0 && <Text type="secondary">未检测到桌面端版本文件。</Text>}
+            </Space>
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card
+            className="release-platform-card android"
+            title={<Space><MobileOutlined />Android APK</Space>}
+            extra={<Tag>{currentAndroidReleases.length} 个</Tag>}
+          >
+            <div className="release-platform-summary">
+              <span className="release-platform-icon"><MobileOutlined /></span>
+              <div className="release-platform-copy">
+                <Typography.Title level={4}>移动端安装包</Typography.Title>
+                <Typography.Paragraph type="secondary">用于手机扫码连接局域网控制页面，安装后直接进入移动端入口。</Typography.Paragraph>
+              </div>
+            </div>
+            <Space direction="vertical" className="wide-space release-platform-list">
+              {currentAndroidReleases.map((release) => (
+                <div className="resource-row" key={release.relative_path}>
+                  <div>
+                    <Text strong>{release.display_title || `ColorVision Android ${release.version || ''}`}</Text>
+                    <div className="muted-line">
+                      {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
+                    </div>
+                  </div>
+                  <Button type="primary" icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
+                    下载 APK
+                  </Button>
+                </div>
+              ))}
+              {currentAndroidReleases.length === 0 && <Text type="secondary">暂无 Android APK。</Text>}
+            </Space>
+          </Card>
+        </Col>
+      </Row>
 
-      <Card title={<Space><FilterOutlined />历史筛选</Space>}>
+      <Card title={<Space><FilterOutlined />Windows 桌面历史筛选</Space>}>
         <Form
           layout="inline"
           initialValues={params}
@@ -132,9 +180,9 @@ export function ReleasesPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={10}>
-          <Card title="根目录保留版本">
+          <Card title="Windows 桌面端当前版本">
             <Space direction="vertical" className="wide-space">
-              {(data.app_info.current_releases || []).map((release) => (
+              {desktopReleases.map((release) => (
                 <div className="resource-row" key={release.relative_path}>
                   <div>
                     <Text strong>{release.display_title}</Text>
@@ -143,16 +191,16 @@ export function ReleasesPage() {
                     </div>
                   </div>
                   <Button type="primary" icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
-                    下载
+                    下载桌面端
                   </Button>
                 </div>
               ))}
-              {(data.app_info.current_releases || []).length === 0 && <Text type="secondary">未检测到根目录版本文件。</Text>}
+              {desktopReleases.length === 0 && <Text type="secondary">未检测到桌面端版本文件。</Text>}
             </Space>
           </Card>
         </Col>
         <Col xs={24} xl={14}>
-          <Card title={`归档历史时间线 · ${data.archive_visible_item_count} 条`}>
+          <Card title={`Windows 桌面端归档历史 · ${data.archive_visible_item_count} 条`}>
             <Collapse
               defaultActiveKey={data.archive_visible_groups.filter((g) => g.is_expanded).map((g) => g.branch || '')}
               items={data.archive_visible_groups.map((group, index) => ({
@@ -189,6 +237,26 @@ export function ReleasesPage() {
           </Card>
         </Col>
       </Row>
+
+      {archivedAndroidReleases.length > 0 && (
+        <Card title={<Space><MobileOutlined />Android APK 历史包</Space>}>
+          <Space direction="vertical" className="wide-space">
+            {archivedAndroidReleases.map((release) => (
+              <div className="resource-row" key={release.relative_path}>
+                <div>
+                  <Text strong>{release.display_title || `ColorVision Android ${release.version || ''}`}</Text>
+                  <div className="muted-line">
+                    {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
+                  </div>
+                </div>
+                <Button icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
+                  下载 APK
+                </Button>
+              </div>
+            ))}
+          </Space>
+        </Card>
+      )}
     </Space>
   )
 }
