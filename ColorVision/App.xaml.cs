@@ -4,6 +4,7 @@ using ColorVision.Copilot.Mcp;
 using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Desktop.LanRemote;
 using ColorVision.UI.Desktop.Wizards;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
@@ -171,6 +172,7 @@ namespace ColorVision
             }
 
             CopilotMcpServer.Instance.ApplyConfig();
+            LanRemoteControlService.Instance.ApplyConfig();
 
             if (!Debugger.IsAttached)
             {
@@ -231,6 +233,7 @@ namespace ColorVision
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
             CopilotMcpServer.Instance.Stop();
+            LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
             //Environment.Exit(0);

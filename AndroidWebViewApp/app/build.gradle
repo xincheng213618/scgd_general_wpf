@@ -2,6 +2,17 @@ plugins {
     id "com.android.application"
 }
 
+def signingPropertiesFile = rootProject.file("signing.properties")
+def signingProperties = new Properties()
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withInputStream { signingProperties.load(it) }
+}
+def releaseSigningReady = signingPropertiesFile.exists()
+        && signingProperties["storeFile"]
+        && signingProperties["storePassword"]
+        && signingProperties["keyAlias"]
+        && signingProperties["keyPassword"]
+
 android {
     namespace "com.colorvision.xcviewer"
     compileSdk 35
@@ -11,12 +22,40 @@ android {
         applicationId "com.colorvision.xcviewer"
         minSdk 23
         targetSdk 35
-        versionCode 1
-        versionName "1.0"
+        versionCode 6
+        versionName "1.5"
+    }
+
+    signingConfigs {
+        release {
+            if (releaseSigningReady) {
+                storeFile rootProject.file(signingProperties["storeFile"])
+                storePassword signingProperties["storePassword"]
+                keyAlias signingProperties["keyAlias"]
+                keyPassword signingProperties["keyPassword"]
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "com.google.zxing:core:3.5.3"
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { it.name.toLowerCase(Locale.ROOT).contains("release") } && !releaseSigningReady) {
+        throw new GradleException("Release signing is not configured. Run AndroidWebViewApp/build-release.ps1 once to create local signing.properties and .signing/colorvision-release.jks.")
     }
 }
