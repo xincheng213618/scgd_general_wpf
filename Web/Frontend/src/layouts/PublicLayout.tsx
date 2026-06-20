@@ -4,7 +4,9 @@ import {
   DashboardOutlined,
   FolderOpenOutlined,
   HomeOutlined,
+  InboxOutlined,
   LoginOutlined,
+  LogoutOutlined,
   MoonOutlined,
   ProductOutlined,
   SunOutlined,
@@ -13,6 +15,7 @@ import {
 import { Button, Layout, Menu, Segmented, Space, Typography } from 'antd'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { logout } from '../services/auth'
 import type { ThemeMode } from '../types/admin'
 import type { AuthSession } from '../types/site'
 
@@ -24,6 +27,7 @@ const menuItems = [
   { key: '/releases', icon: <CloudDownloadOutlined />, label: '版本中心' },
   { key: '/updates', icon: <ProductOutlined />, label: '增量更新' },
   { key: '/tools', icon: <ToolOutlined />, label: '工具下载' },
+  { key: '/transfer', icon: <InboxOutlined />, label: '文件中转' },
   { key: '/browse', icon: <FolderOpenOutlined />, label: '文件浏览' },
 ]
 
@@ -37,11 +41,13 @@ export function PublicLayout({
   mode,
   setMode,
   session,
+  onSessionChanged,
 }: {
   children: ReactNode
   mode: ThemeMode
   setMode: (mode: ThemeMode) => void
   session: AuthSession | null
+  onSessionChanged: () => Promise<void>
 }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -93,12 +99,28 @@ export function PublicLayout({
               ]}
             />
             {session?.authenticated ? (
-              <Button type="primary" icon={<DashboardOutlined />} onClick={() => navigate('/admin')}>
-                发布管理
-              </Button>
+              <>
+                <Button
+                  type="primary"
+                  icon={session.is_admin ? <DashboardOutlined /> : <InboxOutlined />}
+                  onClick={() => navigate(session.is_admin ? '/admin' : '/transfer')}
+                >
+                  {session.is_admin ? '发布管理' : '文件中转'}
+                </Button>
+                <Button
+                  icon={<LogoutOutlined />}
+                  onClick={async () => {
+                    await logout()
+                    await onSessionChanged()
+                    navigate('/')
+                  }}
+                >
+                  退出
+                </Button>
+              </>
             ) : (
-              <Button icon={<LoginOutlined />} onClick={() => navigate('/login?next=/admin')}>
-                登录后台
+              <Button icon={<LoginOutlined />} onClick={() => navigate('/login?next=/transfer')}>
+                登录 / 注册
               </Button>
             )}
           </Space>

@@ -47,7 +47,7 @@ def _is_transfer_storage_path(relative_path: str) -> bool:
 
 
 def _has_transfer_auth() -> bool:
-    if session.get("authenticated"):
+    if session.get("authenticated") or session.get("user_authenticated"):
         return True
 
     auth = request.authorization

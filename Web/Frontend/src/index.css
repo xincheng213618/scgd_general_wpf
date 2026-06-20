@@ -1161,6 +1161,10 @@ a:hover {
   margin-bottom: 12px;
 }
 
+.auth-form {
+  margin-top: 18px;
+}
+
 .path-input {
   width: min(760px, 100%);
 }

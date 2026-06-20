@@ -87,10 +87,11 @@ class TransferRouteTests(unittest.TestCase):
         token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
         return {"Authorization": f"Basic {token}"}
 
-    def test_transfer_page_route_is_removed(self):
+    def test_transfer_page_route_returns_spa(self):
         response = self.client.get("/transfer", follow_redirects=False)
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.content_type)
 
     def test_admin_files_route_requires_login(self):
         response = self.client.get("/admin/files", follow_redirects=False)
@@ -105,6 +106,25 @@ class TransferRouteTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+
+    def test_registered_user_can_use_transfer_but_not_admin(self):
+        register_response = self.client.post(
+            "/api/auth/register",
+            json={"username": "alice", "password": "secret1"},
+        )
+        self.assertEqual(register_response.status_code, 201)
+        self.assertFalse(register_response.get_json()["is_admin"])
+
+        admin_response = self.client.get("/api/admin/cache/status")
+        self.assertEqual(admin_response.status_code, 401)
+
+        upload_response = self.client.put(
+            "/api/transfer/files/user.bin",
+            data=b"payload",
+            content_type="application/octet-stream",
+        )
+        self.assertEqual(upload_response.status_code, 201)
+        self.assertEqual((self.storage / "Transfer" / "user.bin").read_bytes(), b"payload")
 
     def test_transfer_upload_download_list_and_delete_with_basic_auth(self):
         response = self.client.put(

@@ -105,6 +105,7 @@ def admin_spa(spa_path: str = ""):
 @frontend_spa.route("/changelog")
 @frontend_spa.route("/updates")
 @frontend_spa.route("/tools")
+@frontend_spa.route("/transfer")
 @frontend_spa.route("/browse")
 @frontend_spa.route("/browse/<path:spa_path>")
 def site_spa(spa_path: str = ""):

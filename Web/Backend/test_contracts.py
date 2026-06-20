@@ -159,6 +159,10 @@ class PublicPageContracts(ContractTestBase):
         resp = self.client.get("/browse")
         self.assert_spa_shell(resp)
 
+    def test_transfer_page_returns_200(self):
+        resp = self.client.get("/transfer")
+        self.assert_spa_shell(resp)
+
     def test_browse_subpath_returns_200(self):
         self.create_tool("SomeTool.exe")
         resp = self.client.get("/browse/Tool")
@@ -429,6 +433,20 @@ class AuthContracts(ContractTestBase):
         })
         self.assertEqual(resp.status_code, 401)
         self.assertEqual(resp.get_json()["error"], "用户名或密码错误")
+
+    def test_register_user_creates_non_admin_session(self):
+        resp = self.client.post("/api/auth/register", json={
+            "username": "worker",
+            "password": "secret1",
+        })
+        self.assertEqual(resp.status_code, 201)
+        data = resp.get_json()
+        self.assertTrue(data["authenticated"])
+        self.assertFalse(data["is_admin"])
+        self.assertEqual(data["role"], "user")
+
+        admin_resp = self.client.get("/api/admin/cache/status")
+        self.assertEqual(admin_resp.status_code, 401)
 
     def test_logout_redirects(self):
         resp = self.client.get("/logout", follow_redirects=False)

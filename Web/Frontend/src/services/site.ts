@@ -10,7 +10,7 @@ import type {
   UpdatesPayload,
   UploadContext,
 } from '../types/site'
-import { getJson, parseResponse, postForm } from './request'
+import { AuthRequiredError, getJson, parseResponse, postForm } from './request'
 
 function queryString(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams()
@@ -122,6 +122,10 @@ export function uploadTransferFile(file: File, onProgress?: (percent: number) =>
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(xhr.response)
+          return
+        }
+        if (xhr.status === 401) {
+          reject(new AuthRequiredError())
           return
         }
         reject(new Error(xhr.response?.error || `Request failed with ${xhr.status}`))

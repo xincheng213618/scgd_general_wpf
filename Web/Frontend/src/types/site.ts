@@ -215,6 +215,8 @@ export interface UploadContext {
 
 export interface AuthSession {
   authenticated: boolean
+  is_admin?: boolean
+  role?: string
   username?: string
 }
 

@@ -48,7 +48,7 @@ def _get_ctx() -> TransferRouteContext:
 
 
 def _actor_type() -> str:
-    if session.get("authenticated"):
+    if session.get("authenticated") or session.get("user_authenticated"):
         return "user"
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):

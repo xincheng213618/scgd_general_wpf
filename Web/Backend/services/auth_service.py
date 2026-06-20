@@ -7,6 +7,7 @@ Falls back to config.json upload_auth when users table is empty.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -21,6 +22,25 @@ except ImportError:  # pragma: no cover
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{3,32}$")
+MIN_PASSWORD_LENGTH = 6
+
+
+def normalize_username(username: str) -> str:
+    return username.strip()
+
+
+def validate_registration(username: str, password: str) -> str | None:
+    username = normalize_username(username)
+    if not username:
+        return "请输入用户名"
+    if not USERNAME_PATTERN.match(username):
+        return "用户名只能使用 3-32 位字母、数字、下划线、点或连字符"
+    if len(password) < MIN_PASSWORD_LENGTH:
+        return f"密码至少需要 {MIN_PASSWORD_LENGTH} 位"
+    return None
 
 
 def ensure_admin_user(
@@ -60,6 +80,50 @@ def ensure_admin_user(
         db.close()
 
 
+def create_user(
+    cache: CacheManager,
+    username: str,
+    password: str,
+    *,
+    role: str = "user",
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Create a normal user account. Returns (user, error_message)."""
+    if generate_password_hash is None:
+        return None, "密码服务不可用"
+
+    username = normalize_username(username)
+    validation_error = validate_registration(username, password)
+    if validation_error:
+        return None, validation_error
+
+    normalized_role = role if role in {"admin", "user"} else "user"
+    pw_hash = generate_password_hash(password)
+    now = _now_iso()
+    db = cache.get_db()
+    try:
+        existing = db.execute(
+            "SELECT id FROM users WHERE lower(username) = lower(?)",
+            (username,),
+        ).fetchone()
+        if existing:
+            return None, "用户名已存在"
+
+        cursor = db.execute(
+            """INSERT INTO users (username, password_hash, role, is_active, created_at, updated_at)
+               VALUES (?, ?, ?, 1, ?, ?)""",
+            (username, pw_hash, normalized_role, now, now),
+        )
+        db.commit()
+        row = db.execute("SELECT * FROM users WHERE id = ?", (cursor.lastrowid,)).fetchone()
+        user = dict(row)
+        user.pop("password_hash", None)
+        return user, None
+    except Exception:
+        return None, "注册失败"
+    finally:
+        db.close()
+
+
 def verify_user_credentials(
     cache: CacheManager,
     username: str,
@@ -69,6 +133,7 @@ def verify_user_credentials(
     if check_password_hash is None:
         return None
 
+    username = normalize_username(username)
     db = cache.get_db()
     try:
         row = db.execute(

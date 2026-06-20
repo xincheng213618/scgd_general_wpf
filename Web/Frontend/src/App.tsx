@@ -19,6 +19,7 @@ import { PublishPage } from './pages/PublishPage'
 import { ReleasesPage } from './pages/ReleasesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ToolsPage } from './pages/ToolsPage'
+import { TransferPage } from './pages/TransferPage'
 import { UpdatesPage } from './pages/UpdatesPage'
 import { getSession } from './services/auth'
 import type { ThemeMode } from './types/admin'
@@ -110,7 +111,7 @@ function App() {
             <Route
               path="/"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session}>
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
                   <HomePage />
                 </PublicLayout>
               }
@@ -118,7 +119,7 @@ function App() {
             <Route
               path="/plugins"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session}>
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
                   <PluginsPage />
                 </PublicLayout>
               }
@@ -126,7 +127,7 @@ function App() {
             <Route
               path="/plugins/:pluginId"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session}>
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
                   <PluginDetailPage />
                 </PublicLayout>
               }
@@ -134,7 +135,7 @@ function App() {
             <Route
               path="/releases"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session}>
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
                   <ReleasesPage />
                 </PublicLayout>
               }
@@ -142,7 +143,7 @@ function App() {
             <Route
               path="/changelog"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session}>
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
                   <ChangelogPage />
                 </PublicLayout>
               }
@@ -150,7 +151,7 @@ function App() {
             <Route
               path="/updates"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session}>
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
                   <UpdatesPage />
                 </PublicLayout>
               }
@@ -158,7 +159,7 @@ function App() {
             <Route
               path="/tools"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session}>
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
                   <ToolsPage />
                 </PublicLayout>
               }
@@ -166,8 +167,16 @@ function App() {
             <Route
               path="/browse/*"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session}>
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
                   <BrowsePage />
+                </PublicLayout>
+              }
+            />
+            <Route
+              path="/transfer"
+              element={
+                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
+                  <TransferPage session={session} />
                 </PublicLayout>
               }
             />

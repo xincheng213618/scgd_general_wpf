@@ -332,10 +332,29 @@ def register_all_blueprints(app, ctx, services, helpers):
                 return True
         return False
 
+    def _check_transfer_auth(required_scopes=None):
+        from flask import session as _session
+        if _session.get("authenticated") or _session.get("user_authenticated"):
+            return True
+        auth_header = _req.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+            if token:
+                from services.api_key_service import verify_api_key
+                scopes = required_scopes or ["file:transfer"]
+                if verify_api_key(cache, token, required_scopes=scopes):
+                    return True
+        auth = _req.authorization
+        if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
+            eu, ep = helpers["get_upload_auth"]()
+            if eu and ep and _hmac.compare_digest(auth.username, eu) and _hmac.compare_digest(auth.password, ep):
+                return True
+        return False
+
     from routes.transfer import TransferRouteContext, register_transfer_routes
     register_transfer_routes(app, TransferRouteContext(
         cache=cache, storage_getter=_dynamic_storage, config_getter=_dynamic_config,
-        check_auth=_check_admin_auth, human_size=human_size,
+        check_auth=_check_transfer_auth, human_size=human_size,
     ))
 
     register_admin_api_routes(app, AdminApiContext(
