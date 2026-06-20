@@ -28,6 +28,7 @@ import {
 import type { PublishIntegrityReport } from '../types/admin'
 import type { CvwsContext, UploadContext } from '../types/site'
 import { humanSize } from '../utils/format'
+import { UploadProgress } from '../components/UploadProgress'
 
 const integrityStatusText = {
   ok: '发布资料齐全',
@@ -122,6 +123,7 @@ function PluginPublishPanel() {
   const [file, setFile] = useState<File | null>(null)
   const [icon, setIcon] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   useEffect(() => {
     getUploadContext().then(setContext).catch(() => undefined)
@@ -151,8 +153,9 @@ function PluginPublishPanel() {
               }
             })
             setSubmitting(true)
+            setUploadProgress(0)
             try {
-              const result = await publishPluginPackage(data)
+              const result = await publishPluginPackage(data, setUploadProgress)
               message.success(`已发布 ${result.pluginId} ${result.version}`)
               form.resetFields()
               setFile(null)
@@ -165,7 +168,14 @@ function PluginPublishPanel() {
           }}
         >
           <Form.Item label="插件包" required>
-            <input type="file" accept=".cvxp,.zip" onChange={(event) => setFile(event.target.files?.[0] || null)} />
+            <input
+              type="file"
+              accept=".cvxp,.zip"
+              onChange={(event) => {
+                setFile(event.target.files?.[0] || null)
+                setUploadProgress(0)
+              }}
+            />
           </Form.Item>
           <Form.Item name="PluginId" label="插件 ID" rules={[{ required: true, message: '请输入插件 ID' }]}>
             <Input placeholder="Spectrum" />
@@ -194,6 +204,7 @@ function PluginPublishPanel() {
           <Form.Item label="图标">
             <input type="file" accept="image/*" onChange={(event) => setIcon(event.target.files?.[0] || null)} />
           </Form.Item>
+          <UploadProgress active={submitting} file={file} percent={uploadProgress} />
           <Button type="primary" htmlType="submit" loading={submitting}>
             发布插件包
           </Button>
@@ -210,6 +221,7 @@ function CvwsPublishPanel() {
   const [version, setVersion] = useState('')
   const [setLatest, setSetLatest] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const load = useCallback(() => getCvwsContext().then(setContext).catch(() => undefined), [])
 
@@ -234,7 +246,14 @@ function CvwsPublishPanel() {
             <Tag>服务包 {context?.package_count ?? 0}</Tag>
             <Typography.Text type="secondary">{context?.tool_dir_display}</Typography.Text>
           </Space>
-          <input type="file" accept=".zip" onChange={(event) => setFile(event.target.files?.[0] || null)} />
+          <input
+            type="file"
+            accept=".zip"
+            onChange={(event) => {
+              setFile(event.target.files?.[0] || null)
+              setUploadProgress(0)
+            }}
+          />
           <Input placeholder="版本号，可留空从文件名推断" value={version} onChange={(event) => setVersion(event.target.value)} />
           <Checkbox checked={setLatest} onChange={(event) => setSetLatest(event.target.checked)}>设为最新版本</Checkbox>
           <Button
@@ -250,8 +269,9 @@ function CvwsPublishPanel() {
               data.append('version', version)
               data.append('set_latest', String(setLatest))
               setSubmitting(true)
+              setUploadProgress(0)
               try {
-                await publishCvwsPackage(data)
+                await publishCvwsPackage(data, setUploadProgress)
                 message.success('服务包已发布')
                 setFile(null)
                 setVersion('')
@@ -265,6 +285,7 @@ function CvwsPublishPanel() {
           >
             发布服务包
           </Button>
+          <UploadProgress active={submitting} file={file} percent={uploadProgress} />
         </Space>
       </Card>
       <Card title="现有服务包">

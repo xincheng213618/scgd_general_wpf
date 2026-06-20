@@ -10,7 +10,7 @@ import type {
   UpdatesPayload,
   UploadContext,
 } from '../types/site'
-import { AuthRequiredError, getJson, parseResponse, postForm } from './request'
+import { AuthRequiredError, getJson, parseResponse } from './request'
 
 function queryString(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams()
@@ -89,8 +89,44 @@ export function getPluginDetail(pluginId: string) {
   return getJson<PluginDetail>(`/api/plugins/${encodeURIComponent(pluginId)}`)
 }
 
-export function publishPluginPackage(formData: FormData) {
-  return postForm<{ pluginId: string; version: string }>('/api/packages/publish', formData)
+function getXhrErrorMessage(response: unknown, fallback: string) {
+  if (response && typeof response === 'object' && 'error' in response) {
+    return String((response as { error?: unknown }).error || fallback)
+  }
+  return fallback
+}
+
+function postFormWithProgress<T>(url: string, formData: FormData, onProgress?: (percent: number) => void) {
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', url)
+    xhr.withCredentials = true
+    xhr.responseType = 'json'
+    xhr.setRequestHeader('Accept', 'application/json')
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        onProgress((event.loaded / event.total) * 100)
+      }
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100)
+        resolve(xhr.response as T)
+        return
+      }
+      if (xhr.status === 401) {
+        reject(new AuthRequiredError())
+        return
+      }
+      reject(new Error(getXhrErrorMessage(xhr.response, `Request failed with ${xhr.status}`)))
+    }
+    xhr.onerror = () => reject(new Error('上传失败'))
+    xhr.send(formData)
+  })
+}
+
+export function publishPluginPackage(formData: FormData, onProgress?: (percent: number) => void) {
+  return postFormWithProgress<{ pluginId: string; version: string }>('/api/packages/publish', formData, onProgress)
 }
 
 export function getTransferFiles() {
@@ -128,7 +164,7 @@ export function uploadTransferFile(file: File, onProgress?: (percent: number) =>
           reject(new AuthRequiredError())
           return
         }
-        reject(new Error(xhr.response?.error || `Request failed with ${xhr.status}`))
+        reject(new Error(getXhrErrorMessage(xhr.response, `Request failed with ${xhr.status}`)))
       }
       xhr.onerror = () => reject(new Error('上传失败'))
       xhr.send(file)
@@ -140,6 +176,6 @@ export function getCvwsContext() {
   return getJson<CvwsContext>('/api/tool/cvwindowsservice/context')
 }
 
-export function publishCvwsPackage(formData: FormData) {
-  return postForm('/api/tool/cvwindowsservice/publish', formData)
+export function publishCvwsPackage(formData: FormData, onProgress?: (percent: number) => void) {
+  return postFormWithProgress('/api/tool/cvwindowsservice/publish', formData, onProgress)
 }

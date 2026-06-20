@@ -1,11 +1,12 @@
 import { DeleteOutlined, InboxOutlined, ReloadOutlined } from '@ant-design/icons'
-import { App, Button, Card, Progress, Space, Table, Tag } from 'antd'
+import { App, Button, Card, Space, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
 import { deleteTransferFile, getTransferFiles, uploadTransferFile } from '../services/site'
 import { AuthRequiredError } from '../services/request'
 import type { TransferFile, TransferFilesResponse } from '../types/site'
 import { humanSize, shortDate } from '../utils/format'
+import { UploadProgress } from './UploadProgress'
 
 export function TransferPanel({ onAuthRequired }: { onAuthRequired?: () => void }) {
   const { message } = App.useApp()
@@ -71,8 +72,14 @@ export function TransferPanel({ onAuthRequired }: { onAuthRequired?: () => void 
             <Tag>文件 {data?.files.length || 0}</Tag>
             <Tag>总大小 {humanSize(data?.total_size)}</Tag>
           </Space>
-          <input type="file" onChange={(event) => setFile(event.target.files?.[0] || null)} />
-          <Progress percent={Math.round(progress)} />
+          <input
+            type="file"
+            onChange={(event) => {
+              setFile(event.target.files?.[0] || null)
+              setProgress(0)
+            }}
+          />
+          <UploadProgress active={uploading} file={file} percent={progress} />
           <Button
             type="primary"
             icon={<InboxOutlined />}

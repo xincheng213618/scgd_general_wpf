@@ -1989,6 +1989,22 @@ body.cv-home-light .workflow-icon {
   width: min(760px, 100%);
 }
 
+.upload-progress-panel {
+  width: min(620px, 100%);
+  padding: 10px 12px;
+  border: 1px solid var(--cv-border);
+  border-radius: 8px;
+  background: var(--cv-muted);
+}
+
+.upload-progress-panel .ant-progress {
+  margin-bottom: 0;
+}
+
+.upload-progress-meta {
+  font-size: 12px;
+}
+
 .markdown-body {
   line-height: 1.75;
 }
