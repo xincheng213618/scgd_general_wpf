@@ -1,5 +1,9 @@
+using ColorVision.UI;
+using ColorVision.UI.Marketplace;
+using Newtonsoft.Json.Linq;
 using System.IO;
 using System.IO.Compression;
+using System.Net.Http;
 using System.Diagnostics;
 using System.Windows;
 
@@ -23,13 +27,6 @@ namespace WindowsServicePlugin.ServiceManager
             if (!hasAnyComponentChecked)
             {
                 MessageBox.Show("请先勾选要安装的组件（服务包、MySQL、MQTT）", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            bool requiresAdministrator = InstallServiceChecked || InstallMqttChecked;
-            if (requiresAdministrator && !ColorVision.Common.Utilities.Tool.IsAdministrator())
-            {
-                MessageBox.Show("安装或更新 CVWindowsService/MQTT 需要管理员权限；MySQL 会优先通过 ColorVisionServiceHost 处理。", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -265,6 +262,269 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(false);
         }
 
+        private async Task DownloadOneKeyPackageAsync()
+        {
+            SetBusy(true, "正在获取最新服务包...");
+            try
+            {
+                string downloadDir = string.IsNullOrWhiteSpace(Config.DownloadLocation)
+                    ? Path.Combine(Environments.DirToolPackageCache, "CVWindowsService")
+                    : Config.DownloadLocation;
+                Directory.CreateDirectory(downloadDir);
+
+                CvwsPackageInfo packageInfo = await GetLatestCvWindowsServicePackageAsync(Config.UpdateServerUrl).ConfigureAwait(true);
+                Version version = packageInfo.Version;
+                if (!IsValidLatestVersion(version))
+                    throw new InvalidOperationException("无法获取 CVWindowsService 最新版本号");
+
+                string? cachedPackage = FindCachedCvWindowsServicePackage(downloadDir, version);
+                if (!string.IsNullOrWhiteSpace(cachedPackage) && IsFullServicePackageZip(cachedPackage))
+                {
+                    ApplyDownloadedServicePackage(cachedPackage);
+                    AddLog($"已使用本地缓存服务包: {cachedPackage}");
+                    return;
+                }
+
+                var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+                if (service == null)
+                    throw new InvalidOperationException("下载服务不可用");
+
+                string downloadUrl = packageInfo.DownloadUrl;
+                AddLog($"开始下载 CVWindowsService 服务包 {version}: {downloadUrl}");
+
+                Application.Current.Dispatcher.Invoke(service.ShowDownloadWindow);
+                service.Download(downloadUrl, downloadDir, null, filePath =>
+                {
+                    if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                    {
+                        AddLog("CVWindowsService 服务包下载失败");
+                        return;
+                    }
+
+                    if (!IsFullServicePackageZip(filePath))
+                    {
+                        AddLog($"下载完成，但文件不是有效的 CVWindowsService 完整服务包: {filePath}");
+                        return;
+                    }
+
+                    ApplyDownloadedServicePackage(filePath);
+                });
+            }
+            catch (Exception ex)
+            {
+                AddLog($"下载 CVWindowsService 服务包失败: {ex.Message}");
+                Application.Current?.Dispatcher.Invoke(() =>
+                    MessageBox.Show($"下载 CVWindowsService 服务包失败: {ex.Message}", "下载服务包", MessageBoxButton.OK, MessageBoxImage.Warning));
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        }
+
+        private void ApplyDownloadedServicePackage(string packagePath)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                ServicePackagePath = packagePath;
+                InstallServiceChecked = true;
+                AddLog($"已应用服务包路径: {ServicePackagePath}");
+            });
+        }
+
+        private static bool IsValidLatestVersion(Version version)
+        {
+            return version.Major > 0 || version.Minor > 0 || version.Build > 0 || version.Revision > 0;
+        }
+
+        private static string? FindCachedCvWindowsServicePackage(string downloadDir, Version version)
+        {
+            if (!Directory.Exists(downloadDir))
+                return null;
+
+            return Directory.GetFiles(downloadDir, $"CVWindowsService[{version}]*.zip", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .FirstOrDefault();
+        }
+
+        private sealed class CvwsPackageInfo
+        {
+            public CvwsPackageInfo(Version version, string downloadUrl)
+            {
+                Version = version;
+                DownloadUrl = downloadUrl;
+            }
+
+            public Version Version { get; }
+
+            public string DownloadUrl { get; }
+        }
+
+        private static async Task<CvwsPackageInfo> GetLatestCvWindowsServicePackageAsync(string updateServerUrl)
+        {
+            using HttpClient client = new()
+            {
+                Timeout = TimeSpan.FromSeconds(15)
+            };
+
+            foreach (string serverUrl in GetCvwsServerCandidates(updateServerUrl))
+            {
+                CvwsPackageInfo? packageInfo = await TryGetLatestCvWindowsServicePackageAsync(client, serverUrl).ConfigureAwait(false);
+                if (packageInfo != null)
+                    return packageInfo;
+            }
+
+            throw new InvalidOperationException("无法获取 CVWindowsService 最新版本号");
+        }
+
+        private static async Task<CvwsPackageInfo?> TryGetLatestCvWindowsServicePackageAsync(HttpClient client, string serverUrl)
+        {
+            Uri root = BuildServerRoot(serverUrl);
+
+            string releasesUrl = BuildCvwsApiUrl(serverUrl, "releases");
+            string? releasesText = await TryGetStringAsync(client, releasesUrl).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(releasesText) && TryParseCvwsReleases(releasesText, root, out CvwsPackageInfo? packageInfo))
+                return packageInfo;
+
+            string latestUrl = BuildCvwsApiUrl(serverUrl, "latest-version");
+            string? latestText = await TryGetStringAsync(client, latestUrl).ConfigureAwait(false);
+            if (TryParseCvwsVersion(latestText, out Version? version))
+            {
+                string downloadUrl = BuildCvwsApiUrl(serverUrl, $"download/{Uri.EscapeDataString(version.ToString())}");
+                return new CvwsPackageInfo(version, downloadUrl);
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<string> GetCvwsServerCandidates(string updateServerUrl)
+        {
+            HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+            foreach (string? candidate in new[] { updateServerUrl, MarketplaceConfig.DefaultServiceBaseUrl })
+            {
+                if (string.IsNullOrWhiteSpace(candidate))
+                    continue;
+
+                Uri root;
+                try
+                {
+                    root = BuildServerRoot(candidate);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                string value = root.ToString().TrimEnd('/');
+                if (seen.Add(value))
+                    yield return value;
+            }
+        }
+
+        private static async Task<string?> TryGetStringAsync(HttpClient client, string url)
+        {
+            try
+            {
+                using HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                return await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool TryParseCvwsReleases(string releasesText, Uri root, out CvwsPackageInfo? packageInfo)
+        {
+            packageInfo = null;
+
+            try
+            {
+                JObject payload = JObject.Parse(releasesText);
+                if (!TryParseCvwsVersion(payload["latestVersion"]?.ToString(), out Version? latestVersion))
+                    return false;
+
+                JArray? packages = payload["packages"] as JArray;
+                JObject? package = packages?
+                    .OfType<JObject>()
+                    .Where(item => string.Equals(item["version"]?.ToString(), latestVersion.ToString(), StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(item => TryParseInt(item["suffix"]?.ToString()))
+                    .FirstOrDefault();
+
+                string? downloadUrl = package?["downloadUrl"]?.ToString();
+                if (string.IsNullOrWhiteSpace(downloadUrl))
+                    downloadUrl = BuildCvwsApiUrl(root.ToString(), $"download/{Uri.EscapeDataString(latestVersion.ToString())}");
+                else
+                    downloadUrl = BuildAbsoluteUrl(root, downloadUrl);
+
+                packageInfo = new CvwsPackageInfo(latestVersion, downloadUrl);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryParseCvwsVersion(string? text, out Version version)
+        {
+            version = new Version();
+            if (string.IsNullOrWhiteSpace(text))
+                return false;
+
+            string value = text.Trim();
+            if (value.StartsWith('{'))
+            {
+                try
+                {
+                    JObject payload = JObject.Parse(value);
+                    value = payload["version"]?.ToString()
+                        ?? payload["latestVersion"]?.ToString()
+                        ?? string.Empty;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            return Version.TryParse(value.Trim(), out version!);
+        }
+
+        private static int TryParseInt(string? text)
+        {
+            return int.TryParse(text, out int value) ? value : 0;
+        }
+
+        private static Uri BuildServerRoot(string updateServerUrl)
+        {
+            string serverUrl = string.IsNullOrWhiteSpace(updateServerUrl)
+                ? MarketplaceConfig.DefaultServiceBaseUrl
+                : updateServerUrl.Trim();
+
+            if (!Uri.TryCreate(serverUrl, UriKind.Absolute, out Uri? configuredUri))
+                throw new InvalidOperationException($"服务更新地址格式不正确: {serverUrl}");
+
+            return new Uri(configuredUri.GetLeftPart(UriPartial.Authority));
+        }
+
+        private static string BuildAbsoluteUrl(Uri root, string url)
+        {
+            if (Uri.TryCreate(url, UriKind.Absolute, out Uri? absoluteUri))
+                return absoluteUri.ToString();
+
+            return new Uri(root, url).ToString();
+        }
+
+        private static string BuildCvwsApiUrl(string updateServerUrl, string relativePath)
+        {
+            Uri root = BuildServerRoot(updateServerUrl);
+            return new Uri(root, $"/api/tool/cvwindowsservice/{relativePath.TrimStart('/')}").ToString();
+        }
+
         private static string FindServicePackageZip(string packDir)
         {
             if (!Directory.Exists(packDir))
@@ -326,7 +586,10 @@ namespace WindowsServicePlugin.ServiceManager
                     if (WinServiceHelper.IsServiceExisted(svc.ServiceName) && WinServiceHelper.IsServiceRunning(svc.ServiceName))
                     {
                         AddLog($"停止服务: {svc.ServiceName}");
-                        WinServiceHelper.StopService(svc.ServiceName, 30);
+                        ServiceHostWindowsServiceController
+                            .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Stop, AddLog, svc.DisplayName)
+                            .GetAwaiter()
+                            .GetResult();
                     }
                 }
                 catch (Exception ex)
@@ -374,7 +637,10 @@ namespace WindowsServicePlugin.ServiceManager
                     if (WinServiceHelper.IsServiceExisted(svc.ServiceName))
                     {
                         AddLog($"启动服务: {svc.ServiceName}");
-                        WinServiceHelper.StartService(svc.ServiceName, 30);
+                        ServiceHostWindowsServiceController
+                            .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Start, AddLog, svc.DisplayName)
+                            .GetAwaiter()
+                            .GetResult();
                     }
                 }
                 catch (Exception ex)
@@ -424,22 +690,10 @@ namespace WindowsServicePlugin.ServiceManager
                     continue;
                 }
 
-                if (WinServiceHelper.IsServiceExisted(svc.ServiceName))
-                {
-                    try
-                    {
-                        WinServiceHelper.StopService(svc.ServiceName, 20);
-                        Application.Current.Dispatcher.Invoke(() =>  ServiceManagerViewModel.Instance.RefreshAll());
-                        
-                    }
-                    catch
-                    {
-                    }
-                    WinServiceHelper.UninstallService(svc.ServiceName);
-                    Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
-                }
-
-                bool ok = WinServiceHelper.InstallService(svc.ServiceName, exePath);
+                bool ok = ServiceHostWindowsServiceController
+                    .InstallAsync(svc.ServiceName, exePath, AddLog, svc.DisplayName, startAfterInstall: false)
+                    .GetAwaiter()
+                    .GetResult();
                 Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
                 AddLog(ok
                     ? $"服务安装成功: {svc.ServiceName}"
@@ -478,12 +732,12 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     if (Directory.Exists(targetPath))
                     {
-                        Directory.Delete(targetPath, true);
+                        DeleteExistingPathWithRetry(targetPath);
                         AddLog($"已清理旧目录: {targetPath}");
                     }
                     else if (File.Exists(targetPath))
                     {
-                        File.Delete(targetPath);
+                        DeleteExistingPathWithRetry(targetPath);
                         AddLog($"已清理旧文件: {targetPath}");
                     }
                 }
@@ -491,6 +745,87 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     throw new IOException($"清理旧服务文件失败: {targetPath}. {ex.Message}", ex);
                 }
+            }
+        }
+
+        private void DeleteExistingPathWithRetry(string targetPath)
+        {
+            const int maxAttempts = 25;
+            TimeSpan retryDelay = TimeSpan.FromMilliseconds(800);
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    if (Directory.Exists(targetPath))
+                    {
+                        TryNormalizeFileAttributes(targetPath);
+                        Directory.Delete(targetPath, true);
+                    }
+                    else if (File.Exists(targetPath))
+                    {
+                        TryNormalizeFileAttributes(targetPath);
+                        File.Delete(targetPath);
+                    }
+
+                    return;
+                }
+                catch (Exception ex) when (IsRetryableCleanupException(ex) && attempt < maxAttempts)
+                {
+                    if (attempt == 1 || attempt % 5 == 0)
+                    {
+                        AddLog($"旧服务文件仍被占用，等待释放后重试({attempt}/{maxAttempts}): {targetPath}");
+                    }
+
+                    System.Threading.Thread.Sleep(retryDelay);
+                }
+            }
+        }
+
+        private static bool IsRetryableCleanupException(Exception ex)
+        {
+            return ex is IOException or UnauthorizedAccessException;
+        }
+
+        private static void TryNormalizeFileAttributes(string targetPath)
+        {
+            try
+            {
+                if (File.Exists(targetPath))
+                {
+                    File.SetAttributes(targetPath, FileAttributes.Normal);
+                    return;
+                }
+
+                if (!Directory.Exists(targetPath))
+                    return;
+
+                foreach (string file in Directory.EnumerateFiles(targetPath, "*", SearchOption.AllDirectories))
+                {
+                    TrySetNormalAttributes(file);
+                }
+
+                foreach (string directory in Directory.EnumerateDirectories(targetPath, "*", SearchOption.AllDirectories)
+                             .OrderByDescending(path => path.Length))
+                {
+                    TrySetNormalAttributes(directory);
+                }
+
+                TrySetNormalAttributes(targetPath);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void TrySetNormalAttributes(string path)
+        {
+            try
+            {
+                File.SetAttributes(path, FileAttributes.Normal);
+            }
+            catch
+            {
             }
         }
 

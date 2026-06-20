@@ -12,6 +12,96 @@ namespace WindowsServicePlugin.ServiceManager
 
     internal static class ServiceHostWindowsServiceController
     {
+        public static async Task<bool> InstallAsync(
+            string serviceName,
+            string executablePath,
+            Action<string> logCallback,
+            string? displayName = null,
+            bool startAfterInstall = false)
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                logCallback("服务名为空，不能执行后台服务安装");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(executablePath))
+            {
+                logCallback("服务可执行文件路径为空，不能执行后台服务安装");
+                return false;
+            }
+
+            string name = string.IsNullOrWhiteSpace(displayName) ? serviceName : displayName;
+            try
+            {
+                logCallback($"正在通过 ColorVisionServiceHost 后台安装 {name} ({serviceName})...");
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .InstallServiceAsync(serviceName, executablePath, name, $"ColorVision service: {name}", startAfterInstall: startAfterInstall)
+                    .ConfigureAwait(true);
+
+                if (response.Success)
+                {
+                    logCallback($"后台服务执行成功: {name} 安装完成");
+                    return true;
+                }
+
+                logCallback($"后台服务执行失败: {name} 安装失败，{response.Message}");
+                if (response.Message.Contains("Unsupported command", StringComparison.OrdinalIgnoreCase))
+                {
+                    logCallback("当前 ColorVisionServiceHost 版本过旧，请先在“更新 -> ColorVision Service Host”中更新后台服务。");
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
+                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
+                return false;
+            }
+        }
+
+        public static async Task<bool> UninstallAsync(
+            string serviceName,
+            Action<string> logCallback,
+            string? displayName = null)
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                logCallback("服务名为空，不能执行后台服务卸载");
+                return false;
+            }
+
+            string name = string.IsNullOrWhiteSpace(displayName) ? serviceName : displayName;
+            try
+            {
+                logCallback($"正在通过 ColorVisionServiceHost 后台卸载 {name} ({serviceName})...");
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
+                    .UninstallServiceAsync(serviceName)
+                    .ConfigureAwait(true);
+
+                if (response.Success)
+                {
+                    logCallback($"后台服务执行成功: {name} 卸载完成");
+                    return true;
+                }
+
+                logCallback($"后台服务执行失败: {name} 卸载失败，{response.Message}");
+                if (response.Message.Contains("Unsupported command", StringComparison.OrdinalIgnoreCase))
+                {
+                    logCallback("当前 ColorVisionServiceHost 版本过旧，请先在“更新 -> ColorVision Service Host”中更新后台服务。");
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
+                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
+                return false;
+            }
+        }
+
         public static async Task<bool> ExecuteAsync(
             string serviceName,
             ServiceHostServiceOperation operation,

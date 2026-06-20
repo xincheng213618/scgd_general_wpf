@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PlatformTarget>x64</PlatformTarget>
-    <VersionPrefix>1.4.10.2</VersionPrefix>
+    <VersionPrefix>1.4.10.3</VersionPrefix>
     <AssemblyProduct>ColorVision Service Host</AssemblyProduct>
   </PropertyGroup>
 

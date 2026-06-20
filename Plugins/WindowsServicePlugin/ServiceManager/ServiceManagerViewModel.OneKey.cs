@@ -1,7 +1,7 @@
 namespace WindowsServicePlugin.ServiceManager
 {
     /// <summary>
-    /// 一键启动/停止所有服务
+    /// 一键启动/停止服务
     /// </summary>
     public partial class ServiceManagerViewModel
     {
@@ -10,6 +10,16 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在启动所有服务...");
             try
             {
+                RefreshAll();
+
+                foreach (var svc in Services)
+                {
+                    if (!svc.IsInstalled && HasResolvableServiceExecutable(svc))
+                    {
+                        await InstallManagedServiceCoreAsync(svc, startAfterInstall: false).ConfigureAwait(true);
+                    }
+                }
+
                 RefreshAll();
 
                 if (MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning)
@@ -58,7 +68,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private async Task OneKeyStopAsync()
         {
-            SetBusy(true, "正在停止所有服务...");
+            SetBusy(true, "正在停止 CVWindowsService...");
             try
             {
                 RefreshAll();
@@ -73,27 +83,17 @@ namespace WindowsServicePlugin.ServiceManager
                         .ConfigureAwait(true);
                 }
 
-                if (MqttManager.Config.IsRunning)
-                {
-                    await MqttManager.StopViaServiceHostAsync(AddLog).ConfigureAwait(true);
-                }
-
-                if (MySqlManager.Config.IsRunning)
-                {
-                    await MySqlManager.StopViaServiceHostAsync(AddLog).ConfigureAwait(true);
-                }
-
                 foreach (var svc in Services.Reverse())
                 {
                     if (WinServiceHelper.IsServiceRunning(svc.ServiceName))
                     {
                         await ServiceHostWindowsServiceController
                             .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Terminate, AddLog, svc.DisplayName, svc.ExePath)
-                            .ConfigureAwait(true);
+                        .ConfigureAwait(true);
                     }
                 }
 
-                AddLog("所有服务已停止");
+                AddLog("CVWindowsService 已停止，MySQL/MQTT 保持当前状态");
             }
             catch (Exception ex)
             {

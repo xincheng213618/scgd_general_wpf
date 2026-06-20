@@ -91,11 +91,11 @@ namespace ColorVision.Engine.Services.RC
             ServiceConfig.Instance.CVMainService_x64Info = ServiceInfo.FromServiceName("CVMainService_x64");
             ServiceConfig.Instance.CVArchServiceInfo = ServiceInfo.FromServiceName("CVArchService");
 
-            // 保持兼容性，同时更新路径字符串
-            ServiceConfig.Instance.RegistrationCenterService = ServiceConfig.Instance.RegistrationCenterServiceInfo.ExecutablePath;
-            ServiceConfig.Instance.CVMainService_dev = ServiceConfig.Instance.CVMainService_devInfo.ExecutablePath;
-            ServiceConfig.Instance.CVMainService_x64 = ServiceConfig.Instance.CVMainService_x64Info.ExecutablePath;
-            ServiceConfig.Instance.CVArchService = ServiceConfig.Instance.CVArchServiceInfo.ExecutablePath;
+            // 服务掉线/被 Windows 更新移除时，不能用空路径覆盖之前保存的可执行文件路径。
+            UpdateSavedServicePath(ServiceConfig.Instance.RegistrationCenterServiceInfo, path => ServiceConfig.Instance.RegistrationCenterService = path);
+            UpdateSavedServicePath(ServiceConfig.Instance.CVMainService_devInfo, path => ServiceConfig.Instance.CVMainService_dev = path);
+            UpdateSavedServicePath(ServiceConfig.Instance.CVMainService_x64Info, path => ServiceConfig.Instance.CVMainService_x64 = path);
+            UpdateSavedServicePath(ServiceConfig.Instance.CVArchServiceInfo, path => ServiceConfig.Instance.CVArchService = path);
         }
 
         public override async Task InitializeAsync()
@@ -141,8 +141,31 @@ namespace ColorVision.Engine.Services.RC
                 {
                     if (File.Exists(ServiceConfig.Instance.RegistrationCenterService))
                     {
-                        log.Info("RegistrationCenterService 服务未安装，启动阶段不再弹出 UAC 自动创建服务，请通过服务管理器安装/修复。");
-                        return;
+                        bool rcInstalled = await InstallMissingServiceViaServiceHostAsync(
+                            "RegistrationCenterService",
+                            ServiceConfig.Instance.RegistrationCenterService,
+                            startAfterInstall: true);
+
+                        await InstallMissingServiceViaServiceHostAsync(
+                            "CVMainService_x64",
+                            ServiceConfig.Instance.CVMainService_x64,
+                            startAfterInstall: false);
+
+                        await InstallMissingServiceViaServiceHostAsync(
+                            "CVMainService_dev",
+                            ServiceConfig.Instance.CVMainService_dev,
+                            startAfterInstall: false);
+
+                        await InstallMissingServiceViaServiceHostAsync(
+                            "CVArchService",
+                            ServiceConfig.Instance.CVArchService,
+                            startAfterInstall: false);
+
+                        if (rcInstalled)
+                        {
+                            isConnect = await MqttRCService.GetInstance().Connect();
+                            if (isConnect) return;
+                        }
                     }
 
 
@@ -155,6 +178,53 @@ namespace ColorVision.Engine.Services.RC
                 log.Error(ex);
                 return;
             }
+        }
+
+        private static async Task<bool> InstallMissingServiceViaServiceHostAsync(string serviceName, string? executablePath, bool startAfterInstall)
+        {
+            if (string.IsNullOrWhiteSpace(executablePath) || !File.Exists(executablePath))
+                return false;
+
+            if (ServiceExists(serviceName))
+                return true;
+
+            log.Info($"{serviceName} 服务未安装，正在通过 ColorVisionServiceHost 静默安装。");
+            ServiceHostResponse response = await ColorVisionServiceHostClient.Default.InstallServiceAsync(
+                serviceName,
+                executablePath,
+                displayName: serviceName,
+                description: $"ColorVision service: {serviceName}",
+                startAfterInstall: startAfterInstall,
+                timeoutSeconds: 45,
+                timeout: TimeSpan.FromSeconds(90));
+
+            if (!response.Success)
+            {
+                log.Warn($"ColorVisionServiceHost 安装 {serviceName} 失败：{response.Message}");
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool ServiceExists(string serviceName)
+        {
+            try
+            {
+                using ServiceController serviceController = new(serviceName);
+                _ = serviceController.Status;
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+        }
+
+        private static void UpdateSavedServicePath(ServiceInfo serviceInfo, Action<string> updatePath)
+        {
+            if (serviceInfo.Exists && File.Exists(serviceInfo.ExecutablePath))
+                updatePath(serviceInfo.ExecutablePath);
         }
     }
 }

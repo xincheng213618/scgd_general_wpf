@@ -88,6 +88,7 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand RestoreServiceBackupCommand { get; }
         public RelayCommand DoInstallCommand { get; }
         public RelayCommand OneKeyInstallAllCommand { get; }
+        public RelayCommand DownloadOneKeyPackageCommand { get; }
 
         public ServiceInstallViewModel()
         {
@@ -101,6 +102,7 @@ namespace WindowsServicePlugin.ServiceManager
             RestoreServiceBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreServiceBackup()), a => !IsBusy);
             DoInstallCommand = new RelayCommand(a => _ = ExecuteInstallAsync(), a => !IsBusy);
             OneKeyInstallAllCommand = new RelayCommand(a => _ = OneKeyInstallAllAsync(), a => !IsBusy);
+            DownloadOneKeyPackageCommand = new RelayCommand(a => _ = DownloadOneKeyPackageAsync(), a => !IsBusy);
         }
 
         #region File Dialogs

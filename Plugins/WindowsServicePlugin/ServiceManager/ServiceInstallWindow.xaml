@@ -9,6 +9,7 @@
         Title="服务安装管理" Height="780" Width="980"
         d:DataContext="{d:DesignInstance local:ServiceInstallViewModel}"
         Background="{DynamicResource GlobalBackground}"
+        Foreground="{DynamicResource GlobalTextBrush}"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -37,7 +38,10 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="一键安装：选择安装包后自动解压、识别组件并勾选，然后点击下方安装按钮" VerticalAlignment="Center" Foreground="Gray" TextWrapping="Wrap"/>
-                        <Button Grid.Column="1" Content="选择一键安装包" Command="{Binding OneKeyInstallAllCommand}" Padding="16,6" Style="{StaticResource ButtonPrimary}"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Content="下载最新服务包" Command="{Binding DownloadOneKeyPackageCommand}" Padding="16,6" Margin="0,0,8,0"/>
+                            <Button Content="选择一键安装包" Command="{Binding OneKeyInstallAllCommand}" Padding="16,6" Style="{StaticResource ButtonPrimary}"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
 
@@ -89,7 +93,7 @@
                 </WrapPanel>
                 
                 <!-- 数据库备份 -->
-                <TextBlock Text="数据库备份" FontSize="12" Margin="0,8,0,4" Foreground="{DynamicResource TextBlockForeground}"/>
+                <TextBlock Text="数据库备份" FontSize="12" Margin="0,8,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
                 <WrapPanel Margin="0,0,0,8">
                     <CheckBox Content="安装前备份数据库" IsChecked="{Binding BackupBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
                     <Button Content="立即备份" Command="{Binding BackupNowCommand}" Padding="12,4" Margin="0,0,8,0"/>
@@ -98,7 +102,7 @@
                 </WrapPanel>
                 
                 <!-- 服务备份 -->
-                <TextBlock Text="服务备份" FontSize="12" Margin="0,4,0,4" Foreground="{DynamicResource TextBlockForeground}"/>
+                <TextBlock Text="服务备份" FontSize="12" Margin="0,4,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
                 <WrapPanel>
                     <CheckBox Content="安装前备份服务文件夹" IsChecked="{Binding BackupServiceBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
                     <CheckBox Content="仅备份 cfg（dev/x64/Reg）" IsChecked="{Binding BackupServiceCfgOnly}" Margin="0,0,20,0" VerticalAlignment="Center"/>

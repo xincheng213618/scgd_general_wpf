@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using ColorVision.UI.Marketplace;
 using Microsoft.Win32;
 using System.ComponentModel;
 using System.IO;
@@ -23,6 +24,16 @@ namespace WindowsServicePlugin.ServiceManager
         [Description("ServiceManagerMySqlPortDescription")]
         public int MySqlPort { get => _MySqlPort; set { _MySqlPort = value; OnPropertyChanged(); } }
         private int _MySqlPort = 3306;
+
+        [DisplayName("ServiceManagerUpdateServerUrl")]
+        [Description("ServiceManagerUpdateServerUrlDescription")]
+        public string UpdateServerUrl { get => _UpdateServerUrl; set { _UpdateServerUrl = value; OnPropertyChanged(); } }
+        private string _UpdateServerUrl = MarketplaceConfig.DefaultServiceBaseUrl;
+
+        [DisplayName("ServiceManagerDownloadLocation")]
+        [Description("ServiceManagerDownloadLocationDescription")]
+        public string DownloadLocation { get => _DownloadLocation; set { _DownloadLocation = value; OnPropertyChanged(); } }
+        private string _DownloadLocation = Path.Combine(Environments.DirToolPackageCache, "CVWindowsService");
 
         [DisplayName("ServiceManagerInstallServiceChecked")]
         [Description("ServiceManagerInstallServiceCheckedDescription")]

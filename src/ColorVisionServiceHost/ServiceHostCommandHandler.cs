@@ -48,6 +48,8 @@ internal sealed class ServiceHostCommandHandler
                 "install-mysql-from-zip" => InstallMySqlFromZip(request),
                 "install-existing-mysql-service" => RepairMySqlService(request),
                 "repair-mysql-service" => RepairMySqlService(request),
+                "service-install" => InstallWindowsService(request),
+                "service-uninstall" => UninstallWindowsService(request),
                 "service-start" => StartWindowsService(request),
                 "service-stop" => StopWindowsService(request),
                 "service-restart" => RestartWindowsService(request),
@@ -514,6 +516,119 @@ internal sealed class ServiceHostCommandHandler
         });
     }
 
+    private static ServiceHostResponse InstallWindowsService(ServiceHostRequest request)
+    {
+        string serviceName = ResolveRequestedServiceName(request);
+        if (!IsAllowedServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
+
+        string executablePath = Path.GetFullPath(GetRequiredDataValue(request, "executablePath"));
+        if (!File.Exists(executablePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service executable was not found: {executablePath}");
+        if (!string.Equals(Path.GetExtension(executablePath), ".exe", StringComparison.OrdinalIgnoreCase))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service executable must be an .exe file: {executablePath}");
+
+        string displayName = GetOptionalDataValue(request, "displayName", serviceName).Trim();
+        string description = GetOptionalDataValue(request, "description", string.Empty).Trim();
+        string startType = GetOptionalDataValue(request, "startType", "delayed-auto").Trim();
+        bool startAfterInstall = GetOptionalDataBool(request, "startAfterInstall", false);
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
+
+        if (string.IsNullOrWhiteSpace(displayName))
+            displayName = serviceName;
+        if (string.IsNullOrWhiteSpace(startType))
+            startType = "delayed-auto";
+
+        List<string> steps = [];
+        List<ProcessResult> processResults = [];
+
+        if (ServiceExists(serviceName))
+        {
+            string? registeredPath = GetServiceInstallPath(serviceName);
+            if (IsSamePath(registeredPath, executablePath))
+            {
+                steps.Add($"Service already installed: {serviceName}");
+                ProcessResult configExistingResult = RunProcess("sc.exe", ["config", serviceName, "start=", startType], null, timeoutSeconds * 1000);
+                processResults.Add(configExistingResult);
+
+                bool alreadyOk = !startAfterInstall || StartServiceAndWait(serviceName, timeoutSeconds, steps);
+                return ServiceHostResponse.FromObject(request.RequestId, alreadyOk, alreadyOk ? "service already installed" : "service start failed", new
+                {
+                    serviceName,
+                    executablePath,
+                    registeredPath,
+                    running = IsServiceRunning(serviceName),
+                    steps,
+                    processResults,
+                });
+            }
+
+            steps.Add($"Service path changed: {registeredPath ?? "(unknown)"} -> {executablePath}");
+            StopServiceIfExists(serviceName, timeoutSeconds, steps);
+            processResults.Add(RunProcess("sc.exe", ["delete", serviceName], null, timeoutSeconds * 1000));
+            WaitForServiceDeleted(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
+        }
+
+        ProcessResult createResult = RunProcess(
+            "sc.exe",
+            ["create", serviceName, "binPath=", executablePath, "start=", startType, "DisplayName=", displayName],
+            null,
+            timeoutSeconds * 1000);
+        processResults.Add(createResult);
+        if (createResult.ExitCode != 0)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"service install failed: {createResult.ExitCode}", new { serviceName, executablePath, steps, processResults });
+
+        if (!string.IsNullOrWhiteSpace(description))
+        {
+            ProcessResult descriptionResult = RunProcess("sc.exe", ["description", serviceName, description], null, timeoutSeconds * 1000);
+            processResults.Add(descriptionResult);
+        }
+
+        WaitForServiceExists(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
+        bool exists = ServiceExists(serviceName);
+        bool started = !startAfterInstall || StartServiceAndWait(serviceName, timeoutSeconds, steps);
+
+        return ServiceHostResponse.FromObject(request.RequestId, exists && started, exists && started ? "service installed" : "service install incomplete", new
+        {
+            serviceName,
+            executablePath,
+            registeredPath = GetServiceInstallPath(serviceName),
+            running = IsServiceRunning(serviceName),
+            steps,
+            processResults,
+        });
+    }
+
+    private static ServiceHostResponse UninstallWindowsService(ServiceHostRequest request)
+    {
+        string serviceName = ResolveRequestedServiceName(request);
+        if (!IsAllowedServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
+
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
+        List<string> steps = [];
+        List<ProcessResult> processResults = [];
+
+        if (!ServiceExists(serviceName))
+        {
+            steps.Add($"Service not installed: {serviceName}");
+            return ServiceHostResponse.FromObject(request.RequestId, true, "service not installed", new { serviceName, steps, processResults });
+        }
+
+        StopServiceIfExists(serviceName, timeoutSeconds, steps);
+        processResults.Add(RunProcess("sc.exe", ["delete", serviceName], null, timeoutSeconds * 1000));
+        WaitForServiceDeleted(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
+
+        bool exists = ServiceExists(serviceName);
+        return ServiceHostResponse.FromObject(request.RequestId, !exists, exists ? "service uninstall failed" : "service uninstalled", new
+        {
+            serviceName,
+            exists,
+            steps,
+            processResults,
+        });
+    }
+
     private static ServiceHostResponse UninstallMySqlService(ServiceHostRequest request)
     {
         string serviceName = GetOptionalDataValue(request, "serviceName", "MySQL").Trim();
@@ -845,6 +960,12 @@ internal sealed class ServiceHostCommandHandler
     {
         string? value = request.Data?[name]?.ToString();
         return int.TryParse(value, out int result) ? result : defaultValue;
+    }
+
+    private static bool GetOptionalDataBool(ServiceHostRequest request, string name, bool defaultValue)
+    {
+        string? value = request.Data?[name]?.ToString();
+        return bool.TryParse(value, out bool result) ? result : defaultValue;
     }
 
     private static string ResolveRequestedServiceName(ServiceHostRequest request, string? defaultServiceName = null)

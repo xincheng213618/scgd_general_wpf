@@ -1,6 +1,5 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
@@ -11,47 +10,6 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceManagerViewModel
     {
-        private bool EnsureElevatedOrRestart(string actionName)
-        {
-            if (Tool.IsAdministrator()) return true;
-
-            if (MessageBox.Show($"{actionName}需要管理员权限，是否重新打开服务管理器并授予权限？", "需要管理员权限", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
-            {
-                RestartAsAdministratorToServiceManager();
-            }
-            return false;
-        }
-
-        private void RestartAsAdministratorToServiceManager()
-        {
-            try
-            {
-                string? exePath = Environment.ProcessPath;
-                if (string.IsNullOrWhiteSpace(exePath))
-                    exePath = Process.GetCurrentProcess().MainModule?.FileName;
-                if (string.IsNullOrWhiteSpace(exePath))
-                {
-                    AddLog("无法获取当前程序路径，不能重新打开服务管理器");
-                    return;
-                }
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = exePath,
-                    Arguments = "-c ServiceManager",
-                    UseShellExecute = true,
-                    Verb = "runas",
-                    WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory
-                };
-                Process.Start(psi);
-                Application.Current?.Dispatcher.Invoke(() => Application.Current.Shutdown());
-            }
-            catch (Exception ex)
-            {
-                AddLog($"提权重开失败: {ex.Message}");
-            }
-        }
-
         private void OpenLegacyConfigFile()
         {
             string? filePath = GetLegacyAppConfigPath();
@@ -126,9 +84,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void OpenInstallManager()
         {
-            if (!EnsureElevatedOrRestart("更新"))
-                return;
-
             var installWindow = new ServiceInstallWindow
             {
                 Owner = Application.Current.GetActiveWindow()

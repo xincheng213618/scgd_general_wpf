@@ -68,6 +68,8 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand OpenMySqlConfigCommand { get; }
         public RelayCommand OpenMqttConfigCommand { get; }
         public RelayCommand OpenLegacyConfigCommand { get; }
+        public RelayCommand ServiceInstallCommand { get; }
+        public RelayCommand ServiceUninstallCommand { get; }
         public RelayCommand ServiceStartCommand { get; }
         public RelayCommand ServiceStopCommand { get; }
         public RelayCommand ServiceRestartCommand { get; }
@@ -109,6 +111,8 @@ namespace WindowsServicePlugin.ServiceManager
             OpenMySqlConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MySql.config"));
             OpenMqttConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MQTT.config"));
             OpenLegacyConfigCommand = new RelayCommand(a => OpenLegacyConfigFile(), a => HasLegacyConfig);
+            ServiceInstallCommand = new RelayCommand(a => _ = InstallManagedServiceAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry entry && !entry.IsInstalled && HasResolvableServiceExecutable(entry));
+            ServiceUninstallCommand = new RelayCommand(a => _ = UninstallManagedServiceAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry { IsInstalled: true });
             ServiceStartCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Start), a => !IsBusy && a is ServiceEntry { IsInstalled: true, IsRunning: false });
             ServiceStopCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Stop), a => !IsBusy && a is ServiceEntry { IsInstalled: true, IsRunning: true });
             ServiceRestartCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Restart), a => !IsBusy && a is ServiceEntry { IsInstalled: true });

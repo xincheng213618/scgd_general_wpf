@@ -9,6 +9,7 @@
         d:DataContext="{d:DesignInstance local:ServiceManagerViewModel}"
         Title="服务管理器" Height="750" Width="1000"
         Background="{DynamicResource GlobalBackground}"
+        Foreground="{DynamicResource GlobalTextBrush}"
         WindowStartupLocation="CenterScreen"
         Initialized="Window_Initialized">
     <Window.Resources>
@@ -72,8 +73,7 @@
                                         </DockPanel>
                                         <WrapPanel>
                                             <TextBlock Text="{Binding ServiceName}" Width="200" VerticalAlignment="Center"/>
-                                            <TextBlock Width="80" VerticalAlignment="Center"
-                                                       Foreground="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Width="80" VerticalAlignment="Center">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Text" Value="{Binding StatusText}"/>
@@ -90,6 +90,8 @@
                                             </TextBlock>
                                         </WrapPanel>
                                         <WrapPanel Margin="0,6,0,0">
+                                            <Button Content="安装" Command="{Binding DataContext.ServiceInstallCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="卸载" Command="{Binding DataContext.ServiceUninstallCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2" Foreground="Red"/>
                                             <Button Content="启动" Command="{Binding DataContext.ServiceStartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                             <Button Content="停止" Command="{Binding DataContext.ServiceStopCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                             <Button Content="重启" Command="{Binding DataContext.ServiceRestartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
