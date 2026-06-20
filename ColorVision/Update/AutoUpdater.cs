@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Linq;
+using System.Net;
 
 namespace ColorVision.Update
 {
@@ -70,6 +71,14 @@ namespace ColorVision.Update
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
         private static readonly HttpClient _metadataClient = new() { Timeout = TimeSpan.FromSeconds(15) };
+        private static readonly SemaphoreSlim _latestVersionSemaphore = new(1, 1);
+        private static readonly object _latestVersionCacheLock = new();
+        private static readonly TimeSpan MetadataRequestTimeout = TimeSpan.FromSeconds(4);
+        private static readonly TimeSpan LatestVersionClientCacheDuration = TimeSpan.FromSeconds(30);
+        private static string? _cachedLatestVersionUrl;
+        private static Version? _cachedLatestVersion;
+        private static DateTimeOffset _cachedLatestVersionAt = DateTimeOffset.MinValue;
+        private static string? _cachedLatestVersionETag;
         private static AutoUpdater _instance;
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
@@ -350,11 +359,13 @@ namespace ColorVision.Update
 
             try
             {
+                using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                timeoutSource.CancelAfter(MetadataRequestTimeout);
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
                 ApplyAuthorizationHeader(request);
-                using HttpResponseMessage response = await _metadataClient.SendAsync(request, cancellationToken);
+                using HttpResponseMessage response = await _metadataClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token);
                 response.EnsureSuccessStatusCode();
-                versionString = await response.Content.ReadAsStringAsync(cancellationToken);
+                versionString = await response.Content.ReadAsStringAsync(timeoutSource.Token);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -364,7 +375,7 @@ namespace ColorVision.Update
             {
                 log.Warn($"Failed to fetch changelog from {url}: {ex.GetBaseException().Message}");
             }
-            catch (TaskCanceledException ex)
+            catch (OperationCanceledException ex)
             {
                 log.Warn($"Timed out fetching changelog from {url}: {ex.GetBaseException().Message}");
             }
@@ -391,14 +402,50 @@ namespace ColorVision.Update
                 return new Version();
             }
 
+            if (TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
+            {
+                return freshCachedVersion;
+            }
+
+            await _latestVersionSemaphore.WaitAsync(cancellationToken);
             try
             {
+                if (TryGetFreshCachedLatestVersion(url, out freshCachedVersion))
+                {
+                    return freshCachedVersion;
+                }
+
+                using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                timeoutSource.CancelAfter(MetadataRequestTimeout);
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
                 ApplyAuthorizationHeader(request);
-                using HttpResponseMessage response = await _metadataClient.SendAsync(request, cancellationToken);
+                string? cachedETag = GetCachedLatestVersionETag(url);
+                if (!string.IsNullOrWhiteSpace(cachedETag))
+                {
+                    request.Headers.TryAddWithoutValidation("If-None-Match", cachedETag);
+                }
+
+                using HttpResponseMessage response = await _metadataClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token);
+                if (response.StatusCode == HttpStatusCode.NotModified
+                    && TryGetAnyCachedLatestVersion(url, out Version notModifiedVersion))
+                {
+                    TouchCachedLatestVersion(url);
+                    return notModifiedVersion;
+                }
+
                 response.EnsureSuccessStatusCode();
-                string payload = await response.Content.ReadAsStringAsync(cancellationToken);
+                string payload = await response.Content.ReadAsStringAsync(timeoutSource.Token);
                 versionString = ExtractVersionString(payload);
+                if (!Version.TryParse(versionString.Trim(), out Version? latestVersion))
+                {
+                    log.Warn($"Invalid update version payload from {url}: {versionString}");
+                    return TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
+                        ? fallbackVersion
+                        : new Version();
+                }
+
+                SetCachedLatestVersion(url, latestVersion, response.Headers.ETag?.ToString());
+                return latestVersion;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -407,26 +454,93 @@ namespace ColorVision.Update
             catch (HttpRequestException ex)
             {
                 log.Warn($"Failed to fetch update metadata from {url}: {ex.GetBaseException().Message}");
-                return new Version();
+                return TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
+                    ? fallbackVersion
+                    : new Version();
             }
-            catch (TaskCanceledException ex)
+            catch (OperationCanceledException ex)
             {
                 log.Warn($"Timed out fetching update metadata from {url}: {ex.GetBaseException().Message}");
-                return new Version();
+                return TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
+                    ? fallbackVersion
+                    : new Version();
             }
             catch (Exception ex)
             {
                 log.Error($"Unexpected failure checking update metadata from {url}.", ex);
-                return new Version();
+                return TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
+                    ? fallbackVersion
+                    : new Version();
             }
-
-            // If versionString is still null, it means there was an issue with getting the ServiceVersion number
-            if (versionString == null)
+            finally
             {
-                throw new InvalidOperationException("Unable to retrieve version number.");
+                _latestVersionSemaphore.Release();
+            }
+        }
+
+        private static bool TryGetFreshCachedLatestVersion(string url, out Version version)
+        {
+            lock (_latestVersionCacheLock)
+            {
+                if (_cachedLatestVersion != null
+                    && string.Equals(_cachedLatestVersionUrl, url, StringComparison.OrdinalIgnoreCase)
+                    && DateTimeOffset.UtcNow - _cachedLatestVersionAt <= LatestVersionClientCacheDuration)
+                {
+                    version = _cachedLatestVersion;
+                    return true;
+                }
             }
 
-            return new Version(versionString.Trim());
+            version = new Version();
+            return false;
+        }
+
+        private static bool TryGetAnyCachedLatestVersion(string url, out Version version)
+        {
+            lock (_latestVersionCacheLock)
+            {
+                if (_cachedLatestVersion != null
+                    && string.Equals(_cachedLatestVersionUrl, url, StringComparison.OrdinalIgnoreCase))
+                {
+                    version = _cachedLatestVersion;
+                    return true;
+                }
+            }
+
+            version = new Version();
+            return false;
+        }
+
+        private static string? GetCachedLatestVersionETag(string url)
+        {
+            lock (_latestVersionCacheLock)
+            {
+                return string.Equals(_cachedLatestVersionUrl, url, StringComparison.OrdinalIgnoreCase)
+                    ? _cachedLatestVersionETag
+                    : null;
+            }
+        }
+
+        private static void SetCachedLatestVersion(string url, Version version, string? etag)
+        {
+            lock (_latestVersionCacheLock)
+            {
+                _cachedLatestVersionUrl = url;
+                _cachedLatestVersion = version;
+                _cachedLatestVersionAt = DateTimeOffset.UtcNow;
+                _cachedLatestVersionETag = etag;
+            }
+        }
+
+        private static void TouchCachedLatestVersion(string url)
+        {
+            lock (_latestVersionCacheLock)
+            {
+                if (string.Equals(_cachedLatestVersionUrl, url, StringComparison.OrdinalIgnoreCase))
+                {
+                    _cachedLatestVersionAt = DateTimeOffset.UtcNow;
+                }
+            }
         }
 
         public async Task<AutoUpdatePlan?> GetUpdatePlanAsync(CancellationToken cancellationToken = default)

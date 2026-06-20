@@ -31,6 +31,17 @@ def _dir_signature_hash(entries: list[tuple[str, int, float]]) -> str:
     return hashlib.md5(raw.encode("utf-8")).hexdigest()[:16]
 
 
+def _version_sort_tuple(version: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(part) for part in str(version).split("."))
+    except (TypeError, ValueError):
+        return ()
+
+
+def _update_sort_key(item: dict[str, Any]) -> tuple[tuple[int, ...], str]:
+    return (_version_sort_tuple(str(item.get("version", ""))), str(item.get("modified", "")))
+
+
 # ---------------------------------------------------------------------------
 # Release index
 # ---------------------------------------------------------------------------
@@ -268,7 +279,7 @@ def _scan_update_packages(storage: Path) -> list[dict[str, Any]]:
             "relative_path": entry.relative_to(storage).as_posix(),
         })
 
-    items.sort(key=lambda x: (x["version"], x["modified"]), reverse=True)
+    items.sort(key=_update_sort_key, reverse=True)
     return items
 
 
@@ -368,11 +379,13 @@ def get_updates_from_index(cache: CacheManager) -> list[dict[str, Any]] | None:
     db = cache.get_db()
     try:
         rows = db.execute(
-            "SELECT * FROM update_index WHERE is_deleted = 0 ORDER BY version DESC, fix DESC"
+            "SELECT * FROM update_index WHERE is_deleted = 0"
         ).fetchall()
         if not rows:
             return None
-        return [dict(r) for r in rows]
+        items = [dict(r) for r in rows]
+        items.sort(key=_update_sort_key, reverse=True)
+        return items
     except Exception:
         return None
     finally:

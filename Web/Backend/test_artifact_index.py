@@ -177,6 +177,19 @@ class ArtifactIndexTests(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["version"], "2.0.0.1")
 
+    def test_get_updates_from_index_sorts_versions_numerically(self):
+        self._create_update("1.4.9.1")
+        self._create_update("1.4.10.7")
+        self._create_update("1.4.10.1")
+
+        from services.artifact_index import refresh_update_index, get_updates_from_index
+        refresh_update_index(self.cache, self.storage)
+
+        result = get_updates_from_index(self.cache)
+
+        self.assertIsNotNone(result)
+        self.assertEqual([item["version"] for item in result[:3]], ["1.4.10.7", "1.4.10.1", "1.4.9.1"])
+
     def test_update_index_state_updated(self):
         self._create_update("1.0.0.1")
         from services.artifact_index import refresh_update_index, get_index_state
@@ -335,6 +348,19 @@ class ArtifactIndexTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         versions = {item["version"] for item in response.get_json()["update_packages"]}
         self.assertIn("1.0.0.1", versions)
+
+    def test_updates_site_api_preserves_numeric_index_order(self):
+        self._create_update("1.4.9.1")
+        self._create_update("1.4.10.7")
+
+        from services.artifact_index import refresh_update_index
+        refresh_update_index(self.cache, self.storage)
+
+        response = self.client.get("/api/site/updates")
+
+        self.assertEqual(response.status_code, 200)
+        versions = [item["version"] for item in response.get_json()["update_packages"]]
+        self.assertEqual(versions[:2], ["1.4.10.7", "1.4.9.1"])
 
     def test_tools_site_api_reads_from_index(self):
         self._create_tool("MyTool.exe")

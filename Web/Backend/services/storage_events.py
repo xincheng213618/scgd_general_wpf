@@ -26,12 +26,17 @@ def on_storage_change(
 
     Call this after any successful file write (upload, publish, reconcile).
     """
-    parts = normalized_path.replace("\\", "/").split("/")
+    normalized = normalized_path.replace("\\", "/").strip("/")
+    parts = normalized.split("/") if normalized else []
     top_dir = parts[0] if parts else ""
+
+    if normalized == "LATEST_RELEASE":
+        _refresh_latest_version_cache(storage)
+        return
 
     if top_dir == "Plugins":
         _refresh_plugin_index(
-            cache, storage, normalized_path,
+            cache, storage, normalized,
             get_download_counts=get_download_counts,
             get_cache_entry=get_cache_entry,
             set_cache_entry=set_cache_entry,
@@ -64,6 +69,14 @@ def _refresh_artifact_scope(cache: Any, storage: Path, scope: str):
             fn(cache, storage)
     except Exception as exc:
         print(f"[storage_events] {scope} index refresh failed: {exc}")
+
+
+def _refresh_latest_version_cache(storage: Path):
+    try:
+        from services.app_latest_version_cache import refresh_latest_version_cache
+        refresh_latest_version_cache(storage)
+    except Exception as exc:
+        print(f"[storage_events] latest version cache refresh failed: {exc}")
 
 
 def _refresh_plugin_index(

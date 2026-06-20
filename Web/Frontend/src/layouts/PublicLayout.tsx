@@ -67,6 +67,13 @@ export function PublicLayout({
     }
   }, [isHome])
 
+  useEffect(() => {
+    document.body.classList.toggle('cv-home-light', isHome)
+    return () => {
+      document.body.classList.remove('cv-home-light')
+    }
+  }, [isHome])
+
   return (
     <Layout className="site-shell">
       <Header className={isHome ? `site-header home-header${homeScrolled ? ' is-scrolled' : ''}` : 'site-header'}>
@@ -88,16 +95,18 @@ export function PublicLayout({
             className="site-menu"
           />
           <Space className="site-actions">
-            <Segmented
-              size="small"
-              value={mode}
-              onChange={(value) => setMode(value as ThemeMode)}
-              options={[
-                { label: '跟随', value: 'system' },
-                { label: <SunOutlined />, value: 'light' },
-                { label: <MoonOutlined />, value: 'dark' },
-              ]}
-            />
+            {!isHome && (
+              <Segmented
+                size="small"
+                value={mode}
+                onChange={(value) => setMode(value as ThemeMode)}
+                options={[
+                  { label: '跟随', value: 'system' },
+                  { label: <SunOutlined />, value: 'light' },
+                  { label: <MoonOutlined />, value: 'dark' },
+                ]}
+              />
+            )}
             {session?.authenticated ? (
               <>
                 <Button

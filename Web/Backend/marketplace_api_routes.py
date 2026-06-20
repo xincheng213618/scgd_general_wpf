@@ -56,6 +56,17 @@ class MarketplaceApiRouteContext:
 
 
 def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> None:
+    def _indexed_latest_versions(plugin_ids: list[str]) -> dict[str, str]:
+        if not plugin_ids:
+            return {}
+        from services.app_latest_version_cache import get_plugin_latest_versions_cached
+        return get_plugin_latest_versions_cached(ctx.get_storage(), plugin_ids, ctx.cache)
+
+    def _plain_version_response(version: str):
+        response = app.response_class(version, 200, {"Content-Type": "text/plain; charset=utf-8"})
+        response.headers["Cache-Control"] = "public, max-age=30"
+        return response
+
     @app.route("/api/plugins", methods=["GET"])
     def api_search_plugins():
         """Search and list plugins. Compatible with IMarketplaceService.SearchPluginsAsync."""
@@ -99,22 +110,36 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         if not isinstance(plugin_ids, list):
             abort(400, description="PluginIds must be an array")
 
-        results = []
+        normalized_safe_ids: list[str] = []
+        normalized_by_input: list[tuple[str, str | None]] = []
+        seen_ids: set[str] = set()
         for plugin_id in plugin_ids:
             if not isinstance(plugin_id, str):
-                results.append({"pluginId": str(plugin_id), "latestVersion": None, "status": "invalid"})
+                normalized_by_input.append((str(plugin_id), None))
                 continue
             normalized_id = plugin_id.strip()
             if not normalized_id or not ctx.is_safe_id(normalized_id):
-                results.append({"pluginId": plugin_id, "latestVersion": None, "status": "invalid"})
+                normalized_by_input.append((plugin_id, None))
                 continue
-            storage = ctx.get_storage()
-            latest = ctx.read_text_file(storage / "Plugins" / normalized_id / "LATEST_RELEASE")
+            normalized_by_input.append((normalized_id, normalized_id))
+            if normalized_id not in seen_ids:
+                seen_ids.add(normalized_id)
+                normalized_safe_ids.append(normalized_id)
+
+        indexed_versions = _indexed_latest_versions(normalized_safe_ids)
+        results = []
+        for original_id, normalized_id in normalized_by_input:
+            if normalized_id is None:
+                results.append({"pluginId": original_id, "latestVersion": None, "status": "invalid"})
+                continue
+            latest = indexed_versions.get(normalized_id)
             if latest:
                 results.append({"pluginId": normalized_id, "latestVersion": latest, "status": "ok"})
             else:
                 results.append({"pluginId": normalized_id, "latestVersion": None, "status": "missing"})
-        return jsonify(results)
+        response = jsonify(results)
+        response.headers["Cache-Control"] = "public, max-age=30"
+        return response
 
     @app.route("/api/plugins/<plugin_id>", methods=["GET"])
     def api_plugin_detail(plugin_id):
@@ -135,11 +160,10 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         """
         if not ctx.is_safe_id(plugin_id):
             abort(400, description="Invalid plugin_id")
-        storage = ctx.get_storage()
-        version = ctx.read_text_file(storage / "Plugins" / plugin_id / "LATEST_RELEASE")
-        if not version:
-            return "Plugin not found", 404
-        return version, 200, {"Content-Type": "text/plain; charset=utf-8"}
+        indexed = _indexed_latest_versions([plugin_id])
+        if plugin_id in indexed:
+            return _plain_version_response(indexed[plugin_id])
+        return "Plugin not found", 404
 
     @app.route("/api/packages/<plugin_id>/<version>", methods=["GET"])
     def api_download_package(plugin_id, version):

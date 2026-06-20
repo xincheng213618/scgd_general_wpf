@@ -250,7 +250,7 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 - `GET /plugins/<id>/icon` — reads icon file for ETag/Last-Modified headers
 - `GET /download/<path>` — serves file directly from disk
 - `GET /api/app/changelog` — reads `CHANGELOG.md` (single file read)
-- `GET /api/app/latest-version` — reads `LATEST_RELEASE` (single file read)
+- `GET /api/app/latest-version` — reads in-memory `LATEST_RELEASE` cache (warmed at startup, refreshed on upload)
 - `GET /api/health`, `GET /api/ready` — filesystem probes for liveness
 
 ### Scheduler signature checks (lightweight)

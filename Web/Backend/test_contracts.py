@@ -396,6 +396,31 @@ class UploadContracts(ContractTestBase):
         self.assertIsNotNone(updates)
         self.assertTrue(any(u["version"] == "1.0.0.5" for u in updates))
 
+    def test_latest_version_cache_refreshes_on_legacy_put(self):
+        latest_path = self.storage / "LATEST_RELEASE"
+        latest_path.write_text("1.2.3.4", encoding="utf-8")
+
+        first = self.client.get("/api/app/latest-version")
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.get_json()["version"], "1.2.3.4")
+
+        latest_path.write_text("9.9.9.9", encoding="utf-8")
+        cached = self.client.get("/api/app/latest-version")
+        self.assertEqual(cached.status_code, 200)
+        self.assertEqual(cached.get_json()["version"], "1.2.3.4")
+
+        resp = self.client.put(
+            "/upload/ColorVision/LATEST_RELEASE",
+            data=b"2.0.0.0",
+            headers=self.basic_auth(),
+            content_type="application/octet-stream",
+        )
+        self.assertEqual(resp.status_code, 201)
+
+        refreshed = self.client.get("/api/app/latest-version")
+        self.assertEqual(refreshed.status_code, 200)
+        self.assertEqual(refreshed.get_json()["version"], "2.0.0.0")
+
     def test_legacy_put_tool_refreshes_index(self):
         resp = self.client.put(
             "/upload/ColorVision/Tool/NewTool.zip",

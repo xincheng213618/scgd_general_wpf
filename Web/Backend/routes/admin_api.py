@@ -599,12 +599,9 @@ def stats_overview():
         row = db.execute("SELECT COUNT(*) AS cnt FROM package_index WHERE is_deleted = 0").fetchone()
         stats["packageCount"] = row["cnt"] if row else 0
 
-        # Latest release version
         storage = ctx.storage_getter()
-        try:
-            latest = (storage / "LATEST_RELEASE").read_text(encoding="utf-8").strip()
-        except (OSError, UnicodeDecodeError):
-            latest = ""
+        from services.app_latest_version_cache import get_latest_version_cached
+        latest = get_latest_version_cached(storage)
         stats["latestReleaseVersion"] = latest
 
         # Cache hit status

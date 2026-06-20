@@ -30,6 +30,7 @@ from storage_browser import (
 )
 from storage_paths import resolve_storage_file as resolve_storage_file_impl
 from update_retention import repair_update_storage_layout
+from services.app_latest_version_cache import get_latest_version_cached
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,9 @@ class MarketplaceDataService:
 
     def _storage(self) -> Path:
         return self._storage_getter()
+
+    def _latest_version(self) -> str:
+        return get_latest_version_cached(self._storage())
 
     def _config(self) -> dict[str, Any]:
         return self._config_getter()
@@ -332,7 +336,7 @@ class MarketplaceDataService:
     def build_release_app_info(self) -> dict[str, Any]:
         releases = self.scan_app_release_artifacts()
         return {
-            "latest_version": self._read_text_file(self._storage() / "LATEST_RELEASE") or "",
+            "latest_version": self._latest_version(),
             **build_app_release_context(releases),
         }
 
@@ -342,7 +346,7 @@ class MarketplaceDataService:
         preview_text = "\n".join(changelog.splitlines()[:24])
         signature = changelog_signature(changelog_path)
         return {
-            "latest_version": self._read_text_file(self._storage() / "LATEST_RELEASE") or "",
+            "latest_version": self._latest_version(),
             **self.build_home_release_snapshot(),
             "has_changelog": bool(changelog.strip()),
             "changelog_preview_html": self._render_markdown_cached(
@@ -383,7 +387,7 @@ class MarketplaceDataService:
                 signature=timeline_signature,
             )
         return {
-            "latest_version": self._read_text_file(self._storage() / "LATEST_RELEASE") or "",
+            "latest_version": self._latest_version(),
             "changelog": changelog,
             "changelog_html": self._render_markdown_cached(
                 cache_key="markdown:changelog_full:v1",
@@ -475,7 +479,7 @@ class MarketplaceDataService:
             ttl_seconds=self._cache.changelog_analysis_cache_ttl_seconds,
         )
         return {
-            "latest_version": self._read_text_file(self._storage() / "LATEST_RELEASE") or "",
+            "latest_version": self._latest_version(),
             "changelog": changelog,
             "changelog_html": self._render_markdown_cached(
                 cache_key="markdown:changelog_full:v1",

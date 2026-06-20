@@ -375,6 +375,16 @@ def register_all_blueprints(app, ctx, services, helpers):
         dist_dir=Path(__file__).resolve().parents[1] / "Frontend" / "dist",
     ))
 
+    try:
+        from services.app_latest_version_cache import (
+            warm_latest_version_cache,
+            warm_plugin_latest_versions_cache,
+        )
+        warm_latest_version_cache(_dynamic_storage())
+        warm_plugin_latest_versions_cache(_dynamic_storage(), cache)
+    except Exception as exc:
+        print(f"[version_cache] startup warm failed: {exc}")
+
 
 def _parse_int_arg(req, *names, default, minimum=None, maximum=None):
     raw = None

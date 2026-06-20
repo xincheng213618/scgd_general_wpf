@@ -160,12 +160,12 @@ def refresh_plugin_index(
 
     if not plugin_dir.is_dir():
         # Mark as deleted in index
-        _mark_plugin_deleted(cache, plugin_id)
+        _mark_plugin_deleted(cache, plugin_id, storage=storage)
         return None
 
     summary = build_plugin_summary_from_disk(storage, plugin_id, download_counts=download_counts)
     if not summary:
-        _mark_plugin_deleted(cache, plugin_id)
+        _mark_plugin_deleted(cache, plugin_id, storage=storage)
         return None
 
     now = _now_iso()
@@ -248,6 +248,11 @@ def refresh_plugin_index(
     cache.invalidate_cache_prefix("plugin_catalog:")
     cache.invalidate_cache_prefix(f"plugin_summary:v1:{plugin_id}")
     cache.invalidate_cache_prefix(f"plugin_detail:v1:{plugin_id}")
+    try:
+        from services.app_latest_version_cache import set_plugin_latest_version_cache
+        set_plugin_latest_version_cache(storage, plugin_id, str(summary.get("latest_version", "")))
+    except Exception:
+        pass
 
     elapsed_ms = int((time.monotonic() - started) * 1000)
     summary["_refresh_ms"] = elapsed_ms
@@ -297,7 +302,7 @@ def _upsert_package(
     )
 
 
-def _mark_plugin_deleted(cache: CacheManager, plugin_id: str):
+def _mark_plugin_deleted(cache: CacheManager, plugin_id: str, *, storage: Path | None = None):
     now = _now_iso()
     db = cache.get_db()
     try:
@@ -317,6 +322,12 @@ def _mark_plugin_deleted(cache: CacheManager, plugin_id: str):
         print(f"[plugin_index] mark deleted failed for {plugin_id}: {exc}")
     finally:
         db.close()
+    if storage is not None:
+        try:
+            from services.app_latest_version_cache import set_plugin_latest_version_cache
+            set_plugin_latest_version_cache(storage, plugin_id, None)
+        except Exception:
+            pass
 
 
 def _plugin_dir_signature(storage: Path, plugin_id: str) -> str:
@@ -380,7 +391,7 @@ def refresh_all_plugin_index(
 
     # Mark plugins that disappeared from disk
     for plugin_id in existing_ids - disk_plugin_ids:
-        _mark_plugin_deleted(cache, plugin_id)
+        _mark_plugin_deleted(cache, plugin_id, storage=storage)
         deleted_count += 1
 
     elapsed_ms = int((time.monotonic() - started) * 1000)
@@ -404,6 +415,11 @@ def refresh_all_plugin_index(
         duration_ms=elapsed_ms,
         error="; ".join(errors[-3:]) if errors else "",
     )
+    try:
+        from services.app_latest_version_cache import warm_plugin_latest_versions_cache
+        warm_plugin_latest_versions_cache(storage, cache)
+    except Exception:
+        pass
 
     return {
         "indexed_count": indexed_count,

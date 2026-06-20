@@ -7,8 +7,8 @@ JSON payloads and file-serving endpoints that those pages need.
 
 from __future__ import annotations
 
-import hashlib
 import hmac
+import hashlib
 
 from flask import Blueprint, abort, jsonify, request, send_from_directory, session
 
@@ -95,6 +95,12 @@ def _parse_int(name: str, *, default: int, minimum: int, maximum: int):
     except (TypeError, ValueError):
         abort(400, description=f"Invalid integer parameter: {name}")
     return max(minimum, min(maximum, value))
+
+
+def _latest_version_payload() -> tuple[str, str]:
+    from services.app_latest_version_cache import get_latest_version_cached, latest_version_etag
+    version = get_latest_version_cached(_storage())
+    return version, latest_version_etag(_storage(), version)
 
 
 @pages.route("/api/site/home")
@@ -238,8 +244,17 @@ def plugin_icon(plugin_id):
 
 @pages.route("/api/app/latest-version")
 def api_app_latest_version():
-    version = _services()._read_text_file(_storage() / "LATEST_RELEASE") or ""
-    return jsonify({"version": version.strip()})
+    version, etag = _latest_version_payload()
+    if request.headers.get("If-None-Match", "").strip('"') == etag:
+        response = _app_mod.app.response_class(status=304)
+        response.headers["ETag"] = f'"{etag}"'
+        response.headers["Cache-Control"] = "public, max-age=30"
+        return response
+
+    response = jsonify({"version": version})
+    response.headers["ETag"] = f'"{etag}"'
+    response.headers["Cache-Control"] = "public, max-age=30"
+    return response
 
 
 @pages.route("/api/app/changelog")

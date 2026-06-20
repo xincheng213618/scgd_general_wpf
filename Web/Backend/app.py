@@ -133,6 +133,16 @@ if __name__ == "__main__":
     if args.debug:
         CONFIG["debug"] = True
 
+    try:
+        from services.app_latest_version_cache import (
+            warm_latest_version_cache,
+            warm_plugin_latest_versions_cache,
+        )
+        warm_latest_version_cache(STORAGE)
+        warm_plugin_latest_versions_cache(STORAGE, _cache)
+    except Exception as exc:
+        print(f"[version_cache] startup warm failed: {exc}")
+
     handle_cli_args(args, cache=_cache, storage=STORAGE, config=CONFIG, get_db=get_db,
                     validate_runtime_config=_validate_runtime_config,
                     reconcile_app_release_history=SERVICES.reconcile_app_release_history,

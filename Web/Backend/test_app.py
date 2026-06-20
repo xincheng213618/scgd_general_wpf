@@ -863,6 +863,52 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertIsNone(lookup["bad!"]["latestVersion"])
         self.assertEqual(lookup["bad!"]["status"], "invalid")
 
+    def test_api_batch_version_check_uses_plugin_index_when_available(self):
+        plugin_dir = self._create_plugin("IndexedBatchPlugin", "3.2.1")
+        from services.plugin_index import refresh_all_plugin_index
+        refresh_all_plugin_index(marketplace_app._cache, self.storage)
+        (plugin_dir / "LATEST_RELEASE").unlink()
+
+        response = self.client.post(
+            "/api/plugins/batch-version-check",
+            json={"PluginIds": ["IndexedBatchPlugin"]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload[0]["latestVersion"], "3.2.1")
+        self.assertEqual(payload[0]["status"], "ok")
+
+    def test_api_batch_version_check_reuses_memory_cache(self):
+        plugin_dir = self._create_plugin("MemoryBatchPlugin", "5.6.7")
+
+        first = self.client.post(
+            "/api/plugins/batch-version-check",
+            json={"PluginIds": ["MemoryBatchPlugin"]},
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.get_json()[0]["latestVersion"], "5.6.7")
+
+        (plugin_dir / "LATEST_RELEASE").unlink()
+        second = self.client.post(
+            "/api/plugins/batch-version-check",
+            json={"PluginIds": ["MemoryBatchPlugin"]},
+        )
+
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.get_json()[0]["latestVersion"], "5.6.7")
+
+    def test_api_plugin_latest_version_uses_plugin_index_when_available(self):
+        plugin_dir = self._create_plugin("IndexedLatestPlugin", "4.5.6")
+        from services.plugin_index import refresh_all_plugin_index
+        refresh_all_plugin_index(marketplace_app._cache, self.storage)
+        (plugin_dir / "LATEST_RELEASE").unlink()
+
+        response = self.client.get("/api/plugins/IndexedLatestPlugin/latest-version")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_data(as_text=True), "4.5.6")
+
     def test_api_feedback_rejects_too_many_files(self):
         attachments = []
         for index in range(marketplace_app.MAX_FEEDBACK_FILES + 1):
