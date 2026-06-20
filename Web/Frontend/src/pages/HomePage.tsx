@@ -132,16 +132,21 @@ export function HomePage() {
             <img src="/brand/colorvision-icon.png" alt="ColorVision" />
           </span>
           <Title level={1}>ColorVision</Title>
+          {latestAndroid && (
+            <div className="landing-mobile-note">
+              Android 版 {latestAndroid.version} 可用，手机端建议优先安装移动版。
+            </div>
+          )}
           <Space wrap className="landing-hero-actions">
-            <Button type="primary" size="large" shape="round" icon={<CloudDownloadOutlined />} href={downloadPath(latest?.relative_path)}>
-              下载 Windows 版
-            </Button>
             {latestAndroid && (
-              <Button size="large" shape="round" icon={<MobileOutlined />} href={downloadPath(latestAndroid.relative_path)}>
+              <Button className="hero-action-android" size="large" shape="round" icon={<MobileOutlined />} href={downloadPath(latestAndroid.relative_path)}>
                 下载 Android 版
               </Button>
             )}
-            <Button size="large" shape="round" icon={<AppstoreOutlined />} href="/plugins">
+            <Button className="hero-action-windows" type="primary" size="large" shape="round" icon={<CloudDownloadOutlined />} href={downloadPath(latest?.relative_path)}>
+              下载 Windows 版
+            </Button>
+            <Button className="hero-action-plugins" size="large" shape="round" icon={<AppstoreOutlined />} href="/plugins">
               插件市场
             </Button>
           </Space>

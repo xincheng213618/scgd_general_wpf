@@ -325,6 +325,10 @@ a:hover {
   font-weight: 650;
 }
 
+.landing-mobile-note {
+  display: none;
+}
+
 .landing-hero-actions {
   margin-top: 32px;
   justify-content: center;
@@ -2073,14 +2077,51 @@ body.cv-home-light .workflow-icon {
 }
 
 @media (max-width: 768px) {
+  .site-header.home-header {
+    position: sticky;
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom-color: var(--cv-border);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(14px);
+  }
+
   .site-header-inner {
     width: min(100% - 24px, 1440px);
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 12px;
+    align-items: center;
   }
 
   .site-brand {
     min-width: 0;
+  }
+
+  .site-brand .pro-brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .brand-eyebrow {
+    display: none;
+  }
+
+  .site-menu {
+    min-width: 0;
+    justify-self: end;
+    max-width: 100%;
+  }
+
+  .site-menu .ant-menu-overflow {
+    justify-content: flex-end;
+  }
+
+  .site-menu .ant-menu-item,
+  .site-menu .ant-menu-submenu-title {
+    padding-inline: 9px;
+  }
+
+  .site-actions {
+    display: none;
   }
 
   .site-content {
@@ -2099,8 +2140,15 @@ body.cv-home-light .workflow-icon {
 
   .codex-style-hero {
     min-height: auto;
-    padding: 72px 10px 42px;
-    gap: 30px;
+    padding: 24px 14px 30px;
+    gap: 18px;
+  }
+
+  .hero-bg-video {
+    opacity: 0.58;
+    filter: saturate(1.06) contrast(1.02) brightness(1.06);
+    transform: none;
+    animation: none;
   }
 
   .landing-hero-inner {
@@ -2108,16 +2156,66 @@ body.cv-home-light .workflow-icon {
   }
 
   .home-product-icon {
-    width: 78px;
-    height: 78px;
-    margin-bottom: 28px;
+    width: 58px;
+    height: 58px;
+    margin-bottom: 14px;
+    padding: 8px;
+    border-radius: 16px;
   }
 
   .landing-hero-inner h1 {
-    font-size: clamp(42px, 13vw, 50px);
+    font-size: clamp(38px, 12vw, 48px);
     line-height: 1;
     word-break: keep-all;
     overflow-wrap: normal;
+  }
+
+  .landing-mobile-note {
+    display: block;
+    width: min(100%, 340px);
+    margin-top: 12px;
+    color: rgba(9, 9, 11, 0.62);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .landing-hero-actions {
+    width: min(100%, 340px);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px !important;
+    margin-top: 18px;
+  }
+
+  .landing-hero-actions .ant-space-item,
+  .landing-hero-actions .ant-btn {
+    width: 100%;
+  }
+
+  .landing-hero-actions .ant-btn {
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .landing-hero-actions .hero-action-android {
+    order: 1;
+    color: #fff;
+    background: #09090b;
+    border-color: #09090b;
+    box-shadow: 0 14px 34px rgba(9, 9, 11, 0.16);
+  }
+
+  .landing-hero-actions .hero-action-windows {
+    order: 2;
+    color: #111827;
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(15, 23, 42, 0.10);
+    box-shadow: none;
+  }
+
+  .landing-hero-actions .hero-action-plugins {
+    order: 3;
   }
 
   .landing-hero-subtitle {
@@ -2125,22 +2223,34 @@ body.cv-home-light .workflow-icon {
     font-size: 19px;
   }
 
+  .landing-version-note {
+    width: min(100%, 340px);
+    margin-top: 16px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
   .landing-proof {
-    width: min(100% - 20px, 520px);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    width: min(100%, 340px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px 8px;
   }
 
   .landing-proof span {
-    min-height: 46px;
+    min-height: 42px;
+    font-size: 11px;
+  }
+
+  .landing-proof span:nth-child(n+4) {
+    display: none;
   }
 
   .landing-proof strong {
-    font-size: 20px;
+    font-size: 17px;
   }
 
   .landing-workflows {
-    padding-top: 42px;
+    padding-top: 26px;
   }
 
   .home-feature-stage,
@@ -2150,12 +2260,12 @@ body.cv-home-light .workflow-icon {
   }
 
   .home-download-feature {
-    min-height: 252px;
-    padding: 22px;
+    min-height: 168px;
+    padding: 18px;
   }
 
   .feature-release-title {
-    font-size: clamp(34px, 11vw, 48px);
+    font-size: clamp(28px, 9vw, 38px);
   }
 
   .feature-release-meta {
@@ -2244,5 +2354,53 @@ body.cv-home-light .workflow-icon {
 
   .page-container .ant-pro-page-container-children-container {
     padding-inline: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .site-header {
+    padding: 8px 0;
+  }
+
+  .site-header-inner {
+    width: calc(100% - 18px);
+    gap: 8px;
+  }
+
+  .site-brand-copy .ant-typography {
+    font-size: 15px;
+  }
+
+  .site-menu .ant-menu-title-content {
+    display: none;
+  }
+
+  .site-menu .ant-menu-item,
+  .site-menu .ant-menu-submenu-title {
+    min-width: 38px;
+    padding-inline: 8px;
+    text-align: center;
+  }
+
+  .site-menu .ant-menu-item .ant-menu-item-icon,
+  .site-menu .ant-menu-submenu-title .ant-menu-item-icon {
+    margin-inline-end: 0;
+    font-size: 18px;
+  }
+
+  .codex-style-hero {
+    padding: 20px 12px 26px;
+  }
+
+  .landing-proof {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-feature-stage {
+    margin-top: 14px;
+  }
+
+  .home-resource-hub .landing-workflow-card {
+    min-height: 128px;
   }
 }
