@@ -25,6 +25,7 @@
 	<ItemGroup>
 		<PackageReference Include="Markdig.Signed" Version="1.2.0" />
 		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
+		<PackageReference Include="QRCoder.Xaml" Version="1.8.0" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="README.md">
