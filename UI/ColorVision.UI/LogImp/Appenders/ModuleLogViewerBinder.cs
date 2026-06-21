@@ -3,6 +3,8 @@ using log4net.Core;
 using log4net.Filter;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.UI.LogImp
 {
@@ -43,6 +45,7 @@ namespace ColorVision.UI.LogImp
             _appender.AddFilter(new DenyAllFilter());
             _hierarchy.Root.AddAppender(_appender);
             log4net.Config.BasicConfigurator.Configure(_hierarchy);
+            logViewer.SetViewerContextMenu(CreateContextMenu(logViewer));
         }
 
         public void Dispose()
@@ -56,6 +59,20 @@ namespace ColorVision.UI.LogImp
             _hierarchy.Root.RemoveAppender(_appender);
             _appender.Dispose();
             log4net.Config.BasicConfigurator.Configure(_hierarchy);
+        }
+
+        private ContextMenu CreateContextMenu(LogViewerControl logViewer)
+        {
+            var contextMenu = new ContextMenu();
+            contextMenu.Items.Add(new MenuItem { Header = Properties.Resources.MenuCopy, Command = ApplicationCommands.Copy, CommandTarget = logViewer, InputGestureText = "Ctrl+C" });
+            contextMenu.Items.Add(new MenuItem { Header = Properties.Resources.MenuSelectAll, Command = ApplicationCommands.SelectAll, CommandTarget = logViewer, InputGestureText = "Ctrl+A" });
+            contextMenu.Items.Add(new Separator());
+
+            var autoRefreshMenuItem = new MenuItem { Header = Properties.Resources.AutoRefresh, IsCheckable = true, IsChecked = _appender.AutoRefresh };
+            autoRefreshMenuItem.Click += (_, _) => _appender.AutoRefresh = autoRefreshMenuItem.IsChecked;
+            contextMenu.Items.Add(autoRefreshMenuItem);
+            contextMenu.Opened += (_, _) => autoRefreshMenuItem.IsChecked = _appender.AutoRefresh;
+            return contextMenu;
         }
 
         private sealed class LoggerPrefixFilter : FilterSkeleton
