@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Filters;
@@ -738,6 +739,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
 
+            int latestMeasureResultId = MeasureImgResultDao.Instance.GetLatestId(Device.Config.Code);
             EnsureTimedButtonOperations();
             MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
             logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
@@ -747,6 +749,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (state == MsgRecordState.Timeout)
                 {
+                    if (TryHandleCaptureTimeoutFromDatabase(latestMeasureResultId))
+                    {
+                        return;
+                    }
+
                     if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration == null)
                     {
                         MessageBox1.Show(Properties.Resources.CaptureTimeoutConfigureCalibration);
@@ -758,11 +765,59 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 if (state == MsgRecordState.Fail)
                 {
-                    View.SearchAll();
-                    MessageBox.Show(Application.Current.GetActiveWindow(), record.MsgReturn.Message + Environment.NewLine + Properties.Resources.TryRestartService, "ColorVisoin");
+                    HandleCaptureFail(record.MsgReturn?.Message);
                 }
             });
 
+        }
+
+        private bool TryHandleCaptureTimeoutFromDatabase(int latestMeasureResultId)
+        {
+            MeasureResultImgModel? result = MeasureImgResultDao.Instance.GetLatestAfterId(Device.Config.Code, latestMeasureResultId);
+            if (result == null) return false;
+
+            View.SearchAll();
+            if (!IsFailedMeasureResult(result))
+            {
+                logger.Info($"取图超时后检测到数据库已生成记录，Id:{result.Id}, ResultCode:{result.ResultCode}");
+                return true;
+            }
+
+            string errorMessage = BuildMeasureResultErrorMessage(result);
+            logger.Error($"取图超时后检测到数据库失败记录：{errorMessage}");
+            HandleCaptureFail(errorMessage, refreshResults: false);
+            return true;
+        }
+
+        private static bool IsFailedMeasureResult(MeasureResultImgModel result) => result.ResultCode != 0;
+
+        private static string BuildMeasureResultErrorMessage(MeasureResultImgModel result)
+        {
+            string message = string.IsNullOrWhiteSpace(result.Result) ? "未知错误" : result.Result;
+            return $"数据库失败记录 Id:{result.Id}, ResultCode:{result.ResultCode}, Message:{message}";
+        }
+
+        private async void HandleCaptureFail(string? message, bool refreshResults = true)
+        {
+            if (refreshResults)
+            {
+                View.SearchAll();
+            }
+
+            string errorMessage = string.IsNullOrWhiteSpace(message) ? "取图失败" : message;
+            string prompt = errorMessage + Environment.NewLine + Properties.Resources.TryRestartService + Environment.NewLine + "是否重启服务？";
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), prompt, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    await DisplayFlow.RestartColorVisionServicesAsync();
+                }
+                catch (Exception ex)
+                {
+                    logger.Error("重启 ColorVision 服务失败", ex);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                }
+            }
         }
 
         public MsgRecord? TakePhoto(double exp = 0)

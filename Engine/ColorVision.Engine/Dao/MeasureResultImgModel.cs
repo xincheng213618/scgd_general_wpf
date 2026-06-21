@@ -1,6 +1,9 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
+using log4net;
 using System;
+
+#pragma warning disable CA1822
 
 namespace ColorVision.Engine
 {
@@ -62,7 +65,52 @@ namespace ColorVision.Engine
 
     public class MeasureImgResultDao : BaseTableDao<MeasureResultImgModel>
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MeasureImgResultDao));
 
         public static MeasureImgResultDao Instance { get;} = new MeasureImgResultDao();
+
+        public int GetLatestId(string? deviceCode)
+        {
+            if (!MySqlControl.GetInstance().IsConnect) return -1;
+
+            try
+            {
+                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                var query = db.Queryable<MeasureResultImgModel>();
+                if (!string.IsNullOrWhiteSpace(deviceCode))
+                {
+                    query = query.Where(x => x.DeviceCode == deviceCode);
+                }
+
+                return query.OrderBy(x => x.Id, OrderByType.Desc).First()?.Id ?? 0;
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                return -1;
+            }
+        }
+
+        public MeasureResultImgModel? GetLatestAfterId(string? deviceCode, int id)
+        {
+            if (id < 0 || !MySqlControl.GetInstance().IsConnect) return null;
+
+            try
+            {
+                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                var query = db.Queryable<MeasureResultImgModel>().Where(x => x.Id > id);
+                if (!string.IsNullOrWhiteSpace(deviceCode))
+                {
+                    query = query.Where(x => x.DeviceCode == deviceCode);
+                }
+
+                return query.OrderBy(x => x.Id, OrderByType.Desc).First();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                return null;
+            }
+        }
     }
 }

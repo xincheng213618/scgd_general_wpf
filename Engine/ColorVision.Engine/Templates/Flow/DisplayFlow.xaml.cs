@@ -179,7 +179,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        private async Task RestartColorVisionServicesAsync()
+        public static async Task RestartColorVisionServicesAsync()
         {
             foreach (string serviceName in RestartServiceNames)
                 await RunServiceHostCommandAsync(serviceName, start: false);
@@ -203,9 +203,9 @@ namespace ColorVision.Engine.Templates.Flow
                 throw new InvalidOperationException($"{(start ? "启动" : "停止")} {serviceName} 失败: {response.Message}");
         }
 
-        private async Task RefreshServiceConnectionAsync()
+        private static async Task RefreshServiceConnectionAsync()
         {
-            await Application.Current.Dispatcher.InvokeAsync(RefreshSavedServiceInfo);
+            RefreshSavedServiceInfo();
             MqttRCService rcService = MqttRCService.GetInstance();
             rcService.Regist();
             for (int i = 0; i < 20 && !rcService.IsConnect; i++)
@@ -215,8 +215,6 @@ namespace ColorVision.Engine.Templates.Flow
                 rcService.QueryServices();
             else
                 log.Warn("服务重启完成，但注册中心重新连接未确认。");
-
-            this.TryGetTimedButtonOperations()?.RefreshIdleState(RestartServicesButton);
         }
 
         private static void RefreshSavedServiceInfo()
