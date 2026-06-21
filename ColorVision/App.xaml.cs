@@ -2,6 +2,7 @@
 using ColorVision.Common.NativeMethods;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Properties;
+using ColorVision.ServiceHost;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.LanRemote;
@@ -18,6 +19,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision
 {
@@ -217,6 +219,7 @@ namespace ColorVision
                 WizardWindow wizardWindow = new WizardWindow();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
+                ScheduleServiceHostStartupCheck(wizardWindow, DispatcherPriority.Send);
             }
             else 
             {
@@ -224,6 +227,11 @@ namespace ColorVision
                 StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();
             }
+        }
+
+        private static void ScheduleServiceHostStartupCheck(Window owner, DispatcherPriority priority)
+        {
+            _ = owner.Dispatcher.BeginInvoke(async () => await ServiceHostStartupUpdateChecker.CheckAndPromptAsync(owner).ConfigureAwait(true), priority);
         }
 
         /// <summary>

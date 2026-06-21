@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.UI;
 using ColorVision.UI.ServiceHost;
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace WindowsServicePlugin.ServiceManager
@@ -494,6 +495,24 @@ namespace WindowsServicePlugin.ServiceManager
             return ResetDatabaseFromSqlFile(sqlFilePath, logCallback);
         }
 
+        public bool InitializeColorVisionDatabase(string basePath, Action<string> logCallback)
+        {
+            string? sqlFilePath = ResolveColorVisionAllSqlPath(basePath);
+            if (string.IsNullOrWhiteSpace(sqlFilePath))
+            {
+                logCallback("未找到 color_vision_all.sql，跳过数据库初始化脚本执行");
+                return true;
+            }
+
+            if (!EnsureRootPasswordReady(logCallback))
+            {
+                return false;
+            }
+
+            logCallback("新安装 MySQL，直接执行数据库初始化脚本");
+            return ExecuteRootSqlFile(sqlFilePath, logCallback, null, false);
+        }
+
         private bool ExecuteRootSqlFile(string sqlFilePath, Action<string> logCallback)
         {
             return ExecuteRootSqlFile(sqlFilePath, logCallback, null, true);
@@ -799,9 +818,32 @@ namespace WindowsServicePlugin.ServiceManager
         private static void LogServiceHostFailure(ServiceHostResponse response, Action<string> logCallback)
         {
             logCallback($"后台服务执行失败: {response.Message}");
+            LogServiceHostProcessResults(response.Data?["processResults"], logCallback);
             if (response.Message.Contains("Unsupported command", StringComparison.OrdinalIgnoreCase))
             {
                 logCallback("当前已安装的 ColorVisionServiceHost 版本过旧，请先在“更新 -> ColorVision Service Host”中重新安装/更新后台服务。");
+            }
+        }
+
+        private static void LogServiceHostProcessResults(JToken? token, Action<string> logCallback)
+        {
+            if (token is not JArray results || results.Count == 0)
+                return;
+
+            int start = Math.Max(0, results.Count - 3);
+            for (int i = start; i < results.Count; i++)
+            {
+                JToken item = results[i];
+                string fileName = Path.GetFileName(item["fileName"]?.ToString() ?? string.Empty);
+                string arguments = item["arguments"]?.ToString() ?? string.Empty;
+                string exitCode = item["exitCode"]?.ToString() ?? string.Empty;
+                string output = item["output"]?.ToString().Trim() ?? string.Empty;
+                string error = item["error"]?.ToString().Trim() ?? string.Empty;
+                logCallback($"  {fileName} {arguments} => {exitCode}");
+                if (!string.IsNullOrWhiteSpace(output))
+                    logCallback($"  stdout: {output}");
+                if (!string.IsNullOrWhiteSpace(error))
+                    logCallback($"  stderr: {error}");
             }
         }
 

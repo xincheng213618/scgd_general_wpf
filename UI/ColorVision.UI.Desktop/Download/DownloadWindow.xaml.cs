@@ -48,6 +48,17 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
+        public static void CloseInstance()
+        {
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                if (_instance == null || !_instance.IsLoaded)
+                    return;
+
+                _instance.Close();
+            });
+        }
+
         private Aria2cDownloadManager _manager;
         private int _currentPage = 1;
         private int _pageSize = 20;
@@ -67,6 +78,7 @@ namespace ColorVision.UI.Desktop.Download
                     _manager.DownloadCompleted -= OnDownloadCompleted;
                     _manager.StatusMessageChanged -= OnStatusMessageChanged;
                 }
+                _instance = null;
             };
         }
 

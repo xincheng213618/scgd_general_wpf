@@ -21,5 +21,10 @@ namespace ColorVision.UI.Desktop.Download
         {
             DownloadWindow.ShowInstance();
         }
+
+        public void CloseDownloadWindow()
+        {
+            DownloadWindow.CloseInstance();
+        }
     }
 }

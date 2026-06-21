@@ -352,11 +352,17 @@ internal sealed class ServiceHostCommandHandler
         if (!File.Exists(mysqlExePath) || !File.Exists(mysqladminExePath))
             return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL client tools were not found under: {binDirectory}", new { steps, processResults });
 
+        string dataDirectory = Path.Combine(installBasePath, "data");
+
         steps.Add("Initializing MySQL data directory.");
-        ProcessResult initResult = RunProcess(mysqldExePath, "--initialize-insecure", binDirectory, timeoutSeconds * 1000);
+        ProcessResult initResult = RunProcess(
+            mysqldExePath,
+            ["--initialize-insecure", $"--basedir={installBasePath}", $"--datadir={dataDirectory}"],
+            binDirectory,
+            timeoutSeconds * 1000);
         processResults.Add(initResult);
         if (initResult.ExitCode != 0)
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL initialization failed: {initResult.ExitCode}", new { steps, processResults, installBasePath });
+            return ServiceHostResponse.FromObject(request.RequestId, false, BuildProcessFailureMessage("MySQL initialization failed", initResult), new { steps, processResults, installBasePath });
 
         steps.Add($"Installing MySQL service: {serviceName}");
         ProcessResult installResult = RunProcess(mysqldExePath, $"--install {serviceName}", binDirectory, timeoutSeconds * 1000);
@@ -1206,6 +1212,8 @@ internal sealed class ServiceHostCommandHandler
             },
         };
 
+        ConfigureProcessEnvironment(process.StartInfo, workingDirectory);
+
         foreach (string argument in arguments)
         {
             process.StartInfo.ArgumentList.Add(argument);
@@ -1243,6 +1251,8 @@ internal sealed class ServiceHostCommandHandler
             },
         };
 
+        ConfigureProcessEnvironment(process.StartInfo, workingDirectory);
+
         process.Start();
         Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
         Task<string> errorTask = process.StandardError.ReadToEndAsync();
@@ -1257,6 +1267,37 @@ internal sealed class ServiceHostCommandHandler
         string output = ReadCompletedOutput(outputTask);
         string error = ReadCompletedOutput(errorTask);
         return new ProcessResult(fileName, arguments, process.ExitCode, output, error);
+    }
+
+    private static void ConfigureProcessEnvironment(ProcessStartInfo startInfo, string? workingDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(workingDirectory) || !Directory.Exists(workingDirectory))
+            return;
+
+        string path = startInfo.Environment.TryGetValue("PATH", out string? currentPath)
+            ? currentPath ?? string.Empty
+            : Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+
+        if (!path.Split(Path.PathSeparator).Any(item => IsSamePath(item, workingDirectory)))
+            startInfo.Environment["PATH"] = workingDirectory + Path.PathSeparator + path;
+    }
+
+    private static string BuildProcessFailureMessage(string message, ProcessResult result)
+    {
+        string explanation = ExplainProcessExitCode(result.ExitCode);
+        return string.IsNullOrWhiteSpace(explanation)
+            ? $"{message}: {result.ExitCode}"
+            : $"{message}: {result.ExitCode} ({explanation})";
+    }
+
+    private static string ExplainProcessExitCode(int exitCode)
+    {
+        return exitCode switch
+        {
+            unchecked((int)0xC0000135) => "缺少运行时 DLL，通常是 Visual C++ Redistributable 或 MySQL bin 目录依赖未加载",
+            unchecked((int)0xC000007B) => "程序或依赖 DLL 架构不匹配，可能混用了 x86/x64 组件",
+            _ => string.Empty
+        };
     }
 
     private static void KillProcessTree(Process process)

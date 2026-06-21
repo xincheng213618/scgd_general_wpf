@@ -17,16 +17,17 @@ namespace WindowsServicePlugin.ServiceManager
         private async Task ExecuteInstallAsync()
         {
             string basePath = Config.BaseLocation;
-            if (string.IsNullOrEmpty(basePath))
+            bool hasAnyComponentChecked = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked || InstallVc2013Checked;
+            bool needsBasePath = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked || BackupBeforeInstall || BackupServiceBeforeInstall || AutoUpdateDatabase;
+            if (needsBasePath && string.IsNullOrEmpty(basePath))
             {
                 MessageBox.Show("请先设置安装根目录", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            bool hasAnyComponentChecked = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked;
             if (!hasAnyComponentChecked)
             {
-                MessageBox.Show("请先勾选要安装的组件（服务包、MySQL、MQTT）", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("请先勾选要安装的组件", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -47,6 +48,9 @@ namespace WindowsServicePlugin.ServiceManager
                         }
 
                         bool servicesStoppedForInstall = false;
+                        bool mysqlInstalledThisRun = false;
+                        var serviceManager = ServiceManagerViewModel.Instance;
+                        bool hasServiceWork = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked;
 
                         // 2. 备份服务文件夹
                         if (BackupServiceBeforeInstall && InstallServiceChecked)
@@ -58,6 +62,14 @@ namespace WindowsServicePlugin.ServiceManager
 
                         }
 
+                        bool needsVc2013Runtime = !IsVc2013RuntimeInstalled() && (InstallVc2013Checked || InstallMySqlChecked);
+                        if (needsVc2013Runtime)
+                        {
+                            SetProgress(progress += 10, "安装 VC++ 2013 运行库...");
+                            if (!InstallVc2013Runtime())
+                                throw new InvalidOperationException("VC++ 2013 运行库安装失败");
+                        }
+
                         // 3. 安装 MySQL
                         if (InstallMySqlChecked)
                         {
@@ -65,12 +77,14 @@ namespace WindowsServicePlugin.ServiceManager
                                 throw new InvalidOperationException("已勾选 MySQL，但未选择有效的 MySQL ZIP 安装包");
 
                             SetProgress(progress += 15, "安装 MySQL...");
-                            var serviceManager = ServiceManagerViewModel.Instance;
+                            serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
+                            bool mysqlWasInstalled = serviceManager.MySqlManager.Config.IsInstalled || serviceManager.MySqlManager.Helper.IsInstalled;
                             bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipViaServiceHostAsync(MySqlPackagePath, basePath, log.Info).GetAwaiter().GetResult();
                             if (!mysqlInstalled)
                             {
                                 throw new InvalidOperationException("MySQL 安装失败");
                             }
+                            mysqlInstalledThisRun = !mysqlWasInstalled;
                         }
 
                         // 4. 安装 MQTT
@@ -114,11 +128,24 @@ namespace WindowsServicePlugin.ServiceManager
                         }
 
                         // 6. 同步配置
-                        SetProgress(progress += 10, "同步配置...");
-                        ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
+                        if (hasServiceWork)
+                        {
+                            SetProgress(progress += 10, "同步配置...");
+                            serviceManager.ApplyConfigAndRefreshAfterInstall();
+                        }
 
                         // 7. 更新数据库
-                        if (AutoUpdateDatabase)
+                        if (mysqlInstalledThisRun)
+                        {
+                            SetProgress(progress += 15, "初始化数据库...");
+                            if (!InitializeColorVisionDatabase(basePath))
+                            {
+                                throw new InvalidOperationException("初始化数据库失败");
+                            }
+
+                            serviceManager.ApplyConfigAndRefreshAfterInstall();
+                        }
+                        else if (AutoUpdateDatabase)
                         {
                             SetProgress(progress += 15, "更新数据库到最近版本...");
                             if (!ExecuteColorVisionAllSql(basePath))
@@ -126,14 +153,20 @@ namespace WindowsServicePlugin.ServiceManager
                                 throw new InvalidOperationException("更新数据库到最近版本失败");
                             }
 
-                            ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
+                            serviceManager.ApplyConfigAndRefreshAfterInstall();
                         }
 
                         // 8. 启动服务
-                        SetProgress(progress += 10, "启动服务...");
-                        StartInstalledServicesAfterInstall();
+                        if (hasServiceWork)
+                        {
+                            SetProgress(progress += 10, "启动服务...");
+                            StartInstalledServicesAfterInstall();
+                        }
 
-                        CleanupPackDirectory(basePath);
+                        if (!string.IsNullOrWhiteSpace(basePath))
+                        {
+                            CleanupPackDirectory(basePath);
+                        }
 
                         SetProgress(100, "安装完成");
                         log.Info("安装完成！");
@@ -150,6 +183,7 @@ namespace WindowsServicePlugin.ServiceManager
             finally
             {
                 SetBusy(false);
+                RefreshInstallComponentState();
             }
         }
 
@@ -257,53 +291,12 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(false);
         }
 
-        private async Task DownloadOneKeyPackageAsync()
+        private async Task DownloadServicePackageAsync()
         {
             SetBusy(true, "正在获取最新服务包...");
             try
             {
-                string downloadDir = string.IsNullOrWhiteSpace(Config.DownloadLocation)
-                    ? Path.Combine(Environments.DirToolPackageCache, "CVWindowsService")
-                    : Config.DownloadLocation;
-                Directory.CreateDirectory(downloadDir);
-
-                CvwsPackageInfo packageInfo = await GetLatestCvWindowsServicePackageAsync(Config.UpdateServerUrl).ConfigureAwait(true);
-                Version version = packageInfo.Version;
-                if (!IsValidLatestVersion(version))
-                    throw new InvalidOperationException("无法获取 CVWindowsService 最新版本号");
-
-                string? cachedPackage = FindCachedCvWindowsServicePackage(downloadDir, version);
-                if (!string.IsNullOrWhiteSpace(cachedPackage) && IsFullServicePackageZip(cachedPackage))
-                {
-                    ApplyDownloadedServicePackage(cachedPackage);
-                    log.Info($"已使用本地缓存服务包: {cachedPackage}");
-                    return;
-                }
-
-                var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
-                if (service == null)
-                    throw new InvalidOperationException("下载服务不可用");
-
-                string downloadUrl = packageInfo.DownloadUrl;
-                log.Info($"开始下载 CVWindowsService 服务包 {version}: {downloadUrl}");
-
-                Application.Current.Dispatcher.Invoke(service.ShowDownloadWindow);
-                service.Download(downloadUrl, downloadDir, null, filePath =>
-                {
-                    if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-                    {
-                        log.Info("CVWindowsService 服务包下载失败");
-                        return;
-                    }
-
-                    if (!IsFullServicePackageZip(filePath))
-                    {
-                        log.Info($"下载完成，但文件不是有效的 CVWindowsService 完整服务包: {filePath}");
-                        return;
-                    }
-
-                    ApplyDownloadedServicePackage(filePath);
-                });
+                ApplyDownloadedServicePackage(await DownloadServicePackageFileAsync().ConfigureAwait(true));
             }
             catch (Exception ex)
             {
@@ -313,8 +306,38 @@ namespace WindowsServicePlugin.ServiceManager
             }
             finally
             {
+                CloseDownloadWindow();
                 SetBusy(false);
             }
+        }
+
+        private async Task<string> DownloadServicePackageFileAsync()
+        {
+            string downloadDir = string.IsNullOrWhiteSpace(Config.DownloadLocation) ? Path.Combine(Environments.DirToolPackageCache, "CVWindowsService") : Config.DownloadLocation;
+            Directory.CreateDirectory(downloadDir);
+            CvwsPackageInfo packageInfo = await GetLatestCvWindowsServicePackageAsync(Config.UpdateServerUrl).ConfigureAwait(false);
+            Version version = packageInfo.Version;
+            if (!IsValidLatestVersion(version))
+                throw new InvalidOperationException("无法获取 CVWindowsService 最新版本号");
+
+            string? cachedPackage = FindCachedCvWindowsServicePackage(downloadDir, version);
+            if (!string.IsNullOrWhiteSpace(cachedPackage) && IsFullServicePackageZip(cachedPackage))
+            {
+                log.Info($"已使用本地缓存服务包: {cachedPackage}");
+                return cachedPackage;
+            }
+
+            IDownloadService service = GetDownloadService();
+            string downloadUrl = packageInfo.DownloadUrl;
+            log.Info($"开始下载 CVWindowsService 服务包 {version}: {downloadUrl}");
+            Application.Current.Dispatcher.Invoke(service.ShowDownloadWindow);
+            string? filePath = await DownloadWithServiceAsync(service, downloadUrl, downloadDir).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                throw new InvalidOperationException("CVWindowsService 服务包下载失败");
+            if (!IsFullServicePackageZip(filePath))
+                throw new InvalidOperationException($"下载完成，但文件不是有效的 CVWindowsService 完整服务包: {filePath}");
+
+            return filePath;
         }
 
         private void ApplyDownloadedServicePackage(string packagePath)
@@ -327,9 +350,266 @@ namespace WindowsServicePlugin.ServiceManager
             });
         }
 
+        private async Task OnlineDownloadAsync()
+        {
+            SetBusy(true, "正在在线下载...");
+            try
+            {
+                RefreshInstallComponentState();
+                Task<string> serviceTask = DownloadServicePackageFileAsync();
+                Task<string>? mysqlTask = IsMySqlInstallVisible ? DownloadMySqlPackageFileAsync() : null;
+                Task<string>? mqttTask = IsMqttInstallVisible ? DownloadMqttInstallerFileAsync() : null;
+                Task<string>? vc2013Task = IsVc2013InstallVisible ? DownloadVc2013InstallerFileAsync() : null;
+                var tasks = new List<Task> { serviceTask };
+                if (mysqlTask != null) tasks.Add(mysqlTask);
+                if (mqttTask != null) tasks.Add(mqttTask);
+                if (vc2013Task != null) tasks.Add(vc2013Task);
+
+                await Task.WhenAll(tasks).ConfigureAwait(true);
+                ApplyDownloadedServicePackage(serviceTask.Result);
+                if (mysqlTask != null) ApplyDownloadedMySqlPackage(mysqlTask.Result);
+                if (mqttTask != null) ApplyDownloadedMqttInstaller(mqttTask.Result);
+                if (vc2013Task != null) ApplyDownloadedVc2013Installer(vc2013Task.Result);
+                log.Info("在线下载完成");
+            }
+            catch (Exception ex)
+            {
+                log.Info($"在线下载失败: {ex.Message}");
+                Application.Current?.Dispatcher.Invoke(() => MessageBox.Show($"在线下载失败: {ex.Message}", "在线下载", MessageBoxButton.OK, MessageBoxImage.Warning));
+            }
+            finally
+            {
+                CloseDownloadWindow();
+                SetBusy(false);
+                RefreshInstallComponentState();
+            }
+        }
+
+        private async Task DownloadMySqlPackageAsync()
+        {
+            SetBusy(true, "正在下载 MySQL...");
+            try
+            {
+                ApplyDownloadedMySqlPackage(await DownloadMySqlPackageFileAsync().ConfigureAwait(true));
+            }
+            catch (Exception ex)
+            {
+                log.Info($"下载 MySQL 失败: {ex.Message}");
+                Application.Current?.Dispatcher.Invoke(() => MessageBox.Show($"下载 MySQL 失败: {ex.Message}", "下载 MySQL", MessageBoxButton.OK, MessageBoxImage.Warning));
+            }
+            finally
+            {
+                CloseDownloadWindow();
+                SetBusy(false);
+            }
+        }
+
+        private Task<string> DownloadMySqlPackageFileAsync()
+        {
+            return DownloadToolFileAsync("MySQL", item => item.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase), "MySQL", "MySQL");
+        }
+
+        private void ApplyDownloadedMySqlPackage(string packagePath)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MySqlPackagePath = packagePath;
+                InstallMySqlChecked = true;
+            });
+            log.Info($"已应用 MySQL 包路径: {packagePath}");
+        }
+
+        private async Task DownloadMqttInstallerAsync()
+        {
+            SetBusy(true, "正在下载 MQTT...");
+            try
+            {
+                ApplyDownloadedMqttInstaller(await DownloadMqttInstallerFileAsync().ConfigureAwait(true));
+            }
+            catch (Exception ex)
+            {
+                log.Info($"下载 MQTT 失败: {ex.Message}");
+                Application.Current?.Dispatcher.Invoke(() => MessageBox.Show($"下载 MQTT 失败: {ex.Message}", "下载 MQTT", MessageBoxButton.OK, MessageBoxImage.Warning));
+            }
+            finally
+            {
+                CloseDownloadWindow();
+                SetBusy(false);
+            }
+        }
+
+        private Task<string> DownloadMqttInstallerFileAsync()
+        {
+            return DownloadToolFileAsync("MQTT", item => item.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase), "MQTT", "MQTT");
+        }
+
+        private void ApplyDownloadedMqttInstaller(string installerPath)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MqttInstallerPath = installerPath;
+                InstallMqttChecked = true;
+            });
+            log.Info($"已应用 MQTT 安装包路径: {installerPath}");
+        }
+
+        private async Task DownloadVc2013InstallerAsync()
+        {
+            SetBusy(true, "正在下载 VC++ 2013...");
+            try
+            {
+                ApplyDownloadedVc2013Installer(await DownloadVc2013InstallerFileAsync().ConfigureAwait(true));
+            }
+            catch (Exception ex)
+            {
+                log.Info($"下载 VC++ 2013 失败: {ex.Message}");
+                Application.Current?.Dispatcher.Invoke(() => MessageBox.Show($"下载 VC++ 2013 失败: {ex.Message}", "下载 VC++ 2013", MessageBoxButton.OK, MessageBoxImage.Warning));
+            }
+            finally
+            {
+                CloseDownloadWindow();
+                SetBusy(false);
+            }
+        }
+
+        private async Task<string> DownloadVc2013InstallerFileAsync()
+        {
+            log.Info("开始下载 VC++ 2013 x64 运行库...");
+            string installerPath = await DownloadToolFileAsync("VC++", item => item.Name.Equals("vcredist_2013u5_x64.exe", StringComparison.OrdinalIgnoreCase), "VC++", "VC++ 2013 x64").ConfigureAwait(false);
+            log.Info($"已下载 VC++ 2013 x64 运行库: {installerPath}");
+            return installerPath;
+        }
+
+        private void ApplyDownloadedVc2013Installer(string installerPath)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Vc2013InstallerPath = installerPath;
+                InstallVc2013Checked = true;
+            });
+            log.Info($"已应用 VC++ 2013 安装包路径: {installerPath}");
+        }
+
+        private async Task<string> DownloadToolFileAsync(string toolFolder, Func<ToolFileInfo, bool> predicate, string cacheFolder, string displayName)
+        {
+            string downloadDir = Path.Combine(GetDownloadRoot(), cacheFolder);
+            Directory.CreateDirectory(downloadDir);
+            ToolFileInfo fileInfo = await GetLatestToolFileAsync(Config.UpdateServerUrl, toolFolder, predicate).ConfigureAwait(false);
+            string cachedPath = Path.Combine(downloadDir, fileInfo.Name);
+            if (File.Exists(cachedPath) && new FileInfo(cachedPath).Length == fileInfo.Size)
+            {
+                log.Info($"已使用本地缓存 {displayName}: {cachedPath}");
+                return cachedPath;
+            }
+
+            IDownloadService service = GetDownloadService();
+            string downloadUrl = BuildAbsoluteDownloadUrl(Config.UpdateServerUrl, fileInfo.RelativePath);
+            log.Info($"开始下载 {displayName}: {downloadUrl}");
+            Application.Current.Dispatcher.Invoke(service.ShowDownloadWindow);
+            string? filePath = await DownloadWithServiceAsync(service, downloadUrl, downloadDir).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                throw new InvalidOperationException($"{displayName} 下载失败");
+
+            return filePath;
+        }
+
+        private static IDownloadService GetDownloadService()
+        {
+            return AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault()
+                ?? throw new InvalidOperationException("下载服务不可用");
+        }
+
+        private static void CloseDownloadWindow()
+        {
+            try
+            {
+                GetDownloadService().CloseDownloadWindow();
+            }
+            catch
+            {
+            }
+        }
+
+        private static Task<string?> DownloadWithServiceAsync(IDownloadService service, string downloadUrl, string downloadDir)
+        {
+            TaskCompletionSource<string?> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            service.Download(downloadUrl, downloadDir, null, filePath => completion.TrySetResult(filePath));
+            return completion.Task;
+        }
+
+        private static async Task<ToolFileInfo> GetLatestToolFileAsync(string updateServerUrl, string toolFolder, Func<ToolFileInfo, bool> predicate)
+        {
+            using HttpClient client = new() { Timeout = TimeSpan.FromSeconds(15) };
+            string browseUrl = BuildToolBrowseApiUrl(updateServerUrl, toolFolder);
+            string text = await client.GetStringAsync(browseUrl).ConfigureAwait(false);
+            JObject payload = JObject.Parse(text);
+            ToolFileInfo? file = payload["items"]?
+                .OfType<JObject>()
+                .Select(ToolFileInfo.FromJson)
+                .OfType<ToolFileInfo>()
+                .Where(item => !item.IsDirectory && predicate(item))
+                .OrderByDescending(item => item.ModifiedUtc)
+                .FirstOrDefault();
+
+            return file ?? throw new InvalidOperationException($"未找到 Tool/{toolFolder} 下载文件");
+        }
+
+        private string GetDownloadRoot()
+        {
+            return string.IsNullOrWhiteSpace(Config.DownloadLocation) ? Path.Combine(Environments.DirToolPackageCache, "CVWindowsService") : Config.DownloadLocation;
+        }
+
+        private static string BuildToolBrowseApiUrl(string updateServerUrl, string toolFolder)
+        {
+            Uri root = BuildServerRoot(updateServerUrl);
+            return new Uri(root, $"/api/site/browse/Tool/{Uri.EscapeDataString(toolFolder)}").ToString();
+        }
+
+        private static string BuildAbsoluteDownloadUrl(string updateServerUrl, string relativePath)
+        {
+            Uri root = BuildServerRoot(updateServerUrl);
+            return new Uri(root, $"/download/{relativePath.Replace("+", "%2B", StringComparison.Ordinal)}").ToString();
+        }
+
+        private static bool IsVc2013RuntimeInstalled()
+        {
+            return File.Exists(Path.Combine(Environment.SystemDirectory, "msvcr120.dll"))
+                && File.Exists(Path.Combine(Environment.SystemDirectory, "msvcp120.dll"));
+        }
+
         private static bool IsValidLatestVersion(Version version)
         {
             return version.Major > 0 || version.Minor > 0 || version.Build > 0 || version.Revision > 0;
+        }
+
+        private sealed class ToolFileInfo
+        {
+            public string Name { get; init; } = string.Empty;
+            public string RelativePath { get; init; } = string.Empty;
+            public bool IsDirectory { get; init; }
+            public long Size { get; init; }
+            public DateTimeOffset ModifiedUtc { get; init; }
+
+            public static ToolFileInfo? FromJson(JObject item)
+            {
+                string name = item["name"]?.ToString() ?? string.Empty;
+                string relativePath = item["relative_path"]?.ToString() ?? item["path"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(relativePath))
+                    return null;
+
+                DateTimeOffset modifiedUtc = DateTimeOffset.MinValue;
+                if (!DateTimeOffset.TryParse(item["modified_iso"]?.ToString(), out modifiedUtc))
+                    modifiedUtc = DateTimeOffset.MinValue;
+
+                return new ToolFileInfo
+                {
+                    Name = name,
+                    RelativePath = relativePath,
+                    IsDirectory = item["is_dir"]?.Value<bool>() ?? false,
+                    Size = item["size"]?.Value<long>() ?? 0,
+                    ModifiedUtc = modifiedUtc,
+                };
+            }
         }
 
         private static string? FindCachedCvWindowsServicePackage(string downloadDir, Version version)
@@ -873,6 +1153,50 @@ namespace WindowsServicePlugin.ServiceManager
         private bool ExecuteColorVisionAllSql(string basePath)
         {
             return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, log.Info);
+        }
+
+        private bool InitializeColorVisionDatabase(string basePath)
+        {
+            return ServiceManagerViewModel.Instance.MySqlManager.InitializeColorVisionDatabase(basePath, log.Info);
+        }
+
+        private bool InstallVc2013Runtime()
+        {
+            try
+            {
+                if (IsVc2013RuntimeInstalled())
+                    return true;
+                if (string.IsNullOrWhiteSpace(Vc2013InstallerPath) || !File.Exists(Vc2013InstallerPath))
+                    throw new InvalidOperationException("请先选择或下载 VC++ 2013 x64 运行库安装程序");
+
+                log.Info($"正在安装 VC++ 2013 x64 运行库: {Vc2013InstallerPath}");
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = Vc2013InstallerPath,
+                    Arguments = "/install /quiet /norestart",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(Vc2013InstallerPath) ?? string.Empty,
+                };
+
+                using Process? process = Process.Start(startInfo);
+                if (process == null)
+                    throw new InvalidOperationException("无法启动 VC++ 2013 安装程序");
+                if (!process.WaitForExit(180000))
+                {
+                    process.Kill(true);
+                    throw new TimeoutException("VC++ 2013 安装超时");
+                }
+
+                bool success = process.ExitCode is 0 or 3010 or 1638;
+                log.Info(success ? $"VC++ 2013 x64 运行库安装完成，退出码: {process.ExitCode}" : $"VC++ 2013 x64 运行库安装失败，退出码: {process.ExitCode}");
+                return success && IsVc2013RuntimeInstalled();
+            }
+            catch (Exception ex)
+            {
+                log.Info($"VC++ 2013 x64 运行库安装失败: {ex.Message}");
+                return false;
+            }
         }
 
         private static bool IsLogPath(string fullPath, string rootPath)
