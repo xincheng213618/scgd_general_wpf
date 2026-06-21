@@ -41,9 +41,11 @@ namespace ColorVision.UI.LogImp
             LogConfig.Instance.PropertyChanged += _configChangedHandler;
         }
 
+        public bool IgnoreAutoRefresh { get; set; }
+
         protected override void Append(LoggingEvent loggingEvent)
         {
-            if (!LogConfig.Instance.AutoRefresh)
+            if (!IgnoreAutoRefresh && !LogConfig.Instance.AutoRefresh)
             {
                 return;
             }

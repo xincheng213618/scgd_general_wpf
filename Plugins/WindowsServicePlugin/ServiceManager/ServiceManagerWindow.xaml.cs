@@ -1,11 +1,15 @@
+using ColorVision.UI.LogImp;
 using ColorVision.Themes;
-using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager
 {
+    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "WPF window releases the log binder in OnClosed.")]
     public partial class ServiceManagerWindow : Window
     {
+        private ModuleLogViewerBinder? _logBinder;
+
         public ServiceManagerWindow()
         {
             InitializeComponent();
@@ -14,26 +18,15 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            DataContext = ServiceManagerViewModel.Instance;
-
-            // 日志自动滚动
-            ServiceManagerViewModel.Instance.PropertyChanged += ViewModel_PropertyChanged;
-        }
-
-        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(ServiceManagerViewModel.LogText))
-            {
-                Dispatcher.InvokeAsync(() =>
-                {
-                    LogTextBox.ScrollToEnd();
-                });
-            }
+            var viewModel = ServiceManagerViewModel.Instance;
+            DataContext = viewModel;
+            _logBinder = new ModuleLogViewerBinder(LogViewer, "WindowsServicePlugin.ServiceManager");
         }
 
         protected override void OnClosed(EventArgs e)
         {
-            ServiceManagerViewModel.Instance.PropertyChanged -= ViewModel_PropertyChanged;
+            _logBinder?.Dispose();
+            _logBinder = null;
             base.OnClosed(e);
         }
     }

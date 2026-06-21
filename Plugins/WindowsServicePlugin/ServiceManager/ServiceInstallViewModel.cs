@@ -16,9 +16,6 @@ namespace WindowsServicePlugin.ServiceManager
         private readonly ServiceManagerConfig _config = ServiceManagerConfig.Instance;
         public ServiceManagerConfig Config => _config;
 
-        public string LogText { get => _logText; set { _logText = value; OnPropertyChanged(); } }
-        private string _logText = string.Empty;
-
         public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
         private bool _isBusy;
 
@@ -81,7 +78,6 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand SelectServicePackageCommand { get; }
         public RelayCommand SelectMySqlZipCommand { get; }
         public RelayCommand SelectMqttInstallerCommand { get; }
-        public RelayCommand ClearLogCommand { get; }
         public RelayCommand BackupNowCommand { get; }
         public RelayCommand RestoreBackupCommand { get; }
         public RelayCommand BackupServiceNowCommand { get; }
@@ -95,7 +91,6 @@ namespace WindowsServicePlugin.ServiceManager
             SelectServicePackageCommand = new RelayCommand(a => SelectServicePackage());
             SelectMySqlZipCommand = new RelayCommand(a => SelectMySqlZip());
             SelectMqttInstallerCommand = new RelayCommand(a => SelectMqttInstaller());
-            ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
             BackupNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupNow()), a => !IsBusy);
             RestoreBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreBackup()), a => !IsBusy);
             BackupServiceNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupServiceNow()), a => !IsBusy);
@@ -147,13 +142,10 @@ namespace WindowsServicePlugin.ServiceManager
 
         #region Shared Helpers
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as an instance helper for partial view-model operation code.")]
         private void AddLog(string message)
         {
-            var timestamp = DateTime.Now.ToString("HH:mm:ss");
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                LogText += $"[{timestamp}] {message}\n";
-            });
+            log.Info(message);
         }
 
         private void SetBusy(bool busy, string text = "")

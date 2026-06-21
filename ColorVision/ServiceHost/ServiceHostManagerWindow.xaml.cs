@@ -1,18 +1,21 @@
 #pragma warning disable CA1863
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using ColorVision.UI.ServiceHost;
+using ColorVision.UI.LogImp;
 using ColorVision.Update.Export;
 using log4net;
 using AppResources = ColorVision.Properties.Resources;
 
 namespace ColorVision.ServiceHost
 {
+    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "WPF window releases the log binder on Closed.")]
     public partial class ServiceHostManagerWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ServiceHostManagerWindow));
@@ -24,12 +27,15 @@ namespace ColorVision.ServiceHost
 
         private ServiceHostStatus? _lastStatus;
         private bool _isBusy;
+        private readonly ModuleLogViewerBinder _logBinder;
 
         public ServiceHostManagerWindow()
         {
             InitializeComponent();
+            _logBinder = new ModuleLogViewerBinder(LogViewer, "ColorVision.ServiceHost");
             InitializeStaticText();
             Loaded += async (_, _) => await RefreshStatusAsync().ConfigureAwait(true);
+            Closed += (_, _) => _logBinder.Dispose();
         }
 
         private void InitializeStaticText()
@@ -78,12 +84,12 @@ namespace ColorVision.ServiceHost
 
         private async void PingButton_Click(object sender, RoutedEventArgs e)
         {
-            await RunClientCommandAsync("Ping", token => ColorVisionServiceHostClient.Default.PingAsync(cancellationToken: token)).ConfigureAwait(true);
+            await RunClientCommandAsync("Ping", token => ColorVisionServiceHostClient.Default.PingAsync(cancellationToken: token), useBusyState: false).ConfigureAwait(true);
         }
 
         private async void StatusButton_Click(object sender, RoutedEventArgs e)
         {
-            await RunClientCommandAsync("Status", token => ColorVisionServiceHostClient.Default.StatusAsync(cancellationToken: token), refreshAfter: true).ConfigureAwait(true);
+            await RunClientCommandAsync("Status", token => ColorVisionServiceHostClient.Default.StatusAsync(cancellationToken: token), refreshAfter: true, useBusyState: false).ConfigureAwait(true);
         }
 
         private async void WriteMarkerButton_Click(object sender, RoutedEventArgs e)
@@ -120,20 +126,12 @@ namespace ColorVision.ServiceHost
 
         private async void RegisterThumbnailButton_Click(object sender, RoutedEventArgs e)
         {
-            await RunThumbnailCommandAsync(
-                "register-thumbnail",
-                "Register Thumbnail",
-                AppResources.ThumbnailRegistrationSuccess,
-                AppResources.RegistrationFailed).ConfigureAwait(true);
+            await RunThumbnailCommandAsync("register-thumbnail", "Register Thumbnail", AppResources.ThumbnailRegistrationSuccess, AppResources.RegistrationFailed).ConfigureAwait(true);
         }
 
         private async void UnregisterThumbnailButton_Click(object sender, RoutedEventArgs e)
         {
-            await RunThumbnailCommandAsync(
-                "unregister-thumbnail",
-                "Unregister Thumbnail",
-                AppResources.ThumbnailUnregistered,
-                AppResources.UnregistrationFailed).ConfigureAwait(true);
+            await RunThumbnailCommandAsync("unregister-thumbnail", "Unregister Thumbnail", AppResources.ThumbnailUnregistered, AppResources.UnregistrationFailed).ConfigureAwait(true);
         }
 
         private void OpenPackageButton_Click(object sender, RoutedEventArgs e)
@@ -184,9 +182,14 @@ namespace ColorVision.ServiceHost
             }
         }
 
-        private async Task RunClientCommandAsync(string name, Func<CancellationToken, Task<ServiceHostResponse>> operation, bool refreshAfter = false)
+        private async Task RunClientCommandAsync(
+            string name,
+            Func<CancellationToken, Task<ServiceHostResponse>> operation,
+            bool refreshAfter = false,
+            bool useBusyState = true)
         {
-            SetBusy(true);
+            if (useBusyState)
+                SetBusy(true);
             AppendLog($"> {name}");
             try
             {
@@ -201,7 +204,8 @@ namespace ColorVision.ServiceHost
             {
                 if (refreshAfter)
                     await RefreshStatusAsync().ConfigureAwait(true);
-                SetBusy(false);
+                if (useBusyState)
+                    SetBusy(false);
             }
         }
 
@@ -410,10 +414,11 @@ namespace ColorVision.ServiceHost
             }
         }
 
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as an instance helper for operation logging.")]
         private void AppendLog(string message)
         {
-            LogBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
-            LogBox.ScrollToEnd();
+            log.Info(message);
         }
+
     }
 }

@@ -173,6 +173,8 @@ Must exist at runtime:
 3. **UI Layering**: UI ↔ Engine via abstractions; avoid ad-hoc cross-layer calls
 4. **Assets**: Use `CopyToOutputDirectory` for configs/assets as needed
 5. **Plugins**: Class Library `net8.0-windows`; add `<UseWPF>true</UseWPF>` if UI needed
+6. **Professional code over line count**: More lines are not a KPI. Keep code concise, direct, and maintainable.
+7. **Formatting discipline**: Prefer single-line calls for simple method invocations and short argument lists. Split calls across lines only when it materially improves readability, such as long expressions, nested lambdas, object initializers, or complex conditionals.
 
 ## Plugin Development Quick Start
 

@@ -33,9 +33,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         public MySqlServiceHelper MySqlHelper => MySqlManager.Helper;
 
-        public string LogText { get => _LogText; set { _LogText = value; OnPropertyChanged(); } }
-        private string _LogText = string.Empty;
-
         public string CurrentVersion { get => _CurrentVersion; set { _CurrentVersion = value; OnPropertyChanged(); } }
         private string _CurrentVersion = string.Empty;
 
@@ -61,7 +58,6 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand UpdateConfigCommand { get; }
         public RelayCommand OpenInstallManagerCommand { get; }
         public RelayCommand RefreshCommand { get; }
-        public RelayCommand ClearLogCommand { get; }
         public RelayCommand SetBasePathCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
         public RelayCommand OpenWinServiceConfigCommand { get; }
@@ -104,7 +100,6 @@ namespace WindowsServicePlugin.ServiceManager
             UpdateConfigCommand = new RelayCommand(a => UpdateConfig(), a => !IsBusy);
             OpenInstallManagerCommand = new RelayCommand(a => OpenInstallManager());
             RefreshCommand = new RelayCommand(a => RefreshAll());
-            ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
             SetBasePathCommand = new RelayCommand(a => SetBasePath());
             OpenFolderCommand = new RelayCommand(a => OpenServiceFolder(a as ServiceEntry));
             OpenWinServiceConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "WinService.config"));
@@ -213,14 +208,10 @@ namespace WindowsServicePlugin.ServiceManager
             });
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as an instance helper for partial view-model operation code.")]
         public void AddLog(string message)
         {
-            string entry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}=> {message}";
             log.Info(message);
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                LogText += entry + Environment.NewLine;
-            });
         }
 
         private void SetBusy(bool busy, string text = "")

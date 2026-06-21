@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WindowsServicePlugin.ServiceManager"
+        xmlns:logControls="clr-namespace:ColorVision.UI.LogImp.Controls;assembly=ColorVision.UI"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ServiceManagerViewModel}"
@@ -252,11 +253,14 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <TextBlock Grid.Row="0" Text="日志输出" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
-            <TextBox Grid.Row="1" Text="{Binding LogText, Mode=OneWay}" IsReadOnly="True"
-                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                     TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"
-                     AcceptsReturn="True" Padding="8" VerticalContentAlignment="Top"
-                     x:Name="LogTextBox"/>
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="6">
+                <logControls:LogViewerControl x:Name="LogViewer"
+                                              TextWrapping="Wrap"
+                                              ViewerMode="TextBox"
+                                              MaxChars="100000"
+                                              FontFamily="Consolas"
+                                              FontSize="12"/>
+            </Border>
         </Grid>
 
         <!-- 状态栏 -->
