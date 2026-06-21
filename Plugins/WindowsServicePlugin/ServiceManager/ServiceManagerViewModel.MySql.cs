@@ -182,19 +182,18 @@ namespace WindowsServicePlugin.ServiceManager
         {
             if (string.IsNullOrWhiteSpace(MySqlManager.Config.RootPassword))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "请先填写 root 密码。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowUiMessage("请先填写 root 密码。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             string? sqlFilePath = MySqlServiceManager.ResolveResetDatabaseSqlPath();
             if (string.IsNullOrWhiteSpace(sqlFilePath))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "未找到 color_vision_all.sql，请确认服务安装目录下存在 SQL 目录。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowUiMessage("未找到 color_vision_all.sql，请确认服务安装目录下存在 SQL 目录。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            var confirm = MessageBox.Show(
-                Application.Current.GetActiveWindow(),
+            var confirm = ShowUiMessage(
                 $"将使用 root 账号执行数据库重置脚本：\n{sqlFilePath}\n\n该脚本会重建/覆盖部分数据库表，是否继续？",
                 "重置数据库",
                 MessageBoxButton.YesNo,
@@ -252,122 +251,6 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void DoCheckDatabaseConfig()
-        {
-            SetBusy(true, "正在检查数据库配置...");
-            try
-            {
-                var current = MySqlManager.Config;
-                var legacy = ReadLegacyMySqlProfile();
-
-                bool currentAppOk = MySqlManager.TestConnection(current.Host, current.Port, current.AppUser, current.AppPassword, current.Database);
-                bool currentRootOk = !string.IsNullOrWhiteSpace(current.RootPassword)
-                    && MySqlManager.TestConnection(current.Host, current.Port, "root", current.RootPassword, null);
-
-                bool legacyAppOk = legacy != null
-                    && !string.IsNullOrWhiteSpace(legacy.AppUser)
-                    && MySqlManager.TestConnection(legacy.Host, legacy.Port, legacy.AppUser, legacy.AppPassword, legacy.Database);
-                bool legacyRootOk = legacy != null
-                    && !string.IsNullOrWhiteSpace(legacy.RootPassword)
-                    && MySqlManager.TestConnection(legacy.Host, legacy.Port, "root", legacy.RootPassword, null);
-
-                log.Info($"当前配置业务账号校验: {(currentAppOk ? "成功" : "失败")}");
-                log.Info($"旧版配置业务账号校验: {(legacyAppOk ? "成功" : "失败")}");
-
-                if (currentAppOk && !legacyAppOk)
-                {
-                    SyncManagedServiceConfigs();
-                    if (legacy != null)
-                    {
-                        SyncLegacyMySqlProfileSafely(CreateLegacyProfileFromCurrent(), true);
-                        MessageBox.Show(Application.Current.GetActiveWindow(),"当前服务管理器中的数据库配置可用，已同步旧版配置。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "当前服务管理器中的数据库配置可用，且未检测到旧版配置文件。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    RefreshAll();
-                    return;
-                }
-
-                if (!currentAppOk && legacyAppOk && legacy != null)
-                {
-                    string resolvedRootPassword = string.IsNullOrWhiteSpace(legacy.RootPassword) ? current.RootPassword : legacy.RootPassword;
-                    MySqlManager.UpdateStoredCredentials(legacy.Host, legacy.Port, resolvedRootPassword, legacy.AppUser, legacy.AppPassword, legacy.Database);
-                    SyncManagedServiceConfigs();
-                    RefreshAll();
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "旧版 App.config 中的数据库配置可用，已同步当前服务管理器配置。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                if (currentAppOk && legacyAppOk)
-                {
-                    string message = legacy != null &&
-                        current.AppUser == legacy.AppUser &&
-                        current.AppPassword == legacy.AppPassword &&
-                        current.Database == legacy.Database
-                        ? "当前配置和旧版配置都可用，且账号信息一致。"
-                        : "当前配置和旧版配置都可用，但账号信息并不完全一致，未自动覆盖。";
-                    MessageBox.Show(Application.Current.GetActiveWindow(), message, "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "当前配置和旧版配置的业务账号都无法连接数据库，是否尝试重置业务账号并同步配置？", "数据库配置检查", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
-                {
-                    return;
-                }
-
-                if (!currentRootOk && legacyRootOk && legacy != null)
-                {
-                    MySqlManager.UpdateStoredCredentials(current.Host, current.Port, legacy.RootPassword, current.AppUser, current.AppPassword, current.Database);
-                    currentRootOk = true;
-                    log.Info("已采用旧版配置中的 root 密码进行重置");
-                }
-
-                if (!currentRootOk)
-                {
-                    if (string.IsNullOrWhiteSpace(current.RootNewPassword))
-                    {
-                        current.RootNewPassword = MySqlServiceHelper.GenerateRandomPassword();
-                        log.Info($"已生成新的 root 密码: {current.RootNewPassword}");
-                    }
-
-                    if (!MySqlManager.ForceResetRootPassword(log.Info))
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "强制重置 root 密码失败，未能完成业务账号修复。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-                }
-
-                if (!MySqlManager.CreateOrUpdateUser(log.Info))
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "业务账号重置失败，请检查 root 密码和 MySQL 服务状态。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                SyncManagedServiceConfigs();
-                if (legacy != null || HasLegacyConfig)
-                {
-                    SyncLegacyMySqlProfileSafely(CreateLegacyProfileFromCurrent(), true);
-                    MessageBox.Show(Application.Current.GetActiveWindow(),"数据库业务账号已重置并同步到两边配置。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库业务账号已重置，当前服务配置已更新，未检测到旧版配置文件。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                RefreshAll();
-            }
-            finally
-            {
-                SetBusy(false);
-            }
-        }
-
-        public int GetConfiguredMySqlPort()
-        {
-            return MySqlManager.GetConfiguredPort(Config.MySqlPort);
-        }
-
         private void DoDeleteUser()
         {
             MySqlManager.DeleteUser(log.Info);
@@ -392,18 +275,15 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private LegacyMySqlProfile CreateLegacyProfileFromCurrent()
+        private static MessageBoxResult ShowUiMessage(string message, string caption, MessageBoxButton button, MessageBoxImage image)
         {
-            var current = MySqlManager.Config;
-            return new LegacyMySqlProfile
-            {
-                Host = current.Host,
-                Port = current.Port,
-                AppUser = current.AppUser,
-                AppPassword = current.AppPassword,
-                RootPassword = current.RootPassword,
-                Database = current.Database
-            };
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null)
+                return MessageBox.Show(message, caption, button, image);
+
+            return dispatcher.CheckAccess()
+                ? MessageBox.Show(Application.Current.GetActiveWindow(), message, caption, button, image)
+                : dispatcher.Invoke(() => MessageBox.Show(Application.Current.GetActiveWindow(), message, caption, button, image));
         }
     }
 }

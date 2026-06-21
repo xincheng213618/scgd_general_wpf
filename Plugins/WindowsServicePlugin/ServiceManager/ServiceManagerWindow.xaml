@@ -42,7 +42,6 @@
                     <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
                     <Button Content="更新配置" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                    <Button Content="检查数据库配置" Command="{Binding CheckDatabaseConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
                     <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
                             Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
                     <Button Content="更新" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"

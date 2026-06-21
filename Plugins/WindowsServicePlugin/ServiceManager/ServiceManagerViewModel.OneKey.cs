@@ -85,7 +85,7 @@ namespace WindowsServicePlugin.ServiceManager
                     }
                 }
 
-                log.Info("CVWindowsService 已停止，MySQL/MQTT 保持当前状态");
+                log.Info("CVWindowsService 已停止");
             }
             catch (Exception ex)
             {

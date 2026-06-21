@@ -88,7 +88,6 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand MySqlCreateOrUpdateUserCommand { get; }
         public RelayCommand MySqlDeleteUserCommand { get; }
         public RelayCommand MySqlGenerateRandomRootPasswordCommand { get; }
-        public RelayCommand CheckDatabaseConfigCommand { get; }
 
         public ServiceManagerViewModel()
         {
@@ -129,7 +128,6 @@ namespace WindowsServicePlugin.ServiceManager
             MySqlCreateOrUpdateUserCommand = new RelayCommand(a => _ = Task.Run(() => DoCreateOrUpdateUser()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlDeleteUserCommand = new RelayCommand(a => _ = Task.Run(() => DoDeleteUser()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlGenerateRandomRootPasswordCommand = new RelayCommand(a => GenerateRandomRootPassword());
-            CheckDatabaseConfigCommand = new RelayCommand(a => _ = Task.Run(() => DoCheckDatabaseConfig()), a => !IsBusy && MySqlManager.Config.IsRunning);
 
             Initialize();
         }
