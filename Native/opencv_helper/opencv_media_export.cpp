@@ -4,13 +4,16 @@
 #include "algorithm.h"
 #include "algorithm/distortion/distortion_p9.h"
 #include "algorithm/sfr/sfr_bmw4.h"
+#include "algorithm/surface_defect/surface_defect.h"
 #include <opencv2/opencv.hpp>
 #include <nlohmann\json.hpp>
+#include <algorithm>
 #include <string>
 #include <locale>
 #include <codecvt>
 #include <cmath>
 #include <combaseapi.h>
+#include <cctype>
 #include <cstring>
 #include <exception>
 #include <future>
@@ -207,6 +210,115 @@ cvcore::distortion::DistortionP9Config ParseDistortionP9Config(const json& root)
 	return config;
 }
 
+double ReadRatioValue(const json& root, const char* lowerName, const char* upperName, double fallback)
+{
+	double value = root.value(lowerName, root.value(upperName, fallback));
+	return value > 1.0 ? value / 100.0 : value;
+}
+
+std::vector<int> ReadIntArray(const json& root, const char* lowerName, const char* upperName, const std::vector<int>& fallback)
+{
+	const json* value = nullptr;
+	if (root.contains(lowerName) && root.at(lowerName).is_array()) {
+		value = &root.at(lowerName);
+	}
+	else if (root.contains(upperName) && root.at(upperName).is_array()) {
+		value = &root.at(upperName);
+	}
+
+	if (value == nullptr) {
+		return fallback;
+	}
+
+	std::vector<int> output;
+	output.reserve(value->size());
+	for (const auto& item : *value) {
+		if (item.is_number_integer()) {
+			output.push_back(item.get<int>());
+		}
+	}
+
+	return output.empty() ? fallback : output;
+}
+
+int ReadSurfaceDefectChannel(const json& root, int fallback)
+{
+	if (root.contains("channel")) {
+		const json& value = root.at("channel");
+		if (value.is_number_integer()) {
+			return value.get<int>();
+		}
+		if (value.is_string()) {
+			std::string channel = value.get<std::string>();
+			std::transform(channel.begin(), channel.end(), channel.begin(), [](unsigned char c) {
+				return static_cast<char>(std::tolower(c));
+			});
+			if (channel == "b" || channel == "blue") return 0;
+			if (channel == "g" || channel == "green") return 1;
+			if (channel == "r" || channel == "red") return 2;
+			return -1;
+		}
+	}
+	if (root.contains("Channel") && root.at("Channel").is_number_integer()) {
+		return root.at("Channel").get<int>();
+	}
+	return fallback;
+}
+
+cvcore::surface_defect::SurfaceDefectConfig ParseSurfaceDefectConfig(const json& root)
+{
+	cvcore::surface_defect::SurfaceDefectConfig config;
+	if (!root.is_object()) {
+		return config;
+	}
+
+	config.channel = ReadSurfaceDefectChannel(root, config.channel);
+	config.scales = ReadIntArray(root, "scales", "Scales", config.scales);
+	config.darkThreshold = ReadRatioValue(root, "darkThreshold", "DarkThreshold", config.darkThreshold);
+	config.brightThreshold = ReadRatioValue(root, "brightThreshold", "BrightThreshold", config.brightThreshold);
+	config.minArea = root.value("minArea", root.value("MinArea", config.minArea));
+	config.maxArea = root.value("maxArea", root.value("MaxArea", config.maxArea));
+	config.muraMinArea = root.value("muraMinArea", root.value("MuraMinArea", config.muraMinArea));
+	config.openKernel = root.value("openKernel", root.value("OpenKernel", config.openKernel));
+	config.closeKernel = root.value("closeKernel", root.value("CloseKernel", config.closeKernel));
+	config.mergeDistance = root.value("mergeDistance", root.value("MergeDistance", config.mergeDistance));
+	config.maxDefects = root.value("maxDefects", root.value("MaxDefects", config.maxDefects));
+	config.enableDark = root.value("enableDark", root.value("EnableDark", config.enableDark));
+	config.enableBright = root.value("enableBright", root.value("EnableBright", config.enableBright));
+	config.enableLineDetect = root.value("enableLineDetect", root.value("EnableLineDetect", config.enableLineDetect));
+	config.lineAspectRatio = root.value("lineAspectRatio", root.value("LineAspectRatio", config.lineAspectRatio));
+	config.minSeverity = root.value("minSeverity", root.value("MinSeverity", config.minSeverity));
+	config.minorSeverity = root.value("minorSeverity", root.value("MinorSeverity", config.minorSeverity));
+	config.majorSeverity = root.value("majorSeverity", root.value("MajorSeverity", config.majorSeverity));
+	config.criticalSeverity = root.value("criticalSeverity", root.value("CriticalSeverity", config.criticalSeverity));
+	return config;
+}
+
+json SurfaceDefectConfigToJson(const cvcore::surface_defect::SurfaceDefectConfig& config)
+{
+	return json{
+		{ "channel", config.channel },
+		{ "scales", config.scales },
+		{ "darkThreshold", config.darkThreshold },
+		{ "brightThreshold", config.brightThreshold },
+		{ "minArea", config.minArea },
+		{ "maxArea", config.maxArea },
+		{ "muraMinArea", config.muraMinArea },
+		{ "openKernel", config.openKernel },
+		{ "closeKernel", config.closeKernel },
+		{ "mergeDistance", config.mergeDistance },
+		{ "maxDefects", config.maxDefects },
+		{ "enableDark", config.enableDark },
+		{ "enableBright", config.enableBright },
+		{ "enableLineDetect", config.enableLineDetect },
+		{ "lineAspectRatio", config.lineAspectRatio },
+		{ "minSeverity", config.minSeverity },
+		{ "minorSeverity", config.minorSeverity },
+		{ "majorSeverity", config.majorSeverity },
+		{ "criticalSeverity", config.criticalSeverity }
+	};
+}
+
 json DistortionP9ConfigToJson(const cvcore::distortion::DistortionP9Config& config)
 {
 	return json{
@@ -307,6 +419,49 @@ json PointToJson(const cv::Point2d& point, const cv::Point& origin)
 	return json{
 		{ "x", point.x + origin.x },
 		{ "y", point.y + origin.y }
+	};
+}
+
+std::string SurfaceDefectGrade(double severity, const cvcore::surface_defect::SurfaceDefectConfig& config)
+{
+	if (severity >= config.criticalSeverity) {
+		return "critical";
+	}
+	if (severity >= config.majorSeverity) {
+		return "major";
+	}
+	if (severity >= config.minorSeverity) {
+		return "minor";
+	}
+	return severity > 0.0 ? "trace" : "ok";
+}
+
+json SurfaceDefectToJson(
+	const cvcore::surface_defect::SurfaceDefectItem& defect,
+	const cv::Point& origin,
+	const cvcore::surface_defect::SurfaceDefectConfig& config)
+{
+	return json{
+		{ "id", defect.id },
+		{ "type", defect.type },
+		{ "polarity", defect.polarity },
+		{ "grade", SurfaceDefectGrade(defect.severity, config) },
+		{ "scale", defect.scale },
+		{ "x", defect.boundingRect.x + origin.x },
+		{ "y", defect.boundingRect.y + origin.y },
+		{ "w", defect.boundingRect.width },
+		{ "h", defect.boundingRect.height },
+		{ "centerX", defect.center.x + origin.x },
+		{ "centerY", defect.center.y + origin.y },
+		{ "area", defect.area },
+		{ "meanDelta", defect.meanDelta },
+		{ "minDelta", defect.minDelta },
+		{ "maxDelta", defect.maxDelta },
+		{ "maxDeltaAbs", defect.maxDeltaAbs },
+		{ "severity", defect.severity },
+		{ "aspectRatio", defect.aspectRatio },
+		{ "fillRatio", defect.fillRatio },
+		{ "boundingRect", RectToJson(defect.boundingRect, origin) }
 	};
 }
 
@@ -1251,6 +1406,73 @@ COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* 
 		}
 		outputJson["KeyRegions"] = rectsArray;
 		outputJson["Count"] = keyRects.size();
+
+		return CopyJsonResult(outputJson, result);
+	});
+}
+
+COLORVISIONCORE_API int M_DetectSurfaceDefects(HImage img, RoiRect roi, const char* config, char** result)
+{
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
+
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || result == nullptr) {
+			return ExportInvalidArgument;
+		}
+
+		json j = json::object();
+		if (config != nullptr && config[0] != '\0') {
+			if (!TryParseJson(config, j)) {
+				return ExportInvalidJson;
+			}
+		}
+
+		cv::Point origin(0, 0);
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		const cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+		const bool useRoi = (mroi.width > 0 && mroi.height > 0 && (mroi & imageRect) == mroi);
+		if (useRoi) {
+			mat = mat(mroi);
+			origin = cv::Point(mroi.x, mroi.y);
+		}
+
+		cvcore::surface_defect::SurfaceDefectConfig defectConfig = ParseSurfaceDefectConfig(j);
+		cvcore::surface_defect::SurfaceDefectResult calcResult =
+			cvcore::surface_defect::detectSurfaceDefects(mat, defectConfig);
+
+		json outputJson;
+		outputJson["algorithm"] = "SurfaceDefect";
+		outputJson["version"] = "0.1";
+		outputJson["success"] = calcResult.success;
+		outputJson["statusCode"] = calcResult.statusCode;
+		outputJson["message"] = calcResult.message;
+		outputJson["count"] = calcResult.defects.size();
+		outputJson["image"] = {
+			{ "width", img.cols },
+			{ "height", img.rows },
+			{ "roi", RectToJson(useRoi ? mroi : cv::Rect(0, 0, mat.cols, mat.rows), cv::Point(0, 0)) }
+		};
+		outputJson["configUsed"] = SurfaceDefectConfigToJson(defectConfig);
+		outputJson["summary"] = {
+			{ "defectCount", calcResult.summary.defectCount },
+			{ "darkCount", calcResult.summary.darkCount },
+			{ "brightCount", calcResult.summary.brightCount },
+			{ "maxSeverity", calcResult.summary.maxSeverity },
+			{ "meanSeverity", calcResult.summary.meanSeverity },
+			{ "grade", calcResult.summary.grade }
+		};
+		outputJson["diagnostics"] = {
+			{ "roiUsed", useRoi },
+			{ "relativeResidual", true },
+			{ "background", "gaussian" }
+		};
+		outputJson["defects"] = json::array();
+		for (const auto& defect : calcResult.defects) {
+			outputJson["defects"].push_back(SurfaceDefectToJson(defect, origin, defectConfig));
+		}
 
 		return CopyJsonResult(outputJson, result);
 	});

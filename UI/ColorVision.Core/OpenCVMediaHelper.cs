@@ -52,6 +52,9 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalDistortionP9(HImage img, RoiRect roi, string config, out IntPtr result);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_DetectSurfaceDefects(HImage img, RoiRect roi, string config, out IntPtr result);
+
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int FreeResult(IntPtr str);

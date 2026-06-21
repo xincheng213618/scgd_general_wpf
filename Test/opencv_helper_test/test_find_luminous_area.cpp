@@ -893,6 +893,53 @@ bool smokeDistortionP9DesktopFixtureIfPresent()
     return ok;
 }
 
+bool smokeSurfaceDefectDetectsSyntheticBrightAndDark()
+{
+    cv::Mat image(160, 220, CV_8UC1, cv::Scalar(128));
+    cv::rectangle(image, cv::Rect(42, 46, 24, 18), cv::Scalar(190), cv::FILLED);
+    cv::rectangle(image, cv::Rect(142, 92, 28, 20), cv::Scalar(70), cv::FILLED);
+
+    HImage hImage = createHImageFromMat(image);
+    RoiRect roi = { 0, 0, 0, 0 };
+    json config = {
+        { "scales", { 31 } },
+        { "brightThreshold", 0.05 },
+        { "darkThreshold", 0.05 },
+        { "minArea", 20 },
+        { "muraMinArea", 2000 },
+        { "openKernel", 1 },
+        { "closeKernel", 3 },
+        { "mergeDistance", 5 }
+    };
+
+    char* result = nullptr;
+    int ret = M_DetectSurfaceDefects(hImage, roi, config.dump().c_str(), &result);
+    if (ret <= 0 || result == nullptr) {
+        return false;
+    }
+
+    json output = json::parse(result, nullptr, false);
+    FreeResult(result);
+    if (output.is_discarded() || !output.value("success", false)) {
+        return false;
+    }
+
+    const auto& summary = output.at("summary");
+    if (summary.value("brightCount", 0) < 1 || summary.value("darkCount", 0) < 1) {
+        return false;
+    }
+
+    bool hasBright = false;
+    bool hasDark = false;
+    for (const auto& defect : output.at("defects")) {
+        const std::string polarity = defect.value("polarity", "");
+        hasBright = hasBright || polarity == "bright";
+        hasDark = hasDark || polarity == "dark";
+    }
+
+    return hasBright && hasDark;
+}
+
 bool smokeConvertImageHandlesStrideAndOwnedBuffer()
 {
     const int width = 7;
@@ -1744,6 +1791,11 @@ int main(int argc, char* argv[])
 
     if (!smokeDistortionP9DesktopFixtureIfPresent()) {
         std::cerr << "M_CalDistortionP9 desktop fixture test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeSurfaceDefectDetectsSyntheticBrightAndDark()) {
+        std::cerr << "M_DetectSurfaceDefects synthetic bright/dark test failed" << std::endl;
         return 1;
     }
 

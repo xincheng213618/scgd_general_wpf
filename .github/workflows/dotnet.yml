@@ -6,8 +6,8 @@ name: .NET
 on:
   push:
     branches: [ "master","develop" ]
-  # pull_request:
-    # branches: [ "master" ]
+  pull_request:
+    branches: [ "master","develop" ]
 
 jobs:
   build:
@@ -16,23 +16,29 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-    
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 10.0.x
-        
+
     - name: Restore dependencies
-      run: dotnet restore build.sln 
-      
+      run: |
+        dotnet restore build.sln
+        dotnet restore Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64
+
     - name: Setup MSBuild path
       uses: microsoft/setup-msbuild@v3
-    
-    - name: Build C++ project with MSBuild
+
+    - name: Build solution with MSBuild
       run: |
         msbuild build.sln /p:Configuration=Release /p:Platform=x64
-        
+
+    - name: Run .NET tests
+      run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal
+
     - name: Publish to NuGet
+      if: github.event_name == 'push'
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -49,9 +55,3 @@ jobs:
         dotnet nuget push .\UI\ColorVision.UI.Desktop\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\Engine\ColorVision.FileIO\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\Engine\cvColorVision\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-        
-        
-
-
-
-      

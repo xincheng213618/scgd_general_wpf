@@ -194,6 +194,7 @@
     <ClInclude Include="algorithm\distortion\distortion_p9.h" />
     <ClInclude Include="algorithm\sfr\sfr_bmw4.h" />
     <ClInclude Include="algorithm\sfr\sfr_slanted.h" />
+    <ClInclude Include="algorithm\surface_defect\surface_defect.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="include\cvcore\sfr.h" />
     <ClInclude Include="native_log.h" />
@@ -205,6 +206,7 @@
     <ClCompile Include="algorithm\distortion\distortion_p9.cpp" />
     <ClCompile Include="algorithm\sfr\sfr_bmw4.cpp" />
     <ClCompile Include="algorithm\sfr\sfr_slanted.cpp" />
+    <ClCompile Include="algorithm\surface_defect\surface_defect.cpp" />
     <ClCompile Include="common.cpp" />
     <ClCompile Include="exports\sfr_export.cpp" />
     <ClCompile Include="native_log.cpp" />

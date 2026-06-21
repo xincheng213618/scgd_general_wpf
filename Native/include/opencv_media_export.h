@@ -89,6 +89,10 @@ extern "C" COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, con
 
 extern "C" COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* config, char** result);
 
+// Surface defect / mura detector.
+// Returns JSON with summary + defect list. Thresholds are relative ratios; values > 1 are treated as percentages.
+extern "C" COLORVISIONCORE_API int M_DetectSurfaceDefects(HImage img, RoiRect roi, const char* config, char** result);
+
 extern "C" COLORVISIONCORE_API int FreeResult(char* result);
 
 extern "C" COLORVISIONCORE_API int M_CalSFR(

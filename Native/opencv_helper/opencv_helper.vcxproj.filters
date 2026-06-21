@@ -28,6 +28,9 @@
     <Filter Include="算法\Distortion">
       <UniqueIdentifier>{62a9db2d-8111-48fa-b1e4-7394f6fe7b9f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="算法\SurfaceDefect">
+      <UniqueIdentifier>{08a7b7d1-04ab-4b7a-a654-2f35546c4f92}</UniqueIdentifier>
+    </Filter>
     <Filter Include="导出">
       <UniqueIdentifier>{a1b2c3d4-1234-5678-9abc-def012345678}</UniqueIdentifier>
     </Filter>
@@ -69,6 +72,9 @@
     <ClInclude Include="algorithm\distortion\distortion_p9.h">
       <Filter>算法\Distortion</Filter>
     </ClInclude>
+    <ClInclude Include="algorithm\surface_defect\surface_defect.h">
+      <Filter>算法\SurfaceDefect</Filter>
+    </ClInclude>
     <ClInclude Include="include\cvcore\sfr.h">
       <Filter>接口</Filter>
     </ClInclude>
@@ -106,6 +112,9 @@
     </ClCompile>
     <ClCompile Include="algorithm\distortion\distortion_p9.cpp">
       <Filter>算法\Distortion</Filter>
+    </ClCompile>
+    <ClCompile Include="algorithm\surface_defect\surface_defect.cpp">
+      <Filter>算法\SurfaceDefect</Filter>
     </ClCompile>
     <ClCompile Include="exports\sfr_export.cpp">
       <Filter>导出</Filter>

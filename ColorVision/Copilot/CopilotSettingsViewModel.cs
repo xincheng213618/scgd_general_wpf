@@ -313,6 +313,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _mcpPort, value))
                 {
+                    SyncMcpPortTextFromValue(value);
                     McpEndpoint = BuildMcpEndpoint();
                     MarkMcpSettingsPending();
                 }
@@ -330,6 +331,16 @@ namespace ColorVision.Copilot
             }
         }
         private string _mcpPortText = CopilotConfig.DefaultMcpPort.ToString(CultureInfo.InvariantCulture);
+
+        private void SyncMcpPortTextFromValue(int port)
+        {
+            var portText = port.ToString(CultureInfo.InvariantCulture);
+            if (string.Equals(_mcpPortText, portText, StringComparison.Ordinal))
+                return;
+
+            _mcpPortText = portText;
+            OnPropertyChanged(nameof(McpPortText));
+        }
 
         public bool IsMcpPortValid
         {
