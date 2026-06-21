@@ -12,7 +12,7 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceInstallViewModel : ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ServiceInstallViewModel));
+        private readonly ILog log = LogManager.GetLogger(typeof(ServiceInstallViewModel));
         private readonly ServiceManagerConfig _config = ServiceManagerConfig.Instance;
         public ServiceManagerConfig Config => _config;
 
@@ -142,12 +142,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         #region Shared Helpers
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as an instance helper for partial view-model operation code.")]
-        private void AddLog(string message)
-        {
-            log.Info(message);
-        }
-
         private void SetBusy(bool busy, string text = "")
         {
             Application.Current?.Dispatcher.Invoke(() =>
@@ -168,7 +162,7 @@ namespace WindowsServicePlugin.ServiceManager
                 Progress = value;
                 ProgressText = text;
             });
-            AddLog(text);
+            log.Info(text);
         }
 
         #endregion

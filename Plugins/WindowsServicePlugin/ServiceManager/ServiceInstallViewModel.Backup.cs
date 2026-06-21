@@ -17,15 +17,15 @@ namespace WindowsServicePlugin.ServiceManager
                 mySqlManager.RefreshStatus(ServiceManagerViewModel.Instance.Services, ServiceManagerViewModel.Instance.Config.MySqlPort);
                 if (!mySqlManager.Config.IsRunning)
                 {
-                    AddLog("MySQL 未运行，跳过备份");
+                    log.Info("MySQL 未运行，跳过备份");
                     return;
                 }
 
-                mySqlManager.BackupDatabase(AddLog);
+                mySqlManager.BackupDatabase(log.Info);
             }
             catch (Exception ex)
             {
-                AddLog($"备份失败: {ex.Message}");
+                log.Info($"备份失败: {ex.Message}");
             }
         }
 
@@ -52,15 +52,15 @@ namespace WindowsServicePlugin.ServiceManager
                 mySqlManager.RefreshStatus(ServiceManagerViewModel.Instance.Services, ServiceManagerViewModel.Instance.Config.MySqlPort);
                 if (!mySqlManager.Config.IsRunning)
                 {
-                    AddLog("MySQL 未运行，无法恢复");
+                    log.Info("MySQL 未运行，无法恢复");
                     return;
                 }
 
-                mySqlManager.RestoreDatabase(filePath, AddLog);
+                mySqlManager.RestoreDatabase(filePath, log.Info);
             }
             catch (Exception ex)
             {
-                AddLog($"恢复失败: {ex.Message}");
+                log.Info($"恢复失败: {ex.Message}");
             }
         }
 
@@ -89,14 +89,14 @@ namespace WindowsServicePlugin.ServiceManager
                 string basePath = Config.BaseLocation;
                 if (string.IsNullOrEmpty(basePath) || !Directory.Exists(basePath))
                 {
-                    AddLog("未设置安装根目录或目录不存在，跳过服务备份");
+                    log.Info("未设置安装根目录或目录不存在，跳过服务备份");
                     return;
                 }
 
                 string sourcePath = ResolveBestServiceRootForBackup(basePath);
                 if (!Directory.Exists(sourcePath))
                 {
-                    AddLog($"服务备份源目录不存在: {sourcePath}");
+                    log.Info($"服务备份源目录不存在: {sourcePath}");
                     return;
                 }
 
@@ -108,13 +108,13 @@ namespace WindowsServicePlugin.ServiceManager
                     ? Path.Combine(backupDir, $"CVWindowsService_cfg_{versionTag}_{timestamp}.zip")
                     : Path.Combine(backupDir, $"CVWindowsService_{versionTag}_{timestamp}.rar");
 
-                AddLog($"备份服务文件夹: {sourcePath} → {backupFile}");
+                log.Info($"备份服务文件夹: {sourcePath} → {backupFile}");
                 if (File.Exists(backupFile)) File.Delete(backupFile);
 
                 if (BackupServiceCfgOnly)
                 {
                     int cfgCount = CreateCfgOnlyBackupZip(sourcePath, backupFile);
-                    AddLog($"CFG 备份完成，文件数: {cfgCount}");
+                    log.Info($"CFG 备份完成，文件数: {cfgCount}");
                 }
                 else
                 {
@@ -124,15 +124,15 @@ namespace WindowsServicePlugin.ServiceManager
                         backupFile = Path.ChangeExtension(backupFile, ".zip");
                         if (File.Exists(backupFile)) File.Delete(backupFile);
                         int packedCount = CreateServiceBackupZip(sourcePath, backupFile);
-                        AddLog($"WinRAR 不可用或执行失败，已回退 ZIP 全量压缩，文件数: {packedCount}");
+                        log.Info($"WinRAR 不可用或执行失败，已回退 ZIP 全量压缩，文件数: {packedCount}");
                     }
                 }
 
-                AddLog($"服务备份完成: {backupFile}");
+                log.Info($"服务备份完成: {backupFile}");
             }
             catch (Exception ex)
             {
-                AddLog($"服务备份失败: {ex.Message}");
+                log.Info($"服务备份失败: {ex.Message}");
             }
         }
 
@@ -159,14 +159,14 @@ namespace WindowsServicePlugin.ServiceManager
                 string basePath = Config.BaseLocation;
                 if (string.IsNullOrEmpty(basePath))
                 {
-                    AddLog("未设置安装根目录，无法恢复");
+                    log.Info("未设置安装根目录，无法恢复");
                     return;
                 }
 
                 StopPackagedServices();
                 stopped = true;
 
-                AddLog($"恢复服务文件夹: {filePath} → {basePath}");
+                log.Info($"恢复服务文件夹: {filePath} → {basePath}");
 
                 // 清空目标并恢复
                 if (Directory.Exists(basePath))
@@ -177,7 +177,7 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     if (!ExtractRarToDirectory(filePath, basePath))
                     {
-                        AddLog("RAR 恢复失败：未检测到可用 WinRAR/RAR 命令行");
+                        log.Info("RAR 恢复失败：未检测到可用 WinRAR/RAR 命令行");
                         return;
                     }
                 }
@@ -185,11 +185,11 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     ZipFile.ExtractToDirectory(filePath, basePath, true);
                 }
-                AddLog($"服务恢复完成");
+                log.Info($"服务恢复完成");
             }
             catch (Exception ex)
             {
-                AddLog($"服务恢复失败: {ex.Message}");
+                log.Info($"服务恢复失败: {ex.Message}");
             }
             finally
             {
@@ -240,7 +240,7 @@ namespace WindowsServicePlugin.ServiceManager
                 }
             }
 
-            AddLog($"服务备份源目录选择: {best}");
+            log.Info($"服务备份源目录选择: {best}");
             return best;
         }
 
@@ -263,7 +263,7 @@ namespace WindowsServicePlugin.ServiceManager
                 }
                 catch (Exception ex)
                 {
-                    AddLog($"跳过文件（打包失败）: {filePath}，原因: {ex.Message}");
+                    log.Info($"跳过文件（打包失败）: {filePath}，原因: {ex.Message}");
                 }
             }
 
@@ -328,20 +328,20 @@ namespace WindowsServicePlugin.ServiceManager
                 string stdOut = p.StandardOutput.ReadToEnd();
                 if (p.ExitCode <= 1 && File.Exists(backupFile))
                 {
-                    AddLog("WinRAR 压缩成功（RAR 格式，相同文件按参考保存，已忽略 log）");
+                    log.Info("WinRAR 压缩成功（RAR 格式，相同文件按参考保存，已忽略 log）");
                     return true;
                 }
 
-                AddLog($"WinRAR 压缩失败，ExitCode={p.ExitCode}");
+                log.Info($"WinRAR 压缩失败，ExitCode={p.ExitCode}");
                 if (!string.IsNullOrWhiteSpace(stdErr))
-                    AddLog($"WinRAR stderr: {stdErr}");
+                    log.Info($"WinRAR stderr: {stdErr}");
                 if (!string.IsNullOrWhiteSpace(stdOut))
-                    AddLog($"WinRAR stdout: {stdOut}");
+                    log.Info($"WinRAR stdout: {stdOut}");
                 return false;
             }
             catch (Exception ex)
             {
-                AddLog($"调用 WinRAR 异常: {ex.Message}");
+                log.Info($"调用 WinRAR 异常: {ex.Message}");
                 return false;
             }
         }
@@ -412,7 +412,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
             catch (Exception ex)
             {
-                AddLog($"RAR 解压异常: {ex.Message}");
+                log.Info($"RAR 解压异常: {ex.Message}");
                 return false;
             }
         }

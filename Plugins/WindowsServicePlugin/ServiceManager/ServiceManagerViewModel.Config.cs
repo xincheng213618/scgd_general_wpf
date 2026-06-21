@@ -15,7 +15,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             try
             {
-                AddLog("开始更新配置...");
+                log.Info("开始更新配置...");
                 string baseLocation = Config.BaseLocation;
                 if (string.IsNullOrEmpty(baseLocation) || !Directory.Exists(baseLocation))
                 {
@@ -25,24 +25,24 @@ namespace WindowsServicePlugin.ServiceManager
 
                 SyncAllConfigs(false);
 
-                AddLog("配置更新完成");
+                log.Info("配置更新完成");
 
                 if (MessageBox.Show("配置已更新，是否重启注册中心服务？", "更新配置", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     _ = Task.Run(async () =>
                     {
                         bool restarted = await ServiceHostWindowsServiceController
-                            .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, AddLog, "注册中心服务")
+                            .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, log.Info, "注册中心服务")
                             .ConfigureAwait(true);
                         if (restarted)
-                            AddLog("注册中心服务已重启");
+                            log.Info("注册中心服务已重启");
                         Application.Current?.Dispatcher.Invoke(() => RefreshAll());
                     });
                 }
             }
             catch (Exception ex)
             {
-                AddLog($"配置更新失败: {ex.Message}");
+                log.Info($"配置更新失败: {ex.Message}");
                 log.Error("配置更新失败", ex);
             }
         }
@@ -56,12 +56,12 @@ namespace WindowsServicePlugin.ServiceManager
                     throw new DirectoryNotFoundException($"安装根目录不存在: {baseLocation}");
 
                 SyncAllConfigs(false);
-                AddLog("已执行安装后配置同步(UpdateConfig)");
+                log.Info("已执行安装后配置同步(UpdateConfig)");
                 Application.Current?.Dispatcher.Invoke(() => RefreshAll());
             }
             catch (Exception ex)
             {
-                AddLog($"安装后配置同步失败: {ex.Message}");
+                log.Info($"安装后配置同步失败: {ex.Message}");
                 throw;
             }
         }
@@ -171,11 +171,11 @@ namespace WindowsServicePlugin.ServiceManager
                         setting.SetAttributeValue("value", value);
                 }
                 doc.Save(configPath);
-                AddLog($"更新 MySQL 配置: {configPath}");
+                log.Info($"更新 MySQL 配置: {configPath}");
             }
             catch (Exception ex)
             {
-                AddLog($"更新 MySQL 配置失败: {ex.Message}");
+                log.Info($"更新 MySQL 配置失败: {ex.Message}");
                 throw;
             }
         }
@@ -207,11 +207,11 @@ namespace WindowsServicePlugin.ServiceManager
                         setting.SetAttributeValue("value", value);
                 }
                 doc.Save(configPath);
-                AddLog($"更新 MQTT 配置: {configPath}");
+                log.Info($"更新 MQTT 配置: {configPath}");
             }
             catch (Exception ex)
             {
-                AddLog($"更新 MQTT 配置失败: {ex.Message}");
+                log.Info($"更新 MQTT 配置失败: {ex.Message}");
                 throw;
             }
         }
@@ -245,11 +245,11 @@ namespace WindowsServicePlugin.ServiceManager
                         setting.SetAttributeValue("value", value);
                 }
                 doc.Save(configPath);
-                AddLog($"更新 WinService 配置: {configPath}");
+                log.Info($"更新 WinService 配置: {configPath}");
             }
             catch (Exception ex)
             {
-                AddLog($"更新 WinService 配置失败: {ex.Message}");
+                log.Info($"更新 WinService 配置失败: {ex.Message}");
                 throw;
             }
         }
@@ -267,7 +267,7 @@ namespace WindowsServicePlugin.ServiceManager
             if (restartRegistrationCenter)
             {
                 ServiceHostWindowsServiceController
-                    .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, AddLog, "注册中心服务")
+                    .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, log.Info, "注册中心服务")
                     .GetAwaiter()
                     .GetResult();
             }
@@ -314,11 +314,11 @@ namespace WindowsServicePlugin.ServiceManager
                 config.Save(filePath);
                 OnPropertyChanged(nameof(LegacyConfigPath));
                 OnPropertyChanged(nameof(HasLegacyConfig));
-                AddLog($"已同步旧版配置: {filePath}");
+                log.Info($"已同步旧版配置: {filePath}");
             }
             catch (Exception ex)
             {
-                AddLog($"同步旧版配置失败: {ex.Message}");
+                log.Info($"同步旧版配置失败: {ex.Message}");
             }
         }
 
@@ -371,7 +371,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
             catch (Exception ex)
             {
-                AddLog($"读取旧版数据库配置失败: {ex.Message}");
+                log.Info($"读取旧版数据库配置失败: {ex.Message}");
                 return null;
             }
         }
@@ -418,14 +418,14 @@ namespace WindowsServicePlugin.ServiceManager
                 SetSetting("MysqlDatabase", targetProfile.Database);
 
                 doc.Save(filePath);
-                AddLog($"已更新旧版 App.config: {filePath}");
+                log.Info($"已更新旧版 App.config: {filePath}");
                 OnPropertyChanged(nameof(LegacyConfigPath));
                 OnPropertyChanged(nameof(HasLegacyConfig));
                 return true;
             }
             catch (Exception ex)
             {
-                AddLog($"更新旧版 App.config 失败: {ex.Message}");
+                log.Info($"更新旧版 App.config 失败: {ex.Message}");
                 return false;
             }
             finally
@@ -488,7 +488,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
             {
-                AddLog("未找到 CVWinSMS.exe，跳过重启旧版管理工具");
+                log.Info("未找到 CVWinSMS.exe，跳过重启旧版管理工具");
                 return;
             }
 
@@ -502,11 +502,11 @@ namespace WindowsServicePlugin.ServiceManager
                     Verb = "runas"
                 };
                 Process.Start(psi);
-                AddLog("已重新启动 CVWinSMS");
+                log.Info("已重新启动 CVWinSMS");
             }
             catch (Exception ex)
             {
-                AddLog($"重新启动 CVWinSMS 失败: {ex.Message}");
+                log.Info($"重新启动 CVWinSMS 失败: {ex.Message}");
             }
         }
 

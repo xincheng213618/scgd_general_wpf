@@ -123,18 +123,10 @@ namespace WindowsServicePlugin.ServiceManager
                 logCallback($"正在通过 ColorVisionServiceHost 后台{label} {name} ({serviceName})...");
                 ServiceHostResponse response = operation switch
                 {
-                    ServiceHostServiceOperation.Start => await ColorVisionServiceHostClient.Default
-                        .StartServiceAsync(serviceName)
-                        .ConfigureAwait(true),
-                    ServiceHostServiceOperation.Stop => await ColorVisionServiceHostClient.Default
-                        .StopServiceAsync(serviceName)
-                        .ConfigureAwait(true),
-                    ServiceHostServiceOperation.Restart => await ColorVisionServiceHostClient.Default
-                        .RestartServiceAsync(serviceName)
-                        .ConfigureAwait(true),
-                    ServiceHostServiceOperation.Terminate => await ColorVisionServiceHostClient.Default
-                        .TerminateServiceAsync(serviceName, executablePath)
-                        .ConfigureAwait(true),
+                    ServiceHostServiceOperation.Start => await ColorVisionServiceHostClient.Default.StartServiceAsync(serviceName).ConfigureAwait(true),
+                    ServiceHostServiceOperation.Stop => await ColorVisionServiceHostClient.Default.StopServiceAsync(serviceName).ConfigureAwait(true),
+                    ServiceHostServiceOperation.Restart => await ColorVisionServiceHostClient.Default.RestartServiceAsync(serviceName).ConfigureAwait(true),
+                    ServiceHostServiceOperation.Terminate => await ColorVisionServiceHostClient.Default.TerminateServiceAsync(serviceName, executablePath).ConfigureAwait(true),
                     _ => throw new InvalidOperationException($"Unsupported service operation: {operation}"),
                 };
 

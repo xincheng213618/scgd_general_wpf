@@ -66,7 +66,7 @@ namespace WindowsServicePlugin.ServiceManager
 
                             SetProgress(progress += 15, "安装 MySQL...");
                             var serviceManager = ServiceManagerViewModel.Instance;
-                            bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipViaServiceHostAsync(MySqlPackagePath, basePath, AddLog).GetAwaiter().GetResult();
+                            bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipViaServiceHostAsync(MySqlPackagePath, basePath, log.Info).GetAwaiter().GetResult();
                             if (!mysqlInstalled)
                             {
                                 throw new InvalidOperationException("MySQL 安装失败");
@@ -103,10 +103,10 @@ namespace WindowsServicePlugin.ServiceManager
                             }
                             CleanExistingServicePackageTargets(ServicePackagePath, basePath);
                             ZipFile.ExtractToDirectory(ServicePackagePath, basePath, true);
-                            AddLog("解压服务包完成");
+                            log.Info("解压服务包完成");
 
                             string installRoot = ResolveServiceInstallRoot(basePath);
-                            AddLog($"服务安装根目录: {installRoot}");
+                            log.Info($"服务安装根目录: {installRoot}");
                             DeleteCommonDllAfterUpdate(installRoot);
 
                             SetProgress(progress += 5, "注册/更新服务...");
@@ -137,17 +137,17 @@ namespace WindowsServicePlugin.ServiceManager
                         }
                         else if (servicesStoppedForInstall)
                         {
-                            AddLog("安装前已停止服务，当前未自动启动（根据配置）");
+                            log.Info("安装前已停止服务，当前未自动启动（根据配置）");
                         }
 
                         CleanupPackDirectory(basePath);
 
                         SetProgress(100, "安装完成");
-                        AddLog("安装完成！");
+                        log.Info("安装完成！");
                     }
                     catch (Exception ex)
                     {
-                        AddLog($"安装失败: {ex.Message}");
+                        log.Info($"安装失败: {ex.Message}");
                         log.Error("安装失败", ex);
                         Application.Current?.Dispatcher.Invoke(() =>
                             MessageBox.Show($"安装失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
@@ -168,12 +168,12 @@ namespace WindowsServicePlugin.ServiceManager
                 if (Directory.Exists(packDir))
                 {
                     Directory.Delete(packDir, true);
-                    AddLog($"安装后已删除pack目录: {packDir}");
+                    log.Info($"安装后已删除pack目录: {packDir}");
                 }
             }
             catch (Exception ex)
             {
-                AddLog($"清理pack目录失败: {ex.Message}");
+                log.Info($"清理pack目录失败: {ex.Message}");
             }
         }
 
@@ -210,9 +210,9 @@ namespace WindowsServicePlugin.ServiceManager
                             InstallMySqlChecked = false;
                             MqttInstallerPath = string.Empty;
                             InstallMqttChecked = false;
-                            AddLog($"已识别完整服务包: {ServicePackagePath}");
+                            log.Info($"已识别完整服务包: {ServicePackagePath}");
                         });
-                        AddLog("安装包解析完成：当前包仅包含 CVWindowsService 服务主体");
+                        log.Info("安装包解析完成：当前包仅包含 CVWindowsService 服务主体");
                         return;
                     }
 
@@ -221,7 +221,7 @@ namespace WindowsServicePlugin.ServiceManager
                         Directory.Delete(packDir, true);
 
                     ZipFile.ExtractToDirectory(zipFile, packDir);
-                    AddLog($"解压完成: {packDir}");
+                    log.Info($"解压完成: {packDir}");
 
                     // 自动识别包内内容，配置路径并勾选
                     string mysqlZip = Path.Combine(packDir, "mysql-5.7.37-winx64.zip");
@@ -240,24 +240,24 @@ namespace WindowsServicePlugin.ServiceManager
 
                         if (hasSvc)
                         {
-                            AddLog($"已应用服务包路径: {ServicePackagePath}");
+                            log.Info($"已应用服务包路径: {ServicePackagePath}");
                         }
                         if (File.Exists(mysqlZip))
                         {
-                            AddLog($"已应用 MySQL 包路径: {MySqlPackagePath}");
+                            log.Info($"已应用 MySQL 包路径: {MySqlPackagePath}");
                         }
                         if (File.Exists(mqttInstaller))
                         {
-                            AddLog($"已应用 MQTT 包路径: {MqttInstallerPath}");
+                            log.Info($"已应用 MQTT 包路径: {MqttInstallerPath}");
                         }
                     });
 
-                    AddLog($"检测到组件: 服务={hasSvc}, MySQL={File.Exists(mysqlZip)}, MQTT={File.Exists(mqttInstaller)}");
-                    AddLog("一键安装包解析完成，pack目录将在安装成功后清理");
+                    log.Info($"检测到组件: 服务={hasSvc}, MySQL={File.Exists(mysqlZip)}, MQTT={File.Exists(mqttInstaller)}");
+                    log.Info("一键安装包解析完成，pack目录将在安装成功后清理");
                 }
                 catch (Exception ex)
                 {
-                    AddLog($"解析一键安装包失败: {ex.Message}");
+                    log.Info($"解析一键安装包失败: {ex.Message}");
                 }
             });
 
@@ -283,7 +283,7 @@ namespace WindowsServicePlugin.ServiceManager
                 if (!string.IsNullOrWhiteSpace(cachedPackage) && IsFullServicePackageZip(cachedPackage))
                 {
                     ApplyDownloadedServicePackage(cachedPackage);
-                    AddLog($"已使用本地缓存服务包: {cachedPackage}");
+                    log.Info($"已使用本地缓存服务包: {cachedPackage}");
                     return;
                 }
 
@@ -292,20 +292,20 @@ namespace WindowsServicePlugin.ServiceManager
                     throw new InvalidOperationException("下载服务不可用");
 
                 string downloadUrl = packageInfo.DownloadUrl;
-                AddLog($"开始下载 CVWindowsService 服务包 {version}: {downloadUrl}");
+                log.Info($"开始下载 CVWindowsService 服务包 {version}: {downloadUrl}");
 
                 Application.Current.Dispatcher.Invoke(service.ShowDownloadWindow);
                 service.Download(downloadUrl, downloadDir, null, filePath =>
                 {
                     if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
                     {
-                        AddLog("CVWindowsService 服务包下载失败");
+                        log.Info("CVWindowsService 服务包下载失败");
                         return;
                     }
 
                     if (!IsFullServicePackageZip(filePath))
                     {
-                        AddLog($"下载完成，但文件不是有效的 CVWindowsService 完整服务包: {filePath}");
+                        log.Info($"下载完成，但文件不是有效的 CVWindowsService 完整服务包: {filePath}");
                         return;
                     }
 
@@ -314,7 +314,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
             catch (Exception ex)
             {
-                AddLog($"下载 CVWindowsService 服务包失败: {ex.Message}");
+                log.Info($"下载 CVWindowsService 服务包失败: {ex.Message}");
                 Application.Current?.Dispatcher.Invoke(() =>
                     MessageBox.Show($"下载 CVWindowsService 服务包失败: {ex.Message}", "下载服务包", MessageBoxButton.OK, MessageBoxImage.Warning));
             }
@@ -330,7 +330,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 ServicePackagePath = packagePath;
                 InstallServiceChecked = true;
-                AddLog($"已应用服务包路径: {ServicePackagePath}");
+                log.Info($"已应用服务包路径: {ServicePackagePath}");
             });
         }
 
@@ -573,7 +573,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void InstallMqttFromExe(string exeFile)
         {
-            ServiceManagerViewModel.Instance.MqttManager.InstallFromExe(exeFile, AddLog);
+            ServiceManagerViewModel.Instance.MqttManager.InstallFromExe(exeFile, log.Info);
             Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
         }
 
@@ -587,16 +587,16 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     if (WinServiceHelper.IsServiceExisted(svc.ServiceName) && WinServiceHelper.IsServiceRunning(svc.ServiceName))
                     {
-                        AddLog($"停止服务: {svc.ServiceName}");
+                        log.Info($"停止服务: {svc.ServiceName}");
                         ServiceHostWindowsServiceController
-                            .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Stop, AddLog, svc.DisplayName)
+                            .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Stop, log.Info, svc.DisplayName)
                             .GetAwaiter()
                             .GetResult();
                     }
                 }
                 catch (Exception ex)
                 {
-                    AddLog($"停止服务失败: {svc.ServiceName}, {ex.Message}");
+                    log.Info($"停止服务失败: {svc.ServiceName}, {ex.Message}");
                 }
                 Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
             }
@@ -608,7 +608,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 try
                 {
-                    AddLog($"关闭旧版服务管理工具进程: CVWinSMS, PID={process.Id}");
+                    log.Info($"关闭旧版服务管理工具进程: CVWinSMS, PID={process.Id}");
                     if (!process.CloseMainWindow())
                     {
                         process.Kill();
@@ -620,7 +620,7 @@ namespace WindowsServicePlugin.ServiceManager
                 }
                 catch (Exception ex)
                 {
-                    AddLog($"关闭 CVWinSMS 进程失败: PID={process.Id}, {ex.Message}");
+                    log.Info($"关闭 CVWinSMS 进程失败: PID={process.Id}, {ex.Message}");
                 }
                 finally
                 {
@@ -638,16 +638,16 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     if (WinServiceHelper.IsServiceExisted(svc.ServiceName))
                     {
-                        AddLog($"启动服务: {svc.ServiceName}");
+                        log.Info($"启动服务: {svc.ServiceName}");
                         ServiceHostWindowsServiceController
-                            .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Start, AddLog, svc.DisplayName)
+                            .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Start, log.Info, svc.DisplayName)
                             .GetAwaiter()
                             .GetResult();
                     }
                 }
                 catch (Exception ex)
                 {
-                    AddLog($"启动服务失败: {svc.ServiceName}, {ex.Message}");
+                    log.Info($"启动服务失败: {svc.ServiceName}, {ex.Message}");
                 }
                 Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
             }
@@ -662,15 +662,15 @@ namespace WindowsServicePlugin.ServiceManager
             serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
             if (serviceManager.MySqlManager.Config.IsInstalled && !serviceManager.MySqlManager.Config.IsRunning)
             {
-                AddLog($"启动 MySQL 服务: {serviceManager.MySqlManager.Helper.ServiceName}");
-                serviceManager.MySqlManager.StartViaServiceHostAsync(AddLog).GetAwaiter().GetResult();
+                log.Info($"启动 MySQL 服务: {serviceManager.MySqlManager.Helper.ServiceName}");
+                serviceManager.MySqlManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult();
             }
 
             serviceManager.MqttManager.RefreshStatus(serviceManager.Services);
             if (serviceManager.MqttManager.Config.IsInstalled && !serviceManager.MqttManager.Config.IsRunning)
             {
-                AddLog($"启动 MQTT 服务: {serviceManager.MqttManager.Config.ServiceName}");
-                serviceManager.MqttManager.StartViaServiceHostAsync(AddLog).GetAwaiter().GetResult();
+                log.Info($"启动 MQTT 服务: {serviceManager.MqttManager.Config.ServiceName}");
+                serviceManager.MqttManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult();
             }
 
             StartPackagedServices();
@@ -688,16 +688,16 @@ namespace WindowsServicePlugin.ServiceManager
                 string exePath = Path.Combine(basePath, svc.FolderName, svc.GetExecutableName());
                 if (!File.Exists(exePath))
                 {
-                    AddLog($"跳过服务（未找到可执行文件）: {svc.ServiceName}");
+                    log.Info($"跳过服务（未找到可执行文件）: {svc.ServiceName}");
                     continue;
                 }
 
                 bool ok = ServiceHostWindowsServiceController
-                    .InstallAsync(svc.ServiceName, exePath, AddLog, svc.DisplayName, startAfterInstall: false)
+                    .InstallAsync(svc.ServiceName, exePath, log.Info, svc.DisplayName, startAfterInstall: false)
                     .GetAwaiter()
                     .GetResult();
                 Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
-                AddLog(ok
+                log.Info(ok
                     ? $"服务安装成功: {svc.ServiceName}"
                     : $"服务安装失败: {svc.ServiceName}");
             }
@@ -719,14 +719,14 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
                 {
-                    AddLog($"跳过异常安装包路径: {name}");
+                    log.Info($"跳过异常安装包路径: {name}");
                     continue;
                 }
 
                 string targetPath = Path.GetFullPath(Path.Combine(fullBasePath, name));
                 if (!IsPathInsideDirectory(targetPath, fullBasePath))
                 {
-                    AddLog($"跳过安装根目录外路径: {targetPath}");
+                    log.Info($"跳过安装根目录外路径: {targetPath}");
                     continue;
                 }
 
@@ -735,12 +735,12 @@ namespace WindowsServicePlugin.ServiceManager
                     if (Directory.Exists(targetPath))
                     {
                         DeleteExistingPathWithRetry(targetPath);
-                        AddLog($"已清理旧目录: {targetPath}");
+                        log.Info($"已清理旧目录: {targetPath}");
                     }
                     else if (File.Exists(targetPath))
                     {
                         DeleteExistingPathWithRetry(targetPath);
-                        AddLog($"已清理旧文件: {targetPath}");
+                        log.Info($"已清理旧文件: {targetPath}");
                     }
                 }
                 catch (Exception ex)
@@ -776,7 +776,7 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     if (attempt == 1 || attempt % 5 == 0)
                     {
-                        AddLog($"旧服务文件仍被占用，等待释放后重试({attempt}/{maxAttempts}): {targetPath}");
+                        log.Info($"旧服务文件仍被占用，等待释放后重试({attempt}/{maxAttempts}): {targetPath}");
                     }
 
                     System.Threading.Thread.Sleep(retryDelay);
@@ -879,7 +879,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private bool ExecuteColorVisionAllSql(string basePath)
         {
-            return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, AddLog);
+            return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, log.Info);
         }
 
         private static bool IsLogPath(string fullPath, string rootPath)
@@ -908,25 +908,25 @@ namespace WindowsServicePlugin.ServiceManager
                     {
                         if (!Directory.Exists(target))
                         {
-                            AddLog($"CommonDll 复制目标目录不存在，跳过: {target}");
+                            log.Info($"CommonDll 复制目标目录不存在，跳过: {target}");
                             continue;
                         }
 
                         int copiedCount = CopyDirectoryRecursive(commonDllDir, target);
-                        AddLog($"已复制 CommonDll 到: {target}，文件数: {copiedCount}");
+                        log.Info($"已复制 CommonDll 到: {target}，文件数: {copiedCount}");
                     }
 
                     Directory.Delete(commonDllDir, true);
-                    AddLog("安装后已删除 CommonDll 目录");
+                    log.Info("安装后已删除 CommonDll 目录");
                 }
                 else
                 {
-                    AddLog($"未找到 CommonDll 目录: {commonDllDir}");
+                    log.Info($"未找到 CommonDll 目录: {commonDllDir}");
                 }
             }
             catch (Exception ex)
             {
-                AddLog($"删除 CommonDll 失败: {ex.Message}");
+                log.Info($"删除 CommonDll 失败: {ex.Message}");
             }
         }
 

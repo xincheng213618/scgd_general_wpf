@@ -30,28 +30,14 @@ namespace WindowsServicePlugin.ServiceManager
                 ?? string.Empty;
         }
 
-        public bool Start(Action<string> logCallback)
-        {
-            return StartViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
-        }
-
-        public bool Stop(Action<string> logCallback)
-        {
-            return StopViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
-        }
-
         public async Task<bool> StartViaServiceHostAsync(Action<string> logCallback)
         {
-            return await ServiceHostWindowsServiceController
-                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MQTT")
-                .ConfigureAwait(true);
+            return await ServiceHostWindowsServiceController.ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MQTT").ConfigureAwait(true);
         }
 
         public async Task<bool> StopViaServiceHostAsync(Action<string> logCallback)
         {
-            return await ServiceHostWindowsServiceController
-                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MQTT")
-                .ConfigureAwait(true);
+            return await ServiceHostWindowsServiceController.ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MQTT").ConfigureAwait(true);
         }
 
         public void InstallFromExe(string exeFile, Action<string> logCallback)
@@ -65,7 +51,7 @@ namespace WindowsServicePlugin.ServiceManager
 
             using var process = Process.Start(startInfo);
             process?.WaitForExit();
-            Start(logCallback);
+            StartViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
         }
 
         private void MigrateFromLegacySettings()

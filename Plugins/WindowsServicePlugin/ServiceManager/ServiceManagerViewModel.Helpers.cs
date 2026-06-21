@@ -15,7 +15,7 @@ namespace WindowsServicePlugin.ServiceManager
             string? filePath = GetLegacyAppConfigPath();
             if (string.IsNullOrWhiteSpace(filePath))
             {
-                AddLog("旧版 App.config 不存在");
+                log.Info("旧版 App.config 不存在");
                 return;
             }
             PlatformHelper.OpenFolderAndSelectFile(filePath);
@@ -31,7 +31,7 @@ namespace WindowsServicePlugin.ServiceManager
                 : (!string.IsNullOrWhiteSpace(Config.BaseLocation) ? Path.Combine(Config.BaseLocation, entry.FolderName) : null);
             if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
             {
-                AddLog($"目录不存在: {entry.DisplayName}");
+                log.Info($"目录不存在: {entry.DisplayName}");
                 return;
             }
             PlatformHelper.OpenFolder(path);
@@ -47,14 +47,14 @@ namespace WindowsServicePlugin.ServiceManager
                 : (!string.IsNullOrWhiteSpace(Config.BaseLocation) ? Path.Combine(Config.BaseLocation, entry.FolderName) : null);
             if (string.IsNullOrWhiteSpace(serviceDir))
             {
-                AddLog($"无法定位 {entry.DisplayName} 的目录");
+                log.Info($"无法定位 {entry.DisplayName} 的目录");
                 return;
             }
 
             string filePath = Path.Combine(serviceDir, "cfg", fileName);
             if (!File.Exists(filePath))
             {
-                AddLog($"配置文件不存在: {filePath}");
+                log.Info($"配置文件不存在: {filePath}");
                 return;
             }
             PlatformHelper.OpenFolderAndSelectFile(filePath);

@@ -11,13 +11,7 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, $"正在通过后台服务{label} {entry.ServiceName}...");
             try
             {
-                await ServiceHostWindowsServiceController.ExecuteAsync(
-                        entry.ServiceName,
-                        operation,
-                        AddLog,
-                        entry.DisplayName,
-                        entry.ExePath)
-                    .ConfigureAwait(true);
+                await ServiceHostWindowsServiceController.ExecuteAsync(entry.ServiceName, operation, log.Info, entry.DisplayName, entry.ExePath).ConfigureAwait(true);
             }
             finally
             {
@@ -31,8 +25,8 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在通过后台服务启动 MQTT...");
             try
             {
-                bool ok = await MqttManager.StartViaServiceHostAsync(AddLog).ConfigureAwait(true);
-                AddLog(ok ? "MQTT 服务启动完成" : "MQTT 服务启动失败");
+                bool ok = await MqttManager.StartViaServiceHostAsync(log.Info).ConfigureAwait(true);
+                log.Info(ok ? "MQTT 服务启动完成" : "MQTT 服务启动失败");
             }
             finally
             {
@@ -46,8 +40,8 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在通过后台服务停止 MQTT...");
             try
             {
-                bool ok = await MqttManager.StopViaServiceHostAsync(AddLog).ConfigureAwait(true);
-                AddLog(ok ? "MQTT 服务停止完成" : "MQTT 服务停止失败");
+                bool ok = await MqttManager.StopViaServiceHostAsync(log.Info).ConfigureAwait(true);
+                log.Info(ok ? "MQTT 服务停止完成" : "MQTT 服务停止失败");
             }
             finally
             {

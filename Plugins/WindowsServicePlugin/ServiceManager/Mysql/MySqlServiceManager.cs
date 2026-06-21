@@ -36,40 +36,6 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        public async Task<bool> InstallFromZipAsync(string zipFilePath, string baseLocation, Action<string> logCallback)
-        {
-            string targetDir = Directory.GetParent(baseLocation)?.FullName ?? baseLocation;
-            var credentials = CreateFreshInstallCredentials();
-
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
-            bool result = await Helper.InstallFromZipAsync(
-                zipFilePath,
-                targetDir,
-                logCallback,
-                credentials.RootPassword,
-                credentials.AppUser,
-                credentials.AppPassword,
-                credentials.Database);
-
-            if (!result)
-            {
-                return false;
-            }
-
-            ApplyInstalledCredentials(
-                credentials.RootPassword,
-                credentials.AppUser,
-                credentials.AppPassword,
-                credentials.Database,
-                Helper.BasePath);
-
-            logCallback($"MySQL root 密码: {credentials.RootPassword}");
-            logCallback($"MySQL 业务账号: {credentials.AppUser}");
-            logCallback($"MySQL 业务密码: {credentials.AppPassword}");
-            logCallback("MySQL 账号信息已保存到 MySqlServiceConfig");
-            return true;
-        }
-
         public async Task<bool> InstallFromZipViaServiceHostAsync(string zipFilePath, string baseLocation, Action<string> logCallback)
         {
             string targetDir = Directory.GetParent(baseLocation)?.FullName ?? baseLocation;
@@ -143,7 +109,6 @@ namespace WindowsServicePlugin.ServiceManager
             Config.AppUser = appUser;
             Config.AppPassword = appPassword;
             Config.Database = database;
-            Config.Host = Config.Host;
             Config.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
 
             if (!string.IsNullOrWhiteSpace(installedBasePath))
@@ -191,75 +156,18 @@ namespace WindowsServicePlugin.ServiceManager
             RememberInstallBasePath(exePath);
         }
 
-        public bool Start(Action<string> logCallback)
-        {
-            return StartViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
-        }
-
-        public bool RegisterExistingService(Action<string> logCallback)
-        {
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
-            if (!ResolveExistingMySqlBasePath(logCallback))
-            {
-                return false;
-            }
-
-            bool ok = Helper.RegisterExistingService(logCallback);
-            if (ok)
-            {
-                Config.ServiceName = Helper.ServiceName;
-                Config.InstallBasePath = Helper.BasePath;
-                Config.ExePath = Helper.MysqldExePath;
-                Config.IsInstalled = Helper.IsInstalled;
-                Config.IsRunning = Helper.IsRunning;
-                Config.Status = Config.IsRunning ? "运行中" : (Config.IsInstalled ? "已停止" : "未安装");
-                SaveConfig();
-            }
-            return ok;
-        }
-
         public async Task<bool> RegisterExistingServiceViaServiceHostAsync(Action<string> logCallback)
         {
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
-            if (!ResolveSavedMySqlBasePath(logCallback))
-            {
-                return false;
-            }
-
-            string mysqldExePath = Helper.MysqldExePath;
-            if (!File.Exists(mysqldExePath))
-            {
-                logCallback($"mysqld.exe 不存在: {mysqldExePath}");
-                return false;
-            }
-
-            try
-            {
-                logCallback("正在通过 ColorVisionServiceHost 后台注册 MySQL 服务...");
-                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
-                    .RepairMySqlServiceAsync(Helper.ServiceName, mysqldExePath)
-                    .ConfigureAwait(true);
-
-                if (!response.Success)
-                {
-                    LogServiceHostFailure(response, logCallback);
-                    return false;
-                }
-
-                logCallback($"后台服务执行成功: {response.Message}");
-                RefreshConfigFromHelper();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
-                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
-                return false;
-            }
+            return await RepairMySqlViaServiceHostAsync("正在通过 ColorVisionServiceHost 后台注册 MySQL 服务...", logCallback).ConfigureAwait(true);
         }
 
         public async Task<bool> RepairOrRestartViaServiceHostAsync(Action<string> logCallback)
         {
+            return await RepairMySqlViaServiceHostAsync("正在通过 ColorVisionServiceHost 后台修复/重启 MySQL 服务...", logCallback).ConfigureAwait(true);
+        }
+
+        private async Task<bool> RepairMySqlViaServiceHostAsync(string startMessage, Action<string> logCallback)
+        {
             Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
             if (!ResolveSavedMySqlBasePath(logCallback))
             {
@@ -275,10 +183,8 @@ namespace WindowsServicePlugin.ServiceManager
 
             try
             {
-                logCallback("正在通过 ColorVisionServiceHost 后台修复/重启 MySQL 服务...");
-                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
-                    .RepairMySqlServiceAsync(Helper.ServiceName, mysqldExePath)
-                    .ConfigureAwait(true);
+                logCallback(startMessage);
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default.RepairMySqlServiceAsync(Helper.ServiceName, mysqldExePath).ConfigureAwait(true);
 
                 if (!response.Success)
                 {
@@ -300,9 +206,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public async Task<bool> StartViaServiceHostAsync(Action<string> logCallback)
         {
-            bool ok = await ServiceHostWindowsServiceController
-                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MySQL")
-                .ConfigureAwait(true);
+            bool ok = await ServiceHostWindowsServiceController.ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MySQL").ConfigureAwait(true);
             if (ok)
                 RefreshConfigFromHelper();
 
@@ -311,9 +215,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public async Task<bool> StopViaServiceHostAsync(Action<string> logCallback)
         {
-            bool ok = await ServiceHostWindowsServiceController
-                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MySQL")
-                .ConfigureAwait(true);
+            bool ok = await ServiceHostWindowsServiceController.ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MySQL").ConfigureAwait(true);
             if (ok)
                 RefreshConfigFromHelper();
 
@@ -322,9 +224,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public async Task<bool> UninstallViaServiceHostAsync(Action<string> logCallback)
         {
-            bool ok = await ServiceHostWindowsServiceController
-                .UninstallAsync(Config.ServiceName, logCallback, "MySQL")
-                .ConfigureAwait(true);
+            bool ok = await ServiceHostWindowsServiceController.UninstallAsync(Config.ServiceName, logCallback, "MySQL").ConfigureAwait(true);
             if (ok)
             {
                 Config.IsInstalled = false;
@@ -336,25 +236,6 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             return ok;
-        }
-
-        public bool Stop(Action<string> logCallback)
-        {
-            return StopViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
-        }
-
-        public bool Uninstall(Action<string> logCallback)
-        {
-            bool result = Helper.Uninstall(logCallback);
-            if (result)
-            {
-                Config.IsInstalled = false;
-                Config.IsRunning = false;
-                Config.Status = "未安装";
-                Config.ExePath = string.Empty;
-                Config.Version = string.Empty;
-            }
-            return result;
         }
 
         public bool BackupDatabase(Action<string> logCallback)
@@ -474,9 +355,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 if (serviceExists)
                 {
-                    bool stopped = await ServiceHostWindowsServiceController
-                        .ExecuteAsync(Helper.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MySQL")
-                        .ConfigureAwait(false);
+                    bool stopped = await ServiceHostWindowsServiceController.ExecuteAsync(Helper.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MySQL").ConfigureAwait(false);
                     if (!stopped && Helper.IsRunning)
                     {
                         logCallback("后台停止 MySQL 服务失败，无法继续重置 root 密码");
@@ -501,9 +380,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 if (serviceExists && shouldRestart)
                 {
-                    await ServiceHostWindowsServiceController
-                        .ExecuteAsync(Helper.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MySQL")
-                        .ConfigureAwait(false);
+                    await ServiceHostWindowsServiceController.ExecuteAsync(Helper.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MySQL").ConfigureAwait(false);
                 }
             }
         }
@@ -557,41 +434,6 @@ namespace WindowsServicePlugin.ServiceManager
             SaveConfig();
         }
 
-        private bool ResolveExistingMySqlBasePath(Action<string> logCallback)
-        {
-            if (!string.IsNullOrWhiteSpace(Config.ExePath) && File.Exists(Config.ExePath))
-            {
-                SetManualBasePath(Config.ExePath);
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(Config.InstallBasePath)
-                && File.Exists(Path.Combine(Config.InstallBasePath, "bin", "mysqld.exe")))
-            {
-                Helper.BasePath = Config.InstallBasePath;
-                return true;
-            }
-
-            if (Helper.DetectFromRegistry())
-            {
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(ServiceManagerConfig.Instance.BaseLocation)
-                && Helper.DetectFromServicePath(ServiceManagerConfig.Instance.BaseLocation))
-            {
-                return true;
-            }
-
-            if (Directory.Exists(@"D:\CVService") && Helper.DetectFromServicePath(@"D:\CVService"))
-            {
-                return true;
-            }
-
-            logCallback("未找到已有 MySQL 文件，请先浏览选择 mysqld.exe 或检查安装目录");
-            return false;
-        }
-
         private bool ResolveSavedMySqlBasePath(Action<string> logCallback)
         {
             if (!string.IsNullOrWhiteSpace(Config.InstallBasePath)
@@ -604,7 +446,6 @@ namespace WindowsServicePlugin.ServiceManager
             if (!string.IsNullOrWhiteSpace(Config.ExePath) && File.Exists(Config.ExePath))
             {
                 RememberInstallBasePath(Config.ExePath);
-                Helper.BasePath = Directory.GetParent(Config.ExePath)?.Parent?.FullName ?? Helper.BasePath;
                 return true;
             }
 
@@ -845,7 +686,6 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (changed)
             {
-                Config.Host = Config.Host;
                 Config.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
                 SaveConfig();
             }

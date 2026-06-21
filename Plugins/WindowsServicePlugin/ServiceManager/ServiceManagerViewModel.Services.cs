@@ -16,7 +16,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
             catch (Exception ex)
             {
-                AddLog($"{entry.DisplayName} 安装失败: {ex.Message}");
+                log.Info($"{entry.DisplayName} 安装失败: {ex.Message}");
             }
             finally
             {
@@ -33,13 +33,11 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, $"正在卸载 {entry.DisplayName}...");
             try
             {
-                await ServiceHostWindowsServiceController
-                    .UninstallAsync(entry.ServiceName, AddLog, entry.DisplayName)
-                    .ConfigureAwait(true);
+                await ServiceHostWindowsServiceController.UninstallAsync(entry.ServiceName, log.Info, entry.DisplayName).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
-                AddLog($"{entry.DisplayName} 卸载失败: {ex.Message}");
+                log.Info($"{entry.DisplayName} 卸载失败: {ex.Message}");
             }
             finally
             {
@@ -52,14 +50,12 @@ namespace WindowsServicePlugin.ServiceManager
         {
             if (!TryResolveServiceExecutable(entry, out string executablePath))
             {
-                AddLog($"找不到 {entry.DisplayName} 可执行文件，无法安装服务");
+                log.Info($"找不到 {entry.DisplayName} 可执行文件，无法安装服务");
                 return false;
             }
 
             entry.ExePath = executablePath;
-            return await ServiceHostWindowsServiceController
-                .InstallAsync(entry.ServiceName, executablePath, AddLog, entry.DisplayName, startAfterInstall)
-                .ConfigureAwait(true);
+            return await ServiceHostWindowsServiceController.InstallAsync(entry.ServiceName, executablePath, log.Info, entry.DisplayName, startAfterInstall).ConfigureAwait(true);
         }
 
         private bool HasResolvableServiceExecutable(ServiceEntry entry)

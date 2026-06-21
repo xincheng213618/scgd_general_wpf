@@ -1,4 +1,3 @@
-using ColorVision.Common.Utilities;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager
@@ -27,16 +26,16 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在安装 MySQL...");
             try
             {
-                bool result = await MySqlManager.InstallFromZipViaServiceHostAsync(dlg.FileName, basePath, AddLog);
+                bool result = await MySqlManager.InstallFromZipViaServiceHostAsync(dlg.FileName, basePath, log.Info);
                 if (result)
                 {
-                    AddLog("MySQL 安装成功");
+                    log.Info("MySQL 安装成功");
                     SyncAllConfigs(false);
                     RefreshAll();
                 }
                 else
                 {
-                    AddLog("MySQL 安装失败");
+                    log.Info("MySQL 安装失败");
                 }
             }
             finally
@@ -47,7 +46,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void DoMySqlBackup()
         {
-            MySqlManager.BackupDatabase(AddLog);
+            MySqlManager.BackupDatabase(log.Info);
         }
 
         private async Task RegisterExistingMySqlServiceAsync()
@@ -55,15 +54,15 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在通过后台服务注册 MySQL 服务...");
             try
             {
-                bool ok = await MySqlManager.RegisterExistingServiceViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                bool ok = await MySqlManager.RegisterExistingServiceViaServiceHostAsync(log.Info).ConfigureAwait(true);
                 if (ok)
                 {
-                    AddLog("MySQL 服务注册完成");
+                    log.Info("MySQL 服务注册完成");
                     SyncLegacyAppConfig();
                 }
                 else
                 {
-                    AddLog("MySQL 服务注册失败");
+                    log.Info("MySQL 服务注册失败");
                 }
             }
             finally
@@ -78,15 +77,15 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在通过后台服务修复 MySQL...");
             try
             {
-                bool ok = await MySqlManager.RepairOrRestartViaServiceHostAsync(AddLog).ConfigureAwait(true);
+                bool ok = await MySqlManager.RepairOrRestartViaServiceHostAsync(log.Info).ConfigureAwait(true);
                 if (ok)
                 {
-                    AddLog("MySQL 后台修复/重启完成");
+                    log.Info("MySQL 后台修复/重启完成");
                     SyncLegacyAppConfig();
                 }
                 else
                 {
-                    AddLog("MySQL 后台修复/重启失败");
+                    log.Info("MySQL 后台修复/重启失败");
                 }
             }
             finally
@@ -101,8 +100,8 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在通过后台服务启动 MySQL...");
             try
             {
-                bool ok = await MySqlManager.StartViaServiceHostAsync(AddLog).ConfigureAwait(true);
-                AddLog(ok ? "MySQL 服务启动完成" : "MySQL 服务启动失败");
+                bool ok = await MySqlManager.StartViaServiceHostAsync(log.Info).ConfigureAwait(true);
+                log.Info(ok ? "MySQL 服务启动完成" : "MySQL 服务启动失败");
             }
             finally
             {
@@ -116,8 +115,8 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在通过后台服务停止 MySQL...");
             try
             {
-                bool ok = await MySqlManager.StopViaServiceHostAsync(AddLog).ConfigureAwait(true);
-                AddLog(ok ? "MySQL 服务停止完成" : "MySQL 服务停止失败");
+                bool ok = await MySqlManager.StopViaServiceHostAsync(log.Info).ConfigureAwait(true);
+                log.Info(ok ? "MySQL 服务停止完成" : "MySQL 服务停止失败");
             }
             finally
             {
@@ -131,8 +130,8 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在通过后台服务卸载 MySQL...");
             try
             {
-                bool ok = await MySqlManager.UninstallViaServiceHostAsync(AddLog).ConfigureAwait(true);
-                AddLog(ok ? "MySQL 服务卸载完成" : "MySQL 服务卸载失败");
+                bool ok = await MySqlManager.UninstallViaServiceHostAsync(log.Info).ConfigureAwait(true);
+                log.Info(ok ? "MySQL 服务卸载完成" : "MySQL 服务卸载失败");
             }
             finally
             {
@@ -157,7 +156,7 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (string.IsNullOrEmpty(filePath)) return;
 
-            MySqlManager.RestoreDatabase(filePath, AddLog);
+            MySqlManager.RestoreDatabase(filePath, log.Info);
         }
 
         private void DoRunSqlScript()
@@ -176,7 +175,7 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (string.IsNullOrEmpty(filePath)) return;
 
-            MySqlManager.ExecuteSqlFile(filePath, AddLog);
+            MySqlManager.ExecuteSqlFile(filePath, log.Info);
         }
 
         private async Task ResetDatabaseAsync()
@@ -206,16 +205,16 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在重置数据库...");
             try
             {
-                bool ok = await Task.Run(() => MySqlManager.ResetDatabaseFromServiceSql(AddLog));
+                bool ok = await Task.Run(() => MySqlManager.ResetDatabaseFromServiceSql(log.Info));
                 if (ok)
                 {
-                    AddLog("数据库重置完成");
+                    log.Info("数据库重置完成");
                     SyncManagedServiceConfigs();
                     SyncLegacyAppConfig();
                 }
                 else
                 {
-                    AddLog("数据库重置失败");
+                    log.Info("数据库重置失败");
                 }
             }
             finally
@@ -227,7 +226,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void DoSetRootPassword()
         {
-            if (MySqlManager.SetRootPassword(AddLog))
+            if (MySqlManager.SetRootPassword(log.Info))
             {
                 SyncLegacyAppConfig();
                 RefreshMySqlStatus();
@@ -236,14 +235,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void DoForceResetRootPassword()
         {
-            if (!Tool.IsAdministrator())
-            {
-                AddLog("重置 root 密码需要管理员权限，请使用管理员身份启动程序后重试");
-                MessageBox.Show("重置 root 密码需要管理员权限，请使用管理员身份启动程序后重试。", "需要管理员权限", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (MySqlManager.ForceResetRootPassword(AddLog))
+            if (MySqlManager.ForceResetRootPassword(log.Info))
             {
                 SyncLegacyAppConfig();
                 RefreshMySqlStatus();
@@ -252,11 +244,11 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void DoCreateOrUpdateUser()
         {
-            if (MySqlManager.CreateOrUpdateUser(AddLog))
+            if (MySqlManager.CreateOrUpdateUser(log.Info))
             {
                 SyncLegacyAppConfig();
                 SyncAllConfigs(false);
-                AddLog("业务用户配置已更新到 MySqlServiceConfig");
+                log.Info("业务用户配置已更新到 MySqlServiceConfig");
             }
         }
 
@@ -279,8 +271,8 @@ namespace WindowsServicePlugin.ServiceManager
                     && !string.IsNullOrWhiteSpace(legacy.RootPassword)
                     && MySqlManager.TestConnection(legacy.Host, legacy.Port, "root", legacy.RootPassword, null);
 
-                AddLog($"当前配置业务账号校验: {(currentAppOk ? "成功" : "失败")}");
-                AddLog($"旧版配置业务账号校验: {(legacyAppOk ? "成功" : "失败")}");
+                log.Info($"当前配置业务账号校验: {(currentAppOk ? "成功" : "失败")}");
+                log.Info($"旧版配置业务账号校验: {(legacyAppOk ? "成功" : "失败")}");
 
                 if (currentAppOk && !legacyAppOk)
                 {
@@ -329,31 +321,25 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     MySqlManager.UpdateStoredCredentials(current.Host, current.Port, legacy.RootPassword, current.AppUser, current.AppPassword, current.Database);
                     currentRootOk = true;
-                    AddLog("已采用旧版配置中的 root 密码进行重置");
+                    log.Info("已采用旧版配置中的 root 密码进行重置");
                 }
 
                 if (!currentRootOk)
                 {
-                    if (!Tool.IsAdministrator())
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "业务账号重置需要 root 密码；当前未匹配到可用 root 密码，且强制重置 root 需要管理员权限。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-
                     if (string.IsNullOrWhiteSpace(current.RootNewPassword))
                     {
                         current.RootNewPassword = MySqlServiceHelper.GenerateRandomPassword();
-                        AddLog($"已生成新的 root 密码: {current.RootNewPassword}");
+                        log.Info($"已生成新的 root 密码: {current.RootNewPassword}");
                     }
 
-                    if (!MySqlManager.ForceResetRootPassword(AddLog))
+                    if (!MySqlManager.ForceResetRootPassword(log.Info))
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), "强制重置 root 密码失败，未能完成业务账号修复。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
                 }
 
-                if (!MySqlManager.CreateOrUpdateUser(AddLog))
+                if (!MySqlManager.CreateOrUpdateUser(log.Info))
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "业务账号重置失败，请检查 root 密码和 MySQL 服务状态。", "数据库配置检查", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
@@ -384,12 +370,12 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void DoDeleteUser()
         {
-            MySqlManager.DeleteUser(AddLog);
+            MySqlManager.DeleteUser(log.Info);
         }
 
         private void GenerateRandomRootPassword()
         {
-            MySqlManager.GenerateRandomRootPassword(AddLog);
+            MySqlManager.GenerateRandomRootPassword(log.Info);
         }
 
         private void BrowseMySqlPath()

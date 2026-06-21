@@ -18,7 +18,7 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceManagerViewModel : ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ServiceManagerViewModel));
+        private readonly ILog log = LogManager.GetLogger(typeof(ServiceManagerViewModel));
 
         public static ServiceManagerViewModel Instance { get; } = new ServiceManagerViewModel();
 
@@ -30,8 +30,6 @@ namespace WindowsServicePlugin.ServiceManager
         public MySqlServiceManager MySqlManager { get; } = new MySqlServiceManager();
 
         public MqttServiceManager MqttManager { get; } = new MqttServiceManager();
-
-        public MySqlServiceHelper MySqlHelper => MySqlManager.Helper;
 
         public string CurrentVersion { get => _CurrentVersion; set { _CurrentVersion = value; OnPropertyChanged(); } }
         private string _CurrentVersion = string.Empty;
@@ -206,12 +204,6 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 MqttManager.RefreshStatus(Services);
             });
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as an instance helper for partial view-model operation code.")]
-        public void AddLog(string message)
-        {
-            log.Info(message);
         }
 
         private void SetBusy(bool busy, string text = "")
