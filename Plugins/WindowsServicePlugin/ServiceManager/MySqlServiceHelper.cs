@@ -21,7 +21,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         public string MysqldExePath => Path.Combine(BasePath, "bin", "mysqld.exe");
         public string MysqlExePath => Path.Combine(BasePath, "bin", "mysql.exe");
-        public string MysqladminExePath => Path.Combine(BasePath, "bin", "mysqladmin.exe");
         public string MysqldumpExePath => Path.Combine(BasePath, "bin", "mysqldump.exe");
         public string MyIniPath => Path.Combine(BasePath, "my.ini");
 
@@ -46,17 +45,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         public bool IsInstalled => WinServiceHelper.IsServiceExisted(ServiceName);
         public bool IsRunning => WinServiceHelper.IsServiceRunning(ServiceName);
-
-        /// <summary>
-        /// 使用 mysqladmin 设置/更改 root 密码（参考 CVWinSMS.doMysqlRootPwdset）
-        /// </summary>
-        public bool SetRootPasswordViaAdmin(string oldPassword, string newPassword)
-        {
-            // mysqladmin -P {port} -u root [-p"old"] password "new"
-            string oldPart = string.IsNullOrEmpty(oldPassword) ? "" : $" -p\"{EscapeSqlLiteral(oldPassword)}\"";
-            string args = $"-P {Port} -u root{oldPart} password \"{EscapeSqlLiteral(newPassword)}\"";
-            return RunProcess(MysqladminExePath, args, Path.GetDirectoryName(MysqladminExePath)!);
-        }
 
         /// <summary>
         /// 创建应用用户并授权
@@ -87,31 +75,6 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 logCallback($"创建用户失败: {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 删除业务用户（localhost 和 % 两个主机）
-        /// 参考 CVWinSMS.CVMysqlServiceManager.DoMysqlDelUser
-        /// </summary>
-        public bool DeleteAppUser(string rootPwd, string userName, Action<string> logCallback)
-        {
-            try
-            {
-                logCallback($"正在删除用户 {userName}...");
-                string safeUser = EscapeSqlLiteral(userName);
-                string sql = $"DROP USER IF EXISTS '{safeUser}'@'localhost'; DROP USER IF EXISTS '{safeUser}'@'%'; FLUSH PRIVILEGES;";
-                string args = string.IsNullOrEmpty(rootPwd)
-                    ? $"-P {Port} -u root -e \"{sql}\""
-                    : $"-P {Port} -u root -p\"{EscapeSqlLiteral(rootPwd)}\" -e \"{sql}\"";
-                bool ok = RunProcess(MysqlExePath, args, Path.GetDirectoryName(MysqlExePath)!);
-                logCallback(ok ? $"用户 {userName} 已删除" : $"用户 {userName} 删除失败");
-                return ok;
-            }
-            catch (Exception ex)
-            {
-                logCallback($"删除用户失败: {ex.Message}");
                 return false;
             }
         }
@@ -548,25 +511,6 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 logCallback($"还原失败: {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 通过 mysqladmin 更新 root 密码（MySQL 5.7 兼容）
-        /// </summary>
-        public bool TrySetRootPassword(string oldPassword, string newPassword, Action<string> logCallback)
-        {
-            try
-            {
-                logCallback("正在设置 root 密码...");
-                bool ok = SetRootPasswordViaAdmin(oldPassword, newPassword);
-                logCallback(ok ? "root 密码设置成功" : "root 密码设置失败");
-                return ok;
-            }
-            catch (Exception ex)
-            {
-                logCallback($"设置 root 密码失败: {ex.Message}");
                 return false;
             }
         }

@@ -104,28 +104,18 @@ namespace WindowsServicePlugin.ServiceManager
                 string backupDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "ServiceBackup");
                 Directory.CreateDirectory(backupDir);
                 string versionTag = GetServiceVersionTag(sourcePath);
-                string backupFile = BackupServiceCfgOnly
-                    ? Path.Combine(backupDir, $"CVWindowsService_cfg_{versionTag}_{timestamp}.zip")
-                    : Path.Combine(backupDir, $"CVWindowsService_{versionTag}_{timestamp}.rar");
+                string backupFile = Path.Combine(backupDir, $"CVWindowsService_{versionTag}_{timestamp}.rar");
 
                 log.Info($"备份服务文件夹: {sourcePath} → {backupFile}");
                 if (File.Exists(backupFile)) File.Delete(backupFile);
 
-                if (BackupServiceCfgOnly)
+                bool winRarOk = TryCreateServiceBackupWithWinRar(sourcePath, backupFile);
+                if (!winRarOk)
                 {
-                    int cfgCount = CreateCfgOnlyBackupZip(sourcePath, backupFile);
-                    log.Info($"CFG 备份完成，文件数: {cfgCount}");
-                }
-                else
-                {
-                    bool winRarOk = TryCreateServiceBackupWithWinRar(sourcePath, backupFile);
-                    if (!winRarOk)
-                    {
-                        backupFile = Path.ChangeExtension(backupFile, ".zip");
-                        if (File.Exists(backupFile)) File.Delete(backupFile);
-                        int packedCount = CreateServiceBackupZip(sourcePath, backupFile);
-                        log.Info($"WinRAR 不可用或执行失败，已回退 ZIP 全量压缩，文件数: {packedCount}");
-                    }
+                    backupFile = Path.ChangeExtension(backupFile, ".zip");
+                    if (File.Exists(backupFile)) File.Delete(backupFile);
+                    int packedCount = CreateServiceBackupZip(sourcePath, backupFile);
+                    log.Info($"WinRAR 不可用或执行失败，已回退 ZIP 全量压缩，文件数: {packedCount}");
                 }
 
                 log.Info($"服务备份完成: {backupFile}");
@@ -264,35 +254,6 @@ namespace WindowsServicePlugin.ServiceManager
                 catch (Exception ex)
                 {
                     log.Info($"跳过文件（打包失败）: {filePath}，原因: {ex.Message}");
-                }
-            }
-
-            return packed;
-        }
-
-        private static int CreateCfgOnlyBackupZip(string sourceRoot, string zipPath)
-        {
-            int packed = 0;
-            using var fs = new FileStream(zipPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-            using var archive = new ZipArchive(fs, ZipArchiveMode.Create);
-
-            string[] cfgRoots =
-            {
-                Path.Combine(sourceRoot, "CVMainWindowsService_dev", "cfg"),
-                Path.Combine(sourceRoot, "CVMainWindowsService_x64", "cfg"),
-                Path.Combine(sourceRoot, "RegWindowsService", "cfg")
-            };
-
-            foreach (string cfgRoot in cfgRoots)
-            {
-                if (!Directory.Exists(cfgRoot))
-                    continue;
-
-                foreach (var filePath in Directory.EnumerateFiles(cfgRoot, "*", SearchOption.AllDirectories))
-                {
-                    string entryName = Path.GetRelativePath(sourceRoot, filePath).Replace('\\', '/');
-                    archive.CreateEntryFromFile(filePath, entryName, CompressionLevel.Optimal);
-                    packed++;
                 }
             }
 

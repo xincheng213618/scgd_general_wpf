@@ -1,9 +1,10 @@
+using System.IO;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager
 {
     /// <summary>
-    /// MySQL 操作：安装、备份、恢复、密码管理、用户管理
+    /// MySQL 操作：安装、脚本执行、密码管理、用户管理
     /// </summary>
     public partial class ServiceManagerViewModel
     {
@@ -44,11 +45,6 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void DoMySqlBackup()
-        {
-            MySqlManager.BackupDatabase(log.Info);
-        }
-
         private async Task RegisterExistingMySqlServiceAsync()
         {
             SetBusy(true, "正在通过后台服务注册 MySQL 服务...");
@@ -63,29 +59,6 @@ namespace WindowsServicePlugin.ServiceManager
                 else
                 {
                     log.Info("MySQL 服务注册失败");
-                }
-            }
-            finally
-            {
-                SetBusy(false);
-                RefreshAll();
-            }
-        }
-
-        private async Task RepairMySqlServicePreferServiceHostAsync()
-        {
-            SetBusy(true, "正在通过后台服务修复 MySQL...");
-            try
-            {
-                bool ok = await MySqlManager.RepairOrRestartViaServiceHostAsync(log.Info).ConfigureAwait(true);
-                if (ok)
-                {
-                    log.Info("MySQL 后台修复/重启完成");
-                    SyncLegacyAppConfig();
-                }
-                else
-                {
-                    log.Info("MySQL 后台修复/重启失败");
                 }
             }
             finally
@@ -140,42 +113,32 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void DoMySqlRestore()
+        private async Task RunSqlScriptAsync()
         {
-            string? filePath = null;
-            Application.Current?.Dispatcher.Invoke(() =>
+            string filePath = MySqlManager.Config.SqlScriptPath;
+            if (string.IsNullOrWhiteSpace(filePath))
             {
-                var dlg = new Microsoft.Win32.OpenFileDialog
-                {
-                    Filter = "SQL 文件 (*.sql)|*.sql",
-                    Title = "选择备份文件"
-                };
-                if (dlg.ShowDialog() == true)
-                    filePath = dlg.FileName;
-            });
-
-            if (string.IsNullOrEmpty(filePath)) return;
-
-            MySqlManager.RestoreDatabase(filePath, log.Info);
-        }
-
-        private void DoRunSqlScript()
-        {
-            string? filePath = null;
-            Application.Current?.Dispatcher.Invoke(() =>
+                ShowUiMessage("请先选择或输入 SQL 脚本路径。", "脚本执行", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!File.Exists(filePath))
             {
-                var dlg = new Microsoft.Win32.OpenFileDialog
-                {
-                    Filter = "SQL 文件 (*.sql)|*.sql",
-                    Title = "选择 SQL 脚本"
-                };
-                if (dlg.ShowDialog() == true)
-                    filePath = dlg.FileName;
-            });
+                ShowUiMessage($"SQL 脚本不存在：\n{filePath}", "脚本执行", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-            if (string.IsNullOrEmpty(filePath)) return;
-
-            MySqlManager.ExecuteSqlFile(filePath, log.Info);
+            MySqlManager.SetSqlScriptPath(filePath);
+            SetBusy(true, "正在执行 SQL 脚本...");
+            try
+            {
+                bool ok = await Task.Run(() => MySqlManager.ExecuteSqlFile(filePath, log.Info));
+                log.Info(ok ? "SQL 脚本执行完成" : "SQL 脚本执行失败");
+            }
+            finally
+            {
+                SetBusy(false);
+                RefreshAll();
+            }
         }
 
         private async Task ResetDatabaseAsync()
@@ -223,18 +186,9 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void DoSetRootPassword()
+        private void DoApplyRootPassword()
         {
-            if (MySqlManager.SetRootPassword(log.Info))
-            {
-                SyncLegacyAppConfig();
-                RefreshMySqlStatus();
-            }
-        }
-
-        private void DoForceResetRootPassword()
-        {
-            if (MySqlManager.ForceResetRootPassword(log.Info))
+            if (MySqlManager.ApplyRootPassword(log.Info))
             {
                 SyncLegacyAppConfig();
                 RefreshMySqlStatus();
@@ -251,14 +205,23 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void DoDeleteUser()
-        {
-            MySqlManager.DeleteUser(log.Info);
-        }
-
         private void GenerateRandomRootPassword()
         {
             MySqlManager.GenerateRandomRootPassword(log.Info);
+        }
+
+        private void BrowseSqlScriptPath()
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "SQL 文件 (*.sql)|*.sql",
+                Title = "选择 SQL 脚本",
+                FileName = MySqlManager.Config.SqlScriptPath
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                MySqlManager.SetSqlScriptPath(dlg.FileName);
+            }
         }
 
         private void BrowseMySqlPath()
@@ -277,13 +240,18 @@ namespace WindowsServicePlugin.ServiceManager
 
         private static MessageBoxResult ShowUiMessage(string message, string caption, MessageBoxButton button, MessageBoxImage image)
         {
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher == null)
+            var application = Application.Current;
+            if (application == null)
                 return MessageBox.Show(message, caption, button, image);
 
-            return dispatcher.CheckAccess()
-                ? MessageBox.Show(Application.Current.GetActiveWindow(), message, caption, button, image)
-                : dispatcher.Invoke(() => MessageBox.Show(Application.Current.GetActiveWindow(), message, caption, button, image));
+            var dispatcher = application.Dispatcher;
+            return dispatcher.CheckAccess() ? ShowUiMessageCore(application, message, caption, button, image) : dispatcher.Invoke(() => ShowUiMessageCore(application, message, caption, button, image));
+        }
+
+        private static MessageBoxResult ShowUiMessageCore(Application application, string message, string caption, MessageBoxButton button, MessageBoxImage image)
+        {
+            var owner = application.GetActiveWindow();
+            return owner == null ? MessageBox.Show(message, caption, button, image) : MessageBox.Show(owner, message, caption, button, image);
         }
     }
 }

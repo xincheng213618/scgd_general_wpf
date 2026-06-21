@@ -37,29 +37,6 @@ namespace WindowsServicePlugin.ServiceManager
             PlatformHelper.OpenFolder(path);
         }
 
-        private void OpenServiceFile(ServiceEntry? entry, string fileName)
-        {
-            if (entry == null)
-                return;
-
-            string? serviceDir = !string.IsNullOrWhiteSpace(entry.ExePath)
-                ? Path.GetDirectoryName(entry.ExePath)
-                : (!string.IsNullOrWhiteSpace(Config.BaseLocation) ? Path.Combine(Config.BaseLocation, entry.FolderName) : null);
-            if (string.IsNullOrWhiteSpace(serviceDir))
-            {
-                log.Info($"无法定位 {entry.DisplayName} 的目录");
-                return;
-            }
-
-            string filePath = Path.Combine(serviceDir, "cfg", fileName);
-            if (!File.Exists(filePath))
-            {
-                log.Info($"配置文件不存在: {filePath}");
-                return;
-            }
-            PlatformHelper.OpenFolderAndSelectFile(filePath);
-        }
-
         private void SetBasePath()
         {
             using var dlg = new System.Windows.Forms.FolderBrowserDialog

@@ -72,12 +72,7 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
 
             string regDir = Path.Combine(baseLocation, "RegWindowsService");
-            if (Directory.Exists(regDir))
-            {
-                UpdateMysqlCfgFile(Path.Combine(regDir, "cfg", "MySql.config"));
-                UpdateMqttCfgFile(Path.Combine(regDir, "cfg", "MQTT.config"));
-                UpdateWinServiceCfgFile(Path.Combine(regDir, "cfg", "WinService.config"), isRC: true);
-            }
+            if (Directory.Exists(regDir)) UpdateServiceConfigFiles(regDir, isRC: true);
 
             string[] serviceFolders = ["CVMainWindowsService_x64", "CVMainWindowsService_dev", "TPAWindowsService", "TPAWindowsService32", "CVFlowWindowsService"];
             foreach (var folderName in serviceFolders)
@@ -85,10 +80,17 @@ namespace WindowsServicePlugin.ServiceManager
                 string svcDir = Path.Combine(baseLocation, folderName);
                 if (!Directory.Exists(svcDir)) continue;
 
-                UpdateMysqlCfgFile(Path.Combine(svcDir, "cfg", "MySql.config"));
-                UpdateMqttCfgFile(Path.Combine(svcDir, "cfg", "MQTT.config"));
-                UpdateWinServiceCfgFile(Path.Combine(svcDir, "cfg", "WinService.config"), isRC: false);
+                UpdateServiceConfigFiles(svcDir, isRC: false);
             }
+        }
+
+        private void UpdateServiceConfigFiles(string serviceDir, bool isRC)
+        {
+            string cfgDir = Path.Combine(serviceDir, "cfg");
+            UpdateMysqlCfgFile(Path.Combine(cfgDir, "MySql.config"));
+            UpdateMqttCfgFile(Path.Combine(cfgDir, "MQTT.config"));
+            UpdateWinServiceCfgFile(Path.Combine(cfgDir, "WinService.config"), isRC);
+            UpdateLog4NetConfigFiles(serviceDir);
         }
 
         private string? ResolveManagedServiceInstallRoot()
@@ -162,7 +164,7 @@ namespace WindowsServicePlugin.ServiceManager
                         "Host" => mySqlConfig.Host,
                         "Port" => mySqlConfig.Port.ToString(),
                         "User" => mySqlConfig.UserName,
-                        "Password" => mySqlConfig.UserPwd   ,
+                        "Password" => mySqlConfig.UserPwd,
                         "Database" => mySqlConfig.Database,
                         _ => null
                     };
@@ -177,6 +179,60 @@ namespace WindowsServicePlugin.ServiceManager
                 log.Info($"更新 MySQL 配置失败: {ex.Message}");
                 throw;
             }
+        }
+
+        private void UpdateLog4NetConfigFiles(string serviceDir)
+        {
+            foreach (string configPath in EnumerateServiceConfigFiles(serviceDir))
+            {
+                UpdateLog4NetConfigFile(configPath);
+            }
+        }
+
+        private static IEnumerable<string> EnumerateServiceConfigFiles(string serviceDir)
+        {
+            foreach (string dir in new[] { serviceDir, Path.Combine(serviceDir, "cfg") })
+            {
+                if (!Directory.Exists(dir)) continue;
+
+                foreach (string filePath in Directory.EnumerateFiles(dir, "*log4net*.config", SearchOption.TopDirectoryOnly))
+                    yield return filePath;
+            }
+        }
+
+        private void UpdateLog4NetConfigFile(string configPath)
+        {
+            try
+            {
+                var doc = XDocument.Load(configPath);
+                var log4net = doc.Root?.Name.LocalName == "log4net" ? doc.Root : doc.Descendants().FirstOrDefault(element => element.Name.LocalName == "log4net");
+                if (log4net == null) return;
+
+                bool changed = false;
+                foreach (var level in log4net.Descendants().Where(IsLoggerLevelElement))
+                {
+                    if (string.Equals(level.Attribute("value")?.Value, "ALL", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    level.SetAttributeValue("value", "ALL");
+                    changed = true;
+                }
+
+                if (!changed) return;
+
+                doc.Save(configPath);
+                log.Info($"更新 log4net 配置: {configPath}");
+            }
+            catch (Exception ex)
+            {
+                log.Info($"更新 log4net 配置失败: {configPath}, {ex.Message}");
+                throw;
+            }
+        }
+
+        private static bool IsLoggerLevelElement(XElement element)
+        {
+            string parentName = element.Parent?.Name.LocalName ?? string.Empty;
+            return element.Name.LocalName == "level" && (parentName == "root" || parentName == "logger");
         }
 
         private void UpdateMqttCfgFile(string configPath)

@@ -28,6 +28,7 @@ namespace WindowsServicePlugin.ServiceManager
         public void Initialize(int fallbackPort)
         {
             MigrateFromLegacySettings();
+            EnsureDefaultSqlScriptPath();
             Helper.Port = GetConfiguredPort(fallbackPort);
 
             if (!Helper.DetectFromRegistry() && !string.IsNullOrWhiteSpace(Config.InstallBasePath))
@@ -105,7 +106,6 @@ namespace WindowsServicePlugin.ServiceManager
         public void ApplyInstalledCredentials(string rootPassword, string appUser, string appPassword, string database, string? installedBasePath = null)
         {
             Config.RootPassword = rootPassword;
-            Config.RootNewPassword = string.Empty;
             Config.AppUser = appUser;
             Config.AppPassword = appPassword;
             Config.Database = database;
@@ -134,6 +134,7 @@ namespace WindowsServicePlugin.ServiceManager
         public void RefreshStatus(IEnumerable<ServiceEntry> services, int fallbackPort)
         {
             Helper.Port = GetConfiguredPort(fallbackPort);
+            EnsureDefaultSqlScriptPath();
 
             if (!Helper.DetectFromRegistry() && !string.IsNullOrWhiteSpace(Config.InstallBasePath))
             {
@@ -159,11 +160,6 @@ namespace WindowsServicePlugin.ServiceManager
         public async Task<bool> RegisterExistingServiceViaServiceHostAsync(Action<string> logCallback)
         {
             return await RepairMySqlViaServiceHostAsync("正在通过 ColorVisionServiceHost 后台注册 MySQL 服务...", logCallback).ConfigureAwait(true);
-        }
-
-        public async Task<bool> RepairOrRestartViaServiceHostAsync(Action<string> logCallback)
-        {
-            return await RepairMySqlViaServiceHostAsync("正在通过 ColorVisionServiceHost 后台修复/重启 MySQL 服务...", logCallback).ConfigureAwait(true);
         }
 
         private async Task<bool> RepairMySqlViaServiceHostAsync(string startMessage, Action<string> logCallback)
@@ -296,43 +292,41 @@ namespace WindowsServicePlugin.ServiceManager
             Config.Host = host;
             Config.Port = GetConfiguredPort(port);
             Config.RootPassword = rootPassword;
-            Config.RootNewPassword = string.Empty;
             Config.AppUser = appUser;
             Config.AppPassword = appPassword;
             Config.Database = database;
             SaveConfig();
         }
 
-        public bool SetRootPassword(Action<string> logCallback)
+        public bool ApplyRootPassword(Action<string> logCallback)
         {
-            if (string.IsNullOrWhiteSpace(Config.RootNewPassword))
+            if (string.IsNullOrWhiteSpace(Config.RootPassword))
             {
-                logCallback("请先输入新 root 密码");
+                logCallback("请先输入 root 密码");
                 return false;
             }
 
-            bool ok = Helper.TrySetRootPassword(Config.RootPassword, Config.RootNewPassword, logCallback);
-            if (!ok)
+            if (IsRootPasswordUsable(Config.RootPassword))
             {
-                return false;
+                SaveConfig();
+                logCallback("root 密码验证通过并已保存");
+                return true;
             }
 
-            Config.RootPassword = Config.RootNewPassword;
-            Config.RootNewPassword = string.Empty;
-            SaveConfig();
-            return true;
+            logCallback("root 密码不可用，准备通过后台服务强制重置为当前输入的 root 密码...");
+            return ForceResetRootPassword(Config.RootPassword, logCallback);
         }
 
-        public bool ForceResetRootPassword(Action<string> logCallback)
+        private bool ForceResetRootPassword(string targetPassword, Action<string> logCallback)
         {
-            return ForceResetRootPasswordWithoutUacAsync(logCallback).GetAwaiter().GetResult();
+            return ForceResetRootPasswordWithoutUacAsync(targetPassword, logCallback).GetAwaiter().GetResult();
         }
 
-        private async Task<bool> ForceResetRootPasswordWithoutUacAsync(Action<string> logCallback)
+        private async Task<bool> ForceResetRootPasswordWithoutUacAsync(string targetPassword, Action<string> logCallback)
         {
-            if (string.IsNullOrWhiteSpace(Config.RootNewPassword))
+            if (string.IsNullOrWhiteSpace(targetPassword))
             {
-                logCallback("请先输入新 root 密码");
+                logCallback("请先输入 root 密码");
                 return false;
             }
 
@@ -363,14 +357,13 @@ namespace WindowsServicePlugin.ServiceManager
                     }
                 }
 
-                bool ok = Helper.ResetRootPasswordWithStoppedService(Config.RootNewPassword, logCallback);
+                bool ok = Helper.ResetRootPasswordWithStoppedService(targetPassword, logCallback);
                 if (!ok)
                 {
                     return false;
                 }
 
-                Config.RootPassword = Config.RootNewPassword;
-                Config.RootNewPassword = string.Empty;
+                Config.RootPassword = targetPassword;
                 SaveConfig();
                 RefreshConfigFromHelper();
                 logCallback("root 密码强制重置成功");
@@ -404,21 +397,30 @@ namespace WindowsServicePlugin.ServiceManager
             return true;
         }
 
-        public bool DeleteUser(Action<string> logCallback)
-        {
-            if (string.IsNullOrWhiteSpace(Config.AppUser))
-            {
-                logCallback("请先填写要删除的用户名");
-                return false;
-            }
-
-            return Helper.DeleteAppUser(Config.RootPassword, Config.AppUser, logCallback);
-        }
-
         public void GenerateRandomRootPassword(Action<string> logCallback)
         {
-            Config.RootNewPassword = MySqlServiceHelper.GenerateRandomPassword();
-            logCallback($"已生成随机 root 密码: {Config.RootNewPassword}");
+            Config.RootPassword = MySqlServiceHelper.GenerateRandomPassword();
+            SaveConfig();
+            logCallback($"已生成随机 root 密码: {Config.RootPassword}");
+        }
+
+        public void SetSqlScriptPath(string sqlScriptPath)
+        {
+            Config.SqlScriptPath = sqlScriptPath;
+            SaveConfig();
+        }
+
+        public void EnsureDefaultSqlScriptPath()
+        {
+            if (!string.IsNullOrWhiteSpace(Config.SqlScriptPath))
+                return;
+
+            string? sqlFilePath = ResolveResetDatabaseSqlPath();
+            if (string.IsNullOrWhiteSpace(sqlFilePath))
+                return;
+
+            Config.SqlScriptPath = sqlFilePath;
+            SaveConfig();
         }
 
         public void SetManualBasePath(string mysqldExePath)
@@ -565,8 +567,7 @@ namespace WindowsServicePlugin.ServiceManager
                 logCallback($"未保存 root 密码，已生成新的 root 密码: {targetPassword}");
             }
 
-            Config.RootNewPassword = targetPassword;
-            if (!ForceResetRootPassword(logCallback))
+            if (!ForceResetRootPassword(targetPassword, logCallback))
             {
                 logCallback("root 密码重置失败，无法继续执行 SQL");
                 return false;

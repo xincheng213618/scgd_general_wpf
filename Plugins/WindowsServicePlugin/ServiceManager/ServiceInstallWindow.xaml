@@ -89,8 +89,7 @@
             <StackPanel>
                 <TextBlock Text="安装选项" FontWeight="Bold" Margin="0,0,0,6"/>
                 <WrapPanel>
-                    <CheckBox Content="安装后一键启动所有服务" IsChecked="{Binding AutoStartAfterInstall}" Margin="0,2,20,2"/>
-                    <CheckBox Content="安装后自动执行数据库更新脚本" IsChecked="{Binding AutoUpdateDatabase}" Margin="0,2,20,2"/>
+                    <CheckBox Content="更新数据库到最近版本" IsChecked="{Binding AutoUpdateDatabase}" Margin="0,2,20,2"/>
                 </WrapPanel>
                 
                 <!-- 数据库备份 -->
@@ -106,7 +105,6 @@
                 <TextBlock Text="服务备份" FontSize="12" Margin="0,4,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
                 <WrapPanel>
                     <CheckBox Content="安装前备份服务文件夹" IsChecked="{Binding BackupServiceBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
-                    <CheckBox Content="仅备份 cfg（dev/x64/Reg）" IsChecked="{Binding BackupServiceCfgOnly}" Margin="0,0,20,0" VerticalAlignment="Center"/>
                     <Button Content="立即备份服务" Command="{Binding BackupServiceNowCommand}" Padding="12,4" Margin="0,0,8,0"/>
                     <Button Content="恢复服务备份" Command="{Binding RestoreServiceBackupCommand}" Padding="12,4"/>
                     <TextBlock Text="(保存至：我的文档\ColorVision\ServiceBackup)" VerticalAlignment="Center" Foreground="Gray" Margin="8,0,0,0" FontSize="11"/>

@@ -42,9 +42,6 @@ namespace WindowsServicePlugin.ServiceManager
         public string MqttInstallerPath { get => _mqttInstallerPath; set { _mqttInstallerPath = value; OnPropertyChanged(); } }
         private string _mqttInstallerPath = string.Empty;
 
-        public bool AutoStartAfterInstall { get => _autoStartAfterInstall; set { _autoStartAfterInstall = value; OnPropertyChanged(); } }
-        private bool _autoStartAfterInstall = true;
-
         public bool AutoUpdateDatabase { get => _autoUpdateDatabase; set { _autoUpdateDatabase = value; OnPropertyChanged(); } }
         private bool _autoUpdateDatabase;
 
@@ -53,9 +50,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         public bool BackupServiceBeforeInstall { get => _backupServiceBeforeInstall; set { _backupServiceBeforeInstall = value; OnPropertyChanged(); } }
         private bool _backupServiceBeforeInstall;
-
-        public bool BackupServiceCfgOnly { get => _backupServiceCfgOnly; set { _backupServiceCfgOnly = value; OnPropertyChanged(); } }
-        private bool _backupServiceCfgOnly;
 
         public bool InstallServiceChecked
         {

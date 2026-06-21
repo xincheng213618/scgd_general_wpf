@@ -117,28 +117,21 @@ namespace WindowsServicePlugin.ServiceManager
                         SetProgress(progress += 10, "同步配置...");
                         ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
 
-                        // 7. 执行数据库脚本
+                        // 7. 更新数据库
                         if (AutoUpdateDatabase)
                         {
-                            SetProgress(progress += 15, "执行数据库脚本...");
+                            SetProgress(progress += 15, "更新数据库到最近版本...");
                             if (!ExecuteColorVisionAllSql(basePath))
                             {
-                                throw new InvalidOperationException("执行 color_vision_all.sql 失败");
+                                throw new InvalidOperationException("更新数据库到最近版本失败");
                             }
 
                             ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
                         }
 
                         // 8. 启动服务
-                        if (AutoStartAfterInstall)
-                        {
-                            SetProgress(progress += 10, "启动服务...");
-                            StartInstalledServicesAfterInstall();
-                        }
-                        else if (servicesStoppedForInstall)
-                        {
-                            log.Info("安装前已停止服务，当前未自动启动（根据配置）");
-                        }
+                        SetProgress(progress += 10, "启动服务...");
+                        StartInstalledServicesAfterInstall();
 
                         CleanupPackDirectory(basePath);
 
