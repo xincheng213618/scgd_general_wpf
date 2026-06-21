@@ -105,7 +105,7 @@ namespace ColorVision.Engine
                     }
 
                     log.Info($"检测MySQL服务 {serviceName}，状态{status}，正在通过ColorVisionServiceHost启动服务。");
-                    ServiceHostResponse response = await ColorVisionServiceHostClient.Default.StartMySqlServiceAsync(
+                    ServiceHostResponse response = await ColorVisionServiceHostClient.Default.StartServiceAsync(
                         serviceName,
                         timeoutSeconds: 45,
                         timeout: TimeSpan.FromSeconds(60));

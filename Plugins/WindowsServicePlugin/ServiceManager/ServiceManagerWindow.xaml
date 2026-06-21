@@ -251,14 +251,11 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <DockPanel Grid.Row="0" Margin="0,0,0,2">
-                <TextBlock Text="日志输出" VerticalAlignment="Center" FontWeight="Bold"/>
-                <Button DockPanel.Dock="Right" Content="清除" Command="{Binding ClearLogCommand}" Padding="8,2"/>
-                <Button DockPanel.Dock="Right" Content="刷新状态" Command="{Binding RefreshCommand}" Padding="8,2" Margin="0,0,8,0"/>
-            </DockPanel>
+            <TextBlock Grid.Row="0" Text="日志输出" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
             <TextBox Grid.Row="1" Text="{Binding LogText, Mode=OneWay}" IsReadOnly="True"
                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                      TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"
+                     AcceptsReturn="True" Padding="8" VerticalContentAlignment="Top"
                      x:Name="LogTextBox"/>
         </Grid>
 

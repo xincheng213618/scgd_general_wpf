@@ -96,7 +96,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private async Task StartMySqlServiceAsync()
+        private async Task StartMySqlAsync()
         {
             SetBusy(true, "正在通过后台服务启动 MySQL...");
             try
@@ -111,7 +111,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private async Task StopMySqlServiceAsync()
+        private async Task StopMySqlAsync()
         {
             SetBusy(true, "正在通过后台服务停止 MySQL...");
             try
@@ -126,7 +126,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private async Task UninstallMySqlServiceAsync()
+        private async Task UninstallMySqlAsync()
         {
             SetBusy(true, "正在通过后台服务卸载 MySQL...");
             try

@@ -126,6 +126,16 @@ namespace ColorVision.ServiceHost
             return RunPowerShellScriptAsync(CreateUninstallScript(), requireAdministrator: true, cancellationToken);
         }
 
+        public static Task<ServiceHostOperationResult> StartAsync(CancellationToken cancellationToken = default)
+        {
+            return RunPowerShellScriptAsync(CreateStartScript(), requireAdministrator: true, cancellationToken);
+        }
+
+        public static Task<ServiceHostOperationResult> StopAsync(CancellationToken cancellationToken = default)
+        {
+            return RunPowerShellScriptAsync(CreateStopScript(), requireAdministrator: true, cancellationToken);
+        }
+
         public static async Task<ServiceHostOperationResult> SelfUpdateAsync(CancellationToken cancellationToken = default)
         {
             if (!File.Exists(ServiceHostProtocol.PackageExecutablePath))
@@ -289,6 +299,38 @@ namespace ColorVision.ServiceHost
                 "if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1056) { throw \"Failed to start service: $LASTEXITCODE\" }",
                 "Write-Output \"Service host installed to: $exe\"",
                 "Write-Output \"Service start type: Automatic\"",
+                string.Empty,
+            });
+        }
+
+        private static string CreateStartScript()
+        {
+            return string.Join(Environment.NewLine, new[]
+            {
+                "$ErrorActionPreference = 'Stop'",
+                $"$serviceName = {PsQuote(ServiceHostProtocol.ServiceName)}",
+                "$service = Get-Service -Name $serviceName -ErrorAction Stop",
+                "if ($service.Status -ne 'Running') {",
+                "    Start-Service -Name $serviceName -ErrorAction Stop",
+                "    $service.WaitForStatus('Running', [TimeSpan]::FromSeconds(20))",
+                "}",
+                "Write-Output \"Service host started.\"",
+                string.Empty,
+            });
+        }
+
+        private static string CreateStopScript()
+        {
+            return string.Join(Environment.NewLine, new[]
+            {
+                "$ErrorActionPreference = 'Stop'",
+                $"$serviceName = {PsQuote(ServiceHostProtocol.ServiceName)}",
+                "$service = Get-Service -Name $serviceName -ErrorAction Stop",
+                "if ($service.Status -ne 'Stopped') {",
+                "    Stop-Service -Name $serviceName -Force -ErrorAction Stop",
+                "    $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(20))",
+                "}",
+                "Write-Output \"Service host stopped.\"",
                 string.Empty,
             });
         }

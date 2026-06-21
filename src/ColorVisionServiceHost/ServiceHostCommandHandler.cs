@@ -54,9 +54,6 @@ internal sealed class ServiceHostCommandHandler
                 "service-stop" => StopWindowsService(request),
                 "service-restart" => RestartWindowsService(request),
                 "service-terminate" => TerminateWindowsService(request),
-                "start-mysql-service" => StartWindowsService(request, "MySQL"),
-                "stop-mysql-service" => StopWindowsService(request, "MySQL"),
-                "uninstall-mysql-service" => UninstallMySqlService(request),
                 "register-thumbnail" => RunMaintenanceTask(request, "register-thumbnail"),
                 "unregister-thumbnail" => RunMaintenanceTask(request, "unregister-thumbnail"),
                 _ => ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported command: {command}"),
@@ -621,31 +618,6 @@ internal sealed class ServiceHostCommandHandler
 
         bool exists = ServiceExists(serviceName);
         return ServiceHostResponse.FromObject(request.RequestId, !exists, exists ? "service uninstall failed" : "service uninstalled", new
-        {
-            serviceName,
-            exists,
-            steps,
-            processResults,
-        });
-    }
-
-    private static ServiceHostResponse UninstallMySqlService(ServiceHostRequest request)
-    {
-        string serviceName = GetOptionalDataValue(request, "serviceName", "MySQL").Trim();
-        if (!IsAllowedMySqlServiceName(serviceName))
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported MySQL service name: {serviceName}");
-
-        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
-        string? mysqldExePath = request.Data?["mysqldExePath"]?.ToString();
-        if (!string.IsNullOrWhiteSpace(mysqldExePath))
-            mysqldExePath = Path.GetFullPath(mysqldExePath);
-
-        List<string> steps = [];
-        List<ProcessResult> processResults = [];
-        RemoveMySqlServiceRegistration(serviceName, mysqldExePath, timeoutSeconds, steps, processResults);
-
-        bool exists = ServiceExists(serviceName);
-        return ServiceHostResponse.FromObject(request.RequestId, !exists, exists ? "MySQL service uninstall failed" : "MySQL service uninstalled", new
         {
             serviceName,
             exists,

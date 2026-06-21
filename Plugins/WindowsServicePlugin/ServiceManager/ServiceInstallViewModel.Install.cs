@@ -125,6 +125,8 @@ namespace WindowsServicePlugin.ServiceManager
                             {
                                 throw new InvalidOperationException("执行 color_vision_all.sql 失败");
                             }
+
+                            ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
                         }
 
                         // 8. 启动服务

@@ -123,9 +123,9 @@ namespace WindowsServicePlugin.ServiceManager
             MySqlInstallZipCommand = new RelayCommand(a => _ = MySqlInstallZipAsync(), a => !IsBusy);
             MySqlRepairServiceCommand = new RelayCommand(a => _ = RepairMySqlServicePreferServiceHostAsync(), a => !IsBusy);
             MySqlRegisterExistingCommand = new RelayCommand(a => _ = RegisterExistingMySqlServiceAsync(), a => !IsBusy);
-            MySqlStartCommand = new RelayCommand(a => _ = StartMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
-            MySqlStopCommand = new RelayCommand(a => _ = StopMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
-            MySqlUninstallCommand = new RelayCommand(a => _ = UninstallMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled);
+            MySqlStartCommand = new RelayCommand(a => _ = StartMySqlAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
+            MySqlStopCommand = new RelayCommand(a => _ = StopMySqlAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlUninstallCommand = new RelayCommand(a => _ = UninstallMySqlAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled);
             MySqlBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlBackup()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlRestoreCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlRestore()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlRunScriptCommand = new RelayCommand(a => _ = Task.Run(() => DoRunSqlScript()), a => !IsBusy && MySqlManager.Config.IsRunning);

@@ -489,6 +489,175 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
+        public bool TryGetExistingTables(string userName, string password, string database, IReadOnlyList<string> candidateTables, out IReadOnlyList<string> existingTables, Action<string> logCallback)
+        {
+            existingTables = Array.Empty<string>();
+            if (string.IsNullOrWhiteSpace(database) || candidateTables.Count == 0)
+            {
+                return true;
+            }
+
+            try
+            {
+                var builder = new MySqlConnectionStringBuilder
+                {
+                    Server = "127.0.0.1",
+                    Port = (uint)Port,
+                    UserID = userName,
+                    Password = password ?? string.Empty,
+                    CharacterSet = "utf8mb4",
+                    ConnectionTimeout = 5,
+                    SslMode = MySqlSslMode.None,
+                    Pooling = false
+                };
+
+                using var connection = new MySqlConnection(builder.ConnectionString);
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = BuildExistingTablesSql(candidateTables.Count);
+                command.Parameters.AddWithValue("@schema", database);
+                for (int i = 0; i < candidateTables.Count; i++)
+                {
+                    command.Parameters.AddWithValue($"@t{i}", candidateTables[i]);
+                }
+
+                HashSet<string> found = new(StringComparer.OrdinalIgnoreCase);
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    found.Add(reader.GetString(0));
+                }
+
+                existingTables = candidateTables.Where(found.Contains).ToArray();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"检查可备份数据表失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static string BuildExistingTablesSql(int tableCount)
+        {
+            string[] parameterNames = Enumerable.Range(0, tableCount).Select(i => $"@t{i}").ToArray();
+            return $"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = @schema AND TABLE_NAME IN ({string.Join(",", parameterNames)})";
+        }
+
+        public bool BackupDataTables(string userName, string password, string database, string outputFile, IReadOnlyList<string> tables, Action<string> logCallback)
+        {
+            if (tables.Count == 0)
+            {
+                logCallback("没有需要备份的数据表");
+                return true;
+            }
+
+            try
+            {
+                string dumpPath = File.Exists(MysqldumpExePath)
+                    ? MysqldumpExePath
+                    : MySqlLocalConfig.Instance.MysqldumpPath;
+
+                if (string.IsNullOrWhiteSpace(dumpPath) || !File.Exists(dumpPath))
+                {
+                    logCallback("找不到 mysqldump");
+                    return false;
+                }
+
+                string? dir = Path.GetDirectoryName(outputFile);
+                if (!string.IsNullOrWhiteSpace(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = dumpPath,
+                    WorkingDirectory = Path.GetDirectoryName(dumpPath) ?? BasePath,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
+                };
+                psi.ArgumentList.Add("-P");
+                psi.ArgumentList.Add(Port.ToString());
+                psi.ArgumentList.Add("-u");
+                psi.ArgumentList.Add(userName);
+                if (!string.IsNullOrEmpty(password))
+                {
+                    psi.ArgumentList.Add($"-p{password}");
+                }
+
+                psi.ArgumentList.Add("--default-character-set=utf8mb4");
+                psi.ArgumentList.Add("--single-transaction");
+                psi.ArgumentList.Add("--quick");
+                psi.ArgumentList.Add("--skip-triggers");
+                psi.ArgumentList.Add("--skip-lock-tables");
+                psi.ArgumentList.Add("--skip-add-locks");
+                psi.ArgumentList.Add("--no-create-info");
+                psi.ArgumentList.Add("--complete-insert");
+                psi.ArgumentList.Add("--replace");
+                psi.ArgumentList.Add(database);
+                foreach (string table in tables)
+                {
+                    psi.ArgumentList.Add(table);
+                }
+
+                logCallback($"正在备份资源数据表: {string.Join(", ", tables)}");
+                using var process = Process.Start(psi);
+                if (process == null)
+                {
+                    logCallback("无法启动 mysqldump");
+                    return false;
+                }
+
+                Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+                bool finished = process.WaitForExit(600000);
+                if (!finished)
+                {
+                    try
+                    {
+                        process.Kill(true);
+                    }
+                    catch
+                    {
+                    }
+
+                    logCallback("资源数据备份超时");
+                    return false;
+                }
+
+                string stdout = stdoutTask.GetAwaiter().GetResult();
+                string stderr = stderrTask.GetAwaiter().GetResult();
+                if (process.ExitCode != 0)
+                {
+                    if (!string.IsNullOrWhiteSpace(stderr))
+                    {
+                        logCallback(stderr.Trim());
+                    }
+                    logCallback($"资源数据备份失败，退出码: {process.ExitCode}");
+                    return false;
+                }
+
+                StringBuilder sql = new();
+                sql.AppendLine("SET NAMES utf8mb4;");
+                sql.AppendLine("SET FOREIGN_KEY_CHECKS = 0;");
+                sql.AppendLine(stdout);
+                sql.AppendLine("SET FOREIGN_KEY_CHECKS = 1;");
+                File.WriteAllText(outputFile, sql.ToString(), new UTF8Encoding(false));
+                logCallback($"资源数据备份完成: {outputFile}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"资源数据备份失败: {ex.Message}");
+                return false;
+            }
+        }
+
         public bool TestConnection(string? host, int port, string userName, string password, string? database, Action<string>? logCallback = null)
         {
             string effectiveHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
@@ -667,7 +836,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        public bool ForceResetRootPassword(string newPassword, Action<string> logCallback)
+        public bool ResetRootPasswordWithStoppedService(string newPassword, Action<string> logCallback)
         {
             if (!File.Exists(MysqldExePath) || !File.Exists(MysqlExePath))
             {
@@ -679,7 +848,11 @@ namespace WindowsServicePlugin.ServiceManager
             try
             {
                 logCallback("开始强制重置 root 密码...");
-                EnsureMySqlStopped(logCallback);
+                if (Process.GetProcessesByName("mysqld").Length > 0)
+                {
+                    logCallback("检测到 mysqld 仍在运行，请先停止 MySQL 服务后再重置 root 密码");
+                    return false;
+                }
 
                 var startInfo = new ProcessStartInfo
                 {
@@ -730,9 +903,6 @@ namespace WindowsServicePlugin.ServiceManager
                     skipGrantProcess.WaitForExit(3000);
                 }
 
-                Thread.Sleep(1500);
-                Start(logCallback);
-
                 logCallback(ok ? "root 密码强制重置成功" : "root 密码强制重置失败");
                 return ok;
             }
@@ -753,11 +923,6 @@ namespace WindowsServicePlugin.ServiceManager
                 }
                 catch
                 {
-                }
-
-                if (IsInstalled && !IsRunning)
-                {
-                    Start(logCallback);
                 }
             }
         }
@@ -941,7 +1106,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             for (int i = 0; i < 20; i++)
             {
-                if (RunProcess(MysqlExePath, "-u root -e \"SELECT 1;\"", BasePath, 5000))
+                if (RunProcess(MysqlExePath, $"-P {Port} -u root -e \"SELECT 1;\"", BasePath, 5000))
                 {
                     return true;
                 }
@@ -952,7 +1117,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private bool TryRunRootResetSql(string sql)
         {
-            return RunProcess(MysqlExePath, $"-u root -e \"{sql}\"", BasePath, 10000);
+            return RunProcess(MysqlExePath, $"-P {Port} -u root -e \"{sql}\"", BasePath, 10000);
         }
 
         /// <summary>

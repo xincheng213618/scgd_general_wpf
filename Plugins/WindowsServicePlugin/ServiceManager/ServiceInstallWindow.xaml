@@ -130,13 +130,11 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <DockPanel Grid.Row="0" Margin="0,0,0,6">
-                    <TextBlock Text="安装日志" VerticalAlignment="Center" FontWeight="Bold"/>
-                    <Button DockPanel.Dock="Right" Content="清除" Command="{Binding ClearLogCommand}" Padding="8,2"/>
-                </DockPanel>
+                <TextBlock Grid.Row="0" Text="安装日志" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
                 <TextBox Grid.Row="1" Text="{Binding LogText, Mode=OneWay}" IsReadOnly="True"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                         TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"/>
+                         TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"
+                         AcceptsReturn="True" Padding="8" VerticalContentAlignment="Top"/>
             </Grid>
         </Border>
 
