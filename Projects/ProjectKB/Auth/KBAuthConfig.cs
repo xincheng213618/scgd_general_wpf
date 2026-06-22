@@ -1,12 +1,12 @@
 using ColorVision.Common.Utilities;
-using ColorVision.UI;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace ProjectKB.Auth
 {
-    public class KBAuthConfig : IConfig
+    public class KBAuthConfig
     {
-        public static KBAuthConfig Instance => ConfigService.Instance.GetRequiredService<KBAuthConfig>();
+        public static KBAuthConfig Instance { get; } = new();
 
         /// <summary>
         /// 管理员账号
@@ -38,30 +38,45 @@ namespace ProjectKB.Auth
         /// </summary>
         public bool IsInitialized { get; set; }
 
-        [JsonIgnore]
-        private const string DefaultUserName = "admin";
+        public static string PasswordFilePath => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "ColorVision",
+            "ProjectKB",
+            "Security",
+            "Auth",
+            "kb.auth.json");
 
         [JsonIgnore]
-        private const string DefaultPassword = "admin";
+        private bool _passwordFileLoaded;
+
+        [JsonIgnore]
+        internal const string DefaultUserName = "admin";
+
+        [JsonIgnore]
+        internal const string DefaultPassword = "admin";
 
         /// <summary>
         /// 初始化默认账号密码（仅首次）
         /// </summary>
         public void EnsureInitialized()
         {
+            LoadPasswordFile();
+            if (IsInitialized && (string.IsNullOrWhiteSpace(AdminPasswordHash) || string.IsNullOrWhiteSpace(AdminPasswordSalt)))
+                IsInitialized = false;
+
             if (!IsInitialized)
             {
                 AdminUserName = DefaultUserName;
                 SetPassword(DefaultPassword);
                 IsInitialized = true;
-                ConfigService.Instance.SaveConfigs();
+                SavePasswordFile();
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(AdminUserName))
             {
                 AdminUserName = DefaultUserName;
-                ConfigService.Instance.SaveConfigs();
+                SavePasswordFile();
             }
         }
 
@@ -106,8 +121,98 @@ namespace ProjectKB.Auth
                 return false;
 
             SetPassword(newPassword);
-            ConfigService.Instance.SaveConfigs();
+            SavePasswordFile();
             return true;
+        }
+
+        /// <summary>
+        /// 保存独立密码文件，避免删除主配置时影响数据库、设备和UI设置。
+        /// </summary>
+        internal void SavePasswordFile()
+        {
+            string? directory = Path.GetDirectoryName(PasswordFilePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+                Directory.CreateDirectory(directory);
+
+            var data = new PasswordFileData
+            {
+                AdminUserName = AdminUserName,
+                EnablePermissionControl = EnablePermissionControl,
+                AdminPasswordHash = AdminPasswordHash,
+                AdminPasswordSalt = AdminPasswordSalt,
+                IdleTimeoutMinutes = IdleTimeoutMinutes,
+                IsInitialized = IsInitialized
+            };
+            File.WriteAllText(PasswordFilePath, JsonConvert.SerializeObject(data, Formatting.Indented));
+            TryHideFile(PasswordFilePath);
+        }
+
+        private void LoadPasswordFile()
+        {
+            if (_passwordFileLoaded)
+                return;
+
+            _passwordFileLoaded = true;
+
+            if (!File.Exists(PasswordFilePath))
+            {
+                ResetToUninitializedDefault();
+                return;
+            }
+
+            try
+            {
+                PasswordFileData? data = JsonConvert.DeserializeObject<PasswordFileData>(File.ReadAllText(PasswordFilePath));
+                if (data != null)
+                    Apply(data);
+                else
+                    ResetToUninitializedDefault();
+            }
+            catch
+            {
+                ResetToUninitializedDefault();
+            }
+        }
+
+        private void Apply(PasswordFileData data)
+        {
+            AdminUserName = string.IsNullOrWhiteSpace(data.AdminUserName) ? DefaultUserName : data.AdminUserName;
+            EnablePermissionControl = data.EnablePermissionControl;
+            AdminPasswordHash = data.AdminPasswordHash ?? string.Empty;
+            AdminPasswordSalt = data.AdminPasswordSalt ?? string.Empty;
+            IdleTimeoutMinutes = data.IdleTimeoutMinutes;
+            IsInitialized = data.IsInitialized;
+        }
+
+        private void ResetToUninitializedDefault()
+        {
+            AdminUserName = DefaultUserName;
+            EnablePermissionControl = false;
+            AdminPasswordHash = string.Empty;
+            AdminPasswordSalt = string.Empty;
+            IdleTimeoutMinutes = 30;
+            IsInitialized = false;
+        }
+
+        private static void TryHideFile(string filePath)
+        {
+            try
+            {
+                File.SetAttributes(filePath, File.GetAttributes(filePath) | FileAttributes.Hidden);
+            }
+            catch
+            {
+            }
+        }
+
+        private sealed class PasswordFileData
+        {
+            public string AdminUserName { get; set; } = DefaultUserName;
+            public bool EnablePermissionControl { get; set; }
+            public string AdminPasswordHash { get; set; } = string.Empty;
+            public string AdminPasswordSalt { get; set; } = string.Empty;
+            public int IdleTimeoutMinutes { get; set; } = 30;
+            public bool IsInitialized { get; set; }
         }
 
         private static string GenerateSalt()
