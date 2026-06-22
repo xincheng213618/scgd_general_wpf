@@ -15,11 +15,8 @@ using ColorVision.UI.Extension;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -51,8 +48,6 @@ namespace ColorVision.Engine.Services
         public RelayCommand ImportCommand { get; set; }
         [CommandDisplayAttribute("Copy", Order = -10), BrowsableAttribute(false)]
         public RelayCommand CopyCommand { get; set; }
-        [CommandDisplay("AskCopilot", Order = -4), BrowsableAttribute(false)]
-        public RelayCommand AskCopilotDeviceCommand { get; set; }
 
         [CommandDisplayAttribute("Reset", CommandType = CommandType.Highlighted, Order = 9999)]
         public RelayCommand ResetCommand { get; set; }
@@ -182,12 +177,8 @@ namespace ColorVision.Engine.Services
                 window.ShowDialog();
             });
             RefreshCommand = new RelayCommand(a => RestartRCService());
-            AskCopilotDeviceCommand = new RelayCommand(a => AskCopilotAboutDevice());
 
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Export, Command = ExportCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Import, Command = ImportCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "问 AI 分析设备状态", Command = AskCopilotDeviceCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.RestartService, Command = RefreshCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = PropertyCommand });
 
 
@@ -196,198 +187,6 @@ namespace ColorVision.Engine.Services
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;
             UpdateFilecfgCommand = new RelayCommand(a => UpdateFilecfg(), a=> Config is IFileServerCfg);
-        }
-
-        private void AskCopilotAboutDevice()
-        {
-            var contextItem = CopilotBusinessContextBuilder.BuildDeviceContextItem(BuildCopilotDeviceSnapshot());
-            var result = CopilotPromptRequestHelper.Dispatch(new CopilotPromptRequestOptions
-            {
-                Mode = CopilotPromptMode.Diagnose,
-                Prompt = "请基于已附加的设备/服务上下文，分析当前设备状态、配置风险、心跳或日志线索，并给出优先排查建议。不要执行任何设备控制动作，只能根据快照判断。",
-                StartNewConversation = true,
-                SendNow = true,
-                AttachContextSnapshot = true,
-                ContextAttachmentTitle = contextItem.Title,
-                ContextAttachmentSourceId = $"device-service:{Code}",
-                ContextItems = new[] { contextItem },
-            });
-
-            if (!result.WasSent)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), result.StatusMessage, "ColorVision", MessageBoxButton.OK,
-                    result.IsAvailable ? MessageBoxImage.Warning : MessageBoxImage.Information);
-            }
-        }
-
-        private CopilotDeviceContextSnapshot BuildCopilotDeviceSnapshot()
-        {
-            var mqttService = GetMQTTService();
-            var logSnapshot = CaptureRecentLogSnapshot();
-
-            return new CopilotDeviceContextSnapshot
-            {
-                SourceId = $"device-service:{Code}",
-                Title = $"设备服务 · {Name}",
-                ServiceName = Name,
-                ServiceCode = Code,
-                ServiceType = ServiceTypes.ToString(),
-                DeviceStatus = mqttService?.DeviceStatus.ToString() ?? string.Empty,
-                HeartbeatTime = HeartbeatTime > 0 ? $"{HeartbeatTime} ms" : string.Empty,
-                SendTopic = SendTopic,
-                SubscribeTopic = SubscribeTopic,
-                RuntimeProperties = BuildRuntimeProperties(mqttService),
-                ConfigProperties = BuildObjectProperties(Config),
-                RecentLogSummary = logSnapshot.Summary,
-                RecentLogContent = logSnapshot.Content,
-            };
-        }
-
-        private IReadOnlyList<CopilotContextProperty> BuildRuntimeProperties(MQTTServiceBase? mqttService)
-        {
-            var properties = new List<CopilotContextProperty>
-            {
-                new() { Name = "SysResourceId", Value = SysResourceModel?.Id.ToString() ?? string.Empty },
-                new() { Name = "SysResourcePid", Value = SysResourceModel?.Pid.ToString() ?? string.Empty },
-                new() { Name = "SysResourceType", Value = SysResourceModel?.Type.ToString() ?? string.Empty },
-                new() { Name = "SysResourceRemark", Value = SysResourceModel?.Remark ?? string.Empty },
-            };
-
-            if (mqttService != null)
-            {
-                properties.Add(new CopilotContextProperty { Name = "MQTTServiceName", Value = mqttService.ServiceName ?? string.Empty });
-                properties.Add(new CopilotContextProperty { Name = "MQTTDeviceCode", Value = mqttService.DeviceCode ?? string.Empty });
-                properties.Add(new CopilotContextProperty { Name = "MQTTDeviceStatus", Value = mqttService.DeviceStatus.ToString() });
-            }
-
-            return properties;
-        }
-
-        private static IReadOnlyList<CopilotContextProperty> BuildObjectProperties(object? source)
-        {
-            if (source == null)
-                return Array.Empty<CopilotContextProperty>();
-
-            var properties = new List<CopilotContextProperty>();
-            foreach (var property in source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (!property.CanRead || property.GetIndexParameters().Length > 0)
-                    continue;
-
-                try
-                {
-                    var value = property.GetValue(source);
-                    if (!IsSimpleValue(value, property.PropertyType))
-                        continue;
-
-                    properties.Add(new CopilotContextProperty
-                    {
-                        Name = property.Name,
-                        Value = FormatValue(value),
-                    });
-                }
-                catch
-                {
-                }
-            }
-
-            return properties;
-        }
-
-        private (string Summary, string Content) CaptureRecentLogSnapshot()
-        {
-            try
-            {
-                var baseDir = ResolveServiceBaseDirectory();
-                if (string.IsNullOrWhiteSpace(baseDir))
-                    return ("未找到服务安装目录。", string.Empty);
-
-                var logDir = Path.Combine(baseDir, "log");
-                var prefix = ResolveLogFilePrefix();
-                string? logPath = string.IsNullOrWhiteSpace(prefix)
-                    ? LogFileHelper.GetLatestMainLogPath(baseDir)
-                    : LogFileHelper.GetMostRecentLogFile(logDir, prefix);
-
-                if (string.IsNullOrWhiteSpace(logPath) || !File.Exists(logPath))
-                    logPath = Directory.Exists(logDir)
-                        ? Directory.EnumerateFiles(logDir, "*.log", SearchOption.TopDirectoryOnly)
-                            .Select(path => new FileInfo(path))
-                            .OrderByDescending(file => file.LastWriteTimeUtc)
-                            .FirstOrDefault()?.FullName
-                        : null;
-
-                if (string.IsNullOrWhiteSpace(logPath) || !File.Exists(logPath))
-                    return ("未找到最近服务日志。", string.Empty);
-
-                var lines = File.ReadLines(logPath).TakeLast(80).ToArray();
-                var content = string.Join(Environment.NewLine, lines);
-                if (content.Length > 6000)
-                    content = content[^6000..];
-
-                return ($"已读取最近服务日志：{Path.GetFileName(logPath)}，保留最后 {lines.Length} 行。", content);
-            }
-            catch (Exception ex)
-            {
-                return ($"读取最近服务日志失败：{ex.Message}", string.Empty);
-            }
-        }
-
-        private string? ResolveServiceBaseDirectory()
-        {
-            string? servicePath = ServiceTypes == ColorVision.Engine.Services.Types.ServiceTypes.SMU
-                ? ServiceConfig.Instance.CVMainService_dev
-                : ServiceConfig.Instance.CVMainService_x64;
-
-            if (string.IsNullOrWhiteSpace(servicePath))
-                servicePath = ServiceConfig.Instance.CVMainService_x64Info?.ExecutablePath;
-
-            try
-            {
-                return string.IsNullOrWhiteSpace(servicePath) ? null : Directory.GetParent(servicePath)?.FullName;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private string ResolveLogFilePrefix()
-        {
-            return ServiceTypes switch
-            {
-                ColorVision.Engine.Services.Types.ServiceTypes.Camera => "CVMainWindowsService_x64_camera",
-                ColorVision.Engine.Services.Types.ServiceTypes.Spectrum => "CVMainWindowsService_x64_Spectrum",
-                ColorVision.Engine.Services.Types.ServiceTypes.Algorithm => "CVMainWindowsService_x64_Algorithm",
-                ColorVision.Engine.Services.Types.ServiceTypes.ThirdPartyAlgorithms => "CVMainWindowsService_x64_Algorithm",
-                ColorVision.Engine.Services.Types.ServiceTypes.PG => "CVMainWindowsService_x64_CVOLED",
-                ColorVision.Engine.Services.Types.ServiceTypes.SMU => "CVMainWindowsService_dev_SMU",
-                _ => string.Empty,
-            };
-        }
-
-        private static bool IsSimpleValue(object? value, Type propertyType)
-        {
-            if (value == null)
-                return true;
-
-            var source = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-            return source.IsPrimitive
-                || source.IsEnum
-                || source == typeof(string)
-                || source == typeof(decimal)
-                || source == typeof(DateTime)
-                || source == typeof(TimeSpan)
-                || source == typeof(Guid);
-        }
-
-        private static string FormatValue(object? value)
-        {
-            return value switch
-            {
-                null => string.Empty,
-                DateTime dateTime => dateTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                _ => value.ToString() ?? string.Empty,
-            };
         }
 
         public void UpdateFilecfg()
