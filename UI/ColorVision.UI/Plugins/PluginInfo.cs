@@ -127,7 +127,13 @@ namespace ColorVision.UI.Plugins
                 string iconPath = FindPluginFile("PackageIcon.png", "packageicon.png");
                 if (File.Exists(iconPath))
                 {
-                    return new BitmapImage(new Uri(iconPath));
+                    BitmapImage image = new();
+                    image.BeginInit();
+                    image.CacheOption = BitmapCacheOption.OnLoad;
+                    image.UriSource = new Uri(iconPath, UriKind.Absolute);
+                    image.EndInit();
+                    image.Freeze();
+                    return image;
                 }
             }
             catch { /* ignore errors */ }

@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+using ColorVision.Themes;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,6 +15,7 @@ namespace EventVWR
         public EventWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
         public ObservableCollection<EventLogEntry> logEntries { get; set; } = new ObservableCollection<EventLogEntry>();
         private void Window_Initialized(object sender, EventArgs e)
@@ -24,11 +26,11 @@ namespace EventVWR
             using (EventLog eventLog = new EventLog(logName))
             {
                 // 使用 LINQ 查询并倒序排列结果
-                 logEntries = new ObservableCollection<EventLogEntry>(
-                    eventLog.Entries.Cast<EventLogEntry>()
-                    .Where(entry => entry.EntryType == EventLogEntryType.Error)
-                    .OrderByDescending(entry => entry.TimeGenerated)
-                );
+                logEntries = new ObservableCollection<EventLogEntry>(
+                   eventLog.Entries.Cast<EventLogEntry>()
+                   .Where(entry => entry.EntryType == EventLogEntryType.Error)
+                   .OrderByDescending(entry => entry.TimeGenerated)
+               );
 
                 // 设置 ListView 的 ItemsSource
                 ListViewEvent.ItemsSource = logEntries;
