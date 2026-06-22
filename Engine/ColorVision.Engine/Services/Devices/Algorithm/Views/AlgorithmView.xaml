@@ -40,8 +40,12 @@
                 </Grid.RowDefinitions>
                 <ToolBarTray Grid.Row="0" IsLocked="True">
                     <ToolBar Padding="3,2">
-                        <ToggleButton IsChecked="{Binding IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}" Style="{StaticResource ToggleButtonSwitch}" />
-                        <ToggleButton IsChecked="{Binding IsShowSideListView, Converter={StaticResource Boolean2BooleanReConverter}}" Style="{StaticResource ToggleButtonSwitch}" />
+                        <ToggleButton Style="{StaticResource PanelToggleButtonStyle}" ToolTip="{x:Static properties:Resources.IsShowListView}" IsChecked="{Binding IsShowListView}">
+                            <Path Style="{StaticResource PanelIconPathStyle}" Data="M4,4.5 H14 C14.55,4.5 15,4.95 15,5.5 V12.5 C15,13.05 14.55,13.5 14,13.5 H4 C3.45,13.5 3,13.05 3,12.5 V5.5 C3,4.95 3.45,4.5 4,4.5 Z M5,10.8 H13"/>
+                        </ToggleButton>
+                        <ToggleButton Style="{StaticResource PanelToggleButtonStyle}" Margin="6,0,7,0" ToolTip="{x:Static properties:Resources.ShowDataColumns}" IsChecked="{Binding IsShowSideListView}">
+                            <Path Style="{StaticResource PanelIconPathStyle}" Data="M4,4.5 H14 C14.55,4.5 15,4.95 15,5.5 V12.5 C15,13.05 14.55,13.5 14,13.5 H4 C3.45,13.5 3,13.05 3,12.5 V5.5 C3,4.95 3.45,4.5 4,4.5 Z M10.8,5.5 V12.5"/>
+                        </ToggleButton>
 
                         <Button Margin="2,0,0,0" Click="Exchange_Click" Content="{x:Static properties:Resources.Exchange}" />
 
