@@ -1,9 +1,7 @@
 #pragma warning disable CA1510,CS8625
 using ColorVision.Core;
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -35,7 +33,6 @@ namespace ColorVision.ImageEditor.Realtime
         private bool _renderQueued;
         private bool _disposed;
         private bool _hasRenderedFrame;
-        private long _lastAcceptedTimestamp;
         private WriteableBitmap? _bitmap;
 
         public RealtimeFramePresenter(ImageView imageView, RealtimeFrameOptions? options = null)
@@ -99,7 +96,6 @@ namespace ColorVision.ImageEditor.Realtime
             {
                 _hasLatestFrame = false;
                 _hasRenderedFrame = false;
-                _lastAcceptedTimestamp = 0;
                 _latestPixels = null;
                 _drawingPixels = null;
             }
@@ -118,18 +114,7 @@ namespace ColorVision.ImageEditor.Realtime
 
         private bool CanAcceptFrame(int width, int height, PixelFormat format, ref int stride, ref int length)
         {
-            if (_disposed || Options.IsFrozen || !TryNormalizeLayout(width, height, format, ref stride, ref length)) return false;
-
-            int maxFps = Options.MaxDisplayFps;
-            if (maxFps <= 0) return true;
-
-            long now = Stopwatch.GetTimestamp();
-            long minTicks = Stopwatch.Frequency / maxFps;
-            long last = Interlocked.Read(ref _lastAcceptedTimestamp);
-            if (last != 0 && now - last < minTicks) return false;
-
-            Interlocked.Exchange(ref _lastAcceptedTimestamp, now);
-            return true;
+            return !_disposed && !Options.IsFrozen && TryNormalizeLayout(width, height, format, ref stride, ref length);
         }
 
         private void SaveLatestFrame(int width, int height, PixelFormat format, int stride, int length, int transform)

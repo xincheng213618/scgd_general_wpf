@@ -12,6 +12,7 @@ ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
     'runtimes/win-x64/',
 )
+EXCLUDED_OUTPUT_DIRECTORIES = {'log', 'plugins', 'publish'}
 SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
 
 # ----------------------
@@ -232,7 +233,7 @@ def get_all_files(directory, include_shell_extension=True):
     """获取目录下的所有文件路径"""
     file_paths = []
     for root, dirs, files in os.walk(directory):
-        dirs[:] = [d for d in dirs if d not in {'log', 'Plugins'}]
+        dirs[:] = [d for d in dirs if d.lower() not in EXCLUDED_OUTPUT_DIRECTORIES]
         for file in files:
             if file.endswith('.pdb'):
                 continue

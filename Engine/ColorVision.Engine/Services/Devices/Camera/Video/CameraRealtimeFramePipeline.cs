@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _disposed;
         private bool _configSubscribed;
         private bool _isRunning;
+        private bool _showOverlayRoi = true;
         private int _transform = RealtimeFramePresenter.TransformNone;
 
         public CameraRealtimeFramePipeline()
@@ -36,19 +37,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             set => System.Threading.Volatile.Write(ref _transform, value & RealtimeFramePresenter.TransformFlipXY);
         }
 
-        public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone)
+        public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone, bool showOverlayRoi = true)
         {
             ArgumentNullException.ThrowIfNull(imageView);
             ThrowIfDisposed();
 
             if (!imageView.Dispatcher.CheckAccess())
             {
-                imageView.Dispatcher.Invoke(() => Start(imageView, transform));
+                imageView.Dispatcher.Invoke(() => Start(imageView, transform, showOverlayRoi));
                 return;
             }
 
             _imageView = imageView;
             Transform = transform;
+            _showOverlayRoi = showOverlayRoi;
+            _overlayVisual.IsRoiVisible = showOverlayRoi && IsArticulationEnabled;
             _isRunning = true;
             _frameCount = 0;
             _lastFps = 0;
@@ -58,7 +61,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             imageView.Realtime.Configure(new RealtimeFrameOptions
             {
-                MaxDisplayFps = _config.MaxDisplayFps,
                 AutoZoomOnFirstFrame = true,
                 UpdateImageMetadata = true
             });
@@ -179,31 +181,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             return true;
         }
 
-        private bool IsArticulationEnabled => _config.IsUseCacheFile && _config.IsCalArtculation;
+        private bool IsArticulationEnabled => _config.IsCalArtculation;
 
         private void UpdateOverlayVisibility(ImageView imageView)
         {
-            if (IsArticulationEnabled)
+            _overlayVisual.IsRoiVisible = _showOverlayRoi && IsArticulationEnabled;
+            _overlayVisual.Attach();
+            if (!_overlaysAdded)
             {
-                _overlayVisual.Attach();
-                if (!_overlaysAdded)
-                {
-                    imageView.ImageShow.AddOverlayVisual(_overlayVisual);
-                    _overlaysAdded = true;
-                }
-                _overlayVisual.UpdateMetrics(_articulation, _lastFps);
-                return;
+                imageView.ImageShow.AddOverlayVisual(_overlayVisual);
+                _overlaysAdded = true;
             }
 
-            _processor?.Dispose();
-            _processor = null;
-            _overlayVisual.ResetMetrics();
-            _overlayVisual.Detach();
-            if (_overlaysAdded)
+            if (!IsArticulationEnabled)
             {
-                imageView.ImageShow.RemoveOverlayVisual(_overlayVisual);
-                _overlaysAdded = false;
+                _processor?.Dispose();
+                _processor = null;
             }
+
+            UpdateOverlayMetrics();
         }
 
         private VideoFrameProcessor EnsureProcessor()
@@ -224,7 +220,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
                 _articulation = result.Articulation;
 
-                if (IsArticulationEnabled) _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+                UpdateOverlayMetrics();
             }));
         }
 
@@ -239,7 +235,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _lastFps = (double)_frameCount * 1000 / _fpsTimer.ElapsedMilliseconds;
             System.Threading.Interlocked.Exchange(ref _frameCount, 0);
             _fpsTimer.Restart();
-            if (IsArticulationEnabled) _overlayVisual.UpdateMetrics(_articulation, _lastFps);
+            UpdateOverlayMetrics();
+        }
+
+        private void UpdateOverlayMetrics()
+        {
+            _overlayVisual.UpdateMetrics(_lastFps, IsArticulationEnabled ? _articulation : null);
         }
 
         private void EnsureConfigSubscription()
@@ -271,12 +272,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             void ApplyConfigChange()
             {
-                if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DefaultRealtimeCameraConfig.MaxDisplayFps))
-                    imageView.Realtime.Options.MaxDisplayFps = _config.MaxDisplayFps;
-
-                if (string.IsNullOrEmpty(e.PropertyName)
-                    || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsUseCacheFile)
-                    || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsCalArtculation))
+                if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DefaultRealtimeCameraConfig.IsCalArtculation))
                     UpdateOverlayVisibility(imageView);
             }
 

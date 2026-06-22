@@ -13,6 +13,7 @@ namespace ColorVision.ImageEditor.Realtime
     {
         private readonly DefaultRealtimeCameraConfig _config;
         private bool _isAttached;
+        private bool _isRoiVisible = true;
         private string _statusText = string.Empty;
 
         public RealtimeCameraOverlayVisual(DefaultRealtimeCameraConfig? config = null)
@@ -20,11 +21,21 @@ namespace ColorVision.ImageEditor.Realtime
             _config = config ?? DefaultRealtimeCameraConfig.Current;
         }
 
+        public bool IsRoiVisible
+        {
+            get => _isRoiVisible;
+            set
+            {
+                if (_isRoiVisible == value) return;
+                _isRoiVisible = value;
+                RequestRender();
+            }
+        }
+
         public void Attach()
         {
             if (_isAttached) return;
 
-            _config.TextProperties.PropertyChanged += OverlayConfigChanged;
             _config.RectangleTextProperties.PropertyChanged += OverlayConfigChanged;
             _isAttached = true;
             RequestRender();
@@ -34,7 +45,6 @@ namespace ColorVision.ImageEditor.Realtime
         {
             if (!_isAttached) return;
 
-            _config.TextProperties.PropertyChanged -= OverlayConfigChanged;
             _config.RectangleTextProperties.PropertyChanged -= OverlayConfigChanged;
             _isAttached = false;
             RequestClear();
@@ -46,9 +56,11 @@ namespace ColorVision.ImageEditor.Realtime
             return rect.Width <= 0 || rect.Height <= 0 ? new Rect(0, 0, width, height) : rect;
         }
 
-        public void UpdateMetrics(double articulation, double fps)
+        public void UpdateMetrics(double fps, double? articulation)
         {
-            string statusText = string.Format(CultureInfo.InvariantCulture, "fps:{0:F1} Articulation: {1:F5}", fps, articulation);
+            string statusText = articulation.HasValue
+                ? string.Format(CultureInfo.InvariantCulture, "fps:{0:F1} 清晰度:{1:F5}", fps, articulation.Value)
+                : string.Format(CultureInfo.InvariantCulture, "fps:{0:F1}", fps);
             if (string.Equals(_statusText, statusText, StringComparison.Ordinal)) return;
 
             _statusText = statusText;
@@ -87,35 +99,41 @@ namespace ColorVision.ImageEditor.Realtime
         private void RenderCore()
         {
             using DrawingContext dc = RenderOpen();
-            DrawRoi(dc);
-            DrawStatus(dc);
+            RectangleTextProperties rectangle = _config.RectangleTextProperties;
+            DrawRoi(dc, rectangle);
+            DrawStatus(dc, rectangle);
         }
 
-        private void DrawRoi(DrawingContext dc)
+        private void DrawRoi(DrawingContext dc, RectangleTextProperties rectangle)
         {
-            RectangleTextProperties rectangle = _config.RectangleTextProperties;
-            if (rectangle.Rect.Width <= 0 || rectangle.Rect.Height <= 0) return;
+            if (!_isRoiVisible || rectangle.Rect.Width <= 0 || rectangle.Rect.Height <= 0) return;
             dc.DrawRectangle(rectangle.Brush, rectangle.Pen, rectangle.Rect);
         }
 
-        private void DrawStatus(DrawingContext dc)
+        private void DrawStatus(DrawingContext dc, RectangleTextProperties rectangle)
         {
-            TextProperties text = _config.TextProperties;
-            if (!text.IsShowText || string.IsNullOrWhiteSpace(_statusText)) return;
+            if (!rectangle.IsShowText || string.IsNullOrWhiteSpace(_statusText)) return;
 
             FormattedText formattedText = new(
                 _statusText,
                 CultureInfo.CurrentCulture,
-                text.FlowDirection,
-                new Typeface(text.FontFamily, text.FontStyle, text.FontWeight, text.FontStretch),
-                Math.Max(text.FontSize, 1),
-                text.Foreground,
+                rectangle.FlowDirection,
+                new Typeface(rectangle.FontFamily, rectangle.FontStyle, rectangle.FontWeight, rectangle.FontStretch),
+                Math.Max(rectangle.FontSize, 1),
+                rectangle.Foreground,
                 VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
-            Rect backgroundRect = new(text.Position.X, text.Position.Y, formattedText.Width, formattedText.Height);
-            if (text.Background != null && text.Background != Brushes.Transparent) dc.DrawRectangle(text.Background, null, backgroundRect);
+            dc.DrawText(formattedText, GetStatusOrigin(rectangle.Rect, formattedText, _isRoiVisible));
+        }
 
-            dc.DrawText(formattedText, text.Position);
+        private static Point GetStatusOrigin(Rect rect, FormattedText formattedText, bool anchorToRoi)
+        {
+            if (!anchorToRoi || rect.Width <= 0 || rect.Height <= 0) return new Point();
+
+            double x = Math.Max(0, rect.Right - formattedText.Width);
+            double y = rect.Top - formattedText.Height;
+            if (y < 0) y = rect.Top;
+            return new Point(x, y);
         }
     }
 }

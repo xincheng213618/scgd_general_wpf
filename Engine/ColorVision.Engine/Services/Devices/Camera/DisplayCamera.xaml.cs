@@ -204,6 +204,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             InitializeLocalVideoRoiEditor();
             DisplayCameraConfig.PropertyChanged += DisplayCameraConfig_PropertyChanged;
+            Device.CameraVideoControl.Config.PropertyChanged += RealtimeCameraConfig_PropertyChanged;
             ApplyLocalVideoRoiToRealtimeConfig();
 
             CBFilp.ItemsSource = from e1 in Enum.GetValues<CVImageFlipMode>().Cast<CVImageFlipMode>()
@@ -255,8 +256,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void ApplyLocalVideoRoiToRealtimeConfig()
         {
-            DefaultRealtimeCameraConfig.Current.RectangleTextProperties.Rect = DisplayCameraConfig.LocalVideoRoi;
+            RectangleTextProperties rectangle = Device.CameraVideoControl.Config.RectangleTextProperties;
+            rectangle.Rect = DisplayCameraConfig.LocalVideoRoi;
+            rectangle.Brush = Brushes.Transparent;
+            rectangle.Pen = new Pen(Brushes.LimeGreen, 1);
+            rectangle.Foreground = Brushes.DarkOrange;
+            rectangle.Position = RectangleTextPosition.Top;
+            rectangle.IsShowText = true;
+            if (rectangle.FontSize <= 0) rectangle.FontSize = 200;
         }
+
+        private bool IsRealtimeArticulationEnabled => Device.CameraVideoControl.Config.IsCalArtculation;
 
         private static bool IsVisibleLocalVideoRoi(Rect rect) => rect.Width > 0 && rect.Height > 0;
 
@@ -268,17 +278,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Brush = Brushes.Transparent,
                 Pen = new Pen(Brushes.LimeGreen, 1),
                 Foreground = Brushes.LimeGreen,
-                Text = "清晰度区域",
+                Text = string.Empty,
                 Position = RectangleTextPosition.Top,
-                IsShowText = true
+                IsShowText = false
             };
         }
 
         private void RefreshLocalVideoRoiVisual(bool selectNewVisual = false)
         {
-            if (!Device.DisplayConfig.IsLocalVideoOpen)
+            if (!Device.DisplayConfig.IsLocalVideoOpen || !IsRealtimeArticulationEnabled)
             {
-                SyncLocalVideoRoiVisualFromConfig();
+                RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
                 return;
             }
 
@@ -294,6 +304,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EnsureLocalVideoRoiVisual(bool select = true)
         {
+            if (!IsRealtimeArticulationEnabled)
+            {
+                RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
+                return;
+            }
+
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
             {
@@ -375,6 +391,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ApplyLocalVideoRoiToRealtimeConfig();
             SyncLocalVideoRoiVisualFromConfig();
             SaveDisplayConfig();
+        }
+
+        private void RealtimeCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(e.PropertyName) && e.PropertyName != nameof(DefaultRealtimeCameraConfig.IsCalArtculation)) return;
+
+            RefreshLocalVideoRoiVisual(selectNewVisual: true);
         }
 
         private void CaptureLocalVideoImageEditMode(ColorVision.ImageEditor.ImageView imageView)
@@ -468,10 +491,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void LocalVideoRoiDefault_Click(object sender, RoutedEventArgs e)
         {
             DisplayCameraConfig.LocalVideoRoi = new Rect(50, 50, 100, 100);
-            if (Device.DisplayConfig.IsLocalVideoOpen)
-            {
-                EnsureLocalVideoRoiVisual();
-            }
+            RefreshLocalVideoRoiVisual(selectNewVisual: true);
         }
 
         private void LocalVideoRoiFull_Click(object sender, RoutedEventArgs e)
@@ -1153,6 +1173,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
             DisplayCameraConfig.PropertyChanged -= DisplayCameraConfig_PropertyChanged;
+            Device.CameraVideoControl.Config.PropertyChanged -= RealtimeCameraConfig_PropertyChanged;
             RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
 
             // Clean up video display resources
@@ -1332,10 +1353,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 button.Content = "Close Video";
                 ApplyLocalVideoRoiToRealtimeConfig();
-                _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform);
-                EnsureLocalVideoRoiVisual();
+                _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false);
                 SetLocalVideoPoiTemplateSupported(true);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
+                RefreshLocalVideoRoiVisual(selectNewVisual: true);
                 localVideoOpened = true;
                 logger.Info("视频模式初始化结束");
             }
