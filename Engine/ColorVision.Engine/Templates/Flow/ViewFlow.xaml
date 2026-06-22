@@ -100,7 +100,17 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <ProgressBar  Maximum="100" Value="{Binding FlowEngineManager.BatchProgress}"/>
-                    <TextBox x:FieldModifier="public" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
+                    <TextBox x:FieldModifier="public" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0" VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
+                    <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom"  BorderThickness="0">
+                        <WrapPanel>
+                            <Button Content="X64" Tag="ServiceLog_x64" Click="Button_OpenServiceLog_Click" Margin="0,0,5,0"/>
+                            <Button Content="Camera" Tag="ServiceLog_Camera" Click="Button_OpenServiceLog_Click" Margin="0,0,5,0"/>
+                            <Button Content="Spectrum" Tag="ServiceLog_Spectrum" Click="Button_OpenServiceLog_Click" Margin="0,0,5,0"/>
+                            <Button Content="x86" Tag="ServiceLog_dev" Click="Button_OpenServiceLog_Click" Margin="0,0,5,0"/>
+                            <Button Content="Algorithm" Tag="ServiceLog_Algorithm" Click="Button_OpenServiceLog_Click" Margin="0,0,5,0"/>
+                            <Button Content="OLED" Tag="ServiceLog_CVOLED" Click="Button_OpenServiceLog_Click"/>
+                        </WrapPanel>
+                    </Border>
                 </Grid>
             </Grid>
         </Grid>

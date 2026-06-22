@@ -73,6 +73,29 @@ namespace ColorVision.Engine.Services
             }
         }
 
+        public static string? GetServiceLogPath(string panelId)
+        {
+            if (string.IsNullOrWhiteSpace(panelId))
+                return null;
+
+            foreach (var (serviceName, configuredPathAccessor, logs) in ServiceGroups)
+            {
+                foreach (var (logPanelId, _, logFilePrefix) in logs)
+                {
+                    if (!string.Equals(logPanelId, panelId, StringComparison.Ordinal))
+                        continue;
+
+                    string? serviceBaseDir = GetServiceBaseDir(configuredPathAccessor, serviceName);
+                    if (string.IsNullOrEmpty(serviceBaseDir))
+                        return null;
+
+                    return GetLogFilePath(serviceBaseDir, Path.Combine(serviceBaseDir, "log"), logFilePrefix);
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Register all configured log panels for a single Windows service.
         /// </summary>
