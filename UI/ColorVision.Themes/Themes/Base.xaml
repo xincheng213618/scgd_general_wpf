@@ -314,19 +314,34 @@
     <Style x:Key="ButtonPageControl1" TargetType="{x:Type ToggleButton}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">
-                    <DockPanel Background="{TemplateBinding Background}">
-                        <Path x:Name="path1"  Margin="7,2" Height="10" Width="10" Stretch="Fill" Fill="{DynamicResource GlobalTextBrush}" Data="M 0,0 L 1,1 L 0,2 Z"/>
-                        <ContentPresenter  HorizontalAlignment="Left"  VerticalAlignment="Center"/>
+                    <DockPanel Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                        <Path x:Name="Chevron"
+                              Width="14"
+                              Height="14"
+                              Margin="5,0,6,0"
+                              Data="M5,3 L9,7 L5,11"
+                              Fill="Transparent"
+                              Stretch="None"
+                              Stroke="{TemplateBinding Foreground}"
+                              StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round"
+                              StrokeStartLineCap="Round"
+                              StrokeThickness="1.8"
+                              VerticalAlignment="Center"
+                              Visibility="Visible"/>
+                        <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
                     </DockPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="true">
-                            <Setter TargetName="path1" Property="Data" Value="M 0,0 L 1,1 L 2,0 Z"/>
-                            <Setter TargetName="path1" Property="Height" Value="10"/>
-                            <Setter TargetName="path1" Property="Width" Value="10"/>
-                            <Setter TargetName="path1" Property="Margin" Value="7,2"/>
+                            <Setter TargetName="Chevron" Property="Data" Value="M3,5 L7,9 L11,5"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter TargetName="Chevron" Property="Opacity" Value="0.82"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

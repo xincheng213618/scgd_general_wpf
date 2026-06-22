@@ -22,7 +22,7 @@
         <Style BasedOn="{StaticResource TextBox.Small}" TargetType="{x:Type TextBox}" />
     </UserControl.Resources>
     <StackPanel>
-        <DockPanel Margin="3,0,8,0" ToolTip="{Binding DService.DeviceStatus}">
+        <DockPanel Margin="0,0,5,0" ToolTip="{Binding DService.DeviceStatus}">
             <Grid DockPanel.Dock="Right">
                 <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                 <Image Height="18" Margin="0,0,0,0" Source="{DynamicResource DrawingImageProperty}" />
