@@ -53,6 +53,9 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
+        private static readonly TimeSpan RestartServicesTimeout = TimeSpan.FromMinutes(7);
+        private static readonly TimeSpan RefreshAfterRestartTimeout = TimeSpan.FromSeconds(20);
+        private const double DefaultRestartServicesExpectedDurationMs = 15000;
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ObservableCollection<KBItemMaster> ViewResluts => ViewResultManager.ViewResluts;
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
@@ -85,6 +88,7 @@ namespace ProjectKB
                 (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.ItemsSource = ViewResluts;
             InitFlow();
+            EnsureTimedButtonOperations();
             Task.Run(async () =>
             {
                 if (ProjectKBConfig.Instance.AutoModbusConnect)
@@ -274,26 +278,74 @@ namespace ProjectKB
 
         public static KBRecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
+        private TimedButtonOperationRegistry EnsureTimedButtonOperations()
+        {
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(actionKey => $"projectkb:{actionKey}");
+            operations.Register(RestartServicesButton, "restart-cv-windows-services", options =>
+            {
+                options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(BuildRestartServicesButtonText(), stats);
+                options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(BuildRestartServicesButtonText(), stats);
+                options.RunningText = "重启服务";
+            });
+            return operations;
+        }
+
+        private static string BuildRestartServicesButtonText()
+        {
+            string version = ServiceConfig.Instance.RegistrationCenterServiceInfo.FileVersion;
+            return string.IsNullOrWhiteSpace(version) ? "重启服务" : $"重启{version}";
+        }
+
+        private double GetExpectedRestartDurationMs()
+        {
+            TimedButtonOperationStats? stats = EnsureTimedButtonOperations().Get(RestartServicesButton)?.CurrentStats;
+            if (stats?.SuccessCount > 0 && stats.AverageElapsedMs > 0) return stats.AverageElapsedMs;
+            if (stats?.WarmupCount > 0 && stats.WarmupElapsedMs > 0) return stats.WarmupElapsedMs;
+            return DefaultRestartServicesExpectedDurationMs;
+        }
+
         private async void RestartServicesButton_Click(object sender, RoutedEventArgs e)
         {
             if (!AuthManager.RequireAdmin(this)) return;
 
-            RestartServicesButton.IsEnabled = false;
-            RestartServicesButton.Content = "重启中...";
+            TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
+            if (operations.Get(RestartServicesButton)?.IsRunning == true) return;
 
+            TimedButtonOperationScope? operationScope = operations.Begin(RestartServicesButton, GetExpectedRestartDurationMs(), "重启服务");
+            bool success = false;
             try
             {
-                await DisplayFlow.RestartColorVisionServicesAsync();
-                await Refresh();
+                logTextBox.Text = "正在重启ColorVision服务...";
+                await DisplayFlow.RestartColorVisionServicesAsync().WaitAsync(RestartServicesTimeout);
+                success = true;
+
+                try
+                {
+                    await Refresh().WaitAsync(RefreshAfterRestartTimeout);
+                    logTextBox.Text = "服务重启完成，当前流程已刷新";
+                }
+                catch (TimeoutException ex)
+                {
+                    log.Warn("服务重启完成，但刷新当前流程超时", ex);
+                    logTextBox.Text = "服务重启完成，刷新当前流程超时，可手动切换流程刷新";
+                }
+            }
+            catch (TimeoutException ex)
+            {
+                log.Error("重启ColorVision服务超时", ex);
+                logTextBox.Text = "重启服务超时，已恢复按钮，可稍后重试";
+                MessageBox.Show(this, $"重启服务超过 {RestartServicesTimeout.TotalMinutes:F0} 分钟未完成，请检查服务状态后重试。", "重启服务超时", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
                 log.Error("重启ColorVision服务失败", ex);
+                logTextBox.Text = $"服务重启失败：{ex.Message}";
                 MessageBox.Show(this, ex.Message, "重启服务失败", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
-                RestartServicesButton.IsEnabled = true;
+                operationScope?.Complete(success);
+                this.TryGetTimedButtonOperations()?.RefreshIdleState(RestartServicesButton);
             }
         }
 
@@ -1384,6 +1436,7 @@ namespace ProjectKB
             STNodeEditorMain?.Dispose();
             timer?.Dispose();
             logOutput?.Dispose();
+            this.DisposeTimedButtonOperations();
             GC.SuppressFinalize(this);
         }
 
