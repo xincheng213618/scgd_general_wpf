@@ -554,24 +554,6 @@ namespace ColorVision.Engine.Services.Flow
             STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + delta, mousePosition.X, mousePosition.Y);
         }
 
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (FlowEngineManager.Batch != null)
-            {
-                Frame frame = new Frame();
-
-                MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, FlowEngineManager.Batch);
-                Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
-                window.Content = batchDataHistory;
-                window.Show();
-            }
-            else
-            {
-                MessageBox.Show(Properties.Resources.Flow_RunFlowFirst);
-            }
-        }
-
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             BatchManager.GetInstance().Edit();

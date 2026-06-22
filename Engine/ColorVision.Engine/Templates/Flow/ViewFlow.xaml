@@ -33,10 +33,8 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Row="0" >
-
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
                             <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
@@ -76,31 +74,21 @@
                         <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Image  Source="{DynamicResource DrawingImageClear}"/>
                         </Button>
-                        <Button Command="{Binding NewFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="{x:Static properties:Resources.Flow_NewFlow}">
-                            <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
-                        </Button>
                         <Button Command="{Binding ExportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="{x:Static properties:Resources.Flow_ExportFlow}">
                             <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                         </Button>
                         <Button Command="{Binding ImportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="{x:Static properties:Resources.Flow_ImportFlow}">
                             <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                         </Button>
-                        <Button Command="{Binding ImportModuleCommand}" Margin="0,0,5,0" Padding="2" Height="30" ToolTip="{x:Static properties:Resources.Flow_ImportTemplateAsModule}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
-                                <TextBlock Text="{x:Static properties:Resources.Flow_Module}" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                            <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>
-                            <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                            <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Margin="0,0,5,0"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                            <Button Content="{x:Static properties:Resources.Flow_NodeTimeAnalysis}" Click="Button_Click_NodeAnalysis"/>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                             <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
                             <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess"  Margin="0,0,5,0"/>
-                            <Button Content="{x:Static properties:Resources.Flow_NodeTimeAnalysis}" Click="Button_Click_NodeAnalysis"/>
                         </StackPanel>
 
                     </StackPanel>
@@ -113,15 +101,8 @@
                     </Grid.RowDefinitions>
                     <ProgressBar  Maximum="100" Value="{Binding FlowEngineManager.BatchProgress}"/>
                     <TextBox x:FieldModifier="public" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Height="35">
-                        <Button Content="{x:Static properties:Resources.ExecutionProcess}"  x:Name="ButtonRun" Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
-                        <Button Content="{x:Static properties:Resources.StopProcess}"  x:Name="ButtonStop" Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}" FontWeight="Bold" FontSize="16" Click="Button_FlowStop_Click" />
-                    </StackPanel>
                 </Grid>
-
             </Grid>
-
-
         </Grid>
     </Grid>
 </UserControl>
