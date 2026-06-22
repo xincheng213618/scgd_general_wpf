@@ -1,0 +1,280 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect.SurfaceDefectDebugWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="表面缺陷/Mura 检测" Height="760" Width="1120"
+        MinHeight="620" MinWidth="960"
+        Background="#F6F7F9" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#0B6B5E"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#667085"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#D9DEE5"/>
+        <SolidColorBrush x:Key="PanelBackground" Color="#FFFFFF"/>
+        <Style TargetType="Button">
+            <Setter Property="MinWidth" Value="88"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Padding" Value="12,4"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#263238"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <Button x:Name="DetectButton" Content="检测" Click="DetectButton_Click"/>
+                <Button Content="清除 Overlay" Click="ClearOverlay_Click"/>
+                <Button Content="复制配置" Click="CopyConfig_Click"/>
+                <Button Content="复制 JSON" Click="CopyJson_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="HeaderSummaryText"
+                       DockPanel.Dock="Right"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource PrimaryBrush}"/>
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Background="{StaticResource PanelBackground}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="输入范围" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="RoiInfoText" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="检测通道" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="ChannelCombo" SelectedIndex="0" Margin="0,0,0,10">
+                            <ComboBoxItem Content="亮度/Luma" Tag="-1"/>
+                            <ComboBoxItem Content="B 通道" Tag="0"/>
+                            <ComboBoxItem Content="G 通道" Tag="1"/>
+                            <ComboBoxItem Content="R 通道" Tag="2"/>
+                        </ComboBox>
+
+                        <TextBlock Text="背景尺度" Margin="0,0,0,4"/>
+                        <TextBox x:Name="ScalesTextBox" Text="31,61,121" Margin="0,0,0,10"/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="暗缺陷阈值(%)" Margin="0,0,0,4"/>
+                                <TextBox x:Name="DarkThresholdTextBox" Text="1.5"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="亮缺陷阈值(%)" Margin="0,0,0,4"/>
+                                <TextBox x:Name="BrightThresholdTextBox" Text="1.5"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="最小面积(px)" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MinAreaTextBox" Text="8"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="最大面积(px)" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MaxAreaTextBox" Text="200000"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Mura 最小面积" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MuraMinAreaTextBox" Text="1000"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="最大输出数" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MaxDefectsTextBox" Text="1000"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="形态学" FontWeight="SemiBold" Margin="0,8,0,8"/>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Open Kernel" Margin="0,0,0,4"/>
+                                <TextBox x:Name="OpenKernelTextBox" Text="1"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Close Kernel" Margin="0,0,0,4"/>
+                                <TextBox x:Name="CloseKernelTextBox" Text="3"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="合并距离(px)" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MergeDistanceTextBox" Text="3"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="线缺陷长宽比" Margin="0,0,0,4"/>
+                                <TextBox x:Name="LineAspectRatioTextBox" Text="8.0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <CheckBox x:Name="EnableDarkCheckBox" Content="检测暗缺陷" IsChecked="True" Margin="0,2"/>
+                        <CheckBox x:Name="EnableBrightCheckBox" Content="检测亮缺陷" IsChecked="True" Margin="0,2"/>
+                        <CheckBox x:Name="EnableLineCheckBox" Content="启用线缺陷分类" IsChecked="True" Margin="0,2"/>
+                        <CheckBox x:Name="DrawOverlayCheckBox" Content="检测后刷新 Overlay" IsChecked="True" Margin="0,12,0,2"/>
+                        <CheckBox x:Name="AutoClearOverlayCheckBox" Content="刷新前清除旧 Overlay" IsChecked="True" Margin="0,2,0,10"/>
+
+                        <TextBlock Text="等级阈值" FontWeight="SemiBold" Margin="0,8,0,8"/>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="最小 severity" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MinSeverityTextBox" Text="0.0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Minor" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MinorSeverityTextBox" Text="0.25"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Major" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MajorSeverityTextBox" Text="1.0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Critical" Margin="0,0,0,4"/>
+                                <TextBox x:Name="CriticalSeverityTextBox" Text="3.0"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0"
+                        Background="{StaticResource PanelBackground}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="10"
+                        Margin="0,0,0,10">
+                    <DataGrid x:Name="SummaryGrid"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              MinHeight="116"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="指标" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="值" Binding="{Binding Value}" Width="140"/>
+                            <DataGridTextColumn Header="说明" Binding="{Binding Description}" Width="2*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <TabControl Grid.Row="1">
+                    <TabItem Header="缺陷列表">
+                        <Border Background="{StaticResource PanelBackground}" Padding="8">
+                            <DataGrid x:Name="DefectsGrid"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      IsReadOnly="True"
+                                      GridLinesVisibility="Horizontal">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="52"/>
+                                    <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="110"/>
+                                    <DataGridTextColumn Header="等级" Binding="{Binding Grade}" Width="76"/>
+                                    <DataGridTextColumn Header="极性" Binding="{Binding Polarity}" Width="70"/>
+                                    <DataGridTextColumn Header="面积" Binding="{Binding Area}" Width="82"/>
+                                    <DataGridTextColumn Header="Severity" Binding="{Binding Severity, StringFormat=F4}" Width="92"/>
+                                    <DataGridTextColumn Header="MeanDelta" Binding="{Binding MeanDelta, StringFormat=F4}" Width="98"/>
+                                    <DataGridTextColumn Header="MaxAbs" Binding="{Binding MaxDeltaAbs, StringFormat=F4}" Width="90"/>
+                                    <DataGridTextColumn Header="Scale" Binding="{Binding Scale}" Width="70"/>
+                                    <DataGridTextColumn Header="Aspect" Binding="{Binding AspectRatio, StringFormat=F2}" Width="80"/>
+                                    <DataGridTextColumn Header="Fill" Binding="{Binding FillRatio, StringFormat=F2}" Width="70"/>
+                                    <DataGridTextColumn Header="Rect" Binding="{Binding RectDisplay}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                    </TabItem>
+                    <TabItem Header="JSON">
+                        <TextBox x:Name="JsonText"
+                                 AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 FontFamily="Consolas"
+                                 FontSize="12"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 IsReadOnly="True"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"/>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+        </Grid>
+
+        <TextBlock x:Name="StatusText"
+                   Grid.Row="2"
+                   Margin="0,10,0,0"
+                   Foreground="{StaticResource MutedBrush}"
+                   TextWrapping="Wrap"/>
+    </Grid>
+</Window>
