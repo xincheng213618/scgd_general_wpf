@@ -274,6 +274,29 @@ namespace ProjectKB
 
         public static KBRecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
+        private async void RestartServicesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!AuthManager.RequireAdmin(this)) return;
+
+            RestartServicesButton.IsEnabled = false;
+            RestartServicesButton.Content = "重启中...";
+
+            try
+            {
+                await DisplayFlow.RestartColorVisionServicesAsync();
+                await Refresh();
+            }
+            catch (Exception ex)
+            {
+                log.Error("重启ColorVision服务失败", ex);
+                MessageBox.Show(this, ex.Message, "重启服务失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                RestartServicesButton.IsEnabled = true;
+            }
+        }
+
         #region FlowRun
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
@@ -1215,7 +1238,7 @@ namespace ProjectKB
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
-            outputText.Background = Brushes.White;
+            outputText.SetResourceReference(Control.BackgroundProperty, "RegionBrush");
             NGResult.Text = string.Empty;
         }
 

@@ -39,11 +39,9 @@ namespace ProjectKB.Auth
         public bool IsInitialized { get; set; }
 
         public static string PasswordFilePath => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "ColorVision",
-            "ProjectKB",
-            "Security",
-            "Auth",
+            "Config",
             "kb.auth.json");
 
         [JsonIgnore]
@@ -126,7 +124,7 @@ namespace ProjectKB.Auth
         }
 
         /// <summary>
-        /// 保存独立密码文件，避免删除主配置时影响数据库、设备和UI设置。
+        /// 保存独立密码文件，和主配置文件放在同一目录，避免重置密码时误删其它配置。
         /// </summary>
         internal void SavePasswordFile()
         {
@@ -144,7 +142,6 @@ namespace ProjectKB.Auth
                 IsInitialized = IsInitialized
             };
             File.WriteAllText(PasswordFilePath, JsonConvert.SerializeObject(data, Formatting.Indented));
-            TryHideFile(PasswordFilePath);
         }
 
         private void LoadPasswordFile()
@@ -192,17 +189,6 @@ namespace ProjectKB.Auth
             AdminPasswordSalt = string.Empty;
             IdleTimeoutMinutes = 30;
             IsInitialized = false;
-        }
-
-        private static void TryHideFile(string filePath)
-        {
-            try
-            {
-                File.SetAttributes(filePath, File.GetAttributes(filePath) | FileAttributes.Hidden);
-            }
-            catch
-            {
-            }
         }
 
         private sealed class PasswordFileData
