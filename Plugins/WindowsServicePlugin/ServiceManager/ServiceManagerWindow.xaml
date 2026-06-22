@@ -4,11 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WindowsServicePlugin.ServiceManager"
+        xmlns:res="clr-namespace:WindowsServicePlugin.Properties"
         xmlns:logControls="clr-namespace:ColorVision.UI.LogImp.Controls;assembly=ColorVision.UI"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ServiceManagerViewModel}"
-        Title="服务管理器" Height="750" Width="1000"
+        Title="{x:Static res:Resources.ServiceManager}" Height="750" Width="1000"
         Background="{DynamicResource GlobalBackground}"
         Foreground="{DynamicResource GlobalTextBrush}"
         WindowStartupLocation="CenterScreen"
@@ -30,22 +31,22 @@
             <StackPanel>
                 <!-- 安装路径 -->
                 <DockPanel Margin="0,0,0,8">
-                    <TextBlock Text="安装根目录：" VerticalAlignment="Center" Width="80"/>
-                    <Button DockPanel.Dock="Right" Content="目录设置" Command="{Binding SetBasePathCommand}" Margin="8,0,0,0" Padding="12,4"/>
+                    <TextBlock Text="{x:Static res:Resources.BaseInstallRootLabel}" VerticalAlignment="Center" Width="80"/>
+                    <Button DockPanel.Dock="Right" Content="{x:Static res:Resources.SetDirectory}" Command="{Binding SetBasePathCommand}" Margin="8,0,0,0" Padding="12,4"/>
                     <TextBox Text="{Binding Config.BaseLocation, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" IsReadOnly="True"/>
                 </DockPanel>
 
                 <!-- 版本和操作 -->
                 <WrapPanel>
-                    <Button Content="一键启动" Command="{Binding OneKeyStartCommand}" Margin="0,0,8,0" Padding="16,6"
+                    <Button Content="{x:Static res:Resources.OneKeyStart}" Command="{Binding OneKeyStartCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
-                    <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
+                    <Button Content="{x:Static res:Resources.OneKeyStop}" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
-                    <Button Content="更新配置" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                    <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
+                    <Button Content="{x:Static res:Resources.UpdateConfig}" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                    <Button Content="{x:Static res:Resources.LegacyAppConfig}" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
                             Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
-                    <Button Content="更新" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"
-                            Style="{StaticResource ButtonPrimary}" ToolTip="打开服务安装管理器，检查更新并安装"/>
+                    <Button Content="{x:Static res:Resources.Update}" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"
+                            Style="{StaticResource ButtonPrimary}" ToolTip="{x:Static res:Resources.OpenInstallManagerToolTip}"/>
                 </WrapPanel>
             </StackPanel>
         </Border>
@@ -53,7 +54,7 @@
         <!-- 中间：TabControl -->
         <TabControl Grid.Row="1" Margin="8">
             <!-- 服务列表 Tab -->
-            <TabItem Header="CVWindowsService">
+            <TabItem Header="{x:Static res:Resources.CVWindowsService}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Services}">
                         <ItemsControl.ItemTemplate>
@@ -90,13 +91,13 @@
                                             </TextBlock>
                                         </WrapPanel>
                                         <WrapPanel Margin="0,6,0,0">
-                                            <Button Content="安装" Command="{Binding DataContext.ServiceInstallCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
-                                            <Button Content="卸载" Command="{Binding DataContext.ServiceUninstallCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2" Foreground="Red"/>
-                                            <Button Content="启动" Command="{Binding DataContext.ServiceStartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
-                                            <Button Content="停止" Command="{Binding DataContext.ServiceStopCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
-                                            <Button Content="重启" Command="{Binding DataContext.ServiceRestartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
-                                            <Button Content="终止" Command="{Binding DataContext.ServiceTerminateCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
-                                            <Button Content="打开目录" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="{x:Static res:Resources.Install}" Command="{Binding DataContext.ServiceInstallCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="{x:Static res:Resources.Uninstall}" Command="{Binding DataContext.ServiceUninstallCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2" Foreground="Red"/>
+                                            <Button Content="{x:Static res:Resources.Start}" Command="{Binding DataContext.ServiceStartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="{x:Static res:Resources.Stop}" Command="{Binding DataContext.ServiceStopCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="{x:Static res:Resources.Restart}" Command="{Binding DataContext.ServiceRestartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="{x:Static res:Resources.Terminate}" Command="{Binding DataContext.ServiceTerminateCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="{x:Static res:Resources.OpenFolder}" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
                                         </WrapPanel>
                                     </StackPanel>
                                 </Border>
@@ -107,7 +108,7 @@
             </TabItem>
 
             <!-- MySQL Tab -->
-            <TabItem Header="MySQL">
+            <TabItem Header="{x:Static res:Resources.MySQL}">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -118,12 +119,12 @@
                     </Grid.RowDefinitions>
 
                     <!-- MySQL 信息 -->
-                    <GroupBox Header="MySQL 服务信息" Grid.Row="0" Margin="0,0,0,8" Padding="8">
+                    <GroupBox Header="{x:Static res:Resources.MySqlServiceInfo}" Grid.Row="0" Margin="0,0,0,8" Padding="8">
                         <StackPanel>
                             <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="服务名" Width="80" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static res:Resources.ServiceName}" Width="80" VerticalAlignment="Center"/>
                                 <TextBox Text="{Binding MySqlManager.Config.ServiceName}" Width="120" Margin="4,0" IsReadOnly="True"/>
-                                <TextBlock Text="状态" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                                <TextBlock Text="{x:Static res:Resources.Status}" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
@@ -141,28 +142,28 @@
                                 </TextBlock>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="路径" Width="80" VerticalAlignment="Center"/>
-                                <Button DockPanel.Dock="Right" Content="浏览" Command="{Binding MySqlBrowseCommand}" Padding="8,2" Margin="4,0,0,0"/>
+                                <TextBlock Text="{x:Static res:Resources.Path}" Width="80" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static res:Resources.Browse}" Command="{Binding MySqlBrowseCommand}" Padding="8,2" Margin="4,0,0,0"/>
                                 <TextBox Text="{Binding MySqlManager.Config.ExePath}" IsReadOnly="True"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="root密码" Width="80" VerticalAlignment="Center"/>
-                                <Button DockPanel.Dock="Right" Content="应用root密码" Command="{Binding MySqlApplyRootPasswordCommand}" Padding="8,2" Margin="4,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="随机生成" Command="{Binding MySqlGenerateRandomRootPasswordCommand}" Padding="8,2" Margin="4,0,0,0"/>
+                                <TextBlock Text="{x:Static res:Resources.RootPassword}" Width="80" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static res:Resources.ApplyRootPassword}" Command="{Binding MySqlApplyRootPasswordCommand}" Padding="8,2" Margin="4,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static res:Resources.GenerateRandom}" Command="{Binding MySqlGenerateRandomRootPasswordCommand}" Padding="8,2" Margin="4,0,0,0"/>
                                 <TextBox Text="{Binding MySqlManager.Config.RootPassword, UpdateSourceTrigger=PropertyChanged}" Width="260" Margin="4,0,0,0"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="业务用户" Width="80" VerticalAlignment="Center"/>
-                                <Button DockPanel.Dock="Right" Content="创建/更新用户" Command="{Binding MySqlCreateOrUpdateUserCommand}" Padding="8,2" Margin="4,0,0,0"/>
+                                <TextBlock Text="{x:Static res:Resources.AppUser}" Width="80" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static res:Resources.CreateOrUpdateUser}" Command="{Binding MySqlCreateOrUpdateUserCommand}" Padding="8,2" Margin="4,0,0,0"/>
                                 <TextBox Text="{Binding MySqlManager.Config.AppUser, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="4,0,0,0"/>
-                                <TextBlock Text="业务密码" Width="70" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <TextBlock Text="{x:Static res:Resources.AppPassword}" Width="70" VerticalAlignment="Center" Margin="12,0,0,0"/>
                                 <TextBox Text="{Binding MySqlManager.Config.AppPassword, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="4,0,0,0"/>
-                                <TextBlock Text="数据库" Width="52" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <TextBlock Text="{x:Static res:Resources.Database}" Width="52" VerticalAlignment="Center" Margin="12,0,0,0"/>
                                 <TextBox Text="{Binding MySqlManager.Config.Database, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="4,0,0,0"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="SQL脚本" Width="80" VerticalAlignment="Center"/>
-                                <Button DockPanel.Dock="Right" Content="脚本执行" Command="{Binding MySqlRunScriptCommand}" Padding="8,2" Margin="4,0,0,0"/>
+                                <TextBlock Text="{x:Static res:Resources.SqlScript}" Width="80" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="{x:Static res:Resources.RunScript}" Command="{Binding MySqlRunScriptCommand}" Padding="8,2" Margin="4,0,0,0"/>
                                 <Button DockPanel.Dock="Right" Content="..." Command="{Binding MySqlBrowseSqlScriptCommand}" Padding="10,2" Margin="4,0,0,0"/>
                                 <TextBox Text="{Binding MySqlManager.Config.SqlScriptPath, UpdateSourceTrigger=PropertyChanged}" Margin="4,0,0,0"/>
                             </DockPanel>
@@ -171,35 +172,35 @@
 
                     <!-- MySQL 操作按钮 -->
                     <WrapPanel Grid.Row="1" Margin="0,0,0,8">
-                        <Button Content="Zip全安装" Command="{Binding MySqlInstallZipCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                        <Button Content="注册服务" Command="{Binding MySqlRegisterExistingCommand}" Margin="0,0,8,0" Padding="12,6"
-                                ToolTip="使用上次保存的 MySQL 路径注册 MySQL，不重新初始化数据"/>
-                        <Button Content="启动" Command="{Binding MySqlStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                        <Button Content="停止" Command="{Binding MySqlStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                        <Button Content="卸载" Command="{Binding MySqlUninstallCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
+                        <Button Content="{x:Static res:Resources.ZipFullInstall}" Command="{Binding MySqlInstallZipCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="{x:Static res:Resources.RegisterService}" Command="{Binding MySqlRegisterExistingCommand}" Margin="0,0,8,0" Padding="12,6"
+                                ToolTip="{x:Static res:Resources.RegisterMySqlTooltip}"/>
+                        <Button Content="{x:Static res:Resources.Start}" Command="{Binding MySqlStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="{x:Static res:Resources.Stop}" Command="{Binding MySqlStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="{x:Static res:Resources.Uninstall}" Command="{Binding MySqlUninstallCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
 
                         <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
 
-                        <Button Content="重置数据库" Command="{Binding MySqlResetDatabaseCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"
-                                ToolTip="使用 root 执行服务安装目录 SQL\color_vision_all.sql"/>
+                        <Button Content="{x:Static res:Resources.ResetDatabase}" Command="{Binding MySqlResetDatabaseCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"
+                                ToolTip="{x:Static res:Resources.ResetDatabaseTooltip}"/>
                     </WrapPanel>
                 </Grid>
             </TabItem>
 
             <!-- MQTT Tab -->
-            <TabItem Header="MQTT">
+            <TabItem Header="{x:Static res:Resources.MQTT}">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <GroupBox Header="MQTT 服务信息" Grid.Row="0" Margin="0,0,0,8" Padding="8">
+                    <GroupBox Header="{x:Static res:Resources.MqttServiceInfo}" Grid.Row="0" Margin="0,0,0,8" Padding="8">
                         <StackPanel>
                             <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="服务名" Width="80" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static res:Resources.ServiceName}" Width="80" VerticalAlignment="Center"/>
                                 <TextBox Text="{Binding MqttManager.Config.ServiceName}" Width="180" Margin="4,0" IsReadOnly="True"/>
-                                <TextBlock Text="状态" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                                <TextBlock Text="{x:Static res:Resources.Status}" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
@@ -217,15 +218,15 @@
                                 </TextBlock>
                             </DockPanel>
                             <DockPanel>
-                                <TextBlock Text="路径" Width="80" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static res:Resources.Path}" Width="80" VerticalAlignment="Center"/>
                                 <TextBox Text="{Binding MqttManager.Config.ExePath}" IsReadOnly="True"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
 
                     <WrapPanel Grid.Row="1" Margin="0,0,0,8">
-                        <Button Content="启动" Command="{Binding MqttStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                        <Button Content="停止" Command="{Binding MqttStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="{x:Static res:Resources.Start}" Command="{Binding MqttStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="{x:Static res:Resources.Stop}" Command="{Binding MqttStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
                     </WrapPanel>
                 </Grid>
             </TabItem>
@@ -245,7 +246,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="日志输出" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
+            <TextBlock Grid.Row="0" Text="{x:Static res:Resources.LogOutput}" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
             <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="6">
                 <logControls:LogViewerControl x:Name="LogViewer"
                                               TextWrapping="Wrap"

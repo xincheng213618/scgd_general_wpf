@@ -132,14 +132,8 @@
   <data name="CameraLog" xml:space="preserve">
     <value>Journal de la caméra</value>
   </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>Journal de service RC</value>
-  </data>
   <data name="ManagementService" xml:space="preserve">
     <value>Services de gestion</value>
-  </data>
-  <data name="ReadServiceConfig" xml:space="preserve">
-    <value>Lire la configuration du service</value>
   </data>
   <data name="ReplaceServiceCfg" xml:space="preserve">
     <value>Remplacer le CFG du service</value>
@@ -204,34 +198,256 @@
   <data name="Service" xml:space="preserve">
     <value>Service</value>
   </data>
-  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
-    <value>BCompare introuvable, voulez-vous le télécharger ?</value>
+  <data name="ServiceInstallManager" xml:space="preserve">
+    <value>Service Installation Manager</value>
   </data>
-  <data name="DownLoadBeyondCompare" xml:space="preserve">
-    <value>Télécharger BeyondCompare</value>
+  <data name="BaseInstallRootLabel" xml:space="preserve">
+    <value>Install root:</value>
   </data>
-  <data name="OpenBeyondCompare" xml:space="preserve">
-    <value>Ouvrir BeyondCompare</value>
+  <data name="SetDirectory" xml:space="preserve">
+    <value>Set Folder</value>
   </data>
-  <data name="InstallMqtt" xml:space="preserve">
-    <value>Installer MQTT</value>
+  <data name="OneKeyInstallHint" xml:space="preserve">
+    <value>One-click install: choose a package, then it will be unpacked and detected automatically before installation.</value>
   </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>Paramètres du fichier de sauvegarde</value>
+  <data name="OnlineDownload" xml:space="preserve">
+    <value>Online Download</value>
   </data>
-  <data name="ActivateWindows" xml:space="preserve">
-    <value>Activer Windows</value>
+  <data name="SelectOneKeyPackage" xml:space="preserve">
+    <value>Select Package</value>
   </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>Redémarrer le service</value>
+  <data name="ServicePackage" xml:space="preserve">
+    <value>Service Package</value>
   </data>
-  <data name="RestartServiceSucess" xml:space="preserve">
-    <value>Redémarrage du service réussi</value>
+  <data name="Download" xml:space="preserve">
+    <value>Download</value>
   </data>
-  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
-    <value>Si le redémarrage du service échoue, veuillez le redémarrer manuellement.</value>
+  <data name="Select" xml:space="preserve">
+    <value>Select</value>
   </data>
-  <data name="UpdateService" xml:space="preserve">
-    <value>Service de mise à jour</value>
+  <data name="InstallOptions" xml:space="preserve">
+    <value>Install Options</value>
+  </data>
+  <data name="UpdateDatabaseLatest" xml:space="preserve">
+    <value>Update database to latest version</value>
+  </data>
+  <data name="DatabaseBackup" xml:space="preserve">
+    <value>Database Backup</value>
+  </data>
+  <data name="BackupDatabaseBeforeInstall" xml:space="preserve">
+    <value>Back up database before install</value>
+  </data>
+  <data name="BackupNow" xml:space="preserve">
+    <value>Back Up Now</value>
+  </data>
+  <data name="RestoreBackup" xml:space="preserve">
+    <value>Restore Backup</value>
+  </data>
+  <data name="DatabaseBackupLocationHint" xml:space="preserve">
+    <value>(Saved to: Documents\ColorVision\Backup)</value>
+  </data>
+  <data name="ServiceBackup" xml:space="preserve">
+    <value>Service Backup</value>
+  </data>
+  <data name="BackupServiceBeforeInstall" xml:space="preserve">
+    <value>Back up service folder before install</value>
+  </data>
+  <data name="BackupServiceNow" xml:space="preserve">
+    <value>Back Up Service</value>
+  </data>
+  <data name="RestoreServiceBackup" xml:space="preserve">
+    <value>Restore Service Backup</value>
+  </data>
+  <data name="ServiceBackupLocationHint" xml:space="preserve">
+    <value>(Saved to: Documents\ColorVision\ServiceBackup)</value>
+  </data>
+  <data name="InstallLog" xml:space="preserve">
+    <value>Install Log</value>
+  </data>
+  <data name="InstallNow" xml:space="preserve">
+    <value>Install Now</value>
+  </data>
+  <data name="OneKeyStart" xml:space="preserve">
+    <value>Start All</value>
+  </data>
+  <data name="OneKeyStop" xml:space="preserve">
+    <value>Stop All</value>
+  </data>
+  <data name="UpdateConfig" xml:space="preserve">
+    <value>Update Config</value>
+  </data>
+  <data name="LegacyAppConfig" xml:space="preserve">
+    <value>Legacy App.config</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="OpenInstallManagerToolTip" xml:space="preserve">
+    <value>Open the service installation manager to check updates and install.</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Uninstall" xml:space="preserve">
+    <value>Uninstall</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Restart" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="Terminate" xml:space="preserve">
+    <value>Terminate</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="MySqlServiceInfo" xml:space="preserve">
+    <value>MySQL Service Info</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Service Name</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Browse</value>
+  </data>
+  <data name="RootPassword" xml:space="preserve">
+    <value>root Password</value>
+  </data>
+  <data name="ApplyRootPassword" xml:space="preserve">
+    <value>Apply root Password</value>
+  </data>
+  <data name="GenerateRandom" xml:space="preserve">
+    <value>Random</value>
+  </data>
+  <data name="AppUser" xml:space="preserve">
+    <value>App User</value>
+  </data>
+  <data name="CreateOrUpdateUser" xml:space="preserve">
+    <value>Create/Update User</value>
+  </data>
+  <data name="AppPassword" xml:space="preserve">
+    <value>App Password</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>Database</value>
+  </data>
+  <data name="SqlScript" xml:space="preserve">
+    <value>SQL Script</value>
+  </data>
+  <data name="RunScript" xml:space="preserve">
+    <value>Run Script</value>
+  </data>
+  <data name="ZipFullInstall" xml:space="preserve">
+    <value>Full ZIP Install</value>
+  </data>
+  <data name="RegisterService" xml:space="preserve">
+    <value>Register Service</value>
+  </data>
+  <data name="RegisterMySqlTooltip" xml:space="preserve">
+    <value>Register MySQL with the last saved path without reinitializing data.</value>
+  </data>
+  <data name="ResetDatabase" xml:space="preserve">
+    <value>Reset Database</value>
+  </data>
+  <data name="ResetDatabaseTooltip" xml:space="preserve">
+    <value>Run SQL\color_vision_all.sql from the service install folder as root.</value>
+  </data>
+  <data name="MqttServiceInfo" xml:space="preserve">
+    <value>MQTT Service Info</value>
+  </data>
+  <data name="LogOutput" xml:space="preserve">
+    <value>Log Output</value>
+  </data>
+  <data name="SetupConfigTitle" xml:space="preserve">
+    <value>Service Manager Setup</value>
+  </data>
+  <data name="SetupConfigChoiceTitle" xml:space="preserve">
+    <value>Choose Setup Mode</value>
+  </data>
+  <data name="ImportConfig" xml:space="preserve">
+    <value>Import Config</value>
+  </data>
+  <data name="ImportConfigDescription" xml:space="preserve">
+    <value>Locate legacy CVWinSMS and read App.config</value>
+  </data>
+  <data name="ManualConfig" xml:space="preserve">
+    <value>Manual Config</value>
+  </data>
+  <data name="ManualConfigDescription" xml:space="preserve">
+    <value>Configure MySQL and MQTT</value>
+  </data>
+  <data name="SkipConfig" xml:space="preserve">
+    <value>Skip Setup</value>
+  </data>
+  <data name="LegacyConfigDetectedFormat" xml:space="preserve">
+    <value>Legacy config detected: {0}</value>
+  </data>
+  <data name="LegacyConfigNotDetected" xml:space="preserve">
+    <value>No legacy config detected. You can choose the legacy CVWinSMS.exe for import, or manually configure MySQL and MQTT.</value>
+  </data>
+  <data name="MqttServiceDisplayName" xml:space="preserve">
+    <value>MQTT Service</value>
+  </data>
+  <data name="RegistrationCenterServiceDisplayName" xml:space="preserve">
+    <value>Registration Center Service</value>
+  </data>
+  <data name="CvMainServiceX64DisplayName" xml:space="preserve">
+    <value>CV Main Service (x64)</value>
+  </data>
+  <data name="CvMainServiceDevDisplayName" xml:space="preserve">
+    <value>CV Main Service (Dev)</value>
+  </data>
+  <data name="SelectServiceBaseLocationDialog" xml:space="preserve">
+    <value>Select service installation root</value>
+  </data>
+  <data name="ServicePackageZipFilter" xml:space="preserve">
+    <value>Service package (*.zip)|*.zip</value>
+  </data>
+  <data name="SelectServicePackageDialog" xml:space="preserve">
+    <value>Select service package</value>
+  </data>
+  <data name="MySqlZipFilter" xml:space="preserve">
+    <value>MySQL ZIP (*.zip)|*.zip</value>
+  </data>
+  <data name="SelectMySqlPackageDialog" xml:space="preserve">
+    <value>Select MySQL package</value>
+  </data>
+  <data name="MqttInstallerFilter" xml:space="preserve">
+    <value>MQTT installer (*.exe)|*.exe</value>
+  </data>
+  <data name="SelectMqttInstallerDialog" xml:space="preserve">
+    <value>Select MQTT installer</value>
+  </data>
+  <data name="Vc2013InstallerFilter" xml:space="preserve">
+    <value>VC++ 2013 installer (*.exe)|*.exe</value>
+  </data>
+  <data name="SelectVc2013InstallerDialog" xml:space="preserve">
+    <value>Select VC++ 2013 x64 runtime installer</value>
+  </data>
+  <data name="InstallErrorCaption" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="CVWindowsService" xml:space="preserve">
+    <value>CVWindowsService</value>
+  </data>
+  <data name="MySQL" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="MQTT" xml:space="preserve">
+    <value>MQTT</value>
+  </data>
+  <data name="Vc2013Runtime" xml:space="preserve">
+    <value>VC++ 2013</value>
   </data>
 </root>

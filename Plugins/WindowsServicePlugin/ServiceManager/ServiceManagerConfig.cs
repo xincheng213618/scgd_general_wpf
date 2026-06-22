@@ -5,6 +5,7 @@ using Microsoft.Win32;
 using System.ComponentModel;
 using System.IO;
 using System.Xml.Linq;
+using WindowsServicePlugin.Properties;
 
 namespace WindowsServicePlugin.ServiceManager
 {
@@ -53,7 +54,7 @@ namespace WindowsServicePlugin.ServiceManager
         public static ServiceEntry MQTTServiceEntries { get; set; } = new ServiceEntry
         {
             ServiceName = "mosquitto",
-            DisplayName = "MQTT服务",
+            DisplayName = Resources.MqttServiceDisplayName,
             FolderName = "mosquitto",
             ExecutableName = "mosquitto.exe",
             IsPackaged = false
@@ -70,7 +71,7 @@ namespace WindowsServicePlugin.ServiceManager
                 new ServiceEntry
                 {
                     ServiceName = "RegistrationCenterService",
-                    DisplayName = "注册中心服务",
+                    DisplayName = Resources.RegistrationCenterServiceDisplayName,
                     FolderName = "RegWindowsService",
                     ExecutableName = "RegWindowsService.exe",
                     IsPackaged = true
@@ -78,14 +79,14 @@ namespace WindowsServicePlugin.ServiceManager
                 new ServiceEntry
                 {
                     ServiceName = "CVMainService_x64",
-                    DisplayName = "CV主服务(x64)",
+                    DisplayName = Resources.CvMainServiceX64DisplayName,
                     FolderName = "CVMainWindowsService_x64",
                     IsPackaged = true
                 },
                 new ServiceEntry
                 {
                     ServiceName = "CVMainService_dev",
-                    DisplayName = "CV主服务(Dev)",
+                    DisplayName = Resources.CvMainServiceDevDisplayName,
                     FolderName = "CVMainWindowsService_dev",
                     IsPackaged = true
                 },

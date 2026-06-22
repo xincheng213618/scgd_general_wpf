@@ -4,10 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WindowsServicePlugin.ServiceManager"
+        xmlns:res="clr-namespace:WindowsServicePlugin.Properties"
         xmlns:logControls="clr-namespace:ColorVision.UI.LogImp.Controls;assembly=ColorVision.UI"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="服务安装管理" Height="780" Width="980"
+        Title="{x:Static res:Resources.ServiceInstallManager}" Height="780" Width="980"
         d:DataContext="{d:DesignInstance local:ServiceInstallViewModel}"
         Background="{DynamicResource GlobalBackground}"
         Foreground="{DynamicResource GlobalTextBrush}"
@@ -29,7 +30,7 @@
         <!-- 安装组件选择 -->
         <Border Grid.Row="0" Padding="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,0,8">
             <StackPanel>
-                <TextBlock Text="服务安装管理" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                <TextBlock Text="{x:Static res:Resources.ServiceInstallManager}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
 
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
@@ -37,9 +38,9 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="安装根目录：" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="0" Text="{x:Static res:Resources.BaseInstallRootLabel}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <TextBox Grid.Column="1" Text="{Binding Config.BaseLocation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="目录设置" Command="{Binding SelectBaseLocationCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="{x:Static res:Resources.SetDirectory}" Command="{Binding SelectBaseLocationCommand}" Padding="12,4"/>
                 </Grid>
 
                 <!-- 一键安装包 -->
@@ -49,10 +50,10 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="一键安装：选择安装包后自动解压、识别组件并勾选，然后点击下方安装按钮" VerticalAlignment="Center" Foreground="Gray" TextWrapping="Wrap"/>
+                        <TextBlock Grid.Column="0" Text="{x:Static res:Resources.OneKeyInstallHint}" VerticalAlignment="Center" Foreground="Gray" TextWrapping="Wrap"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button Content="在线下载" Command="{Binding OnlineDownloadCommand}" Padding="16,6" Margin="0,0,8,0"/>
-                            <Button Content="选择一键安装包" Command="{Binding OneKeyInstallAllCommand}" Padding="16,6" Style="{StaticResource ButtonPrimary}"/>
+                            <Button Content="{x:Static res:Resources.OnlineDownload}" Command="{Binding OnlineDownloadCommand}" Padding="16,6" Margin="0,0,8,0"/>
+                            <Button Content="{x:Static res:Resources.SelectOneKeyPackage}" Command="{Binding OneKeyInstallAllCommand}" Padding="16,6" Style="{StaticResource ButtonPrimary}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -65,10 +66,10 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <CheckBox Grid.Column="0" Content="服务包" IsChecked="{Binding InstallServiceChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
+                    <CheckBox Grid.Column="0" Content="{x:Static res:Resources.ServicePackage}" IsChecked="{Binding InstallServiceChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
                     <TextBox Grid.Column="1" Text="{Binding ServicePackagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="下载" Command="{Binding DownloadServicePackageCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="选择" Command="{Binding SelectServicePackageCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadServicePackageCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                    <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectServicePackageCommand}" Padding="12,4"/>
                 </Grid>
 
                 <!-- MySQL -->
@@ -79,10 +80,10 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <CheckBox Grid.Column="0" Content="MySQL" IsChecked="{Binding InstallMySqlChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
+                    <CheckBox Grid.Column="0" Content="{x:Static res:Resources.MySQL}" IsChecked="{Binding InstallMySqlChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
                     <TextBox Grid.Column="1" Text="{Binding MySqlPackagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="下载" Command="{Binding DownloadMySqlPackageCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="选择" Command="{Binding SelectMySqlZipCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadMySqlPackageCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                    <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectMySqlZipCommand}" Padding="12,4"/>
                 </Grid>
 
                 <!-- VC++ 2013 -->
@@ -93,10 +94,10 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <CheckBox Grid.Column="0" Content="VC++ 2013" IsChecked="{Binding InstallVc2013Checked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
+                    <CheckBox Grid.Column="0" Content="{x:Static res:Resources.Vc2013Runtime}" IsChecked="{Binding InstallVc2013Checked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
                     <TextBox Grid.Column="1" Text="{Binding Vc2013InstallerPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="下载" Command="{Binding DownloadVc2013InstallerCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="选择" Command="{Binding SelectVc2013InstallerCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadVc2013InstallerCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                    <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectVc2013InstallerCommand}" Padding="12,4"/>
                 </Grid>
 
                 <!-- MQTT -->
@@ -107,10 +108,10 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <CheckBox Grid.Column="0" Content="MQTT" IsChecked="{Binding InstallMqttChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
+                    <CheckBox Grid.Column="0" Content="{x:Static res:Resources.MQTT}" IsChecked="{Binding InstallMqttChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
                     <TextBox Grid.Column="1" Text="{Binding MqttInstallerPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="下载" Command="{Binding DownloadMqttInstallerCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="选择" Command="{Binding SelectMqttInstallerCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadMqttInstallerCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                    <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectMqttInstallerCommand}" Padding="12,4"/>
                 </Grid>
             </StackPanel>
         </Border>
@@ -118,27 +119,27 @@
         <!-- 安装选项 -->
         <Border Grid.Row="1" Padding="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,0,8">
             <StackPanel>
-                <TextBlock Text="安装选项" FontWeight="Bold" Margin="0,0,0,6"/>
+                <TextBlock Text="{x:Static res:Resources.InstallOptions}" FontWeight="Bold" Margin="0,0,0,6"/>
                 <WrapPanel>
-                    <CheckBox Content="更新数据库到最近版本" IsChecked="{Binding AutoUpdateDatabase}" Margin="0,2,20,2"/>
+                    <CheckBox Content="{x:Static res:Resources.UpdateDatabaseLatest}" IsChecked="{Binding AutoUpdateDatabase}" Margin="0,2,20,2"/>
                 </WrapPanel>
                 
                 <!-- 数据库备份 -->
-                <TextBlock Text="数据库备份" FontSize="12" Margin="0,8,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <TextBlock Text="{x:Static res:Resources.DatabaseBackup}" FontSize="12" Margin="0,8,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
                 <WrapPanel Margin="0,0,0,8">
-                    <CheckBox Content="安装前备份数据库" IsChecked="{Binding BackupBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
-                    <Button Content="立即备份" Command="{Binding BackupNowCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Content="恢复备份" Command="{Binding RestoreBackupCommand}" Padding="12,4"/>
-                    <TextBlock Text="(保存至：我的文档\ColorVision\Backup)" VerticalAlignment="Center" Foreground="Gray" Margin="8,0,0,0" FontSize="11"/>
+                    <CheckBox Content="{x:Static res:Resources.BackupDatabaseBeforeInstall}" IsChecked="{Binding BackupBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
+                    <Button Content="{x:Static res:Resources.BackupNow}" Command="{Binding BackupNowCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                    <Button Content="{x:Static res:Resources.RestoreBackup}" Command="{Binding RestoreBackupCommand}" Padding="12,4"/>
+                    <TextBlock Text="{x:Static res:Resources.DatabaseBackupLocationHint}" VerticalAlignment="Center" Foreground="Gray" Margin="8,0,0,0" FontSize="11"/>
                 </WrapPanel>
                 
                 <!-- 服务备份 -->
-                <TextBlock Text="服务备份" FontSize="12" Margin="0,4,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <TextBlock Text="{x:Static res:Resources.ServiceBackup}" FontSize="12" Margin="0,4,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
                 <WrapPanel>
-                    <CheckBox Content="安装前备份服务文件夹" IsChecked="{Binding BackupServiceBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
-                    <Button Content="立即备份服务" Command="{Binding BackupServiceNowCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Content="恢复服务备份" Command="{Binding RestoreServiceBackupCommand}" Padding="12,4"/>
-                    <TextBlock Text="(保存至：我的文档\ColorVision\ServiceBackup)" VerticalAlignment="Center" Foreground="Gray" Margin="8,0,0,0" FontSize="11"/>
+                    <CheckBox Content="{x:Static res:Resources.BackupServiceBeforeInstall}" IsChecked="{Binding BackupServiceBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
+                    <Button Content="{x:Static res:Resources.BackupServiceNow}" Command="{Binding BackupServiceNowCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                    <Button Content="{x:Static res:Resources.RestoreServiceBackup}" Command="{Binding RestoreServiceBackupCommand}" Padding="12,4"/>
+                    <TextBlock Text="{x:Static res:Resources.ServiceBackupLocationHint}" VerticalAlignment="Center" Foreground="Gray" Margin="8,0,0,0" FontSize="11"/>
                 </WrapPanel>
             </StackPanel>
         </Border>
@@ -158,7 +159,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="安装日志" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
+                <TextBlock Grid.Row="0" Text="{x:Static res:Resources.InstallLog}" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
                 <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="6">
                     <logControls:LogViewerControl x:Name="LogViewer"
                                                   TextWrapping="Wrap"
@@ -172,7 +173,7 @@
 
         <Border Grid.Row="5" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="立即安装" Command="{Binding DoInstallCommand}" Padding="40,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ButtonPrimary}" Margin="0,0,8,0"/>
+                <Button Content="{x:Static res:Resources.InstallNow}" Command="{Binding DoInstallCommand}" Padding="40,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ButtonPrimary}" Margin="0,0,8,0"/>
             </StackPanel>
         </Border>
     </Grid>

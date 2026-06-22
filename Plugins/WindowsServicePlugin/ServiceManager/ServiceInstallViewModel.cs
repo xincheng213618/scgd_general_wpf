@@ -3,6 +3,7 @@ using ColorVision.UI;
 using log4net;
 using System.IO;
 using System.Windows;
+using WindowsServicePlugin.Properties;
 
 namespace WindowsServicePlugin.ServiceManager
 {
@@ -132,7 +133,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             using var dlg = new System.Windows.Forms.FolderBrowserDialog
             {
-                Description = "选择服务安装根目录",
+                Description = Resources.SelectServiceBaseLocationDialog,
                 SelectedPath = Directory.Exists(Config.BaseLocation) ? Config.BaseLocation : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
                 ShowNewFolderButton = true
             };
@@ -149,8 +150,8 @@ namespace WindowsServicePlugin.ServiceManager
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "服务安装包 (*.zip)|*.zip",
-                Title = "选择服务安装包"
+                Filter = Resources.ServicePackageZipFilter,
+                Title = Resources.SelectServicePackageDialog
             };
 
             if (dlg.ShowDialog() == true)
@@ -161,8 +162,8 @@ namespace WindowsServicePlugin.ServiceManager
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "MySQL ZIP (*.zip)|*.zip",
-                Title = "选择 MySQL 安装包"
+                Filter = Resources.MySqlZipFilter,
+                Title = Resources.SelectMySqlPackageDialog
             };
 
             if (dlg.ShowDialog() == true)
@@ -173,8 +174,8 @@ namespace WindowsServicePlugin.ServiceManager
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "MQTT 安装程序 (*.exe)|*.exe",
-                Title = "选择 MQTT 安装程序"
+                Filter = Resources.MqttInstallerFilter,
+                Title = Resources.SelectMqttInstallerDialog
             };
 
             if (dlg.ShowDialog() == true)
@@ -185,8 +186,8 @@ namespace WindowsServicePlugin.ServiceManager
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "VC++ 2013 安装程序 (*.exe)|*.exe",
-                Title = "选择 VC++ 2013 x64 运行库安装程序"
+                Filter = Resources.Vc2013InstallerFilter,
+                Title = Resources.SelectVc2013InstallerDialog
             };
 
             if (dlg.ShowDialog() == true)
