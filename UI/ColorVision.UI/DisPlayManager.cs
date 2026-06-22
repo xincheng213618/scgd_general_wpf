@@ -538,6 +538,7 @@ namespace ColorVision.UI
             userControl.PreviewMouseMove += DisplayControl_PreviewMouseMove;
             userControl.Drop -= DisplayControl_Drop;
             userControl.Drop += DisplayControl_Drop;
+            userControl.Margin = new Thickness(userControl.Margin.Left, 1, userControl.Margin.Right, 1);
             panel.Children.Add(userControl);
         }
 
