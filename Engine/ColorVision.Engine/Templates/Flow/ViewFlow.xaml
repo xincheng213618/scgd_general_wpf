@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Flow"
-             xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
+             xmlns:stwpf="clr-namespace:ST.Library.UI.NodeEditor.Wpf;assembly=ST.Library.UI"
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
              xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
@@ -18,9 +18,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Column="0" x:Name="Grid1">
-            <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
-                <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
-            </WindowsFormsHost>
+            <stwpf:WpfSTNodeEditor x:Name="STNodeEditorMain" x:FieldModifier="public" Visibility="Visible" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
         </Grid>
         <ProgressBar x:Name="ProgressBar1" Visibility="Collapsed" Grid.Row="1" Maximum="100" Style="{StaticResource ProgressBarFlat}" Value="{Binding FlowEngineManager.BatchProgress}"/>
 

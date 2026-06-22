@@ -3,6 +3,7 @@
 		<AssemblyName>ST.Library.UI</AssemblyName>
 		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
 		<UseWindowsForms>True</UseWindowsForms>
+		<UseWPF>True</UseWPF>
 		<LangVersion>11.0</LangVersion>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<TargetFrameworks>net8.0-windows;net10.0-windows;;net472</TargetFrameworks>
