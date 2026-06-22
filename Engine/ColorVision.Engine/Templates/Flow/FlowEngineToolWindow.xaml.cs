@@ -1,17 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Themes;
 using ColorVision.UI;
-using FlowEngineLib.Base;
-using FlowEngineLib.Start;
 using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -137,25 +132,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-            {
-                Save();
-                e.Handled = true;
-                return;
-            }
-            if (e.Key == Key.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-            {
-                Refresh();
-                e.Handled = true;
-                return;
-            }
-            if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-            {
-                AutoAlignment();
-                e.Handled = true;
-                return;
-            }
-
             if (STNodeEditorMain.ActiveNode == null && STNodeEditorMain.GetSelectedNode().Length ==0)
             {
                 if (e.Key == Key.Left)
@@ -223,7 +199,21 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            STNodeEditorMain.ConfigureCreatedNode = ConfigureCreatedNode;
+            STNodeEditorMain.PreviewKeyDown += (s, e) =>
+            {
+                if (e.KeyCode == System.Windows.Forms.Keys.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                {
+                    Save();
+                }
+                if (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                {
+                    Refresh();
+                }
+                if (e.KeyCode == System.Windows.Forms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                {
+                    AutoAlignment();
+                }
+            };
             this.DataContext = this;
             this.Closed += (s, e) =>
             {
@@ -238,11 +228,10 @@ namespace ColorVision.Engine.Templates.Flow
                     }
                 }
                 STNodeEditorHelper?.HidePropertyEditor();
-                STNodeEditorMain?.Dispose();
 
             };
 
-            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain.CoreEditor);
+            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
 
             // Wire up embedded property editor panel
             STNodeEditorHelper.STNodePropertyGrid1 = STNodePropertyGrid1;
@@ -395,6 +384,76 @@ namespace ColorVision.Engine.Templates.Flow
             STNodeEditorHelper.AutoSize();
         }
 
+        private bool IsMouseDown;
+        private System.Drawing.Point lastMousePosition;
+        private void STNodeEditorMain_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            lastMousePosition = e.Location;
+            System.Drawing.PointF m_pt_down_in_canvas = new System.Drawing.PointF();
+            m_pt_down_in_canvas.X = ((float)e.X - STNodeEditorMain.CanvasOffsetX) / STNodeEditorMain.CanvasScale;
+            m_pt_down_in_canvas.Y = ((float)e.Y - STNodeEditorMain.CanvasOffsetY) / STNodeEditorMain.CanvasScale;
+            NodeFindInfo nodeFindInfo = STNodeEditorMain.FindNodeFromPoint(m_pt_down_in_canvas);
+
+            if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
+            {
+
+            }
+            else if (nodeFindInfo.Node != null)
+            {
+
+            }
+            else if (nodeFindInfo.NodeOption != null)
+            {
+
+            }
+            else if (e.Button == System.Windows.Forms.MouseButtons.Left)
+            {
+                IsMouseDown = true;
+            }
+        }
+
+        private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            IsMouseDown = false;
+        }
+
+        private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (!STNodeEditorMain.EnableBlankLeftDragCanvas && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
+            {        // 计算鼠标移动的距离
+                int deltaX = e.X - lastMousePosition.X;
+                int deltaY = e.Y - lastMousePosition.Y;
+
+                // 更新画布偏移
+                STNodeEditorMain.MoveCanvas(
+                    STNodeEditorMain.CanvasOffsetX + deltaX,
+                    STNodeEditorMain.CanvasOffsetY + deltaY,
+                    bAnimation: false,
+                    CanvasMoveArgs.All
+                );
+
+                // 更新最后的鼠标位置
+                lastMousePosition = e.Location;
+            }
+        }
+        
+
+        private void STNodeEditorMain_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            var mousePosition = STNodeEditorMain.PointToClient(e.Location);
+
+            if (e.Delta < 0)
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.05f, mousePosition.X, mousePosition.Y);
+                NotifyPropertyChanged(nameof(CanvasScale));
+            }
+            else
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.05f, mousePosition.X, mousePosition.Y);
+                NotifyPropertyChanged(nameof(CanvasScale));
+            }
+        }
+
         private void PropertyEditorClose_Click(object sender, RoutedEventArgs e)
         {
             STNodeEditorHelper.HidePropertyEditor();
@@ -403,23 +462,6 @@ namespace ColorVision.Engine.Templates.Flow
         private void TogglePropertyEditorMode_Click(object sender, RoutedEventArgs e)
         {
             STNodeEditorHelper.TogglePropertyEditorMode();
-        }
-
-        private void ConfigureCreatedNode(STNode node)
-        {
-            if (node is CVBaseServerNode vBaseServerNode)
-            {
-                var matchedService = MqttRCService.GetInstance().ServiceTokens.FirstOrDefault(s => s.Devices.Any(d => d.Key == vBaseServerNode.DeviceCode));
-                if (matchedService != null)
-                {
-                    vBaseServerNode.Token = matchedService.Token;
-                }
-            }
-            else if (node is MQTTStartNode startNode)
-            {
-                startNode.Server = MQTTControl.Config.Host;
-                startNode.Port = MQTTControl.Config.Port;
-            }
         }
 
 

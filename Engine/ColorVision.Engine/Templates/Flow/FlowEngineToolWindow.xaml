@@ -4,8 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
+        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
-        xmlns:stwpf="clr-namespace:ST.Library.UI.NodeEditor.Wpf;assembly=ST.Library.UI"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
@@ -49,7 +49,9 @@
                 <ColumnDefinition x:Name="PropertyEditorColumn" Width="300"/>
             </Grid.ColumnDefinitions>
 
-            <stwpf:WpfSTNodeEditor Grid.Column="0" x:Name="STNodeEditorMain" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <WindowsFormsHost Grid.Column="0" >
+                <st:STNodeEditor  x:Name="STNodeEditorMain"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel"/>
+            </WindowsFormsHost>
 
             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
 
