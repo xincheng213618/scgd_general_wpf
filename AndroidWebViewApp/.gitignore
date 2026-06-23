@@ -6,5 +6,8 @@ captures/
 .cxx/
 .tools/
 .android-sdk/
+.signing/
+signing.properties
+/*.png
 
 app/build/

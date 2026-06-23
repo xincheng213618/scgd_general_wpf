@@ -2,8 +2,10 @@
 using ColorVision.Common.NativeMethods;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Properties;
+using ColorVision.ServiceHost;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Desktop.LanRemote;
 using ColorVision.UI.Desktop.Wizards;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
@@ -17,6 +19,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision
 {
@@ -171,6 +174,7 @@ namespace ColorVision
             }
 
             CopilotMcpServer.Instance.ApplyConfig();
+            LanRemoteControlService.Instance.ApplyConfig();
 
             if (!Debugger.IsAttached)
             {
@@ -215,6 +219,7 @@ namespace ColorVision
                 WizardWindow wizardWindow = new WizardWindow();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
+                ScheduleServiceHostStartupCheck(wizardWindow, DispatcherPriority.Send);
             }
             else 
             {
@@ -224,6 +229,11 @@ namespace ColorVision
             }
         }
 
+        private static void ScheduleServiceHostStartupCheck(Window owner, DispatcherPriority priority)
+        {
+            _ = owner.Dispatcher.BeginInvoke(async () => await ServiceHostStartupUpdateChecker.CheckAndPromptAsync(owner).ConfigureAwait(true), priority);
+        }
+
         /// <summary>
         /// Application DelayClose
         /// </summary>
@@ -231,6 +241,7 @@ namespace ColorVision
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
             CopilotMcpServer.Instance.Stop();
+            LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
             //Environment.Exit(0);

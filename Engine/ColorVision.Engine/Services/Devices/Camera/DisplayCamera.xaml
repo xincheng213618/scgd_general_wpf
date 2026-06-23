@@ -25,28 +25,6 @@
     </UserControl.Resources>
     <StackPanel>
         <DockPanel>
-            <Grid DockPanel.Dock="Right">
-                <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" Command="{Binding PropertyCommand}" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                <Image Height="18" Source="{DynamicResource DrawingImageProperty}" />
-                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
-            </Grid>
-
-            <Button Padding="3" Background="Transparent" BorderThickness="0" Command="{Binding RefreshCommand}" DockPanel.Dock="Right">
-                <Button.Triggers>
-                    <EventTrigger RoutedEvent="Button.Click">
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger>
-                </Button.Triggers>
-                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE72C;" ToolTip="{x:Static properties:Resources.Refresh}">
-                    <TextBlock.RenderTransform>
-                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6" />
-                    </TextBlock.RenderTransform>
-                </TextBlock>
-            </Button>
             <ToggleButton Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
@@ -339,11 +317,50 @@
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Flip}" />
                             <ComboBox x:Name="CBFilp2" DisplayMemberPath="Value" SelectedValue="{Binding DisplayConfig.LocalVideoTransform}" SelectedValuePath="Key" SelectionChanged="CBFilp2_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
                         </DockPanel>
-                        <StackPanel x:Name="LocalVideoRoiEditorHost" Margin="0,0,0,3" />
-                        <UniformGrid Margin="0,0,0,3" Columns="2">
-                            <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="默认区域" />
-                            <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="全幅" />
-                        </UniformGrid>
+                        <StackPanel Margin="0,0,0,3">
+                            <CheckBox Margin="0,0,0,3" Content="十字导引" IsChecked="{Binding DisplayConfig.IsCrossGuideEnabled}" />
+                            <StackPanel Visibility="{Binding DisplayConfig.IsCrossGuideEnabled, Converter={StaticResource bool2VisibilityConverter}}">
+                                <UniformGrid Margin="0,0,0,3" Columns="2">
+                                    <DockPanel Margin="0,0,3,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="中心X" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterX}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="3,0,0,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="中心Y" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterY}" />
+                                    </DockPanel>
+                                </UniformGrid>
+                                <UniformGrid Margin="0,0,0,3" Columns="2">
+                                    <DockPanel Margin="0,0,3,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="阈值" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideTolerancePx}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="3,0,0,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="间隔" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideIntervalMs}" />
+                                    </DockPanel>
+                                </UniformGrid>
+                                <UniformGrid Margin="0,0,0,3" Columns="2">
+                                    <DockPanel Margin="0,0,3,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="亮度" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideThresholdRatio}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="3,0,0,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="覆盖" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideMinCoverageRatio}" />
+                                    </DockPanel>
+                                </UniformGrid>
+                                <StackPanel x:Name="LocalVideoCrossGuideRoiEditorHost" Margin="0,0,0,3" />
+                                <TextBlock Text="{Binding DisplayConfig.CrossGuideStatus}" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding CameraVideoControl.Config.IsCalArtculation, Converter={StaticResource bool2VisibilityConverter}}">
+                            <StackPanel x:Name="LocalVideoRoiEditorHost" Margin="0,0,0,3" />
+                            <UniformGrid Margin="0,0,0,3" Columns="2">
+                                <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="默认区域" />
+                                <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="全幅" />
+                            </UniformGrid>
+                        </StackPanel>
                         <DockPanel Margin="0,0,0,3">
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Gain}" />
                             <TextBox MinWidth="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2}" />

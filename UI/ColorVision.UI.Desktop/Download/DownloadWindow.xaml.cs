@@ -4,9 +4,11 @@ using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Desktop.Download
@@ -46,6 +48,17 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
+        public static void CloseInstance()
+        {
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                if (_instance == null || !_instance.IsLoaded)
+                    return;
+
+                _instance.Close();
+            });
+        }
+
         private Aria2cDownloadManager _manager;
         private int _currentPage = 1;
         private int _pageSize = 20;
@@ -65,6 +78,7 @@ namespace ColorVision.UI.Desktop.Download
                     _manager.DownloadCompleted -= OnDownloadCompleted;
                     _manager.StatusMessageChanged -= OnStatusMessageChanged;
                 }
+                _instance = null;
             };
         }
 
@@ -78,14 +92,10 @@ namespace ColorVision.UI.Desktop.Download
             DownloadListView.ItemsSource = _manager.Tasks;
             LoadData();
 
-            // Show current status and update indicator
             if (!string.IsNullOrEmpty(_manager.StatusMessage))
                 StatusBarText.Text = _manager.StatusMessage;
 
-            bool isConnected = _manager.IsAria2cRunning;
-            StatusIndicator.Fill = isConnected
-                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80))
-                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(158, 158, 158));
+            UpdateStatusIndicator();
 
             // Pre-load aria2c daemon so manual downloads don't wait
             _manager.PreloadAria2cAsync();
@@ -96,12 +106,15 @@ namespace ColorVision.UI.Desktop.Download
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 StatusBarText.Text = message;
-                // Update status indicator color based on service state
-                bool isConnected = _manager.IsAria2cRunning;
-                StatusIndicator.Fill = isConnected
-                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80))   // Green
-                    : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(158, 158, 158)); // Gray
+                UpdateStatusIndicator();
             });
+        }
+
+        private void UpdateStatusIndicator()
+        {
+            StatusIndicator.Fill = _manager.IsAria2cRunning
+                ? new SolidColorBrush(Color.FromRgb(76, 175, 80))
+                : new SolidColorBrush(Color.FromRgb(158, 158, 158));
         }
 
         private void OnDownloadCompleted(object? sender, DownloadTask task)
@@ -255,138 +268,244 @@ namespace ColorVision.UI.Desktop.Download
 
         private void DownloadListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (DownloadListView.SelectedItem is DownloadTask task)
+            if (GetPrimarySelectedTask() is DownloadTask task)
+                OpenTask(task);
+        }
+
+        private void DownloadListView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is not DependencyObject source)
+                return;
+
+            var item = FindVisualParent<ListBoxItem>(source);
+            if (item == null)
+                return;
+
+            if (!item.IsSelected)
             {
-                if (System.IO.File.Exists(task.SavePath))
-                {
-                    try
-                    {
-                        Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-                else if (System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(task.SavePath)))
-                {
-                    PlatformHelper.OpenFolderAndSelectFile(task.SavePath);
-                }
+                DownloadListView.SelectedItems.Clear();
+                item.IsSelected = true;
             }
+
+            DownloadListView.SelectedItem = item.DataContext;
+            item.Focus();
+        }
+
+        private void DownloadContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            UpdateContextMenuState();
         }
 
         private void ContextMenu_OpenFile_Click(object sender, RoutedEventArgs e)
         {
-            if (DownloadListView.SelectedItem is DownloadTask task && System.IO.File.Exists(task.SavePath))
-            {
-                try
-                {
-                    Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            if (GetPrimarySelectedTask() is DownloadTask task)
+                OpenTaskFile(task);
         }
 
         private void ContextMenu_OpenFolder_Click(object sender, RoutedEventArgs e)
         {
-            if (DownloadListView.SelectedItem is DownloadTask task)
-            {
-                PlatformHelper.OpenFolderAndSelectFile(task.SavePath);
-            }
+            if (GetPrimarySelectedTask() is DownloadTask task)
+                OpenTaskFolder(task);
         }
 
         private void ContextMenu_CopyUrl_Click(object sender, RoutedEventArgs e)
         {
-            if (DownloadListView.SelectedItem is DownloadTask task)
-            {
-                Common.Clipboard.SetText(task.Url);
-            }
+            CopySelectedUrls();
         }
 
         private void ContextMenu_Pause_Click(object sender, RoutedEventArgs e)
         {
-            if (DownloadListView.SelectedItem is DownloadTask task && task.IsDownloading)
-            {
-                _manager.PauseDownload(task);
-            }
+            ApplyToSelectedTasks(CanPause, _manager.PauseDownload);
         }
 
         private void ContextMenu_Resume_Click(object sender, RoutedEventArgs e)
         {
-            if (DownloadListView.SelectedItem is DownloadTask task && task.Status == DownloadStatus.Paused)
-            {
-                _manager.ResumeDownload(task);
-            }
+            ApplyToSelectedTasks(CanResume, _manager.ResumeDownload);
         }
 
         private void ContextMenu_Retry_Click(object sender, RoutedEventArgs e)
         {
-            if (DownloadListView.SelectedItem is DownloadTask task)
-            {
-                _manager.RetryDownload(task);
-            }
+            ApplyToSelectedTasks(CanRetry, _manager.RetryDownload);
         }
 
         private void ContextMenu_Cancel_Click(object sender, RoutedEventArgs e)
         {
-            if (DownloadListView.SelectedItem is DownloadTask task)
-            {
-                _manager.CancelDownload(task);
-            }
+            ApplyToSelectedTasks(CanCancel, _manager.CancelDownload);
         }
 
         private void ContextMenu_Delete_Click(object sender, RoutedEventArgs e)
         {
-            var selected = DownloadListView.SelectedItems.Cast<DownloadTask>().ToList();
-            if (selected.Count == 0) return;
-            bool deleteFiles = ShouldDeleteFiles(selected);
-            _manager.DeleteRecords(selected.Select(t => t.Id).ToArray(), deleteFiles);
-            LoadData();
+            DeleteTasks(GetSelectedTasks());
         }
 
         private void InlineOpenFolder_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
-            {
+            if (GetTaskFromSender(sender) is DownloadTask task)
                 PlatformHelper.OpenFolderAndSelectFile(task.SavePath);
-            }
         }
 
         private void InlineDelete_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
-            {
-                bool deleteFile = ShouldDeleteFiles(new[] { task });
-                _manager.DeleteRecords(new[] { task.Id }, deleteFile);
-                LoadData();
-            }
+            if (GetTaskFromSender(sender) is DownloadTask task)
+                DeleteTasks(new[] { task });
         }
 
         private void InlinePause_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
-            {
+            if (GetTaskFromSender(sender) is DownloadTask task && CanPause(task))
                 _manager.PauseDownload(task);
-            }
         }
 
         private void InlineResume_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
-            {
+            if (GetTaskFromSender(sender) is DownloadTask task && CanResume(task))
                 _manager.ResumeDownload(task);
-            }
         }
 
         private void InlineRetry_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
-            {
+            if (GetTaskFromSender(sender) is DownloadTask task && CanRetry(task))
                 _manager.RetryDownload(task);
+        }
+
+        private void UpdateContextMenuState()
+        {
+            var selected = GetSelectedTasks();
+            var primaryTask = GetPrimarySelectedTask(selected);
+
+            MenuOpenFile.IsEnabled = CanOpenFile(primaryTask);
+            MenuOpenFolder.IsEnabled = CanOpenFolder(primaryTask);
+            MenuCopyUrl.IsEnabled = selected.Count > 0;
+            MenuPause.IsEnabled = selected.Any(CanPause);
+            MenuResume.IsEnabled = selected.Any(CanResume);
+            MenuRetry.IsEnabled = selected.Any(CanRetry);
+            MenuCancel.IsEnabled = selected.Any(CanCancel);
+            MenuDelete.IsEnabled = selected.Count > 0;
+        }
+
+        private List<DownloadTask> GetSelectedTasks()
+        {
+            return DownloadListView.SelectedItems.Cast<DownloadTask>().ToList();
+        }
+
+        private DownloadTask? GetPrimarySelectedTask()
+        {
+            return GetPrimarySelectedTask(GetSelectedTasks());
+        }
+
+        private DownloadTask? GetPrimarySelectedTask(List<DownloadTask> selected)
+        {
+            if (DownloadListView.SelectedItem is DownloadTask task && selected.Contains(task))
+                return task;
+
+            return selected.Count > 0 ? selected[0] : null;
+        }
+
+        private static DownloadTask? GetTaskFromSender(object sender)
+        {
+            return (sender as FrameworkElement)?.DataContext as DownloadTask;
+        }
+
+        private static bool CanOpenFile(DownloadTask? task)
+        {
+            return task != null && File.Exists(task.SavePath);
+        }
+
+        private static bool CanOpenFolder(DownloadTask? task)
+        {
+            return task != null && !string.IsNullOrWhiteSpace(task.SavePath);
+        }
+
+        private static bool CanPause(DownloadTask task)
+        {
+            return task.IsDownloading;
+        }
+
+        private static bool CanResume(DownloadTask task)
+        {
+            return task.Status == DownloadStatus.Paused;
+        }
+
+        private static bool CanRetry(DownloadTask task)
+        {
+            return task.Status == DownloadStatus.Waiting
+                || task.Status == DownloadStatus.Failed
+                || task.Status == DownloadStatus.FileDeleted;
+        }
+
+        private static bool CanCancel(DownloadTask task)
+        {
+            return task.Status == DownloadStatus.Waiting || task.Status == DownloadStatus.Downloading;
+        }
+
+        private void OpenTask(DownloadTask task)
+        {
+            if (!OpenTaskFile(task))
+                OpenTaskFolder(task);
+        }
+
+        private bool OpenTaskFile(DownloadTask task)
+        {
+            if (!File.Exists(task.SavePath))
+                return false;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            return true;
+        }
+
+        private static void OpenTaskFolder(DownloadTask task)
+        {
+            PlatformHelper.OpenFolderAndSelectFile(task.SavePath);
+        }
+
+        private void CopySelectedUrls()
+        {
+            var urls = GetSelectedTasks()
+                .Select(task => task.Url)
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .ToList();
+
+            if (urls.Count > 0)
+                Common.Clipboard.SetText(string.Join(Environment.NewLine, urls));
+        }
+
+        private void ApplyToSelectedTasks(Func<DownloadTask, bool> canApply, Action<DownloadTask> apply)
+        {
+            foreach (var task in GetSelectedTasks().Where(canApply).ToList())
+            {
+                apply(task);
+            }
+        }
+
+        private void DeleteTasks(IReadOnlyCollection<DownloadTask> tasks)
+        {
+            if (tasks.Count == 0)
+                return;
+
+            bool deleteFiles = ShouldDeleteFiles(tasks);
+            _manager.DeleteRecords(tasks.Select(t => t.Id).ToArray(), deleteFiles);
+            LoadData();
+        }
+
+        private static T? FindVisualParent<T>(DependencyObject? source) where T : DependencyObject
+        {
+            while (source != null)
+            {
+                if (source is T target)
+                    return target;
+
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            return null;
         }
 
         /// <summary>

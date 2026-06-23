@@ -48,13 +48,12 @@ internal sealed class ServiceHostCommandHandler
                 "install-mysql-from-zip" => InstallMySqlFromZip(request),
                 "install-existing-mysql-service" => RepairMySqlService(request),
                 "repair-mysql-service" => RepairMySqlService(request),
+                "service-install" => InstallWindowsService(request),
+                "service-uninstall" => UninstallWindowsService(request),
                 "service-start" => StartWindowsService(request),
                 "service-stop" => StopWindowsService(request),
                 "service-restart" => RestartWindowsService(request),
                 "service-terminate" => TerminateWindowsService(request),
-                "start-mysql-service" => StartWindowsService(request, "MySQL"),
-                "stop-mysql-service" => StopWindowsService(request, "MySQL"),
-                "uninstall-mysql-service" => UninstallMySqlService(request),
                 "register-thumbnail" => RunMaintenanceTask(request, "register-thumbnail"),
                 "unregister-thumbnail" => RunMaintenanceTask(request, "unregister-thumbnail"),
                 _ => ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported command: {command}"),
@@ -353,11 +352,17 @@ internal sealed class ServiceHostCommandHandler
         if (!File.Exists(mysqlExePath) || !File.Exists(mysqladminExePath))
             return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL client tools were not found under: {binDirectory}", new { steps, processResults });
 
+        string dataDirectory = Path.Combine(installBasePath, "data");
+
         steps.Add("Initializing MySQL data directory.");
-        ProcessResult initResult = RunProcess(mysqldExePath, "--initialize-insecure", binDirectory, timeoutSeconds * 1000);
+        ProcessResult initResult = RunProcess(
+            mysqldExePath,
+            ["--initialize-insecure", $"--basedir={installBasePath}", $"--datadir={dataDirectory}"],
+            binDirectory,
+            timeoutSeconds * 1000);
         processResults.Add(initResult);
         if (initResult.ExitCode != 0)
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"MySQL initialization failed: {initResult.ExitCode}", new { steps, processResults, installBasePath });
+            return ServiceHostResponse.FromObject(request.RequestId, false, BuildProcessFailureMessage("MySQL initialization failed", initResult), new { steps, processResults, installBasePath });
 
         steps.Add($"Installing MySQL service: {serviceName}");
         ProcessResult installResult = RunProcess(mysqldExePath, $"--install {serviceName}", binDirectory, timeoutSeconds * 1000);
@@ -514,23 +519,111 @@ internal sealed class ServiceHostCommandHandler
         });
     }
 
-    private static ServiceHostResponse UninstallMySqlService(ServiceHostRequest request)
+    private static ServiceHostResponse InstallWindowsService(ServiceHostRequest request)
     {
-        string serviceName = GetOptionalDataValue(request, "serviceName", "MySQL").Trim();
-        if (!IsAllowedMySqlServiceName(serviceName))
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported MySQL service name: {serviceName}");
+        string serviceName = ResolveRequestedServiceName(request);
+        if (!IsAllowedServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
 
+        string executablePath = Path.GetFullPath(GetRequiredDataValue(request, "executablePath"));
+        if (!File.Exists(executablePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service executable was not found: {executablePath}");
+        if (!string.Equals(Path.GetExtension(executablePath), ".exe", StringComparison.OrdinalIgnoreCase))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service executable must be an .exe file: {executablePath}");
+
+        string displayName = GetOptionalDataValue(request, "displayName", serviceName).Trim();
+        string description = GetOptionalDataValue(request, "description", string.Empty).Trim();
+        string startType = GetOptionalDataValue(request, "startType", "delayed-auto").Trim();
+        bool startAfterInstall = GetOptionalDataBool(request, "startAfterInstall", false);
         int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
-        string? mysqldExePath = request.Data?["mysqldExePath"]?.ToString();
-        if (!string.IsNullOrWhiteSpace(mysqldExePath))
-            mysqldExePath = Path.GetFullPath(mysqldExePath);
+
+        if (string.IsNullOrWhiteSpace(displayName))
+            displayName = serviceName;
+        if (string.IsNullOrWhiteSpace(startType))
+            startType = "delayed-auto";
 
         List<string> steps = [];
         List<ProcessResult> processResults = [];
-        RemoveMySqlServiceRegistration(serviceName, mysqldExePath, timeoutSeconds, steps, processResults);
+
+        if (ServiceExists(serviceName))
+        {
+            string? registeredPath = GetServiceInstallPath(serviceName);
+            if (IsSamePath(registeredPath, executablePath))
+            {
+                steps.Add($"Service already installed: {serviceName}");
+                ProcessResult configExistingResult = RunProcess("sc.exe", ["config", serviceName, "start=", startType], null, timeoutSeconds * 1000);
+                processResults.Add(configExistingResult);
+
+                bool alreadyOk = !startAfterInstall || StartServiceAndWait(serviceName, timeoutSeconds, steps);
+                return ServiceHostResponse.FromObject(request.RequestId, alreadyOk, alreadyOk ? "service already installed" : "service start failed", new
+                {
+                    serviceName,
+                    executablePath,
+                    registeredPath,
+                    running = IsServiceRunning(serviceName),
+                    steps,
+                    processResults,
+                });
+            }
+
+            steps.Add($"Service path changed: {registeredPath ?? "(unknown)"} -> {executablePath}");
+            StopServiceIfExists(serviceName, timeoutSeconds, steps);
+            processResults.Add(RunProcess("sc.exe", ["delete", serviceName], null, timeoutSeconds * 1000));
+            WaitForServiceDeleted(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
+        }
+
+        ProcessResult createResult = RunProcess(
+            "sc.exe",
+            ["create", serviceName, "binPath=", executablePath, "start=", startType, "DisplayName=", displayName],
+            null,
+            timeoutSeconds * 1000);
+        processResults.Add(createResult);
+        if (createResult.ExitCode != 0)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"service install failed: {createResult.ExitCode}", new { serviceName, executablePath, steps, processResults });
+
+        if (!string.IsNullOrWhiteSpace(description))
+        {
+            ProcessResult descriptionResult = RunProcess("sc.exe", ["description", serviceName, description], null, timeoutSeconds * 1000);
+            processResults.Add(descriptionResult);
+        }
+
+        WaitForServiceExists(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
+        bool exists = ServiceExists(serviceName);
+        bool started = !startAfterInstall || StartServiceAndWait(serviceName, timeoutSeconds, steps);
+
+        return ServiceHostResponse.FromObject(request.RequestId, exists && started, exists && started ? "service installed" : "service install incomplete", new
+        {
+            serviceName,
+            executablePath,
+            registeredPath = GetServiceInstallPath(serviceName),
+            running = IsServiceRunning(serviceName),
+            steps,
+            processResults,
+        });
+    }
+
+    private static ServiceHostResponse UninstallWindowsService(ServiceHostRequest request)
+    {
+        string serviceName = ResolveRequestedServiceName(request);
+        if (!IsAllowedServiceName(serviceName))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
+
+        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 45), 5, 180);
+        List<string> steps = [];
+        List<ProcessResult> processResults = [];
+
+        if (!ServiceExists(serviceName))
+        {
+            steps.Add($"Service not installed: {serviceName}");
+            return ServiceHostResponse.FromObject(request.RequestId, true, "service not installed", new { serviceName, steps, processResults });
+        }
+
+        StopServiceIfExists(serviceName, timeoutSeconds, steps);
+        processResults.Add(RunProcess("sc.exe", ["delete", serviceName], null, timeoutSeconds * 1000));
+        WaitForServiceDeleted(serviceName, TimeSpan.FromSeconds(Math.Min(timeoutSeconds, 30)));
 
         bool exists = ServiceExists(serviceName);
-        return ServiceHostResponse.FromObject(request.RequestId, !exists, exists ? "MySQL service uninstall failed" : "MySQL service uninstalled", new
+        return ServiceHostResponse.FromObject(request.RequestId, !exists, exists ? "service uninstall failed" : "service uninstalled", new
         {
             serviceName,
             exists,
@@ -847,6 +940,12 @@ internal sealed class ServiceHostCommandHandler
         return int.TryParse(value, out int result) ? result : defaultValue;
     }
 
+    private static bool GetOptionalDataBool(ServiceHostRequest request, string name, bool defaultValue)
+    {
+        string? value = request.Data?[name]?.ToString();
+        return bool.TryParse(value, out bool result) ? result : defaultValue;
+    }
+
     private static string ResolveRequestedServiceName(ServiceHostRequest request, string? defaultServiceName = null)
     {
         string serviceName = GetOptionalDataValue(request, "serviceName", defaultServiceName ?? string.Empty).Trim();
@@ -1113,6 +1212,8 @@ internal sealed class ServiceHostCommandHandler
             },
         };
 
+        ConfigureProcessEnvironment(process.StartInfo, workingDirectory);
+
         foreach (string argument in arguments)
         {
             process.StartInfo.ArgumentList.Add(argument);
@@ -1150,6 +1251,8 @@ internal sealed class ServiceHostCommandHandler
             },
         };
 
+        ConfigureProcessEnvironment(process.StartInfo, workingDirectory);
+
         process.Start();
         Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
         Task<string> errorTask = process.StandardError.ReadToEndAsync();
@@ -1164,6 +1267,37 @@ internal sealed class ServiceHostCommandHandler
         string output = ReadCompletedOutput(outputTask);
         string error = ReadCompletedOutput(errorTask);
         return new ProcessResult(fileName, arguments, process.ExitCode, output, error);
+    }
+
+    private static void ConfigureProcessEnvironment(ProcessStartInfo startInfo, string? workingDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(workingDirectory) || !Directory.Exists(workingDirectory))
+            return;
+
+        string path = startInfo.Environment.TryGetValue("PATH", out string? currentPath)
+            ? currentPath ?? string.Empty
+            : Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+
+        if (!path.Split(Path.PathSeparator).Any(item => IsSamePath(item, workingDirectory)))
+            startInfo.Environment["PATH"] = workingDirectory + Path.PathSeparator + path;
+    }
+
+    private static string BuildProcessFailureMessage(string message, ProcessResult result)
+    {
+        string explanation = ExplainProcessExitCode(result.ExitCode);
+        return string.IsNullOrWhiteSpace(explanation)
+            ? $"{message}: {result.ExitCode}"
+            : $"{message}: {result.ExitCode} ({explanation})";
+    }
+
+    private static string ExplainProcessExitCode(int exitCode)
+    {
+        return exitCode switch
+        {
+            unchecked((int)0xC0000135) => "缺少运行时 DLL，通常是 Visual C++ Redistributable 或 MySQL bin 目录依赖未加载",
+            unchecked((int)0xC000007B) => "程序或依赖 DLL 架构不匹配，可能混用了 x86/x64 组件",
+            _ => string.Empty
+        };
     }
 
     private static void KillProcessTree(Process process)

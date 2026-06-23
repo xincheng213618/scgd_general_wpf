@@ -51,7 +51,6 @@ If environment variables are not set, the script will use default credentials `x
 | `COLORVISION_UPLOAD_FOLDER` | Upload folder | `ColorVision` |
 | `COLORVISION_UPLOAD_USERNAME` | Upload username | `xincheng` |
 | `COLORVISION_UPLOAD_PASSWORD` | Upload password | `xincheng` |
-| `COLORVISION_REMOTE_UPLOAD` | Enable remote upload | `1` (enabled) |
 
 ## build.py - Main Application Build
 
@@ -63,11 +62,6 @@ Build the main application installer and upload to backend.
 # Full build (compile + package + upload)
 py Scripts\build.py
 
-# Skip build, only upload latest installer
-py Scripts\build.py --skip-build
-
-# Skip remote upload
-py Scripts\build.py --skip-remote-upload
 ```
 
 ### Feature Description

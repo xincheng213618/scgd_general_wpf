@@ -12,6 +12,7 @@ ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
     'runtimes/win-x64/',
 )
+EXCLUDED_OUTPUT_DIRECTORIES = {'log', 'plugins', 'publish'}
 SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
 
 # ----------------------
@@ -232,7 +233,7 @@ def get_all_files(directory, include_shell_extension=True):
     """获取目录下的所有文件路径"""
     file_paths = []
     for root, dirs, files in os.walk(directory):
-        dirs[:] = [d for d in dirs if d not in {'log', 'Plugins'}]
+        dirs[:] = [d for d in dirs if d.lower() not in EXCLUDED_OUTPUT_DIRECTORIES]
         for file in files:
             if file.endswith('.pdb'):
                 continue
@@ -374,7 +375,9 @@ def main() -> int:
     if old_zip:
         print(f"创建增量包: {incremental_zip}")
         make_incremental_zip(old_zip, new_version_dir, incremental_zip)
-        upload_file(incremental_zip, "ColorVision/Update")
+        if not upload_file(incremental_zip, "ColorVision/Update"):
+            print("增量包上传失败，终止发布。")
+            return 1
         # copy_with_progress(incremental_zip,"H:\\ColorVision\\Update")
 
     print("创建全量包")

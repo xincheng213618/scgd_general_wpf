@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | UI 与主程序逻辑测试 | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI 基础设施、Copilot/MCP、日志、Marketplace、PropertyGrid、终端缓冲、STNode、排序和编辑器辅助逻辑 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | native OpenCV helper 验证 | `Test/opencv_helper_test/` | Visual C++、OpenCV、x64 | `opencv_helper` 侧函数，例如 `M_FindLuminousArea` | Visual Studio 2022 或 `msbuild opencv_helper_test.vcxproj` |
-| 插件市场后端测试 | `Backend/marketplace/` | Python/Flask | Marketplace API、release 记录、上传下载和存储行为 | `python test_app.py`、`python test_app_releases.py` |
+| 插件市场后端测试 | `Web/Backend/` | Python/Flask | Marketplace API、release 记录、上传下载和存储行为 | `python test_app.py`、`python test_app_releases.py` |
 | 构建脚本测试 | `Scripts/` | Python | 构建、打包、发布脚本的局部逻辑 | `pytest Scripts/test_*.py -v` |
 | 文档站验证 | `docs/` | VitePress | 导航、Markdown、搜索索引、静态页面生成 | `npm run docs:build` |
 
@@ -59,7 +59,7 @@ Test/opencv_helper_test/build_test_find_luminous.bat
 插件市场后端：
 
 ```powershell
-cd Backend/marketplace
+cd Web/Backend
 python test_app.py
 python test_app_releases.py
 ```
@@ -81,7 +81,7 @@ pytest Scripts/test_*.py -v
 | 插件市场下载、包校验、临时目录 | `MarketplacePackageDownloadServiceTests`，再看 [现有插件现场验收与交接清单](../04-api-reference/plugins/plugin-field-acceptance.md) |
 | Flow 节点复制粘贴或 STNode 行为 | `STNodeCopyPasteTests`，再看 [模板与 Flow 链路](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test`，并确认 runtime DLL 输出 |
-| 插件市场后端 | `Backend/marketplace/test_app*.py` |
+| 插件市场后端 | `Web/Backend/test_app*.py` |
 | 打包脚本 | `Scripts/test_*.py`，再跑目标 `package_plugin.bat` 或 `package_project.bat` |
 | 文档站 | `npm run docs:build`，必要时访问本地路由 |
 

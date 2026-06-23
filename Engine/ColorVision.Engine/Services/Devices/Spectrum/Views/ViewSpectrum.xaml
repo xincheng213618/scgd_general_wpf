@@ -37,19 +37,21 @@
                     <RowDefinition Height="32"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <ToolBarTray Grid.Row="0">
-                    <ToolBar>
+                <StackPanel Grid.Row="0" Margin="3,2" Orientation="Horizontal" VerticalAlignment="Center">
                         <ToggleButton Click="Button1_Click"  IsChecked="True" Margin="2,0,0,0" >
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
                         </ToggleButton>
                         <ToggleButton x:Name="ToggleSpectrumType" Click="ToggleSpectrumType_Click" Margin="2,0,0,0" ToolTip="{x:Static properties:Resources.ToggleSpectrum}">
                             <TextBlock Text="{x:Static properties:Resources.Relative}" x:Name="SpectrumTypeText"/>
                         </ToggleButton>
-                        <Button Content="{x:Static properties:Resources.Inquire}" Click="Inquire_Click" Margin="2,0,0,0"/>
-                        <Button x:Name="Search" Content="{x:Static properties:Resources.AdvanceSearch}" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                        <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static properties:Resources.Inquire}" Click="Inquire_Click">
+                            <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M7.2,3.2 A4,4 0 1 1 7.2,11.2 A4,4 0 1 1 7.2,3.2 M10.2,10.2 L14.2,14.2"/>
+                        </Button>
+                        <Button x:Name="Search" Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static properties:Resources.AdvanceSearch}" Click="SearchAdvanced_Click">
+                            <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M3,4.5 H15 L10.5,9 V13 L7.5,14 V9 Z"/>
+                        </Button>
                         <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="2,0,0,0"/>
-                    </ToolBar>
-                </ToolBarTray>
+                </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">

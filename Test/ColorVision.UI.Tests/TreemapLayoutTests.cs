@@ -1,5 +1,5 @@
 #pragma warning disable CA1707
-using ColorVision.UI.Controls;
+using ColorVision.UI.Desktop.ThirdPartyApps.Treemap;
 using System.Windows;
 
 namespace ColorVision.UI.Tests;

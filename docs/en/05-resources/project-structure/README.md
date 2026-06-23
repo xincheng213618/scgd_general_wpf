@@ -12,7 +12,7 @@ This document provides a quick explanation of the main directory division of the
 | `Engine/` | Core engine, device services, template system, flow execution | [Engine Development Guide](../../02-developer-guide/engine-development/README.md) / [Engine Components Overview](../../04-api-reference/engine-components/README.md) |
 | `Plugins/` | Runtime plugins and extension capabilities | [Plugin Development Overview](../../02-developer-guide/plugin-development/overview.md) |
 | `Projects/` | Client project packages and business customization implementations | [Component Interactions](../../03-architecture/overview/component-interactions.md) |
-| `Backend/marketplace/` | Plugin marketplace backend service | [Plugin Marketplace Backend](../../02-developer-guide/backend/README.md) |
+| `Web/Backend/` | Plugin marketplace backend service | [Plugin Marketplace Backend](../../02-developer-guide/backend/README.md) |
 | `Scripts/` | Build, packaging, and release scripts | [Build and Release Scripts](../../02-developer-guide/scripts/README.md) |
 | `ColorVisionSetup/` | Installer and updater | [Auto Update System](../../02-developer-guide/deployment/auto-update.md) |
 | `Test/` | xUnit, native helper, backend, and script validation | [Testing And Validation Handoff](../../02-developer-guide/testing.md) |

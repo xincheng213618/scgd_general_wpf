@@ -32,6 +32,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         private ObservableCollection<ThirdPartyAppInfo> _allApps = new();
         private List<ThirdPartyAppGroupItem> _groups = new();
         private string _allGroupsLabel = string.Empty;
+        private string _toolsGroupLabel = string.Empty;
         private CustomAppsConfig _customConfig = null!;
         private CancellationTokenSource? _loadCancellation;
 
@@ -45,6 +46,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             _customConfig = CustomAppsConfig.Instance;
             _allGroupsLabel = GetResourceString("ThirdPartyAppsAll", "All");
+            _toolsGroupLabel = IsChineseUICulture() ? "工具" : "Tools";
 
             SearchBox.ToolTip = Properties.Resources.Search;
             BtnAddApp.ToolTip = Properties.Resources.CustomApp_AddTooltip;
@@ -59,7 +61,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         private void RefreshGroups()
         {
             _groups = _allApps
-                .GroupBy(a => a.Group)
+                .GroupBy(GetDisplayGroup)
                 .Where(g => !string.IsNullOrEmpty(g.Key))
                 .OrderBy(g => g.Min(a => a.Order))
                 .Select(g => new ThirdPartyAppGroupItem(g.Key, g.Count()))
@@ -93,7 +95,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
             if (selectedGroup is { IsAll: false })
             {
-                filtered = filtered.Where(a => a.Group == selectedGroup.Name);
+                filtered = filtered.Where(a => GetDisplayGroup(a) == selectedGroup.Name);
             }
 
             if (!string.IsNullOrEmpty(keyword))
@@ -324,6 +326,42 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 AppsListBox.ItemsSource = null;
                 GroupListBox.Items.Clear();
             }
+        }
+
+        private string GetDisplayGroup(ThirdPartyAppInfo app)
+        {
+            if (IsBuiltInToolGroup(app.Group))
+                return _toolsGroupLabel;
+
+            return app.Group;
+        }
+
+        private static bool IsBuiltInToolGroup(string group)
+        {
+            if (string.IsNullOrWhiteSpace(group))
+                return false;
+
+            string normalized = group.Trim();
+            return normalized.Equals("ColorVision", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("常用工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("Common Tools", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("内置工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("內置工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("Built-in Tools", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("内部工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("內部工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("Internal Tools", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("安装工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("安裝工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("Install Tools", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("便携工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("便攜工具", StringComparison.OrdinalIgnoreCase)
+                   || normalized.Equals("Portable Tools", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsChineseUICulture()
+        {
+            return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
         }
 
         protected override void OnClosed(EventArgs e)

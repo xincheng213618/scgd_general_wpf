@@ -354,7 +354,6 @@ def main() -> None:
     parser.add_argument("--username", default=os.environ.get("COLORVISION_UPLOAD_USERNAME", DEFAULT_UPLOAD_USERNAME), help="Upload username")
     parser.add_argument("--password", default=os.environ.get("COLORVISION_UPLOAD_PASSWORD", DEFAULT_UPLOAD_PASSWORD), help="Upload password")
     parser.add_argument("--no-upload", action="store_true", help="Only package locally and skip upload")
-    parser.add_argument("--keep-package", action="store_true", help="Keep the local .cvxp file after successful upload")
     args = parser.parse_args()
 
     project_file = Path(args.project_file).expanduser().resolve() if args.project_file else None
@@ -411,7 +410,7 @@ def main() -> None:
     if not upload_latest_release(version, plugin_folder, args.upload_url, args.username, args.password):
         raise RuntimeError("LATEST_RELEASE upload failed.")
 
-    if not args.keep_package and output_file.exists():
+    if output_file.exists():
         output_file.unlink()
         print(f"Deleted local package: {output_file}")
 

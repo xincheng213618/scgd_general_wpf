@@ -21,5 +21,10 @@ namespace ColorVision.UI
         /// Shows the download manager window.
         /// </summary>
         void ShowDownloadWindow();
+
+        /// <summary>
+        /// Closes the download manager window when the caller owns a temporary download flow.
+        /// </summary>
+        void CloseDownloadWindow();
     }
 }

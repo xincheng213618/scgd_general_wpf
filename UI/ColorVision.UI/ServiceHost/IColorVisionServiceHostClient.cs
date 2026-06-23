@@ -27,6 +27,10 @@ namespace ColorVision.UI.ServiceHost
 
         Task<ServiceHostResponse> InstallMySqlFromZipAsync(string serviceName, string zipFilePath, string targetDirectory, int port, string rootPassword, string appUser, string appPassword, string database, int timeoutSeconds = 120, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
+        Task<ServiceHostResponse> InstallServiceAsync(string serviceName, string executablePath, string? displayName = null, string? description = null, string startType = "delayed-auto", bool startAfterInstall = false, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> UninstallServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
         Task<ServiceHostResponse> StartServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> StopServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -35,11 +39,6 @@ namespace ColorVision.UI.ServiceHost
 
         Task<ServiceHostResponse> TerminateServiceAsync(string serviceName, string? executablePath = null, int timeoutSeconds = 20, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
-        Task<ServiceHostResponse> StartMySqlServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
-
-        Task<ServiceHostResponse> StopMySqlServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
-
-        Task<ServiceHostResponse> UninstallMySqlServiceAsync(string serviceName, string? mysqldExePath = null, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
     }
 
     public sealed class ColorVisionServiceHostClient : IColorVisionServiceHostClient
@@ -159,14 +158,35 @@ namespace ColorVision.UI.ServiceHost
                 cancellationToken);
         }
 
-        public Task<ServiceHostResponse> StartMySqlServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        public Task<ServiceHostResponse> InstallServiceAsync(string serviceName, string executablePath, string? displayName = null, string? description = null, string startType = "delayed-auto", bool startAfterInstall = false, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
         {
-            return StartServiceAsync(serviceName, timeoutSeconds, timeout, cancellationToken);
+            return SendAsync(
+                "service-install",
+                new
+                {
+                    serviceName,
+                    executablePath,
+                    displayName,
+                    description,
+                    startType,
+                    startAfterInstall,
+                    timeoutSeconds,
+                },
+                timeout ?? TimeSpan.FromSeconds(90),
+                cancellationToken);
         }
 
-        public Task<ServiceHostResponse> StopMySqlServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        public Task<ServiceHostResponse> UninstallServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
         {
-            return StopServiceAsync(serviceName, timeoutSeconds, timeout, cancellationToken);
+            return SendAsync(
+                "service-uninstall",
+                new
+                {
+                    serviceName,
+                    timeoutSeconds,
+                },
+                timeout ?? TimeSpan.FromSeconds(90),
+                cancellationToken);
         }
 
         public Task<ServiceHostResponse> StartServiceAsync(string serviceName, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
@@ -219,20 +239,6 @@ namespace ColorVision.UI.ServiceHost
                     timeoutSeconds,
                 },
                 timeout ?? TimeSpan.FromSeconds(60),
-                cancellationToken);
-        }
-
-        public Task<ServiceHostResponse> UninstallMySqlServiceAsync(string serviceName, string? mysqldExePath = null, int timeoutSeconds = 45, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
-        {
-            return SendAsync(
-                "uninstall-mysql-service",
-                new
-                {
-                    serviceName,
-                    mysqldExePath,
-                    timeoutSeconds,
-                },
-                timeout ?? TimeSpan.FromSeconds(90),
                 cancellationToken);
         }
 

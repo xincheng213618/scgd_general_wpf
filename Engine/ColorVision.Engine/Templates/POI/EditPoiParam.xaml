@@ -426,7 +426,7 @@
                                         </DockPanel>
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
                                             <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.AreaPolygonUsNode}"/>
-                                            <TextBox  Text="{x:Static properties:Resources.UseNodePrompt}" />
+                                            <TextBlock  Text="{x:Static properties:Resources.UseNodePrompt}" />
                                         </DockPanel>
                                     </UniformGrid>
                                     <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>

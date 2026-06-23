@@ -225,17 +225,14 @@ class BuildScriptTests(unittest.TestCase):
     def test_main_aborts_before_build_when_preflight_fails(self):
         args = SimpleNamespace(
             project="ColorVision",
-            skip_build=False,
-            skip_remote_upload=False,
             upload_url="http://example.com:9998",
             upload_folder="ColorVision",
             upload_user="tester",
             upload_password="secret",
+            upload_use_system_proxy=False,
             connect_timeout=10,
             read_timeout=30,
             upload_retries=2,
-            latest_file=None,
-            setup_files_dir=None,
         )
 
         project = build.ProjectConfig(
@@ -263,20 +260,15 @@ class BuildScriptTests(unittest.TestCase):
     def test_main_uses_shared_default_credentials_when_not_explicitly_provided(self):
         args = SimpleNamespace(
             project="ColorVision",
-            skip_build=True,
-            skip_remote_upload=False,
             upload_url=None,
             upload_folder="ColorVision",
             upload_user=None,
             upload_password=None,
+            upload_use_system_proxy=False,
             connect_timeout=10,
             read_timeout=30,
             upload_retries=2,
-            latest_file=str(self.root / "ColorVision-2.0.0.0.exe"),
-            setup_files_dir=None,
         )
-        latest_file = Path(args.latest_file)
-        latest_file.write_bytes(b"payload")
         changelog_path = self.root / "CHANGELOG.md"
         changelog_path.write_text("hello", encoding="utf-8")
         project = build.ProjectConfig(
@@ -306,6 +298,44 @@ class BuildScriptTests(unittest.TestCase):
         self.assertEqual(exit_code, 2)
         self.assertEqual(captured_settings["settings"].username, "xincheng")
         self.assertEqual(captured_settings["settings"].password, "xincheng")
+
+    def test_main_fails_when_primary_release_upload_fails(self):
+        args = SimpleNamespace(
+            project="ColorVision",
+            upload_url="http://example.com:9998",
+            upload_folder="ColorVision",
+            upload_user="tester",
+            upload_password="secret",
+            upload_use_system_proxy=False,
+            connect_timeout=10,
+            read_timeout=30,
+            upload_retries=2,
+        )
+        package_file = self.root / "ColorVision-2.0.0.0.exe"
+        package_file.write_bytes(b"payload")
+        changelog_path = self.root / "CHANGELOG.md"
+        changelog_path.write_text("hello", encoding="utf-8")
+        project = build.ProjectConfig(
+            name="ColorVision",
+            msbuild_path=Path("msbuild.exe"),
+            solution_path=Path("build.sln"),
+            advanced_installer_path=Path("AdvancedInstaller.com"),
+            aip_path=Path("ColorVision.aip"),
+            setup_files_dir=self.root,
+            changelog_src=changelog_path,
+            wechat_target_directory=self.root,
+        )
+
+        with (
+            patch("build.parse_args", return_value=args),
+            patch("build.build_projects", return_value={"ColorVision": project}),
+            patch("build.preflight_remote_upload", return_value=True),
+            patch("build.rebuild_project", return_value=True),
+            patch("build.compare_and_write_version", return_value=False),
+        ):
+            exit_code = build.main()
+
+        self.assertEqual(exit_code, 1)
 
 
 if __name__ == "__main__":

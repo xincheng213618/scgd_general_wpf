@@ -31,10 +31,6 @@ namespace WindowsServicePlugin.ServiceManager
         public string RootPassword { get => _rootPassword; set { _rootPassword = value ?? string.Empty; OnPropertyChanged(); } }
         private string _rootPassword = string.Empty;
 
-        [JsonIgnore]
-        public string RootNewPassword { get => _rootNewPassword; set { _rootNewPassword = value ?? string.Empty; OnPropertyChanged(); } }
-        private string _rootNewPassword = string.Empty;
-
         public string AppUser { get => _appUser; set { _appUser = string.IsNullOrWhiteSpace(value) ? "cv" : value.Trim(); OnPropertyChanged(); } }
         private string _appUser = "cv";
 
@@ -43,6 +39,9 @@ namespace WindowsServicePlugin.ServiceManager
 
         public string Database { get => _database; set { _database = string.IsNullOrWhiteSpace(value) ? "color_vision_4xx" : value.Trim(); OnPropertyChanged(); } }
         private string _database = "color_vision_4xx";
+
+        public string SqlScriptPath { get => _sqlScriptPath; set { _sqlScriptPath = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _sqlScriptPath = string.Empty;
 
         public string InstallBasePath { get => _installBasePath; set { _installBasePath = value ?? string.Empty; OnPropertyChanged(); } }
         private string _installBasePath = string.Empty;

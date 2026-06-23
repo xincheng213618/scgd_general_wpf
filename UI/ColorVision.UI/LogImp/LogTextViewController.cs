@@ -175,7 +175,7 @@ namespace ColorVision.UI.LogImp
 
     internal static class LogTextViewMenuFactory
     {
-        public static void AppendRealtimeLogMenuItems(ContextMenu contextMenu, Action clear, Action<Level> setLogLevel)
+        public static void AppendRealtimeLogMenuItems(ContextMenu contextMenu, Action clear, Action<Level> setLogLevel, Func<bool> getAutoRefresh, Action<bool> setAutoRefresh)
         {
             var clearMenuItem = new MenuItem { Header = Properties.Resources.Clear };
             clearMenuItem.Click += (_, _) => clear();
@@ -190,10 +190,7 @@ namespace ColorVision.UI.LogImp
                 value => LogConfig.Instance.AutoScrollToEnd = value);
             contextMenu.Items.Add(autoScrollMenuItem);
 
-            var autoRefreshMenuItem = CreateCheckableItem(
-                Properties.Resources.AutoRefresh,
-                () => LogConfig.Instance.AutoRefresh,
-                value => LogConfig.Instance.AutoRefresh = value);
+            var autoRefreshMenuItem = CreateCheckableItem(Properties.Resources.AutoRefresh, getAutoRefresh, setAutoRefresh);
             contextMenu.Items.Add(autoRefreshMenuItem);
 
             contextMenu.Items.Add(new Separator());
@@ -207,7 +204,7 @@ namespace ColorVision.UI.LogImp
             {
                 LogViewUiHelper.PopulateLogLevelMenu(logLevelMenuItem, LogConfig.GetAllLevels(), LogConfig.Instance.LogLevel, setLogLevel);
                 RefreshCheckableItem(autoScrollMenuItem, () => LogConfig.Instance.AutoScrollToEnd);
-                RefreshCheckableItem(autoRefreshMenuItem, () => LogConfig.Instance.AutoRefresh);
+                RefreshCheckableItem(autoRefreshMenuItem, getAutoRefresh);
             };
         }
 

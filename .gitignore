@@ -376,6 +376,7 @@ FodyWeavers.xsd
 # Node.js / npm
 node_modules/
 package-lock.json
+!Web/Frontend/package-lock.json
 .npm
 .eslintcache
 
@@ -396,6 +397,11 @@ Backend/**/marketplace.db-shm
 Backend/**/marketplace.db-wal
 Backend/**/storage/
 Backend/**/__pycache__/
+Web/Backend/marketplace.db
+Web/Backend/marketplace.db-shm
+Web/Backend/marketplace.db-wal
+Web/Backend/storage/
+Web/Backend/__pycache__/
 
 dist/
 build/

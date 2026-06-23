@@ -12,7 +12,7 @@
 | `Engine/` | 核心引擎、裝置服務、模板系統、流程執行 | [Engine 開發指南](../../02-developer-guide/engine-development/README.md) / [Engine 元件總覽](../../04-api-reference/engine-components/README.md) |
 | `Plugins/` | 執行時外掛和擴充套件能力 | [外掛開發概覽](../../02-developer-guide/plugin-development/overview.md) |
 | `Projects/` | 客戶專案包、業務定製和對接示例 | [專案說明](../../00-projects/README.md) / [專案包總覽](../../04-api-reference/projects/README.md) |
-| `Backend/marketplace/` | 外掛市場後端服務 | [外掛市場後端](../../02-developer-guide/backend/README.md) |
+| `Web/Backend/` | 外掛市場後端服務 | [外掛市場後端](../../02-developer-guide/backend/README.md) |
 | `Scripts/` | 建置、打包、釋出指令碼 | [建置與釋出指令碼](../../02-developer-guide/scripts/README.md) |
 | `ColorVisionSetup/` | 安裝器與更新程式 | [自動更新系統](../../02-developer-guide/deployment/auto-update.md) |
 | `Test/` | xUnit、native helper、後端和指令碼驗證 | [測試與驗證交接手冊](../../02-developer-guide/testing.md) |

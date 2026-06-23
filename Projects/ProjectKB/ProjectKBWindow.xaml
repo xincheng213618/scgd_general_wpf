@@ -344,7 +344,7 @@
                     <TextBox x:Name="logTextBox" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
                 </Border>
 
-                <RichTextBox x:Name="outputText" Grid.Row="2" Margin="5,0" Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <RichTextBox x:Name="outputText" Grid.Row="2" Margin="5,0" Background="{DynamicResource RegionBrush}" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <FlowDocument>  
                         <Paragraph>
 
@@ -383,6 +383,9 @@
             </StatusBarItem>
             <StatusBarItem x:Name="TestStatusBarItem">
                 <Button Content="Test" Click="Button_Click"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button x:Name="RestartServicesButton" Content="重启服务" Click="RestartServicesButton_Click"/>
             </StatusBarItem>
             <Separator/>
             <StatusBarItem>

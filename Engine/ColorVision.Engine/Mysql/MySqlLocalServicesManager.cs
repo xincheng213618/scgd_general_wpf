@@ -157,6 +157,16 @@ namespace ColorVision.Database
         public string BackupPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
         public ObservableCollection<MysqlBack> Backups { get; set; } = new ObservableCollection<MysqlBack>();
         public ObservableCollection<MySqlCleanupTableInfo> CleanupTables { get; } = new ObservableCollection<MySqlCleanupTableInfo>();
+        public static IReadOnlyList<string> MigrationBackupTableNames { get; } =
+        [
+            "t_scgd_algorithm_poi_template_detail",
+            "t_scgd_algorithm_poi_template_master",
+            "t_scgd_camera_license",
+            "t_scgd_mod_param_detail",
+            "t_scgd_mod_param_master",
+            "t_scgd_sys_resource",
+            "t_scgd_sys_resource_group"
+        ];
 
 
         public static MySqlLocalConfig Config => MySqlLocalConfig.Instance;
@@ -920,8 +930,7 @@ namespace ColorVision.Database
 
         public List<string> GetFilteredResourceTableNames()
         {
-            var tableNames = new List<string>() { "t_scgd_algorithm_poi_template_detail", "t_scgd_algorithm_poi_template_master", "t_scgd_camera_license", "t_scgd_mod_param_detail", "t_scgd_mod_param_master", "t_scgd_sys_resource", "t_scgd_sys_resource_group" };
-            return tableNames;
+            return MigrationBackupTableNames.ToList();
         }
 
 

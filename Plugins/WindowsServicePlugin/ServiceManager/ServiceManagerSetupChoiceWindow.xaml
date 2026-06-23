@@ -1,7 +1,8 @@
 <Window x:Class="WindowsServicePlugin.ServiceManager.ServiceManagerSetupChoiceWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="服务管理器配置" Height="260" Width="460"
+        xmlns:res="clr-namespace:WindowsServicePlugin.Properties"
+        Title="{x:Static res:Resources.SetupConfigTitle}" Height="260" Width="460"
         Background="{DynamicResource GlobalBackground}"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -15,7 +16,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="选择初始化配置方式"
+                   Text="{x:Static res:Resources.SetupConfigChoiceTitle}"
                    FontSize="17"
                    FontWeight="SemiBold"
                    Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -39,8 +40,8 @@
                     Padding="12"
                     Click="Import_Click">
                 <StackPanel>
-                    <TextBlock Text="导入配置" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="定位旧版 CVWinSMS 并读取 App.config" Margin="0,6,0,0" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{x:Static res:Resources.ImportConfig}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{x:Static res:Resources.ImportConfigDescription}" Margin="0,6,0,0" TextWrapping="Wrap" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Button>
 
@@ -49,14 +50,14 @@
                     Padding="12"
                     Click="Manual_Click">
                 <StackPanel>
-                    <TextBlock Text="手动配置" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="配置 MySQL 和 MQTT" Margin="0,6,0,0" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{x:Static res:Resources.ManualConfig}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{x:Static res:Resources.ManualConfigDescription}" Margin="0,6,0,0" TextWrapping="Wrap" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Button>
         </Grid>
 
         <Button Grid.Row="3"
-                Content="跳过配置"
+                Content="{x:Static res:Resources.SkipConfig}"
                 Width="120"
                 Height="30"
                 Margin="0,14,0,0"

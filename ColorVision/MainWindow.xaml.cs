@@ -142,9 +142,6 @@ namespace ColorVision
             }
             WorkspaceManager.DealyLoad.Clear();
 
-            // 更新后首次打开时显示更新日志
-            ShowChangelogIfUpdated();
-
             // Ctrl+W 关闭当前活动的文档
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
             {
@@ -239,35 +236,6 @@ namespace ColorVision
 
             terminalPanel.IsActiveChanged += (_, _) => ActivateTerminalPanel();
             ActivateTerminalPanel();
-        }
-
-        /// <summary>
-        /// 更新后首次打开时显示更新日志。
-        /// 对比当前版本与上次记录的版本，若版本变更则显示 CHANGELOG.md。
-        /// </summary>
-        private void ShowChangelogIfUpdated()
-        {
-            try
-            {
-                string currentVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
-                if (string.IsNullOrEmpty(currentVersion)) return;
-
-                if (Config.LastOpenedVersion != currentVersion)
-                {
-                    string changelogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
-                    if (File.Exists(changelogPath))
-                    {
-                        var editor = new WebView2Editor();
-                        editor.Open(changelogPath);
-                    }
-
-                    Config.LastOpenedVersion = currentVersion;
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Warn("显示更新日志失败", ex);
-            }
         }
 
         private void MainWindow_Drop(object sender, DragEventArgs e)

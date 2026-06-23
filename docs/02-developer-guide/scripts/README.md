@@ -51,23 +51,47 @@ export COLORVISION_UPLOAD_PASSWORD="xincheng"
 | `COLORVISION_UPLOAD_FOLDER` | 上传文件夹 | `ColorVision` |
 | `COLORVISION_UPLOAD_USERNAME` | 上传用户名 | `xincheng` |
 | `COLORVISION_UPLOAD_PASSWORD` | 上传密码 | `xincheng` |
-| `COLORVISION_REMOTE_UPLOAD` | 是否启用远程上传 | `1` (启用) |
 
 ## build.py - 主程序构建
 
 构建主程序安装包并上传到后端。
 
+### 主程序正式发布流程
+
+正式发布只有一个入口：
+
+```powershell
+Scripts\release.bat
+```
+
+它会依次执行 `py Scripts\build.py` 和 `py Scripts\build_update.py`，完成主安装包构建上传、`LATEST_RELEASE` 更新、增量更新包构建上传和全量 zip 生成。
+
+发布前只需要确认仓库根目录 `Directory.Build.props` 里的版本号已经提升：
+
+```xml
+<VersionPrefix>1.4.10.5</VersionPrefix>
+```
+
+`release.bat` 正常发布时本来就会生成本地文件，这不是“只本地打包”。判断是否真的发布，看输出里是否出现：
+
+- `Uploading primary release package`
+- `File uploaded successfully`
+- `Uploaded LATEST_RELEASE successfully`
+- 更新包上传的 `File uploaded successfully`
+
+正式发布不要拆开手工执行 `build.py` 或 `build_update.py`，也不要使用任何跳过构建、跳过上传的调试参数。
+
+发布成功后会有这些本地产物：
+
+- `%USERPROFILE%\Documents\Advanced Installer\Projects\ColorVision\Setup Files\ColorVision-{version}.exe`
+- `%USERPROFILE%\Desktop\History\ColorVision-[{version}].zip`
+- `%USERPROFILE%\Desktop\History\update\ColorVision-Update-[{version}].cvx`
+
 ### 用法
 
 ```powershell
-# 完整构建（编译 + 打包 + 上传）
+# release.bat 的内部步骤；正式发布不要绕过 release.bat 直接运行
 py Scripts\build.py
-
-# 跳过构建，仅上传最新安装包
-py Scripts\build.py --skip-build
-
-# 跳过远程上传
-py Scripts\build.py --skip-remote-upload
 ```
 
 ### 功能说明

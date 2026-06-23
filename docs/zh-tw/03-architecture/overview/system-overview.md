@@ -14,7 +14,7 @@
 - `Plugins/`：執行時外掛擴充套件
 - `Projects/`：客戶專案和定製業務組合
 - `ColorVisionSetup/`：安裝器與更新相關程式
-- `Backend/marketplace/`：外掛市場後端
+- `Web/Backend/`：外掛市場後端
 - `Scripts/`：建置、打包、釋出指令碼
 
 ## 按系統角色看結構
@@ -53,7 +53,7 @@
 ### 交付與外圍層
 
 - `ColorVisionSetup/` 負責安裝與更新側程式
-- `Backend/marketplace/` 負責外掛市場後端
+- `Web/Backend/` 負責外掛市場後端
 - `Scripts/` 和根目錄批處理指令碼負責建置、打包和釋出
 
 ## 執行時最常見的主鏈路

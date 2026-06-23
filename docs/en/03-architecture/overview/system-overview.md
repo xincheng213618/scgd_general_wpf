@@ -14,7 +14,7 @@ The most important top-level areas are:
 - `Plugins/`: Runtime plugin extensions
 - `Projects/`: Client projects and customized business combinations
 - `ColorVisionSetup/`: Installer and update-related programs
-- `Backend/marketplace/`: Plugin marketplace backend
+- `Web/Backend/`: Plugin marketplace backend
 - `Scripts/`: Build, packaging, and release scripts
 
 ## Structure by System Role
@@ -53,7 +53,7 @@ If you are tracing "what happens first after the program starts," usually start 
 ### Delivery and Peripheral Layer
 
 - `ColorVisionSetup/` handles installer and update-side programs
-- `Backend/marketplace/` handles plugin marketplace backend
+- `Web/Backend/` handles plugin marketplace backend
 - `Scripts/` and root directory batch scripts handle build, packaging, and release
 
 ## Most Common Main Chains at Runtime

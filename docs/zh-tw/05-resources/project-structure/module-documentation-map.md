@@ -17,7 +17,7 @@
 | `Plugins/` | 執行時外掛和擴充套件能力 | [現有外掛能力說明](../../04-api-reference/plugins/README.md) | [當前外掛文件覆蓋清單](../../04-api-reference/plugins/current-plugin-coverage.md)、[外掛能力與交接矩陣](../../04-api-reference/plugins/plugin-capability-matrix.md)、[外掛開發概覽](../../02-developer-guide/plugin-development/overview.md) |
 | `Projects/` | 客戶專案、定製業務拼裝、對接示例 | [專案說明](../../00-projects/README.md) | [專案包總覽](../../04-api-reference/projects/README.md)、[目前專案文件覆蓋清單](../../04-api-reference/projects/current-project-coverage.md)、[專案包能力與交接矩陣](../../04-api-reference/projects/project-capability-matrix.md)、[專案包執行與交接場景手冊](../../04-api-reference/projects/project-package-playbook.md) |
 | `ColorVisionSetup/` | 安裝器和更新流程 | [部署概覽](../../02-developer-guide/deployment/overview.md) | [自動更新系統](../../02-developer-guide/deployment/auto-update.md) |
-| `Backend/marketplace/` | 外掛市場後端 | [外掛市場後端](../../02-developer-guide/backend/README.md) | [開發指南](../../02-developer-guide/README.md) |
+| `Web/Backend/` | 外掛市場後端 | [外掛市場後端](../../02-developer-guide/backend/README.md) | [開發指南](../../02-developer-guide/README.md) |
 | `Scripts/` | 建置、打包、釋出指令碼 | [建置與釋出指令碼](../../02-developer-guide/scripts/README.md) | [部署概覽](../../02-developer-guide/deployment/overview.md) |
 | `Test/` | xUnit、native helper、後端和指令碼驗證 | [測試與驗證交接手冊](../../02-developer-guide/testing.md) | [開發指南](../../02-developer-guide/README.md) |
 | `docs/` | 當前文件站原始碼 | [附錄與資源](../README.md) | 當前文件 |

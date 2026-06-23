@@ -18,7 +18,7 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceManagerViewModel : ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ServiceManagerViewModel));
+        private readonly ILog log = LogManager.GetLogger(typeof(ServiceManagerViewModel));
 
         public static ServiceManagerViewModel Instance { get; } = new ServiceManagerViewModel();
 
@@ -30,11 +30,6 @@ namespace WindowsServicePlugin.ServiceManager
         public MySqlServiceManager MySqlManager { get; } = new MySqlServiceManager();
 
         public MqttServiceManager MqttManager { get; } = new MqttServiceManager();
-
-        public MySqlServiceHelper MySqlHelper => MySqlManager.Helper;
-
-        public string LogText { get => _LogText; set { _LogText = value; OnPropertyChanged(); } }
-        private string _LogText = string.Empty;
 
         public string CurrentVersion { get => _CurrentVersion; set { _CurrentVersion = value; OnPropertyChanged(); } }
         private string _CurrentVersion = string.Empty;
@@ -61,13 +56,11 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand UpdateConfigCommand { get; }
         public RelayCommand OpenInstallManagerCommand { get; }
         public RelayCommand RefreshCommand { get; }
-        public RelayCommand ClearLogCommand { get; }
         public RelayCommand SetBasePathCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
-        public RelayCommand OpenWinServiceConfigCommand { get; }
-        public RelayCommand OpenMySqlConfigCommand { get; }
-        public RelayCommand OpenMqttConfigCommand { get; }
         public RelayCommand OpenLegacyConfigCommand { get; }
+        public RelayCommand ServiceInstallCommand { get; }
+        public RelayCommand ServiceUninstallCommand { get; }
         public RelayCommand ServiceStartCommand { get; }
         public RelayCommand ServiceStopCommand { get; }
         public RelayCommand ServiceRestartCommand { get; }
@@ -77,22 +70,17 @@ namespace WindowsServicePlugin.ServiceManager
 
         // MySQL commands
         public RelayCommand MySqlInstallZipCommand { get; }
-        public RelayCommand MySqlRepairServiceCommand { get; }
         public RelayCommand MySqlRegisterExistingCommand { get; }
         public RelayCommand MySqlStartCommand { get; }
         public RelayCommand MySqlStopCommand { get; }
         public RelayCommand MySqlUninstallCommand { get; }
-        public RelayCommand MySqlBackupCommand { get; }
-        public RelayCommand MySqlRestoreCommand { get; }
         public RelayCommand MySqlRunScriptCommand { get; }
+        public RelayCommand MySqlBrowseSqlScriptCommand { get; }
         public RelayCommand MySqlResetDatabaseCommand { get; }
         public RelayCommand MySqlBrowseCommand { get; }
-        public RelayCommand MySqlSetRootPasswordCommand { get; }
-        public RelayCommand MySqlForceResetRootPasswordCommand { get; }
+        public RelayCommand MySqlApplyRootPasswordCommand { get; }
         public RelayCommand MySqlCreateOrUpdateUserCommand { get; }
-        public RelayCommand MySqlDeleteUserCommand { get; }
         public RelayCommand MySqlGenerateRandomRootPasswordCommand { get; }
-        public RelayCommand CheckDatabaseConfigCommand { get; }
 
         public ServiceManagerViewModel()
         {
@@ -102,13 +90,11 @@ namespace WindowsServicePlugin.ServiceManager
             UpdateConfigCommand = new RelayCommand(a => UpdateConfig(), a => !IsBusy);
             OpenInstallManagerCommand = new RelayCommand(a => OpenInstallManager());
             RefreshCommand = new RelayCommand(a => RefreshAll());
-            ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
             SetBasePathCommand = new RelayCommand(a => SetBasePath());
             OpenFolderCommand = new RelayCommand(a => OpenServiceFolder(a as ServiceEntry));
-            OpenWinServiceConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "WinService.config"));
-            OpenMySqlConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MySql.config"));
-            OpenMqttConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MQTT.config"));
             OpenLegacyConfigCommand = new RelayCommand(a => OpenLegacyConfigFile(), a => HasLegacyConfig);
+            ServiceInstallCommand = new RelayCommand(a => _ = InstallManagedServiceAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry entry && !entry.IsInstalled && HasResolvableServiceExecutable(entry));
+            ServiceUninstallCommand = new RelayCommand(a => _ = UninstallManagedServiceAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry { IsInstalled: true });
             ServiceStartCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Start), a => !IsBusy && a is ServiceEntry { IsInstalled: true, IsRunning: false });
             ServiceStopCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Stop), a => !IsBusy && a is ServiceEntry { IsInstalled: true, IsRunning: true });
             ServiceRestartCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Restart), a => !IsBusy && a is ServiceEntry { IsInstalled: true });
@@ -117,22 +103,17 @@ namespace WindowsServicePlugin.ServiceManager
             MqttStopCommand = new RelayCommand(a => _ = StopMqttServiceAsync(), a => !IsBusy && MqttManager.Config.IsRunning);
 
             MySqlInstallZipCommand = new RelayCommand(a => _ = MySqlInstallZipAsync(), a => !IsBusy);
-            MySqlRepairServiceCommand = new RelayCommand(a => _ = RepairMySqlServicePreferServiceHostAsync(), a => !IsBusy);
             MySqlRegisterExistingCommand = new RelayCommand(a => _ = RegisterExistingMySqlServiceAsync(), a => !IsBusy);
-            MySqlStartCommand = new RelayCommand(a => _ = StartMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
-            MySqlStopCommand = new RelayCommand(a => _ = StopMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
-            MySqlUninstallCommand = new RelayCommand(a => _ = UninstallMySqlServiceAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled);
-            MySqlBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlBackup()), a => !IsBusy && MySqlManager.Config.IsRunning);
-            MySqlRestoreCommand = new RelayCommand(a => _ = Task.Run(() => DoMySqlRestore()), a => !IsBusy && MySqlManager.Config.IsRunning);
-            MySqlRunScriptCommand = new RelayCommand(a => _ = Task.Run(() => DoRunSqlScript()), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlStartCommand = new RelayCommand(a => _ = StartMySqlAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled && !MySqlManager.Config.IsRunning);
+            MySqlStopCommand = new RelayCommand(a => _ = StopMySqlAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlUninstallCommand = new RelayCommand(a => _ = UninstallMySqlAsync(), a => !IsBusy && MySqlManager.Config.IsInstalled);
+            MySqlRunScriptCommand = new RelayCommand(a => _ = RunSqlScriptAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
+            MySqlBrowseSqlScriptCommand = new RelayCommand(a => BrowseSqlScriptPath());
             MySqlResetDatabaseCommand = new RelayCommand(a => _ = ResetDatabaseAsync(), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlBrowseCommand = new RelayCommand(a => BrowseMySqlPath());
-            MySqlSetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoSetRootPassword()), a => !IsBusy && MySqlManager.Config.IsRunning);
-            MySqlForceResetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoForceResetRootPassword()), a => !IsBusy);
+            MySqlApplyRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoApplyRootPassword()), a => !IsBusy);
             MySqlCreateOrUpdateUserCommand = new RelayCommand(a => _ = Task.Run(() => DoCreateOrUpdateUser()), a => !IsBusy && MySqlManager.Config.IsRunning);
-            MySqlDeleteUserCommand = new RelayCommand(a => _ = Task.Run(() => DoDeleteUser()), a => !IsBusy && MySqlManager.Config.IsRunning);
             MySqlGenerateRandomRootPasswordCommand = new RelayCommand(a => GenerateRandomRootPassword());
-            CheckDatabaseConfigCommand = new RelayCommand(a => _ = Task.Run(() => DoCheckDatabaseConfig()), a => !IsBusy && MySqlManager.Config.IsRunning);
 
             Initialize();
         }
@@ -206,16 +187,6 @@ namespace WindowsServicePlugin.ServiceManager
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 MqttManager.RefreshStatus(Services);
-            });
-        }
-
-        public void AddLog(string message)
-        {
-            string entry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}=> {message}";
-            log.Info(message);
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                LogText += entry + Environment.NewLine;
             });
         }
 

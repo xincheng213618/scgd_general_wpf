@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
@@ -16,7 +17,7 @@ namespace ColorVision.Themes
         /// </summary>
         public static void ForceApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyThemeChanged(app, theme);
 
-        public static void ApplyCaption(this Window window,bool Icon = true)   
+        public static void ApplyCaption(this Window window, bool Icon = true)
         {
             RoutedEventHandler routedEventHandler = null;
             ThemeChangedHandler themeChangedHandler = null;
@@ -24,25 +25,24 @@ namespace ColorVision.Themes
             routedEventHandler = (s, e) =>
             {
                 IntPtr hwnd = new WindowInteropHelper(window).Handle;
+                BitmapImage? packageIcon = TryLoadPackageIcon(window);
+                if (packageIcon != null)
+                    window.Icon = packageIcon;
 
-                if (Icon)
+                themeChangedHandler = theme =>
                 {
-                    themeChangedHandler = (theme) =>
-                    {
-                        window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
-                        ThemeManager.SetWindowTitleBarColor(hwnd, theme);
-                    };
-                    ThemeManager.Current.CurrentThemeChanged += themeChangedHandler;
+                    if (Icon && packageIcon == null)
+                        window.Icon = CreateDefaultIcon(theme);
+                    ThemeManager.SetWindowTitleBarColor(hwnd, theme);
+                };
+                ThemeManager.Current.CurrentThemeChanged += themeChangedHandler;
 
-                    if (ThemeManager.Current.CurrentTheme == Theme.Dark)
-                        window.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision.Themes;component/Assets/Image/ColorVision1.ico"));
-                }
+                if (Icon && packageIcon == null)
+                    window.Icon = CreateDefaultIcon(ThemeManager.Current.CurrentUITheme);
 
                 ThemeManager.SetWindowTitleBarColor(hwnd, ThemeManager.Current.CurrentUITheme);
 
-                // 解绑 Loaded 事件
                 window.Loaded -= routedEventHandler;
-                // 监听 Closed，窗口关闭时解绑主题事件
                 window.Closed += (sender2, e2) =>
                 {
                     if (themeChangedHandler != null)
@@ -50,7 +50,38 @@ namespace ColorVision.Themes
                 };
             };
             window.Loaded += routedEventHandler;
+        }
 
+        private static BitmapImage CreateDefaultIcon(Theme theme) => new(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+
+        private static BitmapImage? TryLoadPackageIcon(Window window)
+        {
+            try
+            {
+                string assemblyLocation = window.GetType().Assembly.Location;
+                if (string.IsNullOrWhiteSpace(assemblyLocation))
+                    return null;
+
+                string? directory = Path.GetDirectoryName(assemblyLocation);
+                if (string.IsNullOrWhiteSpace(directory))
+                    return null;
+
+                string iconPath = Path.Combine(directory, "PackageIcon.png");
+                if (!File.Exists(iconPath))
+                    return null;
+
+                BitmapImage image = new();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.UriSource = new Uri(iconPath, UriKind.Absolute);
+                image.EndInit();
+                image.Freeze();
+                return image;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

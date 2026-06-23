@@ -1,0 +1,107 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9.DistortionP9ResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="9点畸变分析" Height="720" Width="980"
+        Background="#F6F7F9" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#0B6B5E"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#D9DEE5"/>
+        <SolidColorBrush x:Key="PanelBackground" Color="#FFFFFF"/>
+        <Style TargetType="Button">
+            <Setter Property="MinWidth" Value="92"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Padding" Value="12,4"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#263238"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <Button Content="导出 JSON" Click="ExportJson_Click"/>
+                <Button Content="导出 CSV" Click="ExportCsv_Click"/>
+                <Button Content="复制 JSON" Click="CopyJson_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="SummaryText"
+                       DockPanel.Dock="Right"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource PrimaryBrush}"/>
+        </DockPanel>
+
+        <Border Grid.Row="1"
+                Background="{StaticResource PanelBackground}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="10"
+                Margin="0,0,0,10">
+            <DataGrid x:Name="MetricsGrid"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      MinHeight="132"
+                      GridLinesVisibility="Horizontal">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="指标" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="值" Binding="{Binding Value}" Width="150"/>
+                    <DataGridTextColumn Header="单位" Binding="{Binding Unit}" Width="80"/>
+                    <DataGridTextColumn Header="说明" Binding="{Binding Description}" Width="2*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <TabControl Grid.Row="2">
+            <TabItem Header="9点坐标">
+                <Border Background="{StaticResource PanelBackground}" Padding="8">
+                    <DataGrid x:Name="PointsGrid"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              IsReadOnly="True"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="54"/>
+                            <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="70"/>
+                            <DataGridTextColumn Header="行" Binding="{Binding Row}" Width="54"/>
+                            <DataGridTextColumn Header="列" Binding="{Binding Col}" Width="54"/>
+                            <DataGridTextColumn Header="X" Binding="{Binding X, StringFormat=F3}" Width="120"/>
+                            <DataGridTextColumn Header="Y" Binding="{Binding Y, StringFormat=F3}" Width="120"/>
+                            <DataGridTextColumn Header="面积" Binding="{Binding Area}" Width="90"/>
+                            <DataGridTextColumn Header="外接框" Binding="{Binding BoundingRectDisplay}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+            </TabItem>
+            <TabItem Header="JSON">
+                <TextBox x:Name="JsonText"
+                         AcceptsReturn="True"
+                         AcceptsTab="True"
+                         FontFamily="Consolas"
+                         FontSize="12"
+                         HorizontalScrollBarVisibility="Auto"
+                         IsReadOnly="True"
+                         TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto"/>
+            </TabItem>
+        </TabControl>
+
+        <TextBlock x:Name="StatusText"
+                   Grid.Row="3"
+                   Margin="0,10,0,0"
+                   Foreground="#667085"
+                   TextWrapping="Wrap"/>
+    </Grid>
+</Window>

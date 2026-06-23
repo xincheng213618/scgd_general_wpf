@@ -112,14 +112,8 @@
   <data name="CameraLog" xml:space="preserve">
     <value>相机日志</value>
   </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC服务日志</value>
-  </data>
   <data name="ManagementService" xml:space="preserve">
     <value>管理服务</value>
-  </data>
-  <data name="ReadServiceConfig" xml:space="preserve">
-    <value>读取服务的配置</value>
   </data>
   <data name="ReplaceServiceCfg" xml:space="preserve">
     <value>替换服务的CFG</value>
@@ -184,34 +178,256 @@
   <data name="Service" xml:space="preserve">
     <value>服务</value>
   </data>
-  <data name="BCompareNotFound_DownloadPrompt" xml:space="preserve">
-    <value>找不到BCompare，是否下载</value>
+  <data name="ServiceInstallManager" xml:space="preserve">
+    <value>服务安装管理</value>
   </data>
-  <data name="DownLoadBeyondCompare" xml:space="preserve">
-    <value>下载BeyondCompare</value>
+  <data name="BaseInstallRootLabel" xml:space="preserve">
+    <value>安装根目录：</value>
   </data>
-  <data name="OpenBeyondCompare" xml:space="preserve">
-    <value>打开BeyondCompare</value>
+  <data name="SetDirectory" xml:space="preserve">
+    <value>目录设置</value>
   </data>
-  <data name="InstallMqtt" xml:space="preserve">
-    <value>安装MQTT</value>
+  <data name="OneKeyInstallHint" xml:space="preserve">
+    <value>一键安装：选择安装包后自动解压、识别组件并勾选，然后点击下方安装按钮</value>
   </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>转储文件设置</value>
+  <data name="OnlineDownload" xml:space="preserve">
+    <value>在线下载</value>
   </data>
-  <data name="ActivateWindows" xml:space="preserve">
-    <value>激活Windows</value>
+  <data name="SelectOneKeyPackage" xml:space="preserve">
+    <value>选择一键安装包</value>
   </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>重启服务</value>
+  <data name="ServicePackage" xml:space="preserve">
+    <value>服务包</value>
   </data>
-  <data name="RestartServiceSucess" xml:space="preserve">
-    <value>重启服务成功</value>
+  <data name="Download" xml:space="preserve">
+    <value>下载</value>
   </data>
-  <data name="ServiceRestartFailed_PleaseRestartManually" xml:space="preserve">
-    <value>重启服务失败请手动重启服务</value>
+  <data name="Select" xml:space="preserve">
+    <value>选择</value>
   </data>
-  <data name="UpdateService" xml:space="preserve">
-    <value>更新服务</value>
+  <data name="InstallOptions" xml:space="preserve">
+    <value>安装选项</value>
+  </data>
+  <data name="UpdateDatabaseLatest" xml:space="preserve">
+    <value>更新数据库到最近版本</value>
+  </data>
+  <data name="DatabaseBackup" xml:space="preserve">
+    <value>数据库备份</value>
+  </data>
+  <data name="BackupDatabaseBeforeInstall" xml:space="preserve">
+    <value>安装前备份数据库</value>
+  </data>
+  <data name="BackupNow" xml:space="preserve">
+    <value>立即备份</value>
+  </data>
+  <data name="RestoreBackup" xml:space="preserve">
+    <value>恢复备份</value>
+  </data>
+  <data name="DatabaseBackupLocationHint" xml:space="preserve">
+    <value>(保存至：我的文档\ColorVision\Backup)</value>
+  </data>
+  <data name="ServiceBackup" xml:space="preserve">
+    <value>服务备份</value>
+  </data>
+  <data name="BackupServiceBeforeInstall" xml:space="preserve">
+    <value>安装前备份服务文件夹</value>
+  </data>
+  <data name="BackupServiceNow" xml:space="preserve">
+    <value>立即备份服务</value>
+  </data>
+  <data name="RestoreServiceBackup" xml:space="preserve">
+    <value>恢复服务备份</value>
+  </data>
+  <data name="ServiceBackupLocationHint" xml:space="preserve">
+    <value>(保存至：我的文档\ColorVision\ServiceBackup)</value>
+  </data>
+  <data name="InstallLog" xml:space="preserve">
+    <value>安装日志</value>
+  </data>
+  <data name="InstallNow" xml:space="preserve">
+    <value>立即安装</value>
+  </data>
+  <data name="OneKeyStart" xml:space="preserve">
+    <value>一键启动</value>
+  </data>
+  <data name="OneKeyStop" xml:space="preserve">
+    <value>一键停止</value>
+  </data>
+  <data name="UpdateConfig" xml:space="preserve">
+    <value>更新配置</value>
+  </data>
+  <data name="LegacyAppConfig" xml:space="preserve">
+    <value>旧版App.config</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="OpenInstallManagerToolTip" xml:space="preserve">
+    <value>打开服务安装管理器，检查更新并安装</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>安装</value>
+  </data>
+  <data name="Uninstall" xml:space="preserve">
+    <value>卸载</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>启动</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="Restart" xml:space="preserve">
+    <value>重启</value>
+  </data>
+  <data name="Terminate" xml:space="preserve">
+    <value>终止</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>打开目录</value>
+  </data>
+  <data name="MySqlServiceInfo" xml:space="preserve">
+    <value>MySQL 服务信息</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>服务名</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>路径</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>浏览</value>
+  </data>
+  <data name="RootPassword" xml:space="preserve">
+    <value>root密码</value>
+  </data>
+  <data name="ApplyRootPassword" xml:space="preserve">
+    <value>应用root密码</value>
+  </data>
+  <data name="GenerateRandom" xml:space="preserve">
+    <value>随机生成</value>
+  </data>
+  <data name="AppUser" xml:space="preserve">
+    <value>业务用户</value>
+  </data>
+  <data name="CreateOrUpdateUser" xml:space="preserve">
+    <value>创建/更新用户</value>
+  </data>
+  <data name="AppPassword" xml:space="preserve">
+    <value>业务密码</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>数据库</value>
+  </data>
+  <data name="SqlScript" xml:space="preserve">
+    <value>SQL脚本</value>
+  </data>
+  <data name="RunScript" xml:space="preserve">
+    <value>脚本执行</value>
+  </data>
+  <data name="ZipFullInstall" xml:space="preserve">
+    <value>Zip全安装</value>
+  </data>
+  <data name="RegisterService" xml:space="preserve">
+    <value>注册服务</value>
+  </data>
+  <data name="RegisterMySqlTooltip" xml:space="preserve">
+    <value>使用上次保存的 MySQL 路径注册 MySQL，不重新初始化数据</value>
+  </data>
+  <data name="ResetDatabase" xml:space="preserve">
+    <value>重置数据库</value>
+  </data>
+  <data name="ResetDatabaseTooltip" xml:space="preserve">
+    <value>使用 root 执行服务安装目录 SQL\color_vision_all.sql</value>
+  </data>
+  <data name="MqttServiceInfo" xml:space="preserve">
+    <value>MQTT 服务信息</value>
+  </data>
+  <data name="LogOutput" xml:space="preserve">
+    <value>日志输出</value>
+  </data>
+  <data name="SetupConfigTitle" xml:space="preserve">
+    <value>服务管理器配置</value>
+  </data>
+  <data name="SetupConfigChoiceTitle" xml:space="preserve">
+    <value>选择初始化配置方式</value>
+  </data>
+  <data name="ImportConfig" xml:space="preserve">
+    <value>导入配置</value>
+  </data>
+  <data name="ImportConfigDescription" xml:space="preserve">
+    <value>定位旧版 CVWinSMS 并读取 App.config</value>
+  </data>
+  <data name="ManualConfig" xml:space="preserve">
+    <value>手动配置</value>
+  </data>
+  <data name="ManualConfigDescription" xml:space="preserve">
+    <value>配置 MySQL 和 MQTT</value>
+  </data>
+  <data name="SkipConfig" xml:space="preserve">
+    <value>跳过配置</value>
+  </data>
+  <data name="LegacyConfigDetectedFormat" xml:space="preserve">
+    <value>检测到旧版配置：{0}</value>
+  </data>
+  <data name="LegacyConfigNotDetected" xml:space="preserve">
+    <value>未检测到旧版配置。导入时可以选择旧版 CVWinSMS.exe，手动配置可直接填写 MySQL 和 MQTT。</value>
+  </data>
+  <data name="MqttServiceDisplayName" xml:space="preserve">
+    <value>MQTT服务</value>
+  </data>
+  <data name="RegistrationCenterServiceDisplayName" xml:space="preserve">
+    <value>注册中心服务</value>
+  </data>
+  <data name="CvMainServiceX64DisplayName" xml:space="preserve">
+    <value>CV主服务(x64)</value>
+  </data>
+  <data name="CvMainServiceDevDisplayName" xml:space="preserve">
+    <value>CV主服务(Dev)</value>
+  </data>
+  <data name="SelectServiceBaseLocationDialog" xml:space="preserve">
+    <value>选择服务安装根目录</value>
+  </data>
+  <data name="ServicePackageZipFilter" xml:space="preserve">
+    <value>服务安装包 (*.zip)|*.zip</value>
+  </data>
+  <data name="SelectServicePackageDialog" xml:space="preserve">
+    <value>选择服务安装包</value>
+  </data>
+  <data name="MySqlZipFilter" xml:space="preserve">
+    <value>MySQL ZIP (*.zip)|*.zip</value>
+  </data>
+  <data name="SelectMySqlPackageDialog" xml:space="preserve">
+    <value>选择 MySQL 安装包</value>
+  </data>
+  <data name="MqttInstallerFilter" xml:space="preserve">
+    <value>MQTT 安装程序 (*.exe)|*.exe</value>
+  </data>
+  <data name="SelectMqttInstallerDialog" xml:space="preserve">
+    <value>选择 MQTT 安装程序</value>
+  </data>
+  <data name="Vc2013InstallerFilter" xml:space="preserve">
+    <value>VC++ 2013 安装程序 (*.exe)|*.exe</value>
+  </data>
+  <data name="SelectVc2013InstallerDialog" xml:space="preserve">
+    <value>选择 VC++ 2013 x64 运行库安装程序</value>
+  </data>
+  <data name="InstallErrorCaption" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="CVWindowsService" xml:space="preserve">
+    <value>CVWindowsService</value>
+  </data>
+  <data name="MySQL" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="MQTT" xml:space="preserve">
+    <value>MQTT</value>
+  </data>
+  <data name="Vc2013Runtime" xml:space="preserve">
+    <value>VC++ 2013</value>
   </data>
 </root>

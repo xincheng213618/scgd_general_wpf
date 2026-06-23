@@ -2,13 +2,18 @@
 #include "Windows.h"
 #include "opencv_media_export.h"
 #include "algorithm.h"
+#include "algorithm/distortion/distortion_p9.h"
+#include "algorithm/sfr/sfr_bmw4.h"
+#include "algorithm/surface_defect/surface_defect.h"
 #include <opencv2/opencv.hpp>
 #include <nlohmann\json.hpp>
+#include <algorithm>
 #include <string>
 #include <locale>
 #include <codecvt>
 #include <cmath>
 #include <combaseapi.h>
+#include <cctype>
 #include <cstring>
 #include <exception>
 #include <future>
@@ -123,6 +128,368 @@ int CopyJsonResult(const json& outputJson, char** result)
 	std::memcpy(buffer, output.c_str(), length);
 	*result = buffer;
 	return static_cast<int>(length);
+}
+
+void ReadBmwSfr4ConfigFields(const json& j, cvcore::sfr::BmwSfr4Config& config)
+{
+	if (!j.is_object()) {
+		return;
+	}
+
+	config.pixelPitch = j.value("PixelPitch", j.value("pixelPitch", config.pixelPitch));
+	config.polynomialDegree = j.value("PolynomialDegree", j.value("polynomialDegree", config.polynomialDegree));
+	config.binning = j.value("Binning", j.value("binning", config.binning));
+	config.threshold = j.value("Threshold", j.value("threshold", config.threshold));
+	config.minTargetArea = j.value("MinArea", j.value("minTargetArea", config.minTargetArea));
+	config.maxTargetArea = j.value("MaxArea", j.value("maxTargetArea", config.maxTargetArea));
+	config.maxTargets = j.value("MaxTargets", j.value("maxTargets", config.maxTargets));
+	config.roiWidth = j.value("RoiWidth", j.value("roi_w", j.value("dst_roi_w", config.roiWidth)));
+	config.roiHeight = j.value("RoiHeight", j.value("roi_h", j.value("dst_roi_h", config.roiHeight)));
+	config.maxCurveLength = j.value("MaxCurveLength", j.value("maxCurveLength", config.maxCurveLength));
+	config.edgeOffsetRatio = j.value("EdgeOffsetRatio", j.value("edgeOffsetRatio", config.edgeOffsetRatio));
+	config.minAspectRatio = j.value("MinAspectRatio", j.value("minAspectRatio", config.minAspectRatio));
+	config.maxAspectRatio = j.value("MaxAspectRatio", j.value("maxAspectRatio", config.maxAspectRatio));
+	config.closeKernel = j.value("CloseKernel", j.value("closeKernel", config.closeKernel));
+	config.openKernel = j.value("OpenKernel", j.value("openKernel", config.openKernel));
+	config.borderMargin = j.value("BorderMargin", j.value("borderMargin", config.borderMargin));
+	config.requireFullTarget = j.value("RequireFullTarget", j.value("requireFullTarget", config.requireFullTarget));
+	config.requireFourCurves = j.value("RequireFourCurves", j.value("requireFourCurves", config.requireFourCurves));
+	config.usePcaAngle = j.value("UsePcaAngle", j.value("usePcaAngle", config.usePcaAngle));
+
+	config.activeEdges[0] = j.value("ActiveLeft", j.value("active_Left", config.activeEdges[0]));
+	config.activeEdges[1] = j.value("ActiveTop", j.value("active_Top", config.activeEdges[1]));
+	config.activeEdges[2] = j.value("ActiveRight", j.value("active_Right", config.activeEdges[2]));
+	config.activeEdges[3] = j.value("ActiveBottom", j.value("active_Bottom", config.activeEdges[3]));
+}
+
+cvcore::sfr::BmwSfr4Config ParseBmwSfr4Config(const json& root)
+{
+	cvcore::sfr::BmwSfr4Config config;
+	ReadBmwSfr4ConfigFields(root, config);
+	if (root.contains("sfrAutoPoi1")) {
+		ReadBmwSfr4ConfigFields(root.at("sfrAutoPoi1"), config);
+	}
+	return config;
+}
+
+void ReadDistortionP9ConfigFields(const json& j, cvcore::distortion::DistortionP9Config& config)
+{
+	if (!j.is_object()) {
+		return;
+	}
+
+	config.expectedRows = j.value("expectedRows", j.value("brightNumY", config.expectedRows));
+	config.expectedCols = j.value("expectedCols", j.value("brightNumX", config.expectedCols));
+	config.threshold = j.value("threshold", j.value("Threshold", config.threshold));
+	config.brightTarget = j.value("brightTarget", j.value("BrightTarget", config.brightTarget));
+	config.minRectSize = j.value("minRectSize", j.value("outRectSizeMin", j.value("MinRectSize", config.minRectSize)));
+	config.maxRectSize = j.value("maxRectSize", j.value("outRectSizeMax", j.value("MaxRectSize", config.maxRectSize)));
+	config.minArea = j.value("minArea", j.value("MinArea", config.minArea));
+	config.maxArea = j.value("maxArea", j.value("MaxArea", config.maxArea));
+	config.erodeKernel = j.value("erodeKernel", j.value("ErodeKernel", config.erodeKernel));
+	config.erodeIterations = j.value("erodeIterations", j.value("erodeTime", j.value("ErodeIterations", config.erodeIterations)));
+	config.dilateIterations = j.value("dilateIterations", j.value("DilateIterations", config.dilateIterations));
+	config.maxCandidates = j.value("maxCandidates", j.value("MaxCandidates", config.maxCandidates));
+	config.tvCalcWay = j.value("tvCalcWay", j.value("TvCaclWay", config.tvCalcWay));
+	config.sortWithPca = j.value("sortWithPca", j.value("SortWithPca", config.sortWithPca));
+}
+
+cvcore::distortion::DistortionP9Config ParseDistortionP9Config(const json& root)
+{
+	cvcore::distortion::DistortionP9Config config;
+	ReadDistortionP9ConfigFields(root, config);
+	if (root.contains("CommonParams")) {
+		ReadDistortionP9ConfigFields(root.at("CommonParams"), config);
+	}
+	if (root.contains("Point9Params")) {
+		ReadDistortionP9ConfigFields(root.at("Point9Params"), config);
+	}
+	if (root.contains("caclDistorType")) {
+		ReadDistortionP9ConfigFields(root.at("caclDistorType"), config);
+	}
+	return config;
+}
+
+double ReadRatioValue(const json& root, const char* lowerName, const char* upperName, double fallback)
+{
+	double value = root.value(lowerName, root.value(upperName, fallback));
+	return value > 1.0 ? value / 100.0 : value;
+}
+
+std::vector<int> ReadIntArray(const json& root, const char* lowerName, const char* upperName, const std::vector<int>& fallback)
+{
+	const json* value = nullptr;
+	if (root.contains(lowerName) && root.at(lowerName).is_array()) {
+		value = &root.at(lowerName);
+	}
+	else if (root.contains(upperName) && root.at(upperName).is_array()) {
+		value = &root.at(upperName);
+	}
+
+	if (value == nullptr) {
+		return fallback;
+	}
+
+	std::vector<int> output;
+	output.reserve(value->size());
+	for (const auto& item : *value) {
+		if (item.is_number_integer()) {
+			output.push_back(item.get<int>());
+		}
+	}
+
+	return output.empty() ? fallback : output;
+}
+
+int ReadSurfaceDefectChannel(const json& root, int fallback)
+{
+	if (root.contains("channel")) {
+		const json& value = root.at("channel");
+		if (value.is_number_integer()) {
+			return value.get<int>();
+		}
+		if (value.is_string()) {
+			std::string channel = value.get<std::string>();
+			std::transform(channel.begin(), channel.end(), channel.begin(), [](unsigned char c) {
+				return static_cast<char>(std::tolower(c));
+			});
+			if (channel == "b" || channel == "blue") return 0;
+			if (channel == "g" || channel == "green") return 1;
+			if (channel == "r" || channel == "red") return 2;
+			return -1;
+		}
+	}
+	if (root.contains("Channel") && root.at("Channel").is_number_integer()) {
+		return root.at("Channel").get<int>();
+	}
+	return fallback;
+}
+
+cvcore::surface_defect::SurfaceDefectConfig ParseSurfaceDefectConfig(const json& root)
+{
+	cvcore::surface_defect::SurfaceDefectConfig config;
+	if (!root.is_object()) {
+		return config;
+	}
+
+	config.channel = ReadSurfaceDefectChannel(root, config.channel);
+	config.scales = ReadIntArray(root, "scales", "Scales", config.scales);
+	config.darkThreshold = ReadRatioValue(root, "darkThreshold", "DarkThreshold", config.darkThreshold);
+	config.brightThreshold = ReadRatioValue(root, "brightThreshold", "BrightThreshold", config.brightThreshold);
+	config.minArea = root.value("minArea", root.value("MinArea", config.minArea));
+	config.maxArea = root.value("maxArea", root.value("MaxArea", config.maxArea));
+	config.muraMinArea = root.value("muraMinArea", root.value("MuraMinArea", config.muraMinArea));
+	config.openKernel = root.value("openKernel", root.value("OpenKernel", config.openKernel));
+	config.closeKernel = root.value("closeKernel", root.value("CloseKernel", config.closeKernel));
+	config.mergeDistance = root.value("mergeDistance", root.value("MergeDistance", config.mergeDistance));
+	config.maxDefects = root.value("maxDefects", root.value("MaxDefects", config.maxDefects));
+	config.enableDark = root.value("enableDark", root.value("EnableDark", config.enableDark));
+	config.enableBright = root.value("enableBright", root.value("EnableBright", config.enableBright));
+	config.enableLineDetect = root.value("enableLineDetect", root.value("EnableLineDetect", config.enableLineDetect));
+	config.lineAspectRatio = root.value("lineAspectRatio", root.value("LineAspectRatio", config.lineAspectRatio));
+	config.minSeverity = root.value("minSeverity", root.value("MinSeverity", config.minSeverity));
+	config.minorSeverity = root.value("minorSeverity", root.value("MinorSeverity", config.minorSeverity));
+	config.majorSeverity = root.value("majorSeverity", root.value("MajorSeverity", config.majorSeverity));
+	config.criticalSeverity = root.value("criticalSeverity", root.value("CriticalSeverity", config.criticalSeverity));
+	return config;
+}
+
+json SurfaceDefectConfigToJson(const cvcore::surface_defect::SurfaceDefectConfig& config)
+{
+	return json{
+		{ "channel", config.channel },
+		{ "scales", config.scales },
+		{ "darkThreshold", config.darkThreshold },
+		{ "brightThreshold", config.brightThreshold },
+		{ "minArea", config.minArea },
+		{ "maxArea", config.maxArea },
+		{ "muraMinArea", config.muraMinArea },
+		{ "openKernel", config.openKernel },
+		{ "closeKernel", config.closeKernel },
+		{ "mergeDistance", config.mergeDistance },
+		{ "maxDefects", config.maxDefects },
+		{ "enableDark", config.enableDark },
+		{ "enableBright", config.enableBright },
+		{ "enableLineDetect", config.enableLineDetect },
+		{ "lineAspectRatio", config.lineAspectRatio },
+		{ "minSeverity", config.minSeverity },
+		{ "minorSeverity", config.minorSeverity },
+		{ "majorSeverity", config.majorSeverity },
+		{ "criticalSeverity", config.criticalSeverity }
+	};
+}
+
+json DistortionP9ConfigToJson(const cvcore::distortion::DistortionP9Config& config)
+{
+	return json{
+		{ "expectedRows", config.expectedRows },
+		{ "expectedCols", config.expectedCols },
+		{ "threshold", config.threshold },
+		{ "brightTarget", config.brightTarget },
+		{ "minRectSize", config.minRectSize },
+		{ "maxRectSize", config.maxRectSize },
+		{ "minArea", config.minArea },
+		{ "maxArea", config.maxArea },
+		{ "erodeKernel", config.erodeKernel },
+		{ "erodeIterations", config.erodeIterations },
+		{ "dilateIterations", config.dilateIterations },
+		{ "maxCandidates", config.maxCandidates },
+		{ "tvCalcWay", config.tvCalcWay },
+		{ "sortWithPca", config.sortWithPca }
+	};
+}
+
+json DistortionP9MetricsToJson(const cvcore::distortion::DistortionP9Metric& metrics)
+{
+	return json{
+		{ "horizontalTvPercent", metrics.horizontalTvPercent },
+		{ "verticalTvPercent", metrics.verticalTvPercent },
+		{ "topPercent", metrics.topPercent },
+		{ "bottomPercent", metrics.bottomPercent },
+		{ "leftPercent", metrics.leftPercent },
+		{ "rightPercent", metrics.rightPercent },
+		{ "keystoneHorizontalPercent", metrics.keystoneHorizontalPercent },
+		{ "keystoneVerticalPercent", metrics.keystoneVerticalPercent },
+		{ "topWidth", metrics.topWidth },
+		{ "middleWidth", metrics.middleWidth },
+		{ "bottomWidth", metrics.bottomWidth },
+		{ "leftHeight", metrics.leftHeight },
+		{ "centerHeight", metrics.centerHeight },
+		{ "rightHeight", metrics.rightHeight },
+		{ "gridWidth", metrics.gridWidth },
+		{ "gridHeight", metrics.gridHeight }
+	};
+}
+
+json StringArrayToJson(const std::vector<std::string>& values)
+{
+	json output = json::array();
+	for (const auto& value : values) {
+		output.push_back(value);
+	}
+	return output;
+}
+
+json RectToJson(const cv::Rect& rect, const cv::Point& origin);
+
+json DistortionP9PointToJson(const cvcore::distortion::DistortionP9Point& point, const cv::Point& origin)
+{
+	return json{
+		{ "id", point.id },
+		{ "row", point.row },
+		{ "col", point.col },
+		{ "name", point.name },
+		{ "x", point.center.x + origin.x },
+		{ "y", point.center.y + origin.y },
+		{ "area", point.area },
+		{ "boundingRect", RectToJson(point.boundingRect, origin) }
+	};
+}
+
+cv::Rect TryGetConfigMaskRect(const json& root)
+{
+	if (!root.contains("MaskRect") || !root.at("MaskRect").is_object()) {
+		return cv::Rect();
+	}
+
+	const json& mask = root.at("MaskRect");
+	if (!mask.value("enable", false)) {
+		return cv::Rect();
+	}
+
+	return cv::Rect(
+		mask.value("x", 0),
+		mask.value("y", 0),
+		mask.value("w", 0),
+		mask.value("h", 0));
+}
+
+json RectToJson(const cv::Rect& rect, const cv::Point& origin)
+{
+	return json{
+		{ "x", rect.x + origin.x },
+		{ "y", rect.y + origin.y },
+		{ "w", rect.width },
+		{ "h", rect.height }
+	};
+}
+
+json PointToJson(const cv::Point2d& point, const cv::Point& origin)
+{
+	return json{
+		{ "x", point.x + origin.x },
+		{ "y", point.y + origin.y }
+	};
+}
+
+std::string SurfaceDefectGrade(double severity, const cvcore::surface_defect::SurfaceDefectConfig& config)
+{
+	if (severity >= config.criticalSeverity) {
+		return "critical";
+	}
+	if (severity >= config.majorSeverity) {
+		return "major";
+	}
+	if (severity >= config.minorSeverity) {
+		return "minor";
+	}
+	return severity > 0.0 ? "trace" : "ok";
+}
+
+json SurfaceDefectToJson(
+	const cvcore::surface_defect::SurfaceDefectItem& defect,
+	const cv::Point& origin,
+	const cvcore::surface_defect::SurfaceDefectConfig& config)
+{
+	return json{
+		{ "id", defect.id },
+		{ "type", defect.type },
+		{ "polarity", defect.polarity },
+		{ "grade", SurfaceDefectGrade(defect.severity, config) },
+		{ "scale", defect.scale },
+		{ "x", defect.boundingRect.x + origin.x },
+		{ "y", defect.boundingRect.y + origin.y },
+		{ "w", defect.boundingRect.width },
+		{ "h", defect.boundingRect.height },
+		{ "centerX", defect.center.x + origin.x },
+		{ "centerY", defect.center.y + origin.y },
+		{ "area", defect.area },
+		{ "meanDelta", defect.meanDelta },
+		{ "minDelta", defect.minDelta },
+		{ "maxDelta", defect.maxDelta },
+		{ "maxDeltaAbs", defect.maxDeltaAbs },
+		{ "severity", defect.severity },
+		{ "aspectRatio", defect.aspectRatio },
+		{ "fillRatio", defect.fillRatio },
+		{ "boundingRect", RectToJson(defect.boundingRect, origin) }
+	};
+}
+
+json SfrCurveToJson(const cvcore::sfr::BmwSfr4Curve& curve, const cv::Point& origin, int maxCurveLength)
+{
+	json curveJson;
+	curveJson["id"] = curve.id;
+	curveJson["name"] = curve.name;
+	curveJson["roi"] = RectToJson(curve.roi, origin);
+	curveJson["edgeSlope"] = curve.sfr.edgeSlope;
+	curveJson["mtf10_norm"] = curve.sfr.mtf10_norm;
+	curveJson["mtf50_norm"] = curve.sfr.mtf50_norm;
+	curveJson["mtf10_cypix"] = curve.sfr.mtf10_cypix;
+	curveJson["mtf50_cypix"] = curve.sfr.mtf50_cypix;
+
+	int length = static_cast<int>(std::min(curve.sfr.freq.size(), curve.sfr.sfr.size()));
+	if (maxCurveLength > 0) {
+		length = std::min(length, maxCurveLength);
+	}
+
+	curveJson["frequency"] = json::array();
+	curveJson["domainSamplingData"] = json::array();
+	for (int i = 0; i < length; ++i) {
+		curveJson["frequency"].push_back(curve.sfr.freq[static_cast<size_t>(i)]);
+		curveJson["domainSamplingData"].push_back(curve.sfr.sfr[static_cast<size_t>(i)]);
+	}
+
+	return curveJson;
 }
 
 struct CoTaskMemBufferDeleter
@@ -1039,6 +1406,222 @@ COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* 
 		}
 		outputJson["KeyRegions"] = rectsArray;
 		outputJson["Count"] = keyRects.size();
+
+		return CopyJsonResult(outputJson, result);
+	});
+}
+
+COLORVISIONCORE_API int M_DetectSurfaceDefects(HImage img, RoiRect roi, const char* config, char** result)
+{
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
+
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || result == nullptr) {
+			return ExportInvalidArgument;
+		}
+
+		json j = json::object();
+		if (config != nullptr && config[0] != '\0') {
+			if (!TryParseJson(config, j)) {
+				return ExportInvalidJson;
+			}
+		}
+
+		cv::Point origin(0, 0);
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		const cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+		const bool useRoi = (mroi.width > 0 && mroi.height > 0 && (mroi & imageRect) == mroi);
+		if (useRoi) {
+			mat = mat(mroi);
+			origin = cv::Point(mroi.x, mroi.y);
+		}
+
+		cvcore::surface_defect::SurfaceDefectConfig defectConfig = ParseSurfaceDefectConfig(j);
+		cvcore::surface_defect::SurfaceDefectResult calcResult =
+			cvcore::surface_defect::detectSurfaceDefects(mat, defectConfig);
+
+		json outputJson;
+		outputJson["algorithm"] = "SurfaceDefect";
+		outputJson["version"] = "0.1";
+		outputJson["success"] = calcResult.success;
+		outputJson["statusCode"] = calcResult.statusCode;
+		outputJson["message"] = calcResult.message;
+		outputJson["count"] = calcResult.defects.size();
+		outputJson["image"] = {
+			{ "width", img.cols },
+			{ "height", img.rows },
+			{ "roi", RectToJson(useRoi ? mroi : cv::Rect(0, 0, mat.cols, mat.rows), cv::Point(0, 0)) }
+		};
+		outputJson["configUsed"] = SurfaceDefectConfigToJson(defectConfig);
+		outputJson["summary"] = {
+			{ "defectCount", calcResult.summary.defectCount },
+			{ "darkCount", calcResult.summary.darkCount },
+			{ "brightCount", calcResult.summary.brightCount },
+			{ "maxSeverity", calcResult.summary.maxSeverity },
+			{ "meanSeverity", calcResult.summary.meanSeverity },
+			{ "grade", calcResult.summary.grade }
+		};
+		outputJson["diagnostics"] = {
+			{ "roiUsed", useRoi },
+			{ "relativeResidual", true },
+			{ "background", "gaussian" }
+		};
+		outputJson["defects"] = json::array();
+		for (const auto& defect : calcResult.defects) {
+			outputJson["defects"].push_back(SurfaceDefectToJson(defect, origin, defectConfig));
+		}
+
+		return CopyJsonResult(outputJson, result);
+	});
+}
+
+COLORVISIONCORE_API int M_CalSFRBmw4In1(HImage img, RoiRect roi, const char* config, char** result)
+{
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
+
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || result == nullptr) {
+			return ExportInvalidArgument;
+		}
+
+		json j = json::object();
+		if (config != nullptr && config[0] != '\0') {
+			if (!TryParseJson(config, j)) {
+				return ExportInvalidJson;
+			}
+		}
+
+		cv::Point origin(0, 0);
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		const cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+		const bool useRoi = (mroi.width > 0 && mroi.height > 0 && (mroi & imageRect) == mroi);
+		if (useRoi) {
+			mat = mat(mroi);
+			origin = cv::Point(mroi.x, mroi.y);
+		}
+
+		cvcore::sfr::BmwSfr4Config sfrConfig = ParseBmwSfr4Config(j);
+		cvcore::sfr::BmwSfr4Result calcResult = cvcore::sfr::calculateBmwSfr4In1(mat, sfrConfig);
+		if (calcResult.points.empty()) {
+			return ExportAlgorithmFailed;
+		}
+
+		json outputJson;
+		outputJson["count"] = calcResult.points.size();
+		outputJson["result"] = json::array();
+
+		for (const auto& point : calcResult.points) {
+			json pointJson;
+			pointJson["name"] = point.name;
+			pointJson["center"] = PointToJson(point.center, origin);
+			pointJson["angle"] = point.angleRadians;
+			pointJson["targetRect"] = RectToJson(point.targetRect, origin);
+			pointJson["data"] = json::array();
+
+			for (const auto& curve : point.curves) {
+				pointJson["data"].push_back(SfrCurveToJson(curve, origin, sfrConfig.maxCurveLength));
+			}
+
+			outputJson["result"].push_back(std::move(pointJson));
+		}
+
+		return CopyJsonResult(outputJson, result);
+	});
+}
+
+COLORVISIONCORE_API int M_CalDistortionP9(HImage img, RoiRect roi, const char* config, char** result)
+{
+	return GuardIntExport([&]() -> int {
+		if (result != nullptr) {
+			*result = nullptr;
+		}
+
+		cv::Mat mat = CreateMatView(img);
+		if (mat.empty() || result == nullptr) {
+			return ExportInvalidArgument;
+		}
+
+		json j = json::object();
+		if (config != nullptr && config[0] != '\0') {
+			if (!TryParseJson(config, j)) {
+				return ExportInvalidJson;
+			}
+		}
+
+		cv::Point origin(0, 0);
+		cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+		if (mroi.width <= 0 || mroi.height <= 0) {
+			mroi = TryGetConfigMaskRect(j);
+		}
+
+		const cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+		const bool useRoi = (mroi.width > 0 && mroi.height > 0 && (mroi & imageRect) == mroi);
+		if (useRoi) {
+			mat = mat(mroi);
+			origin = cv::Point(mroi.x, mroi.y);
+		}
+
+		cvcore::distortion::DistortionP9Config distortionConfig = ParseDistortionP9Config(j);
+		cvcore::distortion::DistortionP9Result calcResult = cvcore::distortion::calculateDistortionP9(mat, distortionConfig);
+		const int expectedCount = distortionConfig.expectedRows * distortionConfig.expectedCols;
+
+		json outputJson;
+		outputJson["algorithm"] = "DistortionP9";
+		outputJson["version"] = "1.0";
+		outputJson["success"] = calcResult.success;
+		outputJson["statusCode"] = calcResult.statusCode;
+		outputJson["message"] = calcResult.message;
+		outputJson["count"] = calcResult.points.size();
+		outputJson["selectedCount"] = calcResult.points.size();
+		outputJson["expectedCount"] = expectedCount;
+		outputJson["candidateCount"] = calcResult.candidateCount;
+		outputJson["image"] = {
+			{ "width", img.cols },
+			{ "height", img.rows },
+			{ "roi", RectToJson(useRoi ? mroi : cv::Rect(0, 0, mat.cols, mat.rows), cv::Point(0, 0)) }
+		};
+		outputJson["configUsed"] = DistortionP9ConfigToJson(distortionConfig);
+		outputJson["metrics"] = calcResult.success ? DistortionP9MetricsToJson(calcResult.metrics) : json(nullptr);
+		outputJson["warnings"] = StringArrayToJson(calcResult.warnings);
+		outputJson["diagnostics"] = {
+			{ "expectedPointCount", expectedCount },
+			{ "candidateCount", calcResult.candidateCount },
+			{ "missingCount", std::max(0, expectedCount - calcResult.candidateCount) },
+			{ "extraCount", std::max(0, calcResult.candidateCount - expectedCount) },
+			{ "roiUsed", useRoi },
+			{ "canCalculateMetrics", calcResult.success }
+		};
+		outputJson["method"] = {
+			{ "pointOrder", "TL,TC,TR,ML,C,MR,BL,BC,BR" },
+			{ "tvFormula", "((edge1 + edge2) / 2 - center) / center * 100; TvCaclWay=1 halves the percentage" },
+			{ "edgeFormula", "signed middle-point bow relative to the edge chord, normalized by average grid span" }
+		};
+
+		outputJson["points"] = json::array();
+		for (const auto& point : calcResult.points) {
+			outputJson["points"].push_back(DistortionP9PointToJson(point, origin));
+		}
+
+		outputJson["candidatePoints"] = json::array();
+		for (const auto& point : calcResult.candidatePoints) {
+			outputJson["candidatePoints"].push_back(DistortionP9PointToJson(point, origin));
+		}
+
+		outputJson["grid"] = json::array();
+		for (int row = 0; row < distortionConfig.expectedRows; ++row) {
+			json rowJson = json::array();
+			for (int col = 0; col < distortionConfig.expectedCols; ++col) {
+				const int id = row * distortionConfig.expectedCols + col;
+				rowJson.push_back(id);
+			}
+			outputJson["grid"].push_back(std::move(rowJson));
+		}
 
 		return CopyJsonResult(outputJson, result);
 	});

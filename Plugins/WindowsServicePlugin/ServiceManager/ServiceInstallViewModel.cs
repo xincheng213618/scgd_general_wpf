@@ -1,6 +1,9 @@
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using log4net;
+using System.IO;
 using System.Windows;
+using WindowsServicePlugin.Properties;
 
 namespace WindowsServicePlugin.ServiceManager
 {
@@ -12,12 +15,9 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceInstallViewModel : ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ServiceInstallViewModel));
+        private readonly ILog log = LogManager.GetLogger(typeof(ServiceInstallViewModel));
         private readonly ServiceManagerConfig _config = ServiceManagerConfig.Instance;
         public ServiceManagerConfig Config => _config;
-
-        public string LogText { get => _logText; set { _logText = value; OnPropertyChanged(); } }
-        private string _logText = string.Empty;
 
         public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
         private bool _isBusy;
@@ -45,8 +45,17 @@ namespace WindowsServicePlugin.ServiceManager
         public string MqttInstallerPath { get => _mqttInstallerPath; set { _mqttInstallerPath = value; OnPropertyChanged(); } }
         private string _mqttInstallerPath = string.Empty;
 
-        public bool AutoStartAfterInstall { get => _autoStartAfterInstall; set { _autoStartAfterInstall = value; OnPropertyChanged(); } }
-        private bool _autoStartAfterInstall = true;
+        public string Vc2013InstallerPath { get => _vc2013InstallerPath; set { _vc2013InstallerPath = value; OnPropertyChanged(); } }
+        private string _vc2013InstallerPath = string.Empty;
+
+        public bool IsMySqlInstallVisible { get => _isMySqlInstallVisible; set { _isMySqlInstallVisible = value; OnPropertyChanged(); } }
+        private bool _isMySqlInstallVisible = true;
+
+        public bool IsMqttInstallVisible { get => _isMqttInstallVisible; set { _isMqttInstallVisible = value; OnPropertyChanged(); } }
+        private bool _isMqttInstallVisible = true;
+
+        public bool IsVc2013InstallVisible { get => _isVc2013InstallVisible; set { _isVc2013InstallVisible = value; OnPropertyChanged(); } }
+        private bool _isVc2013InstallVisible = true;
 
         public bool AutoUpdateDatabase { get => _autoUpdateDatabase; set { _autoUpdateDatabase = value; OnPropertyChanged(); } }
         private bool _autoUpdateDatabase;
@@ -56,9 +65,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         public bool BackupServiceBeforeInstall { get => _backupServiceBeforeInstall; set { _backupServiceBeforeInstall = value; OnPropertyChanged(); } }
         private bool _backupServiceBeforeInstall;
-
-        public bool BackupServiceCfgOnly { get => _backupServiceCfgOnly; set { _backupServiceCfgOnly = value; OnPropertyChanged(); } }
-        private bool _backupServiceCfgOnly;
 
         public bool InstallServiceChecked
         {
@@ -78,39 +84,74 @@ namespace WindowsServicePlugin.ServiceManager
             set { Config.InstallMqttChecked = value; OnPropertyChanged(); }
         }
 
+        public bool InstallVc2013Checked { get => _installVc2013Checked; set { _installVc2013Checked = value; OnPropertyChanged(); } }
+        private bool _installVc2013Checked;
+
         public RelayCommand SelectServicePackageCommand { get; }
         public RelayCommand SelectMySqlZipCommand { get; }
         public RelayCommand SelectMqttInstallerCommand { get; }
-        public RelayCommand ClearLogCommand { get; }
+        public RelayCommand SelectVc2013InstallerCommand { get; }
         public RelayCommand BackupNowCommand { get; }
         public RelayCommand RestoreBackupCommand { get; }
         public RelayCommand BackupServiceNowCommand { get; }
         public RelayCommand RestoreServiceBackupCommand { get; }
         public RelayCommand DoInstallCommand { get; }
         public RelayCommand OneKeyInstallAllCommand { get; }
+        public RelayCommand DownloadOneKeyPackageCommand { get; }
+        public RelayCommand DownloadServicePackageCommand { get; }
+        public RelayCommand DownloadMySqlPackageCommand { get; }
+        public RelayCommand DownloadMqttInstallerCommand { get; }
+        public RelayCommand DownloadVc2013InstallerCommand { get; }
+        public RelayCommand OnlineDownloadCommand { get; }
+        public RelayCommand SelectBaseLocationCommand { get; }
 
         public ServiceInstallViewModel()
         {
             SelectServicePackageCommand = new RelayCommand(a => SelectServicePackage());
             SelectMySqlZipCommand = new RelayCommand(a => SelectMySqlZip());
             SelectMqttInstallerCommand = new RelayCommand(a => SelectMqttInstaller());
-            ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
+            SelectVc2013InstallerCommand = new RelayCommand(a => SelectVc2013Installer());
             BackupNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupNow()), a => !IsBusy);
             RestoreBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreBackup()), a => !IsBusy);
             BackupServiceNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupServiceNow()), a => !IsBusy);
             RestoreServiceBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreServiceBackup()), a => !IsBusy);
             DoInstallCommand = new RelayCommand(a => _ = ExecuteInstallAsync(), a => !IsBusy);
             OneKeyInstallAllCommand = new RelayCommand(a => _ = OneKeyInstallAllAsync(), a => !IsBusy);
+            DownloadServicePackageCommand = new RelayCommand(a => _ = DownloadServicePackageAsync(), a => !IsBusy);
+            DownloadOneKeyPackageCommand = DownloadServicePackageCommand;
+            DownloadMySqlPackageCommand = new RelayCommand(a => _ = DownloadMySqlPackageAsync(), a => !IsBusy);
+            DownloadMqttInstallerCommand = new RelayCommand(a => _ = DownloadMqttInstallerAsync(), a => !IsBusy);
+            DownloadVc2013InstallerCommand = new RelayCommand(a => _ = DownloadVc2013InstallerAsync(), a => !IsBusy);
+            OnlineDownloadCommand = new RelayCommand(a => _ = OnlineDownloadAsync(), a => !IsBusy);
+            SelectBaseLocationCommand = new RelayCommand(a => SelectBaseLocation(), a => !IsBusy);
+            RefreshInstallComponentState();
         }
 
         #region File Dialogs
+
+        private void SelectBaseLocation()
+        {
+            using var dlg = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = Resources.SelectServiceBaseLocationDialog,
+                SelectedPath = Directory.Exists(Config.BaseLocation) ? Config.BaseLocation : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                ShowNewFolderButton = true
+            };
+
+            if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                return;
+
+            Config.BaseLocation = dlg.SelectedPath;
+            ConfigHandler.GetInstance().Save<ServiceManagerConfig>();
+            OnPropertyChanged(nameof(Config));
+        }
 
         private void SelectServicePackage()
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "服务安装包 (*.zip)|*.zip",
-                Title = "选择服务安装包"
+                Filter = Resources.ServicePackageZipFilter,
+                Title = Resources.SelectServicePackageDialog
             };
 
             if (dlg.ShowDialog() == true)
@@ -121,8 +162,8 @@ namespace WindowsServicePlugin.ServiceManager
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "MySQL ZIP (*.zip)|*.zip",
-                Title = "选择 MySQL 安装包"
+                Filter = Resources.MySqlZipFilter,
+                Title = Resources.SelectMySqlPackageDialog
             };
 
             if (dlg.ShowDialog() == true)
@@ -133,26 +174,44 @@ namespace WindowsServicePlugin.ServiceManager
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "MQTT 安装程序 (*.exe)|*.exe",
-                Title = "选择 MQTT 安装程序"
+                Filter = Resources.MqttInstallerFilter,
+                Title = Resources.SelectMqttInstallerDialog
             };
 
             if (dlg.ShowDialog() == true)
                 MqttInstallerPath = dlg.FileName;
         }
 
+        private void SelectVc2013Installer()
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = Resources.Vc2013InstallerFilter,
+                Title = Resources.SelectVc2013InstallerDialog
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                Vc2013InstallerPath = dlg.FileName;
+                InstallVc2013Checked = true;
+            }
+        }
+
         #endregion
 
-        #region Shared Helpers
-
-        private void AddLog(string message)
+        private void RefreshInstallComponentState()
         {
-            var timestamp = DateTime.Now.ToString("HH:mm:ss");
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                LogText += $"[{timestamp}] {message}\n";
-            });
+            var manager = ServiceManagerViewModel.Instance;
+            manager.RefreshAll();
+            IsMySqlInstallVisible = !manager.MySqlManager.Config.IsInstalled;
+            IsMqttInstallVisible = !manager.MqttManager.Config.IsInstalled;
+            IsVc2013InstallVisible = !IsVc2013RuntimeInstalled();
+            if (!IsMySqlInstallVisible) InstallMySqlChecked = false;
+            if (!IsMqttInstallVisible) InstallMqttChecked = false;
+            if (!IsVc2013InstallVisible) InstallVc2013Checked = false;
         }
+
+        #region Shared Helpers
 
         private void SetBusy(bool busy, string text = "")
         {
@@ -174,7 +233,7 @@ namespace WindowsServicePlugin.ServiceManager
                 Progress = value;
                 ProgressText = text;
             });
-            AddLog(text);
+            log.Info(text);
         }
 
         #endregion

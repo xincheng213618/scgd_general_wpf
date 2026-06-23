@@ -1,0 +1,20 @@
+<Project>
+  <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)\PackageIcon.png')">
+    <None Update="PackageIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="CopyPackageIconToHostPluginFolders"
+          AfterTargets="Build"
+          Condition="Exists('$(MSBuildProjectDirectory)\PackageIcon.png') And '$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'">
+    <PropertyGroup>
+      <HostDebugPluginDir>$(SolutionDir)ColorVision\bin\x64\Debug\net10.0-windows\Plugins\$(MSBuildProjectName)\</HostDebugPluginDir>
+      <HostReleasePluginDir>$(SolutionDir)ColorVision\bin\x64\Release\net10.0-windows\Plugins\$(MSBuildProjectName)\</HostReleasePluginDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(HostDebugPluginDir);$(HostReleasePluginDir)" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\PackageIcon.png" DestinationFolder="$(HostDebugPluginDir)" SkipUnchangedFiles="true" Retries="0" RetryDelayMilliseconds="0" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\PackageIcon.png" DestinationFolder="$(HostReleasePluginDir)" SkipUnchangedFiles="true" Retries="0" RetryDelayMilliseconds="0" ContinueOnError="WarnAndContinue" />
+  </Target>
+</Project>

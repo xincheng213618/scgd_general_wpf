@@ -10,23 +10,10 @@ namespace ColorVision.ImageEditor.Realtime
             ArgumentNullException.ThrowIfNull(options);
             if (ReferenceEquals(this, options)) return;
 
-            MaxDisplayFps = options.MaxDisplayFps;
             AutoZoomOnFirstFrame = options.AutoZoomOnFirstFrame;
             UpdateImageMetadata = options.UpdateImageMetadata;
             IsFrozen = options.IsFrozen;
         }
-
-        public int MaxDisplayFps
-        {
-            get => _maxDisplayFps;
-            set
-            {
-                int normalized = value < 0 ? 0 : value;
-                if (_maxDisplayFps == normalized) return;
-                _maxDisplayFps = normalized; OnPropertyChanged();
-            }
-        }
-        private int _maxDisplayFps = 60;
 
         public bool AutoZoomOnFirstFrame
         {

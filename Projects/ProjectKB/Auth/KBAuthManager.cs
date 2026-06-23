@@ -49,7 +49,7 @@ namespace ProjectKB.Auth
                 _config.EnablePermissionControl = value;
                 IsAdmin = false;
                 StopIdleTimer();
-                ConfigService.Instance.SaveConfigs();
+                _config.SavePasswordFile();
                 IsAdminChanged?.Invoke(this, EventArgs.Empty);
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -177,7 +177,7 @@ namespace ProjectKB.Auth
             set
             {
                 _config.IdleTimeoutMinutes = value;
-                ConfigService.Instance.SaveConfigs();
+                _config.SavePasswordFile();
                 if (IsAdmin)
                 {
                     RestartIdleTimer();

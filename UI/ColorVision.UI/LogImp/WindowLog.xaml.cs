@@ -27,11 +27,16 @@ namespace ColorVision.UI
         LogViewerAppender LogViewerAppender { get; set; }
         Hierarchy Hierarchy { get; set; }
         private LogTextViewController? _logTextView;
+        private bool _autoRefresh = true;
         private void Window_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
-            LogViewerAppender = new LogViewerAppender(LogViewer);
-            LogViewerAppender.Layout = new PatternLayout(LogConstants.DefaultLogPattern);
+            LogViewerAppender = new LogViewerAppender(LogViewer)
+            {
+                Layout = new PatternLayout(LogConstants.DefaultLogPattern),
+                IgnoreAutoRefresh = true,
+                AutoRefresh = _autoRefresh
+            };
             Hierarchy.Root.AddAppender(LogViewerAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
@@ -46,8 +51,7 @@ namespace ColorVision.UI
             this.DataContext = LogConfig.Instance;
 
             _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
-            _logTextView.ConfigureContextMenus(contextMenu =>
-                LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel));
+            _logTextView.ConfigureContextMenus(contextMenu => LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel, GetAutoRefresh, SetAutoRefresh));
 
             LoadLogHistory();
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -121,6 +125,17 @@ namespace ColorVision.UI
         private void ClearLog()
         {
             LogViewer.Clear();
+        }
+
+        private bool GetAutoRefresh()
+        {
+            return LogViewerAppender.AutoRefresh;
+        }
+
+        private void SetAutoRefresh(bool autoRefresh)
+        {
+            _autoRefresh = autoRefresh;
+            LogViewerAppender.AutoRefresh = autoRefresh;
         }
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)

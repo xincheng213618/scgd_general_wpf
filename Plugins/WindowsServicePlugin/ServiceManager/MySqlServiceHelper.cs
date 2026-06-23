@@ -9,7 +9,7 @@ using System.Text;
 namespace WindowsServicePlugin.ServiceManager
 {
     /// <summary>
-    /// MySQL服务管理：安装、初始化、启动、停止、备份、还原
+    /// MySQL 本地命令辅助：账号、SQL、备份、还原和 root 密码修复。
     /// </summary>
     public class MySqlServiceHelper
     {
@@ -19,12 +19,8 @@ namespace WindowsServicePlugin.ServiceManager
         public string BasePath { get; set; } = string.Empty;
         public int Port { get; set; } = 3306;
 
-        /// <summary>最近一次全新安装时自动生成的 root 密码，由调用方持久化</summary>
-        public string LastGeneratedRootPassword { get; private set; } = string.Empty;
-
         public string MysqldExePath => Path.Combine(BasePath, "bin", "mysqld.exe");
         public string MysqlExePath => Path.Combine(BasePath, "bin", "mysql.exe");
-        public string MysqladminExePath => Path.Combine(BasePath, "bin", "mysqladmin.exe");
         public string MysqldumpExePath => Path.Combine(BasePath, "bin", "mysqldump.exe");
         public string MyIniPath => Path.Combine(BasePath, "my.ini");
 
@@ -47,245 +43,8 @@ namespace WindowsServicePlugin.ServiceManager
             return false;
         }
 
-        /// <summary>
-        /// 从CVWindowsService的Mysql子目录检测
-        /// </summary>
-        public bool DetectFromServicePath(string cvWindowsServicePath)
-        {
-            // 在 CVWindowsService 目录的同级或上级查找 mysql 文件夹
-            var parent = Directory.GetParent(cvWindowsServicePath)?.FullName ?? cvWindowsServicePath;
-            string[] possiblePaths =
-            [
-                Path.Combine(parent, "mysql-5.7.37-winx64"),
-                Path.Combine(parent, "Mysql", "mysql-5.7.37-winx64"),
-                Path.Combine(cvWindowsServicePath, "mysql-5.7.37-winx64"),
-            ];
-
-            foreach (var p in possiblePaths)
-            {
-                if (Directory.Exists(p) && File.Exists(Path.Combine(p, "bin", "mysqld.exe")))
-                {
-                    BasePath = p;
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public bool IsInstalled => WinServiceHelper.IsServiceExisted(ServiceName);
         public bool IsRunning => WinServiceHelper.IsServiceRunning(ServiceName);
-
-        public bool RegisterExistingService(Action<string> logCallback)
-        {
-            if (!File.Exists(MysqldExePath))
-            {
-                logCallback($"mysqld.exe 不存在: {MysqldExePath}");
-                return false;
-            }
-
-            try
-            {
-                bool exists = WinServiceHelper.IsServiceExisted(ServiceName);
-                string? registeredPath = WinServiceHelper.GetServiceInstallPath(ServiceName);
-                bool shouldInstall = !exists || !IsSamePath(registeredPath, MysqldExePath);
-
-                if (exists && shouldInstall)
-                {
-                    logCallback($"MySQL 服务路径变化，重新安装: {ServiceName}");
-                    WinServiceHelper.StopService(ServiceName, 30);
-                    RunProcessAdmin(MysqldExePath, $"--remove {ServiceName}", Path.GetDirectoryName(MysqldExePath)!);
-                    WinServiceHelper.UninstallService(ServiceName);
-                }
-
-                if (shouldInstall)
-                {
-                    logCallback($"正在注册 MySQL 服务 ({ServiceName})...");
-                    if (!RunProcessAdmin(MysqldExePath, $"--install {ServiceName}", Path.GetDirectoryName(MysqldExePath)!))
-                    {
-                        logCallback("MySQL 服务安装失败");
-                        return false;
-                    }
-                    logCallback("MySQL 服务安装成功");
-                }
-                else
-                {
-                    logCallback($"MySQL 服务已安装: {ServiceName}");
-                }
-
-                return Start(logCallback);
-            }
-            catch (Exception ex)
-            {
-                logCallback($"注册 MySQL 服务失败: {ex.Message}");
-                log.Error("注册 MySQL 服务失败", ex);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// ZIP全安装: 停止/删除旧服务 → 解压 → 初始化 → 安装服务 → 启动 → 设置随机 root 密码 → 创建业务用户
-        /// </summary>
-        public async Task<bool> InstallFromZipAsync(
-            string zipFilePath,
-            string targetPath,
-            Action<string> logCallback,
-            string rootPassword = "",
-            string appUser = "",
-            string appPassword = "",
-            string database = "color_vision_4xx")
-        {
-            return await Task.Run(() =>
-            {
-                try
-                {
-                    LastGeneratedRootPassword = string.Empty;
-
-                    DetectExistingInstallation(targetPath);
-
-                    // 1. 若旧服务存在，先停止并移除
-                    if (WinServiceHelper.IsServiceExisted(ServiceName))
-                    {
-                        logCallback($"停止并删除已有 MySQL 服务 ({ServiceName})...");
-                        WinServiceHelper.StopService(ServiceName, 30);
-                        for (int w = 0; w < 15; w++)
-                        {
-                            Thread.Sleep(1000);
-                            if (!WinServiceHelper.IsServiceRunning(ServiceName)) break;
-                        }
-                        // 优先用现有 exe 卸载，否则用 sc delete
-                        if (File.Exists(MysqldExePath))
-                            RunProcessAdmin(MysqldExePath, $"--remove {ServiceName}", Path.GetDirectoryName(MysqldExePath)!);
-                        else
-                            WinServiceHelper.UninstallService(ServiceName);
-                    }
-
-                    EnsureAllMySqlProcessesStopped(logCallback);
-                    CleanupExistingInstallation(zipFilePath, targetPath, logCallback);
-
-                    // 2. 解压
-                    logCallback("正在解压 MySQL...");
-                    System.IO.Compression.ZipFile.ExtractToDirectory(zipFilePath, targetPath, true);
-
-                    // 3. 查找解压后的 mysql 目录（如 mysql-5.7.37-winx64）
-                    var mysqlDirs = ResolveExtractedMySqlDirectories(zipFilePath, targetPath);
-                    if (mysqlDirs.Length == 0)
-                    {
-                        logCallback("解压完成但未找到 MySQL 目录 (mysql-*)");
-                        return false;
-                    }
-                    BasePath = mysqlDirs[0];
-                    logCallback($"MySQL 目录: {BasePath}");
-
-                    return DoFullInstall(logCallback, rootPassword, appUser, appPassword, database);
-                }
-                catch (Exception ex)
-                {
-                    logCallback($"MySQL 安装失败: {ex.Message}");
-                    log.Error("MySQL ZIP安装失败", ex);
-                    return false;
-                }
-            });
-        }
-
-        /// <summary>
-        /// 完整安装流程：初始化 → 安装服务 → 启动 → 设置 root 密码 → 创建业务用户
-        /// </summary>
-        public bool DoFullInstall(
-            Action<string> logCallback,
-            string rootPassword = "",
-            string appUser = "",
-            string appPassword = "",
-            string database = "color_vision_4xx")
-        {
-            if (!File.Exists(MysqldExePath))
-            {
-                logCallback($"mysqld.exe 不存在: {MysqldExePath}");
-                return false;
-            }
-
-            string binDir = Path.GetDirectoryName(MysqldExePath)!;
-            string effectiveRootPassword = string.IsNullOrWhiteSpace(rootPassword) ? GenerateRandomPassword() : rootPassword;
-            string effectiveAppUser = string.IsNullOrWhiteSpace(appUser) ? "cv" : appUser.Trim();
-            string effectiveAppPassword = string.IsNullOrWhiteSpace(appPassword) ? GenerateRandomPassword() : appPassword;
-            string effectiveDatabase = string.IsNullOrWhiteSpace(database) ? "color_vision_4xx" : database.Trim();
-
-            LastGeneratedRootPassword = string.Empty;
-
-            // 1. 初始化 (--initialize-insecure → root初始密码为空)
-            logCallback("正在初始化 MySQL (--initialize-insecure)...");
-            if (!RunProcessAdmin(MysqldExePath, "--initialize-insecure", binDir))
-            {
-                LogInitializationDirectoryState(logCallback);
-                logCallback("MySQL 初始化失败");
-                return false;
-            }
-
-            // 2. 安装 Windows 服务 (需要管理员)
-            logCallback($"正在安装 MySQL 服务 ({ServiceName})...");
-            if (!RunProcessAdmin(MysqldExePath, $"--install {ServiceName}", binDir))
-            {
-                logCallback("MySQL 服务安装失败");
-                return false;
-            }
-
-            // 3. 启动服务
-            logCallback("已生成随机 root 密码，正在启动 MySQL 服务...");
-            if (!Start(logCallback))
-            {
-                return false;
-            }
-
-            // 等待启动
-            bool started = false;
-            for (int i = 0; i < 30; i++)
-            {
-                Thread.Sleep(1000);
-                if (WinServiceHelper.IsServiceRunning(ServiceName))
-                {
-                    logCallback("MySQL 服务已启动");
-                    started = true;
-                    break;
-                }
-            }
-            if (!started)
-            {
-                logCallback("MySQL 服务启动超时");
-                return false;
-            }
-
-            // 4. 使用空 root 密码初始化为随机密码
-            logCallback("正在设置随机 root 密码...");
-            if (!SetRootPasswordViaAdmin("", effectiveRootPassword))
-            {
-                logCallback("root 密码设置失败");
-                return false;
-            }
-            LastGeneratedRootPassword = effectiveRootPassword;
-            logCallback("root 密码设置成功");
-
-            // 5. 使用新 root 密码创建业务用户
-            if (!string.IsNullOrWhiteSpace(effectiveAppUser))
-            {
-                if (!CreateAppUser(effectiveRootPassword, effectiveAppUser, effectiveAppPassword, effectiveDatabase, logCallback))
-                {
-                    logCallback($"业务用户 {effectiveAppUser} 创建失败");
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 使用 mysqladmin 设置/更改 root 密码（参考 CVWinSMS.doMysqlRootPwdset）
-        /// </summary>
-        public bool SetRootPasswordViaAdmin(string oldPassword, string newPassword)
-        {
-            // mysqladmin -P {port} -u root [-p"old"] password "new"
-            string oldPart = string.IsNullOrEmpty(oldPassword) ? "" : $" -p\"{EscapeSqlLiteral(oldPassword)}\"";
-            string args = $"-P {Port} -u root{oldPart} password \"{EscapeSqlLiteral(newPassword)}\"";
-            return RunProcess(MysqladminExePath, args, Path.GetDirectoryName(MysqladminExePath)!);
-        }
 
         /// <summary>
         /// 创建应用用户并授权
@@ -316,31 +75,6 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 logCallback($"创建用户失败: {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 删除业务用户（localhost 和 % 两个主机）
-        /// 参考 CVWinSMS.CVMysqlServiceManager.DoMysqlDelUser
-        /// </summary>
-        public bool DeleteAppUser(string rootPwd, string userName, Action<string> logCallback)
-        {
-            try
-            {
-                logCallback($"正在删除用户 {userName}...");
-                string safeUser = EscapeSqlLiteral(userName);
-                string sql = $"DROP USER IF EXISTS '{safeUser}'@'localhost'; DROP USER IF EXISTS '{safeUser}'@'%'; FLUSH PRIVILEGES;";
-                string args = string.IsNullOrEmpty(rootPwd)
-                    ? $"-P {Port} -u root -e \"{sql}\""
-                    : $"-P {Port} -u root -p\"{EscapeSqlLiteral(rootPwd)}\" -e \"{sql}\"";
-                bool ok = RunProcess(MysqlExePath, args, Path.GetDirectoryName(MysqlExePath)!);
-                logCallback(ok ? $"用户 {userName} 已删除" : $"用户 {userName} 删除失败");
-                return ok;
-            }
-            catch (Exception ex)
-            {
-                logCallback($"删除用户失败: {ex.Message}");
                 return false;
             }
         }
@@ -489,6 +223,175 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
+        public bool TryGetExistingTables(string userName, string password, string database, IReadOnlyList<string> candidateTables, out IReadOnlyList<string> existingTables, Action<string> logCallback)
+        {
+            existingTables = Array.Empty<string>();
+            if (string.IsNullOrWhiteSpace(database) || candidateTables.Count == 0)
+            {
+                return true;
+            }
+
+            try
+            {
+                var builder = new MySqlConnectionStringBuilder
+                {
+                    Server = "127.0.0.1",
+                    Port = (uint)Port,
+                    UserID = userName,
+                    Password = password ?? string.Empty,
+                    CharacterSet = "utf8mb4",
+                    ConnectionTimeout = 5,
+                    SslMode = MySqlSslMode.None,
+                    Pooling = false
+                };
+
+                using var connection = new MySqlConnection(builder.ConnectionString);
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = BuildExistingTablesSql(candidateTables.Count);
+                command.Parameters.AddWithValue("@schema", database);
+                for (int i = 0; i < candidateTables.Count; i++)
+                {
+                    command.Parameters.AddWithValue($"@t{i}", candidateTables[i]);
+                }
+
+                HashSet<string> found = new(StringComparer.OrdinalIgnoreCase);
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    found.Add(reader.GetString(0));
+                }
+
+                existingTables = candidateTables.Where(found.Contains).ToArray();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"检查可备份数据表失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static string BuildExistingTablesSql(int tableCount)
+        {
+            string[] parameterNames = Enumerable.Range(0, tableCount).Select(i => $"@t{i}").ToArray();
+            return $"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = @schema AND TABLE_NAME IN ({string.Join(",", parameterNames)})";
+        }
+
+        public bool BackupDataTables(string userName, string password, string database, string outputFile, IReadOnlyList<string> tables, Action<string> logCallback)
+        {
+            if (tables.Count == 0)
+            {
+                logCallback("没有需要备份的数据表");
+                return true;
+            }
+
+            try
+            {
+                string dumpPath = File.Exists(MysqldumpExePath)
+                    ? MysqldumpExePath
+                    : MySqlLocalConfig.Instance.MysqldumpPath;
+
+                if (string.IsNullOrWhiteSpace(dumpPath) || !File.Exists(dumpPath))
+                {
+                    logCallback("找不到 mysqldump");
+                    return false;
+                }
+
+                string? dir = Path.GetDirectoryName(outputFile);
+                if (!string.IsNullOrWhiteSpace(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = dumpPath,
+                    WorkingDirectory = Path.GetDirectoryName(dumpPath) ?? BasePath,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
+                };
+                psi.ArgumentList.Add("-P");
+                psi.ArgumentList.Add(Port.ToString());
+                psi.ArgumentList.Add("-u");
+                psi.ArgumentList.Add(userName);
+                if (!string.IsNullOrEmpty(password))
+                {
+                    psi.ArgumentList.Add($"-p{password}");
+                }
+
+                psi.ArgumentList.Add("--default-character-set=utf8mb4");
+                psi.ArgumentList.Add("--single-transaction");
+                psi.ArgumentList.Add("--quick");
+                psi.ArgumentList.Add("--skip-triggers");
+                psi.ArgumentList.Add("--skip-lock-tables");
+                psi.ArgumentList.Add("--skip-add-locks");
+                psi.ArgumentList.Add("--no-create-info");
+                psi.ArgumentList.Add("--complete-insert");
+                psi.ArgumentList.Add("--replace");
+                psi.ArgumentList.Add(database);
+                foreach (string table in tables)
+                {
+                    psi.ArgumentList.Add(table);
+                }
+
+                logCallback($"正在备份资源数据表: {string.Join(", ", tables)}");
+                using var process = Process.Start(psi);
+                if (process == null)
+                {
+                    logCallback("无法启动 mysqldump");
+                    return false;
+                }
+
+                Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+                bool finished = process.WaitForExit(600000);
+                if (!finished)
+                {
+                    try
+                    {
+                        process.Kill(true);
+                    }
+                    catch
+                    {
+                    }
+
+                    logCallback("资源数据备份超时");
+                    return false;
+                }
+
+                string stdout = stdoutTask.GetAwaiter().GetResult();
+                string stderr = stderrTask.GetAwaiter().GetResult();
+                if (process.ExitCode != 0)
+                {
+                    if (!string.IsNullOrWhiteSpace(stderr))
+                    {
+                        logCallback(stderr.Trim());
+                    }
+                    logCallback($"资源数据备份失败，退出码: {process.ExitCode}");
+                    return false;
+                }
+
+                StringBuilder sql = new();
+                sql.AppendLine("SET NAMES utf8mb4;");
+                sql.AppendLine("SET FOREIGN_KEY_CHECKS = 0;");
+                sql.AppendLine(stdout);
+                sql.AppendLine("SET FOREIGN_KEY_CHECKS = 1;");
+                File.WriteAllText(outputFile, sql.ToString(), new UTF8Encoding(false));
+                logCallback($"资源数据备份完成: {outputFile}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"资源数据备份失败: {ex.Message}");
+                return false;
+            }
+        }
+
         public bool TestConnection(string? host, int port, string userName, string password, string? database, Action<string>? logCallback = null)
         {
             string effectiveHost = string.IsNullOrWhiteSpace(host) ? "127.0.0.1" : host.Trim();
@@ -612,62 +515,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        /// <summary>
-        /// 启动 MySQL 服务
-        /// </summary>
-        public bool Start(Action<string> logCallback)
-        {
-            logCallback($"正在启动 MySQL 服务 ({ServiceName})...");
-            bool result = Tool.ExecuteCommandAsAdmin($"net start {ServiceName}");
-            logCallback(result ? "MySQL 服务已启动" : "MySQL 服务启动失败");
-            return result;
-        }
-
-        /// <summary>
-        /// 停止 MySQL 服务
-        /// </summary>
-        public bool Stop(Action<string> logCallback)
-        {
-            logCallback($"正在停止 MySQL 服务 ({ServiceName})...");
-            bool result = Tool.ExecuteCommandAsAdmin($"net stop {ServiceName}");
-            logCallback(result ? "MySQL 服务已停止" : "MySQL 服务停止失败");
-            return result;
-        }
-
-        /// <summary>
-        /// 卸载 MySQL 服务
-        /// </summary>
-        public bool Uninstall(Action<string> logCallback)
-        {
-            logCallback($"正在卸载 MySQL 服务 ({ServiceName})...");
-            if (IsRunning)
-                Stop(logCallback);
-            
-            RunProcess(MysqldExePath, $"--remove {ServiceName}", BasePath);
-            logCallback("MySQL 服务已卸载");
-            return true;
-        }
-
-        /// <summary>
-        /// 通过 mysqladmin 更新 root 密码（MySQL 5.7 兼容）
-        /// </summary>
-        public bool TrySetRootPassword(string oldPassword, string newPassword, Action<string> logCallback)
-        {
-            try
-            {
-                logCallback("正在设置 root 密码...");
-                bool ok = SetRootPasswordViaAdmin(oldPassword, newPassword);
-                logCallback(ok ? "root 密码设置成功" : "root 密码设置失败");
-                return ok;
-            }
-            catch (Exception ex)
-            {
-                logCallback($"设置 root 密码失败: {ex.Message}");
-                return false;
-            }
-        }
-
-        public bool ForceResetRootPassword(string newPassword, Action<string> logCallback)
+        public bool ResetRootPasswordWithStoppedService(string newPassword, Action<string> logCallback)
         {
             if (!File.Exists(MysqldExePath) || !File.Exists(MysqlExePath))
             {
@@ -679,7 +527,11 @@ namespace WindowsServicePlugin.ServiceManager
             try
             {
                 logCallback("开始强制重置 root 密码...");
-                EnsureMySqlStopped(logCallback);
+                if (Process.GetProcessesByName("mysqld").Length > 0)
+                {
+                    logCallback("检测到 mysqld 仍在运行，请先停止 MySQL 服务后再重置 root 密码");
+                    return false;
+                }
 
                 var startInfo = new ProcessStartInfo
                 {
@@ -730,9 +582,6 @@ namespace WindowsServicePlugin.ServiceManager
                     skipGrantProcess.WaitForExit(3000);
                 }
 
-                Thread.Sleep(1500);
-                Start(logCallback);
-
                 logCallback(ok ? "root 密码强制重置成功" : "root 密码强制重置失败");
                 return ok;
             }
@@ -754,180 +603,6 @@ namespace WindowsServicePlugin.ServiceManager
                 catch
                 {
                 }
-
-                if (IsInstalled && !IsRunning)
-                {
-                    Start(logCallback);
-                }
-            }
-        }
-
-        private void EnsureMySqlStopped(Action<string> logCallback)
-        {
-            if (IsInstalled)
-            {
-                logCallback($"正在停止 MySQL 服务 ({ServiceName})...");
-                if (!WinServiceHelper.StopService(ServiceName, 30))
-                {
-                    Tool.ExecuteCommandAsAdmin($"net stop {ServiceName}");
-                }
-            }
-
-            for (int i = 0; i < 10; i++)
-            {
-                if (Process.GetProcessesByName("mysqld").Length == 0)
-                {
-                    return;
-                }
-                Thread.Sleep(1000);
-            }
-
-            logCallback("检测到 mysqld 进程未退出，正在强制结束...");
-            WinServiceHelper.KillProcessByName("mysqld");
-            Thread.Sleep(1500);
-        }
-
-        private void EnsureAllMySqlProcessesStopped(Action<string> logCallback)
-        {
-            EnsureMySqlStopped(logCallback);
-
-            var mysqlProcesses = Process.GetProcessesByName("mysql");
-            if (mysqlProcesses.Length <= 0)
-            {
-                return;
-            }
-
-            logCallback($"检测到 {mysqlProcesses.Length} 个 mysql 客户端进程未退出，正在结束...");
-            foreach (var process in mysqlProcesses)
-            {
-                try
-                {
-                    process.Kill();
-                    process.WaitForExit(3000);
-                }
-                catch
-                {
-                }
-            }
-        }
-
-        private void DetectExistingInstallation(string targetPath)
-        {
-            if (DetectFromRegistry())
-            {
-                return;
-            }
-
-            if (!Directory.Exists(targetPath))
-            {
-                return;
-            }
-
-            string? existingDir = Directory.GetDirectories(targetPath, "mysql-*", SearchOption.TopDirectoryOnly)
-                .OrderByDescending(path => path)
-                .FirstOrDefault(dir => File.Exists(Path.Combine(dir, "bin", "mysqld.exe")));
-            if (!string.IsNullOrWhiteSpace(existingDir))
-            {
-                BasePath = existingDir;
-            }
-        }
-
-        private static void CleanupExistingInstallation(string zipFilePath, string targetPath, Action<string> logCallback)
-        {
-            if (!Directory.Exists(targetPath))
-            {
-                Directory.CreateDirectory(targetPath);
-                return;
-            }
-
-            string[] packageDirNames = GetMySqlPackageTopLevelDirectoryNames(zipFilePath);
-            string[] existingDirs = packageDirNames.Length > 0
-                ? packageDirNames
-                    .Select(name => Path.Combine(targetPath, name))
-                    .Where(Directory.Exists)
-                    .ToArray()
-                : [];
-
-            foreach (string existingDir in existingDirs)
-            {
-                try
-                {
-                    logCallback($"清理旧 MySQL 目录: {existingDir}");
-                    Directory.Delete(existingDir, true);
-                }
-                catch (Exception ex)
-                {
-                    throw new IOException($"清理旧 MySQL 目录失败: {existingDir}. {ex.Message}", ex);
-                }
-            }
-        }
-
-        private static string[] ResolveExtractedMySqlDirectories(string zipFilePath, string targetPath)
-        {
-            string[] packageDirNames = GetMySqlPackageTopLevelDirectoryNames(zipFilePath);
-            string[] packageDirs = packageDirNames
-                .Select(name => Path.Combine(targetPath, name))
-                .Where(dir => File.Exists(Path.Combine(dir, "bin", "mysqld.exe")))
-                .ToArray();
-            if (packageDirs.Length > 0)
-            {
-                return packageDirs;
-            }
-
-            return Directory.GetDirectories(targetPath, "mysql-*", SearchOption.TopDirectoryOnly)
-                .Where(dir => File.Exists(Path.Combine(dir, "bin", "mysqld.exe")))
-                .OrderByDescending(dir => dir)
-                .ToArray();
-        }
-
-        private static string[] GetMySqlPackageTopLevelDirectoryNames(string zipFilePath)
-        {
-            try
-            {
-                using var archive = System.IO.Compression.ZipFile.OpenRead(zipFilePath);
-                return archive.Entries
-                    .Select(entry => GetTopLevelEntryName(entry.FullName))
-                    .Where(name => name.StartsWith("mysql-", StringComparison.OrdinalIgnoreCase))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-            }
-            catch
-            {
-                return [];
-            }
-        }
-
-        private static string GetTopLevelEntryName(string entryName)
-        {
-            string normalized = entryName.Replace('\\', '/').TrimStart('/');
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return string.Empty;
-            }
-
-            string top = normalized.Split('/')[0].Trim();
-            return top is "." or ".." ? string.Empty : top;
-        }
-
-        private void LogInitializationDirectoryState(Action<string> logCallback)
-        {
-            try
-            {
-                string dataDir = Path.Combine(BasePath, "data");
-                if (Directory.Exists(dataDir))
-                {
-                    int fileCount = Directory.GetFiles(dataDir, "*", SearchOption.AllDirectories).Length;
-                    logCallback($"初始化失败时 data 目录已存在，文件数: {fileCount}");
-                }
-
-                if (File.Exists(MyIniPath))
-                {
-                    logCallback($"初始化使用的 my.ini: {MyIniPath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Warn("记录 MySQL 初始化目录状态失败", ex);
             }
         }
 
@@ -941,7 +616,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             for (int i = 0; i < 20; i++)
             {
-                if (RunProcess(MysqlExePath, "-u root -e \"SELECT 1;\"", BasePath, 5000))
+                if (RunProcess(MysqlExePath, $"-P {Port} -u root -e \"SELECT 1;\"", BasePath, 5000))
                 {
                     return true;
                 }
@@ -952,7 +627,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private bool TryRunRootResetSql(string sql)
         {
-            return RunProcess(MysqlExePath, $"-u root -e \"{sql}\"", BasePath, 10000);
+            return RunProcess(MysqlExePath, $"-P {Port} -u root -e \"{sql}\"", BasePath, 10000);
         }
 
         /// <summary>
@@ -967,34 +642,6 @@ namespace WindowsServicePlugin.ServiceManager
             return new string(buf.Select(b => chars[b % chars.Length]).ToArray());
         }
 
-        /// <summary>
-        /// 以管理员权限运行进程（若当前已是管理员则直接运行，否则请求 UAC）
-        /// </summary>
-        private static bool RunProcessAdmin(string fileName, string arguments, string workingDir)
-        {
-            try
-            {
-                bool isAdmin = Tool.IsAdministrator();
-                var psi = new ProcessStartInfo
-                {
-                    FileName = fileName,
-                    Arguments = arguments,
-                    WorkingDirectory = workingDir,
-                    UseShellExecute = !isAdmin,
-                    CreateNoWindow = isAdmin,
-                    Verb = isAdmin ? "" : "runas"
-                };
-                using var p = Process.Start(psi);
-                p?.WaitForExit(60000);
-                return p?.ExitCode == 0;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"RunProcessAdmin {Path.GetFileName(fileName)} {arguments} failed", ex);
-                return false;
-            }
-        }
-
         private static string EscapeSqlLiteral(string value)
         {
             return value.Replace("\\", "\\\\").Replace("'", "''");
@@ -1003,21 +650,6 @@ namespace WindowsServicePlugin.ServiceManager
         private static string EscapeSqlIdentifier(string value)
         {
             return value.Replace("`", "``");
-        }
-
-        private static bool IsSamePath(string? left, string right)
-        {
-            if (string.IsNullOrWhiteSpace(left))
-                return false;
-
-            try
-            {
-                return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                return string.Equals(left.Trim('"'), right.Trim('"'), StringComparison.OrdinalIgnoreCase);
-            }
         }
 
         private static bool RunProcess(string fileName, string arguments, string workingDir, int timeoutMilliseconds = 60000)

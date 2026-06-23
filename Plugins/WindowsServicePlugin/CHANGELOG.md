@@ -2,14 +2,21 @@
 
 ## Unreleased
 
+### Added
+
+- Added localized resources for the refreshed service manager and service
+  installation windows.
+
 ### Changed
 
 - Focused `ServiceManager` on local full-package service installation, MySQL, and
   service config synchronization.
-- Removed old online download and incremental-update code paths from the install
-  window.
+- Updated service manager UI labels, setup choices, install package controls, and
+  file-picker captions to use plugin resources.
+- Reworked service package, MySQL, MQTT, and VC++ 2013 package selection around
+  the service installation window.
 - Removed the external `CVWinSMS.exe` launch/download/update menu entry.
-- Removed old service-log menu entries.
+- Removed unused legacy localization keys for deleted helper menu actions.
 - Removed old wizard steps that depended on the external CVWinSMS `App.config` as
   the primary workflow.
 - Changed install-time config synchronization to fail the install when config

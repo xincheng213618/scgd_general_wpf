@@ -53,6 +53,11 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
+        private static readonly TimeSpan RestartServicesTimeout = TimeSpan.FromMinutes(7);
+        private static readonly TimeSpan RefreshAfterRestartTimeout = TimeSpan.FromSeconds(20);
+        private const double DefaultRestartServicesExpectedDurationMs = 15000;
+        private readonly SemaphoreSlim _refreshGate = new(1, 1);
+        private bool _isDisposed;
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ObservableCollection<KBItemMaster> ViewResluts => ViewResultManager.ViewResluts;
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
@@ -85,6 +90,7 @@ namespace ProjectKB
                 (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.ItemsSource = ViewResluts;
             InitFlow();
+            EnsureTimedButtonOperations();
             Task.Run(async () =>
             {
                 if (ProjectKBConfig.Instance.AutoModbusConnect)
@@ -274,6 +280,77 @@ namespace ProjectKB
 
         public static KBRecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
+        private TimedButtonOperationRegistry EnsureTimedButtonOperations()
+        {
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(actionKey => $"projectkb:{actionKey}");
+            operations.Register(RestartServicesButton, "restart-cv-windows-services", options =>
+            {
+                options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(BuildRestartServicesButtonText(), stats);
+                options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(BuildRestartServicesButtonText(), stats);
+                options.RunningText = "重启服务";
+            });
+            return operations;
+        }
+
+        private static string BuildRestartServicesButtonText()
+        {
+            string version = ServiceConfig.Instance.RegistrationCenterServiceInfo.FileVersion;
+            return string.IsNullOrWhiteSpace(version) ? "重启服务" : $"重启{version}";
+        }
+
+        private double GetExpectedRestartDurationMs()
+        {
+            TimedButtonOperationStats? stats = EnsureTimedButtonOperations().Get(RestartServicesButton)?.CurrentStats;
+            if (stats?.SuccessCount > 0 && stats.AverageElapsedMs > 0) return stats.AverageElapsedMs;
+            if (stats?.WarmupCount > 0 && stats.WarmupElapsedMs > 0) return stats.WarmupElapsedMs;
+            return DefaultRestartServicesExpectedDurationMs;
+        }
+
+        private async void RestartServicesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!AuthManager.RequireAdmin(this)) return;
+
+            TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
+            if (operations.Get(RestartServicesButton)?.IsRunning == true) return;
+
+            TimedButtonOperationScope? operationScope = operations.Begin(RestartServicesButton, GetExpectedRestartDurationMs(), "重启服务");
+            bool success = false;
+            try
+            {
+                logTextBox.Text = "正在重启ColorVision服务...";
+                await DisplayFlow.RestartColorVisionServicesAsync().WaitAsync(RestartServicesTimeout);
+                success = true;
+
+                try
+                {
+                    await Refresh().WaitAsync(RefreshAfterRestartTimeout);
+                    logTextBox.Text = "服务重启完成，当前流程已刷新";
+                }
+                catch (TimeoutException ex)
+                {
+                    log.Warn("服务重启完成，但刷新当前流程超时", ex);
+                    logTextBox.Text = "服务重启完成，刷新当前流程超时，可手动切换流程刷新";
+                }
+            }
+            catch (TimeoutException ex)
+            {
+                log.Error("重启ColorVision服务超时", ex);
+                logTextBox.Text = "重启服务超时，已恢复按钮，可稍后重试";
+                MessageBox.Show(this, $"重启服务超过 {RestartServicesTimeout.TotalMinutes:F0} 分钟未完成，请检查服务状态后重试。", "重启服务超时", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                log.Error("重启ColorVision服务失败", ex);
+                logTextBox.Text = $"服务重启失败：{ex.Message}";
+                MessageBox.Show(this, ex.Message, "重启服务失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                operationScope?.Complete(success);
+                this.TryGetTimedButtonOperations()?.RefreshIdleState(RestartServicesButton);
+            }
+        }
+
         #region FlowRun
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
@@ -317,26 +394,117 @@ namespace ProjectKB
         {
             if (FlowTemplate.SelectedIndex < 0) return;
 
+            await _refreshGate.WaitAsync();
             try
             {
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent -= UpdateMsg;
+                if (!EnsureFlowEngineAvailable()) return;
 
-                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                await RefreshCoreAsync();
+            }
+            catch (ObjectDisposedException ex)
+            {
+                log.Warn("刷新流程时流程编辑器已释放，正在重建流程编辑器", ex);
+                if (!RebuildFlowEngine()) return;
 
-                for (int i = 0; i < 200; i++)
+                try
                 {
-                    if (flowEngine.IsReady)
-                        break;
-                    await Task.Delay(10);
+                    await RefreshCoreAsync();
                 }
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent += UpdateMsg;
+                catch (Exception retryEx)
+                {
+                    log.Error("重建流程编辑器后刷新流程失败", retryEx);
+                    ClearFlowSafely();
+                }
             }
             catch (Exception ex)
             {
                 log.Error("刷新流程失败", ex);
+                ClearFlowSafely();
+            }
+            finally
+            {
+                _refreshGate.Release();
+            }
+        }
+
+        private async Task RefreshCoreAsync()
+        {
+            if (FlowTemplate.SelectedIndex < 0 || !EnsureFlowEngineAvailable()) return;
+
+            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                item.nodeRunEvent -= UpdateMsg;
+
+            flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+
+            for (int i = 0; i < 200; i++)
+            {
+                if (_isDisposed || !IsFlowEngineAvailable()) return;
+                if (flowEngine.IsReady) break;
+                await Task.Delay(10);
+            }
+
+            if (!EnsureFlowEngineAvailable()) return;
+            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                item.nodeRunEvent += UpdateMsg;
+        }
+
+        private bool EnsureFlowEngineAvailable()
+        {
+            if (_isDisposed) return false;
+            return IsFlowEngineAvailable() || RebuildFlowEngine();
+        }
+
+        private bool IsFlowEngineAvailable()
+        {
+            return flowEngine != null
+                && STNodeEditorMain != null
+                && !STNodeEditorMain.IsDisposed
+                && !STNodeEditorMain.Disposing;
+        }
+
+        private bool RebuildFlowEngine()
+        {
+            if (_isDisposed) return false;
+            if (flowControl?.IsFlowRun == true)
+            {
+                log.Warn("流程正在运行，跳过流程编辑器重建");
+                return false;
+            }
+
+            if (flowControl != null)
+                flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            flowControl = null;
+            try
+            {
+                STNodeEditorMain?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("释放旧流程编辑器失败", ex);
+            }
+
+            flowEngine = new FlowEngineControl(false);
+            STNodeEditorMain = new STNodeEditor();
+            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            flowEngine.AttachNodeEditor(STNodeEditorMain);
+            return true;
+        }
+
+        private void ClearFlowSafely()
+        {
+            if (!IsFlowEngineAvailable()) return;
+
+            try
+            {
                 flowEngine.LoadFromBase64(string.Empty);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                log.Warn("流程编辑器已释放，跳过清空流程", ex);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("清空流程失败", ex);
             }
         }
 
@@ -446,8 +614,7 @@ namespace ProjectKB
             log.Info($"IsReady{flowEngine.IsReady}");
             if (!flowEngine.IsReady)
             {
-                string base64 = string.Empty;
-                flowEngine.LoadFromBase64(base64);
+                ClearFlowSafely();
                 await Refresh();
                 log.Info($"IsReady{flowEngine.IsReady}");
             }
@@ -485,10 +652,13 @@ namespace ProjectKB
         }
 
 
-        private FlowControl flowControl;
+        private FlowControl? flowControl;
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
-            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            if (sender is FlowControl completedFlowControl)
+                completedFlowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            else if (flowControl != null)
+                flowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
             if (!Dispatcher.CheckAccess())
             {
@@ -537,7 +707,7 @@ namespace ProjectKB
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
                 ViewResluts.Insert(0, CurrentFlowResult); //倒序插入
-                flowEngine.LoadFromBase64(string.Empty);
+                ClearFlowSafely();
                 Refresh();
                 if (TryCount < ProjectKBConfig.Instance.TryCountMax)
                 {
@@ -1215,7 +1385,7 @@ namespace ProjectKB
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
-            outputText.Background = Brushes.White;
+            outputText.SetResourceReference(Control.BackgroundProperty, "RegionBrush");
             NGResult.Text = string.Empty;
         }
 
@@ -1350,6 +1520,9 @@ namespace ProjectKB
 
         public void Dispose()
         {
+            if (_isDisposed) return;
+            _isDisposed = true;
+
             ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
             ProjectKBConfig.Instance.PropertyChanged -= ProjectKBConfig_PropertyChanged;
             ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
@@ -1361,6 +1534,7 @@ namespace ProjectKB
             STNodeEditorMain?.Dispose();
             timer?.Dispose();
             logOutput?.Dispose();
+            this.DisposeTimedButtonOperations();
             GC.SuppressFinalize(this);
         }
 

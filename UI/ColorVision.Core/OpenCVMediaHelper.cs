@@ -46,6 +46,15 @@ namespace ColorVision.Core
         out double mtf10_norm_b, out double mtf50_norm_b, out double mtf10_cypix_b, out double mtf50_cypix_b,
         out double mtf10_norm_l, out double mtf50_norm_l, out double mtf10_cypix_l, out double mtf50_cypix_l);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalSFRBmw4In1(HImage img, RoiRect roi, string config, out IntPtr result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalDistortionP9(HImage img, RoiRect roi, string config, out IntPtr result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_DetectSurfaceDefects(HImage img, RoiRect roi, string config, out IntPtr result);
+
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int FreeResult(IntPtr str);

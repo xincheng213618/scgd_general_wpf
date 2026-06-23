@@ -14,7 +14,7 @@
 - `Plugins/`：运行时插件扩展
 - `Projects/`：客户项目和定制业务组合
 - `ColorVisionSetup/`：安装器与更新相关程序
-- `Backend/marketplace/`：插件市场后端
+- `Web/Backend/`：插件市场后端
 - `Scripts/`：构建、打包、发布脚本
 
 ## 按系统角色看结构
@@ -53,7 +53,7 @@
 ### 交付与外围层
 
 - `ColorVisionSetup/` 负责安装与更新侧程序
-- `Backend/marketplace/` 负责插件市场后端
+- `Web/Backend/` 负责插件市场后端
 - `Scripts/` 和根目录批处理脚本负责构建、打包和发布
 
 ## 运行时最常见的主链路

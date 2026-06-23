@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.SocketProtocol;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
+using ColorVision.UI.ServiceHost;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -64,6 +65,7 @@ namespace ColorVision.Engine.Templates.Flow
         private int _pendingUiUpdate;
         private CancellationTokenSource _refreshCts;
         private bool _suppressSelectionRefresh;
+        private static readonly string[] RestartServiceNames = ["RegistrationCenterService", "CVMainService_x64", "CVMainService_dev"];
 
         public DisplayFlow(FlowEngineManager flowEngineManager)
         {
@@ -115,6 +117,7 @@ namespace ColorVision.Engine.Templates.Flow
 
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
+            EnsureTimedButtonOperations();
 
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s, e) =>
@@ -127,6 +130,98 @@ namespace ColorVision.Engine.Templates.Flow
             timer = new Timer(UpdateMsg, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
+        }
+
+        private TimedButtonOperationRegistry EnsureTimedButtonOperations()
+        {
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(actionKey => $"flow:{actionKey}");
+            operations.Register(RestartServicesButton, "restart-cv-windows-services", options =>
+            {
+                options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(BuildRestartServicesButtonText(), stats);
+                options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(BuildRestartServicesButtonText(), stats);
+                options.RunningText = "重启服务";
+            });
+            return operations;
+        }
+
+        private static string BuildRestartServicesButtonText()
+        {
+            string version = ServiceConfig.Instance.RegistrationCenterServiceInfo.FileVersion;
+            return string.IsNullOrWhiteSpace(version) ? "重启服务" : $"重启{version}";
+        }
+
+        private double GetExpectedRestartDurationMs()
+        {
+            TimedButtonOperationStats? stats = EnsureTimedButtonOperations().Get(RestartServicesButton)?.CurrentStats;
+            if (stats?.SuccessCount > 0 && stats.AverageElapsedMs > 0) return stats.AverageElapsedMs;
+            if (stats?.WarmupCount > 0 && stats.WarmupElapsedMs > 0) return stats.WarmupElapsedMs;
+            return 15000;
+        }
+
+        private async void Button_RestartServices_Click(object sender, RoutedEventArgs e)
+        {
+            TimedButtonOperationScope? operationScope = EnsureTimedButtonOperations().Begin(RestartServicesButton, GetExpectedRestartDurationMs(), "重启服务");
+            bool success = false;
+            try
+            {
+                await RestartColorVisionServicesAsync();
+                success = true;
+            }
+            catch (Exception ex)
+            {
+                log.Error("重启 ColorVision 服务失败", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+            }
+            finally
+            {
+                operationScope?.Complete(success);
+                this.TryGetTimedButtonOperations()?.RefreshIdleState(RestartServicesButton);
+            }
+        }
+
+        public static async Task RestartColorVisionServicesAsync()
+        {
+            foreach (string serviceName in RestartServiceNames)
+                await RunServiceHostCommandAsync(serviceName, start: false);
+
+            await Task.Delay(1000);
+
+            foreach (string serviceName in RestartServiceNames)
+                await RunServiceHostCommandAsync(serviceName, start: true);
+
+            await Task.Delay(1000);
+            await RefreshServiceConnectionAsync();
+        }
+
+        private static async Task RunServiceHostCommandAsync(string serviceName, bool start)
+        {
+            ServiceHostResponse response = start
+                ? await ColorVisionServiceHostClient.Default.StartServiceAsync(serviceName, timeoutSeconds: 45, timeout: TimeSpan.FromSeconds(60))
+                : await ColorVisionServiceHostClient.Default.StopServiceAsync(serviceName, timeoutSeconds: 45, timeout: TimeSpan.FromSeconds(60));
+
+            if (!response.Success)
+                throw new InvalidOperationException($"{(start ? "启动" : "停止")} {serviceName} 失败: {response.Message}");
+        }
+
+        private static async Task RefreshServiceConnectionAsync()
+        {
+            RefreshSavedServiceInfo();
+            MqttRCService rcService = MqttRCService.GetInstance();
+            rcService.Regist();
+            for (int i = 0; i < 20 && !rcService.IsConnect; i++)
+                await Task.Delay(250);
+
+            if (rcService.IsConnect)
+                rcService.QueryServices();
+            else
+                log.Warn("服务重启完成，但注册中心重新连接未确认。");
+        }
+
+        private static void RefreshSavedServiceInfo()
+        {
+            ServiceConfig.Instance.RegistrationCenterServiceInfo = ColorVision.Engine.Services.RC.ServiceInfo.FromServiceName("RegistrationCenterService");
+            ServiceConfig.Instance.CVMainService_x64Info = ColorVision.Engine.Services.RC.ServiceInfo.FromServiceName("CVMainService_x64");
+            ServiceConfig.Instance.CVMainService_devInfo = ColorVision.Engine.Services.RC.ServiceInfo.FromServiceName("CVMainService_dev");
         }
 
 
@@ -673,6 +768,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             _refreshCts?.Cancel();
             _refreshCts?.Dispose();
+            this.DisposeTimedButtonOperations();
             timer.Dispose();
             GC.SuppressFinalize(this);
         }

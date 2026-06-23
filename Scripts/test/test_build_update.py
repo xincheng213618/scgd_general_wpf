@@ -80,6 +80,43 @@ class BuildUpdateTests(unittest.TestCase):
         self.assertIn("ServiceHost/ColorVisionServiceHost.exe", included)
         self.assertIn("ServiceHost/Tasks/RegisterFileAssociations.ps1", included)
 
+    def test_get_all_files_skips_publish_directory(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            files = [
+                "ColorVision.exe",
+                os.path.join("publish", "ColorVision.exe"),
+                os.path.join("publish", "runtimes", "linux-x64", "native.dll"),
+            ]
+
+            for relative_path in files:
+                file_path = os.path.join(temp_dir, relative_path)
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                with open(file_path, "w", encoding="utf-8") as file:
+                    file.write(relative_path)
+
+            included = {
+                os.path.relpath(file_path, temp_dir).replace("\\", "/")
+                for file_path in build_update.get_all_files(temp_dir)
+            }
+
+        self.assertIn("ColorVision.exe", included)
+        self.assertNotIn("publish/ColorVision.exe", included)
+        self.assertNotIn("publish/runtimes/linux-x64/native.dll", included)
+
+    def test_main_fails_when_incremental_upload_fails(self):
+        with (
+            patch("build_update.get_file_version", return_value="1.2.3.4"),
+            patch("build_update.create_directory_if_not_exists"),
+            patch("build_update.find_latest_zip", return_value="old.zip"),
+            patch("build_update.make_incremental_zip"),
+            patch("build_update.upload_file", return_value=False),
+            patch("build_update.create_full_zip") as mocked_full_zip,
+        ):
+            exit_code = build_update.main()
+
+        self.assertEqual(exit_code, 1)
+        mocked_full_zip.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

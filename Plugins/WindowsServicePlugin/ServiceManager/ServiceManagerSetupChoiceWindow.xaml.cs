@@ -1,6 +1,7 @@
 using ColorVision.Themes;
 using System.IO;
 using System.Windows;
+using PluginResources = WindowsServicePlugin.Properties.Resources;
 
 namespace WindowsServicePlugin.ServiceManager
 {
@@ -29,8 +30,8 @@ namespace WindowsServicePlugin.ServiceManager
         private void UpdateLegacyConfigText()
         {
             LegacyConfigText.Text = File.Exists(_legacyConfigPath)
-                ? "检测到旧版配置：" + _legacyConfigPath
-                : "未检测到旧版配置。导入时可以选择旧版 CVWinSMS.exe，手动配置可直接填写 MySQL 和 MQTT。";
+                ? string.Format(PluginResources.LegacyConfigDetectedFormat, _legacyConfigPath)
+                : PluginResources.LegacyConfigNotDetected;
         }
 
         private void Import_Click(object sender, RoutedEventArgs e)

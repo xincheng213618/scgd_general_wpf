@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using System;
@@ -47,6 +48,7 @@ namespace SystemMonitor
                             WindowStartupLocation = WindowStartupLocation.CenterOwner,
                         };
                         window.Content = new SystemMonitorControl();
+                        window.ApplyCaption();
                         window.Show();
                     })
                 }

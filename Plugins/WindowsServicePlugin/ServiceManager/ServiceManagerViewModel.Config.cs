@@ -1,5 +1,4 @@
 using ColorVision.Database;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Xml.Linq;
@@ -15,7 +14,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             try
             {
-                AddLog("开始更新配置...");
+                log.Info("开始更新配置...");
                 string baseLocation = Config.BaseLocation;
                 if (string.IsNullOrEmpty(baseLocation) || !Directory.Exists(baseLocation))
                 {
@@ -25,24 +24,24 @@ namespace WindowsServicePlugin.ServiceManager
 
                 SyncAllConfigs(false);
 
-                AddLog("配置更新完成");
+                log.Info("配置更新完成");
 
                 if (MessageBox.Show("配置已更新，是否重启注册中心服务？", "更新配置", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     _ = Task.Run(async () =>
                     {
                         bool restarted = await ServiceHostWindowsServiceController
-                            .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, AddLog, "注册中心服务")
+                            .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, log.Info, "注册中心服务")
                             .ConfigureAwait(true);
                         if (restarted)
-                            AddLog("注册中心服务已重启");
+                            log.Info("注册中心服务已重启");
                         Application.Current?.Dispatcher.Invoke(() => RefreshAll());
                     });
                 }
             }
             catch (Exception ex)
             {
-                AddLog($"配置更新失败: {ex.Message}");
+                log.Info($"配置更新失败: {ex.Message}");
                 log.Error("配置更新失败", ex);
             }
         }
@@ -56,12 +55,12 @@ namespace WindowsServicePlugin.ServiceManager
                     throw new DirectoryNotFoundException($"安装根目录不存在: {baseLocation}");
 
                 SyncAllConfigs(false);
-                AddLog("已执行安装后配置同步(UpdateConfig)");
+                log.Info("已执行安装后配置同步(UpdateConfig)");
                 Application.Current?.Dispatcher.Invoke(() => RefreshAll());
             }
             catch (Exception ex)
             {
-                AddLog($"安装后配置同步失败: {ex.Message}");
+                log.Info($"安装后配置同步失败: {ex.Message}");
                 throw;
             }
         }
@@ -73,12 +72,7 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
 
             string regDir = Path.Combine(baseLocation, "RegWindowsService");
-            if (Directory.Exists(regDir))
-            {
-                UpdateMysqlCfgFile(Path.Combine(regDir, "cfg", "MySql.config"));
-                UpdateMqttCfgFile(Path.Combine(regDir, "cfg", "MQTT.config"));
-                UpdateWinServiceCfgFile(Path.Combine(regDir, "cfg", "WinService.config"), isRC: true);
-            }
+            if (Directory.Exists(regDir)) UpdateServiceConfigFiles(regDir, isRC: true);
 
             string[] serviceFolders = ["CVMainWindowsService_x64", "CVMainWindowsService_dev", "TPAWindowsService", "TPAWindowsService32", "CVFlowWindowsService"];
             foreach (var folderName in serviceFolders)
@@ -86,10 +80,17 @@ namespace WindowsServicePlugin.ServiceManager
                 string svcDir = Path.Combine(baseLocation, folderName);
                 if (!Directory.Exists(svcDir)) continue;
 
-                UpdateMysqlCfgFile(Path.Combine(svcDir, "cfg", "MySql.config"));
-                UpdateMqttCfgFile(Path.Combine(svcDir, "cfg", "MQTT.config"));
-                UpdateWinServiceCfgFile(Path.Combine(svcDir, "cfg", "WinService.config"), isRC: false);
+                UpdateServiceConfigFiles(svcDir, isRC: false);
             }
+        }
+
+        private void UpdateServiceConfigFiles(string serviceDir, bool isRC)
+        {
+            string cfgDir = Path.Combine(serviceDir, "cfg");
+            UpdateMysqlCfgFile(Path.Combine(cfgDir, "MySql.config"));
+            UpdateMqttCfgFile(Path.Combine(cfgDir, "MQTT.config"));
+            UpdateWinServiceCfgFile(Path.Combine(cfgDir, "WinService.config"), isRC);
+            UpdateLog4NetConfigFiles(serviceDir);
         }
 
         private string? ResolveManagedServiceInstallRoot()
@@ -163,7 +164,7 @@ namespace WindowsServicePlugin.ServiceManager
                         "Host" => mySqlConfig.Host,
                         "Port" => mySqlConfig.Port.ToString(),
                         "User" => mySqlConfig.UserName,
-                        "Password" => mySqlConfig.UserPwd   ,
+                        "Password" => mySqlConfig.UserPwd,
                         "Database" => mySqlConfig.Database,
                         _ => null
                     };
@@ -171,13 +172,67 @@ namespace WindowsServicePlugin.ServiceManager
                         setting.SetAttributeValue("value", value);
                 }
                 doc.Save(configPath);
-                AddLog($"更新 MySQL 配置: {configPath}");
+                log.Info($"更新 MySQL 配置: {configPath}");
             }
             catch (Exception ex)
             {
-                AddLog($"更新 MySQL 配置失败: {ex.Message}");
+                log.Info($"更新 MySQL 配置失败: {ex.Message}");
                 throw;
             }
+        }
+
+        private void UpdateLog4NetConfigFiles(string serviceDir)
+        {
+            foreach (string configPath in EnumerateServiceConfigFiles(serviceDir))
+            {
+                UpdateLog4NetConfigFile(configPath);
+            }
+        }
+
+        private static IEnumerable<string> EnumerateServiceConfigFiles(string serviceDir)
+        {
+            foreach (string dir in new[] { serviceDir, Path.Combine(serviceDir, "cfg") })
+            {
+                if (!Directory.Exists(dir)) continue;
+
+                foreach (string filePath in Directory.EnumerateFiles(dir, "*log4net*.config", SearchOption.TopDirectoryOnly))
+                    yield return filePath;
+            }
+        }
+
+        private void UpdateLog4NetConfigFile(string configPath)
+        {
+            try
+            {
+                var doc = XDocument.Load(configPath);
+                var log4net = doc.Root?.Name.LocalName == "log4net" ? doc.Root : doc.Descendants().FirstOrDefault(element => element.Name.LocalName == "log4net");
+                if (log4net == null) return;
+
+                bool changed = false;
+                foreach (var level in log4net.Descendants().Where(IsLoggerLevelElement))
+                {
+                    if (string.Equals(level.Attribute("value")?.Value, "ALL", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    level.SetAttributeValue("value", "ALL");
+                    changed = true;
+                }
+
+                if (!changed) return;
+
+                doc.Save(configPath);
+                log.Info($"更新 log4net 配置: {configPath}");
+            }
+            catch (Exception ex)
+            {
+                log.Info($"更新 log4net 配置失败: {configPath}, {ex.Message}");
+                throw;
+            }
+        }
+
+        private static bool IsLoggerLevelElement(XElement element)
+        {
+            string parentName = element.Parent?.Name.LocalName ?? string.Empty;
+            return element.Name.LocalName == "level" && (parentName == "root" || parentName == "logger");
         }
 
         private void UpdateMqttCfgFile(string configPath)
@@ -207,11 +262,11 @@ namespace WindowsServicePlugin.ServiceManager
                         setting.SetAttributeValue("value", value);
                 }
                 doc.Save(configPath);
-                AddLog($"更新 MQTT 配置: {configPath}");
+                log.Info($"更新 MQTT 配置: {configPath}");
             }
             catch (Exception ex)
             {
-                AddLog($"更新 MQTT 配置失败: {ex.Message}");
+                log.Info($"更新 MQTT 配置失败: {ex.Message}");
                 throw;
             }
         }
@@ -245,11 +300,11 @@ namespace WindowsServicePlugin.ServiceManager
                         setting.SetAttributeValue("value", value);
                 }
                 doc.Save(configPath);
-                AddLog($"更新 WinService 配置: {configPath}");
+                log.Info($"更新 WinService 配置: {configPath}");
             }
             catch (Exception ex)
             {
-                AddLog($"更新 WinService 配置失败: {ex.Message}");
+                log.Info($"更新 WinService 配置失败: {ex.Message}");
                 throw;
             }
         }
@@ -267,7 +322,7 @@ namespace WindowsServicePlugin.ServiceManager
             if (restartRegistrationCenter)
             {
                 ServiceHostWindowsServiceController
-                    .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, AddLog, "注册中心服务")
+                    .ExecuteAsync("RegistrationCenterService", ServiceHostServiceOperation.Restart, log.Info, "注册中心服务")
                     .GetAwaiter()
                     .GetResult();
             }
@@ -314,11 +369,11 @@ namespace WindowsServicePlugin.ServiceManager
                 config.Save(filePath);
                 OnPropertyChanged(nameof(LegacyConfigPath));
                 OnPropertyChanged(nameof(HasLegacyConfig));
-                AddLog($"已同步旧版配置: {filePath}");
+                log.Info($"已同步旧版配置: {filePath}");
             }
             catch (Exception ex)
             {
-                AddLog($"同步旧版配置失败: {ex.Message}");
+                log.Info($"同步旧版配置失败: {ex.Message}");
             }
         }
 
@@ -335,189 +390,5 @@ namespace WindowsServicePlugin.ServiceManager
             return File.Exists(filePath) ? filePath : null;
         }
 
-        private LegacyMySqlProfile? ReadLegacyMySqlProfile()
-        {
-            string? filePath = GetLegacyAppConfigPath();
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-                return null;
-
-            try
-            {
-                var doc = XDocument.Load(filePath);
-                var settings = doc.Element("configuration")?.Element("appSettings")?.Elements("add");
-                if (settings == null)
-                    return null;
-
-                string? GetValue(string key)
-                {
-                    return settings.FirstOrDefault(x => x.Attribute("key")?.Value == key)?.Attribute("value")?.Value;
-                }
-
-                int port = GetConfiguredMySqlPort();
-                if (int.TryParse(GetValue("MysqlPort"), out int parsedPort) && parsedPort > 0)
-                {
-                    port = parsedPort;
-                }
-
-                return new LegacyMySqlProfile
-                {
-                    Host = string.IsNullOrWhiteSpace(GetValue("MysqlHost")) ? "127.0.0.1" : GetValue("MysqlHost")!,
-                    Port = port,
-                    AppUser = GetValue("MysqlUser") ?? string.Empty,
-                    AppPassword = GetValue("MysqlPwd") ?? string.Empty,
-                    RootPassword = GetValue("MysqlRootPwd") ?? string.Empty,
-                    Database = string.IsNullOrWhiteSpace(GetValue("MysqlDatabase")) ? MySqlManager.Config.Database : GetValue("MysqlDatabase")!
-                };
-            }
-            catch (Exception ex)
-            {
-                AddLog($"读取旧版数据库配置失败: {ex.Message}");
-                return null;
-            }
-        }
-
-        private bool SyncLegacyMySqlProfileSafely(LegacyMySqlProfile targetProfile, bool restartIfRunning)
-        {
-            string? filePath = GetLegacyAppConfigPath();
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-                return false;
-
-            bool wasRunning = IsCVWinSMSRunning();
-            string? exePath = wasRunning ? ResolveCVWinSMSExecutablePath() : null;
-
-            try
-            {
-                if (wasRunning)
-                {
-                    StopCVWinSMSProcesses();
-                }
-
-                var doc = XDocument.Load(filePath);
-                var appSettings = doc.Element("configuration")?.Element("appSettings");
-                if (appSettings == null)
-                    return false;
-
-                void SetSetting(string key, string value)
-                {
-                    var element = appSettings.Elements("add").FirstOrDefault(x => x.Attribute("key")?.Value == key);
-                    if (element == null)
-                    {
-                        appSettings.Add(new XElement("add", new XAttribute("key", key), new XAttribute("value", value)));
-                    }
-                    else
-                    {
-                        element.SetAttributeValue("value", value);
-                    }
-                }
-
-                SetSetting("MysqlHost", targetProfile.Host);
-                SetSetting("MysqlPort", targetProfile.Port.ToString());
-                SetSetting("MysqlUser", targetProfile.AppUser);
-                SetSetting("MysqlPwd", targetProfile.AppPassword);
-                SetSetting("MysqlRootPwd", targetProfile.RootPassword);
-                SetSetting("MysqlDatabase", targetProfile.Database);
-
-                doc.Save(filePath);
-                AddLog($"已更新旧版 App.config: {filePath}");
-                OnPropertyChanged(nameof(LegacyConfigPath));
-                OnPropertyChanged(nameof(HasLegacyConfig));
-                return true;
-            }
-            catch (Exception ex)
-            {
-                AddLog($"更新旧版 App.config 失败: {ex.Message}");
-                return false;
-            }
-            finally
-            {
-                if (wasRunning && restartIfRunning)
-                {
-                    RestartCVWinSMS(exePath);
-                }
-            }
-        }
-
-        private static bool IsCVWinSMSRunning()
-        {
-            return Process.GetProcessesByName("CVWinSMS").Length > 0;
-        }
-
-        private static string? ResolveCVWinSMSExecutablePath()
-        {
-            if (!string.IsNullOrWhiteSpace(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath) && File.Exists(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath))
-            {
-                return CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath;
-            }
-
-            foreach (var process in Process.GetProcessesByName("CVWinSMS"))
-            {
-                try
-                {
-                    return process.MainModule?.FileName;
-                }
-                catch
-                {
-                }
-            }
-
-            return null;
-        }
-
-        private static void StopCVWinSMSProcesses()
-        {
-            foreach (var process in Process.GetProcessesByName("CVWinSMS"))
-            {
-                try
-                {
-                    if (!process.CloseMainWindow())
-                    {
-                        process.Kill();
-                    }
-                    else if (!process.WaitForExit(5000))
-                    {
-                        process.Kill();
-                    }
-                }
-                catch
-                {
-                }
-            }
-        }
-
-        private void RestartCVWinSMS(string? exePath)
-        {
-            if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
-            {
-                AddLog("未找到 CVWinSMS.exe，跳过重启旧版管理工具");
-                return;
-            }
-
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = exePath,
-                    WorkingDirectory = Path.GetDirectoryName(exePath) ?? AppDomain.CurrentDomain.BaseDirectory,
-                    UseShellExecute = true,
-                    Verb = "runas"
-                };
-                Process.Start(psi);
-                AddLog("已重新启动 CVWinSMS");
-            }
-            catch (Exception ex)
-            {
-                AddLog($"重新启动 CVWinSMS 失败: {ex.Message}");
-            }
-        }
-
-        private sealed class LegacyMySqlProfile
-        {
-            public string Host { get; init; } = "127.0.0.1";
-            public int Port { get; init; } = 3306;
-            public string AppUser { get; init; } = string.Empty;
-            public string AppPassword { get; init; } = string.Empty;
-            public string RootPassword { get; init; } = string.Empty;
-            public string Database { get; init; } = "color_vision_4xx";
-        }
     }
 }

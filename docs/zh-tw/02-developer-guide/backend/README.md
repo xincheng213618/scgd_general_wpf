@@ -6,16 +6,15 @@ ColorVision 外掛市場後端是一個基於 Python Flask 的輕量級服務，
 
 後端服務提供以下核心功能：
 
-- **Web 管理介面** - 瀏覽、搜尋、下載和上傳外掛
+- **React Web 門戶** - 瀏覽、搜尋、下載、後台釋出和運維管理
 - **REST API** - 為 WPF 桌面客戶端提供介面
-- **舊版相容** - 支援與舊版本客戶端的相容路由
 - **下載統計** - 基於 SQLite 的下載統計
 
 ## 專案結構
 
 ```
-Backend/marketplace/
-├── app.py              # Flask 應用主入口 (Web UI + API + 舊版相容)
+Web/Backend/
+├── app.py              # Flask 應用主入口 (React SPA + API + 檔案服務)
 ├── app_changelog.py    # 更新日誌管理模組
 ├── app_releases.py     # 應用版本釋出管理
 ├── catalog_view_models.py  # 外掛目錄檢視模型
@@ -34,14 +33,8 @@ Backend/marketplace/
 ├── storage_paths.py    # 儲存路徑管理
 ├── storage_uploads.py  # 上傳處理
 ├── update_retention.py # 更新包保留策略
-├── static/             # 靜態資源
-└── templates/          # Jinja2 模板檔案
-    ├── base.html
-    ├── index.html
-    ├── plugins.html
-    ├── plugin_detail.html
-    ├── upload.html
-    └── browse.html
+├── routes/             # Flask 藍圖：站點資料、認證、後台 API、檔案服務
+└── services/           # 索引、鑑權、任務排程和儲存事件服務
 ```
 
 ## 安裝和執行
@@ -54,7 +47,7 @@ Backend/marketplace/
 ### 安裝依賴
 
 ```bash
-cd Backend/marketplace
+cd Web/Backend
 pip install -r requirements.txt
 ```
 
@@ -104,19 +97,18 @@ python app.py --port 9999
 
 ## API 介面
 
-### Web UI 路由
+### React Web 路由
 
 | 路由 | 功能 |
 |------|------|
 | `GET /` | 首頁 — 儲存概覽、快速連結 |
 | `GET /plugins` | 外掛市場 — 搜尋、分類、排序 |
 | `GET /plugins/{id}` | 外掛詳情 — 版本列表、README、下載 |
-| `GET /upload` | 上傳頁面 |
-| `POST /upload` | 處理上傳 |
 | `GET /browse[/path]` | 檔案瀏覽器 |
 | `GET /releases` | 釋出版本列表 |
 | `GET /updates` | 更新包列表 |
 | `GET /tools` | 工具下載列表 |
+| `GET /admin[/path]` | 後台管理系統 |
 
 ### REST API
 
@@ -133,12 +125,12 @@ python app.py --port 9999
 | GET | `/api/health` | 健康檢查端點 |
 | GET | `/api/ready` | 就緒檢查端點 |
 
-### 舊版相容路由
+### 建置指令碼與客戶端下載路由
 
 | 路由模式 | 說明 |
 |----------|------|
-| `PUT /upload/{path}` | 相容舊建置指令碼上傳 |
-| `/D%3A/ColorVision/Plugins/{path}` | 相容舊客戶端版本檢查和下載 |
+| `PUT /upload/{path}` | 建置指令碼直接上傳製品 |
+| `/D%3A/ColorVision/Plugins/{path}` | 桌面客戶端版本檢查和下載 |
 
 ## 認證
 
@@ -204,8 +196,7 @@ python test_upload_services.py
 |------|------|------|
 | 語言 | Python | 3.9+ |
 | 框架 | Flask | >=3.0 |
-| 模板引擎 | Jinja2 | 內建 |
-| CSS 框架 | Bootstrap 5 | 5.x |
+| 前端 | React + TypeScript + Ant Design | 見 `Web/Frontend` |
 | 資料庫 | SQLite | 內建 |
 | Markdown 渲染 | markdown | >=3.8 |
 

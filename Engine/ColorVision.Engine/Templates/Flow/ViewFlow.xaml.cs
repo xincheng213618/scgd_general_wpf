@@ -12,7 +12,9 @@ using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,6 +32,7 @@ namespace ColorVision.Engine.Services.Flow
     public partial class ViewFlow : System.Windows.Controls.UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewFlow));
+        private const string NotepadPlusPlusPath = @"C:\Program Files\Notepad++\notepad++.exe";
 
         public FlowEngineManager FlowEngineManager { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
@@ -554,24 +557,6 @@ namespace ColorVision.Engine.Services.Flow
             STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + delta, mousePosition.X, mousePosition.Y);
         }
 
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (FlowEngineManager.Batch != null)
-            {
-                Frame frame = new Frame();
-
-                MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, FlowEngineManager.Batch);
-                Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
-                window.Content = batchDataHistory;
-                window.Show();
-            }
-            else
-            {
-                MessageBox.Show(Properties.Resources.Flow_RunFlowFirst);
-            }
-        }
-
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             BatchManager.GetInstance().Edit();
@@ -617,6 +602,41 @@ namespace ColorVision.Engine.Services.Flow
                 var window = new FlowNodeAnalysisWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Show();
             }
+        }
+
+        private void Button_OpenServiceLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement { Tag: string panelId }) return;
+
+            string? logPath = ServiceLogPanelProvider.GetServiceLogPath(panelId);
+            if (string.IsNullOrEmpty(logPath) || !File.Exists(logPath))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "未找到对应服务日志，请确认服务已安装并已生成日志。", "ColorVision");
+                return;
+            }
+
+            try
+            {
+                OpenLogFile(logPath);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"打开服务日志失败: {logPath}", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"打开服务日志失败：{ex.Message}", "ColorVision");
+            }
+        }
+
+        private static void OpenLogFile(string logPath)
+        {
+            if (File.Exists(NotepadPlusPlusPath))
+            {
+                var startInfo = new ProcessStartInfo(NotepadPlusPlusPath) { UseShellExecute = false };
+                startInfo.ArgumentList.Add(logPath);
+                Process.Start(startInfo);
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo(logPath) { UseShellExecute = true });
         }
 
     }

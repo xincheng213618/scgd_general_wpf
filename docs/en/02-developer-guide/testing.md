@@ -8,7 +8,7 @@ This page maps the current test entry points in the repository. Do not reduce te
 | --- | --- | --- | --- | --- |
 | UI and host logic | `Test/ColorVision.UI.Tests/` | xUnit, `net10.0-windows`, WPF | UI infrastructure, Copilot/MCP, logs, marketplace, PropertyGrid, terminal buffer, STNode, sorting, editor helpers | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | Native OpenCV helper | `Test/opencv_helper_test/` | Visual C++, OpenCV, x64 | `opencv_helper` functions such as `M_FindLuminousArea` | Visual Studio 2022 or `msbuild opencv_helper_test.vcxproj` |
-| Marketplace backend | `Backend/marketplace/` | Python/Flask | Marketplace API, release records, upload/download, storage behavior | `python test_app.py`, `python test_app_releases.py` |
+| Marketplace backend | `Web/Backend/` | Python/Flask | Marketplace API, release records, upload/download, storage behavior | `python test_app.py`, `python test_app_releases.py` |
 | Build scripts | `Scripts/` | Python | Build, package, publish helper logic | `pytest Scripts/test_*.py -v` |
 | Documentation site | `docs/` | VitePress | Navigation, Markdown, search index, static pages | `npm run docs:build` |
 
@@ -52,7 +52,7 @@ The detailed native guide lives in `Test/opencv_helper_test/BUILD_AND_DEBUG_GUID
 ## Backend And Script Tests
 
 ```powershell
-cd Backend/marketplace
+cd Web/Backend
 python test_app.py
 python test_app_releases.py
 
@@ -70,7 +70,7 @@ If dependencies are missing, prepare the environment from [Plugin Marketplace Ba
 | Marketplace download or package checks | `MarketplacePackageDownloadServiceTests` and plugin field acceptance |
 | Flow/STNode copy paste | `STNodeCopyPasteTests` and [Templates And Flow Chain](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test` and runtime DLL output |
-| marketplace backend | `Backend/marketplace/test_app*.py` |
+| marketplace backend | `Web/Backend/test_app*.py` |
 | packaging scripts | `Scripts/test_*.py` and the target package script |
 | docs site | `npm run docs:build` and route checks when needed |
 

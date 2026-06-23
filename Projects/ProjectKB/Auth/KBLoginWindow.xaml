@@ -35,11 +35,14 @@
         <TextBlock x:Name="AttemptText" Grid.Row="4" Foreground="Orange" FontSize="12"
                    Visibility="Collapsed" Margin="0,0,0,5"/>
 
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="确定" Width="80" Margin="0,0,10,0" Click="Login_Click"
-                    IsDefault="True" Background="{StaticResource PrimaryBrush}" Foreground="White" BorderThickness="0" Padding="12,5"/>
-            <Button Content="取消" Width="80" Click="Cancel_Click"
-                    IsCancel="True" Padding="12,5"/>
-        </StackPanel>
+        <DockPanel Grid.Row="5" LastChildFill="False">
+            <Button Content="忘记密码" DockPanel.Dock="Left" Padding="12,5" Click="ResetPassword_Click"/>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="确定" Width="80" Margin="0,0,10,0" Click="Login_Click"
+                        IsDefault="True" Background="{StaticResource PrimaryBrush}" Foreground="White" BorderThickness="0" Padding="12,5"/>
+                <Button Content="取消" Width="80" Click="Cancel_Click"
+                        IsCancel="True" Padding="12,5"/>
+            </StackPanel>
+        </DockPanel>
     </Grid>
 </Window>

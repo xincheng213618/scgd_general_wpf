@@ -1,12 +1,15 @@
 using ColorVision.Database;
 using ColorVision.UI;
 using ColorVision.UI.ServiceHost;
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace WindowsServicePlugin.ServiceManager
 {
     public class MySqlServiceManager
     {
+        private static readonly string[] ResetPreservedTables = MySqlLocalServicesManager.MigrationBackupTableNames.ToArray();
+
         public MySqlServiceConfig Config { get; } = MySqlServiceConfig.Instance;
 
         public MySqlServiceHelper Helper { get; } = new MySqlServiceHelper();
@@ -19,46 +22,13 @@ namespace WindowsServicePlugin.ServiceManager
         public void Initialize(int fallbackPort)
         {
             MigrateFromLegacySettings();
+            EnsureDefaultSqlScriptPath();
             Helper.Port = GetConfiguredPort(fallbackPort);
 
             if (!Helper.DetectFromRegistry() && !string.IsNullOrWhiteSpace(Config.InstallBasePath))
             {
                 Helper.BasePath = Config.InstallBasePath;
             }
-        }
-
-        public async Task<bool> InstallFromZipAsync(string zipFilePath, string baseLocation, Action<string> logCallback)
-        {
-            string targetDir = Directory.GetParent(baseLocation)?.FullName ?? baseLocation;
-            var credentials = CreateFreshInstallCredentials();
-
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
-            bool result = await Helper.InstallFromZipAsync(
-                zipFilePath,
-                targetDir,
-                logCallback,
-                credentials.RootPassword,
-                credentials.AppUser,
-                credentials.AppPassword,
-                credentials.Database);
-
-            if (!result)
-            {
-                return false;
-            }
-
-            ApplyInstalledCredentials(
-                credentials.RootPassword,
-                credentials.AppUser,
-                credentials.AppPassword,
-                credentials.Database,
-                Helper.BasePath);
-
-            logCallback($"MySQL root 密码: {credentials.RootPassword}");
-            logCallback($"MySQL 业务账号: {credentials.AppUser}");
-            logCallback($"MySQL 业务密码: {credentials.AppPassword}");
-            logCallback("MySQL 账号信息已保存到 MySqlServiceConfig");
-            return true;
         }
 
         public async Task<bool> InstallFromZipViaServiceHostAsync(string zipFilePath, string baseLocation, Action<string> logCallback)
@@ -130,11 +100,9 @@ namespace WindowsServicePlugin.ServiceManager
         public void ApplyInstalledCredentials(string rootPassword, string appUser, string appPassword, string database, string? installedBasePath = null)
         {
             Config.RootPassword = rootPassword;
-            Config.RootNewPassword = string.Empty;
             Config.AppUser = appUser;
             Config.AppPassword = appPassword;
             Config.Database = database;
-            Config.Host = Config.Host;
             Config.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
 
             if (!string.IsNullOrWhiteSpace(installedBasePath))
@@ -160,6 +128,7 @@ namespace WindowsServicePlugin.ServiceManager
         public void RefreshStatus(IEnumerable<ServiceEntry> services, int fallbackPort)
         {
             Helper.Port = GetConfiguredPort(fallbackPort);
+            EnsureDefaultSqlScriptPath();
 
             if (!Helper.DetectFromRegistry() && !string.IsNullOrWhiteSpace(Config.InstallBasePath))
             {
@@ -182,74 +151,12 @@ namespace WindowsServicePlugin.ServiceManager
             RememberInstallBasePath(exePath);
         }
 
-        public bool Start(Action<string> logCallback)
-        {
-            return StartViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
-        }
-
-        public bool RegisterExistingService(Action<string> logCallback)
-        {
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
-            if (!ResolveExistingMySqlBasePath(logCallback))
-            {
-                return false;
-            }
-
-            bool ok = Helper.RegisterExistingService(logCallback);
-            if (ok)
-            {
-                Config.ServiceName = Helper.ServiceName;
-                Config.InstallBasePath = Helper.BasePath;
-                Config.ExePath = Helper.MysqldExePath;
-                Config.IsInstalled = Helper.IsInstalled;
-                Config.IsRunning = Helper.IsRunning;
-                Config.Status = Config.IsRunning ? "运行中" : (Config.IsInstalled ? "已停止" : "未安装");
-                SaveConfig();
-            }
-            return ok;
-        }
-
         public async Task<bool> RegisterExistingServiceViaServiceHostAsync(Action<string> logCallback)
         {
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
-            if (!ResolveSavedMySqlBasePath(logCallback))
-            {
-                return false;
-            }
-
-            string mysqldExePath = Helper.MysqldExePath;
-            if (!File.Exists(mysqldExePath))
-            {
-                logCallback($"mysqld.exe 不存在: {mysqldExePath}");
-                return false;
-            }
-
-            try
-            {
-                logCallback("正在通过 ColorVisionServiceHost 后台注册 MySQL 服务...");
-                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
-                    .RepairMySqlServiceAsync(Helper.ServiceName, mysqldExePath)
-                    .ConfigureAwait(true);
-
-                if (!response.Success)
-                {
-                    LogServiceHostFailure(response, logCallback);
-                    return false;
-                }
-
-                logCallback($"后台服务执行成功: {response.Message}");
-                RefreshConfigFromHelper();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
-                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
-                return false;
-            }
+            return await RepairMySqlViaServiceHostAsync("正在通过 ColorVisionServiceHost 后台注册 MySQL 服务...", logCallback).ConfigureAwait(true);
         }
 
-        public async Task<bool> RepairOrRestartViaServiceHostAsync(Action<string> logCallback)
+        private async Task<bool> RepairMySqlViaServiceHostAsync(string startMessage, Action<string> logCallback)
         {
             Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
             if (!ResolveSavedMySqlBasePath(logCallback))
@@ -266,10 +173,8 @@ namespace WindowsServicePlugin.ServiceManager
 
             try
             {
-                logCallback("正在通过 ColorVisionServiceHost 后台修复/重启 MySQL 服务...");
-                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
-                    .RepairMySqlServiceAsync(Helper.ServiceName, mysqldExePath)
-                    .ConfigureAwait(true);
+                logCallback(startMessage);
+                ServiceHostResponse response = await ColorVisionServiceHostClient.Default.RepairMySqlServiceAsync(Helper.ServiceName, mysqldExePath).ConfigureAwait(true);
 
                 if (!response.Success)
                 {
@@ -291,9 +196,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public async Task<bool> StartViaServiceHostAsync(Action<string> logCallback)
         {
-            bool ok = await ServiceHostWindowsServiceController
-                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MySQL")
-                .ConfigureAwait(true);
+            bool ok = await ServiceHostWindowsServiceController.ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MySQL").ConfigureAwait(true);
             if (ok)
                 RefreshConfigFromHelper();
 
@@ -302,9 +205,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public async Task<bool> StopViaServiceHostAsync(Action<string> logCallback)
         {
-            bool ok = await ServiceHostWindowsServiceController
-                .ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MySQL")
-                .ConfigureAwait(true);
+            bool ok = await ServiceHostWindowsServiceController.ExecuteAsync(Config.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MySQL").ConfigureAwait(true);
             if (ok)
                 RefreshConfigFromHelper();
 
@@ -313,58 +214,18 @@ namespace WindowsServicePlugin.ServiceManager
 
         public async Task<bool> UninstallViaServiceHostAsync(Action<string> logCallback)
         {
-            string? mysqldExePath = File.Exists(Helper.MysqldExePath)
-                ? Helper.MysqldExePath
-                : !string.IsNullOrWhiteSpace(Config.ExePath) && File.Exists(Config.ExePath)
-                    ? Config.ExePath
-                    : null;
-
-            try
+            bool ok = await ServiceHostWindowsServiceController.UninstallAsync(Config.ServiceName, logCallback, "MySQL").ConfigureAwait(true);
+            if (ok)
             {
-                logCallback("正在通过 ColorVisionServiceHost 后台卸载 MySQL 服务...");
-                ServiceHostResponse response = await ColorVisionServiceHostClient.Default
-                    .UninstallMySqlServiceAsync(Config.ServiceName, mysqldExePath)
-                    .ConfigureAwait(true);
-                if (!response.Success)
-                {
-                    LogServiceHostFailure(response, logCallback);
-                    return false;
-                }
-
-                logCallback($"后台服务执行成功: {response.Message}");
                 Config.IsInstalled = false;
                 Config.IsRunning = false;
                 Config.Status = "未安装";
                 Config.ExePath = string.Empty;
                 Config.Version = string.Empty;
                 SaveConfig();
-                return true;
             }
-            catch (Exception ex)
-            {
-                logCallback($"ColorVisionServiceHost 不可用或执行失败: {ex.Message}");
-                logCallback("请先在“更新 -> ColorVision Service Host”中安装/更新后台服务。");
-                return false;
-            }
-        }
 
-        public bool Stop(Action<string> logCallback)
-        {
-            return StopViaServiceHostAsync(logCallback).GetAwaiter().GetResult();
-        }
-
-        public bool Uninstall(Action<string> logCallback)
-        {
-            bool result = Helper.Uninstall(logCallback);
-            if (result)
-            {
-                Config.IsInstalled = false;
-                Config.IsRunning = false;
-                Config.Status = "未安装";
-                Config.ExePath = string.Empty;
-                Config.Version = string.Empty;
-            }
-            return result;
+            return ok;
         }
 
         public bool BackupDatabase(Action<string> logCallback)
@@ -383,7 +244,13 @@ namespace WindowsServicePlugin.ServiceManager
 
         public bool ExecuteSqlFile(string filePath, Action<string> logCallback)
         {
-            return Helper.ExecuteSqlFile(Config.AppUser, Config.AppPassword, Config.Database, filePath, logCallback);
+            if (IsColorVisionAllSql(filePath))
+            {
+                logCallback("检测到 color_vision_all.sql，切换为安全重置流程");
+                return ResetDatabaseFromSqlFile(filePath, logCallback);
+            }
+
+            return ExecuteRootSqlFile(filePath, logCallback, Config.Database);
         }
 
         public static string? ResolveResetDatabaseSqlPath()
@@ -400,7 +267,7 @@ namespace WindowsServicePlugin.ServiceManager
                 return false;
             }
 
-            return ExecuteRootSqlFile(sqlFilePath, logCallback);
+            return ResetDatabaseFromSqlFile(sqlFilePath, logCallback);
         }
 
         public bool TestConnection(string host, int port, string userName, string password, string? database, Action<string>? logCallback = null)
@@ -419,51 +286,90 @@ namespace WindowsServicePlugin.ServiceManager
             Config.Host = host;
             Config.Port = GetConfiguredPort(port);
             Config.RootPassword = rootPassword;
-            Config.RootNewPassword = string.Empty;
             Config.AppUser = appUser;
             Config.AppPassword = appPassword;
             Config.Database = database;
             SaveConfig();
         }
 
-        public bool SetRootPassword(Action<string> logCallback)
+        public bool ApplyRootPassword(Action<string> logCallback)
         {
-            if (string.IsNullOrWhiteSpace(Config.RootNewPassword))
+            if (string.IsNullOrWhiteSpace(Config.RootPassword))
             {
-                logCallback("请先输入新 root 密码");
+                logCallback("请先输入 root 密码");
                 return false;
             }
 
-            bool ok = Helper.TrySetRootPassword(Config.RootPassword, Config.RootNewPassword, logCallback);
-            if (!ok)
+            if (IsRootPasswordUsable(Config.RootPassword))
             {
-                return false;
+                SaveConfig();
+                logCallback("root 密码验证通过并已保存");
+                return true;
             }
 
-            Config.RootPassword = Config.RootNewPassword;
-            Config.RootNewPassword = string.Empty;
-            SaveConfig();
-            return true;
+            logCallback("root 密码不可用，准备通过后台服务强制重置为当前输入的 root 密码...");
+            return ForceResetRootPassword(Config.RootPassword, logCallback);
         }
 
-        public bool ForceResetRootPassword(Action<string> logCallback)
+        private bool ForceResetRootPassword(string targetPassword, Action<string> logCallback)
         {
-            if (string.IsNullOrWhiteSpace(Config.RootNewPassword))
+            return ForceResetRootPasswordWithoutUacAsync(targetPassword, logCallback).GetAwaiter().GetResult();
+        }
+
+        private async Task<bool> ForceResetRootPasswordWithoutUacAsync(string targetPassword, Action<string> logCallback)
+        {
+            if (string.IsNullOrWhiteSpace(targetPassword))
             {
-                logCallback("请先输入新 root 密码");
+                logCallback("请先输入 root 密码");
                 return false;
             }
 
-            bool ok = Helper.ForceResetRootPassword(Config.RootNewPassword, logCallback);
-            if (!ok)
+            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            if (!ResolveSavedMySqlBasePath(logCallback))
             {
                 return false;
             }
 
-            Config.RootPassword = Config.RootNewPassword;
-            Config.RootNewPassword = string.Empty;
-            SaveConfig();
-            return true;
+            string mysqldExePath = Helper.MysqldExePath;
+            if (!File.Exists(mysqldExePath))
+            {
+                logCallback($"mysqld.exe 不存在: {mysqldExePath}");
+                return false;
+            }
+
+            bool serviceExists = Config.IsInstalled || Helper.IsInstalled;
+            bool shouldRestart = Config.IsRunning || Helper.IsRunning;
+            try
+            {
+                if (serviceExists)
+                {
+                    bool stopped = await ServiceHostWindowsServiceController.ExecuteAsync(Helper.ServiceName, ServiceHostServiceOperation.Stop, logCallback, "MySQL").ConfigureAwait(false);
+                    if (!stopped && Helper.IsRunning)
+                    {
+                        logCallback("后台停止 MySQL 服务失败，无法继续重置 root 密码");
+                        return false;
+                    }
+                }
+
+                bool ok = Helper.ResetRootPasswordWithStoppedService(targetPassword, logCallback);
+                if (!ok)
+                {
+                    return false;
+                }
+
+                Config.RootPassword = targetPassword;
+                SaveConfig();
+                RefreshConfigFromHelper();
+                logCallback("root 密码强制重置成功");
+                return true;
+            }
+            finally
+            {
+                if (serviceExists && shouldRestart)
+                {
+                    await ServiceHostWindowsServiceController.ExecuteAsync(Helper.ServiceName, ServiceHostServiceOperation.Start, logCallback, "MySQL").ConfigureAwait(false);
+                }
+            }
         }
 
         public bool CreateOrUpdateUser(Action<string> logCallback)
@@ -485,21 +391,30 @@ namespace WindowsServicePlugin.ServiceManager
             return true;
         }
 
-        public bool DeleteUser(Action<string> logCallback)
-        {
-            if (string.IsNullOrWhiteSpace(Config.AppUser))
-            {
-                logCallback("请先填写要删除的用户名");
-                return false;
-            }
-
-            return Helper.DeleteAppUser(Config.RootPassword, Config.AppUser, logCallback);
-        }
-
         public void GenerateRandomRootPassword(Action<string> logCallback)
         {
-            Config.RootNewPassword = MySqlServiceHelper.GenerateRandomPassword();
-            logCallback($"已生成随机 root 密码: {Config.RootNewPassword}");
+            Config.RootPassword = MySqlServiceHelper.GenerateRandomPassword();
+            SaveConfig();
+            logCallback($"已生成随机 root 密码: {Config.RootPassword}");
+        }
+
+        public void SetSqlScriptPath(string sqlScriptPath)
+        {
+            Config.SqlScriptPath = sqlScriptPath;
+            SaveConfig();
+        }
+
+        public void EnsureDefaultSqlScriptPath()
+        {
+            if (!string.IsNullOrWhiteSpace(Config.SqlScriptPath))
+                return;
+
+            string? sqlFilePath = ResolveResetDatabaseSqlPath();
+            if (string.IsNullOrWhiteSpace(sqlFilePath))
+                return;
+
+            Config.SqlScriptPath = sqlFilePath;
+            SaveConfig();
         }
 
         public void SetManualBasePath(string mysqldExePath)
@@ -515,41 +430,6 @@ namespace WindowsServicePlugin.ServiceManager
             SaveConfig();
         }
 
-        private bool ResolveExistingMySqlBasePath(Action<string> logCallback)
-        {
-            if (!string.IsNullOrWhiteSpace(Config.ExePath) && File.Exists(Config.ExePath))
-            {
-                SetManualBasePath(Config.ExePath);
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(Config.InstallBasePath)
-                && File.Exists(Path.Combine(Config.InstallBasePath, "bin", "mysqld.exe")))
-            {
-                Helper.BasePath = Config.InstallBasePath;
-                return true;
-            }
-
-            if (Helper.DetectFromRegistry())
-            {
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(ServiceManagerConfig.Instance.BaseLocation)
-                && Helper.DetectFromServicePath(ServiceManagerConfig.Instance.BaseLocation))
-            {
-                return true;
-            }
-
-            if (Directory.Exists(@"D:\CVService") && Helper.DetectFromServicePath(@"D:\CVService"))
-            {
-                return true;
-            }
-
-            logCallback("未找到已有 MySQL 文件，请先浏览选择 mysqld.exe 或检查安装目录");
-            return false;
-        }
-
         private bool ResolveSavedMySqlBasePath(Action<string> logCallback)
         {
             if (!string.IsNullOrWhiteSpace(Config.InstallBasePath)
@@ -562,7 +442,6 @@ namespace WindowsServicePlugin.ServiceManager
             if (!string.IsNullOrWhiteSpace(Config.ExePath) && File.Exists(Config.ExePath))
             {
                 RememberInstallBasePath(Config.ExePath);
-                Helper.BasePath = Directory.GetParent(Config.ExePath)?.Parent?.FullName ?? Helper.BasePath;
                 return true;
             }
 
@@ -606,11 +485,123 @@ namespace WindowsServicePlugin.ServiceManager
                 return true;
             }
 
-            return ExecuteRootSqlFile(sqlFilePath, logCallback);
+            return ResetDatabaseFromSqlFile(sqlFilePath, logCallback);
+        }
+
+        public bool InitializeColorVisionDatabase(string basePath, Action<string> logCallback)
+        {
+            string? sqlFilePath = ResolveColorVisionAllSqlPath(basePath);
+            if (string.IsNullOrWhiteSpace(sqlFilePath))
+            {
+                logCallback("未找到 color_vision_all.sql，跳过数据库初始化脚本执行");
+                return true;
+            }
+
+            if (!EnsureRootPasswordReady(logCallback))
+            {
+                return false;
+            }
+
+            logCallback("新安装 MySQL，直接执行数据库初始化脚本");
+            return ExecuteRootSqlFile(sqlFilePath, logCallback, null, false);
         }
 
         private bool ExecuteRootSqlFile(string sqlFilePath, Action<string> logCallback)
         {
+            return ExecuteRootSqlFile(sqlFilePath, logCallback, null, true);
+        }
+
+        private bool ExecuteRootSqlFile(string sqlFilePath, Action<string> logCallback, string? database)
+        {
+            return ExecuteRootSqlFile(sqlFilePath, logCallback, database, true);
+        }
+
+        private bool ExecuteRootSqlFile(string sqlFilePath, Action<string> logCallback, string? database, bool ensureRootPassword)
+        {
+            if (ensureRootPassword && !EnsureRootPasswordReady(logCallback))
+            {
+                return false;
+            }
+
+            logCallback($"使用 root 执行 SQL: {sqlFilePath}");
+            return Helper.ExecuteSqlFile("root", Config.RootPassword, database, sqlFilePath, logCallback);
+        }
+
+        private bool ResetDatabaseFromSqlFile(string sqlFilePath, Action<string> logCallback)
+        {
+            if (!EnsureRootPasswordReady(logCallback))
+            {
+                return false;
+            }
+
+            if (!TryBackupResetPreservedData(logCallback, out string? preservedDataSql))
+            {
+                logCallback("重置前资源数据备份失败，已停止执行以避免数据丢失");
+                return false;
+            }
+
+            if (!ExecuteRootSqlFile(sqlFilePath, logCallback, null, false))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(preservedDataSql))
+            {
+                logCallback("没有检测到需要回写的旧资源数据");
+                return true;
+            }
+
+            logCallback($"正在回写资源数据: {preservedDataSql}");
+            bool restored = Helper.ExecuteSqlFile("root", Config.RootPassword, Config.Database, preservedDataSql, logCallback);
+            logCallback(restored ? "资源数据回写完成" : "资源数据回写失败");
+            return restored;
+        }
+
+        private bool EnsureRootPasswordReady(Action<string> logCallback)
+        {
+            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            if (!ResolveSavedMySqlBasePath(logCallback))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(Config.RootPassword) && IsRootPasswordUsable(Config.RootPassword))
+            {
+                logCallback("root 密码验证通过");
+                return true;
+            }
+
+            logCallback("保存的 root 密码不可用，准备强制重置 root 密码...");
+            string targetPassword = Config.RootPassword;
+            if (string.IsNullOrWhiteSpace(targetPassword))
+            {
+                targetPassword = MySqlServiceHelper.GenerateRandomPassword();
+                logCallback($"未保存 root 密码，已生成新的 root 密码: {targetPassword}");
+            }
+
+            if (!ForceResetRootPassword(targetPassword, logCallback))
+            {
+                logCallback("root 密码重置失败，无法继续执行 SQL");
+                return false;
+            }
+
+            bool verified = IsRootPasswordUsable(Config.RootPassword);
+            logCallback(verified ? "root 密码重置并验证通过" : "root 密码重置后仍无法连接");
+            return verified;
+        }
+
+        private bool IsRootPasswordUsable(string rootPassword)
+        {
+            string configuredHost = string.IsNullOrWhiteSpace(Config.Host) ? "127.0.0.1" : Config.Host.Trim();
+            return Helper.TestConnection(configuredHost, Helper.Port, "root", rootPassword, null)
+                || (!string.Equals(configuredHost, "localhost", StringComparison.OrdinalIgnoreCase)
+                    && Helper.TestConnection("localhost", Helper.Port, "root", rootPassword, null));
+        }
+
+        private bool TryBackupResetPreservedData(Action<string> logCallback, out string? backupFile)
+        {
+            backupFile = null;
+
             Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
             if (!File.Exists(Helper.MysqlExePath))
             {
@@ -619,12 +610,38 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (string.IsNullOrWhiteSpace(Config.RootPassword))
             {
-                logCallback("未找到 root 密码，无法执行数据库重置脚本");
+                logCallback("未找到 root 密码，无法备份重置前资源数据");
                 return false;
             }
 
-            logCallback($"执行 SQL: {sqlFilePath}");
-            return Helper.ExecuteSqlFile("root", Config.RootPassword, null, sqlFilePath, logCallback);
+            if (string.IsNullOrWhiteSpace(Config.Database))
+            {
+                logCallback("未配置业务数据库名，跳过资源数据备份");
+                return true;
+            }
+
+            if (!Helper.TryGetExistingTables("root", Config.RootPassword, Config.Database, ResetPreservedTables, out IReadOnlyList<string> existingTables, logCallback))
+            {
+                return false;
+            }
+
+            if (existingTables.Count == 0)
+            {
+                logCallback("未检测到旧资源数据表，跳过资源数据备份");
+                return true;
+            }
+
+            string timestamp = DateTime.Now.ToString("yyyyMMdd'T'HHmmss");
+            string backupDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
+            backupFile = Path.Combine(backupDir, $"color_vision_resources_{timestamp}.sql");
+
+            if (!Helper.BackupDataTables("root", Config.RootPassword, Config.Database, backupFile, existingTables, logCallback))
+            {
+                backupFile = null;
+                return false;
+            }
+
+            return true;
         }
 
         public static string? ResolveColorVisionAllSqlPath(string? basePath)
@@ -632,6 +649,11 @@ namespace WindowsServicePlugin.ServiceManager
             return EnumerateServiceInstallRoots(basePath)
                 .Select(root => Path.Combine(root, "SQL", "color_vision_all.sql"))
                 .FirstOrDefault(File.Exists);
+        }
+
+        private static bool IsColorVisionAllSql(string filePath)
+        {
+            return string.Equals(Path.GetFileName(filePath), "color_vision_all.sql", StringComparison.OrdinalIgnoreCase);
         }
 
         private void MigrateFromLegacySettings()
@@ -677,7 +699,6 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (changed)
             {
-                Config.Host = Config.Host;
                 Config.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
                 SaveConfig();
             }
@@ -790,9 +811,32 @@ namespace WindowsServicePlugin.ServiceManager
         private static void LogServiceHostFailure(ServiceHostResponse response, Action<string> logCallback)
         {
             logCallback($"后台服务执行失败: {response.Message}");
+            LogServiceHostProcessResults(response.Data?["processResults"], logCallback);
             if (response.Message.Contains("Unsupported command", StringComparison.OrdinalIgnoreCase))
             {
                 logCallback("当前已安装的 ColorVisionServiceHost 版本过旧，请先在“更新 -> ColorVision Service Host”中重新安装/更新后台服务。");
+            }
+        }
+
+        private static void LogServiceHostProcessResults(JToken? token, Action<string> logCallback)
+        {
+            if (token is not JArray results || results.Count == 0)
+                return;
+
+            int start = Math.Max(0, results.Count - 3);
+            for (int i = start; i < results.Count; i++)
+            {
+                JToken item = results[i];
+                string fileName = Path.GetFileName(item["fileName"]?.ToString() ?? string.Empty);
+                string arguments = item["arguments"]?.ToString() ?? string.Empty;
+                string exitCode = item["exitCode"]?.ToString() ?? string.Empty;
+                string output = item["output"]?.ToString().Trim() ?? string.Empty;
+                string error = item["error"]?.ToString().Trim() ?? string.Empty;
+                logCallback($"  {fileName} {arguments} => {exitCode}");
+                if (!string.IsNullOrWhiteSpace(output))
+                    logCallback($"  stdout: {output}");
+                if (!string.IsNullOrWhiteSpace(error))
+                    logCallback($"  stderr: {error}");
             }
         }
 

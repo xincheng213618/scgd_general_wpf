@@ -89,6 +89,10 @@ extern "C" COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, con
 
 extern "C" COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* config, char** result);
 
+// Surface defect / mura detector.
+// Returns JSON with summary + defect list. Thresholds are relative ratios; values > 1 are treated as percentages.
+extern "C" COLORVISIONCORE_API int M_DetectSurfaceDefects(HImage img, RoiRect roi, const char* config, char** result);
+
 extern "C" COLORVISIONCORE_API int FreeResult(char* result);
 
 extern "C" COLORVISIONCORE_API int M_CalSFR(
@@ -124,6 +128,24 @@ extern "C" COLORVISIONCORE_API int M_CalSFRMultiChannel(
     double* mtf10_norm_g, double* mtf50_norm_g, double* mtf10_cypix_g, double* mtf50_cypix_g,
     double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
     double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l);
+
+// BMW target SFR 4-in-1.
+// Returns JSON compatible with SFR2 result shape:
+// { "result": [ { "name": "Point_1", "data": [
+//   { "id": 0, "frequency": [...], "domainSamplingData": [...] }, ... ] } ] }
+extern "C" COLORVISIONCORE_API int M_CalSFRBmw4In1(
+    HImage img,
+    RoiRect roi,
+    const char* config,
+    char** result);
+
+// 9-point distortion measurement.
+// Returns JSON with detected 3x3 points and horizontal/vertical TV + point9 metrics.
+extern "C" COLORVISIONCORE_API int M_CalDistortionP9(
+    HImage img,
+    RoiRect roi,
+    const char* config,
+    char** result);
 
 typedef void(__stdcall* CVNativeLogCallback)(int source, int level, const char* message);
 

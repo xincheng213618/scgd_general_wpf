@@ -15,6 +15,7 @@ namespace ColorVision.UI.LogImp
         private string? Pattern;
         private bool _isAppenderAttached;
         private bool _isDisposed;
+        private bool _autoRefresh = true;
         private LogTextViewController? _logTextView;
 
         public LogOutput(string? pattern = null)
@@ -47,8 +48,7 @@ namespace ColorVision.UI.LogImp
             Hierarchy = (Hierarchy)LogManager.GetRepository();
             this.DataContext = LogConfig.Instance;
             _logTextView = new LogTextViewController(this, RootGrid, SearchPanel, SearchBar1, LogViewer, CloseSearchButton);
-            _logTextView.ConfigureContextMenus(contextMenu =>
-                LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel));
+            _logTextView.ConfigureContextMenus(contextMenu => LogTextViewMenuFactory.AppendRealtimeLogMenuItems(contextMenu, ClearLog, SetLogLevel, GetAutoRefresh, SetAutoRefresh));
 
             AttachAppender();
         }
@@ -72,7 +72,9 @@ namespace ColorVision.UI.LogImp
 
             LogViewerAppender = new LogViewerAppender(LogViewer)
             {
-                Layout = new PatternLayout(Pattern)
+                Layout = new PatternLayout(Pattern),
+                IgnoreAutoRefresh = true,
+                AutoRefresh = _autoRefresh
             };
             Hierarchy.Root.AddAppender(LogViewerAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
@@ -105,6 +107,20 @@ namespace ColorVision.UI.LogImp
         private void ClearLog()
         {
             LogViewer.Clear();
+        }
+
+        private bool GetAutoRefresh()
+        {
+            return LogViewerAppender?.AutoRefresh ?? _autoRefresh;
+        }
+
+        private void SetAutoRefresh(bool autoRefresh)
+        {
+            _autoRefresh = autoRefresh;
+            if (LogViewerAppender != null)
+            {
+                LogViewerAppender.AutoRefresh = autoRefresh;
+            }
         }
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
