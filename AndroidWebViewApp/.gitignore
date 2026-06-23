@@ -8,5 +8,6 @@ captures/
 .android-sdk/
 .signing/
 signing.properties
+/*.png
 
 app/build/

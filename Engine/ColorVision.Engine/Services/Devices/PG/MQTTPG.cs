@@ -23,7 +23,9 @@ namespace ColorVision.Engine.Services.Devices.PG
         [Description("COMM.SKYCODE")]
         COMSKYCODE,
         [Description("CH431.I2C")]
-        CH431I2C
+        CH431I2C,
+        [Description("GECS.V2.4")]
+        GECSV24
     };
 
     public enum CommunicateType
@@ -175,6 +177,7 @@ namespace ColorVision.Engine.Services.Devices.PG
             PGCategoryLib.Add("COMM.GXCLCM", new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } });
             PGCategoryLib.Add("COMM.SkyCode", new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } });
             PGCategoryLib.Add("CH431.I2C", new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } });
+            PGCategoryLib.Add("GECS.V2.4", new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } });
 
         }
 

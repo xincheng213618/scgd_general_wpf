@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Devices.PG
 
             pgCategory.SelectionChanged += (s, e) =>
             {
-                if (pgCategory.SelectedIndex == 4)
+                if (pgCategory.SelectedItem is KeyValuePair<string, Dictionary<string, string>> selectedCategory && selectedCategory.Key == "CH431.I2C")
                 {
                     EditConfig.Addr = "0";
                     EditConfig.Port = 0x08;
@@ -63,6 +63,8 @@ namespace ColorVision.Engine.Services.Devices.PG
                 {
                     CH341_Stream_SpeedDock.Visibility = Visibility.Collapsed;
                     RegisterAddressDockPanel.Visibility = Visibility.Collapsed;
+                    TextBlockPGIP.Text = Properties.Resources.IPAddress;
+                    TextBlockPGPort.Text = Properties.Resources.Port;
                 }
             };
 

@@ -280,49 +280,157 @@ namespace ColorVision.UI.Desktop.LanRemote
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ColorVision 局域网控制</title>
 <style>
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f7fb;color:#182033}
-.page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 18px;box-sizing:border-box}
-.panel{width:min(520px,100%);background:white;border:1px solid #dde4ef;border-radius:18px;padding:26px;box-shadow:0 18px 48px rgba(24,32,51,.10)}
-.eyebrow{font-size:13px;color:#60708b;margin:0 0 8px}
-h1{font-size:28px;line-height:1.2;margin:0 0 12px}
-.status{display:inline-flex;border-radius:999px;padding:6px 12px;background:#eaf7ef;color:#17663a;font-size:13px;margin:6px 0 18px}
-.status.bad{background:#fff0ef;color:#a12a20}
-.meta{display:grid;gap:10px;margin:18px 0 22px}
-.row{display:flex;justify-content:space-between;gap:16px;border-top:1px solid #edf1f6;padding-top:10px;font-size:14px}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f2f7ff;color:#182033}
+.page{min-height:100vh;padding:calc(env(safe-area-inset-top) + 26px) 18px calc(env(safe-area-inset-bottom) + 24px);box-sizing:border-box}
+.top{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 auto 28px;width:min(560px,100%)}
+.brand{margin:0;color:#1598cc;font-size:34px;line-height:1;font-weight:800;letter-spacing:.2px}
+.subtitle{margin:8px 0 0;color:#60708b;font-size:15px}
+.badge{flex:none;border-radius:999px;padding:9px 12px;background:#eaf7ef;color:#17663a;font-size:13px;font-weight:700}
+.badge.bad{background:#fff0ef;color:#a12a20}
+.content{width:min(560px,100%);margin:0 auto;display:grid;gap:14px}
+.card{background:white;border:1px solid #dde4ef;border-radius:18px;overflow:hidden;box-shadow:0 12px 34px rgba(24,32,51,.08)}
+.card-title{margin:0;padding:18px 18px 6px;font-size:20px;line-height:1.25}
+.hint{margin:0;padding:0 18px 14px;color:#66758f;font-size:14px;line-height:1.55}
+.list{list-style:none;margin:0;padding:0}
+.item{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:54px;padding:0 18px;border-top:1px solid #edf1f6;font-size:15px;box-sizing:border-box}
+.item:first-child{border-top:0}
 .label{color:#66758f}
-.value{text-align:right;word-break:break-all}
-button,a.button{display:block;width:100%;box-sizing:border-box;border:0;border-radius:10px;padding:13px 14px;margin-top:10px;background:#1f6feb;color:white;font-size:16px;text-align:center;text-decoration:none}
-a.secondary,button.secondary{background:#eef2f7;color:#243044}
+.value{text-align:right;word-break:break-all;font-weight:650;color:#243044}
+.action{width:100%;border:0;background:white;color:#182033;text-align:left;font:inherit;cursor:pointer}
+.action .value{color:#1f6feb}
+.action:active{background:#eef6ff}
+.logs .item{align-items:flex-start;padding-top:12px;padding-bottom:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.45;color:#60708b}
+.empty{padding:18px;color:#66758f;font-size:14px}
 </style>
 </head>
 <body>
 <main class="page">
-<section class="panel">
-<p class="eyebrow">ColorVision 移动版</p>
-<h1>局域网控制</h1>
-<div class="status {{(authorized ? "" : "bad")}}">{{EscapeHtml(statusText)}}</div>
-<div class="meta">
-<div class="row"><span class="label">电脑</span><span class="value">{{machineName}}</span></div>
-<div class="row"><span class="label">地址</span><span class="value">{{endpoint}}</span></div>
-<div class="row"><span class="label">状态</span><span class="value" id="serverStatus">等待刷新</span></div>
+<header class="top">
+<div>
+<h1 class="brand">ColorVision</h1>
+<p class="subtitle">局域网控制列表</p>
 </div>
-<button onclick="refreshStatus()">刷新状态</button>
-<a class="button secondary" href="cvapp://connections">管理连接</a>
-<a class="button secondary" href="cvapp://disconnect">断开此电脑</a>
+<div class="badge {{(authorized ? "" : "bad")}}" id="authBadge">{{EscapeHtml(statusText)}}</div>
+</header>
+<section class="content">
+<article class="card">
+<h2 class="card-title">电脑状态</h2>
+<p class="hint">当前连接：{{machineName}} · {{endpoint}}</p>
+<ul class="list" id="statusList">
+<li class="item"><span class="label">状态</span><span class="value">正在刷新</span></li>
+</ul>
+</article>
+<article class="card">
+<h2 class="card-title">快捷操作</h2>
+<ul class="list" id="actionList">
+<li class="empty">正在加载操作列表...</li>
+</ul>
+</article>
+<article class="card logs">
+<h2 class="card-title">最近日志</h2>
+<ul class="list" id="logList">
+<li class="empty">正在读取日志...</li>
+</ul>
+</article>
 </section>
 </main>
 <script>
 const token = "{{token}}";
+const statusList = document.getElementById("statusList");
+const actionList = document.getElementById("actionList");
+const logList = document.getElementById("logList");
+
+function text(value, fallback = "--") {
+  return value === undefined || value === null || value === "" ? fallback : String(value);
+}
+
+function escapeHtml(value) {
+  return text(value, "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  })[ch]);
+}
+
+function row(label, value) {
+  return `<li class="item"><span class="label">${escapeHtml(label)}</span><span class="value">${escapeHtml(value)}</span></li>`;
+}
+
 async function refreshStatus(){
-  const status = document.getElementById("serverStatus");
   try {
     const res = await fetch("/api/status?token=" + encodeURIComponent(token));
     const data = await res.json();
-    status.textContent = data.ok ? ("在线 " + data.serverTime) : "未授权";
+    renderStatus(data);
+    await refreshLogs();
   } catch (e) {
-    status.textContent = "无法连接";
+    statusList.innerHTML = row("状态", "无法连接");
+    logList.innerHTML = `<li class="empty">无法读取日志。</li>`;
   }
 }
+
+function renderStatus(data) {
+  statusList.innerHTML = [
+    row("状态", data.ok ? "在线 " + text(data.serverTime, "") : "未授权"),
+    row("主窗口", data.mainWindow ? `${text(data.mainWindow.state)} · ${data.mainWindow.isVisible ? "可见" : "不可见"}` : "--"),
+    row("版本", data.version),
+    row("在线时间", formatDuration(data.uptimeSeconds || 0)),
+    row("进程内存", data.process ? text(data.process.memoryMb) + " MB" : "--"),
+    row("可用地址", Array.isArray(data.addresses) ? data.addresses.join(", ") : "--")
+  ].join("");
+  renderActions(data.capabilities || []);
+}
+
+function renderActions(capabilities) {
+  const items = [
+    { label: "刷新状态", type: "refresh" },
+    ...capabilities.filter(item => item.action !== "refreshStatus").map(item => ({ label: item.label, action: item.action })),
+    { label: "管理连接", href: "cvapp://connections" },
+    { label: "断开此电脑", href: "cvapp://disconnect" }
+  ];
+  actionList.innerHTML = items.map(item => {
+    if (item.href) {
+      return `<li class="item action" onclick="location.href='${item.href}'"><span>${escapeHtml(item.label)}</span><span class="value">›</span></li>`;
+    }
+    const call = item.type === "refresh" ? "refreshStatus()" : `sendCommand('${item.action}')`;
+    return `<li class="item action" onclick="${call}"><span>${escapeHtml(item.label)}</span><span class="value">›</span></li>`;
+  }).join("");
+}
+
+async function sendCommand(action) {
+  const res = await fetch("/api/command?token=" + encodeURIComponent(token), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action })
+  });
+  const data = await res.json();
+  if (data.status) {
+    renderStatus(data.status);
+  } else {
+    await refreshStatus();
+  }
+}
+
+async function refreshLogs() {
+  const res = await fetch("/api/logs?count=12&token=" + encodeURIComponent(token));
+  const data = await res.json();
+  const lines = Array.isArray(data.lines) ? data.lines : [];
+  logList.innerHTML = lines.length
+    ? lines.map(line => `<li class="item">${escapeHtml(line)}</li>`).join("")
+    : `<li class="empty">暂无日志。</li>`;
+}
+
+function formatDuration(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = total % 60;
+  if (hours > 0) return `${hours}小时 ${minutes}分钟`;
+  if (minutes > 0) return `${minutes}分钟 ${rest}秒`;
+  return `${rest}秒`;
+}
+
 refreshStatus();
 </script>
 </body>

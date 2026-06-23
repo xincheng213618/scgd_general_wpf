@@ -108,9 +108,11 @@ namespace ColorVision.UI
         public static DisPlayManager GetInstance() { lock (_locker) { return _instance ??= new DisPlayManager(); } }
         public ObservableCollection<IDisPlayControl> IDisPlayControls { get; private set; }
         private const string DragDataFormat = "ColorVision.UI.DisPlayControl";
+        private static readonly TimeSpan DisplayDragPressDelay = TimeSpan.FromMilliseconds(260);
         private IDisPlayControl? _selectedControl;
         private IDisPlayControl? _dragSourceControl;
         private Point _dragStartPoint;
+        private DateTime _dragStartTime;
         private bool _suppressCollectionChanged;
         private bool _isInitialized;
 
@@ -534,8 +536,14 @@ namespace ColorVision.UI
             userControl.AllowDrop = true;
             userControl.PreviewMouseLeftButtonDown -= DisplayControl_PreviewMouseLeftButtonDown;
             userControl.PreviewMouseLeftButtonDown += DisplayControl_PreviewMouseLeftButtonDown;
+            userControl.PreviewMouseLeftButtonUp -= DisplayControl_PreviewMouseLeftButtonUp;
+            userControl.PreviewMouseLeftButtonUp += DisplayControl_PreviewMouseLeftButtonUp;
+            userControl.PreviewMouseRightButtonDown -= DisplayControl_PreviewMouseRightButtonDown;
+            userControl.PreviewMouseRightButtonDown += DisplayControl_PreviewMouseRightButtonDown;
             userControl.PreviewMouseMove -= DisplayControl_PreviewMouseMove;
             userControl.PreviewMouseMove += DisplayControl_PreviewMouseMove;
+            userControl.ContextMenuOpening -= DisplayControl_ContextMenuOpening;
+            userControl.ContextMenuOpening += DisplayControl_ContextMenuOpening;
             userControl.Drop -= DisplayControl_Drop;
             userControl.Drop += DisplayControl_Drop;
             userControl.Margin = new Thickness(userControl.Margin.Left, 1, userControl.Margin.Right, 1);
@@ -549,12 +557,28 @@ namespace ColorVision.UI
             {
                 _dragSourceControl = disPlayControl;
                 _dragStartPoint = e.GetPosition(null);
+                _dragStartTime = DateTime.UtcNow;
             }
         }
 
+        private void DisplayControl_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) => ClearDisplayDragCandidate();
+
+        private void DisplayControl_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e) => ClearDisplayDragCandidate();
+
+        private void DisplayControl_ContextMenuOpening(object sender, ContextMenuEventArgs e) => ClearDisplayDragCandidate();
+
         private void DisplayControl_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (_dragSourceControl == null || e.LeftButton != MouseButtonState.Pressed)
+            if (_dragSourceControl == null)
+                return;
+
+            if (e.LeftButton != MouseButtonState.Pressed)
+            {
+                ClearDisplayDragCandidate();
+                return;
+            }
+
+            if (DateTime.UtcNow - _dragStartTime < DisplayDragPressDelay)
                 return;
 
             Point position = e.GetPosition(null);
@@ -567,10 +591,18 @@ namespace ColorVision.UI
             if (_dragSourceControl is UserControl userControl)
             {
                 var data = new DataObject(DragDataFormat, _dragSourceControl.DisPlayName);
-                DragDrop.DoDragDrop(userControl, data, DragDropEffects.Move);
+                try
+                {
+                    DragDrop.DoDragDrop(userControl, data, DragDropEffects.Move);
+                }
+                finally
+                {
+                    ClearDisplayDragCandidate();
+                }
             }
-            _dragSourceControl = null;
         }
+
+        private void ClearDisplayDragCandidate() => _dragSourceControl = null;
 
         private static bool CanStartDisplayDrag(DependencyObject? source, DependencyObject owner)
         {
