@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Impl.CVFile
             cvcie.FileExtType = FileInfo.FullName.Contains(".cvraw") ? CVType.Raw : FileInfo.FullName.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
 
             CVFileUtil.ReadCIEFileData(FileInfo.FullName, ref cvcie, index);
-            var src = Mat.FromPixelData(cvcie.Cols, cvcie.Rows, MatType.MakeType(cvcie.Depth, cvcie.Channels), cvcie.Data);
+            using var src = Mat.FromPixelData(cvcie.Rows, cvcie.Cols, MatType.MakeType(cvcie.Depth, cvcie.Channels), cvcie.Data);
 
             System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.FileName = Path.GetFileNameWithoutExtension(FileInfo.FullName) + $".{imageFormat}";
@@ -63,7 +63,10 @@ namespace ColorVision.Engine.Impl.CVFile
                 switch (selectedExt)
                 {
                     case ".bmp":
-                        src.SaveImage(dialog.FileName);
+                        using (Mat bmpImage = VExportCIE.CreateBmpCompatibleMat(src))
+                        {
+                            bmpImage.SaveImage(dialog.FileName);
+                        }
                         break;
                     case ".png":
                         src.SaveImage(dialog.FileName, new ImageEncodingParam(ImwriteFlags.PngCompression, 3));

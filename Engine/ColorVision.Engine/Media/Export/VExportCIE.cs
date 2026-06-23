@@ -35,7 +35,8 @@ namespace ColorVision.Engine.Media
             }
             else if (export.ExportImageFormat == ImageFormat.Bmp)
             {
-                image.SaveImage(fileName);
+                using Mat bmpImage = CreateBmpCompatibleMat(image);
+                bmpImage.SaveImage(fileName);
             }
             else if (export.ExportImageFormat == ImageFormat.Png)
             {
@@ -47,6 +48,31 @@ namespace ColorVision.Engine.Media
                 int quality = export.Compression == 0 ? 95 : Math.Clamp(export.Compression, 0, 100);
                 image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, quality));
             }
+        }
+
+        public static Mat CreateBmpCompatibleMat(Mat src)
+        {
+            ArgumentNullException.ThrowIfNull(src);
+            if (src.Empty())
+            {
+                throw new InvalidOperationException("Cannot export an empty image.");
+            }
+            if (src.Depth() == MatType.CV_8U)
+            {
+                return src.Clone();
+            }
+
+            Mat dst = new();
+            if (src.Depth() == MatType.CV_16U)
+            {
+                src.ConvertTo(dst, MatType.CV_8U, 1.0 / 256.0);
+                return dst;
+            }
+
+            using Mat normalized = new();
+            Cv2.Normalize(src, normalized, 0, 255, NormTypes.MinMax);
+            normalized.ConvertTo(dst, MatType.CV_8U);
+            return dst;
         }
 
         private static Mat CreateMatFromCVCIEFile(CVCIEFile fileInfo)
