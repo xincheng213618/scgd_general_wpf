@@ -317,6 +317,43 @@
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Flip}" />
                             <ComboBox x:Name="CBFilp2" DisplayMemberPath="Value" SelectedValue="{Binding DisplayConfig.LocalVideoTransform}" SelectedValuePath="Key" SelectionChanged="CBFilp2_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
                         </DockPanel>
+                        <StackPanel Margin="0,0,0,3">
+                            <CheckBox Margin="0,0,0,3" Content="十字导引" IsChecked="{Binding DisplayConfig.IsCrossGuideEnabled}" />
+                            <StackPanel Visibility="{Binding DisplayConfig.IsCrossGuideEnabled, Converter={StaticResource bool2VisibilityConverter}}">
+                                <UniformGrid Margin="0,0,0,3" Columns="2">
+                                    <DockPanel Margin="0,0,3,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="中心X" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterX}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="3,0,0,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="中心Y" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterY}" />
+                                    </DockPanel>
+                                </UniformGrid>
+                                <UniformGrid Margin="0,0,0,3" Columns="2">
+                                    <DockPanel Margin="0,0,3,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="阈值" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideTolerancePx}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="3,0,0,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="间隔" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideIntervalMs}" />
+                                    </DockPanel>
+                                </UniformGrid>
+                                <UniformGrid Margin="0,0,0,3" Columns="2">
+                                    <DockPanel Margin="0,0,3,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="亮度" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideThresholdRatio}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="3,0,0,0">
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="覆盖" />
+                                        <TextBox Text="{Binding DisplayConfig.CrossGuideMinCoverageRatio}" />
+                                    </DockPanel>
+                                </UniformGrid>
+                                <StackPanel x:Name="LocalVideoCrossGuideRoiEditorHost" Margin="0,0,0,3" />
+                                <TextBlock Text="{Binding DisplayConfig.CrossGuideStatus}" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
                         <StackPanel Visibility="{Binding CameraVideoControl.Config.IsCalArtculation, Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel x:Name="LocalVideoRoiEditorHost" Margin="0,0,0,3" />
                             <UniformGrid Margin="0,0,0,3" Columns="2">

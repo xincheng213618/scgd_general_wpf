@@ -8,14 +8,7 @@ namespace WindowsServicePlugin.ServiceManager
 {
     public class MySqlServiceManager
     {
-        private static readonly string[] ResetPreservedTables =
-        [
-            "t_scgd_sys_resource_group",
-            "t_scgd_sys_resource",
-            "t_scgd_sys_resource_tpa_dll",
-            "t_scgd_sys_third_party_algorithms",
-            "t_scgd_camera_license"
-        ];
+        private static readonly string[] ResetPreservedTables = MySqlLocalServicesManager.MigrationBackupTableNames.ToArray();
 
         public MySqlServiceConfig Config { get; } = MySqlServiceConfig.Instance;
 

@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1051,CA1707,CA1863
 using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
@@ -68,6 +69,52 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
         private Rect _LocalVideoRoi = new(50, 50, 100, 100);
+
+        [DisplayName("启用十字导引")]
+        public bool IsCrossGuideEnabled { get => _IsCrossGuideEnabled; set { _IsCrossGuideEnabled = value; OnPropertyChanged(); } }
+        private bool _IsCrossGuideEnabled;
+
+        [DisplayName("十字导引区域")]
+        public Rect CrossGuideRoi
+        {
+            get => _CrossGuideRoi;
+            set
+            {
+                Rect normalized = NormalizeLocalVideoRoi(value);
+                if (_CrossGuideRoi == normalized) return;
+                _CrossGuideRoi = normalized;
+                OnPropertyChanged();
+            }
+        }
+        private Rect _CrossGuideRoi = Rect.Empty;
+
+        [DisplayName("标准中心X")]
+        public double CrossGuideStandardCenterX { get => _CrossGuideStandardCenterX; set { _CrossGuideStandardCenterX = value; OnPropertyChanged(); } }
+        private double _CrossGuideStandardCenterX;
+
+        [DisplayName("标准中心Y")]
+        public double CrossGuideStandardCenterY { get => _CrossGuideStandardCenterY; set { _CrossGuideStandardCenterY = value; OnPropertyChanged(); } }
+        private double _CrossGuideStandardCenterY;
+
+        [DisplayName("合格阈值(px)")]
+        public double CrossGuideTolerancePx { get => _CrossGuideTolerancePx; set { _CrossGuideTolerancePx = Math.Max(0, value); OnPropertyChanged(); } }
+        private double _CrossGuideTolerancePx = 3;
+
+        [DisplayName("刷新间隔(ms)")]
+        public int CrossGuideIntervalMs { get => _CrossGuideIntervalMs; set { _CrossGuideIntervalMs = Math.Max(50, value); OnPropertyChanged(); } }
+        private int _CrossGuideIntervalMs = 300;
+
+        [DisplayName("亮度阈值比例")]
+        public double CrossGuideThresholdRatio { get => _CrossGuideThresholdRatio; set { _CrossGuideThresholdRatio = Math.Clamp(value, 0.05, 0.95); OnPropertyChanged(); } }
+        private double _CrossGuideThresholdRatio = 0.45;
+
+        [DisplayName("最小覆盖比例")]
+        public double CrossGuideMinCoverageRatio { get => _CrossGuideMinCoverageRatio; set { _CrossGuideMinCoverageRatio = Math.Clamp(value, 0.01, 0.95); OnPropertyChanged(); } }
+        private double _CrossGuideMinCoverageRatio = 0.08;
+
+        [JsonIgnore]
+        public string CrossGuideStatus { get => _CrossGuideStatus; set { if (_CrossGuideStatus == value) return; _CrossGuideStatus = value; OnPropertyChanged(); } }
+        private string _CrossGuideStatus = string.Empty;
 
         public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
         private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
@@ -151,18 +198,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         // Video display related fields
         private readonly CameraRealtimeFramePipeline _localRealtimePipeline;
+        private readonly VideoCrossGuideProcessor _crossGuideProcessor;
+        private readonly CrossGuideOverlayVisual _crossGuideOverlayVisual;
         private bool _isOpeningLocalVideo;
         private DVRectangleText? _localVideoRoiVisual;
         private bool _isSyncingLocalVideoRoi;
         private bool _hasLocalVideoImageEditModeSnapshot;
         private bool _localVideoImageEditModeSnapshot;
         private bool _isLocalVideoRoiVisualRemoveSubscribed;
+        private bool _crossGuideOverlayAdded;
 
         public DisplayCamera(DeviceCamera device)
         {
             Device = device;
             View = Device.View;
             _localRealtimePipeline = new CameraRealtimeFramePipeline();
+            _crossGuideProcessor = new VideoCrossGuideProcessor(HandleCrossGuideResult);
+            _crossGuideOverlayVisual = new CrossGuideOverlayVisual();
             InitializeComponent();
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromMilliseconds(100);
@@ -203,6 +255,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboBoxHDRTemplate.DataContext = Device.DisplayConfig;
 
             InitializeLocalVideoRoiEditor();
+            InitializeCrossGuideRoiEditor();
             DisplayCameraConfig.PropertyChanged += DisplayCameraConfig_PropertyChanged;
             Device.CameraVideoControl.Config.PropertyChanged += RealtimeCameraConfig_PropertyChanged;
             ApplyLocalVideoRoiToRealtimeConfig();
@@ -242,6 +295,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             LocalVideoRoiEditorHost.Children.Add(PropertyEditorHelper.GenProperties(DisplayCameraConfig, nameof(DisplayCameraConfig.LocalVideoRoi)));
         }
 
+        private void InitializeCrossGuideRoiEditor()
+        {
+            LocalVideoCrossGuideRoiEditorHost.Children.Clear();
+            LocalVideoCrossGuideRoiEditorHost.Children.Add(PropertyEditorHelper.GenProperties(DisplayCameraConfig, nameof(DisplayCameraConfig.CrossGuideRoi)));
+        }
+
         private void DisplayCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (_isSyncingLocalVideoRoi) return;
@@ -252,7 +311,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 RefreshLocalVideoRoiVisual(selectNewVisual: true);
                 SaveDisplayConfig();
             }
+
+            if (IsCrossGuideConfigProperty(e.PropertyName))
+            {
+                RefreshCrossGuideOverlay();
+                if (e.PropertyName != nameof(DisplayCameraConfig.CrossGuideStatus))
+                    SaveDisplayConfig();
+            }
         }
+
+        private static bool IsCrossGuideConfigProperty(string? propertyName) => string.IsNullOrEmpty(propertyName)
+            || propertyName == nameof(DisplayCameraConfig.IsCrossGuideEnabled)
+            || propertyName == nameof(DisplayCameraConfig.CrossGuideRoi)
+            || propertyName == nameof(DisplayCameraConfig.CrossGuideStandardCenterX)
+            || propertyName == nameof(DisplayCameraConfig.CrossGuideStandardCenterY)
+            || propertyName == nameof(DisplayCameraConfig.CrossGuideTolerancePx)
+            || propertyName == nameof(DisplayCameraConfig.CrossGuideIntervalMs)
+            || propertyName == nameof(DisplayCameraConfig.CrossGuideThresholdRatio)
+            || propertyName == nameof(DisplayCameraConfig.CrossGuideMinCoverageRatio);
 
         private void ApplyLocalVideoRoiToRealtimeConfig()
         {
@@ -498,6 +574,98 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             DisplayCameraConfig.LocalVideoRoi = new Rect(0, 0, 0, 0);
             RemoveLocalVideoRoiVisual(restoreImageEditMode: false);
+        }
+
+        private void RefreshCrossGuideOverlay()
+        {
+            if (!Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
+            {
+                RemoveCrossGuideOverlay();
+                if (!Device.DisplayConfig.IsCrossGuideEnabled)
+                {
+                    Device.DisplayConfig.CrossGuideStatus = string.Empty;
+                }
+                return;
+            }
+
+            EnsureCrossGuideOverlay();
+        }
+
+        private void EnsureCrossGuideOverlay()
+        {
+            var imageView = Device.View.ImageView;
+            if (!imageView.Dispatcher.CheckAccess())
+            {
+                imageView.Dispatcher.BeginInvoke(new Action(EnsureCrossGuideOverlay));
+                return;
+            }
+
+            _crossGuideOverlayVisual.Attach();
+            if (_crossGuideOverlayAdded && imageView.ImageShow.ContainsVisual(_crossGuideOverlayVisual)) return;
+
+            imageView.ImageShow.AddOverlayVisual(_crossGuideOverlayVisual);
+            _crossGuideOverlayAdded = true;
+        }
+
+        private void RemoveCrossGuideOverlay()
+        {
+            var imageView = Device.View.ImageView;
+            if (!imageView.Dispatcher.CheckAccess())
+            {
+                imageView.Dispatcher.BeginInvoke(new Action(RemoveCrossGuideOverlay));
+                return;
+            }
+
+            _crossGuideOverlayVisual.Detach();
+            _crossGuideOverlayVisual.Clear();
+            if (_crossGuideOverlayAdded || imageView.ImageShow.ContainsVisual(_crossGuideOverlayVisual))
+            {
+                imageView.ImageShow.RemoveOverlayVisual(_crossGuideOverlayVisual);
+                _crossGuideOverlayAdded = false;
+            }
+
+            _crossGuideProcessor.Reset();
+        }
+
+        private bool TryCreateCrossGuideRequest(int width, int height, out VideoCrossGuideRequest request)
+        {
+            request = default;
+            if (!Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled) return false;
+            if (width <= 0 || height <= 0) return false;
+
+            int transform = Device.DisplayConfig.LocalVideoTransform;
+            RoiRect sourceRoi = VideoCrossGuideDetector.TransformDisplayRoiToSource(Device.DisplayConfig.CrossGuideRoi, width, height, transform);
+            Point standardCenter = new(Device.DisplayConfig.CrossGuideStandardCenterX, Device.DisplayConfig.CrossGuideStandardCenterY);
+            request = new VideoCrossGuideRequest(
+                sourceRoi,
+                standardCenter,
+                transform,
+                Device.DisplayConfig.CrossGuideIntervalMs,
+                Device.DisplayConfig.CrossGuideThresholdRatio,
+                Device.DisplayConfig.CrossGuideMinCoverageRatio,
+                Device.DisplayConfig.CrossGuideTolerancePx);
+            return true;
+        }
+
+        private void HandleCrossGuideResult(VideoCrossGuideResult result)
+        {
+            Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
+                    return;
+
+                EnsureCrossGuideOverlay();
+                _crossGuideOverlayVisual.Update(result);
+                Device.DisplayConfig.CrossGuideStatus = BuildCrossGuideStatus(result);
+            }));
+        }
+
+        private static string BuildCrossGuideStatus(VideoCrossGuideResult result)
+        {
+            if (!result.Found) return result.Message;
+
+            string state = result.IsPass ? "PASS" : "NG";
+            return $"dx:{result.OffsetX:F2}px  dy:{result.OffsetY:F2}px  d:{result.Distance:F2}px  {state}";
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
@@ -1175,9 +1343,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DisplayCameraConfig.PropertyChanged -= DisplayCameraConfig_PropertyChanged;
             Device.CameraVideoControl.Config.PropertyChanged -= RealtimeCameraConfig_PropertyChanged;
             RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
+            RemoveCrossGuideOverlay();
 
             // Clean up video display resources
             _localRealtimePipeline.Dispose();
+            _crossGuideProcessor.Dispose();
             this.DisposeTimedButtonOperations();
             GC.SuppressFinalize(this);
         }
@@ -1290,6 +1460,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             int sourceStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = sourceStride * height;
 
+            if (TryCreateCrossGuideRequest(width, height, out VideoCrossGuideRequest crossGuideRequest))
+            {
+                _crossGuideProcessor.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride, crossGuideRequest);
+            }
+
             _localRealtimePipeline.SubmitFrame(pData, frameBytes, width, height, channels, bpp, sourceStride);
             return 0;
         }
@@ -1311,6 +1486,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     Device.DisplayConfig.IsLocalVideoOpen = false;
                     SetLocalVideoPoiTemplateSupported(false);
                     RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
+                    RemoveCrossGuideOverlay();
+                    Device.DisplayConfig.CrossGuideStatus = string.Empty;
                     _localRealtimePipeline.Stop(resetRealtime: true);
 
                     (closeSucceeded, closeError) = await CloseLocalVideoInternalAsync();
@@ -1357,6 +1534,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 SetLocalVideoPoiTemplateSupported(true);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
                 RefreshLocalVideoRoiVisual(selectNewVisual: true);
+                RefreshCrossGuideOverlay();
                 localVideoOpened = true;
                 logger.Info("视频模式初始化结束");
             }
@@ -1501,10 +1679,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is ComboBox { SelectedValue: int transform })
             {
                 _localRealtimePipeline.Transform = transform;
+                _crossGuideOverlayVisual.Clear();
+                _crossGuideProcessor.Reset();
                 return;
             }
 
             _localRealtimePipeline.Transform = Device.DisplayConfig.LocalVideoTransform;
+            _crossGuideOverlayVisual.Clear();
+            _crossGuideProcessor.Reset();
         }
 
     }
