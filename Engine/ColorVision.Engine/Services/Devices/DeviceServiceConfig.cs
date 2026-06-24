@@ -130,46 +130,64 @@ namespace ColorVision.Engine.Services.Devices
             // 1. 设置 TextSearch.TextPath
             System.Windows.Controls.TextSearch.SetTextPath(combo, "Code");
 
-            // 2. 创建 ItemTemplate
-            DataTemplate itemTemplate = new DataTemplate();
-
-            // 创建根布局 StackPanel (Horizontal)
-            FrameworkElementFactory stackPanelFactory = new FrameworkElementFactory(typeof(StackPanel));
-            stackPanelFactory.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
-
-            // --- 第一部分：Code (颜色绑定 LicenseExpiryColor 表示过期状态) ---
-            FrameworkElementFactory codeBlock = new FrameworkElementFactory(typeof(TextBlock));
-            codeBlock.SetBinding(TextBlock.TextProperty, new Binding("Code"));
-            // 绑定到 PhyCamera.LicenseExpiryColor
-            codeBlock.SetBinding(TextBlock.ForegroundProperty, new Binding("LicenseExpiryColor"));
-            stackPanelFactory.AppendChild(codeBlock);
-
-            // --- 第二部分：空格分隔符 ---
-            FrameworkElementFactory spaceBlock = new FrameworkElementFactory(typeof(TextBlock));
-            spaceBlock.SetValue(TextBlock.TextProperty, " ");
-            stackPanelFactory.AppendChild(spaceBlock);
-
-            // --- 第三部分：在线状态 (中文文本，颜色绑定 Online/Offline) ---
-            FrameworkElementFactory statusBlock = new FrameworkElementFactory(typeof(TextBlock));
-
-            // 文本绑定：使用 StatusToTextConverter 转中文
-            Binding textBinding = new Binding("SysResourceModel.Remark");
-            textBinding.Converter = new StatusToTextConverter();
-            statusBlock.SetBinding(TextBlock.TextProperty, textBinding);
-
-            // 颜色绑定：使用 StatusToColorConverter 转颜色
-            Binding colorBinding = new Binding("SysResourceModel.Remark");
-            colorBinding.Converter = new StatusToColorConverter();
-            statusBlock.SetBinding(TextBlock.ForegroundProperty, colorBinding);
-
-            stackPanelFactory.AppendChild(statusBlock);
-
-            // 设置 VisualTree
-            itemTemplate.VisualTree = stackPanelFactory;
-            combo.ItemTemplate = itemTemplate;
+            combo.ItemTemplate = CreateCameraSnItemTemplate();
 
             dockPanel.Children.Add(combo);
             return dockPanel;
+        }
+
+        private static DataTemplate CreateCameraSnItemTemplate()
+        {
+            DataTemplate itemTemplate = new DataTemplate();
+
+            FrameworkElementFactory root = new FrameworkElementFactory(typeof(StackPanel));
+            root.SetValue(StackPanel.OrientationProperty, Orientation.Vertical);
+            root.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 2, 4, 3));
+
+            FrameworkElementFactory header = new FrameworkElementFactory(typeof(DockPanel));
+            header.SetValue(DockPanel.LastChildFillProperty, true);
+
+            FrameworkElementFactory statusBlock = CreateStatusTextBlock();
+            statusBlock.SetValue(DockPanel.DockProperty, Dock.Right);
+            header.AppendChild(statusBlock);
+
+            FrameworkElementFactory deviceSnBlock = CreateTextBlock("DeviceModeDisplayText", 13, FontWeights.SemiBold, 1.0);
+            deviceSnBlock.SetBinding(TextBlock.ForegroundProperty, new Binding("LicenseExpiryColor"));
+            header.AppendChild(deviceSnBlock);
+            root.AppendChild(header);
+
+            FrameworkElementFactory codeBlock = CreateTextBlock("Code", 12, FontWeights.Normal, 0.72);
+            codeBlock.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 2, 0, 0));
+            root.AppendChild(codeBlock);
+
+            itemTemplate.VisualTree = root;
+            return itemTemplate;
+        }
+
+        private static FrameworkElementFactory CreateTextBlock(string path, double fontSize, FontWeight fontWeight, double opacity)
+        {
+            FrameworkElementFactory textBlock = new FrameworkElementFactory(typeof(TextBlock));
+            textBlock.SetBinding(TextBlock.TextProperty, new Binding(path));
+            textBlock.SetBinding(TextBlock.ToolTipProperty, new Binding(path));
+            textBlock.SetValue(TextBlock.FontSizeProperty, fontSize);
+            textBlock.SetValue(TextBlock.FontWeightProperty, fontWeight);
+            textBlock.SetValue(UIElement.OpacityProperty, opacity);
+            textBlock.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+            return textBlock;
+        }
+
+        private static FrameworkElementFactory CreateStatusTextBlock()
+        {
+            FrameworkElementFactory statusBlock = CreateTextBlock("SysResourceModel.Remark", 12, FontWeights.SemiBold, 1.0);
+            statusBlock.SetValue(FrameworkElement.MarginProperty, new Thickness(8, 0, 0, 0));
+
+            Binding textBinding = new Binding("SysResourceModel.Remark") { Converter = new StatusToTextConverter() };
+            statusBlock.SetBinding(TextBlock.TextProperty, textBinding);
+
+            Binding colorBinding = new Binding("SysResourceModel.Remark") { Converter = new StatusToColorConverter() };
+            statusBlock.SetBinding(TextBlock.ForegroundProperty, colorBinding);
+
+            return statusBlock;
         }
     }
 

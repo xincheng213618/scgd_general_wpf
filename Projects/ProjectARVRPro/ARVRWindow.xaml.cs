@@ -31,6 +31,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -112,13 +113,46 @@ namespace ProjectARVRPro
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
         private string _flowFailureMessage = string.Empty;
+        private string _lastFlowFailureMessage = string.Empty;
         private int _flowFailureCode;
+        private static readonly Regex FindDotsArrayFailureRegex = new(@"findDotsArray\s+return\s+fail(?:e)?d\s*[\(（]\s*(?<code>-?\d+)\s*[\)）]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Dictionary<int, (string Name, string Message)> CVOledErrors = new Dictionary<int, (string Name, string Message)>
+        {
+            [0] = ("CVLED_SUCCESS", "成功"),
+            [1] = ("CVLED_PARAM_E", "参数错误"),
+            [2] = ("CVLED_INPUT_E", "输入错误"),
+            [3] = ("CVLED_SCRREN_NOT_SUPPORT", "屏幕类型不支持(预留)"),
+            [4] = ("CVLED_INIT_E", "初始化错误"),
+            [5] = ("SAVE_E", "保存文件错误"),
+            [6] = ("OUT_OF_BOUNDRY", "越界"),
+            [7] = ("ALGORITHM_E", "算法错误"),
+            [8] = ("MORIE_E", "摩尔纹"),
+            [9] = ("PARTICLE_E", "灰尘检测错误"),
+            [10] = ("EXT_LIGHT_E", "侧光点亮异常"),
+            [11] = ("FOCUS_E", "清晰度异常/聚焦异常"),
+            [12] = ("AAROT_E", "AA区平转"),
+            [13] = ("PERPENDICULAR_E", "垂直不佳"),
+            [14] = ("PATTERN_E", "显示画面错误"),
+            [15] = ("DONGLE_E", "加密狗缺失"),
+            [16] = ("BLACKSCREEN_E", "黑屏错误(屏幕未点亮)"),
+            [17] = ("VH_LINE_E", "横竖线缺陷"),
+            [18] = ("CONSISTANT_STAIN_E", "固定位置缺陷"),
+            [19] = ("MURA_E", "Mura缺陷"),
+            [20] = ("PARTICLE_WARN", "灰尘检测警告(非致命)"),
+            [21] = ("POSITION_QUALITY_E", "定位质量差"),
+            [22] = ("CVLED_BUILD_E", "提取/重建错误"),
+            [23] = ("FILE_NOT_FOUND_E", "文件不存在(预留)"),
+            [24] = ("FILE_FORMAT_E", "文件格式错误(预留)"),
+            [25] = ("JSON_PARSE_E", "JSON解析错误(预留)"),
+            [26] = ("IMAGE_FORMAT_E", "图片格式不支持(预留)")
+        };
         Random Random = new Random();
         public void InitTest(string SN)
         {
             ProjectConfig.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
             _flowFailureMessage = string.Empty;
+            _lastFlowFailureMessage = string.Empty;
             _flowFailureCode = 0;
             CurrentTestType = -1;
             if (string.IsNullOrWhiteSpace(SN))
@@ -604,18 +638,44 @@ namespace ProjectARVRPro
 
         private void RecordFlowFailure(string? message, int code = -1)
         {
-            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
+            (int failureCode, string normalizedMessage) = NormalizeFlowFailure(message, code);
+            _lastFlowFailureMessage = normalizedMessage;
             if (!HasFlowFailure)
             {
                 _flowFailureMessage = normalizedMessage;
-                _flowFailureCode = code;
+                _flowFailureCode = failureCode;
+            }
+            if (CurrentFlowResult != null)
+            {
+                CurrentFlowResult.Result = false;
+                CurrentFlowResult.Msg = normalizedMessage;
             }
             ObjectiveTestResult.TotalResult = false;
+            ObjectiveTestResult.Msg = _flowFailureMessage;
+        }
+
+        private static (int Code, string Message) NormalizeFlowFailure(string? message, int defaultCode)
+        {
+            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
+            Match match = FindDotsArrayFailureRegex.Match(normalizedMessage);
+            if (!match.Success || !int.TryParse(match.Groups["code"].Value, out int oledErrorCode))
+                return (defaultCode, normalizedMessage);
+
+            if (!CVOledErrors.TryGetValue(oledErrorCode, out var oledError))
+                oledError = ("UNKNOWN_CVOLED_ERROR", "未知CVOLED错误码");
+
+            string detail = $"检测失败: {normalizedMessage}; 错误码: {oledErrorCode}, 枚举: {oledError.Name}, 错误信息: {oledError.Message}";
+            return (oledErrorCode, detail);
         }
 
         private string GetProjectResultMessage(string defaultMessage)
         {
             return HasFlowFailure ? _flowFailureMessage : defaultMessage;
+        }
+
+        private string GetSwitchPGMessage()
+        {
+            return string.IsNullOrWhiteSpace(_lastFlowFailureMessage) ? "Switch PG" : $"上一流程失败: {_lastFlowFailureMessage}";
         }
 
         private int GetProjectResultCode(int defaultCode = 0)
@@ -647,6 +707,17 @@ namespace ProjectARVRPro
 
         private void SendProjectResultResponse(int code, string message, object responseData)
         {
+            if (code != 0)
+            {
+                ObjectiveTestResult.TotalResult = false;
+                ObjectiveTestResult.Msg = message;
+                if (CurrentFlowResult != null)
+                {
+                    CurrentFlowResult.Result = false;
+                    CurrentFlowResult.Msg = message;
+                }
+            }
+
             if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
             {
                 log.Info("找不到连接的Socket");
@@ -773,7 +844,7 @@ namespace ProjectARVRPro
 
 
                 ViewResultManager.Save(CurrentFlowResult);
-                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
+                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + CurrentFlowResult.Msg;
 
                 TryCount = 0;
 
@@ -965,19 +1036,21 @@ namespace ProjectARVRPro
                 nextTestType = nextTestType + 1;
             }
 
+            string switchPGMessage = GetSwitchPGMessage();
             var response = new SocketResponse
             {
                 Version = "1.0",
                 MsgID = string.Empty,
                 EventName = "SwitchPG",
                 Code = 0,
-                Msg = "Switch PG",
+                Msg = switchPGMessage,
                 SerialNumber = SNtextBox.Text,
                 Data = new SwitchPG
                 {
                     ARVRTestType = nextTestType
                 },
             };
+            _lastFlowFailureMessage = string.Empty;
 
             string respString = JsonConvert.SerializeObject(response);
             log.Info(respString);
@@ -1080,7 +1153,7 @@ namespace ProjectARVRPro
                 EventName = "ProjectARVRResult",
                 Code = GetProjectResultCode(),
                 SerialNumber = SNtextBox.Text,
-                Msg = GetProjectResultMessage("ARVR Test Completed"),
+                Msg = GetProjectResultMessage(ObjectiveTestResult.TotalResult ? "ARVR Test Completed" : "ARVR Test Fail"),
                 Data = responseData
             };
             string respString = JsonConvert.SerializeObject(response);
@@ -1512,6 +1585,7 @@ namespace ProjectARVRPro
                         CurrentFlowResult.FlowStatus = flowResult.EventName == "OverTime" ? FlowStatus.OverTime : FlowStatus.Failed;
                         CurrentFlowResult.Msg = GetFlowControlMessage(flowResult);
                         RecordFlowFailure(CurrentFlowResult.Msg, flowResult.EventName == "OverTime" ? -2 : -1);
+                        logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName + Environment.NewLine + CurrentFlowResult.Msg;
                         ViewResultManager.Save(CurrentFlowResult);
 
                         if (!ProjectARVRProConfig.Instance.AllowTestFailures)

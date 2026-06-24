@@ -372,6 +372,9 @@ namespace ProjectARVRPro.IntegrationDemo
                    "    public DistortionTestResult DistortionTestResult { get; set; }\r\n" +
                    "    public OpticCenterTestResult OpticCenterTestResult { get; set; }\r\n" +
                    "    public Dictionary<string, ObservableCollection<ObjectiveTestItem>> DynamicTestResults { get; set; }\r\n" +
+                   "    public string Msg { get; set; }\r\n" +
+                   "    public bool TotalResult { get; set; }\r\n" +
+                   "    public string TotalResultString { get; }\r\n" +
                    "}";
         }
     }
