@@ -67,13 +67,6 @@
 - 再检查流程里的参数是不是和手动测试一致
 - 必要时联动看 [流程执行与调试](../workflow/execution.md) 和 [日志查看器](../interface/log-viewer.md)
 
-## 继续阅读
-
-- [设备服务概览](./overview.md)
-- [工作流程概览](../workflow/README.md)
-- [流程执行与调试](../workflow/execution.md)
-- [常见问题](../troubleshooting/common-issues.md)
-
 ## 说明
 
 - 本页只保留电机服务的使用视角，不再继续维护类图和消息处理分析。

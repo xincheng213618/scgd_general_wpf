@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "ColorVision"
   text: "文档入口"
-  tagline: 按角色进入，先解决当前任务；源码、交接清单和完整参考保留在深层页面。
+  tagline: 按角色进入，先解决当前任务；源码、模块参考和详细专题保留在深层页面。
   image:
     src: /images/ColorVision.png
     alt: ColorVision
@@ -41,7 +41,7 @@ features:
 | 第一次安装或快速试用 | [快速上手](/00-getting-started/quick-start) |
 | 日常操作、连接设备、执行流程 | [使用手册](/01-user-guide/README) |
 | 现场交付、复测、排查问题 | [现场操作验收清单](/01-user-guide/field-operation-acceptance) |
-| 接手客户项目 | [项目说明](/00-projects/README) |
+| 查看客户项目 | [项目说明](/00-projects/README) |
 | 确认现有插件能做什么 | [现有插件能力](/04-api-reference/plugins/README) |
 | 改代码、构建、发版 | [开发与交付](/02-developer-guide/README) |
 | 查源码模块、API、Flow 节点 | [参考资料](/04-api-reference/README) |
@@ -49,6 +49,5 @@ features:
 ## 文档边界
 
 - 中文是主文档，保持完整和最新。
-- 英文只保留产品、快速上手、开发交付和许可入口。
-- 日文、韩文、繁体中文副本已从当前工作树移除；需要时可从 Git 历史找回后重新维护。
-- 覆盖清单、发布证据、完整 API 和源码参考不作为第一阅读入口，需要时从对应总览页进入。
+- 英文、日文、韩文、繁体中文副本已从当前工作树移除；需要时可从 Git 历史找回后重新维护。
+- 历史清单、完整 API 和源码参考不作为第一阅读入口，需要时从对应总览页进入。

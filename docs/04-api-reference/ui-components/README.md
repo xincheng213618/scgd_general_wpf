@@ -24,7 +24,7 @@
 | 查控件、菜单、PropertyGrid、ImageEditor 工具源码 | [UI 组件目录](./control-catalog.md) |
 | 理解运行时菜单、设置、插件加载和工具发现 | [UI 运行时组件](./ui-runtime-handoff.md) |
 | 发布 DLL 或 NuGet 包 | [UI DLL 发布](./publishing.md) |
-| 查组件使用方式 | [UI 组件手册](./component-handbook.md) |
+| 查 DLL 边界和修改归属 | [UI DLL 速查](./component-handbook.md) |
 
 ## 依赖方向
 
@@ -45,4 +45,4 @@ flowchart LR
   UIDesktop --> Solution
 ```
 
-交接时重点看依赖方向，不要在底层包里反向引用高层窗口或项目业务。
+维护时重点看依赖方向，不要在底层包里反向引用高层窗口或项目业务。

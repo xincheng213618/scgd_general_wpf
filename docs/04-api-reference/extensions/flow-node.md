@@ -37,69 +37,19 @@
 
 旧文档里那种“重写 `DoServerWork` 就完成节点开发”的说法，和当前 `CVBaseServerNode` 的真实实现并不一致。
 
-## 一个更接近现状的骨架
+## 扩展骨架
 
-```csharp
-using FlowEngineLib.Algorithm;
-using FlowEngineLib.Base;
-using FlowEngineLib.MQTT;
-using ST.Library.UI.NodeEditor;
-
-[STNode("/Custom/MyNode")]
-public class MyNode : CVBaseServerNode
-{
-    public MyNode()
-        : base("自定义节点", "Algorithm", "SVR.Custom", "DEV.Custom")
-    {
-        operatorCode = "CustomEvent";
-    }
-
-    protected override void OnCreate()
-    {
-        base.OnCreate();
-        CreateTempControl(m_custom_item);
-    }
-
-    protected override object getBaseEventData(CVStartCFC start)
-    {
-        var param = new AlgorithmParam();
-        BuildTemp(param);
-        BuildImageParam(param);
-        return param;
-    }
-
-    protected override void OnServerResponse(CVServerResponse resp, CVStartCFC startCFC)
-    {
-        base.OnServerResponse(resp, startCFC);
-        // 按需处理返回数据
-    }
-}
-```
-
-这个骨架和当前代码更接近：节点的核心通常是“如何构建请求数据并接入现有执行链”，而不是自己在节点里完成整段业务计算。
+新增服务节点通常继承 `CVBaseServerNode`，构造函数里确定标题、服务名、设备代码和 `operatorCode`，`OnCreate()` 添加输入输出或编辑控件，`getBaseEventData(...)` 组装请求参数，必要时重写 `OnServerResponse(...)` 或 `Reset(...)`。节点核心是“构建请求并接入现有执行链”，不是在节点里完成整段业务计算。
 
 ## 开始节点和结束节点分别控制什么
 
 ### `BaseStartNode`
 
-开始节点当前负责：
-
-- 创建并保存 `CVStartCFC`
-- 通过 `m_op_start` 和多个 `m_op_loop` 把启动动作分发出去
-- 管理 `Ready`、`Running` 和进行中的 `startActions`
-- 在流程真正结束后向外抛出 `Finished`
-
-因此如果你扩展的是流程入口节点，关注点不会是模板参数，而是启动、循环输出和流程状态管理。
+开始节点负责创建并保存 `CVStartCFC`，通过 `m_op_start` 和多个 `m_op_loop` 分发启动动作，管理 `Ready`、`Running` 和进行中的 `startActions`，并在流程真正结束后抛出 `Finished`。
 
 ### `CVEndNode`
 
-结束节点当前负责：
-
-- 接收 `CVStartCFC` 或循环继续动作
-- 在 `DoNodeEnded(...)` 中调用 `startAction.DoFinishing()`
-- 最终调用 `startAction.FireFinished()`
-
-这也是当前代码里“整条流程 finished”的真正出口。
+结束节点接收 `CVStartCFC` 或循环继续动作，在 `DoNodeEnded(...)` 中调用 `startAction.DoFinishing()`，最终调用 `startAction.FireFinished()`。这是当前代码里整条流程 finished 的真正出口。
 
 ## 当前几个最容易写错的点
 
@@ -133,9 +83,3 @@ public class MyNode : CVBaseServerNode
 3. `BaseStartNode`：理解流程启动、循环输出和 `Finished` 事件来源。
 4. `CVEndNode`：确认流程结束链在哪里闭环。
 5. `AlgorithmNode` 或其他相邻真实节点：最后照着现有节点扩展，而不是从旧教程样板出发。
-
-## 继续阅读
-
-- [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md)
-- [Engine 组件总览](../engine-components/README.md)
-- [算法系统概览](../algorithms/overview.md)

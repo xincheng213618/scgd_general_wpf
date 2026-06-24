@@ -62,43 +62,19 @@
 
 1. 用户从 `ColorVision/` 的主窗口进入某个功能。
 2. `UI/` 中对应窗口或面板负责展示与交互。
-3. `Engine/ColorVision.Engine/` 中的设备服务、模板或流程逻辑接手业务处理。
+3. `Engine/ColorVision.Engine/` 中的设备服务、模板或流程逻辑处理业务。
 4. 需要流程执行时进一步调用 `Engine/FlowEngineLib/`。
 5. 需要图像或算法处理时继续联动 `Engine/cvColorVision/`、`UI/ColorVision.ImageEditor/` 或具体模板实现。
 6. 如果功能来自外部扩展，再进入 `Plugins/` 或 `Projects/` 中的实现。
 
 ## 读代码时的常见切入点
 
-### 想理解主界面和入口
-
-先看：
-
-- `ColorVision/`
-- `UI/ColorVision.UI/`
-- `UI/ColorVision.UI.Desktop/`
-
-### 想理解设备、模板和流程
-
-先看：
-
-- `Engine/ColorVision.Engine/Services/`
-- `Engine/ColorVision.Engine/Templates/`
-- `Engine/FlowEngineLib/`
-
-### 想理解图像结果和显示
-
-先看：
-
-- `UI/ColorVision.ImageEditor/`
-- `Engine/cvColorVision/`
-
-### 想理解扩展能力
-
-先看：
-
-- `Plugins/`
-- `Projects/`
-- [插件开发概览](../../02-developer-guide/plugin-development/overview.md)
+| 目标 | 先看 |
+| --- | --- |
+| 主界面和入口 | `ColorVision/`、`UI/ColorVision.UI/`、`UI/ColorVision.UI.Desktop/` |
+| 设备、模板和流程 | `Engine/ColorVision.Engine/Services/`、`Engine/ColorVision.Engine/Templates/`、`Engine/FlowEngineLib/` |
+| 图像结果和显示 | `UI/ColorVision.ImageEditor/`、`Engine/cvColorVision/` |
+| 扩展能力 | `Plugins/`、`Projects/`、[插件开发概览](../../02-developer-guide/plugin-development/overview.md) |
 
 ## 这页不再做什么
 
@@ -110,13 +86,4 @@
 
 如果某个专题需要更细的运行时关系、流程执行链或模板结构，应进入对应专题页说明，而不是在这里一次讲完。
 
-## 继续阅读
-
-- [架构运行时](./runtime.md)
-- [组件交互](./component-interactions.md)
-- [FlowEngineLib 架构](../components/engine/flow-engine.md)
-- [Templates 架构设计](../components/templates/design.md)
-
-## 说明
-
-- 本页只作为当前仓库结构下的系统入口图，不再继续维护脱离代码目录的抽象分层稿。
+本页只作为当前仓库结构下的系统入口图，不再继续维护脱离代码目录的抽象分层稿。

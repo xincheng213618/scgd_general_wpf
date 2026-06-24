@@ -1,6 +1,6 @@
 # FindLightArea 发光区定位模板
 
-本页说明 `Engine/ColorVision.Engine/Templates/FindLightArea/` 的真实交接链路。它不是通用 ROI SDK，而是“模板参数 -> 图像输入 -> MQTT 算法请求 -> 发光区点位结果 -> 图像凸包覆盖层”的业务模板。
+本页说明 `Engine/ColorVision.Engine/Templates/FindLightArea/` 的真实处理链路。它不是通用 ROI SDK，而是“模板参数 -> 图像输入 -> MQTT 算法请求 -> 发光区点位结果 -> 图像凸包覆盖层”的业务模板。
 
 ## 适用范围
 
@@ -17,7 +17,7 @@
 
 ## 源码入口
 
-| 文件 | 交接用途 |
+| 文件 | 用途 |
 | --- | --- |
 | `TemplateRoi.cs` | 注册 `FindLightArea` 模板，设置 `TemplateDicId = 31`，并通过 `MysqlRoi` 恢复模板字典。 |
 | `ROIParam.cs` | 保存 ROI 参数：`Threshold`、`Times`、`SmoothSize`。 |
@@ -43,7 +43,7 @@
 
 ## 参数说明
 
-| 参数 | 默认值 | 交接说明 |
+| 参数 | 默认值 | 说明 |
 | --- | --- | --- |
 | `Threshold` | `1` | 发光区阈值。现场调整时要记录图像类型和曝光条件，否则阈值没有可复现意义。 |
 | `Times` | `1` | 算法侧迭代/处理次数参数。具体语义由算法服务解释。 |
@@ -53,7 +53,7 @@
 
 `AlgResultLightAreaModel` 只保存 `PosX`、`PosY` 和父结果 `Pid`。展示时会把所有点传给 `GrahamScan.ComputeConvexHull(...)`，再用蓝色透明 `DVPolygon` 画在图像上。
 
-这意味着交接时要注意两个边界：
+这意味着维护时要注意两个边界：
 
 - 点位列表和凸包不是同一个概念。点很多但凸包异常，通常要回看输入图像、阈值和平滑参数。
 - 当前 `SideSave(...)` 会创建导出文件，但实现中没有写入点位行。不要把它当作稳定 CSV 导出能力，若现场需要导出，应先补齐实现和验收样例。
@@ -68,16 +68,9 @@
 | 结果页无点位 | 结果类型是否是 `LightArea` 或 `FindLightArea`，`t_scgd_algorithm_result_detail_light_area.pid` 是否对应主结果。 |
 | 覆盖层形状异常 | 先看 `Threshold`、`Times`、`SmoothSize` 和输入图像，再看 `GrahamScan` 凸包输入点。 |
 
-## 交接清单
+## 检查清单
 
 - 修改参数时，同时更新 `ROIParam.cs`、`MysqlRoi.cs` 和现场推荐值。
 - 修改执行事件时，同时更新 `AlgorithmRoi.SendCommand(...)`、Flow 节点说明和本页。
 - 修改结果结构时，同时更新 `AlgResultLightAreaModel`、结果表、展示列和导出逻辑。
 - 若要把发光区结果交给项目包使用，项目文档必须说明读取的是点位、凸包还是原始图像区域。
-
-## 继续阅读
-
-- [ROI 原语](../primitives/roi.md)
-- [OpenCV 集成](../../../02-developer-guide/engine-development/opencv-integration.md)
-- [结果交接链路](../../engine-components/result-handoff-chain.md)
-- [当前算法模板覆盖清单](../current-algorithm-template-coverage.md)

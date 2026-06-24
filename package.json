@@ -8,8 +8,9 @@
   },
   "scripts": {
     "docs:dev": "vitepress dev docs",
-    "docs:locale:add": "node docs/.vitepress/scripts/scaffold-locale.mjs",
-    "docs:build": "vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs",
+    "docs:build": "vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs && npm run docs:validate:dist",
+    "docs:validate": "vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs && npm run docs:validate:dist",
+    "docs:validate:dist": "node docs/.vitepress/scripts/validate-docs.mjs",
     "docs:preview": "vitepress preview docs"
   },
   "keywords": [

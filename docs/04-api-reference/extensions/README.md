@@ -12,7 +12,7 @@
 
 ## 先把边界分清
 
-- 插件发现、装载和部署不属于这里，应该去看 [插件与现状页](../plugins/README.md) 和 [插件开发概览](../../02-developer-guide/plugin-development/overview.md)。
+- 插件发现、装载和部署不属于这里，应该去看 [现有插件能力](../plugins/README.md) 和 [插件开发概览](../../02-developer-guide/plugin-development/overview.md)。
 - 算法模板和流程模板不属于这里，应该去看 [算法与模板概览](../algorithms/README.md)。
 - 运行时模块之间的依赖关系，也不在这里展开，应该回到 [架构设计](../../03-architecture/README.md)。
 
@@ -26,9 +26,3 @@
 
 - 当前仓库里真正被文档收束成稳定专题的扩展点并不多。
 - 与其继续维护一个表面完整、实际很快过期的扩展目录，不如只保留和代码能直接核对的入口。
-
-## 继续阅读
-
-- [模块参考总览](../README.md)
-- [插件与现状页](../plugins/README.md)
-- [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md)

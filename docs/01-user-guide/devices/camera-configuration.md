@@ -61,15 +61,7 @@
 - 再检查流程里的模板参数是否仍是旧值
 - 必要时联动检查校准和自动曝光模板
 
-## 继续阅读
-
-- [相机服务](./camera.md)
-- [物理相机管理](./camera-management.md)
-- [校准服务](./calibration.md)
-- [流程设计](../workflow/design.md)
-
 ## 说明
 
 - 本页只保留配置和排查视角，不再继续维护基于源码逐段展开的分析稿。
 - 相关实现主要位于 `Engine/ColorVision.Engine/Services/Devices/Camera/`。
-

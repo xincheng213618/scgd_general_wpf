@@ -1,6 +1,6 @@
 # 开发手册
 
-本章节回答“怎么改代码、怎么构建、怎么测试、怎么交付”。根目录 [README](../../README.md) 是仓库第一入口；这里保留开发专题和更细的模块入口。
+本章节回答“怎么改代码、怎么构建、怎么测试、怎么交付”。根目录 `README.md` 是仓库第一入口；这里保留开发专题和更细的模块入口。
 
 ## 按任务进入
 
@@ -14,6 +14,7 @@
 | 修改 UI 类库、菜单、设置或图像编辑器 | [UI 组件](../04-api-reference/ui-components/README.md) |
 | 新增 Flow 节点或扩展点 | [扩展点](../04-api-reference/extensions/README.md)、[Flow 节点扩展](../04-api-reference/extensions/flow-node.md) |
 | 维护插件市场后端 | [插件市场后端](./backend/README.md) |
+| 维护 Copilot 或本地 MCP 集成 | [ColorVision MCP](./core-concepts/colorvision-mcp.md) |
 
 ## 开发前确认
 
@@ -31,6 +32,7 @@ dotnet restore
 dotnet build build.sln -p:Platform=x64
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64
 npm run docs:build
+npm run docs:validate
 ```
 
 插件和项目包打包：
@@ -61,4 +63,4 @@ Scripts\release.bat
 
 - 开发文档写“怎么做”和“在哪里改”，不堆历史会议材料。
 - 细节能回到源码、项目文件、manifest、脚本或测试命令。
-- 证据表、覆盖清单、临时路线图不作为长期文档保留；需要时从 Git 历史或发布记录找回。
+- 一次性记录和临时计划不作为长期文档保留；需要时从 Git 历史或发布记录找回。

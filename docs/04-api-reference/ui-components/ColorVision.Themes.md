@@ -1,236 +1,74 @@
 # ColorVision.Themes
 
-本页只描述 UI/ColorVision.Themes 当前已经落地的主题能力，不再延续旧文档里那种“主题开发框架 + 自定义主题平台 + 完整 FAQ 教程”的写法。
+`UI/ColorVision.Themes/` 是 WPF 主题资源和窗口外观支持库。它负责固定主题切换、资源字典注入、系统主题跟随、标题栏/图标联动和少量通用控件；不是任意自定义主题平台。
 
-## 模块定位
+## 先查什么
 
-ColorVision.Themes 当前更接近一个 WPF 主题资源与窗口外观支持库，核心职责主要有四类：
+| 现象 | 第一检查点 |
+| --- | --- |
+| 应用启动后主题没生效 | `Application.ApplyTheme` 调用时机、`ThemeManager.CurrentTheme` |
+| 某个主题切换时报资源找不到 | `Themes/*.xaml`、`.csproj` 资源打包配置 |
+| 标题栏颜色不跟随主题 | 是否调用 `Window.ApplyCaption` 或使用 `BaseWindow` |
+| `UseSystem` 不跟随 Windows | `AppsUseLightTheme`、`SystemUsesLightTheme`、系统事件监听 |
+| 图标或上传背景缺失 | `Assets/Image/`、`Assets/uploadbg.avif` 是否进入包/输出目录 |
+| 自定义主题接不上 | 当前没有 `Theme.Custom` 或运行时主题注册模型 |
 
-- 定义 Theme 枚举和主题切换入口
-- 向 Application 注入资源字典
-- 跟随 Windows 主题变化更新界面
-- 处理窗口标题栏颜色和图标联动
+## 当前能力
 
-它不是一个已经抽象完成的“任意自定义主题平台”。旧文档里提到的 Theme.Custom、ResourceDictionaryCustom、完整自定义主题注册流程，在当前代码中都没有对应实现。
-
-## 当前最关键的文件
-
-从当前项目结构看，最值得优先阅读的是：
-
-- ThemeManager.cs：主题切换主入口
-- ThemeManagerExtensions.cs：Application 和 Window 扩展方法
-- Theme.cs：主题枚举定义
-- Themes/ 下的 XAML：基础样式和各主题资源字典
-- Controls/、Converter/、Utilities/：主题库附带的控件、转换器和工具代码
-
-## 关键入口类型
-
-### ThemeManager
-
-ThemeManager 是当前主题模块的中心对象。它负责：
-
-- 维护 CurrentTheme 和 CurrentUITheme
-- 处理 UseSystem、Light、Dark、Pink、Cyan 五种主题
-- 根据主题装载对应的 ResourceDictionary 列表
-- 监听 Windows 主题变化
-- 在切换主题时触发主题变更事件
-- 调整窗口标题栏颜色
-
-当前资源字典按几组固定列表组织：
-
-- ResourceDictionaryBase：基础共享样式
-- ResourceDictionaryDark：深色主题资源
-- ResourceDictionaryWhite：浅色主题资源
-- ResourceDictionaryPink：粉色主题资源
-- ResourceDictionaryCyan：青色主题资源
-
-这说明现阶段的主题机制是“固定主题枚举 + 固定资源字典集合”的实现方式，而不是运行时可任意注册新主题类型的开放模型。
-
-### Theme
-
-当前主题枚举只有五个值：
-
-- UseSystem
-- Light
-- Dark
-- Pink
-- Cyan
-
-其中 UseSystem 并不是单独的一套资源，而是在 ApplyTheme 时被映射成当前 AppsTheme 对应的浅色或深色主题。
-
-### ThemeManagerExtensions
-
-ThemeManagerExtensions 提供了两个实际很常用的入口：
-
-- Application.ApplyTheme：应用主题
-- Application.ForceApplyTheme：强制重新装载主题资源
-
-另外，Window.ApplyCaption 会在窗口 Loaded 后：
-
-- 设置标题栏颜色
-- 根据当前主题切换窗口图标
-- 订阅主题变化并在窗口关闭时解绑
-
-所以这个模块不仅管资源字典，也负责一部分窗口壳层外观行为。
-
-## 当前运行时主链
-
-现有主题链路更接近下面这条：
-
-1. 上层 UI 选择主题。
-2. Application.ApplyTheme 调到 ThemeManager.Current.ApplyTheme。
-3. 如果当前选择是 UseSystem，则先解析成 AppsTheme。
-4. ThemeManager 按主题把本模块的资源字典加入 Application.Resources.MergedDictionaries。
-5. CurrentTheme 和 CurrentUITheme 更新，并触发变更事件。
-6. 已调用 ApplyCaption 的窗口跟随更新标题栏颜色和图标。
-
-## 系统主题跟随是怎样做的
-
-ThemeManager 在构造时会启动一个延迟初始化流程。当前实现会在较晚时机再挂接系统事件，而不是在应用启动最早阶段就同步处理。
-
-它主要监听：
-
-- SystemEvents.UserPreferenceChanged
-- SystemParameters.StaticPropertyChanged
-
-然后通过读取注册表中的 Personalize 项判断：
-
-- AppsUseLightTheme
-- SystemUsesLightTheme
-
-因此“跟随系统”当前依赖的是 Windows 注册表值和系统事件，并不是框架层自动提供的完整主题同步服务。
-
-## 标题栏颜色和窗口图标
-
-ThemeManager 还负责调用 DWM API 更新窗口外观：
-
-- 深色主题启用沉浸式暗色标题栏
-- 粉色和青色主题直接设置标题栏和边框颜色
-- 浅色和跟随系统模式重置为系统默认标题栏颜色
-
-Window.ApplyCaption 还会根据当前主题切换窗口图标资源。这部分行为是当前模块很实际的一层价值，旧文档里反而没有把它讲清楚。
-
-## 作为 DLL 使用时
-
-### 应该引用它的场景
-
-- 新窗口需要使用 `BaseWindow`、统一主题资源或通用控件。
-- 应用启动时需要调用 `Application.ApplyTheme`。
-- 窗口需要跟随深色/浅色主题调整标题栏和图标。
-- 需要使用 `LoadingOverlay`、`ProgressRing`、`ToggleSwitch`、上传控件或内置转换器。
-
-### 接入步骤
-
-1. 确认应用已经引用 `ColorVision.Themes.dll`。
-2. 在启动阶段调用 `Application.Current.ApplyTheme(...)` 或由 `ColorVision.UI` 的主题菜单链触发。
-3. 新窗口按需要继承 `BaseWindow`，或在普通 `Window` 上调用 `ApplyCaption`。
-4. 如果新增资源字典，放入 `Themes/` 并在 `ThemeManager` 对应列表中注册。
-
-### 发布注意
-
-主题 DLL 的资源都通过 WPF ResourceDictionary 和 Resource 打包。新增 XAML、图片、图标、AVIF 等资源时，要确认 `.csproj` 中的 `Resource` / `None Remove` / `CopyToOutputDirectory` 设置，否则本地调试可用但 NuGet 包内缺资源。
-
-### DLL 发布验收表
-
-| 验收项 | 要查什么 | 通过标准 |
+| 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
-| 目标框架 | `ColorVision.Themes.csproj` 的 `net8.0-windows7.0;net10.0-windows7.0` | 两个目标框架都能打包，宿主目标框架能解析依赖 |
-| 包元数据 | `GeneratePackageOnBuild`、`PackageReadmeFile`、`README.md` | 包内说明和版本号完整 |
-| 第三方依赖 | `HandyControl` 版本 | 宿主输出目录中依赖版本一致，没有 XAML 资源解析冲突 |
-| 主题资源 | `Themes/Base.xaml`、`Dark.xaml`、`White.xaml`、`Pink.xaml`、`Cyan.xaml` | 切换每个内置主题时资源字典都能加载 |
-| 应用入口 | `Application.ApplyTheme`、`ThemeManager.ApplyTheme`、`ForceApplyTheme` | 启动后和运行时切换都能更新全局资源 |
-| 窗口标题栏 | `Window.ApplyCaption`、DWM 调用 | 深色、浅色、粉色、青色标题栏和图标行为符合预期 |
-| 跟随系统 | `SystemEvents`、`AppsUseLightTheme`、`SystemUsesLightTheme` | Windows 主题变化后应用能按当前实现更新 |
-| 包内资源 | `ColorVision.ico`、`ColorVision1.ico`、`uploadbg.avif` 等 | 发布包内存在资源，窗口图标和上传背景不丢失 |
+| 主题枚举 | `Theme` | 仅有 `UseSystem`、`Light`、`Dark`、`Pink`、`Cyan` |
+| 主题切换 | `ThemeManager` | 维护 `CurrentTheme`、`CurrentUITheme`，装载资源字典并触发变更事件 |
+| 应用入口 | `ThemeManagerExtensions` | `Application.ApplyTheme`、`Application.ForceApplyTheme` |
+| 窗口外观 | `Window.ApplyCaption`、`BaseWindow` | 更新 DWM 标题栏颜色和主题图标 |
+| 主题资源 | `Themes/Base.xaml`、`Dark.xaml`、`White.xaml`、`Pink.xaml`、`Cyan.xaml` | 固定资源字典集合 |
+| 附带控件 | `Controls/`、`Converter/`、`Utilities/` | 主题库内复用控件、转换器和工具 |
 
-### 现场故障首查
+## 主题链路
 
-| 现象 | 先查哪里 | 判断要点 |
-| --- | --- | --- |
-| 应用启动后主题没有生效 | `Application.ApplyTheme` 调用时机、`ThemeManager.CurrentTheme` | 先确认是否真正调用了主题入口 |
-| 某个主题切换时报资源找不到 | `Themes/*.xaml`、项目文件 Resource 配置 | 本地能用但包内失败时，优先查资源打包 |
-| 标题栏颜色不跟随主题 | `Window.ApplyCaption`、DWM API、窗口类型 | 只有调用过 caption 扩展的窗口才会跟随 |
-| 跟随系统不变化 | Windows 注册表 `AppsUseLightTheme`、系统事件监听 | 当前实现依赖系统事件和注册表，不是实时同步服务 |
-| 图标或上传背景缺失 | `Assets/Image/`、`Assets/uploadbg.avif` | 检查 NuGet 包和主程序输出目录是否包含资源 |
-| 自定义主题接不上 | 当前代码中的 `Theme` 枚举和 `ThemeManager` | 现有代码没有旧文档提到的 `Theme.Custom` 扩展点 |
+1. 上层 UI 或配置选择主题。
+2. `Application.ApplyTheme` 调到 `ThemeManager.Current.ApplyTheme`。
+3. 如果选择 `UseSystem`，先按 Windows 应用主题解析为浅色或深色。
+4. `ThemeManager` 把基础资源和目标主题资源加入 `Application.Resources.MergedDictionaries`。
+5. 更新 `CurrentTheme` / `CurrentUITheme` 并触发主题变更事件。
+6. 调过 `ApplyCaption` 的窗口同步更新标题栏颜色和图标。
 
-## 当前实现的边界
+## 系统主题跟随
 
-### 主题持久化不由 ThemeManager 自己完成
+`UseSystem` 依赖 Windows 事件和注册表值，不是框架层的实时同步服务。
 
-当前主题配置虽然使用 ColorVision.Themes 命名空间，但配置类 ThemeConfig 实际位于 UI/ColorVision.UI/Themes。
+| 项 | 当前实现 |
+| --- | --- |
+| 监听事件 | `SystemEvents.UserPreferenceChanged`、`SystemParameters.StaticPropertyChanged` |
+| 应用主题判断 | `Personalize\\AppsUseLightTheme` |
+| 系统主题判断 | `Personalize\\SystemUsesLightTheme` |
+| 标题栏 | 深色启用沉浸式暗色；粉色/青色设置标题栏和边框色；浅色回到系统默认 |
 
-这意味着：
+## 边界
 
-- 主题资源和切换核心在 UI/ColorVision.Themes
-- 菜单、快捷键、配置项编辑等集成逻辑在 UI/ColorVision.UI
+- 主题持久化、菜单和快捷键入口在 `UI/ColorVision.UI/Themes`，不是本项目单独完成。
+- `ThemesHotKey` 负责主题菜单、`Ctrl + Shift + T` 轮换和写入 `ThemeConfig.Instance.Theme`。
+- 旧文档提到的 `Theme.Custom`、`ThemeManager.ResourceDictionaryCustom`、`ThemeConfig.FollowSystem` 当前不存在。
+- 新增主题不是只加一个 XAML，还要改枚举、资源列表、标题栏逻辑、图标策略和包资源。
 
-不要把整个“主题配置系统”都归到 Themes 项目自身。
+## 新增或修改主题验收
 
-### 菜单和快捷键入口在 UI 集成层
+| 验收项 | 要查什么 |
+| --- | --- |
+| 目标框架 | `ColorVision.Themes.csproj` 的 `net8.0-windows7.0;net10.0-windows7.0` |
+| 包元数据 | `GeneratePackageOnBuild`、`PackageReadmeFile`、`README.md` |
+| 第三方依赖 | `HandyControl` 版本和宿主输出目录依赖一致 |
+| 资源字典 | 每个内置主题切换时都能加载对应 XAML |
+| 运行时切换 | 启动后和运行时调用 `ApplyTheme` / `ForceApplyTheme` 都能更新全局资源 |
+| 窗口外观 | 深色、浅色、粉色、青色标题栏和窗口图标符合当前实现 |
+| 系统跟随 | Windows 主题变化后，`UseSystem` 能按注册表和系统事件更新 |
+| 包内资源 | `ColorVision.ico`、`ColorVision1.ico`、`uploadbg.avif` 不丢失 |
 
-当前主题菜单和快捷键入口主要在：
+## 关键文件
 
-- UI/ColorVision.UI/Themes/ThemesHotKey.cs
-
-它负责：
-
-- 生成主题菜单项
-- 在切换时写入 ThemeConfig.Instance.Theme
-- 调用 Application.ApplyTheme
-- 提供 Ctrl + Shift + T 快捷键轮换主题
-
-所以 Themes 模块本身提供的是能力底座，真正和桌面菜单系统对接的是 UI 层。
-
-### 旧文档里的自定义主题扩展点并不存在
-
-当前代码里并没有这些旧文档声称可用的接口：
-
-- Theme.Custom
-- ThemeManager.ResourceDictionaryCustom
-- ThemeConfig.FollowSystem
-
-这类内容已经不能继续作为现有能力写在模块参考里。
-
-## 当前更适合怎样读这个模块
-
-### 想看主题如何切换
-
-先看：
-
-- ThemeManager.cs
-- ThemeManagerExtensions.cs
-- Theme.cs
-
-### 想看主题如何接入应用菜单和配置
-
-先看：
-
-- UI/ColorVision.UI/Themes/ThemeConfig.cs
-- UI/ColorVision.UI/Themes/ThemesHotKey.cs
-
-### 想看主题资源长什么样
-
-先看：
-
-- Themes/Base.xaml
-- Themes/Dark.xaml
-- Themes/White.xaml
-- Themes/Pink.xaml
-- Themes/Cyan.xaml
-
-## 这页不再做什么
-
-本页不再继续维护这些高风险内容：
-
-- 不存在的自定义主题注册 API
-- 伪造的 ThemeConfig 配置字段
-- 教程式的完整主题开发流程
-- 大段版本号、框架兼容矩阵、性能数字承诺
-
-如果后续要补充主题相关内容，应优先补真实资源字典、窗口行为或 UI 接入点，而不是再恢复成一篇泛化教程。
-
-## 继续阅读
-
-- [UI组件概览](./README.md)
-- [ColorVision.UI](./ColorVision.UI.md)
+| 任务 | 先看 |
+| --- | --- |
+| 理解主题切换 | `ThemeManager.cs`、`ThemeManagerExtensions.cs`、`Theme.cs` |
+| 理解菜单和配置接入 | `UI/ColorVision.UI/Themes/ThemeConfig.cs`、`ThemesHotKey.cs` |
+| 检查主题资源 | `Themes/Base.xaml`、`Themes/Dark.xaml`、`Themes/White.xaml`、`Themes/Pink.xaml`、`Themes/Cyan.xaml` |
+| 判断能否扩展主题 | 先查 `Theme` 枚举和 `ThemeManager`，当前没有开放注册模型 |

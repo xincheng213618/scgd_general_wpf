@@ -17,16 +17,7 @@ const docsRoot = path.resolve(process.cwd(), 'docs')
 const distRoot = path.join(docsRoot, '.vitepress', 'dist')
 const manifestOutputPath = path.join(distRoot, 'docs-manifest.json')
 const searchIndexOutputPath = path.join(distRoot, 'docs-search-index.json')
-const archivedLocaleDirectories = new Set(['zh-tw', 'ja', 'ko'])
-const compactEnglishExcludedSections = new Set([
-  '00-getting-started',
-  '00-projects',
-  '01-user-guide',
-  '02-developer-guide',
-  '03-architecture',
-  '04-api-reference',
-  '05-resources',
-])
+const archivedLocaleDirectories = new Set(['en', 'zh-tw', 'ja', 'ko'])
 
 async function main() {
   await ensureDistDirectory()
@@ -37,6 +28,10 @@ async function main() {
 
   for (const markdownFilePath of markdownFiles) {
     const page = await buildPageRecord(markdownFilePath)
+    if (page.redirectFromDeletedPage) {
+      continue
+    }
+
     pages.push(page)
     searchEntries.push(...buildSearchEntries(page))
   }
@@ -143,12 +138,8 @@ function shouldSkipEntry(name, relativePath = name) {
     return true
   }
 
-  const [firstSegment, secondSegment] = relativePath.split('/')
+  const [firstSegment] = relativePath.split('/')
   if (archivedLocaleDirectories.has(firstSegment)) {
-    return true
-  }
-
-  if (firstSegment === 'en' && compactEnglishExcludedSections.has(secondSegment)) {
     return true
   }
 
@@ -157,6 +148,7 @@ function shouldSkipEntry(name, relativePath = name) {
 
 async function buildPageRecord(markdownFilePath) {
   const rawContent = await fs.readFile(markdownFilePath, 'utf8')
+  const pageFlags = parsePageFlags(rawContent)
   const relativePath = normalizePath(path.relative(docsRoot, markdownFilePath))
   const localeKey = getLocaleKey(relativePath)
   const localeLabel = getLocaleDefinition(localeKey).label
@@ -186,6 +178,8 @@ async function buildPageRecord(markdownFilePath) {
     sourcePath,
     sectionKey,
     sectionTitle,
+    searchable: pageFlags.searchable,
+    redirectFromDeletedPage: pageFlags.redirectFromDeletedPage,
     wordCount: countWords(parsedMarkdown.plainText),
     headings,
     sections: parsedMarkdown.sections.map((section) => ({
@@ -197,6 +191,17 @@ async function buildPageRecord(markdownFilePath) {
       summary: createSummary(section.text),
       url: section.slug ? `${url}#${section.slug}` : url,
     })),
+  }
+}
+
+function parsePageFlags(markdownContent) {
+  const frontmatter = markdownContent.match(/^---\s*[\r\n]+([\s\S]*?)[\r\n]+---\s*/u)?.[1] ?? ''
+  const hasSearchDisabled = /^\s*search:\s*false\s*$/mu.test(frontmatter)
+  const redirectFromDeletedPage = /^\s*redirect_from_deleted_page:\s*true\s*$/mu.test(frontmatter)
+
+  return {
+    searchable: !hasSearchDisabled && !redirectFromDeletedPage,
+    redirectFromDeletedPage,
   }
 }
 
@@ -308,6 +313,10 @@ function flushSection(targetSections, section) {
 }
 
 function buildSearchEntries(page) {
+  if (!page.searchable) {
+    return []
+  }
+
   const entries = []
 
   entries.push({
@@ -325,6 +334,10 @@ function buildSearchEntries(page) {
   })
 
   for (const section of page.sections) {
+    if (!section.slug) {
+      continue
+    }
+
     entries.push({
       id: section.url,
       kind: 'section',
@@ -332,7 +345,7 @@ function buildSearchEntries(page) {
       localeLabel: page.localeLabel,
       sectionKey: page.sectionKey,
       sectionTitle: page.sectionTitle,
-      title: section.title || page.title,
+      title: formatSectionSearchTitle(page, section),
       titles: section.titles.length > 0 ? section.titles : [page.title],
       text: section.text,
       summary: section.summary,
@@ -342,6 +355,14 @@ function buildSearchEntries(page) {
   }
 
   return entries
+}
+
+function formatSectionSearchTitle(page, section) {
+  if (!section.title || section.title === page.title) {
+    return page.title
+  }
+
+  return `${page.title}：${section.title}`
 }
 
 function buildSections(pages) {

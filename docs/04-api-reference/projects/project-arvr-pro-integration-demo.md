@@ -34,7 +34,7 @@
 
 ## 对接事件时序
 
-| 阶段 | Demo 行为 | ARVRPro 期望 | 交接关注点 |
+| 阶段 | Demo 行为 | ARVRPro 期望 | 对接要点 |
 | --- | --- | --- | --- |
 | 建连 | `TcpClient` 连接 `host:port` | ARVRPro Socket 服务监听，默认端口 `6666` | 现场先确认端口、防火墙、宿主是否已加载 ProjectARVRPro |
 | 初始化 | 发送 `ProjectARVRInit`，带 `SerialNumber` | 宿主建立当前 SN 和流程上下文 | SN 必须和客户 MES/上位机一致，后续结果靠它追溯 |
@@ -43,41 +43,24 @@
 | AOI 切图确认 | 收到 `AoiSwitchPG` 后发送 `AOITestSwitchImageComplete` | 宿主继续 AOI Relay 链路 | 如果现场没有 AOI Relay，不应强行发送该确认 |
 | 结果解析 | 收到 `ProjectARVRResult` 后解析并保存 JSON/CSV | 宿主返回 `ObjectiveTestResult` | 对外字段变化时同步 `Contracts/`、样例 JSON 和 CSV 说明 |
 
-`JsonStreamMessageReader` 是这个 Demo 的关键交接点。客户上位机如果直接按 `ReadLine()` 或固定长度读取 JSON，遇到半包/粘包就会误判；对外交接时应把这里作为 TCP reader 参考实现。
+`JsonStreamMessageReader` 是这个 Demo 的关键对接点。客户上位机如果直接按 `ReadLine()` 或固定长度读取 JSON，遇到半包/粘包就会误判；对外说明时应把这里作为 TCP reader 参考实现。
 
 ## 常用命令
 
-启动窗口：
+| 场景 | 命令 |
+| --- | --- |
+| 启动窗口 | `dotnet run --project Projects/ProjectARVRPro.IntegrationDemo` |
+| 离线解析样例 | `dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --parse-file Projects/ProjectARVRPro.IntegrationDemo/Samples/project-arvr-result.json` |
+| 联机初始化 | `dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --host 127.0.0.1 --port 6666 --sn SN001 --mode init` |
+| 发布给客户 | `dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.IntegrationDemo.csproj -f net48 -c Release -p:Platform=x64 -o artifacts/ProjectARVRPro.IntegrationDemo` |
 
-```powershell
-dotnet run --project Projects/ProjectARVRPro.IntegrationDemo
-```
-
-离线解析样例：
-
-```powershell
-dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --parse-file Projects/ProjectARVRPro.IntegrationDemo/Samples/project-arvr-result.json
-```
-
-联机初始化：
-
-```powershell
-dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --host 127.0.0.1 --port 6666 --sn SN001 --mode init
-```
-
-发布给客户：
-
-```powershell
-dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.IntegrationDemo.csproj -f net48 -c Release -p:Platform=x64 -o artifacts/ProjectARVRPro.IntegrationDemo
-```
-
-## 交接注意事项
+## 对接注意事项
 
 - 这是客户侧示例，不要把 ColorVision 内部业务逻辑引入这个项目。
 - 对外字段变化时，先更新 `Contracts/`，再更新样例 JSON 和 README。
 - 客户系统读取 TCP 时必须处理半包和粘包；本 demo 的 reader 可以作为参考实现。
 
-## 交接验收表
+## 对接检查表
 
 | 验收项 | 操作 | 通过标准 |
 | --- | --- | --- |

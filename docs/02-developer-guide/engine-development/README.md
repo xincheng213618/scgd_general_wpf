@@ -2,12 +2,11 @@
 
 Engine 开发要先确认你改的是哪条业务链。不要把设备、模板、Flow、算法结果和项目判定混在一个地方改。
 
-## 先读交接手册
+## 先读总览
 
-如果你第一次接手 Engine，请先读：
+如果你第一次维护 Engine，请先读：
 
-- [Engine 业务交接手册](../../04-api-reference/engine-components/README.md)
-- [Engine 组件与业务交接](../../04-api-reference/engine-components/README.md)
+- [Engine 组件总览](../../04-api-reference/engine-components/README.md)
 
 本目录下的页面用于补充具体开发主题。
 

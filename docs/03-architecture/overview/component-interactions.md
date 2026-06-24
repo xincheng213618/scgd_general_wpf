@@ -73,39 +73,14 @@
 
 因此插件与主程序的交互更像“把能力并入现有运行时”，而不是在外部平行运行。
 
-## 改代码时通常怎么用这页
+## 改代码时怎么用
 
-### 改主窗口或用户入口
-
-优先顺着：
-
-- 主程序入口
-- UI 菜单/面板
-- 对应引擎服务
-
-### 改设备行为
-
-优先顺着：
-
-- `ServiceManager`
-- 具体 `DeviceService`
-- 对应 MQTT 或运行时状态对象
-
-### 改模板或流程
-
-优先顺着：
-
-- `TemplateControl`
-- 模板编辑器
-- `DisplayFlow` / `FlowControl` / `FlowEngineLib`
-
-### 改插件扩展
-
-优先顺着：
-
-- `PluginLoader`
-- 插件程序集
-- 被插件实现的菜单、服务、模板或视图接口
+| 改动 | 优先顺着 |
+| --- | --- |
+| 主窗口或用户入口 | 主程序入口 -> UI 菜单/面板 -> 对应引擎服务 |
+| 设备行为 | `ServiceManager` -> 具体 `DeviceService` -> MQTT 或运行时状态对象 |
+| 模板或流程 | `TemplateControl` -> 模板编辑器 -> `DisplayFlow` / `FlowControl` / `FlowEngineLib` |
+| 插件扩展 | `PluginLoader` -> 插件程序集 -> 菜单、服务、模板或视图接口 |
 
 ## 这页不再做什么
 
@@ -117,13 +92,4 @@
 
 如果某个专题需要更深的设计分析，应放回对应专题页，而不是在这里铺开一张过度承诺的总表。
 
-## 继续阅读
-
-- [系统架构概览](./system-overview.md)
-- [架构运行时](./runtime.md)
-- [FlowEngineLib 架构](../components/engine/flow-engine.md)
-- [Templates 架构设计](../components/templates/design.md)
-
-## 说明
-
-- 本页只保留当前最重要的真实交互主链，不再继续维护 draft 矩阵。
+本页只保留当前最重要的真实交互主链，不再继续维护旧矩阵。

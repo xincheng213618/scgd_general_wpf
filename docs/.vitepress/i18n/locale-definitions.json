@@ -4,7 +4,6 @@
     "lang": "zh-CN",
     "title": "ColorVision",
     "description": "ColorVision 是基于 Windows WPF 的专业光电检测平台，提供设备集成、流程自动化、色彩管理和项目交付能力。",
-    "pathPrefix": "",
     "homeDocumentTitle": "ColorVision 文档首页",
     "editLinkText": "在 GitHub 上编辑此页",
     "footerMessage": "基于 MIT License 发布。",
@@ -31,42 +30,6 @@
         "footer": {
           "selectText": "选择",
           "navigateText": "切换"
-        }
-      }
-    }
-  },
-  "en": {
-    "label": "English",
-    "lang": "en-US",
-    "title": "ColorVision",
-    "description": "A compact English entry for ColorVision installation, operation, development, and delivery.",
-    "pathPrefix": "en",
-    "homeDocumentTitle": "ColorVision English Entry",
-    "editLinkText": "Edit this page on GitHub",
-    "footerMessage": "Released under the MIT License.",
-    "outlineLabel": "On This Page",
-    "docFooter": {
-      "prev": "Previous",
-      "next": "Next"
-    },
-    "langMenuLabel": "Languages",
-    "darkModeSwitchLabel": "Theme",
-    "lightModeSwitchTitle": "Switch to light theme",
-    "darkModeSwitchTitle": "Switch to dark theme",
-    "sidebarMenuLabel": "Menu",
-    "returnToTopLabel": "Return to top",
-    "lastUpdatedText": "Last updated",
-    "searchTranslations": {
-      "button": {
-        "buttonText": "Search Docs",
-        "buttonAriaLabel": "Search Docs"
-      },
-      "modal": {
-        "noResultsText": "No results found",
-        "resetButtonTitle": "Clear query",
-        "footer": {
-          "selectText": "Select",
-          "navigateText": "Navigate"
         }
       }
     }

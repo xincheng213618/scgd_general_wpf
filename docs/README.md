@@ -19,9 +19,10 @@
 npm install
 npm run docs:dev
 npm run docs:build
+npm run docs:validate
 ```
 
-生成的站点输出到 `docs/.vitepress/dist/`。
+生成的站点输出到 `docs/.vitepress/dist/`。`docs:build` 会同时运行 VitePress 严格死链检查、生成自定义索引，并校验旧页面兼容入口不会进入搜索。`docs:validate` 可在已有构建产物上单独复查本地链接、兼容跳转页和搜索索引。
 
 ## 目录结构
 
@@ -34,11 +35,10 @@ npm run docs:build
 | `03-architecture/` | 系统架构和运行时设计说明 |
 | `04-api-reference/` | 源码/模块参考、算法、Engine、UI、插件、项目和扩展点 |
 | `05-resources/` | 稳定附录，例如项目结构、模块映射和法律文本 |
-| `en/` | 精简英文入口页 |
-| `.vitepress/` | VitePress 配置、导航、语言元数据和索引生成脚本 |
+| `.vitepress/` | VitePress 配置、导航元数据和索引生成脚本 |
 
 ## 语言策略
 
-简体中文是完整且维护中的文档。英文只保留精简入口页。繁体中文、日文、韩文副本已从当前工作树移除；除非有明确交付需求，否则不恢复全量维护。需要时从 Git 历史找回后按当前结构重新整理。
+简体中文是当前唯一维护中的文档。英文、繁体中文、日文、韩文副本不再保留在当前工作树；除非有明确交付需求，否则不恢复多语言目录。需要时从 Git 历史找回后按当前结构重新整理。
 
 新增或移动页面时，更新受影响章节 README 和 `docs/.vitepress/i18n/navigation-data.json`，然后运行 `npm run docs:build`。

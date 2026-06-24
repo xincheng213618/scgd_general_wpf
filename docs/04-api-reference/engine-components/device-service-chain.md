@@ -1,10 +1,6 @@
 # Engine 设备服务链路
 
-这页说明设备服务从数据库资源到运行时 `DeviceService` 的完整链路。接手设备、终端、MQTT、设备显示页时，先读这页。
-
-## 一句话
-
-设备服务不是靠窗口手动 new 出来的，而是由数据库中的 `SysResourceModel`、`ServiceTypes`、`DeviceServiceFactoryRegistry` 和 `ServiceManager` 共同生成。
+这页说明设备服务从数据库资源到运行时 `DeviceService` 的链路。设备服务不是靠窗口手动 new 出来的，而是由数据库资源、`ServiceTypes`、`DeviceServiceFactoryRegistry` 和 `ServiceManager` 共同生成。
 
 ## 关键源码
 
@@ -15,12 +11,11 @@
 | `Services/Devices/DeviceServiceFactory.cs` | 设备服务工厂注册表 |
 | `Services/Devices/DeviceServiceConfig.cs` | 设备配置基类 |
 | `Services/Type/TypeService.cs` | `ServiceTypes` 枚举和类型节点 |
-| `Services/Terminal/` | 终端节点 |
-| `Services/Devices/<Device>/` | 各类具体设备实现 |
+| `Services/Terminal/`、`Services/Devices/<Device>/` | 终端节点和各类具体设备实现 |
 
 ## 资源层级
 
-当前运行时大致按这个层级组织资源：
+`ServiceManager.LoadServices()` 从数据库读取 `SysDictionaryModel` 和 `SysResourceModel` 后构建运行时树：
 
 ```text
 SysDictionaryModel
@@ -32,96 +27,59 @@ SysDictionaryModel
         ServiceFileBase          # 其他设备下资源
 ```
 
-`ServiceManager.LoadServices()` 会从数据库读取 `SysDictionaryModel` 和 `SysResourceModel`，然后构建这棵树。
+`ServiceManager.GetInstance()` 是单例入口。初始化时如果 MySQL 已连接，会在 UI Dispatcher 上执行 `LoadServices()`；之后 `MySqlControl.GetInstance().MySqlConnectChanged` 触发时重新加载。
 
-## 启动与重载
+## 生成流程
 
-`ServiceManager` 是单例：
+| 步骤 | 行为 |
+| --- | --- |
+| 1 | 读取字典生成 `TypeService` |
+| 2 | 读取 `pid = null` 的资源生成 `TerminalService` |
+| 3 | 读取终端下启用设备资源 |
+| 4 | 通过 `DeviceServiceFactoryRegistry.CreateService()` 生成 `DeviceService` |
+| 5 | 加载 Group、Calibration 和 ServiceFileBase 子资源 |
+| 6 | 由 `GenDeviceDisplayControl()` 写入 `DisPlayManager` |
 
-```text
-ServiceManager.GetInstance()
-```
+设备缺失不一定是代码问题，也可能是 MySQL 未连接、资源被标记删除、资源未启用或资源层级不符合预期。
 
-初始化时如果 MySQL 已连接，会在 UI Dispatcher 上执行 `LoadServices()`。之后 `MySqlControl.GetInstance().MySqlConnectChanged` 触发时会重新加载。
+## 默认设备类型
 
-这意味着设备缺失不一定是代码问题，可能是 MySQL 未连接、资源被标记删除、资源未启用或资源层级不符合预期。
-
-## 设备服务生成流程
-
-```mermaid
-flowchart TD
-  Mysql["MySQL 已连接"] --> Load["ServiceManager.LoadServices"]
-  Load --> Dict["读取 SysDictionaryModel"]
-  Dict --> TypeService["生成 TypeService"]
-  TypeService --> Terminal["读取 pid=null 的 SysResourceModel 生成 TerminalService"]
-  Terminal --> DeviceResource["读取终端下启用设备资源"]
-  DeviceResource --> Factory["DeviceServiceFactoryRegistry.CreateService"]
-  Factory --> Device["DeviceService 实例"]
-  Device --> Children["加载 Group / Calibration / ServiceFileBase 子资源"]
-  Device --> Display["GenDeviceDisplayControl 写入 DisPlayManager"]
-```
-
-## 当前默认设备类型
-
-`DeviceServiceFactoryRegistry.RegisterDefaults()` 当前注册了这些设备：
-
-| ServiceTypes | 设备类 | 配置类 | 说明 |
-| --- | --- | --- | --- |
-| `Camera` | `DeviceCamera` | `ConfigCamera` | 相机设备 |
-| `PG` | `DevicePG` | `ConfigPG` | Pattern Generator |
-| `Spectrum` | `DeviceSpectrum` | `ConfigSpectrum` | 光谱仪 |
-| `SMU` | `DeviceSMU` | `ConfigSMU` | SMU |
-| `Sensor` | `DeviceSensor` | `ConfigSensor` | 传感器 |
-| `FileServer` | `DeviceFileServer` | `ConfigFileServer` | 文件服务，默认 endpoint/port/path 会由工厂设置 |
-| `Algorithm` | `DeviceAlgorithm` | `ConfigAlgorithm` | 算法服务，默认 `IsCCTWave = true` |
-| `FilterWheel` | `DeviceCfwPort` | `ConfigCfwPort` | 滤光轮 |
-| `Calibration` | `DeviceCalibration` | `ConfigCalibration` | 标定服务 |
-| `Motor` | `DeviceMotor` | `ConfigMotor` | 电机 |
-| `ThirdPartyAlgorithms` | `DeviceThirdPartyAlgorithms` | `ConfigThirdPartyAlgorithms` | 第三方算法 |
-| `Flow` | `DeviceFlowDevice` | `ConfigFlowDevice` | 流程设备 |
+| ServiceTypes | 设备类 | 配置类 |
+| --- | --- | --- |
+| `Camera` | `DeviceCamera` | `ConfigCamera` |
+| `PG` | `DevicePG` | `ConfigPG` |
+| `Spectrum` | `DeviceSpectrum` | `ConfigSpectrum` |
+| `SMU` | `DeviceSMU` | `ConfigSMU` |
+| `Sensor` | `DeviceSensor` | `ConfigSensor` |
+| `FileServer` | `DeviceFileServer` | `ConfigFileServer` |
+| `Algorithm` | `DeviceAlgorithm` | `ConfigAlgorithm` |
+| `FilterWheel` | `DeviceCfwPort` | `ConfigCfwPort` |
+| `Calibration` | `DeviceCalibration` | `ConfigCalibration` |
+| `Motor` | `DeviceMotor` | `ConfigMotor` |
+| `ThirdPartyAlgorithms` | `DeviceThirdPartyAlgorithms` | `ConfigThirdPartyAlgorithms` |
+| `Flow` | `DeviceFlowDevice` | `ConfigFlowDevice` |
 
 如果 `SysResourceModel.Type` 对应的 `ServiceTypes` 没有注册工厂，`CreateService()` 会返回 `null`，设备不会进入 `DeviceServices`。
 
-## TypeService 的过滤
+## 显示和过滤
 
-`LoadServices()` 读取字典后会跳过一部分类型：
+`LoadServices()` 读取字典后会跳过 `6, 11, 12, 13, 14, 15, 16, 17`，对应 FileServer、FocusRing、Flow、Archived、ThirdPartyAlgorithms、ThirdPartyAlgorithms32、PowerControl、LightingControl 等类型。枚举存在不代表左侧类型树一定显示。
 
-```text
-6, 11, 12, 13, 14, 15, 16, 17
-```
+显示区由 `GenDeviceDisplayControl()` 从 `TypeServices` 遍历设备，或由 `GenControl(ObservableCollection<DeviceService>)` 用指定集合生成。两者都会先放入 `FlowEngineManager.GetInstance().DisplayFlow`，再追加各设备的 `GetDisplayControl()`。设备树有设备但主区域没有页时，先查 `GetDisplayControl()`、`IDisPlayControl`、`GenDeviceDisplayControl()` 和 `RestoreControl()`。
 
-这些值对应 FileServer、FocusRing、Flow、Archived、ThirdPartyAlgorithms、ThirdPartyAlgorithms32、PowerControl、LightingControl 等类型。交接时不要看到枚举存在就默认它一定出现在左侧类型树里。
+## 新增设备
 
-## 显示页生成
-
-设备加载后，显示区不是自动等同于设备树。`ServiceManager` 还有两个显示生成入口：
-
-| 方法 | 说明 |
+| 步骤 | 必做内容 |
 | --- | --- |
-| `GenDeviceDisplayControl()` | 从 `TypeServices` 遍历设备，生成显示控件列表 |
-| `GenControl(ObservableCollection<DeviceService>)` | 用指定设备集合生成显示控件列表 |
+| 类型 | 在 `ServiceTypes` 增加枚举值 |
+| 配置 | 新增 `ConfigXxx : DeviceServiceConfig` |
+| 服务 | 新增 `DeviceXxx : DeviceService<ConfigXxx>` |
+| 工厂 | 注册到 `DeviceServiceFactoryRegistry` |
+| UI | 需要显示页时实现 `GetDisplayControl()`，需要终端图标时设置 `terminalIconResourceKey` |
+| Flow | 需要进流程节点时补 `Templates/Flow/NodeConfigurator/` |
+| 文档 | 更新本页和用户设备文档 |
 
-两者都会先把 `FlowEngineManager.GetInstance().DisplayFlow` 放在第一个显示页，再追加各设备的 `GetDisplayControl()`。
-
-因此排查“设备树里有设备，但主区域没有页”时，要检查：
-
-1. 设备是否实现或返回了 `IDisPlayControl`。
-2. `GenDeviceDisplayControl()` 是否执行。
-3. `DisPlayManager.GetInstance().RestoreControl()` 是否恢复了旧布局。
-
-## 新增设备的步骤
-
-1. 在 `ServiceTypes` 增加枚举值。
-2. 新增 `ConfigXxx : DeviceServiceConfig`。
-3. 新增 `DeviceXxx : DeviceService<ConfigXxx>`。
-4. 在 `DeviceServiceFactoryRegistry.RegisterDefaults()` 或合适初始化点注册工厂。
-5. 如果设备需要终端图标，设置 `terminalIconResourceKey`。
-6. 如果设备配置有默认值，用 `configureConfig` 填充。
-7. 如果设备要进流程节点，补 `Templates/Flow/NodeConfigurator/`。
-8. 如果设备要显示页面，实现 `GetDisplayControl()`。
-9. 更新本页和用户设备文档。
-
-## 排查清单
+## 排查和禁区
 
 | 现象 | 优先检查 |
 | --- | --- |
@@ -130,11 +88,5 @@ flowchart TD
 | 设备资源存在但不生成 | `ServiceTypes` 值和 `DeviceServiceFactoryRegistry` |
 | 设备生成但没有显示页 | `GetDisplayControl()`、`IDisPlayControl`、`DisPlayManager` |
 | 标定/组资源不显示 | 子资源 type 是否为 `Group` 或 30-50 |
-| 重连数据库后状态异常 | `MySqlConnectChanged` 是否触发重新 `LoadServices()` |
 
-## 不要这样改
-
-- 不要在窗口代码里绕过 `ServiceManager` 手动维护全局设备集合。
-- 不要只新增菜单或窗口，不注册 `DeviceServiceFactoryRegistry`。
-- 不要让底层设备类直接依赖客户项目包。
-- 不要把标定资源、组资源和设备服务混成同一层对象。
+不要在窗口代码里绕过 `ServiceManager` 手动维护全局设备集合；不要只新增菜单或窗口却不注册工厂；不要让底层设备类直接依赖客户项目包。

@@ -1,4 +1,4 @@
-# Engine MQTT 消息处理交接手册
+# Engine MQTT 消息处理指南
 
 本页说明 Engine 层 MQTT 的真实收发模型。当前主线不是“每个模块自己建客户端”，而是 `MQTTControl` 管连接、订阅和消息追踪，设备服务通过 `MQTTServiceBase` / `MQTTDeviceService<T>` 发送命令并等待返回。
 
@@ -80,6 +80,6 @@ public MsgRecord DoSomething(string value)
 ## 相关文档
 
 - [Engine 设备服务链路](../../04-api-reference/engine-components/device-service-chain.md)
-- [Engine 业务场景交接手册](../../04-api-reference/engine-components/README.md)
+- [Engine 组件总览](../../04-api-reference/engine-components/README.md)
 - [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md)
-- [测试与验证交接手册](../testing.md)
+- [测试与验证](../testing.md)

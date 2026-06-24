@@ -38,6 +38,12 @@ npm install
 npm run docs:build
 ```
 
+已有构建产物时，可单独复查文档链接、导航、旧页面兼容入口和搜索索引：
+
+```powershell
+npm run docs:validate
+```
+
 后端和脚本测试：
 
 ```powershell
@@ -74,8 +80,7 @@ python -m unittest Scripts.test.test_backend_client Scripts.test.test_build Scri
 语言策略：
 
 - 简体中文是完整且维护中的文档。
-- 英文只保留精简入口页。
-- 繁体中文、日文、韩文副本不在当前工作树中维护；如真实交付需要恢复，从 Git 历史找回后按当前结构重新维护，不要默认新增全量翻译。
+- 英文、繁体中文、日文、韩文副本不在当前工作树中维护；如真实交付需要恢复，从 Git 历史找回后按当前结构重新维护，不要默认新增全量翻译。
 
 修改文档导航时，请同步检查：
 
@@ -84,7 +89,9 @@ python -m unittest Scripts.test.test_backend_client Scripts.test.test_build Scri
 - `docs/.vitepress/i18n/navigation-data.json`
 - 受影响章节的 README
 
-修改导航、语言配置或 VitePress 配置后，运行 `npm run docs:build`。
+删掉或合并旧页面时，不要让旧地址直接 404。若旧地址可能来自导航、搜索、外部书签或历史链接，请保留一个带 `redirect_from_deleted_page: true` 和 `search: false` 的兼容页，并跳转到新的正式页面。导航和正文入口应指向正式页面，不要指向兼容页。
+
+修改导航、语言配置或 VitePress 配置后，运行 `npm run docs:build`。如果只是复查已有构建产物，可运行 `npm run docs:validate`。
 
 ## 插件和项目包变更
 

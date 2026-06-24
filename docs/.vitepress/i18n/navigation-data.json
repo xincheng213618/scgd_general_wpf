@@ -2,128 +2,81 @@
   "navItems": [
     {
       "text": {
-        "root": "首页",
-        "en": "Home"
+        "root": "首页"
       },
       "link": "/"
     },
     {
       "text": {
-        "root": "快速上手",
-        "en": "Quick Start"
+        "root": "快速上手"
       },
       "link": "/00-getting-started/quick-start"
     },
     {
       "text": {
-        "root": "使用手册",
-        "en": "User Manual"
+        "root": "使用手册"
       },
       "link": "/01-user-guide/README"
     },
     {
       "text": {
-        "root": "开发与交付",
-        "en": "Developer & Delivery"
+        "root": "开发与交付"
       },
       "link": "/02-developer-guide/README"
     },
     {
       "text": {
-        "root": "参考资料",
-        "en": "Reference"
+        "root": "参考资料"
       },
       "link": "/04-api-reference/README"
     },
     {
       "text": {
-        "root": "更新日志",
-        "en": "Changelog"
+        "root": "更新日志"
       },
       "link": "https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md"
     },
     {
       "text": {
-        "root": "GitHub",
-        "en": "GitHub"
+        "root": "GitHub"
       },
       "link": "https://github.com/xincheng213618/scgd_general_wpf"
     }
   ],
-  "navItemsByLocale": {
-    "en": [
-      {
-        "text": {
-          "en": "Home"
-        },
-        "link": "/en/"
-      },
-      {
-        "text": {
-          "en": "Quick Start"
-        },
-        "link": "/en/quick-start"
-      },
-      {
-        "text": {
-          "en": "Developer & Delivery"
-        },
-        "link": "/en/developer-entry"
-      },
-      {
-        "text": {
-          "en": "Chinese Docs"
-        },
-        "rawLink": "/"
-      },
-      {
-        "text": {
-          "en": "GitHub"
-        },
-        "link": "https://github.com/xincheng213618/scgd_general_wpf"
-      }
-    ]
-  },
   "sidebarItems": [
     {
       "text": {
-        "root": "开始",
-        "en": "Start"
+        "root": "开始"
       },
       "collapsed": false,
       "items": [
         {
           "text": {
-            "root": "文档首页",
-            "en": "Documentation Home"
+            "root": "文档首页"
           },
           "link": "/"
         },
         {
           "text": {
-            "root": "快速上手",
-            "en": "Quick Start"
+            "root": "快速上手"
           },
           "link": "/00-getting-started/quick-start"
         },
         {
           "text": {
-            "root": "安装指南",
-            "en": "Installation"
+            "root": "安装指南"
           },
           "link": "/00-getting-started/installation"
         },
         {
           "text": {
-            "root": "首次运行",
-            "en": "First Run"
+            "root": "首次运行"
           },
           "link": "/00-getting-started/first-steps"
         },
         {
           "text": {
-            "root": "常见问题",
-            "en": "Common Issues"
+            "root": "常见问题"
           },
           "link": "/01-user-guide/troubleshooting/common-issues"
         }
@@ -131,57 +84,49 @@
     },
     {
       "text": {
-        "root": "日常使用",
-        "en": "Daily Use"
+        "root": "日常使用"
       },
       "collapsed": false,
       "items": [
         {
           "text": {
-            "root": "使用手册总览",
-            "en": "User Manual Overview"
+            "root": "使用手册总览"
           },
           "link": "/01-user-guide/README"
         },
         {
           "text": {
-            "root": "主窗口导览",
-            "en": "Main Window"
+            "root": "主窗口导览"
           },
           "link": "/01-user-guide/interface/main-window"
         },
         {
           "text": {
-            "root": "连接与配置设备",
-            "en": "Devices"
+            "root": "连接与配置设备"
           },
           "link": "/01-user-guide/devices/overview"
         },
         {
           "text": {
-            "root": "流程设计与执行",
-            "en": "Workflow"
+            "root": "流程设计与执行"
           },
           "link": "/01-user-guide/workflow/README"
         },
         {
           "text": {
-            "root": "数据管理",
-            "en": "Data Management"
+            "root": "数据管理"
           },
           "link": "/01-user-guide/data-management/README"
         },
         {
           "text": {
-            "root": "图像编辑器",
-            "en": "Image Editor"
+            "root": "图像编辑器"
           },
           "link": "/01-user-guide/image-editor/overview"
         },
         {
           "text": {
-            "root": "日志查看器",
-            "en": "Log Viewer"
+            "root": "日志查看器"
           },
           "link": "/01-user-guide/interface/log-viewer"
         }
@@ -189,43 +134,25 @@
     },
     {
       "text": {
-        "root": "项目与插件",
-        "en": "Projects & Plugins"
+        "root": "项目与插件"
       },
       "collapsed": true,
       "items": [
         {
           "text": {
-            "root": "项目说明",
-            "en": "Project Guide"
+            "root": "项目说明"
           },
           "link": "/00-projects/README"
         },
         {
           "text": {
-            "root": "项目能力矩阵",
-            "en": "Project Matrix"
-          },
-          "link": "/04-api-reference/projects/project-capability-matrix"
-        },
-        {
-          "text": {
-            "root": "现有插件能力",
-            "en": "Plugin Capabilities"
+            "root": "现有插件能力"
           },
           "link": "/04-api-reference/plugins/README"
         },
         {
           "text": {
-            "root": "插件能力矩阵",
-            "en": "Plugin Matrix"
-          },
-          "link": "/04-api-reference/plugins/plugin-capability-matrix"
-        },
-        {
-          "text": {
-            "root": "插件开发",
-            "en": "Plugin Development"
+            "root": "插件开发"
           },
           "link": "/02-developer-guide/plugin-development/README"
         }
@@ -233,108 +160,93 @@
     },
     {
       "text": {
-        "root": "开发与交付",
-        "en": "Developer & Delivery"
+        "root": "开发与交付"
       },
       "collapsed": true,
       "items": [
         {
           "text": {
-            "root": "开发手册",
-            "en": "Developer Manual"
+            "root": "开发手册"
           },
           "link": "/02-developer-guide/README"
         },
         {
           "text": {
-            "root": "测试与验证",
-            "en": "Testing"
+            "root": "测试与验证"
           },
           "link": "/02-developer-guide/testing"
         },
         {
           "text": {
-            "root": "部署概览",
-            "en": "Deployment"
+            "root": "部署概览"
           },
           "link": "/02-developer-guide/deployment/overview"
         },
         {
           "text": {
-            "root": "构建与发布脚本",
-            "en": "Build Scripts"
+            "root": "构建与发布脚本"
           },
           "link": "/02-developer-guide/scripts/README"
         },
         {
           "text": {
-            "root": "Engine 开发",
-            "en": "Engine Development"
+            "root": "Engine 开发"
           },
           "link": "/02-developer-guide/engine-development/README"
         },
         {
           "text": {
-            "root": "UI DLL 发布",
-            "en": "UI DLL Publishing"
+            "root": "UI DLL 发布"
           },
-          "link": "/04-api-reference/ui-components/ui-dll-release-playbook"
+          "link": "/04-api-reference/ui-components/publishing"
         },
         {
           "text": {
-            "root": "项目包交付",
-            "en": "Project Delivery"
+            "root": "项目包交付"
           },
-          "link": "/04-api-reference/projects/project-package-playbook"
+          "link": "/04-api-reference/projects/README"
         }
       ]
     },
     {
       "text": {
-        "root": "源码参考",
-        "en": "Source Reference"
+        "root": "源码参考"
       },
       "collapsed": true,
       "items": [
         {
           "text": {
-            "root": "参考资料总览",
-            "en": "Reference Overview"
+            "root": "参考资料总览"
           },
           "link": "/04-api-reference/README"
         },
         {
           "text": {
-            "root": "UI 组件",
-            "en": "UI Components"
+            "root": "UI 组件"
           },
           "link": "/04-api-reference/ui-components/README"
         },
         {
           "text": {
-            "root": "Engine 组件",
-            "en": "Engine Components"
+            "root": "Engine 组件"
           },
           "link": "/04-api-reference/engine-components/README"
         },
         {
           "text": {
-            "root": "算法与模板",
-            "en": "Algorithms & Templates"
+            "root": "算法与模板"
           },
           "link": "/04-api-reference/algorithms/README"
         },
         {
           "text": {
-            "root": "扩展点",
-            "en": "Extensions"
+            "root": "扩展点"
           },
           "link": "/04-api-reference/extensions/README"
         },
         {
           "text": {
-            "root": "Flow 节点摘要",
-            "en": "Flow Node Summary"
+            "root": "Flow 节点摘要"
           },
           "link": "/04-api-reference/flow_nodes_summary"
         }
@@ -342,109 +254,35 @@
     },
     {
       "text": {
-        "root": "附录",
-        "en": "Appendix"
+        "root": "附录"
       },
       "collapsed": true,
       "items": [
         {
           "text": {
-            "root": "文档目录说明",
-            "en": "Documentation Directory"
+            "root": "文档目录说明"
           },
           "link": "/README"
         },
         {
           "text": {
-            "root": "项目结构",
-            "en": "Project Structure"
+            "root": "项目结构"
           },
           "link": "/05-resources/project-structure/README"
         },
         {
           "text": {
-            "root": "模块文档对照",
-            "en": "Module Map"
-          },
-          "link": "/05-resources/project-structure/module-documentation-map"
-        },
-        {
-          "text": {
-            "root": "软件许可协议",
-            "en": "License"
+            "root": "软件许可协议"
           },
           "link": "/05-resources/legal/software-agreement"
         },
         {
           "text": {
-            "root": "更新日志",
-            "en": "Changelog"
+            "root": "更新日志"
           },
           "link": "https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md"
         }
       ]
     }
-  ],
-  "sidebarItemsByLocale": {
-    "en": [
-      {
-        "text": {
-          "en": "English Entry"
-        },
-        "collapsed": false,
-        "items": [
-          {
-            "text": {
-              "en": "Overview"
-            },
-            "link": "/en/"
-          },
-          {
-            "text": {
-              "en": "Quick Start"
-            },
-            "link": "/en/quick-start"
-          },
-          {
-            "text": {
-              "en": "Developer & Delivery"
-            },
-            "link": "/en/developer-entry"
-          },
-          {
-            "text": {
-              "en": "License"
-            },
-            "link": "/en/license"
-          },
-          {
-            "text": {
-              "en": "Full Chinese Docs"
-            },
-            "rawLink": "/"
-          }
-        ]
-      },
-      {
-        "text": {
-          "en": "External"
-        },
-        "collapsed": true,
-        "items": [
-          {
-            "text": {
-              "en": "Changelog"
-            },
-            "link": "https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md"
-          },
-          {
-            "text": {
-              "en": "GitHub"
-            },
-            "link": "https://github.com/xincheng213618/scgd_general_wpf"
-          }
-        ]
-      }
-    ]
-  }
+  ]
 }

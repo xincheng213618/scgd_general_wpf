@@ -1,4 +1,4 @@
-# Engine 模板系统开发交接手册
+# Engine 模板系统开发指南
 
 本页说明 `Engine/ColorVision.Engine/Templates/` 的真实模板开发模型。模板负责参数、编辑、保存、导入导出和算法命令参数，不负责客户最终判定和报表格式。
 
@@ -71,6 +71,6 @@
 ## 相关文档
 
 - [Engine 模板与 Flow 链路](../../04-api-reference/engine-components/template-flow-chain.md)
-- [Engine 结果展示与项目交接链路](../../04-api-reference/engine-components/result-handoff-chain.md)
+- [Engine 结果展示链路](../../04-api-reference/engine-components/result-handoff-chain.md)
 - [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md)
-- [测试与验证交接手册](../testing.md)
+- [测试与验证](../testing.md)

@@ -25,45 +25,9 @@
 
 ## 经典 ROI 链当前是什么样
 
-### 模板入口
+当前经典 ROI 实际落在 `FindLightArea`，不是旧文档写的 `Templates/ROI`。`TemplateRoi` 的关键特征是 `Name = FindLightArea`、`Code = FindLightArea`、`TemplateDicId = 31`，并通过 `GetMysqlCommand()` 返回 `MysqlRoi`。
 
-当前经典 ROI 实际落在 `FindLightArea` 这组代码里，而不是旧文档写的 `Templates/ROI`。
-
-`TemplateRoi` 的实现特征很明确：
-
-- `Name = FindLightArea`
-- `Code = FindLightArea`
-- `TemplateDicId = 31`
-- 通过 `GetMysqlCommand()` 返回 `MysqlRoi`
-
-因此这条链当前本质上是“发光区定位模板”，不是全系统统一 ROI 定义。
-
-### 参数模型
-
-`RoiParam` 当前非常直接，只暴露三项参数：
-
-- `Threshold`
-- `Times`
-- `SmoothSize`
-
-这和旧稿里那种通用矩形 ROI 或多边形 ROI API 不是一回事。它更像具体算法的阈值模板，而不是一个抽象几何对象。
-
-### 运行与 UI
-
-`AlgorithmRoi` 负责：
-
-- 打开 `TemplateRoi` 的编辑窗口
-- 获取 `DisplayRoi`
-- 组装 `Event_LightArea2_GetData` 请求
-
-`DisplayRoi` 则承担当前真实的用户输入流程：
-
-- 选择模板
-- 选择图像源服务
-- 支持批次号、原始文件和本地图像三种输入
-- 拉取 Raw 文件列表并支持直接打开
-
-这说明当前经典 ROI 更接近“发光区检测算法的前端宿主”，而不是单独的绘图部件。
+`RoiParam` 只暴露 `Threshold`、`Times`、`SmoothSize` 三项参数。`AlgorithmRoi` 打开模板编辑窗口、获取 `DisplayRoi`，并组装 `Event_LightArea2_GetData` 请求；`DisplayRoi` 负责选择模板、图像源服务、批次号、原始文件和本地图像输入。
 
 ## 两条 JSON ROI 分支
 
@@ -116,9 +80,3 @@
 3. `Engine/ColorVision.Engine/Templates/FindLightArea/DisplayRoi.xaml.cs`
 4. `Engine/ColorVision.Engine/Templates/Jsons/ImageROI/TemplateImageROI.cs`
 5. `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs`
-
-## 继续阅读
-
-- [POI 原语](./poi.md)
-- [POI 模板](../templates/poi-template.md)
-- [ARVR 模板](../templates/arvr-template.md)

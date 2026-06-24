@@ -18,7 +18,7 @@
 
 ## 源码入口
 
-| 文件 | 交接用途 |
+| 文件 | 用途 |
 | --- | --- |
 | `DicModParam.cs` | 定义 `TemplateModParam` 的加载、保存、创建和模板数据结构。 |
 | `EditDictionaryMode.xaml(.cs)` | 展示字典明细，支持新增、删除、列显示配置和默认值编辑。 |
@@ -30,34 +30,10 @@
 
 ## 数据模型
 
-### 主表
-
-`SysDictionaryModModel` 对应 `t_scgd_sys_dictionary_mod_master`。
-
-| 字段 | 说明 |
-| --- | --- |
-| `code` | 字典代码，常被模板 `Code`、JSON 模板或创建流程引用。 |
-| `name` | 字典显示名称。 |
-| `pid` / `p_type` | 父级和类型信息。 |
-| `mod_type` | 字典类别；算法默认字典当前是 `7`。 |
-| `cfg_json` | 字典级 JSON 配置。 |
-| `version` | 版本。 |
-| `is_enable` / `is_delete` | 启用和删除状态。 |
-| `tenant_id` | 租户。 |
-
-### 明细表
-
-`SysDictionaryModDetaiModel` 对应 `t_scgd_sys_dictionary_mod_item`。
-
-| 字段 | 说明 |
-| --- | --- |
-| `pid` | 所属字典主档 ID。 |
-| `address_code` | 字段地址码；新建明细时默认等于新 ID。 |
-| `symbol` | 字段符号，通常对应模板参数名。 |
-| `name` | 字段说明。 |
-| `default_val` | 默认值。 |
-| `val_type` | `Integer`、`Float`、`Bool`、`String`、`Enum`。 |
-| `is_enable` / `is_delete` | 启用和删除状态。 |
+| 表 | 关键字段 | 说明 |
+| --- | --- | --- |
+| `t_scgd_sys_dictionary_mod_master` | `code`、`name`、`pid`、`p_type`、`mod_type`、`cfg_json`、`version`、`is_enable`、`is_delete`、`tenant_id` | 字典主档；算法默认字典当前是 `mod_type = 7` |
+| `t_scgd_sys_dictionary_mod_item` | `pid`、`address_code`、`symbol`、`name`、`default_val`、`val_type`、`is_enable`、`is_delete` | 字典明细；`symbol` 通常对应模板参数名，`val_type` 支持 `Integer`、`Float`、`Bool`、`String`、`Enum` |
 
 ## 生命周期
 
@@ -90,18 +66,10 @@
 | 字典菜单没有入口 | `MenuDefalutDicAlg` 是否被菜单系统扫描，权限是否允许。 |
 | 删除后仍能看到字段 | 当前删除逻辑是否删到了正确表，缓存是否需要刷新。 |
 
-## 交接清单
+## 检查清单
 
 - 新增模板目录时，同步确认是否需要新的系统字典主档和明细。
 - 修改 `symbol` 时，同时检查模板参数名、导入导出、Flow 包和历史模板。
 - 迁移现场数据库时，系统字典主表和明细表必须一起迁移。
 - 不要把 `mod_type = 7` 的算法字典和 Validate 的合规判定字典混在同一页配置。
 - 如果字典字段影响客户验收，项目文档要写清字段含义和默认值。
-
-## 继续阅读
-
-- [模板管理](./template-management.md)
-- [Templates API 参考](./api-reference.md)
-- [Validate 判定规则模板](./validate-rules.md)
-- [Engine 模板与 Flow 链路](../../engine-components/template-flow-chain.md)
-- [当前算法模板覆盖清单](../current-algorithm-template-coverage.md)

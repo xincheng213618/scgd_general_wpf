@@ -1,6 +1,8 @@
-# 插件能力与交接矩阵
+# 插件横向速查
 
-本页按“接手维护、现场排查、发版验收”的视角横向整理当前 `Plugins/` 下真实存在的插件。单插件的业务细节仍放在各自页面；这里重点回答：
+本页只给维护人员做横向排查，不作为普通读者的入口。第一次找插件请先看 [现有插件能力说明](./README.md)，再进入具体插件页；只有需要比较菜单、状态栏、设置页、Socket、数据库、注册表、管理员权限或 native 依赖时，再回到本页。
+
+本页按“日常维护、现场排查、发版验收”的视角整理当前 `Plugins/` 下真实存在的插件。单插件的业务细节仍放在各自页面；这里重点回答：
 
 - 插件从哪里进入宿主。
 - 它依赖哪些 UI/Engine 模块。
@@ -8,7 +10,7 @@
 - 发布时应该验收什么。
 - 哪些地方最容易被误判。
 
-如果你已经遇到具体问题，例如插件没有加载、菜单没出现、`.deps.json` 版本不满足、`.cvxp` 包缺文件、管理员权限或 Socket 指令异常，先按 [插件运行与交接场景手册](./README.md) 处理。发版或现场替换时，继续使用 [现有插件现场验收与交接清单](./README.md) 逐项验收，并按 [插件发布证据与版本核查表](./README.md) 保存 manifest、DLL 版本、`.cvxp` 和回退证据。
+如果你已经遇到具体问题，例如插件没有加载、菜单没出现、`.deps.json` 版本不满足、`.cvxp` 包缺文件、管理员权限或 Socket 指令异常，先回到 [现有插件能力说明](./README.md) 找对应插件页。发版或现场替换时，按本文的构建、打包和烟测矩阵核对，并保存 manifest、DLL 版本、`.cvxp` 和回退材料。
 
 ## 当前源码插件总表
 
@@ -87,15 +89,3 @@
 | native DLL 未进入插件包 | Spectrum 或 Conoscope 设备链路运行时失败 | 抽检 `.cvxp` 内容，确认光谱仪 DLL、MVS DLL、OpenCV runtime 是否在正确位置 |
 | 需要管理员的插件按普通权限测试 | EventVWR Dump 或 WindowsServicePlugin 操作失败 | 文档和烟测明确标注管理员模式，不把权限失败当成功能缺陷 |
 | Socket handler 已编译但服务未启用 | 外部客户端连不上 Spectrum 指令 | 检查 `ColorVision.SocketProtocol` 配置、端口、协议模式、插件程序集是否加载 |
-
-## 单插件继续阅读
-
-- [插件运行与交接场景手册](./README.md)
-- [现有插件现场验收与交接清单](./README.md)
-- [插件发布证据与版本核查表](./README.md)
-- [Conoscope 插件](./standard-plugins/conoscope.md)
-- [Spectrum 插件](./standard-plugins/spectrum.md)
-- [SystemMonitor 插件](./standard-plugins/system-monitor.md)
-- [EventVWR 插件](./standard-plugins/eventvwr.md)
-- [WindowsServicePlugin 插件](./standard-plugins/windows-service.md)
-- [插件开发手册](../../02-developer-guide/plugin-development/README.md)

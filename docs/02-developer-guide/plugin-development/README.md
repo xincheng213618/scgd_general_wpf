@@ -2,7 +2,7 @@
 
 本章节只讲“怎么开发、装载、调试、打包一个通用插件”。现有插件能做什么，放在 [现有插件能力说明](../../04-api-reference/plugins/README.md)；客户项目包的业务流程，放在 [项目说明](../../00-projects/README.md)。
 
-如果你正在选择参考哪个现有插件，先看 [插件能力与交接矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md)。它按菜单、状态栏、设置页、Socket、数据库、注册表、管理员权限和 native 依赖横向比较当前插件。要确认每个当前插件是否都有对应文档，看 [当前插件文档覆盖清单](../../04-api-reference/plugins/README.md)。准备发版或交接时，再按 [现有插件现场验收与交接清单](../../04-api-reference/plugins/README.md) 做验收记录。
+如果你正在选择参考哪个现有插件，先看 [现有插件能力说明](../../04-api-reference/plugins/README.md)。需要横向排查菜单、状态栏、设置页、Socket、数据库、注册表、管理员权限或 native 依赖时，再进入 [插件横向速查](../../04-api-reference/plugins/plugin-capability-matrix.md)。
 
 ## 插件在仓库中的位置
 
@@ -26,9 +26,8 @@
 
 ## 建议参考的现有插件
 
-- [插件能力与交接矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md)：横向比较现有插件扩展点、依赖和发布风险。
-- [当前插件文档覆盖清单](../../04-api-reference/plugins/README.md)：核对 `Plugins/` 真实目录、manifest、单插件页和验收入口是否一一对应。
-- [现有插件现场验收与交接清单](../../04-api-reference/plugins/README.md)：按当前插件逐项验收入口、业务烟测、外部依赖和回退材料。
+- [现有插件能力说明](../../04-api-reference/plugins/README.md)：按插件进入当前能力、manifest 和单插件页。
+- [插件横向速查](../../04-api-reference/plugins/plugin-capability-matrix.md)：排查现有插件扩展点、依赖和发布风险。
 - [Conoscope 插件](../../04-api-reference/plugins/standard-plugins/conoscope.md)：图像观察、关注点、色域和对比度分析。
 - [Spectrum 插件](../../04-api-reference/plugins/standard-plugins/spectrum.md)：光谱仪连接、标定、测量和结果记录。
 - [SystemMonitor 插件](../../04-api-reference/plugins/standard-plugins/system-monitor.md)：系统性能和状态监控。
@@ -37,5 +36,5 @@
 ## 说明
 
 - 本页只提供插件开发入口，不展开每个现有插件的业务能力。
-- 新增、删除或恢复插件时，同步更新 [当前插件文档覆盖清单](../../04-api-reference/plugins/README.md)、能力矩阵、验收清单和导航。
+- 新增、删除或恢复插件时，同步更新 [现有插件能力说明](../../04-api-reference/plugins/README.md)、插件横向速查和导航。
 - 如果某个插件依赖项目级定制逻辑，应同时查看 `Projects/` 下对应实现。

@@ -4,6 +4,8 @@
 
 ## 当前项目页
 
+如果要横向比较协议、触发方式、结果出口和最小验收，先看 [项目横向速查](./project-capability-matrix.md)。
+
 | 项目 | 源码目录 | 入口 |
 | --- | --- | --- |
 | ProjectARVR | `Projects/ProjectARVR/` | [ProjectARVR](./project-arvr.md) |

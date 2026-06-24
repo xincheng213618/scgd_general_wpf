@@ -33,16 +33,7 @@ dotnet build -p:Platform=x64
 dotnet run --project ColorVision/ColorVision.csproj
 ```
 
-## 继续阅读
-
-- 想先了解客户项目和方案包：前往 [项目说明](../00-projects/README.md)
-- 想看界面和日常操作：前往 [使用手册](../01-user-guide/README.md)
-- 想看系统设计和模块边界：前往 [架构设计](../03-architecture/README.md)
-- 想看仓库目录与模块分工：前往 [项目结构总览](../05-resources/project-structure/README.md)
-- 想进行二次开发：前往 [开发手册](../02-developer-guide/README.md)
-
 ## 说明
 
 - 旧版入门页中与架构、安装器实现、发布脚本相关的长篇内容，已经收敛到对应章节，不再在这里重复维护。
 - 若文档与当前代码行为不一致，以源码和实际构建结果为准。
-

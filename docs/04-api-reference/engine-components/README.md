@@ -13,6 +13,13 @@
 | ST.Library.UI | `Engine/ST.Library.UI/` | 节点编辑器 UI 控件 | [ST.Library.UI](./ST.Library.UI.md) |
 | ColorVision.ShellExtension | `Engine/ColorVision.ShellExtension/` | Windows Shell 缩略图扩展 | [ColorVision.ShellExtension](./ColorVision.ShellExtension.md) |
 
+## 常用专题
+
+| 问题 | 入口 |
+| --- | --- |
+| Engine 需求、排障和发布验证该归到哪条链 | [Engine 业务链路矩阵](./business-flow-matrix.md) |
+| Flow 转换、图像转换和校准节点怎么追 | [Flow 转换与校准节点](./flow-conversion-calibration-nodes.md) |
+
 ## 关键链路
 
 ```mermaid
@@ -29,14 +36,3 @@ flowchart TD
   Result --> ImageEditor["ImageEditor Overlay"]
   Result --> Dao["MySQL / SQLite / CSV"]
 ```
-
-## 继续阅读
-
-- [Engine 业务链路矩阵](./business-flow-matrix.md)
-- [Engine 运行时对象目录](./runtime-object-map.md)
-- [Engine 设备服务链路](./device-service-chain.md)
-- [Engine 模板与 Flow 链路](./template-flow-chain.md)
-- [Flow 转换与校准节点](./flow-conversion-calibration-nodes.md)
-- [Engine 结果展示与项目链路](./result-handoff-chain.md)
-- [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md)
-- [Templates 架构设计](../../03-architecture/components/templates/design.md)

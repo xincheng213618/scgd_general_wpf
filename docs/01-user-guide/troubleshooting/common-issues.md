@@ -53,13 +53,6 @@
 - 记下当前项目、设备名、模板名或插件名
 - 附带对应日志片段再继续排查，效率会明显高很多
 
-## 继续阅读
-
-- [主窗口导览](../interface/main-window.md)
-- [日志查看器](../interface/log-viewer.md)
-- [设备服务概览](../devices/overview.md)
-- [工作流程](../workflow/README.md)
-
 ## 说明
 
 - 本页只保留排查路径，不再继续维护泛化的项目结构分析稿。

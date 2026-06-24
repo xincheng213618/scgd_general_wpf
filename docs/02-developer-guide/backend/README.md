@@ -1,265 +1,95 @@
-# 插件市场后端 (Plugin Marketplace Backend)
+# 插件市场后端
 
-ColorVision 插件市场后端是一个基于 Python Flask 的轻量级服务，用于管理插件的发布、下载和版本控制。
+`Web/Backend/` 是插件市场、更新包分发和后台管理门户的 Flask 服务。维护时先看启动、配置、存储目录、上传认证、索引刷新和故障分流。
 
-## 功能概述
+## 先查什么
 
-后端服务提供以下核心功能：
+| 现象 | 优先看 |
+| --- | --- |
+| 服务起不来 | 端口、依赖、`config.json`、`storage_path` 权限 |
+| `/api/ready` 失败 | `upload_auth`、存储目录可写性 |
+| 上传 401 | `upload_auth`、脚本环境变量、API key scope |
+| 上传成功但市场看不到 | 索引刷新、目录结构、`manifest.json`、`LATEST_RELEASE` |
+| 下载 404 | 文件路径、版本号、插件 id 大小写、保留策略 |
+| 数据库异常 | `marketplace.db` 权限、schema 迁移、索引重建 |
 
-- **React Web 门户** - 浏览、搜索、下载、后台发布和运维管理
-- **REST API** - 为 WPF 桌面客户端提供接口
-- **下载统计** - 基于 SQLite 的下载统计
+## 启动与配置
 
-## 项目结构
-
-```
-Web/Backend/
-├── app.py              # Flask 应用主入口 (React SPA + API + 文件服务)
-├── app_changelog.py    # 更新日志管理模块
-├── app_releases.py     # 应用版本发布管理
-├── catalog_view_models.py  # 插件目录视图模型
-├── config.json         # 配置文件
-├── download_stats.py   # 下载统计模块
-├── feedback_service.py # 用户反馈服务
-├── marketplace.db      # SQLite 数据库 (自动创建，gitignored)
-├── marketplace_services.py # 市场数据服务
-├── package_publish.py  # 包发布验证和处理
-├── page_contexts.py    # 页面上下文构建
-├── plugin_marketplace.py   # 插件市场核心逻辑
-├── plugin_queries.py   # 插件查询接口
-├── requirements.txt    # Python 依赖
-├── runtime_health.py   # 运行时健康检查
-├── storage_browser.py  # 存储浏览器
-├── storage_paths.py    # 存储路径管理
-├── storage_uploads.py  # 上传处理
-├── update_retention.py # 更新包保留策略
-├── routes/             # Flask 蓝图：站点数据、认证、后台 API、文件服务
-└── services/           # 索引、鉴权、任务调度和存储事件服务
-```
-
-## 安装和运行
-
-### 环境要求
-
-- Python 3.9+
-- pip
-
-### 安装依赖
-
-```bash
-cd Web/Backend
+```powershell
+cd Web\Backend
 pip install -r requirements.txt
-```
-
-### 配置文件
-
-编辑 `config.json`：
-
-```json
-{
-    "storage_path": "H:\\ColorVision",
-    "host": "0.0.0.0",
-    "port": 9998,
-    "debug": false,
-    "secret_key": "your-secret-key",
-    "app_release_keep_count": 5,
-    "plugin_package_keep_count": 3,
-    "upload_auth": {
-        "username": "admin",
-        "password": "admin"
-    }
-}
-```
-
-配置项说明：
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `storage_path` | 插件和应用的存储路径 | `storage/` |
-| `host` | 监听地址 | `0.0.0.0` |
-| `port` | 监听端口 | `9998` |
-| `debug` | 调试模式 | `false` |
-| `secret_key` | Flask 密钥 | 需修改 |
-| `upload_auth` | 上传认证凭据 | 需修改 |
-
-### 启动服务
-
-```bash
-# 使用默认配置
 python app.py
-
-# 指定存储路径
-python app.py --storage H:\ColorVision
-
-# 指定端口
-python app.py --port 9999
 ```
 
-## API 接口
+配置优先看 `Web/Backend/config.json`，没有时复制 `config.json.example`。
 
-### React Web 路由
+| 项 | 说明 |
+| --- | --- |
+| `--storage H:\ColorVision` / `storage_path` | 插件包、安装包、更新包和工具文件根目录 |
+| `--port 9999` / `host` / `port` / `debug` | Flask 运行参数 |
+| `--refresh-all-indexes` / `--refresh-plugin-index Spectrum` | 重建全部或单个插件索引 |
+| `secret_key` | Web session 密钥，生产环境必须改 |
+| `upload_auth` | 构建脚本上传和后台接口 Basic Auth |
+| `transfer_upload_dir` | 大文件传输目录，默认相对 `storage_path` |
+| `app_release_keep_count` / `plugin_package_keep_count` | 主程序和插件历史包保留数量 |
 
-| 路由 | 功能 |
-|------|------|
-| `GET /` | 首页 — 存储概览、快速链接 |
-| `GET /plugins` | 插件市场 — 搜索、分类、排序 |
-| `GET /plugins/{id}` | 插件详情 — 版本列表、README、下载 |
-| `GET /browse[/path]` | 文件浏览器 |
-| `GET /releases` | 发布版本列表 |
-| `GET /updates` | 更新包列表 |
-| `GET /tools` | 工具下载列表 |
-| `GET /admin[/path]` | 后台管理系统 |
+不要在公开文档里写真实账号、密码或 API key。
 
-### REST API
+## 存储模型
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/plugins` | 搜索插件（keyword, category, sort, pagination） |
-| GET | `/api/plugins/{id}` | 插件详情 + 所有版本 |
-| GET | `/api/plugins/{id}/latest-version` | 纯文本最新版本 |
-| POST | `/api/plugins/batch-version-check` | 批量版本检查 |
-| GET | `/api/plugins/categories` | 获取所有分类 |
-| GET | `/api/packages/{id}/{version}` | 下载插件包 |
-| POST | `/api/packages/publish` | 发布新版本（需 Basic Auth） |
-| GET | `/api/stats` | 下载统计 |
-| GET | `/api/health` | 健康检查端点 |
-| GET | `/api/ready` | 就绪检查端点 |
+制品来源是文件系统，`marketplace.db` 只保存索引、缓存、统计、用户、API key、审计和任务历史。
 
-### 构建脚本与客户端下载路由
-
-| 路由模式 | 说明 |
-|----------|------|
-| `PUT /upload/{path}` | 构建脚本直接上传制品 |
-| `/D%3A/ColorVision/Plugins/{path}` | 桌面客户端版本检查和下载 |
-
-## 认证
-
-上传接口使用 HTTP Basic Auth 进行保护：
-
-```bash
-# 使用 curl 示例
-curl -u username:password -X POST http://localhost:9998/api/packages/publish \
-  -F "PluginId=Spectrum" \
-  -F "Version=1.0.0.1" \
-  -F "package=@Spectrum-1.0.0.1.cvxp"
-```
-
-## 存储结构
-
-后端直接使用现有的文件系统结构：
-
-```
+```text
 {storage_path}/
-├── LATEST_RELEASE              # 应用最新版本号
-├── CHANGELOG.md                # 应用更新日志
-├── History/                    # 历史完整安装包
-├── Update/                     # 增量更新包
-├── Plugins/                    # 插件目录
-│   ├── Spectrum/
-│   │   ├── LATEST_RELEASE
-│   │   ├── manifest.json
-│   │   ├── PackageIcon.png
-│   │   ├── README.md
-│   │   ├── CHANGELOG.md
-│   │   └── Spectrum-1.0.0.1.cvxp
-│   └── ...
-└── Tool/                       # 工具下载
+  LATEST_RELEASE
+  CHANGELOG.md
+  History/
+  Update/
+  Plugins/<PluginId>/
+    LATEST_RELEASE
+    manifest.json
+    README.md
+    CHANGELOG.md
+    <PluginId>-<version>.cvxp
+  Tool/
+  Transfer/
 ```
 
-## 测试
+## 发布与索引
 
-后端包含完整的测试套件：
+| 场景 | 入口或行为 |
+| --- | --- |
+| 主程序发布 | `Scripts\release.bat` -> `/upload/...` |
+| 插件包发布 | `Scripts\package_plugin.bat <PluginName>` 或 `package_cvxp.py` |
+| API 发布插件 | `POST /api/packages/publish` |
+| 后台管理 | `/admin` |
+| 大文件传输 | `/api/transfer/files/<filename>` |
+| 启动刷新 | 索引为空时后台刷新；已有索引时做签名检查 |
+| 发布刷新 | 插件发布、`/upload/...` 或目录签名变化后刷新对应索引 |
 
-```bash
-# 运行所有测试
-python -m pytest
+首次部署或大量手工改文件后，运行 `python app.py --refresh-all-indexes`。
 
-# 运行特定测试文件
+## 常用页面和接口
+
+| 接口 | 用途 |
+| --- | --- |
+| `/` / `/plugins` / `/admin` / `/browse` | 首页、插件市场、后台管理和存储浏览 |
+| `GET /api/plugins` / `GET /api/plugins/<id>` | 插件列表、搜索和详情 |
+| `POST /api/plugins/batch-version-check` | 客户端批量版本检查 |
+| `GET /api/packages/<id>/<version>` | 下载插件包 |
+| `POST /api/packages/publish` | 发布插件包 |
+| `PUT /upload/<path>` | 构建脚本兼容上传 |
+| `GET /api/health` / `GET /api/ready` | 健康和就绪检查 |
+
+## 测试与边界
+
+```powershell
+cd Web\Backend
 python test_app.py
 python test_app_releases.py
 python test_page_contexts.py
 python test_upload_services.py
+python -m pytest
 ```
 
-## 与构建脚本集成
-
-后端与 `Scripts/` 目录下的构建脚本集成：
-
-- `publish_plugin.py` - 使用 `/api/packages/publish` 发布插件
-- `build.py` - 上传主程序安装包
-- `build_update.py` - 上传增量更新包
-- `build_spectrum.py` - 上传 Spectrum 插件
-
-## 技术栈
-
-| 层次 | 选型 | 版本 |
-|------|------|------|
-| 语言 | Python | 3.9+ |
-| 框架 | Flask | >=3.0 |
-| 前端 | React + TypeScript + Ant Design | 见 `Web/Frontend` |
-| 数据库 | SQLite | 内置 |
-| Markdown 渲染 | markdown | >=3.8 |
-
-## 访问地址
-
-服务启动后：
-
-- Web UI: http://localhost:9998
-- 插件市场: http://localhost:9998/plugins
-- API: http://localhost:9998/api/plugins
-- 文件浏览: http://localhost:9998/browse
-
-## 部署建议
-
-### 生产环境部署
-
-1. **使用 Gunicorn/uWSGI**
-
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:9998 app:app
-```
-
-2. **Nginx 反向代理**
-
-```nginx
-server {
-    listen 80;
-    server_name marketplace.example.com;
-
-    location / {
-        proxy_pass http://localhost:9998;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-3. **启用 HTTPS**
-
-使用 Let's Encrypt 或自签名证书启用 HTTPS。
-
-4. **监控和日志**
-
-- 配置日志轮转
-- 设置监控告警
-- 定期检查磁盘空间
-
-## 故障排查
-
-### 服务无法启动
-
-检查端口是否被占用：
-```bash
-netstat -an | findstr 9998
-```
-
-### 上传失败
-
-- 确认 `upload_auth` 配置正确
-- 检查存储路径权限
-- 查看日志错误信息
-
-### 数据库错误
-
-删除自动生成的 `marketplace.db` 文件，重启服务后会自动重建。
+改上传、索引、认证、发布接口或存储路径后，至少跑相关后端测试；改脚本上传契约时，同步跑 `Scripts/test/` 对应测试。构建脚本是发布入口，后端只接收和组织制品；`marketplace.db` 不是插件包内容来源，WPF 客户端行为不在后端文档里展开。

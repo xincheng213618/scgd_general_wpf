@@ -34,7 +34,7 @@
 
 如果当前校准服务对应的相机还没准备好，先去物理相机管理页处理，而不是只停留在校准窗口里排查。
 
-可继续阅读：
+相关入口：
 
 - [相机管理](./camera-management.md)
 - [相机参数配置](./camera-configuration.md)
@@ -75,13 +75,6 @@
 - 先确认绑定的相机和模板是否有效
 - 再联动检查 [工作流程概览](../workflow/README.md) 和 [流程执行与调试](../workflow/execution.md)
 - 同时结合 [日志查看器](../interface/log-viewer.md) 看具体失败阶段
-
-## 继续阅读
-
-- [设备服务概览](./overview.md)
-- [相机服务](./camera.md)
-- [相机管理](./camera-management.md)
-- [流程执行与调试](../workflow/execution.md)
 
 ## 说明
 

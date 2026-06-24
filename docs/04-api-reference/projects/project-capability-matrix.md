@@ -1,6 +1,8 @@
-# 项目包能力与交接矩阵
+# 项目横向速查
 
-这页用于横向比较 `Projects/` 下所有客户项目包和对接示例。它回答三个问题：这个项目解决什么现场问题，外部系统怎么触发，结果最终交给谁。接手项目时先看本页；遇到外部触发、流程组、模板、Recipe/Fix、导出或打包问题时，进入 [项目包运行与交接场景手册](./README.md)。发版、现场替换或回退时，按 [项目包发布证据与版本核查表](./README.md) 留下 manifest、DLL、`.cvxp`、配置和结果样例，再看 [项目包交接手册](./README.md) 和具体项目页。
+本页给维护人员做横向排查，不作为普通读者入口。第一次找客户项目请先看 [项目说明](../../00-projects/README.md) 和 [项目包总览](./README.md)，再进入具体项目页；只有需要比较协议、触发方式、结果出口、流程组织或发版验收时，再回到本页。
+
+它回答三个问题：这个项目解决什么现场问题，外部系统怎么触发，结果最终交给谁。
 
 ## 项目包总表
 
@@ -18,7 +20,7 @@
 
 ## 按协议和触发方式分类
 
-| 类型 | 项目 | 入口 | 交接重点 |
+| 类型 | 项目 | 入口 | 对接要点 |
 | --- | --- | --- | --- |
 | JSON Socket 项目 | `ProjectARVR`、`ProjectARVRLite`、`ProjectARVRPro` | `Services/SocketControl.cs`、各类 handler | `EventName`、SN 初始化、切图确认、最终 `ProjectARVRResult` 字段 |
 | 文本 Socket 项目 | `ProjectLUX` | `Services/SocketControl.cs` | `T00XX` 和 `ProcessMeta.SocketCode` 的对应关系 |
@@ -72,24 +74,11 @@
 | `ProjectLUX` | 发送一个 `T00XX,SN;`，能匹配当前组的 `SocketCode`，生成对应 CSV/SQLite 结果 |
 | `ProjectShiyuan` | 手动跑 Flow，生成 JND/POI CSV，固定路径图片存在时能复制并生成伪彩图 |
 
-## 打包和交付矩阵
+## 打包
 
-| 项目 | 构建命令 | 打包命令 | 交付时额外确认 |
-| --- | --- | --- | --- |
-| `ProjectARVR` | `dotnet build Projects/ProjectARVR/ProjectARVR.csproj -c Release -p:Platform=x64` | `Scripts\package_project.bat ProjectARVR --no-upload` | Socket 协议、模板关键字、CSV 路径 |
-| `ProjectARVRLite` | `dotnet build Projects/ProjectARVRLite/ProjectARVRLite.csproj -c Release -p:Platform=x64` | `Scripts\package_project.bat ProjectARVRLite --no-upload` | 测试类型配置、预处理、CSV 开关 |
-| `ProjectARVRPro` | `dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj -c Release -p:Platform=x64` | `Scripts\package_project.bat ProjectARVRPro --no-upload` | Legacy 输出、客户 XLSX、SocketRelay、雷鸟串口 |
-| `ProjectBlackMura` | `dotnet build Projects/ProjectBlackMura/ProjectBlackMura.csproj -c Release -p:Platform=x64` | `Scripts\package_project.bat ProjectBlackMura --no-upload` | EPPlus、串口设备号、Excel 输出路径 |
-| `ProjectHeyuan` | `dotnet build Projects/ProjectHeyuan/ProjectHeyuan.csproj -c Release -p:Platform=x64` | `Scripts\package_project.bat ProjectHeyuan --no-upload` | 串口号、DeviceId、CSV 目录 |
-| `ProjectKB` | `dotnet build Projects/ProjectKB/ProjectKB.csproj -c Release -p:Platform=x64` | `Scripts\package_project.bat ProjectKB --no-upload` | `FunTestDll.dll`、`FunTestDllConfig.INI`、Modbus 地址 |
-| `ProjectLUX` | `dotnet build Projects/ProjectLUX/ProjectLUX.csproj -c Release -p:Platform=x64` | `Scripts\package_project.bat ProjectLUX --no-upload` | SocketCode、Recipe/Fix、输出目录 |
-| `ProjectShiyuan` | `dotnet build Projects/ProjectShiyuan/ProjectShiyuan.csproj -c Release -p:Platform=x64` | `Scripts\package_project.bat ProjectShiyuan --no-upload` | `DataPath`、固定图片路径、串口链路是否仍未启用 |
+构建和打包命令：`dotnet build Projects/<Project>/<Project>.csproj -c Release -p:Platform=x64`，再运行 `Scripts\package_project.bat <Project> --no-upload`。
 
-`ProjectARVRPro.IntegrationDemo` 不是插件包，发布给客户时使用：
-
-```powershell
-dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.IntegrationDemo.csproj -f net48 -c Release -p:Platform=x64 -o artifacts/ProjectARVRPro.IntegrationDemo
-```
+交付时额外确认：ARVR 系列看 Socket、切图、CSV/Legacy；BlackMura/Heyuan 看串口和客户报表；KB 看 `FunTestDll.dll`、Modbus 和 MES；LUX 看 `SocketCode`、Recipe/Fix 和输出目录；Shiyuan 看 `DataPath`。`ProjectARVRPro.IntegrationDemo` 不是插件包，发布给客户时走 `dotnet publish`。
 
 ## 变更归属
 
@@ -98,23 +87,8 @@ dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.Integratio
 | 新增客户测试项 | 对应项目的 `Process/`、`Recipe/`、`Fix/`、结果模型 | 对应项目页、本页流程组织能力 |
 | 新增外部事件或命令 | 项目 `Services/SocketControl.cs`、`HYMesManager`、`ModbusControl` | 对应项目页、本页协议分类 |
 | 修改结果字段 | `ObjectiveTestResult`、exporter、Socket response、SQLite model | 对应项目页、本页结果交付方式 |
-| 修改流程组或模板名 | `ProcessGroup` / `ProcessMeta` / 主窗口模板关键字 | 项目包交接手册、具体项目页 |
+| 修改流程组或模板名 | `ProcessGroup` / `ProcessMeta` / 主窗口模板关键字 | 项目包总览、具体项目页 |
 | 修改交付包内容 | `manifest.json`、`.csproj`、打包脚本、README/CHANGELOG | 项目包总览、构建脚本文档 |
-| 通用能力沉淀 | Engine、UI 或通用插件 | Engine 业务链路矩阵、UI DLL 发布、插件能力矩阵 |
+| 通用能力沉淀 | Engine、UI 或通用插件 | Engine 业务链路、UI DLL 发布、插件横向速查 |
 
 客户专用逻辑默认留在项目包。只有多个项目确认会复用，并且能抽象成稳定能力时，才考虑下沉到 Engine、UI 或通用插件。
-
-## 继续阅读
-
-- [项目包运行与交接场景手册](./README.md)
-- [项目包发布证据与版本核查表](./README.md)
-- [项目包交接手册](./README.md)
-- [ProjectARVR](./project-arvr.md)
-- [ProjectARVRLite](./project-arvr-lite.md)
-- [ProjectARVRPro](./project-arvr-pro.md)
-- [ProjectARVRPro.IntegrationDemo](./project-arvr-pro-integration-demo.md)
-- [ProjectBlackMura](./project-black-mura.md)
-- [ProjectHeyuan](./project-heyuan.md)
-- [ProjectKB](./project-kb.md)
-- [ProjectLUX](./project-lux.md)
-- [ProjectShiyuan](./project-shiyuan.md)

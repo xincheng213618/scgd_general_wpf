@@ -6,8 +6,6 @@
 
 ColorVision 的插件以独立目录部署在主程序运行目录下的 `Plugins/` 中。主程序启动时会扫描每个插件目录，读取 `manifest.json`，再按清单指定的 DLL 装载程序集。
 
-当前代码中可以直接确认的几个关键点：
-
 - 插件基础接口位于 `UI/ColorVision.Common/Interfaces/IPlugin.cs`
 - 插件 manifest 模型位于 `UI/ColorVision.UI/Plugins/PluginManifest.cs`
 - 插件装载逻辑位于 `UI/ColorVision.UI/Plugins/PluginLoader.cs`
@@ -31,19 +29,7 @@ public interface IPlugin
 
 ### 2. manifest.json
 
-插件目录通常需要提供 `manifest.json`。当前清单对象至少包含这些字段：
-
-- `id`
-- `manifest_version`
-- `name`
-- `version`
-- `requires`
-- `description`
-- `dllpath`
-- `author`
-- `url`
-- `entry_point`
-- `icon`
+插件目录通常需要提供 `manifest.json`。当前清单对象至少包含 `id`、`manifest_version`、`name`、`version`、`requires`、`description`、`dllpath`、`author`、`url`、`entry_point` 和 `icon`。
 
 其中最核心的是插件标识、描述和 DLL 路径；`entry_point` 在需要显式指定入口类型时使用。
 
@@ -67,8 +53,6 @@ Plugins/
     ├── manifest.json
     ├── MyPlugin.csproj
     ├── MyPlugin.dll
-    ├── README.md
-    ├── CHANGELOG.md
     ├── Assets/
     └── Sources/ 或 *.cs/*.xaml
 ```
@@ -89,13 +73,11 @@ Plugins/
 
 ## 建议阅读顺序
 
-1. 先看 [插件开发手册](./README.md)
-2. 再看 [插件开发入门](./getting-started.md)
-3. 需要理解装载和运行阶段时，再看 [插件生命周期](./lifecycle.md)
-4. 想参考现成插件时，先看 [现有插件能力说明](../../04-api-reference/plugins/README.md)，再进入 [Conoscope](../../04-api-reference/plugins/standard-plugins/conoscope.md)、[Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md) 或 [SystemMonitor](../../04-api-reference/plugins/standard-plugins/system-monitor.md)
+1. 先看 [插件开发手册](./README.md) 和 [插件开发入门](./getting-started.md)。
+2. 理解装载阶段时看 [插件生命周期](./lifecycle.md)。
+3. 参考现成插件时，从 [现有插件能力说明](../../04-api-reference/plugins/README.md) 进入 Conoscope、Spectrum 或 SystemMonitor。
 
 ## 说明
 
 - 旧版文档里出现的 `IPluginContext`、异步生命周期接口和独立插件宿主模型，并不是当前仓库主路径里直接可见的基础接口。
 - 如果文档和代码不一致，以 `UI/ColorVision.Common/Interfaces/IPlugin.cs`、`UI/ColorVision.UI/Plugins/PluginLoader.cs` 和现有插件项目为准。
-

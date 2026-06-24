@@ -6,14 +6,13 @@
 
 - [文档目录说明](../README.md)
 - [项目结构总览](./project-structure/README.md)
-- [模块与文档对照表](./project-structure/module-documentation-map.md)
 - [软件许可协议](./legal/software-agreement.md)
 - [CHANGELOG.md](https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md)
 
 ## 使用方式
 
 - 想理解仓库结构：先看 [项目结构总览](./project-structure/README.md)
-- 想快速定位某个模块对应的文档入口：看 [模块与文档对照表](./project-structure/module-documentation-map.md)
+- 想快速定位某个模块对应的文档入口：看 [项目结构总览](./project-structure/README.md)
 - 想维护文档站结构、语言策略和导航：看 [文档目录说明](../README.md)
 - 想确认版本变化：直接看仓库根目录的 `CHANGELOG.md`
 - 想查看法律文本：进入 [软件许可协议](./legal/software-agreement.md)

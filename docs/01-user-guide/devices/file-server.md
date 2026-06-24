@@ -76,13 +76,6 @@
 - 再回到 [流程执行与调试](../workflow/execution.md) 看流程里用的是不是同一台文件服务
 - 必要时同时检查设备代码和主题配置是否与手动测试一致
 
-## 继续阅读
-
-- [设备服务概览](./overview.md)
-- [图像编辑器概览](../image-editor/overview.md)
-- [流程执行与调试](../workflow/execution.md)
-- [日志查看器](../interface/log-viewer.md)
-
 ## 说明
 
 - 本页只保留文件服务的使用视角，不再继续维护 MQTT 消息结构分析。
