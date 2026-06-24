@@ -1,21 +1,35 @@
+using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Database.Properties;
-using ColorVision.UI.Menus;
+using System;
+using System.Collections.Generic;
 using System.Windows;
 
 namespace ColorVision.Database
 {
-    public class MenuEntityBrowser : GlobalMenuBase
+    public class DatabaseBrowserAppProvider : IThirdPartyAppProvider
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override int Order => 50;
-        public override string Header => Resources.MenuEntityBrowser;
-
-        public override void Execute()
+        public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
+            return new[]
+            {
+                new ThirdPartyAppInfo
+                {
+                    Name = Resources.MenuEntityBrowser,
+                    Group = "ColorVision",
+                    Order = 50,
+                    LaunchAction = OpenDatabaseBrowser,
+                    GetIconPath = () => Environment.ProcessPath
+                }
+            };
+        }
+
+        private static void OpenDatabaseBrowser()
+        {
+            Window? owner = Application.Current.GetActiveWindow();
             new DatabaseBrowserWindow
             {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
+                Owner = owner,
+                WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner
             }.Show();
         }
     }
