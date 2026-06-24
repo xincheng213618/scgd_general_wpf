@@ -17,7 +17,8 @@
 	<ItemGroup>
 		<PackageReference Include="log4net" Version="3.3.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.215" />
 	</ItemGroup>
 
 	<ItemGroup>

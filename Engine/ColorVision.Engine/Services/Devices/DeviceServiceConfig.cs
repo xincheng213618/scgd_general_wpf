@@ -130,7 +130,9 @@ namespace ColorVision.Engine.Services.Devices
             // 1. 设置 TextSearch.TextPath
             System.Windows.Controls.TextSearch.SetTextPath(combo, "Code");
 
-            combo.ItemTemplate = CreateCameraSnItemTemplate();
+            var itemTemplate = CreateCameraSnItemTemplate();
+            combo.ItemTemplate = itemTemplate;
+            combo.ItemContainerStyle = CreateCameraSnItemContainerStyle(itemTemplate);
 
             dockPanel.Children.Add(combo);
             return dockPanel;
@@ -162,6 +164,16 @@ namespace ColorVision.Engine.Services.Devices
 
             itemTemplate.VisualTree = root;
             return itemTemplate;
+        }
+
+        private static Style CreateCameraSnItemContainerStyle(DataTemplate itemTemplate)
+        {
+            Style style = new Style(typeof(ComboBoxItem));
+            style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
+            style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0)));
+            style.Setters.Add(new Setter(Control.MinHeightProperty, 42.0));
+            style.Setters.Add(new Setter(ContentControl.ContentTemplateProperty, itemTemplate));
+            return style;
         }
 
         private static FrameworkElementFactory CreateTextBlock(string path, double fontSize, FontWeight fontWeight, double opacity)
