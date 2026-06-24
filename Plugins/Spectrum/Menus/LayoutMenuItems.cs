@@ -53,12 +53,12 @@ namespace Spectrum.Menus
     public class MenuToggleCie : SpectrumMenuIBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "切换CIE色度图";
+        public override string Header => "打开CIE色度图";
         public override int Order => 111;
 
         public override void Execute()
         {
-            MainWindow.Instance?.LayoutManager?.TogglePanel("CIEDiagram");
+            MainWindow.Instance?.ShowCieWindow();
         }
     }
 }

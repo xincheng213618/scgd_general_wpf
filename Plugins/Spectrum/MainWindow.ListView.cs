@@ -24,8 +24,12 @@ namespace Spectrum
                 DrawPlot();
                 var selected = ViewResultSpectrums[listview.SelectedIndex];
                 listView2.ItemsSource = selected.SpectralDatas;
-                // Draw CIE points on both diagrams simultaneously
+                // Keep the optional CIE window synced with the selected result.
                 DrawCIEPoinr(selected.fx, selected.fy, selected.fu, selected.fv);
+            }
+            else
+            {
+                ClearCieSelection();
             }
         }
 
@@ -103,6 +107,7 @@ namespace Spectrum
                 wpfplot1.Refresh();
                 wpfplot2.Plot.Clear();
                 wpfplot2.Refresh();
+                ClearCieSelection();
             }
             ReDrawPlot();
         }
@@ -224,6 +229,7 @@ namespace Spectrum
 
         public void Dispose()
         {
+            CloseCieWindow();
             Manager.SmuController.Close();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
