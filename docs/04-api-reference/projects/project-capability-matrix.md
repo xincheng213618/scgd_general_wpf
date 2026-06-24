@@ -1,6 +1,6 @@
 # 项目包能力与交接矩阵
 
-这页用于横向比较 `Projects/` 下所有客户项目包和对接示例。它回答三个问题：这个项目解决什么现场问题，外部系统怎么触发，结果最终交给谁。接手项目时先看本页；遇到外部触发、流程组、模板、Recipe/Fix、导出或打包问题时，进入 [项目包运行与交接场景手册](./project-package-playbook.md)。发版、现场替换或回退时，按 [项目包发布证据与版本核查表](./project-release-evidence.md) 留下 manifest、DLL、`.cvxp`、配置和结果样例，再看 [项目包交接手册](./project-handoff.md) 和具体项目页。
+这页用于横向比较 `Projects/` 下所有客户项目包和对接示例。它回答三个问题：这个项目解决什么现场问题，外部系统怎么触发，结果最终交给谁。接手项目时先看本页；遇到外部触发、流程组、模板、Recipe/Fix、导出或打包问题时，进入 [项目包运行与交接场景手册](./README.md)。发版、现场替换或回退时，按 [项目包发布证据与版本核查表](./README.md) 留下 manifest、DLL、`.cvxp`、配置和结果样例，再看 [项目包交接手册](./README.md) 和具体项目页。
 
 ## 项目包总表
 
@@ -106,9 +106,9 @@ dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.Integratio
 
 ## 继续阅读
 
-- [项目包运行与交接场景手册](./project-package-playbook.md)
-- [项目包发布证据与版本核查表](./project-release-evidence.md)
-- [项目包交接手册](./project-handoff.md)
+- [项目包运行与交接场景手册](./README.md)
+- [项目包发布证据与版本核查表](./README.md)
+- [项目包交接手册](./README.md)
 - [ProjectARVR](./project-arvr.md)
 - [ProjectARVRLite](./project-arvr-lite.md)
 - [ProjectARVRPro](./project-arvr-pro.md)

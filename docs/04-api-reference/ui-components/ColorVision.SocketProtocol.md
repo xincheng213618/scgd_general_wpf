@@ -223,18 +223,16 @@ Socket 模块依赖运行时配置。升级 DLL 后要保留或迁移 `%AppData%
 - `SocketMessageManager.cs`
 - `SocketManagerWindow.xaml.cs`
 
-## 优化路线
+## 后续关注点
 
-这个模块后续优化建议分四层推进：
+这个模块后续维护重点分四层：
 
 | 阶段 | 目标 | 重点 |
 | --- | --- | --- |
-| P0 稳定性 | 把服务生命周期和 TCP 边界收紧 | 防重复启动、取消令牌、统一停止路径、粘包/半包处理 |
-| P1 可观测性 | 提高现场排查效率 | 消息导出、连接生命周期、错误统计、处理耗时 |
-| P2 协议化 | 降低外部设备对接成本 | 错误码、Handler 元数据、JSON Schema、版本兼容 |
-| P3 性能与容量 | 支持长期运行和更大历史量 | 分页加载、数据库索引、批量写库、保留策略 |
-
-详细路线见 [Socket 通信模块优化路线](../../02-developer-guide/performance/socket-protocol-optimization-roadmap.md)。
+| 稳定性 | 把服务生命周期和 TCP 边界收紧 | 防重复启动、取消令牌、统一停止路径、粘包/半包处理 |
+| 可观测性 | 提高现场排查效率 | 消息导出、连接生命周期、错误统计、处理耗时 |
+| 协议化 | 降低外部设备对接成本 | 错误码、Handler 元数据、JSON Schema、版本兼容 |
+| 性能与容量 | 支持长期运行和更大历史量 | 分页加载、数据库索引、批量写库、保留策略 |
 
 ## 这页不再做什么
 
@@ -250,4 +248,3 @@ Socket 模块依赖运行时配置。升级 DLL 后要保留或迁移 `%AppData%
 - [UI组件概览](./README.md)
 - [ColorVision.Database](./ColorVision.Database.md)
 - [ColorVision.UI](./ColorVision.UI.md)
-- [Socket 通信模块优化路线](../../02-developer-guide/performance/socket-protocol-optimization-roadmap.md)

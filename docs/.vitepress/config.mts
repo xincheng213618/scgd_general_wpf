@@ -66,7 +66,17 @@ export default withMermaid(
     srcExclude: [
       '**/_*.md',
       '**/.*',
-      'node_modules/**'
+      'node_modules/**',
+      'zh-tw/**',
+      'ja/**',
+      'ko/**',
+      'en/00-getting-started/**',
+      'en/00-projects/**',
+      'en/01-user-guide/**',
+      'en/02-developer-guide/**',
+      'en/03-architecture/**',
+      'en/04-api-reference/**',
+      'en/05-resources/**'
     ],
 
     themeConfig: {

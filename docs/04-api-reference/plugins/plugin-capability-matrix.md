@@ -8,7 +8,7 @@
 - 发布时应该验收什么。
 - 哪些地方最容易被误判。
 
-如果你已经遇到具体问题，例如插件没有加载、菜单没出现、`.deps.json` 版本不满足、`.cvxp` 包缺文件、管理员权限或 Socket 指令异常，先按 [插件运行与交接场景手册](./plugin-handoff-playbook.md) 处理。发版或现场替换时，继续使用 [现有插件现场验收与交接清单](./plugin-field-acceptance.md) 逐项验收，并按 [插件发布证据与版本核查表](./plugin-release-evidence.md) 保存 manifest、DLL 版本、`.cvxp` 和回退证据。
+如果你已经遇到具体问题，例如插件没有加载、菜单没出现、`.deps.json` 版本不满足、`.cvxp` 包缺文件、管理员权限或 Socket 指令异常，先按 [插件运行与交接场景手册](./README.md) 处理。发版或现场替换时，继续使用 [现有插件现场验收与交接清单](./README.md) 逐项验收，并按 [插件发布证据与版本核查表](./README.md) 保存 manifest、DLL 版本、`.cvxp` 和回退证据。
 
 ## 当前源码插件总表
 
@@ -90,9 +90,9 @@
 
 ## 单插件继续阅读
 
-- [插件运行与交接场景手册](./plugin-handoff-playbook.md)
-- [现有插件现场验收与交接清单](./plugin-field-acceptance.md)
-- [插件发布证据与版本核查表](./plugin-release-evidence.md)
+- [插件运行与交接场景手册](./README.md)
+- [现有插件现场验收与交接清单](./README.md)
+- [插件发布证据与版本核查表](./README.md)
 - [Conoscope 插件](./standard-plugins/conoscope.md)
 - [Spectrum 插件](./standard-plugins/spectrum.md)
 - [SystemMonitor 插件](./standard-plugins/system-monitor.md)

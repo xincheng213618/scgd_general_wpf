@@ -80,6 +80,6 @@ public MsgRecord DoSomething(string value)
 ## 相关文档
 
 - [Engine 设备服务链路](../../04-api-reference/engine-components/device-service-chain.md)
-- [Engine 业务场景交接手册](../../04-api-reference/engine-components/business-scenario-playbook.md)
+- [Engine 业务场景交接手册](../../04-api-reference/engine-components/README.md)
 - [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md)
 - [测试与验证交接手册](../testing.md)

@@ -7,10 +7,10 @@
 | 代码区域 | 关注点 | 首选文档入口 | 补充入口 |
 | --- | --- | --- | --- |
 | `ColorVision/` | 主程序入口、主窗口、启动参数 | [安装与首次使用](../../00-getting-started/README.md) | [使用手册操作工作流矩阵](../../01-user-guide/operation-workflow-matrix.md)、[主窗口导览](../../01-user-guide/interface/main-window.md)、[UI 组件使用手册](../../01-user-guide/interface/ui-component-handbook.md) |
-| `UI/` | WPF 类库、DLL/NuGet 发布、主题、编辑器 | [UI 组件与 DLL 发布](../../04-api-reference/ui-components/README.md) | [UI 组件使用手册](../../01-user-guide/interface/ui-component-handbook.md)、[UI 运行时组件交接手册](../../04-api-reference/ui-components/ui-runtime-handoff.md)、[UI 组件目录](../../04-api-reference/ui-components/control-catalog.md)、[UI DLL 发布场景手册](../../04-api-reference/ui-components/ui-dll-release-playbook.md)、[UI DLL 发布矩阵](../../04-api-reference/ui-components/release-matrix.md)、[UI DLL 发布手册](../../04-api-reference/ui-components/publishing.md) |
-| `Engine/` | 设备、模板、流程、MQTT、结果 | [Engine 组件与业务交接](../../04-api-reference/engine-components/README.md) | [业务链路矩阵](../../04-api-reference/engine-components/business-flow-matrix.md)、[业务场景交接手册](../../04-api-reference/engine-components/business-scenario-playbook.md)、[运行时对象目录](../../04-api-reference/engine-components/runtime-object-map.md)、[业务交接](../../04-api-reference/engine-components/business-handoff.md)、[设备链路](../../04-api-reference/engine-components/device-service-chain.md)、[模板与 Flow](../../04-api-reference/engine-components/template-flow-chain.md)、[当前算法模板覆盖清单](../../04-api-reference/algorithms/current-algorithm-template-coverage.md)、[结果交接](../../04-api-reference/engine-components/result-handoff-chain.md) |
-| `Plugins/` | 通用插件 | [现有插件能力说明](../../04-api-reference/plugins/README.md) | [当前插件文档覆盖清单](../../04-api-reference/plugins/current-plugin-coverage.md)、[插件运行与交接场景手册](../../04-api-reference/plugins/plugin-handoff-playbook.md)、[现有插件现场验收与交接清单](../../04-api-reference/plugins/plugin-field-acceptance.md)、[插件能力与交接矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md)、[插件开发手册](../../02-developer-guide/plugin-development/README.md) |
-| `Projects/` | 客户项目包和对接示例 | [项目说明](../../00-projects/README.md) | [项目包能力与交接矩阵](../../04-api-reference/projects/project-capability-matrix.md)、[项目包运行与交接场景手册](../../04-api-reference/projects/project-package-playbook.md)、[项目包总览](../../04-api-reference/projects/README.md)、[项目包交接手册](../../04-api-reference/projects/project-handoff.md)、[Engine 业务交接手册](../../04-api-reference/engine-components/business-handoff.md) |
+| `UI/` | WPF 类库、DLL/NuGet 发布、主题、编辑器 | [UI 组件与 DLL 发布](../../04-api-reference/ui-components/README.md) | [UI 组件使用手册](../../01-user-guide/interface/ui-component-handbook.md)、[UI 运行时组件交接手册](../../04-api-reference/ui-components/ui-runtime-handoff.md)、[UI 组件目录](../../04-api-reference/ui-components/control-catalog.md)、[UI DLL 发布场景手册](../../04-api-reference/ui-components/publishing.md)、[UI DLL 发布矩阵](../../04-api-reference/ui-components/publishing.md)、[UI DLL 发布手册](../../04-api-reference/ui-components/publishing.md) |
+| `Engine/` | 设备、模板、流程、MQTT、结果 | [Engine 组件与业务交接](../../04-api-reference/engine-components/README.md) | [业务链路矩阵](../../04-api-reference/engine-components/business-flow-matrix.md)、[业务场景交接手册](../../04-api-reference/engine-components/README.md)、[运行时对象目录](../../04-api-reference/engine-components/runtime-object-map.md)、[业务交接](../../04-api-reference/engine-components/README.md)、[设备链路](../../04-api-reference/engine-components/device-service-chain.md)、[模板与 Flow](../../04-api-reference/engine-components/template-flow-chain.md)、[当前算法模板覆盖清单](../../04-api-reference/algorithms/current-algorithm-template-coverage.md)、[结果交接](../../04-api-reference/engine-components/result-handoff-chain.md) |
+| `Plugins/` | 通用插件 | [现有插件能力说明](../../04-api-reference/plugins/README.md) | [当前插件文档覆盖清单](../../04-api-reference/plugins/README.md)、[插件运行与交接场景手册](../../04-api-reference/plugins/README.md)、[现有插件现场验收与交接清单](../../04-api-reference/plugins/README.md)、[插件能力与交接矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md)、[插件开发手册](../../02-developer-guide/plugin-development/README.md) |
+| `Projects/` | 客户项目包和对接示例 | [项目说明](../../00-projects/README.md) | [项目包能力与交接矩阵](../../04-api-reference/projects/project-capability-matrix.md)、[项目包运行与交接场景手册](../../04-api-reference/projects/README.md)、[项目包总览](../../04-api-reference/projects/README.md)、[项目包交接手册](../../04-api-reference/projects/README.md)、[Engine 业务交接手册](../../04-api-reference/engine-components/README.md) |
 | `Web/Backend/` | 插件市场后端 | [插件市场后端](../../02-developer-guide/backend/README.md) | [部署概览](../../02-developer-guide/deployment/overview.md) |
 | `Scripts/` | 构建、打包、发布 | [构建与发布脚本](../../02-developer-guide/scripts/README.md) | [开发手册](../../02-developer-guide/README.md) |
 | `Test/` | xUnit、native helper、后端和脚本验证 | [测试与验证交接手册](../../02-developer-guide/testing.md) | [开发手册](../../02-developer-guide/README.md) |
@@ -37,7 +37,7 @@
 | 模块 | 文档 |
 | --- | --- |
 | Engine 横向业务场景、变更归属和验收 | [Engine 业务链路矩阵](../../04-api-reference/engine-components/business-flow-matrix.md) |
-| Engine 具体需求处理步骤、验收和交接记录 | [Engine 业务场景交接手册](../../04-api-reference/engine-components/business-scenario-playbook.md) |
+| Engine 具体需求处理步骤、验收和交接记录 | [Engine 业务场景交接手册](../../04-api-reference/engine-components/README.md) |
 | Engine 运行时对象、关键类和扩展点 | [Engine 运行时对象目录](../../04-api-reference/engine-components/runtime-object-map.md) |
 | `Engine/ColorVision.Engine/` | [ColorVision.Engine](../../04-api-reference/engine-components/ColorVision.Engine.md) |
 | `Engine/ColorVision.Engine/Services/` | [Engine 设备服务链路](../../04-api-reference/engine-components/device-service-chain.md) |
@@ -53,7 +53,7 @@
 
 | 插件目录 | 文档 |
 | --- | --- |
-| `Plugins/` 横向交接 | [插件运行与交接场景手册](../../04-api-reference/plugins/plugin-handoff-playbook.md)、[现有插件现场验收与交接清单](../../04-api-reference/plugins/plugin-field-acceptance.md)、[插件能力与交接矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) |
+| `Plugins/` 横向交接 | [插件运行与交接场景手册](../../04-api-reference/plugins/README.md)、[现有插件现场验收与交接清单](../../04-api-reference/plugins/README.md)、[插件能力与交接矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) |
 | `Plugins/Conoscope/` | [Conoscope](../../04-api-reference/plugins/standard-plugins/conoscope.md) |
 | `Plugins/Spectrum/` | [Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md) |
 | `Plugins/SystemMonitor/` | [SystemMonitor](../../04-api-reference/plugins/standard-plugins/system-monitor.md) |
@@ -65,8 +65,8 @@
 | 项目目录 | 文档 |
 | --- | --- |
 | `Projects/` 能力、协议、输出横向对照 | [项目包能力与交接矩阵](../../04-api-reference/projects/project-capability-matrix.md) |
-| `Projects/` 现场问题、触发、流程、导出和打包场景 | [项目包运行与交接场景手册](../../04-api-reference/projects/project-package-playbook.md) |
-| `Projects/` 通用交接 | [项目包交接手册](../../04-api-reference/projects/project-handoff.md) |
+| `Projects/` 现场问题、触发、流程、导出和打包场景 | [项目包运行与交接场景手册](../../04-api-reference/projects/README.md) |
+| `Projects/` 通用交接 | [项目包交接手册](../../04-api-reference/projects/README.md) |
 | `Projects/ProjectARVR/` | [ProjectARVR](../../04-api-reference/projects/project-arvr.md) |
 | `Projects/ProjectARVRLite/` | [ProjectARVRLite](../../04-api-reference/projects/project-arvr-lite.md) |
 | `Projects/ProjectARVRPro/` | [ProjectARVRPro](../../04-api-reference/projects/project-arvr-pro.md) |
@@ -83,13 +83,13 @@
 | --- | --- |
 | 新增设备服务 | [Engine 设备服务链路](../../04-api-reference/engine-components/device-service-chain.md) -> `Services/Devices/` |
 | 按业务能力定位 Engine 入口 | [Engine 业务链路矩阵](../../04-api-reference/engine-components/business-flow-matrix.md) |
-| 按具体需求处理 Engine 变更 | [Engine 业务场景交接手册](../../04-api-reference/engine-components/business-scenario-playbook.md) |
-| 发布 UI DLL | [UI DLL 发布场景手册](../../04-api-reference/ui-components/ui-dll-release-playbook.md)、[UI DLL 发布手册](../../04-api-reference/ui-components/publishing.md) |
+| 按具体需求处理 Engine 变更 | [Engine 业务场景交接手册](../../04-api-reference/engine-components/README.md) |
+| 发布 UI DLL | [UI DLL 发布场景手册](../../04-api-reference/ui-components/publishing.md)、[UI DLL 发布手册](../../04-api-reference/ui-components/publishing.md) |
 | 按 UI 窗口或组件查使用和排查路径 | [UI 组件使用手册](../../01-user-guide/interface/ui-component-handbook.md)、[UI 运行时组件交接手册](../../04-api-reference/ui-components/ui-runtime-handoff.md) |
 | 按操作场景查使用路径 | [使用手册操作工作流矩阵](../../01-user-guide/operation-workflow-matrix.md) |
 | 选择测试与验收命令 | [测试与验证交接手册](../../02-developer-guide/testing.md) |
-| 开发插件 | [插件运行与交接场景手册](../../04-api-reference/plugins/plugin-handoff-playbook.md) -> [插件开发手册](../../02-developer-guide/plugin-development/README.md) -> [现有插件能力说明](../../04-api-reference/plugins/README.md) -> [现有插件现场验收与交接清单](../../04-api-reference/plugins/plugin-field-acceptance.md) |
-| 维护客户项目 | [项目说明](../../00-projects/README.md) -> [项目包能力与交接矩阵](../../04-api-reference/projects/project-capability-matrix.md) -> [项目包运行与交接场景手册](../../04-api-reference/projects/project-package-playbook.md) -> [项目包交接手册](../../04-api-reference/projects/project-handoff.md) -> 对应项目页 |
+| 开发插件 | [插件运行与交接场景手册](../../04-api-reference/plugins/README.md) -> [插件开发手册](../../02-developer-guide/plugin-development/README.md) -> [现有插件能力说明](../../04-api-reference/plugins/README.md) -> [现有插件现场验收与交接清单](../../04-api-reference/plugins/README.md) |
+| 维护客户项目 | [项目说明](../../00-projects/README.md) -> [项目包能力与交接矩阵](../../04-api-reference/projects/project-capability-matrix.md) -> [项目包运行与交接场景手册](../../04-api-reference/projects/README.md) -> [项目包交接手册](../../04-api-reference/projects/README.md) -> 对应项目页 |
 | 修改流程节点 | [Engine 模板与 Flow 链路](../../04-api-reference/engine-components/template-flow-chain.md) -> [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) |
 | 修改算法模板 | [当前算法模板覆盖清单](../../04-api-reference/algorithms/current-algorithm-template-coverage.md) -> [Engine 模板与 Flow 链路](../../04-api-reference/engine-components/template-flow-chain.md) -> [算法与模板](../../04-api-reference/algorithms/README.md) |
 | 维护发光区定位 | [FindLightArea 发光区定位模板](../../04-api-reference/algorithms/templates/find-light-area.md) -> [ROI 原语](../../04-api-reference/algorithms/primitives/roi.md) |

@@ -17,6 +17,16 @@ const docsRoot = path.resolve(process.cwd(), 'docs')
 const distRoot = path.join(docsRoot, '.vitepress', 'dist')
 const manifestOutputPath = path.join(distRoot, 'docs-manifest.json')
 const searchIndexOutputPath = path.join(distRoot, 'docs-search-index.json')
+const archivedLocaleDirectories = new Set(['zh-tw', 'ja', 'ko'])
+const compactEnglishExcludedSections = new Set([
+  '00-getting-started',
+  '00-projects',
+  '01-user-guide',
+  '02-developer-guide',
+  '03-architecture',
+  '04-api-reference',
+  '05-resources',
+])
 
 async function main() {
   await ensureDistDirectory()
@@ -96,11 +106,13 @@ async function collectMarkdownFiles(rootDirectory) {
   const filePaths = []
 
   for (const entry of entries) {
-    if (shouldSkipEntry(entry.name)) {
+    const entryPath = path.join(rootDirectory, entry.name)
+    const relativeEntryPath = normalizePath(path.relative(docsRoot, entryPath))
+
+    if (shouldSkipEntry(entry.name, relativeEntryPath)) {
       continue
     }
 
-    const entryPath = path.join(rootDirectory, entry.name)
     if (entry.isDirectory()) {
       filePaths.push(...await collectMarkdownFiles(entryPath))
       continue
@@ -114,7 +126,7 @@ async function collectMarkdownFiles(rootDirectory) {
   return filePaths
 }
 
-function shouldSkipEntry(name) {
+function shouldSkipEntry(name, relativePath = name) {
   if (name === '.vitepress' || name === 'node_modules') {
     return true
   }
@@ -128,6 +140,15 @@ function shouldSkipEntry(name) {
   }
 
   if (name.endsWith('.bak') || name.endsWith('.tmp')) {
+    return true
+  }
+
+  const [firstSegment, secondSegment] = relativePath.split('/')
+  if (archivedLocaleDirectories.has(firstSegment)) {
+    return true
+  }
+
+  if (firstSegment === 'en' && compactEnglishExcludedSections.has(secondSegment)) {
     return true
   }
 

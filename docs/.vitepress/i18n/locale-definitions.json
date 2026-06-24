@@ -3,7 +3,7 @@
     "label": "简体中文",
     "lang": "zh-CN",
     "title": "ColorVision",
-    "description": "ColorVision 是基于 Windows WPF 的专业光电技术解决方案，提供设备集成、流程自动化、色彩管理等功能",
+    "description": "ColorVision 是基于 Windows WPF 的专业光电检测平台，提供设备集成、流程自动化、色彩管理和项目交付能力。",
     "pathPrefix": "",
     "homeDocumentTitle": "ColorVision 文档首页",
     "editLinkText": "在 GitHub 上编辑此页",
@@ -39,9 +39,9 @@
     "label": "English",
     "lang": "en-US",
     "title": "ColorVision",
-    "description": "ColorVision is a professional optoelectronic technology and color management platform built on Windows WPF.",
+    "description": "A compact English entry for ColorVision installation, operation, development, and delivery.",
     "pathPrefix": "en",
-    "homeDocumentTitle": "ColorVision Documentation Home",
+    "homeDocumentTitle": "ColorVision English Entry",
     "editLinkText": "Edit this page on GitHub",
     "footerMessage": "Released under the MIT License.",
     "outlineLabel": "On This Page",
@@ -67,114 +67,6 @@
         "footer": {
           "selectText": "Select",
           "navigateText": "Navigate"
-        }
-      }
-    }
-  },
-  "zh-tw": {
-    "label": "繁體中文",
-    "lang": "zh-TW",
-    "title": "ColorVision",
-    "description": "ColorVision 是基於 Windows WPF 的專業光電技術解決方案，提供裝置整合、流程自動化、色彩管理等功能",
-    "pathPrefix": "zh-tw",
-    "homeDocumentTitle": "ColorVision 文件首頁",
-    "editLinkText": "在 GitHub 上編輯此頁",
-    "footerMessage": "基於 MIT License 發布。",
-    "outlineLabel": "頁面導覽",
-    "docFooter": {
-      "prev": "上一章節",
-      "next": "下一章節"
-    },
-    "langMenuLabel": "語言",
-    "darkModeSwitchLabel": "主題",
-    "lightModeSwitchTitle": "切換到淺色模式",
-    "darkModeSwitchTitle": "切換到深色模式",
-    "sidebarMenuLabel": "選單",
-    "returnToTopLabel": "返回頂部",
-    "lastUpdatedText": "最後更新於",
-    "searchTranslations": {
-      "button": {
-        "buttonText": "搜尋文件",
-        "buttonAriaLabel": "搜尋文件"
-      },
-      "modal": {
-        "noResultsText": "無結果",
-        "resetButtonTitle": "清除查詢條件",
-        "footer": {
-          "selectText": "選擇",
-          "navigateText": "切換"
-        }
-      }
-    }
-  },
-  "ja": {
-    "label": "日本語",
-    "lang": "ja-JP",
-    "title": "ColorVision",
-    "description": "ColorVision は Windows WPF ベースのプロフェッショナルな光電技術ソリューションで、デバイス統合、プロセス自動化、色管理機能を提供します。",
-    "pathPrefix": "ja",
-    "homeDocumentTitle": "ColorVision ドキュメントホーム",
-    "editLinkText": "GitHub でこのページを編集",
-    "footerMessage": "MIT License の下で公開。",
-    "outlineLabel": "このページ",
-    "docFooter": {
-      "prev": "前へ",
-      "next": "次へ"
-    },
-    "langMenuLabel": "言語",
-    "darkModeSwitchLabel": "テーマ",
-    "lightModeSwitchTitle": "ライトテーマに切り替え",
-    "darkModeSwitchTitle": "ダークテーマに切り替え",
-    "sidebarMenuLabel": "メニュー",
-    "returnToTopLabel": "トップに戻る",
-    "lastUpdatedText": "最終更新",
-    "searchTranslations": {
-      "button": {
-        "buttonText": "ドキュメントを検索",
-        "buttonAriaLabel": "ドキュメントを検索"
-      },
-      "modal": {
-        "noResultsText": "結果なし",
-        "resetButtonTitle": "検索条件をクリア",
-        "footer": {
-          "selectText": "選択",
-          "navigateText": "移動"
-        }
-      }
-    }
-  },
-  "ko": {
-    "label": "한국어",
-    "lang": "ko-KR",
-    "title": "ColorVision",
-    "description": "ColorVision은 Windows WPF 기반의 전문 광전 기술 솔루션으로, 장치 통합, 공정 자동화, 색상 관리 기능을 제공합니다.",
-    "pathPrefix": "ko",
-    "homeDocumentTitle": "ColorVision 문서 홈",
-    "editLinkText": "GitHub에서 이 페이지 편집",
-    "footerMessage": "MIT License에 따라 배포됩니다.",
-    "outlineLabel": "이 페이지에서",
-    "docFooter": {
-      "prev": "이전",
-      "next": "다음"
-    },
-    "langMenuLabel": "언어",
-    "darkModeSwitchLabel": "테마",
-    "lightModeSwitchTitle": "라이트 테마로 전환",
-    "darkModeSwitchTitle": "다크 테마로 전환",
-    "sidebarMenuLabel": "메뉴",
-    "returnToTopLabel": "맨 위로 돌아가기",
-    "lastUpdatedText": "마지막 업데이트",
-    "searchTranslations": {
-      "button": {
-        "buttonText": "문서 검색",
-        "buttonAriaLabel": "문서 검색"
-      },
-      "modal": {
-        "noResultsText": "결과 없음",
-        "resetButtonTitle": "검색어 지우기",
-        "footer": {
-          "selectText": "선택",
-          "navigateText": "이동"
         }
       }
     }

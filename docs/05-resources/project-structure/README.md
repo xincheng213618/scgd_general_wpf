@@ -27,7 +27,7 @@
 
 ### Engine 或算法开发
 
-1. [Engine 业务交接手册](../../04-api-reference/engine-components/business-handoff.md)
+1. [Engine 业务交接手册](../../04-api-reference/engine-components/README.md)
 2. [Engine 开发指南](../../02-developer-guide/engine-development/README.md)
 3. [算法与模板](../../04-api-reference/algorithms/README.md)
 

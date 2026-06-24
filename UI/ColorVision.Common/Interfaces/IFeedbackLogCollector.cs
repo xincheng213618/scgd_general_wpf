@@ -15,9 +15,19 @@ namespace ColorVision.UI
         string Name { get; }
 
         /// <summary>
+        /// Short optional text shown under the collector name in the feedback window.
+        /// </summary>
+        string Description => string.Empty;
+
+        /// <summary>
         /// Collection order (lower = collected first).
         /// </summary>
         int Order { get; }
+
+        /// <summary>
+        /// Whether this source should be selected by default when users package feedback logs.
+        /// </summary>
+        bool IsSelectedByDefault => true;
 
         /// <summary>
         /// Collects log/diagnostic files and returns their paths.

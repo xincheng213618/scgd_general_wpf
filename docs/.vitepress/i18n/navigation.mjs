@@ -1,10 +1,15 @@
 import { createRequire } from 'node:module'
 import fs from 'node:fs'
 import path from 'node:path'
-import { getLocalizedText, toLocalePath } from './locales.mjs'
+import { getLocaleDefinition, getLocalizedText, toLocalePath } from './locales.mjs'
 
 const require = createRequire(import.meta.url)
-const { navItems, sidebarItems } = require('./navigation-data.json')
+const {
+  navItems,
+  navItemsByLocale = {},
+  sidebarItems,
+  sidebarItemsByLocale = {},
+} = require('./navigation-data.json')
 const docsRoot = path.resolve(process.cwd(), 'docs')
 
 function isStaticOrExternalLink(link) {
@@ -21,12 +26,21 @@ function toExistingLocalePath(localeKey, link) {
     return link
   }
 
+  const pathPrefix = getLocaleDefinition(localeKey).pathPrefix
+  if (pathPrefix && link.startsWith(`/${pathPrefix}/`)) {
+    return link
+  }
+
   const localizedLink = toLocalePath(localeKey, link)
   if (localeKey === 'root' || fs.existsSync(resolveMarkdownCandidate(localizedLink))) {
     return localizedLink
   }
 
   return link
+}
+
+function resolveItemsForLocale(localeKey, defaultItems, itemsByLocale) {
+  return itemsByLocale[localeKey] ?? defaultItems
 }
 
 function localizeItems(localeKey, items) {
@@ -39,7 +53,9 @@ function localizeItems(localeKey, items) {
       localizedItem.collapsed = item.collapsed
     }
 
-    if ('link' in item) {
+    if ('rawLink' in item) {
+      localizedItem.link = item.rawLink
+    } else if ('link' in item) {
       localizedItem.link = toExistingLocalePath(localeKey, item.link)
     }
 
@@ -52,9 +68,9 @@ function localizeItems(localeKey, items) {
 }
 
 export function createNavItems(localeKey) {
-  return localizeItems(localeKey, navItems)
+  return localizeItems(localeKey, resolveItemsForLocale(localeKey, navItems, navItemsByLocale))
 }
 
 export function createSidebarItems(localeKey) {
-  return localizeItems(localeKey, sidebarItems)
+  return localizeItems(localeKey, resolveItemsForLocale(localeKey, sidebarItems, sidebarItemsByLocale))
 }

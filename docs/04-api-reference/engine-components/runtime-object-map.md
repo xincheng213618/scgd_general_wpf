@@ -1,6 +1,6 @@
 # Engine 运行时对象目录
 
-这页按运行时对象整理 `Engine/` 的核心类。它不是替代 [Engine 业务交接手册](./business-handoff.md)，而是给接手人员一张“看到类名就知道它属于哪条业务链”的索引。
+这页按运行时对象整理 `Engine/` 的核心类。它不是替代 [Engine 业务交接手册](./README.md)，而是给接手人员一张“看到类名就知道它属于哪条业务链”的索引。
 
 ## 先看全局链路
 
@@ -179,7 +179,7 @@ flowchart LR
 | 模板不显示 | `TemplateInitializer`、`TemplateControl`、`IITemplateLoad` | [模板与 Flow 链路](./template-flow-chain.md) |
 | Flow 保存失败 | `TemplateFlow`、`FlowParam`、`SysResourceModel.Value` | [模板与 Flow 链路](./template-flow-chain.md) |
 | 节点参数不恢复 | `NodeConfiguratorRegistry`、具体 `*NodeConfigurator` | [模板与 Flow 链路](./template-flow-chain.md) |
-| Flow 完成但项目没结果 | `FlowControlData`、项目 `Process.Execute()` | [项目包交接手册](../projects/project-handoff.md) |
+| Flow 完成但项目没结果 | `FlowControlData`、项目 `Process.Execute()` | [项目包交接手册](../projects/README.md) |
 | 结果列表有记录但 overlay 不显示 | `DisplayAlgorithmManager`、`IResultHandleBase`、`ViewHandleXxx` | [结果展示与项目交接链路](./result-handoff-chain.md) |
 | CSV 字段为空 | Engine 结果 DAO、项目 `ObjectiveTestResult`、项目 exporter | [项目说明](../../00-projects/README.md) |
 

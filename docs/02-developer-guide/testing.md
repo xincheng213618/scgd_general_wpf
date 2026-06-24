@@ -78,7 +78,7 @@ pytest Scripts/test_*.py -v
 | --- | --- |
 | UI 菜单、设置、PropertyGrid、列表编辑、日志或终端 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | Copilot/MCP、文档搜索、业务上下文 | `Copilot*Tests`、`CopilotSearchDocsToolTests` |
-| 插件市场下载、包校验、临时目录 | `MarketplacePackageDownloadServiceTests`，再看 [现有插件现场验收与交接清单](../04-api-reference/plugins/plugin-field-acceptance.md) |
+| 插件市场下载、包校验、临时目录 | `MarketplacePackageDownloadServiceTests`，再看 [现有插件能力](../04-api-reference/plugins/README.md) |
 | Flow 节点复制粘贴或 STNode 行为 | `STNodeCopyPasteTests`，再看 [模板与 Flow 链路](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test`，并确认 runtime DLL 输出 |
 | 插件市场后端 | `Web/Backend/test_app*.py` |

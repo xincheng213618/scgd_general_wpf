@@ -15,6 +15,7 @@ namespace ColorVision.UI.LogImp
         private static readonly ILog log = LogManager.GetLogger(typeof(AppLogCollector));
 
         public string Name => "Application Logs";
+        public string Description => "ColorVision UI runtime logs";
         public int Order => 0;
 
         public IEnumerable<(string EntryPath, string FilePath)> CollectFiles()

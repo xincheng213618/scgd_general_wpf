@@ -4,7 +4,7 @@
 
 如果要按具体控件、窗口或扩展点查源码，请配合阅读 [UI 组件目录](./control-catalog.md)。如果要排查运行时为什么没有发现菜单、设置项、ImageEditor 工具、Socket handler 或 Solution 编辑器，请配合阅读 [UI 运行时组件交接手册](./ui-runtime-handoff.md)。
 
-如果要发布 DLL 或 NuGet 包，请配合阅读 [UI DLL 发布矩阵](./release-matrix.md)。组件手册回答“这个 DLL 负责什么”，发布矩阵回答“这个 DLL 发版时要检查什么”。
+如果要发布 DLL 或 NuGet 包，请配合阅读 [UI DLL 发布矩阵](./publishing.md)。组件手册回答“这个 DLL 负责什么”，发布矩阵回答“这个 DLL 发版时要检查什么”。
 
 ## 组件分层
 
@@ -337,7 +337,7 @@ WPF 窗口需要跟随主题时，应在应用启动后调用 `Application.Apply
 ## 发布前必须看
 
 - [UI DLL 发布手册](./publishing.md)
-- [UI DLL 发布矩阵](./release-matrix.md)
+- [UI DLL 发布矩阵](./publishing.md)
 - [UI 组件目录](./control-catalog.md)
 - [UI 运行时组件交接手册](./ui-runtime-handoff.md)
 - 每个组件的 `.csproj` 中 `TargetFrameworks`、`VersionPrefix`、`GeneratePackageOnBuild`、资源项和 native runtime 设置。

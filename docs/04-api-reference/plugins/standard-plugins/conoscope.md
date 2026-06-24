@@ -181,6 +181,6 @@ Scripts\package_plugin.bat Conoscope --no-upload
 
 ## 继续阅读
 
-- [现有插件现场验收与交接清单](../plugin-field-acceptance.md)
+- [现有插件现场验收与交接清单](../README.md)
 - [插件能力与交接矩阵](../plugin-capability-matrix.md)
-- [插件运行与交接场景手册](../plugin-handoff-playbook.md)
+- [插件运行与交接场景手册](../README.md)

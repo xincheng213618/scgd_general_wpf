@@ -155,7 +155,7 @@
 
 ## 继续阅读
 
-- [现有插件现场验收与交接清单](../plugin-field-acceptance.md)
+- [现有插件现场验收与交接清单](../README.md)
 - [插件能力与交接矩阵](../plugin-capability-matrix.md)
 - [Plugins/README.md](../../../../Plugins/README.md)
 - [docs/02-developer-guide/plugin-development/overview.md](../../../02-developer-guide/plugin-development/overview.md)

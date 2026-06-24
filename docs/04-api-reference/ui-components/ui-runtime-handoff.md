@@ -2,7 +2,7 @@
 
 这页面向接手 `UI/` 运行时链路的人。它回答的问题不是某个 DLL 怎么打包，而是主程序运行后，菜单、设置、插件加载、属性编辑器、图像编辑器、Socket、调度器、插件市场和 Solution 工作区这些 UI 组件如何被发现、装配和排障。
 
-如果你的任务是发布 DLL 或 NuGet 包，先看 [UI DLL 发布场景手册](./ui-dll-release-playbook.md) 和 [UI DLL 发布矩阵](./release-matrix.md)。如果你的任务是改控件或定位界面问题，先看本页，再进入 [UI 组件目录](./control-catalog.md) 和对应 DLL 页。
+如果你的任务是发布 DLL 或 NuGet 包，先看 [UI DLL 发布场景手册](./publishing.md) 和 [UI DLL 发布矩阵](./publishing.md)。如果你的任务是改控件或定位界面问题，先看本页，再进入 [UI 组件目录](./control-catalog.md) 和对应 DLL 页。
 
 ## 一句话边界
 
@@ -109,7 +109,7 @@ flowchart TD
 | 开关控件 | `ToggleSwitch` | 绑定是否双向、样式资源是否存在 |
 | 上传提示 | `UploadWindow`、`UploadMsg` | 背景资源、上传状态、取消逻辑 |
 
-主题问题通常表现为窗口能开但样式丢失、图标丢失、标题栏颜色不对。发布时继续对照 [UI DLL 发布矩阵](./release-matrix.md) 检查资源项。
+主题问题通常表现为窗口能开但样式丢失、图标丢失、标题栏颜色不对。发布时继续对照 [UI DLL 发布矩阵](./publishing.md) 检查资源项。
 
 ## ImageEditor 运行时链路
 
@@ -186,16 +186,16 @@ flowchart LR
 
 | 现象 | 第一检查点 | 第二检查点 | 应看文档 |
 | --- | --- | --- | --- |
-| 插件安装后没有菜单 | `PluginLoader` 是否加载程序集 | `MenuManager` 的 `OwnerGuid`、过滤和权限 | [插件运行与交接场景手册](../plugins/plugin-handoff-playbook.md) |
+| 插件安装后没有菜单 | `PluginLoader` 是否加载程序集 | `MenuManager` 的 `OwnerGuid`、过滤和权限 | [插件运行与交接场景手册](../plugins/README.md) |
 | 菜单有但点击无反应 | 命令 `CanExecute` 和异常日志 | 目标窗口或服务是否初始化 | [UI 组件目录](./control-catalog.md) |
 | 设置项没有出现 | `ConfigSettingManager` 扫描 | `IConfigSettingProvider` 或 `[ConfigSetting]` | 本页设置章节 |
 | PropertyGrid 显示不清楚 | 属性元数据是否完整 | 自定义编辑器是否绑定 | [属性编辑器](../../01-user-guide/interface/property-editor.md) |
-| 主题或图标丢失 | `ColorVision.Themes` 资源是否打包 | 运行目录是否有对应资源 | [UI DLL 发布矩阵](./release-matrix.md) |
+| 主题或图标丢失 | `ColorVision.Themes` 资源是否打包 | 运行目录是否有对应资源 | [UI DLL 发布矩阵](./publishing.md) |
 | 图片能打开但工具栏少 | `IEditorToolFactory` 是否发现工具 | 可见性配置和 `GuidId` 覆盖 | 本页 ImageEditor 章节 |
 | overlay 坐标不对 | Draw 图元和缩放坐标系 | Engine result handler 坐标转换 | [结果展示与项目交接](../engine-components/result-handoff-chain.md) |
-| Socket 收到消息但项目没跑 | `SocketManager` 消息历史 | 项目 `ISocketJsonHandler` 和 EventName | [项目包运行与交接场景手册](../projects/project-package-playbook.md) |
+| Socket 收到消息但项目没跑 | `SocketManager` 消息历史 | 项目 `ISocketJsonHandler` 和 EventName | [项目包运行与交接场景手册](../projects/README.md) |
 | 定时任务没执行 | Quartz 是否启动 | 任务 JSON 和 Job 类型 | [UI 组件目录](./control-catalog.md) |
-| 插件市场下载失败 | marketplace 后端和网络 | `aria2c.exe`、下载目录权限 | [UI DLL 发布矩阵](./release-matrix.md) |
+| 插件市场下载失败 | marketplace 后端和网络 | `aria2c.exe`、下载目录权限 | [UI DLL 发布矩阵](./publishing.md) |
 
 ## 新增 UI 组件交接清单
 
@@ -223,12 +223,12 @@ flowchart LR
 | 插件市场/下载器 | 打开市场，查看详情，下载或模拟下载，确认 README 和 DLL 版本窗口 |
 | Solution 工作区 | 打开 `.cvsln`，新建文件，打开编辑器，启动终端，保存布局 |
 
-发布 DLL 时继续执行 [UI DLL 发布场景手册](./ui-dll-release-playbook.md) 的构建、包内容、native runtime 和 smoke test 检查。
+发布 DLL 时继续执行 [UI DLL 发布场景手册](./publishing.md) 的构建、包内容、native runtime 和 smoke test 检查。
 
 ## 继续阅读
 
 - [UI DLL 组件手册](./component-handbook.md)
 - [UI 组件目录](./control-catalog.md)
-- [UI DLL 发布场景手册](./ui-dll-release-playbook.md)
-- [UI DLL 发布矩阵](./release-matrix.md)
-- [Engine 业务交接手册](../engine-components/business-handoff.md)
+- [UI DLL 发布场景手册](./publishing.md)
+- [UI DLL 发布矩阵](./publishing.md)
+- [Engine 业务交接手册](../engine-components/README.md)

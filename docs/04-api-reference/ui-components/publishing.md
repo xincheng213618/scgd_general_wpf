@@ -2,7 +2,7 @@
 
 这页专门说明 `UI/` 下 DLL/NuGet 包的发布方式。它面向维护 UI 类库、交付 Engine 依赖包、排查插件缺 DLL 的人员。
 
-需要快速确认每个 DLL 的版本、TFM、依赖、包内资源和烟测范围时，先看 [UI DLL 发布矩阵](./release-matrix.md)。如果你接到的是“现场替换 DLL”“插件缺 DLL”“Engine 只拿 NuGet 包”等具体任务，先按 [UI DLL 发布场景手册](./ui-dll-release-playbook.md) 判断范围。发布后要留下可追溯证据时，按 [UI DLL 发布证据与现场核查表](./dll-release-evidence.md) 填写。本页负责展开通用发布流程。
+需要快速确认每个 DLL 的版本、TFM、依赖、包内资源和烟测范围时，先看 [UI DLL 发布矩阵](./publishing.md)。如果你接到的是“现场替换 DLL”“插件缺 DLL”“Engine 只拿 NuGet 包”等具体任务，先按 [UI DLL 发布场景手册](./publishing.md) 判断范围。发布后要留下可追溯证据时，按 [UI DLL 发布证据与现场核查表](./publishing.md) 填写。本页负责展开通用发布流程。
 
 ## 发布对象
 
@@ -77,7 +77,7 @@ UI/<Project>/bin/x64/Release/<TFM>/ColorVision.<Name>.dll
 
 如果包内缺 README，插件市场或 DLL 版本窗口里的说明会很难追溯；如果 `runtimes/win-x64/native` 缺 native DLL，图像和视频链路会在运行时失败。
 
-更完整的资源矩阵见：[UI DLL 发布矩阵](./release-matrix.md#包内资源验收)。
+更完整的资源矩阵见：[UI DLL 发布矩阵](./publishing.md#包内资源验收)。
 
 ## 被 Engine 引用的方式
 
@@ -179,7 +179,7 @@ dotnet build Engine/ColorVision.Engine/ColorVision.Engine.csproj -c Release -p:P
 
 ## 继续阅读
 
-- [UI DLL 发布场景手册](./ui-dll-release-playbook.md)
-- [UI DLL 发布矩阵](./release-matrix.md)
-- [UI DLL 发布证据与现场核查表](./dll-release-evidence.md)
+- [UI DLL 发布场景手册](./publishing.md)
+- [UI DLL 发布矩阵](./publishing.md)
+- [UI DLL 发布证据与现场核查表](./publishing.md)
 - [UI DLL 组件手册](./component-handbook.md)
