@@ -242,11 +242,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public bool ApplyCalibrationGroupForND(int holeIndex)
         {
-            var group = Config.FindCalibrationGroupForND(holeIndex, GetNDHoleName(holeIndex));
-            return ApplyCalibrationGroup(group, true);
+            return ApplyCalibrationGroupForND(holeIndex, false);
         }
 
-        public bool ApplyCalibrationGroup(SpectrumCalibrationGroup? group, bool restartService)
+        public bool ApplyCalibrationGroupForND(int holeIndex, bool forceRestart)
+        {
+            var group = Config.FindCalibrationGroupForND(holeIndex, GetNDHoleName(holeIndex));
+            return ApplyCalibrationGroup(group, true, forceRestart);
+        }
+
+        public bool ApplyCalibrationGroup(SpectrumCalibrationGroup? group, bool restartService, bool forceRestart = false)
         {
             if (group == null)
                 return false;
@@ -259,7 +264,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Config.WavelengthFile = group.WavelengthFile;
             Config.MaguideFile = group.MaguideFile;
 
-            if (!changed)
+            if (!changed && !forceRestart)
                 return false;
 
             if (restartService)

@@ -138,7 +138,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            ApplyBoundSpectrumCalibration(holeMap.HoleIndex);
+                            ApplyBoundSpectrumCalibration(holeMap.HoleIndex, true);
                             MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Success, "ColorVision");
                         });
                     }
@@ -176,7 +176,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         CombPort.SelectedItem = Device.FilterWheelConfig.HoleMapping.FirstOrDefault(a => a.HoleIndex == port);
-                        ApplyBoundSpectrumCalibration(port);
+                        ApplyBoundSpectrumCalibration(port, false);
                     });
                 }
                 else
@@ -192,7 +192,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged; ;
         }
 
-        private void ApplyBoundSpectrumCalibration(int holeIndex)
+        private void ApplyBoundSpectrumCalibration(int holeIndex, bool forceRestart)
         {
             foreach (var spectrum in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>())
             {
@@ -200,7 +200,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     continue;
 
                 spectrum.DisplayConfig.PortNum = holeIndex;
-                spectrum.ApplyCalibrationGroupForND(holeIndex);
+                spectrum.ApplyCalibrationGroupForND(holeIndex, forceRestart);
             }
         }
     }

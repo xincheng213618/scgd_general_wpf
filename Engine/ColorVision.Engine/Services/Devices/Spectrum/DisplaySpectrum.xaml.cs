@@ -291,7 +291,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         RefreshNDHoleMappings();
-                        Device.ApplyCalibrationGroupForND(Device.DisplayConfig.PortNum);
+                        Device.ApplyCalibrationGroupForND(Device.DisplayConfig.PortNum, true);
                     });
                 }
             };
