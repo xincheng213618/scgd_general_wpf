@@ -5,10 +5,13 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.UI;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,6 +24,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         CMvSpectra = 0,
         LightModule = 1,
     }
+
+    public class SpectrumCalibrationGroup : ViewModelBase
+    {
+        public string GroupName { get => _GroupName; set { _GroupName = value; OnPropertyChanged(); } }
+        private string _GroupName = "Default";
+
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
+        private string _WavelengthFile = "WavaLength.dat";
+
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
+        private string _MaguideFile = "Magiude.dat";
+
+        public int NDHoleIndex { get => _NDHoleIndex; set { _NDHoleIndex = value; OnPropertyChanged(); } }
+        private int _NDHoleIndex = -1;
+    }
+
     public class BoolToWidthConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -105,6 +126,57 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
+
+        public ObservableCollection<SpectrumCalibrationGroup> CalibrationGroups
+        {
+            get => _CalibrationGroups;
+            set { _CalibrationGroups = value ?? new ObservableCollection<SpectrumCalibrationGroup>(); OnPropertyChanged(); OnPropertyChanged(nameof(ActiveCalibrationGroup)); }
+        }
+        private ObservableCollection<SpectrumCalibrationGroup> _CalibrationGroups = new ObservableCollection<SpectrumCalibrationGroup>();
+
+        public string ActiveCalibrationGroupName { get => _ActiveCalibrationGroupName; set { _ActiveCalibrationGroupName = value; OnPropertyChanged(); OnPropertyChanged(nameof(ActiveCalibrationGroup)); } }
+        private string _ActiveCalibrationGroupName = "Default";
+
+        [Browsable(false)]
+        [JsonIgnore]
+        public SpectrumCalibrationGroup ActiveCalibrationGroup
+        {
+            get
+            {
+                EnsureCalibrationGroups();
+                return CalibrationGroups.FirstOrDefault(a => string.Equals(a.GroupName, ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase))
+                    ?? CalibrationGroups.First();
+            }
+        }
+
+        public void EnsureCalibrationGroups()
+        {
+            if (CalibrationGroups.Count == 0)
+            {
+                var group = new SpectrumCalibrationGroup { GroupName = "Default" };
+                if (!string.IsNullOrWhiteSpace(WavelengthFile))
+                    group.WavelengthFile = WavelengthFile;
+                if (!string.IsNullOrWhiteSpace(MaguideFile))
+                    group.MaguideFile = MaguideFile;
+                CalibrationGroups.Add(group);
+            }
+
+            if (string.IsNullOrWhiteSpace(ActiveCalibrationGroupName) || CalibrationGroups.All(a => !string.Equals(a.GroupName, ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase)))
+                ActiveCalibrationGroupName = CalibrationGroups.First().GroupName;
+        }
+
+        public SpectrumCalibrationGroup? FindCalibrationGroupForND(int holeIndex, string? holeName)
+        {
+            EnsureCalibrationGroups();
+            SpectrumCalibrationGroup? group = CalibrationGroups.FirstOrDefault(a => a.NDHoleIndex == holeIndex);
+            if (group != null)
+                return group;
+
+            if (string.IsNullOrWhiteSpace(holeName))
+                return null;
+
+            return CalibrationGroups.FirstOrDefault(a => string.Equals(a.GroupName, holeName, StringComparison.OrdinalIgnoreCase));
+        }
 
 
 

@@ -54,6 +54,28 @@
                     <DockPanel Margin="0,0,0,2">
                         <Button x:Name="btn_connect" Margin="0,0,0,2" Click="Button_Click_Open" Content="{x:Static properties:Resources.Open}" />
                     </DockPanel>
+                    <GroupBox Header="标定文件" Margin="0,0,0,5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,0,0,4">
+                                <Button DockPanel.Dock="Right" Margin="5,0,0,0" Command="{Binding OpenCalibrationGroupWindowCommand}" Content="管理..." />
+                                <TextBlock Width="64" Text="当前分组" />
+                                <ComboBox x:Name="ComboBoxCalibrationGroups"
+                                          DisplayMemberPath="GroupName"
+                                          ItemsSource="{Binding Config.CalibrationGroups}"
+                                          SelectedValue="{Binding Config.ActiveCalibrationGroupName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          SelectedValuePath="GroupName"
+                                          SelectionChanged="CalibrationGroup_SelectionChanged" />
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Width="64" Text="波长标定" />
+                                <TextBlock Text="{Binding Config.WavelengthFile}" />
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Width="64" Text="幅值标定" />
+                                <TextBlock Text="{Binding Config.MaguideFile}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
                     <StackPanel x:Name="StackPanelOpen">
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.AverageTimes}" />
@@ -147,7 +169,12 @@
                                 <Button Click="GetNDport_Click" Content="Get" DockPanel.Dock="Right" />
                                 <Button Click="NDport_Click" Content="{x:Static properties:Resources.ChangeNDPort}" DockPanel.Dock="Right" />
                                 <TextBlock Text="NDPort" />
-                                <TextBox Margin="5,0" BorderThickness="0,0,0,1" Text="{Binding DisplayConfig.PortNum}" />
+                                <ComboBox x:Name="ComboBoxNDPort"
+                                          MinWidth="96"
+                                          Margin="5,0"
+                                          DisplayMemberPath="HoleName"
+                                          SelectedValue="{Binding DisplayConfig.PortNum, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          SelectedValuePath="HoleIndex" />
                             </DockPanel>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal" Visibility="{Binding Config.IsShutterEnable, Converter={StaticResource bool2VisibilityConverter}}">

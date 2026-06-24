@@ -2,8 +2,11 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.Spectrum.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
@@ -117,11 +120,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         [CommandDisplay("GetSpectrSerialNumber")]
         public RelayCommand GetSpectrSerialNumberCommand { get; set; }
+
+        [CommandDisplay("CalibrationGroup", Order = -4)]
+        public RelayCommand OpenCalibrationGroupWindowCommand { get; set; }
+
+        [CommandDisplay("ApplyCalibrationGroup", Order = -5)]
+        public RelayCommand ApplyCalibrationGroupCommand { get; set; }
+
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
             View = new ViewSpectrum(this);
             this.SetIconResource("DISpectrumIcon");
+
+            Config.EnsureCalibrationGroups();
 
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
 
@@ -159,9 +171,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
             EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
+            OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
+            ApplyCalibrationGroupCommand = new RelayCommand(a => ApplyActiveCalibrationGroup(true));
 
             OpenSpectrumLogCommand = new RelayCommand(a => OpenSpectrumLog());
             ContextMenu.Items.Add(new MenuItem() { Header = "SpectrumLog", Command = OpenSpectrumLogCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "CalibrationGroup", Command = OpenCalibrationGroupWindowCommand });
         }
 
         [CommandDisplay("SpectrumLog")]
@@ -186,6 +201,73 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public void EditDisplayConfig()
         {
             new PropertyEditorWindow(DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        public IReadOnlyList<HoleMap> GetNDHoleMappings()
+        {
+            var cfwPort = GetBoundCfwPort();
+            var holeMapping = cfwPort?.FilterWheelConfig.HoleMapping;
+            if (holeMapping != null && holeMapping.Count > 0)
+                return holeMapping.ToList();
+
+            return new FilterWheelConfig().HoleMapping.ToList();
+        }
+
+        public string? GetNDHoleName(int holeIndex)
+        {
+            return GetNDHoleMappings().FirstOrDefault(a => a.HoleIndex == holeIndex)?.HoleName;
+        }
+
+        public DeviceCfwPort? GetBoundCfwPort()
+        {
+            string deviceCode = Config.NDConfig.NDBindDeviceCode;
+            if (string.IsNullOrWhiteSpace(deviceCode))
+                return null;
+
+            return ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().FirstOrDefault(a => a.Code == deviceCode);
+        }
+
+        public void OpenCalibrationGroupWindow()
+        {
+            Config.EnsureCalibrationGroups();
+            new SpectrumCalibrationGroupWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            if (DisplayLazy.IsValueCreated)
+                DisplayLazy.Value.RefreshNDHoleMappings();
+        }
+
+        public bool ApplyActiveCalibrationGroup(bool restartService)
+        {
+            return ApplyCalibrationGroup(Config.ActiveCalibrationGroup, restartService);
+        }
+
+        public bool ApplyCalibrationGroupForND(int holeIndex)
+        {
+            var group = Config.FindCalibrationGroupForND(holeIndex, GetNDHoleName(holeIndex));
+            return ApplyCalibrationGroup(group, true);
+        }
+
+        public bool ApplyCalibrationGroup(SpectrumCalibrationGroup? group, bool restartService)
+        {
+            if (group == null)
+                return false;
+
+            bool changed = !string.Equals(Config.ActiveCalibrationGroupName, group.GroupName, StringComparison.Ordinal)
+                || !string.Equals(Config.WavelengthFile, group.WavelengthFile, StringComparison.Ordinal)
+                || !string.Equals(Config.MaguideFile, group.MaguideFile, StringComparison.Ordinal);
+
+            Config.ActiveCalibrationGroupName = group.GroupName;
+            Config.WavelengthFile = group.WavelengthFile;
+            Config.MaguideFile = group.MaguideFile;
+
+            if (!changed)
+                return false;
+
+            if (restartService)
+                Save();
+            else
+                SaveConfig();
+
+            return true;
         }
 
         public static int MyCallback(IntPtr strText, int nLen)
