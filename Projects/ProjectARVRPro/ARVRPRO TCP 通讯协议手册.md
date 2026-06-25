@@ -222,8 +222,137 @@ JSON
 
 }
 
+**3.5 客户端请求：查询流程启用状态 (GetProcessEnable)**
 
-**3.5 客户端请求：确认AOI切图完成 (AOITestSwitchImageComplete)**
+**说明**：查询当前流程组中所有流程项的启用状态。返回的 `Index` 与服务端推送 `SwitchPG.Data.ARVRTestType` 使用同一套序号约定，客户端可直接使用该序号进行后续设置。
+
+- **请求 EventName**：GetProcessEnable
+- **请求示例**：
+
+JSON
+
+{
+
+ "Version": "1.0",
+
+ "MsgID": "req-005",
+
+ "EventName": "GetProcessEnable"
+
+}
+
+- **响应示例**：
+
+JSON
+
+{
+
+ "Version": "1.0",
+
+ "MsgID": "req-005",
+
+ "EventName": "GetProcessEnable",
+
+ "Code": 0,
+
+ "Msg": "OK",
+
+ "Data": {
+
+  "ActiveGroupName": "Default",
+
+  "Count": 16,
+
+  "Items": [
+
+   {
+
+    "Index": 10,
+
+    "Name": "White1",
+
+    "FlowTemplate": "White1_Test",
+
+    "ProcessTypeName": "PoiDynamicProcess",
+
+    "IsEnabled": true
+
+   }
+
+  ]
+
+ }
+
+}
+
+**3.6 客户端请求：设置流程启用状态 (SetProcessEnable)**
+
+**说明**：按 `GetProcessEnable` 返回的 `Index` 批量设置流程项启用/禁用。设置成功后立即更新软件界面勾选状态，并保存到本地流程配置，后续 `ProjectARVRInit` / `SwitchPGCompleted` 按最新状态执行。
+
+- **请求 EventName**：SetProcessEnable
+- **请求参数 (Params)**：JSON 字符串，包含 `Items` 数组
+- **请求示例**：
+
+JSON
+
+{
+
+ "Version": "1.0",
+
+ "MsgID": "req-006",
+
+ "EventName": "SetProcessEnable",
+
+ "Params": "{\"Items\":[{\"Index\":10,\"IsEnabled\":true},{\"Index\":15,\"IsEnabled\":false}]}"
+
+}
+
+- **响应示例**：
+
+JSON
+
+{
+
+ "Version": "1.0",
+
+ "MsgID": "req-006",
+
+ "EventName": "SetProcessEnable",
+
+ "Code": 0,
+
+ "Msg": "OK",
+
+ "Data": {
+
+  "ActiveGroupName": "Default",
+
+  "Applied": [
+
+   {
+
+    "Index": 10,
+
+    "Name": "White1",
+
+    "FlowTemplate": "White1_Test",
+
+    "ProcessTypeName": "PoiDynamicProcess",
+
+    "IsEnabled": true
+
+   }
+
+  ],
+
+  "NotFound": []
+
+ }
+
+}
+
+
+**3.7 客户端请求：确认AOI切图完成 (AOITestSwitchImageComplete)**
 
 **说明**：在测试流程中，软件内部的算法流程（Flow Engine）可能需要通过中转服务器向外部客户端发送 AOI 切图指令 `AoiSwitchPG`（见 4.3），要求客户端切换 AOI 测试画面。当客户端完成 AOI 画面切换后，必须发送此指令通知软件继续执行后续流程。此过程可能在一轮测试中重复多次。
 
@@ -356,7 +485,7 @@ JSON
 
 }
 
-- **客户端动作**：控制硬件切换到下一张 AOI 测试画面，切换成功后回复 `AOITestSwitchImageComplete` 指令（见 3.5）。
+- **客户端动作**：控制硬件切换到下一张 AOI 测试画面，切换成功后回复 `AOITestSwitchImageComplete` 指令（见 3.7）。
 
 
 
@@ -403,5 +532,3 @@ Client                    Server (ARVRPRO)                 Flow Engine
 - `AoiSwitchPG` 和 `AOITestSwitchImageComplete` 通过中转服务器（默认端口 9200）中继。
 - 客户端每收到一次 `AoiSwitchPG` 就需回复一次 `AOITestSwitchImageComplete`。
 - 所有 AOI 切图完成后，Flow 继续执行后续算法，最终由 Server 推送 `ProjectARVRResult`。
-
- 
