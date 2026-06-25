@@ -28,18 +28,6 @@ namespace ProjectKB.Auth
             DialogResult = false;
         }
 
-        private void ResetPassword_Click(object sender, RoutedEventArgs e)
-        {
-            bool showPath = Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-            string message = $"请关闭软件，由维护人员删除本机密码文件后重新启动。\n\n重启后管理员账号和密码会恢复为：{KBAuthConfig.DefaultUserName} / {KBAuthConfig.DefaultPassword}\n登录后请立即修改密码。";
-
-            message += showPath
-                ? $"\n\n密码文件：\n{KBAuthConfig.PasswordFilePath}"
-                : "\n\n维护人员可按住 Ctrl+Shift 再点击“忘记密码”查看密码文件位置。";
-
-            MessageBox.Show(this, message, "忘记密码", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
