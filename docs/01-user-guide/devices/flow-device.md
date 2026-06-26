@@ -63,13 +63,6 @@
 - 如果设备配置本身就不完整，先修设备
 - 如果设备没问题，再回到 [流程执行与调试](../workflow/execution.md) 缩小范围
 
-## 继续阅读
-
-- [设备服务概览](./overview.md)
-- [工作流程概览](../workflow/README.md)
-- [流程执行与调试](../workflow/execution.md)
-- [日志查看器](../interface/log-viewer.md)
-
 ## 说明
 
 - 本页只保留流程设备服务的使用入口，不再继续维护代码结构分析。

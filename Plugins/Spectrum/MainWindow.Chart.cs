@@ -1,4 +1,5 @@
 #pragma warning disable CA1805,CA1822,CS8604
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Cie;
 using Spectrum.Data;
 using SpectrumResources = Spectrum.Properties.Resources;
@@ -10,36 +11,90 @@ namespace Spectrum
 {
     public partial class MainWindow
     {
+        private WindowCIE? _cieWindow;
+        private CieMarker? _currentCieMarker;
+
         public void DrawCIEPoinr(double fx, double fy ,double fu,double fv)
         {
             try
             {
-                this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                if (!Dispatcher.CheckAccess())
                 {
-                    CieChromaticity xy = new(fx, fy);
-                    if (!IsUsableChromaticity(xy))
+                    Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
                     {
-                        xy = CieColorConverter.Uv1976ToXy(new CieChromaticity(fu, fv));
-                    }
+                        UpdateCieSelection(fx, fy, fu, fv);
+                    });
+                    return;
+                }
 
-                    if (IsUsableChromaticity(xy))
-                    {
-                        string sampleLabel = SpectrumResources.SampleLabel;
-                        Cie1931View.SetSelectedXy(xy, System.Windows.Media.Colors.Red, sampleLabel);
-                        Cie1976View.SetSelectedXy(xy, System.Windows.Media.Colors.Red, sampleLabel);
-                    }
-                    else
-                    {
-                        Cie1931View.ClearSelection();
-                        Cie1976View.ClearSelection();
-                    }
-                });
+                UpdateCieSelection(fx, fy, fu, fv);
             }
             catch
             {
 
             }
 
+        }
+
+        private void UpdateCieSelection(double fx, double fy, double fu, double fv)
+        {
+            CieChromaticity xy = new(fx, fy);
+            if (!IsUsableChromaticity(xy))
+            {
+                xy = CieColorConverter.Uv1976ToXy(new CieChromaticity(fu, fv));
+            }
+
+            _currentCieMarker = IsUsableChromaticity(xy)
+                ? new CieMarker(SpectrumResources.SampleLabel, xy, System.Windows.Media.Colors.Red)
+                : null;
+
+            _cieWindow?.SetSelectedMarker(_currentCieMarker);
+        }
+
+        private void OpenCieWindow_Click(object sender, RoutedEventArgs e)
+        {
+            ShowCieWindow();
+        }
+
+        internal void ShowCieWindow()
+        {
+            if (_cieWindow == null)
+            {
+                _cieWindow = new WindowCIE { Owner = this };
+                _cieWindow.Closed += CieWindow_Closed;
+            }
+
+            _cieWindow.SetSelectedMarker(_currentCieMarker);
+            _cieWindow.Show();
+            _cieWindow.Activate();
+        }
+
+        private void CieWindow_Closed(object? sender, EventArgs e)
+        {
+            if (_cieWindow != null)
+            {
+                _cieWindow.Closed -= CieWindow_Closed;
+                _cieWindow = null;
+            }
+        }
+
+        private void ClearCieSelection()
+        {
+            _currentCieMarker = null;
+            _cieWindow?.SetSelectedMarker(null);
+        }
+
+        private void CloseCieWindow()
+        {
+            if (_cieWindow == null)
+            {
+                return;
+            }
+
+            WindowCIE window = _cieWindow;
+            _cieWindow = null;
+            window.Closed -= CieWindow_Closed;
+            window.Close();
         }
 
         private static bool IsUsableChromaticity(CieChromaticity xy)

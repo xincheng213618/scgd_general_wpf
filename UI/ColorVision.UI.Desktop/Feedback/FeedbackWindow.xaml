@@ -7,95 +7,245 @@
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.SendFeedback}" 
         Background="{DynamicResource GlobalBackground}" 
-        Height="640" Width="520" 
+        Height="620" Width="760"
+        MinHeight="560" MinWidth="680"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         Initialized="Window_Initialized">
-    <Grid Margin="15">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <Style x:Key="FeedbackSecondaryTextBlockStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0"/>
+        </Style>
+
+        <Style x:Key="FeedbackSectionBorderStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12"/>
+        </Style>
+
+        <Style x:Key="FeedbackListBoxStyle" TargetType="{x:Type ListBox}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+
+        <Style x:Key="FeedbackListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Title -->
-        <TextBlock Text="{x:Static properties:Resources.SendFeedback}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Text="{x:Static properties:Resources.SendFeedback}"
+                   FontSize="22"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,14"/>
 
-        <!-- Message area -->
-        <TextBox x:Name="MessageTextBox" Grid.Row="1" 
-                 AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                 Margin="0,0,0,10" MinHeight="80"
-                 Text="{x:Static properties:Resources.FeedbackPlaceholder}"
-                 GotFocus="MessageTextBox_GotFocus"/>
+        <Border Grid.Row="1" Style="{StaticResource FeedbackSectionBorderStyle}" Margin="0,0,0,12">
+            <TextBox x:Name="MessageTextBox"
+                     AcceptsReturn="True"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     MinHeight="110"
+                     MaxHeight="150"
+                     Padding="0"
+                     Text="{x:Static properties:Resources.FeedbackPlaceholder}"
+                     TextWrapping="Wrap"
+                     VerticalContentAlignment="Top"
+                     VerticalScrollBarVisibility="Auto"
+                     Foreground="{DynamicResource SecondaryTextBrush}"
+                     GotFocus="MessageTextBox_GotFocus"
+                     LostFocus="MessageTextBox_LostFocus"/>
+        </Border>
 
-        <!-- Diagnostic items list with checkboxes -->
-        <Grid Grid.Row="2" Margin="0,0,0,5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Text="{x:Static properties:Resources.DiagnosticItems}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-            <Button x:Name="PackLogsButton" Grid.Column="1" Content="{x:Static properties:Resources.PackLogs}" Click="PackLogs_Click" Padding="8,3"/>
-        </Grid>
+        <Border Grid.Row="2" Style="{StaticResource FeedbackSectionBorderStyle}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-        <ListBox x:Name="CollectorsList" Grid.Row="3" MaxHeight="130" Margin="0,0,0,10"
-                 BorderThickness="1" BorderBrush="{DynamicResource GlobalBorder}">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <CheckBox IsChecked="{Binding IsChecked}" Margin="2">
-                        <TextBlock>
-                            <Run Text="{Binding Name, Mode=OneWay}"/>
-                            <Run Text="{Binding Description, Mode=OneWay}" Foreground="Gray"/>
-                        </TextBlock>
-                    </CheckBox>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{x:Static properties:Resources.DiagnosticItems}"
+                               FontSize="15"
+                               FontWeight="SemiBold"/>
+                    <Button x:Name="PackLogsButton"
+                            Grid.Column="1"
+                            Content="{x:Static properties:Resources.PackLogs}"
+                            Click="PackLogs_Click"
+                            Padding="14,5"/>
+                </Grid>
 
-        <!-- Attached files list -->
-        <Grid Grid.Row="4" Margin="0,0,0,5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Text="{x:Static properties:Resources.Attachments}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-            <Button x:Name="AddFileButton" Grid.Column="1" Content="{x:Static properties:Resources.AddFile}" Click="AddFile_Click" Margin="5,0" Padding="8,3"/>
-            <Button x:Name="AddScreenshotButton" Grid.Column="2" Content="{x:Static properties:Resources.CaptureScreenshot}" Click="CaptureScreenshot_Click" Padding="8,3"/>
-        </Grid>
+                <ListBox x:Name="CollectorsList"
+                         Grid.Row="1"
+                         Margin="0,12,0,0"
+                         MinHeight="190"
+                         Style="{StaticResource FeedbackListBoxStyle}"
+                         ItemContainerStyle="{StaticResource FeedbackListBoxItemStyle}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource GlobalBackground}"
+                                    BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                                    BorderThickness="1"
+                                    CornerRadius="5"
+                                    Margin="0,0,0,8"
+                                    Padding="10">
+                                <CheckBox IsChecked="{Binding IsChecked}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Row="1"
+                                                   Text="{Binding Description, Mode=OneWay}"
+                                                   FontSize="12"
+                                                   Margin="0,3,0,0"
+                                                   Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                                    </Grid>
+                                </CheckBox>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
 
-        <ListBox x:Name="AttachmentsList" Grid.Row="5" MaxHeight="100" Margin="0,0,0,10">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="{Binding SizeText}" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Button Content="✕" Click="RemoveAttachment_Click" Tag="{Binding}" Padding="3,0" FontSize="10" Background="Transparent" BorderThickness="0" Cursor="Hand"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-
-        <!-- Progress bar and Status -->
-        <Grid Grid.Row="6" Margin="0,0,0,10">
+        <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <ProgressBar x:Name="UploadProgressBar" Height="18" Minimum="0" Maximum="100" Value="0"
-                         Visibility="Collapsed"/>
-            <TextBlock x:Name="StatusText" Grid.Row="1" Foreground="Gray" Margin="0,5,0,0"/>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{x:Static properties:Resources.Attachments}" FontWeight="SemiBold"/>
+            <Button x:Name="AddFileButton"
+                    Grid.Column="1"
+                    Content="{x:Static properties:Resources.AddFile}"
+                    Click="AddFile_Click"
+                    Margin="5,0"
+                    Padding="10,4"/>
+            <Button x:Name="AddScreenshotButton"
+                    Grid.Column="2"
+                    Content="{x:Static properties:Resources.CaptureScreenshot}"
+                    Click="CaptureScreenshot_Click"
+                    Padding="10,4"/>
+
+            <ListBox x:Name="AttachmentsList"
+                     Grid.Row="1"
+                     Grid.ColumnSpan="3"
+                     Height="76"
+                     Margin="0,8,0,0"
+                     Style="{StaticResource FeedbackListBoxStyle}"
+                     ItemContainerStyle="{StaticResource FeedbackListBoxItemStyle}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                                BorderThickness="0,0,0,1"
+                                Padding="0,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding SizeText}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"
+                                           Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                                <Button Grid.Column="2"
+                                        Content="x"
+                                        Click="RemoveAttachment_Click"
+                                        Tag="{Binding}"
+                                        Padding="5,0"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Cursor="Hand"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </Grid>
 
-        <!-- Buttons -->
-        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="{x:Static properties:Resources.SendFeedback}" x:Name="SendButton" Click="Send_Click" Padding="15,5" Margin="0,0,10,0" IsDefault="True"/>
-            <Button Content="{x:Static properties:Resources.Cancel}" Click="Cancel_Click" Padding="15,5" IsCancel="True"/>
-        </StackPanel>
+        <Grid Grid.Row="4" Margin="0,14,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ProgressBar x:Name="UploadProgressBar"
+                         Grid.ColumnSpan="3"
+                         Height="14"
+                         Minimum="0"
+                         Maximum="100"
+                         Value="0"
+                         Visibility="Collapsed"/>
+            <TextBlock x:Name="StatusText"
+                       Grid.Row="1"
+                       Margin="0,8,12,0"
+                       Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+            <Button x:Name="SendButton"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Content="{x:Static properties:Resources.SendFeedback}"
+                    Click="Send_Click"
+                    Padding="18,6"
+                    Margin="0,8,10,0"
+                    Foreground="White"
+                    Background="{DynamicResource PrimaryBrush}"
+                    BorderBrush="{DynamicResource PrimaryBrush}"
+                    IsDefault="True"/>
+            <Button Grid.Row="1"
+                    Grid.Column="2"
+                    Content="{x:Static properties:Resources.Cancel}"
+                    Click="Cancel_Click"
+                    Padding="18,6"
+                    Margin="0,8,0,0"
+                    IsCancel="True"/>
+        </Grid>
     </Grid>
 </Window>

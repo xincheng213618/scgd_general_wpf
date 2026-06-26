@@ -1,73 +1,33 @@
-# Flow Engine 结点文档汇总
+# Flow 节点摘要
 
-## 文档说明
-
-本目录包含以下自动生成的结点文档：
-
-1. **`flow_nodes_reference.md`** (已配置结点参考)
-   - 基于 `NodeConfigurator` 目录中的配置器文件
-   - 包含 **42 个已配置结点** 的详细属性
-   - 每个结点包含：
-     - 配置面板属性（来自 NodeConfigurator）
-     - 类级别属性（来自 FlowEngineLib 实现）
-     - 基类、实现文件等信息
-
-2. **`flow_nodes_complete.md`** (完整结点清单)
-   - 基于 `FlowEngineLib` 目录中所有结点类定义
-   - 包含 **90 个结点类** 的完整清单
-   - 按类型分类统计
-   - 每个结点包含基类、实现文件、属性数量
-
-## 统计概览
-
-### 已配置结点 (42 个)
-
-| 类型 | 数量 |
-|------|------|
-| Algorithm | 17 |
-| Camera | 8 |
-| POI | 5 |
-| OLED | 2 |
-| SMU | 3 |
-| Sensor | 2 |
-| Spectrum | 3 |
-| PG | 1 |
-| FW | 1 |
-
-### 所有结点类 (90 个)
-
-| 类型 | 数量 |
-|------|------|
-| Algorithm | 25 |
-| Camera | 14 |
-| POI | 8 |
-| OLED | 7 |
-| SMU | 7 |
-| MQTT | 5 |
-| Sensor | 3 |
-| Start | 3 |
-| Other | 8 |
-| Loop | 2 |
-| End | 2 |
-| Spectrum | 2 |
-| FW | 1 |
-| Manual | 1 |
-| Device | 1 |
-| PG | 1 |
-
-## 使用建议
-
-- **开发人员**：参考 `flow_nodes_complete.md` 了解所有可用的结点类及其属性
-- **配置人员**：参考 `flow_nodes_reference.md` 了解已配置结点的面板属性和配置方式
-- **维护人员**：两个文档结合使用，了解结点配置与实现的对应关系
+本页保留 FlowEngine 节点的轻量摘要。旧的完整自动生成清单已删除；需要逐项追溯时直接查看源码。
 
 ## 数据来源
 
-- **结点配置**：`Engine\ColorVision.Engine\Templates\Flow\NodeConfigurator\`
-- **结点实现**：`Engine\FlowEngineLib\`
+| 范围 | 源码目录 |
+| --- | --- |
+| 节点实现 | `Engine/FlowEngineLib/` |
+| 节点配置器 | `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/` |
 
-## 更新说明
+## 当前分类概览
 
-文档基于源码自动生成，当结点配置或实现发生变化时，需要重新运行生成脚本。
+| 类型 | 说明 |
+| --- | --- |
+| Algorithm | 算法和模板执行相关节点 |
+| Camera | 相机采集、图像输入和相机控制 |
+| POI/ROI | 关注点、区域和结果定位 |
+| SMU/Sensor/Spectrum/PG | 设备相关节点 |
+| MQTT/Device | 设备通信和服务调用 |
+| Start/End/Loop/Manual | 流程控制节点 |
 
-生成时间：2026-05-22
+## 使用方式
+
+- 想新增或修改节点：先看 [Flow 节点扩展](./extensions/flow-node.md) 和 [FlowEngineLib 架构](../03-architecture/components/engine/flow-engine.md)。
+- 想理解模板和 Flow 如何绑定：看 [Engine 模板与 Flow 链路](./engine-components/template-flow-chain.md)。
+- 想确认当前节点类：直接在源码中搜索 `Node`、`NodeType`、`NodeConfigurator`。
+
+推荐命令：
+
+```powershell
+rg -n "class .*Node|NodeType|NodeConfigurator" Engine/FlowEngineLib Engine/ColorVision.Engine/Templates/Flow
+```

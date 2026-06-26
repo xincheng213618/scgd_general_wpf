@@ -1,9 +1,11 @@
 ﻿#pragma warning disable CA1816
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -134,7 +136,11 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 {
                     if (e == MsgRecordState.Success)
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Success, "ColorVision");
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            ApplyBoundSpectrumCalibration(holeMap.HoleIndex, true);
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Success, "ColorVision");
+                        });
                     }
                     else
                     {
@@ -167,7 +173,11 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 if (e == MsgRecordState.Success)
                 {
                     int port = msgRecord.MsgReturn.Data.Port;
-                    CombPort.SelectedIndex = port;
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        CombPort.SelectedItem = Device.FilterWheelConfig.HoleMapping.FirstOrDefault(a => a.HoleIndex == port);
+                        ApplyBoundSpectrumCalibration(port, false);
+                    });
                 }
                 else
                 {
@@ -180,6 +190,18 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged; ;
+        }
+
+        private void ApplyBoundSpectrumCalibration(int holeIndex, bool forceRestart)
+        {
+            foreach (var spectrum in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>())
+            {
+                if (!string.Equals(spectrum.Config.NDConfig.NDBindDeviceCode, Device.Code, StringComparison.Ordinal))
+                    continue;
+
+                spectrum.DisplayConfig.PortNum = holeIndex;
+                spectrum.ApplyCalibrationGroupForND(holeIndex, forceRestart);
+            }
         }
     }
 }

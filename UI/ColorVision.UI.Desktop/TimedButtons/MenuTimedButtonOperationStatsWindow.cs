@@ -1,5 +1,5 @@
+using ColorVision.Common.ThirdPartyApps;
 using ColorVision.UI.Desktop.Properties;
-using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.TimedButtons
@@ -42,15 +42,21 @@ namespace ColorVision.UI.Desktop.TimedButtons
         }
     }
 
-    public class MenuTimedButtonOperationStatsWindow : GlobalMenuBase
+    public class TimedButtonOperationStatsAppProvider : IThirdPartyAppProvider
     {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => Resources.MenuTimedButtonOperationStats;
-        public override int Order => 1011;
-
-        public override void Execute()
+        public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
-            new TimedButtonOperationStatsWindowLauncher().OpenWindow();
+            return new[]
+            {
+                new ThirdPartyAppInfo
+                {
+                    Name = Resources.MenuTimedButtonOperationStats,
+                    Group = "ColorVision",
+                    Order = 11,
+                    LaunchAction = () => new TimedButtonOperationStatsWindowLauncher().OpenWindow(),
+                    GetIconPath = () => Environment.ProcessPath
+                }
+            };
         }
     }
 

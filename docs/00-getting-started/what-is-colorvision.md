@@ -58,9 +58,3 @@ ColorVision 采用分层模块化架构：
 - **数据层** - 数据存储和管理
 
 详细的架构说明请参考 [系统架构概览](../03-architecture/overview/system-overview.md)。
-
-## 从哪里继续阅读
-
-- 想确认安装和运行前提：前往 [系统要求](./prerequisites.md)
-- 想直接完成安装：前往 [安装指南](./installation.md)
-- 想先上手一次基础操作：前往 [快速上手](./quick-start.md)

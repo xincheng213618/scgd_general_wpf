@@ -17,7 +17,7 @@
 
 ## 源码入口
 
-| 文件 | 交接用途 |
+| 文件 | 用途 |
 | --- | --- |
 | `TemplateDataLoad.cs` | 注册 DataLoad 模板、模板代码和 `TemplateDicId`。 |
 | `DataLoadParam.cs` | 定义设备、结果类型、流水号和 ZIndex 参数。 |
@@ -65,7 +65,7 @@
 
 `TemplateDataLoad` 继承普通 `ITemplate<T>`，因此模板明细仍然来自系统字典和模板表。它没有自定义编辑控件，主要依赖通用模板编辑器和 PropertyGrid 展示 `DataLoadParam`。
 
-交接时不要把 DataLoad 写成“文件导入器”。当前代码没有直接选择文件或解析文件格式，它只是把数据定位参数交给算法服务或 Flow 链路，由下游服务按设备、流水号、结果类型和 ZIndex 读取数据。
+维护时不要把 DataLoad 写成“文件导入器”。当前代码没有直接选择文件或解析文件格式，它只是把数据定位参数交给算法服务或 Flow 链路，由下游服务按设备、流水号、结果类型和 ZIndex 读取数据。
 
 ## 常见排查
 
@@ -77,16 +77,10 @@
 | 加载结果类型不对 | `CVResultType` 转字符串后是否是服务端期望值。 |
 | 多层结果取错 | `ZIndex/DataZIndex` 是否和 Flow 节点层级一致。 |
 
-## 交接清单
+## 检查清单
 
 - 写清使用的是 `AlgDataLoadNode` 模板路径，还是 `AlgDataLoadNode2` 显式参数路径。
 - 记录设备 Code、结果类型、流水号来源和 ZIndex 语义。
 - 修改服务端 DataLoad 协议时，同步检查 `DataLoadData`、`DataLoadData2` 和 Flow 节点文档。
 - 如果要加文件导入能力，应新增明确的文件参数和失败提示，不要混在当前 DataLoad 模板里。
 - 验收时用真实批次确认加载结果和下游节点消费的是同一条数据。
-
-## 继续阅读
-
-- [Engine 模板与 Flow 链路](../../engine-components/template-flow-chain.md)
-- [流程引擎](./flow-engine.md)
-- [当前算法模板覆盖清单](../current-algorithm-template-coverage.md)

@@ -25,7 +25,7 @@ dotnet run --project ColorVision/ColorVision.csproj
 
 - 使用安装器交付完整桌面程序
 - 按需携带插件目录和运行时依赖
-- 若涉及在线更新，继续阅读 [自动更新系统](./auto-update.md)
+- 若涉及在线更新，查看 [自动更新系统](./auto-update.md)
 
 ## 部署前确认项
 

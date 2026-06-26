@@ -1,94 +1,17 @@
-# 性能优化指南
+---
+search: false
+outline: false
+redirect_from_deleted_page: true
+---
 
-## 概述
+<script setup>
+import { onMounted } from 'vue'
 
-本文档提供 ColorVision 系统的性能优化建议和最佳实践。
+onMounted(() => {
+  window.location.replace('../../04-api-reference/ui-components/ColorVision.SocketProtocol')
+})
+</script>
 
-## 启动性能优化
+# 页面已整理
 
-### 延迟加载
-
-- 推迟非必要模块的加载
-- 使用异步初始化
-- 实现按需加载机制
-
-### 并行初始化
-
-- 并行加载独立模块
-- 利用多核处理器
-- 避免阻塞主线程
-
-## 运行时性能优化
-
-### 内存管理
-
-- 及时释放不用的资源
-- 使用对象池管理频繁创建的对象
-- 避免内存泄漏
-
-### 图像处理优化
-
-- 使用硬件加速
-- 批量处理图像
-- 优化算法实现
-
-### 数据库优化
-
-- 使用连接池
-- 预编译 SQL 语句
-- 建立适当的索引
-- 使用分页查询
-
-## 界面性能优化
-
-### 虚拟化
-
-- 使用虚拟化列表控件
-- 延迟渲染可见区域外的元素
-- 按需加载数据
-
-### 减少重绘
-
-- 批量更新 UI
-- 使用双缓冲
-- 避免频繁的布局变更
-
-## 通信与运维窗口优化
-
-`UI/ColorVision.SocketProtocol` 这类带实时连接、消息历史和运维窗口的模块，优化重点不只是吞吐量，还包括服务生命周期、TCP 消息边界、长期运行后的数据库容量，以及现场排查效率。
-
-建议优先阅读：
-
-- [Socket 通信模块优化路线](./socket-protocol-optimization-roadmap.md)
-- [ColorVision.SocketProtocol API 导读](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md)
-
-## 监控和诊断
-
-### 性能监控
-
-使用系统监控插件监测：
-- CPU 使用率
-- 内存占用
-- 磁盘 I/O
-- 网络流量
-
-### 性能分析工具
-
-推荐使用的分析工具：
-- Visual Studio 性能分析器
-- dotTrace
-- PerfView
-
-## 最佳实践
-
-1. **定期进行性能测试**
-2. **建立性能基准**
-3. **持续监控生产环境**
-4. **及时优化瓶颈**
-
-## 相关文档
-
-- [系统架构](/03-architecture/overview/system-overview)
-- [故障排除](/01-user-guide/troubleshooting/common-issues)
-- [系统监控插件](/04-api-reference/plugins/standard-plugins/system-monitor)
-- [Socket 通信模块优化路线](./socket-protocol-optimization-roadmap.md)
+这个旧页面已经合并到 [ColorVision.SocketProtocol](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md)。

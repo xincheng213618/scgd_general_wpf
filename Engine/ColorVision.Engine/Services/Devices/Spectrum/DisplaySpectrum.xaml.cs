@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
 using log4net;
@@ -23,6 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public ViewSpectrum View { get => Device.View;}
 
         public string DisPlayName => Device.Config.Name;
+        private bool _isInitialized;
 
         public DisplaySpectrum(DeviceSpectrum DeviceSpectrum)
         {
@@ -33,6 +35,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            Device.Config.EnsureCalibrationGroups();
+            RefreshNDHoleMappings();
 
             Device.SelfAdaptionInitDarkStarted += () =>
             {
@@ -55,6 +59,21 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
+            _isInitialized = true;
+        }
+
+        public void RefreshNDHoleMappings()
+        {
+            ComboBoxNDPort.ItemsSource = Device.GetNDHoleMappings();
+        }
+
+        private void CalibrationGroup_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isInitialized)
+                return;
+
+            if (ComboBoxCalibrationGroups.SelectedItem is SpectrumCalibrationGroup group)
+                Device.ApplyCalibrationGroup(group, true);
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
@@ -267,6 +286,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
+                else if (e == MsgRecordState.Success)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        RefreshNDHoleMappings();
+                        Device.ApplyCalibrationGroupForND(Device.DisplayConfig.PortNum, true);
+                    });
+                }
             };
         }
 
@@ -278,7 +305,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (e == MsgRecordState.Success)
                 {
                     int port = msgRecord.MsgReturn.Data.Port;
-                    Device.DisplayConfig.PortNum = port;
+                    Application.Current.Dispatcher.Invoke(() => Device.DisplayConfig.PortNum = port);
                 }
                 else
                 {

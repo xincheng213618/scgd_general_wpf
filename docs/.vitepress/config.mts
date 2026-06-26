@@ -59,19 +59,30 @@ export default withMermaid(
     // Clean URLs (removes .html extension)
     cleanUrls: true,
     
-    // Ignore dead links during build
-    ignoreDeadLinks: true,
+    // Keep internal documentation links strict so stale routes fail the build.
+    ignoreDeadLinks: false,
     
     // Ignore specific files/patterns
     srcExclude: [
       '**/_*.md',
       '**/.*',
-      'node_modules/**'
+      'node_modules/**',
+      'en/**',
+      'zh-tw/**',
+      'ja/**',
+      'ko/**',
     ],
 
     themeConfig: {
       logo: '/images/ColorVision.png',
       siteTitle: 'ColorVision',
+      notFound: {
+        code: '404',
+        title: '页面未找到',
+        quote: '这个地址可能已经整理、合并或移动。请从首页、搜索或左侧目录重新进入。',
+        linkLabel: '返回文档首页',
+        linkText: '返回文档首页'
+      },
       socialLinks: [
         { icon: 'github', link: 'https://github.com/xincheng213618/scgd_general_wpf' }
       ],

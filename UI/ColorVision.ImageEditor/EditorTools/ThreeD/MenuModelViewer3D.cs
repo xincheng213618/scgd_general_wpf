@@ -1,21 +1,34 @@
-﻿using ColorVision.ImageEditor.Properties;
-using ColorVision.UI.Menus;
+using ColorVision.Common.ThirdPartyApps;
+using System;
+using System.Collections.Generic;
 using System.Windows;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD
 {
-    public class MenuModelViewer3D : MenuItemBase
+    public class ModelViewer3DAppProvider : IThirdPartyAppProvider
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => Properties.Resources.MenuModelViewer3D;
-        public override int Order => 10;
-
-        public override void Execute()
+        public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
+            return new[]
+            {
+                new ThirdPartyAppInfo
+                {
+                    Name = Properties.Resources.MenuModelViewer3D,
+                    Group = "ColorVision",
+                    Order = 10,
+                    LaunchAction = OpenModelViewer,
+                    GetIconPath = () => Environment.ProcessPath
+                }
+            };
+        }
+
+        private static void OpenModelViewer()
+        {
+            Window? owner = Application.Current.GetActiveWindow();
             new ModelViewer3DWindow
             {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
+                Owner = owner,
+                WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner
             }.Show();
         }
     }

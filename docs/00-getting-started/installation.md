@@ -65,7 +65,7 @@ dotnet run --project .\ColorVision\ColorVision.csproj -p:Platform=x64
 3. 插件扫描完成后，帮助或插件相关菜单能够正常打开
 4. 可以打开一张图片，确认主界面基础交互正常
 
-如果这几步都正常，说明安装链路基本可用，可以继续阅读 [首次运行指南](./first-steps.md) 和 [快速上手](./quick-start.md)。
+如果这几步都正常，说明安装链路基本可用，下一步看 [首次运行指南](./first-steps.md) 或 [快速上手](./quick-start.md)。
 
 ## 常见安装问题
 
@@ -86,9 +86,8 @@ dotnet run --project .\ColorVision\ColorVision.csproj -p:Platform=x64
 - 优先确认是否存在旧版本残留配置或文件占用
 - 必要时先关闭主程序与相关后台服务，再重新安装或重新启动
 
-## 想继续深入时去哪里
+## 下一步去哪里
 
 - 想看首次启动后的基本操作：前往 [首次运行指南](./first-steps.md)
 - 想快速完成一次最小闭环体验：前往 [快速上手](./quick-start.md)
 - 想了解安装器、更新器和交付链路的实现：前往 [部署概览](../02-developer-guide/deployment/overview.md)
-

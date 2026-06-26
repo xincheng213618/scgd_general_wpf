@@ -1,6 +1,5 @@
 #pragma warning disable CA1822,CS8625
 using AvalonDock.Layout;
-using ColorVision.ImageEditor.Cie;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
@@ -80,6 +79,7 @@ namespace Spectrum
             };
             this.Closed += (s, e) =>
             {
+                CloseCieWindow();
                 CleanupSmuTimedButtons();
                 Manager.SmuController.Close();
                 Manager.Disconnect();
@@ -123,8 +123,6 @@ namespace Spectrum
             InitializeNativeLogPanel();
             LayoutManager.RegisterContent("NativeLogPanel", NativeLogGrid);
 
-            LayoutManager.RegisterContent("CIEDiagram", CiePane.Content);
-
             // Load saved layout if exists
             LayoutManager.LoadLayout();
 
@@ -137,7 +135,6 @@ namespace Spectrum
 
             StatusBarManager.GetInstance().Init(StatusBarGrid, "Spectrum");
 
-            InitializeCieDiagramViews();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues<SpectrometerType>().Cast<SpectrometerType>()
                                                    select new KeyValuePair<SpectrometerType, string>(e1, e1.ToDescription());
 
@@ -221,21 +218,6 @@ namespace Spectrum
             UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
             InitializeSmuTimedButtons();
             _ = AutoConnectSmuIfNeededAsync();
-        }
-
-        private void InitializeCieDiagramViews()
-        {
-            ConfigureCompactCieView(Cie1931View, CieDiagramKind.Cie1931xy);
-            ConfigureCompactCieView(Cie1976View, CieDiagramKind.Cie1976uv);
-        }
-
-        private static void ConfigureCompactCieView(CieDiagramView diagramView, CieDiagramKind kind)
-        {
-            diagramView.SetDiagram(kind);
-            diagramView.SetGamuts(new[] { CieGamuts.SRgb });
-            diagramView.SetReferenceMarkers(new[] { CieIlluminants.D65 });
-            diagramView.ShowCctReference = true;
-            diagramView.ShowDaylightReference = false;
         }
 
         private async Task AutoConnectSmuIfNeededAsync()

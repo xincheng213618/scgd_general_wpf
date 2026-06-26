@@ -142,7 +142,7 @@ namespace Spectrum.Layout
                 docGroup.Children.Add(docPane);
                 centerPanel.Children.Add(docGroup);
 
-                // Bottom: Log + CIE Diagram
+                // Bottom: Log panels
                 var bottomGroup = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(DefaultBottomPaneHeight) };
                 var bottomPane = new LayoutAnchorablePane();
 
@@ -169,18 +169,6 @@ namespace Spectrum.Layout
                 if (_contentRegistry.TryGetValue("NativeLogPanel", out var nativeLogContent))
                     nativeLogAnchorable.Content = nativeLogContent;
                 bottomPane.Children.Add(nativeLogAnchorable);
-
-                var cieAnchorable = new LayoutAnchorable
-                {
-                    Title = "CIE色度图",
-                    ContentId = "CIEDiagram",
-                    CanClose = true,
-                    CanAutoHide = true,
-                    CanFloat = true
-                };
-                if (_contentRegistry.TryGetValue("CIEDiagram", out var cieContent))
-                    cieAnchorable.Content = cieContent;
-                bottomPane.Children.Add(cieAnchorable);
 
                 bottomGroup.Children.Add(bottomPane);
                 centerPanel.Children.Add(bottomGroup);
@@ -230,7 +218,6 @@ namespace Spectrum.Layout
                 {
                     "LogPanel" => "日志",
                     "NativeLogPanel" => "光谱仪原生日志",
-                    "CIEDiagram" => "CIE色度图",
                     _ => contentId
                 };
 

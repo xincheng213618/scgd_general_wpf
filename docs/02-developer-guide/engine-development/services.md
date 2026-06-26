@@ -1,8 +1,8 @@
-# Engine 服务开发交接手册
+# Engine 服务开发指南
 
 本页说明 `Engine/ColorVision.Engine/Services/` 里真实存在的设备服务开发模型。这里的“服务”不是通用 DI 服务，而是主程序运行时可见、可配置、可显示、可通过 MQTT 发命令的设备或业务服务。
 
-第一次接手先读 [Engine 设备服务链路](../../04-api-reference/engine-components/device-service-chain.md)，再用本页定位开发落点。
+第一次维护设备服务时，先读 [Engine 设备服务链路](../../04-api-reference/engine-components/device-service-chain.md)，再用本页定位开发落点。
 
 ## 当前服务链路
 
@@ -50,7 +50,7 @@
 5. 新建 `MQTT* : MQTTDeviceService<Config*>`，只封装设备命令，不写客户判定。
 6. 在 `DeviceServiceFactoryRegistry.RegisterDefaults()` 注册 `DeviceServiceFactory<Config*>`。
 7. 如需从终端创建，确认 `DeviceServiceCreateContext` 的 `Code`、`Name`、`SendTopic`、`SubscribeTopic` 会写入配置。
-8. 更新使用手册、设备服务链路、模块对照表和测试验收记录。
+8. 更新使用手册、设备服务链路、项目结构总览和测试验收记录。
 
 ## 变更边界
 
@@ -78,4 +78,4 @@
 - [Engine 设备服务链路](../../04-api-reference/engine-components/device-service-chain.md)
 - [MQTT 消息处理](./mqtt.md)
 - [Engine 运行时对象目录](../../04-api-reference/engine-components/runtime-object-map.md)
-- [测试与验证交接手册](../testing.md)
+- [测试与验证](../testing.md)

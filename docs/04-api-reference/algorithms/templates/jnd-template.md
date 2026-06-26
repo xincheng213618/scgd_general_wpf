@@ -18,7 +18,7 @@
 
 ## 源码入口
 
-| 文件 | 交接用途 |
+| 文件 | 用途 |
 | --- | --- |
 | `TemplateJND.cs` | 注册 JND 模板，设置 `TemplateDicId = 30` 和 `Code = OLED.JND.CalVas`。 |
 | `JNDParam.cs` | 保存 `CutOff` 参数。 |
@@ -52,9 +52,9 @@
 | `v_jnd` | 纵向 JND 结果，来自算法服务回写的 `POIResultDataJND`。 |
 | POI 点位 | JND 不是自己定义点位，而是消费 `TemplatePoi`。点位变更会直接影响 JND 输出。 |
 
-## 项目交接边界
+## 项目维护边界
 
-`ProjectShiyuan` 当前会使用 JND/POI 结果导出和 JND 验证。交接时不要把“JND CSV 已生成”等同于“产品 PASS”：项目侧还可能继续读取 `Compliance_Math_JND`、检查 `Validate` 字段、复制图像或生成伪彩图。
+`ProjectShiyuan` 当前会使用 JND/POI 结果导出和 JND 验证。维护时不要把“JND CSV 已生成”等同于“产品 PASS”：项目侧还可能继续读取 `Compliance_Math_JND`、检查 `Validate` 字段、复制图像或生成伪彩图。
 
 相关项目页：[ProjectShiyuan](../../projects/project-shiyuan.md)。
 
@@ -81,17 +81,9 @@
 | 项目结果 OK/NG 不一致 | 回看项目包对 JND 的二次验证，不要只看算法页结果。 |
 | 导出路径异常 | 检查 `SideSave(...)` 的 `selectedPath` 语义。 |
 
-## 交接清单
+## 检查清单
 
 - 变更 `CutOff` 时，更新 `JNDParam.cs`、`MysqlJND.cs` 和现场推荐值。
 - 修改 POI 选择或坐标系时，同步更新 [POI 模板](./poi-template.md) 和项目包文档。
 - 修改结果字段时，同步更新 `ViewRsultJND.cs`、导出列、项目页和验收样例。
 - 若项目依赖 JND 判定，项目页必须说明最终 OK/NG 的来源。
-
-## 继续阅读
-
-- [POI 模板](./poi-template.md)
-- [POI 原语](../primitives/poi.md)
-- [ProjectShiyuan](../../projects/project-shiyuan.md)
-- [结果交接链路](../../engine-components/result-handoff-chain.md)
-- [当前算法模板覆盖清单](../current-algorithm-template-coverage.md)

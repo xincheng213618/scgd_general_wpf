@@ -33,7 +33,7 @@ public class W51TestResult : ViewModelBase
 
 这份契约代码只描述 JSON 字段，并内置了一个可独立复制的 `ViewModelBase`，不依赖 ARVRPro 的流程、算法、数据库、UI 或任何内部项目。
 
-`ObjectiveTestResult` 已覆盖当前 ARVRPro `ObjectiveTestResult` 的所有顶层静态属性：`W25TestResult`、`W51TestResult`、`W255TestResult`、`BlackTestResult`、`RedTestResult`、`GreenTestResult`、`BlueTestResult`、`ChessboardTestResult`、`MTFHVTestResult`、`MTFHV048TestResults`、`MTFHV058TestResults`、`DistortionTestResult`、`OpticCenterTestResult`、`DynamicTestResults`、`TotalResult`、`TotalResultString`。
+`ObjectiveTestResult` 已覆盖当前 ARVRPro `ObjectiveTestResult` 的所有顶层静态属性：`W25TestResult`、`W51TestResult`、`W255TestResult`、`BlackTestResult`、`RedTestResult`、`GreenTestResult`、`BlueTestResult`、`ChessboardTestResult`、`MTFHVTestResult`、`MTFHV048TestResults`、`MTFHV058TestResults`、`DistortionTestResult`、`OpticCenterTestResult`、`DynamicTestResults`、`Msg`、`TotalResult`、`TotalResultString`。
 
 其中每个 `*TestResult` 内部的公开测试项也按当前 ARVRPro 输出字段补齐。`DistortionTestResult.OpticDistortion` 在 JSON 中实际字段名是 `Optic_Distortion`，契约里保留了 `Optic_Distortion` 字段，并提供 `OpticDistortion` 便捷属性。
 

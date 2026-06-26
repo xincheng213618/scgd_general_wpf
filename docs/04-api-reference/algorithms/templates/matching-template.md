@@ -21,7 +21,7 @@
 
 ## 源码入口
 
-| 文件 | 交接用途 |
+| 文件 | 用途 |
 | --- | --- |
 | `TemplateMatch.cs` | 注册模板名、模板代码和字典 ID。 |
 | `MatchParam.cs` | 保存模板匹配参数。 |
@@ -41,23 +41,11 @@
 | `MaxOverlapRatio` | `0` | 最大交叠比例，描述中标注范围 `0-0.8`。 |
 | `TargetNumber` | `70` | 目标数量。 |
 
-`TemplateFile` 不是 `MatchParam` 字段，而是 `AlgorithmMatching` 和 `AlgorithmTMNode` 运行时参数。交接时要把“参数模板”和“模板文件”分开记录。
+`TemplateFile` 不是 `MatchParam` 字段，而是 `AlgorithmMatching` 和 `AlgorithmTMNode` 运行时参数。维护时要把“参数模板”和“模板文件”分开记录。
 
 ## 手动执行链路
 
-1. 菜单打开 `AlgorithmMatching`。
-2. `DisplayMatching` 绑定 `TemplateMatch.Params`。
-3. 用户选择参数模板和 `TemplateFile`。
-4. 图像来源可来自本地文件、服务端 Raw/CIE 文件或批次号。
-5. `RunTemplate_Click` 调用 `SendCommand(...)`。
-6. 请求参数包含：
-   - `ImgFileName`
-   - `FileType`
-   - `DeviceCode`
-   - `DeviceType`
-   - `TemplateFile`
-   - `TemplateParam`
-7. MQTT 事件为 `Event_MatchTemplate`。
+菜单打开 `AlgorithmMatching` 后，`DisplayMatching` 绑定 `TemplateMatch.Params`。用户选择参数模板和 `TemplateFile`，图像来源可以是本地文件、服务端 Raw/CIE 文件或批次号。`RunTemplate_Click` 调用 `SendCommand(...)`，请求参数包括 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateFile`、`TemplateParam`，MQTT 事件为 `Event_MatchTemplate`。
 
 当前 XAML 中模板 ComboBox 的 `SelectedIndex` 绑定到 `TemplatePoiSelectedIndex`，而 `SendCommand` 读取的是 `TemplateSelectedIndex`。如果界面选择了模板但发送时仍使用第一条模板，优先检查这处绑定。
 
@@ -76,14 +64,7 @@
 
 ## 结果展示
 
-`ViewHandleMatching` 处理 `ViewResultAlgType.AOI`：
-
-1. 从 `AlgResultAoiDao.GetAllByPid(result.Id)` 读取明细。
-2. 如果 `result.FilePath` 存在，打开原图。
-3. 每条 AOI 明细取左上、右上、右下、左下四个点。
-4. 通过 `GrahamScan.ComputeConvexHull(...)` 生成凸包。
-5. 用蓝色 `DVPolygon` 绘制 overlay。
-6. 在表格显示分数、角度、中心点和四个角点坐标。
+`ViewHandleMatching` 处理 `ViewResultAlgType.AOI`：从 `AlgResultAoiDao.GetAllByPid(result.Id)` 读取明细，打开 `result.FilePath` 原图，取每条 AOI 明细四个角点，通过 `GrahamScan.ComputeConvexHull(...)` 生成凸包，再用蓝色 `DVPolygon` 绘制 overlay，并在表格显示分数、角度、中心点和四个角点坐标。
 
 结果表 `t_scgd_algorithm_result_detail_aoi` 的关键字段包括 `score`、`angle`、`center_x/y`、`left_top_x/y`、`right_top_x/y`、`right_bottom_x/y`、`left_bottom_x/y`。
 
@@ -100,17 +81,10 @@
 | overlay 位置不对 | 四角坐标是否是原图坐标，图像是否被缩放或换源。 |
 | 表格列重复 | 当前表头最后两列都写成“左下点x”，应核对是否需要显示 `LeftBottomY`。 |
 
-## 交接清单
+## 检查清单
 
 - 同时记录参数模板、模板文件、输入图像来源和算法服务设备。
 - 修改匹配参数时，同步保存样例图、模板文件和期望 AOI 结果。
 - 修改结果字段时，同步更新 DAO、handler 表格列、overlay 和项目导出。
 - Flow 与手动页都要验收，因为它们参数来源不同但服务事件相同。
 - 如果客户项目依赖 AOI 结果，项目页要说明最终 OK/NG 是否只看 Matching 结果。
-
-## 继续阅读
-
-- [Engine 结果展示与项目交接链路](../../engine-components/result-handoff-chain.md)
-- [Engine 模板与 Flow 链路](../../engine-components/template-flow-chain.md)
-- [ROI 原语](../primitives/roi.md)
-- [当前算法模板覆盖清单](../current-algorithm-template-coverage.md)

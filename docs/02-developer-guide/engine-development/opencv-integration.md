@@ -1,4 +1,4 @@
-# OpenCV 和 native 集成开发交接手册
+# OpenCV 和 native 集成开发指南
 
 本页说明当前仓库里 OpenCV/native 能力的真实边界。Engine 侧有 `cvColorVision` 这种设备 SDK / 算法 DLL 绑定层，UI/Core 侧有 `opencv_helper.dll` / `opencv_cuda.dll` 的 P/Invoke 包装，文件打开链路还包含 `.cvraw` / `.cvcie` 解析和缩略图。
 
@@ -52,7 +52,7 @@ msbuild Test/opencv_helper_test/opencv_helper_test.vcxproj /p:Configuration=Debu
 Test/opencv_helper_test/build_test_find_luminous.bat
 ```
 
-如果当前机器没有 Visual Studio C++ 或 OpenCV native 依赖，至少要记录无法执行的原因，并在交接记录里说明由哪台构建机补验。
+如果当前机器没有 Visual Studio C++ 或 OpenCV native 依赖，至少要记录无法执行的原因，并在验证记录里说明由哪台构建机补验。
 
 ## 验收清单
 
@@ -70,4 +70,4 @@ Test/opencv_helper_test/build_test_find_luminous.bat
 - [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md)
 - [ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md)
 - [ColorVision.ShellExtension](../../04-api-reference/engine-components/ColorVision.ShellExtension.md)
-- [测试与验证交接手册](../testing.md)
+- [测试与验证](../testing.md)

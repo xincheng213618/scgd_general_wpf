@@ -1,59 +1,32 @@
-# Update System Documentation
+# 自动更新
 
-自动更新系统文档，包括更新机制、版本管理和故障恢复。
+本页保留 ColorVision 自动更新的工程入口。安装器和更新包的实际发布流程以 [部署概览](./overview.md) 与 [构建与发布脚本](../scripts/README.md) 为准。
 
-## 目录结构
-
-- [Auto Update Flow](auto-update-flow.md) - 自动更新流程和机制
-- [Version Management](version-management.md) - 版本控制和发布策略
-- [Update Rollback](update-rollback.md) - 更新失败回滚机制
-- [Changelog Window](changelog-window.md) - 更新日志窗口详细文档
-
-## 概述
-
-ColorVision 自动更新系统确保用户能够及时获得最新功能和安全修复：
-
-### 更新流程
+## 更新流程
 
 ```mermaid
-graph LR
-    A[检查更新] --> B[下载更新包]
-    B --> C[校验签名]
-    C --> D[备份当前版本]
-    D --> E[安装更新]
-    E --> F[验证安装]
-    F --> G[清理临时文件]
-    
-    C --> H[校验失败]
-    E --> I[安装失败]
-    H --> J[终止更新]
-    I --> K[回滚版本]
+flowchart LR
+  Check["检查版本"] --> Download["下载更新包"]
+  Download --> Verify["校验包内容"]
+  Verify --> Backup["备份当前版本"]
+  Backup --> Install["安装更新"]
+  Install --> Smoke["启动/验证"]
+  Verify --> Stop["校验失败，终止更新"]
+  Install --> Rollback["安装失败，回滚"]
 ```
 
-### 核心功能
+## 相关位置
 
-- **版本检查**: 定期检查远程更新服务器
-- **增量更新**: 仅下载差异文件，减少带宽使用
-- **签名验证**: 确保更新包的完整性和安全性
-- **自动回滚**: 更新失败时自动恢复到之前版本
-- **静默更新**: 后台自动更新，不影响用户操作
+| 范围 | 位置 |
+| --- | --- |
+| 安装器和更新程序 | `src/ColorVisionSetup/` |
+| 发布和更新脚本 | `Scripts/` |
+| 发布版本号 | `Directory.Build.props` 的 `VersionPrefix` |
+| 版本历史 | 根目录 `CHANGELOG.md` |
 
-### 更新策略
+## 维护要求
 
-- **稳定版**: 经过充分测试的正式版本
-- **测试版**: 包含最新功能的预览版本
-- **安全更新**: 紧急安全补丁，强制更新
-
-## 相关组件
-
-- `ColorVisionSetup/` - 安装和更新程序
-- `Scripts/update/` - 更新相关脚本
-
-## 相关文档
-
-- [部署文档](../deployment/README.md)
-- [安全与权限控制](../security/README.md)
-
----
-
-*最后更新: 2024-09-28*
+- 正式发布使用 `Scripts\release.bat`。
+- 增量更新包上传失败时，`Scripts\build_update.py` 必须返回失败码。
+- 修改更新机制时，同步更新部署概览、构建脚本文档和 CHANGELOG。
+- 不新增本地-only 主安装包发布捷径。

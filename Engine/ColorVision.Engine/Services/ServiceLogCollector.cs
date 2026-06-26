@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Services
         private static readonly ILog log = LogManager.GetLogger(typeof(ServiceLogCollector));
 
         public string Name => "Engine Service Logs";
+        public string Description => "Recent logs and service metadata from Engine services";
         public int Order => 20;
 
         public IEnumerable<(string EntryPath, string FilePath)> CollectFiles()

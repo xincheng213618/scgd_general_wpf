@@ -25,7 +25,7 @@
 		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260602" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260602" />
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.215" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.8" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.8" />
 	</ItemGroup>

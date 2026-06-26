@@ -89,7 +89,7 @@
         </Setter>
     </Style>
 
-    <Style x:Key="PanelIconPathStyle" TargetType="{x:Type Path}">
+    <Style x:Key="PanelIconPathBaseStyle" TargetType="{x:Type Path}">
         <Setter Property="Width" Value="18"/>
         <Setter Property="Height" Value="18"/>
         <Setter Property="Stretch" Value="None"/>
@@ -101,6 +101,9 @@
         <Setter Property="StrokeEndLineCap" Value="Round"/>
         <Setter Property="StrokeLineJoin" Value="Round"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
+    <Style x:Key="PanelIconPathStyle" TargetType="{x:Type Path}" BasedOn="{StaticResource PanelIconPathBaseStyle}">
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}" Value="True">
                 <Setter Property="Opacity" Value="0.95"/>
@@ -111,7 +114,7 @@
         </Style.Triggers>
     </Style>
 
-    <Style x:Key="PanelActionIconPathStyle" TargetType="{x:Type Path}" BasedOn="{StaticResource PanelIconPathStyle}">
+    <Style x:Key="PanelActionIconPathStyle" TargetType="{x:Type Path}" BasedOn="{StaticResource PanelIconPathBaseStyle}">
         <Setter Property="Opacity" Value="0.7"/>
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type Button}}}" Value="True">

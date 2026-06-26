@@ -1,120 +1,69 @@
 # 架构运行时
 
-本页只描述当前代码里能看见的主程序运行时链路，不再继续维护英文 draft 元数据和通用启动时序图。
+本页只描述当前代码里能看见的主程序运行时链路，不维护脱离实现的统一启动时序图。
 
-## 先怎么理解运行时
+## 运行时分支
 
-当前桌面程序的运行时不是“一次性把所有模块都初始化完再显示主界面”的单一模型，而是分成几条实际分支：
+当前桌面程序不是“一次性初始化完再显示主界面”的单一模型。常见分支是：
 
-- 命令行只做文件处理后直接返回
-- 正常桌面启动并进入向导或启动窗口
-- 上次异常退出后，先询问是否禁用插件再继续启动
+| 分支 | 行为 |
+| --- | --- |
+| 命令行文件处理 | `input`、`export` 等分支处理完成后直接返回 |
+| 正常桌面启动 | 初始化配置、日志、主题、语言、插件，再进入向导或启动窗口 |
+| 异常恢复 | 上次异常退出后，先询问是否禁用插件再继续启动 |
 
 ## 主程序启动链路
 
-从 `ColorVision/App.xaml.cs` 当前实现看，常见启动顺序大致是：
-
-1. 设置工作目录并按需预加载关键 DLL。
-2. 初始化配置、日志、主题和语言。
-3. 解析命令行参数。
-4. 如果是 `input` 或 `export` 这类文件处理分支，直接处理后返回。
-5. 进行单实例检查，并在需要时把命令行参数转发给已运行实例。
-6. 非调试状态下清理僵尸进程。
-7. 根据上次启动状态决定是否禁用插件。
-8. 初始化 WinForms 视觉样式。
-9. 根据向导完成状态显示 `WizardWindow` 或 `StartWindow`。
+从 `ColorVision/App.xaml.cs` 看，常见启动顺序是：设置工作目录并预加载 DLL，初始化配置/日志/主题/语言，解析命令行，处理文件分支，执行单实例检查，必要时清理僵尸进程，按上次启动状态决定是否禁用插件，初始化 WinForms 视觉样式，最后显示 `WizardWindow` 或 `StartWindow`。
 
 这里最重要的不是记住所有步骤，而是知道启动并不总会直接进主窗口。
 
-## 插件在什么时候进入
+## 插件加载
 
-当前主程序会在进入向导或启动窗口之前决定是否加载插件。
+插件会在进入向导或启动窗口前决定是否加载。关键点：
 
-插件加载的几个关键点是：
+| 动作 | 说明 |
+| --- | --- |
+| 扫描 | 扫描 `Plugins/` 目录 |
+| 读取 | 读取 `manifest.json` 和可选 `.deps.json` |
+| 校验 | 检查 `ColorVision.*` 依赖版本 |
+| 装载 | 用 `Assembly.LoadFrom(...)` 装载插件程序集 |
+| 恢复 | 上次异常退出时，启动会先询问是否禁用插件 |
 
-- 扫描 `Plugins/` 目录
-- 读取每个插件目录中的 `manifest.json`
-- 可选读取 `.deps.json`
-- 检查 `ColorVision.*` 依赖版本
-- 最后用 `Assembly.LoadFrom(...)` 装载插件程序集
+## 主工作区对象
 
-如果上次异常退出，启动时会先询问是否禁用插件，这说明插件是否参与本次运行时是一个明确分支，而不是总是无条件加载。
+| 对象 | 作用 | 失败时表现 |
+| --- | --- | --- |
+| `ServiceManager` | 数据库连接可用后加载服务树，组织 `TypeServices`、`TerminalServices`、`DeviceServices`、`GroupResources` | 设备树为空、设备控件未生成 |
+| `MQTTRCService` | 保持注册中心连接，查询服务令牌，更新服务状态并同步设备服务对象 | 流程跑不起来、设备在线但状态不更新 |
+| `TemplateControl` | 数据库连接可用后扫描已加载程序集中的 `IITemplateLoad`，调用 `Load()` 注册模板 | 模板不可见、模板不能编辑 |
 
-## 进入主工作区后，哪些运行时对象最关键
+模板是否可见依赖两个前提：相关程序集已经加载，数据库连接已建立。
 
-### 服务树
+## 流程执行链
 
-`ServiceManager` 会在数据库连接可用后加载服务树，把资源表中的数据组织成：
+当用户进入流程窗口后，运行时主链延伸为：
 
-- `TypeServices`
-- `TerminalServices`
-- `DeviceServices`
-- `GroupResources`
+```text
+DisplayFlow -> FlowControl -> FlowEngineLib -> MQTTRCService -> 设备/算法服务
+```
 
-之后再把流程显示区和各设备显示控件装进统一显示管理器里。
+执行过程中持续更新当前运行节点、执行日志、批次进度、节点记录和消息记录。
 
-### 注册中心与服务令牌
+## 常见失败点
 
-`MQTTRCService` 在运行时负责：
+| 阶段 | 先查 |
+| --- | --- |
+| 启动 | 插件依赖、上次异常恢复分支、命令行分支是否提前返回 |
+| 服务准备 | 数据库是否连通，服务树或模板是否装载，注册中心/MQTT 是否准备好 |
+| 执行 | 流程模板是否选中，起始节点是否存在，设备状态是否已同步为可执行 |
 
-- 保持和注册中心的连接状态
-- 查询当前可用服务令牌
-- 更新服务状态
-- 把服务状态同步回设备服务对象
+## 代码入口
 
-所以很多“流程跑不起来”“设备在线但状态不更新”的问题，本质上都不是 UI 问题，而是这里的运行时状态没有准备好。
-
-### 模板注册
-
-模板系统不是手工逐个硬编码注册。当前 `TemplateControl` 会在数据库连接可用后扫描已加载程序集中的 `IITemplateLoad` 实现，并调用它们的 `Load()` 完成模板注册。
-
-这意味着模板是否可见、是否能被编辑，依赖两个前提：
-
-- 相关程序集已经加载
-- 数据库连接已建立
-
-## 流程执行在运行时怎么接上去
-
-当用户进入流程窗口后，运行时主链会继续延伸到：
-
-- `DisplayFlow` 负责刷新当前流程模板、启动或停止流程
-- `FlowControl` 负责启动和停止运行中的流程
-- `FlowEngineLib` 负责具体节点执行
-- `MQTTRCService` 提供流程运行所需的服务令牌和状态更新
-
-执行过程中，运行时还会持续更新：
-
-- 当前运行节点
-- 执行日志文本
-- 批次进度
-- 节点记录和消息记录
-
-## 运行时最常见的失败点
-
-### 启动阶段
-
-- 插件依赖不满足
-- 上次异常退出导致需要手动决定是否禁用插件
-- 命令行分支提前返回，误以为程序没有继续启动
-
-### 服务准备阶段
-
-- 数据库没有连通，导致服务树或模板没有正常装载
-- 注册中心或 MQTT 侧没有准备好，导致服务令牌为空
-
-### 执行阶段
-
-- 流程模板未选中或起始节点缺失
-- 设备服务存在，但运行时状态还没同步到可执行状态
-
-## 继续阅读
-
-- [系统架构概览](./system-overview.md)
-- [组件交互](./component-interactions.md)
-- [工作流程](../../01-user-guide/workflow/README.md)
-- [日志查看器](../../01-user-guide/interface/log-viewer.md)
-
-## 说明
-
-- 本页只保留当前代码能支撑的运行时链路，不再继续维护脱离实现的统一启动时序图。
-- 相关入口主要位于 `ColorVision/App.xaml.cs`、`UI/ColorVision.UI/Plugins/PluginLoader.cs`、`Engine/ColorVision.Engine/Services/ServiceManager.cs`、`Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs` 和 `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`。
+| 主题 | 入口 |
+| --- | --- |
+| 主启动 | `ColorVision/App.xaml.cs` |
+| 插件加载 | `UI/ColorVision.UI/Plugins/PluginLoader.cs` |
+| 服务树 | `Engine/ColorVision.Engine/Services/ServiceManager.cs` |
+| 注册中心 | `Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs` |
+| 模板注册 | `Engine/ColorVision.Engine/Templates/TemplateContorl.cs` |

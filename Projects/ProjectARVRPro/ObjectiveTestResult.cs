@@ -80,6 +80,12 @@ namespace ProjectARVRPro
         private bool _TotalResult = true;
 
         /// <summary>
+        /// 总体失败说明；测试失败时用于告诉调用方具体失败原因。
+        /// </summary>
+        public string Msg { get => _Msg; set { _Msg = value; OnPropertyChanged(); } }
+        private string _Msg = string.Empty;
+
+        /// <summary>
         /// 总体测试结果字符串（如“pass”或“fail”）
         /// </summary>
         public string TotalResultString => TotalResult?"PASS":"Fail";

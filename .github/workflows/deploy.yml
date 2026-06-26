@@ -1,7 +1,7 @@
 name: Deploy VitePress to GitHub Pages
 
 on:
-  # Trigger on pushes to main/master branch
+  # Trigger on pushes to active documentation branches
   push:
     branches: 
       - master
@@ -9,16 +9,19 @@ on:
     paths:
       - 'docs/**'
       - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/deploy.yml'
   
-  # Trigger on pull requests to master (only build, not deploy)
+  # Trigger on pull requests (only build, not deploy)
   pull_request:
     branches:
       - master
+      - develop
     paths:
       - 'docs/**'
       - 'package.json'
-      - '.github/workflows/deploy. yml'
+      - 'package-lock.json'
+      - '.github/workflows/deploy.yml'
   
   # Allow manual trigger
   workflow_dispatch:
@@ -56,7 +59,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build with VitePress
+      - name: Build and validate docs
         run: npm run docs:build
 
       - name: Upload artifact
@@ -66,6 +69,7 @@ jobs:
 
   # Deployment job
   deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

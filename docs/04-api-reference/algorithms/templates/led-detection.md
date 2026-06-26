@@ -1,6 +1,6 @@
 # LED 检测模板
 
-本页说明当前仓库中 LED 检测相关模板的交接边界，重点覆盖 `LEDStripDetection/` 和 `LedCheck/` 两个强类型模板，并说明它们和 `Jsons/LEDStripDetectionV2/`、`Jsons/LedCheck2/` 的关系。
+本页说明当前仓库中 LED 检测相关模板的维护边界，重点覆盖 `LEDStripDetection/` 和 `LedCheck/` 两个强类型模板，并说明它们和 `Jsons/LEDStripDetectionV2/`、`Jsons/LedCheck2/` 的关系。
 
 ## 先分清四个入口
 
@@ -11,11 +11,11 @@
 | `Jsons/LEDStripDetectionV2/` | JSON 模板 | `Code = LEDStripDetection`，事件名字符串 `LEDStripDetection`，`Version = 2.0` | 新灯条/POI 中心计算，参数结构更复杂，适合继续扩展。 |
 | `Jsons/LedCheck2/` | JSON 模板 | `Code = FindLED`，`Event_OLED_FindDotsArrayMem_GetData` | 亚像素级灯珠检测，带颜色、FDA 类型和固定 LED 点位。 |
 
-交接时不要只凭 `Code` 判断唯一实现：`LEDStripDetection` 和 `FindLED` 都存在强类型旧实现和 JSON 新实现。
+维护时不要只凭 `Code` 判断唯一实现：`LEDStripDetection` 和 `FindLED` 都存在强类型旧实现和 JSON 新实现。
 
 ## LEDStripDetection 强类型链路
 
-| 文件 | 交接用途 |
+| 文件 | 用途 |
 | --- | --- |
 | `TemplateLEDStripDetection.cs` | 注册强类型灯条模板，`TemplateDicId = 21`，`IsUserControl = true`。 |
 | `LEDStripDetectionParam.cs` | 保存点数、点距、起始位置、二值化比例、调试和保存路径。 |
@@ -39,7 +39,7 @@
 
 ## LedCheck 强类型链路
 
-| 文件 | 交接用途 |
+| 文件 | 用途 |
 | --- | --- |
 | `TemplateLedCheck.cs` | 注册灯珠检测模板，`Code = FindLED`。 |
 | `LedCheckParam.cs` | 保存灯珠通道、固定半径、轮廓面积、二值化补正、灯珠网格数量等参数。 |
@@ -48,7 +48,7 @@
 | `ViewHandleMTF.cs` | 从 POI 结果表恢复点位，以半径绘制灯珠结果。 |
 | `ViewResultLedCheck.cs` | 保存点位和半径。 |
 
-`LedCheck` 的请求比灯条定位多一个 `POITemplateParam`。当前 UI 使用 `TemplatePoi.Params.CreateEmpty()`，因此交接时要确认现场是允许空 POI，还是必须选择具体 POI 模板。
+`LedCheck` 的请求比灯条定位多一个 `POITemplateParam`。当前 UI 使用 `TemplatePoi.Params.CreateEmpty()`，因此维护时要确认现场是允许空 POI，还是必须选择具体 POI 模板。
 
 `ViewHandleLedCheck.CanHandle` 当前为空列表。如果现场出现“算法执行成功但结果页不接管展示”，要先检查结果类型是否注册到这个 handler，而不是只排查绘图代码。
 
@@ -82,17 +82,10 @@
 | 结果不显示 | `ViewResultAlgType` 是否能匹配对应 handler，`ViewHandleLedCheck.CanHandle` 是否需要补注册。 |
 | 导出 CSV 不对 | `ViewHandleLedCheck.SideSave(...)` 当前写行时误用了表头集合，导出能力需要单独验收。 |
 
-## 交接清单
+## 检查清单
 
 - 涉及 `Code = LEDStripDetection` 的变更必须说明是旧强类型还是 JSON V2。
 - 涉及 `Code = FindLED` 的变更必须说明是 `LedCheck` 还是 `LedCheck2`。
 - 修改强类型参数时，同步更新参数类、默认值、编辑控件和现场样例。
 - 修改 JSON 参数时，同步更新 schema/说明 JSON、`Mysql*` 恢复命令和版本策略。
 - 修改结果展示时，同步更新 handler 的 `CanHandle`、导出、项目验收页和截图样例。
-
-## 继续阅读
-
-- [JSON 模板](./json-templates.md)
-- [POI 模板](./poi-template.md)
-- [结果交接链路](../../engine-components/result-handoff-chain.md)
-- [当前算法模板覆盖清单](../current-algorithm-template-coverage.md)

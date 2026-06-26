@@ -83,13 +83,6 @@
 - 如果连节点关系和参数都还没确认，先留在设计页整理
 - 如果结构已经稳定，再去 [流程执行与调试](./execution.md) 定位运行时问题
 
-## 继续阅读
-
-- [流程执行与调试](./execution.md)
-- [设备服务概览](../devices/overview.md)
-- [属性编辑器](../interface/property-editor.md)
-- [日志查看器](../interface/log-viewer.md)
-
 ## 说明
 
 - 本页只保留流程设计的使用入口，不再继续维护泛化的流程编辑器介绍。

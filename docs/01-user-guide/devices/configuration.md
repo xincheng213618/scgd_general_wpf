@@ -38,13 +38,6 @@
 - 设备状态是否正常
 - 相关窗口或流程节点里是否能选到该设备
 
-## 建议按设备类型继续阅读
-
-- 相机相关：看 [相机服务](./camera.md)、[相机管理](./camera-management.md)、[相机参数配置](./camera-configuration.md)
-- 校准相关：看 [校准服务](./calibration.md)
-- 电机相关：看 [电机服务](./motor.md)
-- 文件或流程型设备：看 [文件服务器](./file-server.md) 和 [流程设备服务](./flow-device.md)
-
 ## 常见问题
 
 ### 新增后列表里没有设备
@@ -67,4 +60,3 @@
 
 - 本页不再保留代码分析稿和类图。
 - 具体实现细节以 `Engine/ColorVision.Engine/Services/` 下的实际代码为准。
-

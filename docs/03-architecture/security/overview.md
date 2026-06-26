@@ -82,12 +82,6 @@
 7. `UI/ColorVision.Solution/Rbac/UserManagerWindow.xaml.cs`
 8. `UI/ColorVision.Solution/Rbac/PermissionManagerWindow.xaml.cs`
 
-## 继续阅读
-
-- [RBAC 模块](./rbac.md)
-- [架构运行时](../overview/runtime.md)
-- [组件交互](../overview/component-interactions.md)
-
 ## 说明
 
 - 本页只保留当前实现里可验证的权限与会话边界，不再继续维护泛化安全能力清单。

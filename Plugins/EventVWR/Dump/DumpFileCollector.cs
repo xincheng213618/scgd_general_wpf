@@ -8,6 +8,7 @@ namespace EventVWR.Dump
     public class DumpFileCollector : ColorVision.UI.IFeedbackLogCollector
     {
         public string Name => "Crash Dumps";
+        public string Description => "Recent WER crash dump files";
         public int Order => 30;
 
         public IEnumerable<(string EntryPath, string FilePath)> CollectFiles()

@@ -1,8 +1,6 @@
 import { createRequire } from 'node:module'
 
-// Shared locale helpers for the docs site and generated search artifacts.
-// Locale definitions live in locale-definitions.json so scaffold scripts can
-// register new locales without hand-editing config code.
+// Shared helpers for the Chinese-only docs site and generated search artifacts.
 
 const require = createRequire(import.meta.url)
 
@@ -18,14 +16,14 @@ export const lastUpdatedFormatOptions = {
 export const localeDefinitions = require('./locale-definitions.json')
 
 const sectionBlueprints = [
-  { key: defaultSectionKey, title: { root: '首页与入口', en: 'Home & Entry' }, link: '/' },
-  { key: '00-projects', title: { root: '项目说明', en: 'Project Guide' }, link: '/00-projects/README' },
-  { key: '01-user-guide', title: { root: '使用手册', en: 'User Manual' }, link: '/01-user-guide/README' },
-  { key: '00-getting-started', title: { root: '使用手册：安装与首次使用', en: 'User Manual: Installation & First Use' }, link: '/00-getting-started/README' },
-  { key: '02-developer-guide', title: { root: '开发手册', en: 'Developer Manual' }, link: '/02-developer-guide/README' },
-  { key: '03-architecture', title: { root: '开发手册：架构设计', en: 'Developer Manual: Architecture' }, link: '/03-architecture/README' },
-  { key: '04-api-reference', title: { root: '模块参考', en: 'Module Reference' }, link: '/04-api-reference/README' },
-  { key: '05-resources', title: { root: '附录与资源', en: 'Resources & Appendix' }, link: '/05-resources/README' },
+  { key: defaultSectionKey, title: { root: '首页与入口' }, link: '/' },
+  { key: '00-projects', title: { root: '项目说明' }, link: '/00-projects/README' },
+  { key: '01-user-guide', title: { root: '使用手册' }, link: '/01-user-guide/README' },
+  { key: '00-getting-started', title: { root: '使用手册：安装与首次使用' }, link: '/00-getting-started/README' },
+  { key: '02-developer-guide', title: { root: '开发手册' }, link: '/02-developer-guide/README' },
+  { key: '03-architecture', title: { root: '开发手册：架构设计' }, link: '/03-architecture/README' },
+  { key: '04-api-reference', title: { root: '模块参考' }, link: '/04-api-reference/README' },
+  { key: '05-resources', title: { root: '附录与资源' }, link: '/05-resources/README' },
 ]
 
 export const localeOrder = Object.keys(localeDefinitions)
@@ -49,12 +47,11 @@ export function getLocalizedText(localizedText, localeKey = defaultLocaleKey) {
   return localizedText[localeKey] ?? localizedText[defaultLocaleKey] ?? Object.values(localizedText)[0] ?? ''
 }
 
-export function getLocaleHomeUrl(localeKey = defaultLocaleKey) {
-  const pathPrefix = getLocaleDefinition(localeKey).pathPrefix
-  return pathPrefix ? `/${pathPrefix}/` : '/'
+export function getLocaleHomeUrl(_localeKey = defaultLocaleKey) {
+  return '/'
 }
 
-export function toLocalePath(localeKey = defaultLocaleKey, link) {
+export function toLocalePath(_localeKey = defaultLocaleKey, link) {
   if (!link || !link.startsWith('/')) {
     return link
   }
@@ -63,12 +60,7 @@ export function toLocalePath(localeKey = defaultLocaleKey, link) {
     return link
   }
 
-  const pathPrefix = getLocaleDefinition(localeKey).pathPrefix
-  if (!pathPrefix) {
-    return link
-  }
-
-  return link === '/' ? `/${pathPrefix}/` : `/${pathPrefix}${link}`
+  return link
 }
 
 export function buildVitePressLocales(themeConfigFactory) {

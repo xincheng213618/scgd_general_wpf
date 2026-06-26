@@ -1,4 +1,4 @@
-# Compliance 结果交接
+# Compliance 结果对接
 
 本页说明 `Engine/ColorVision.Engine/Templates/Compliance/` 的结果模型和展示链路。这个目录当前不是模板编辑器，也不负责创建判定规则；它负责把算法服务或项目流程写回的合规结果读出来、展示出来，并根据 `ValidateResult` 判断是否通过。
 
@@ -24,51 +24,15 @@
 
 ## 数据模型
 
-### Y 结果
-
-`ComplianceYModel` 适合单值亮度或对比类结果。
-
-| 字段 | 说明 |
-| --- | --- |
-| `pid` | 主结果 ID。 |
-| `name` | 结果项名称。 |
-| `data_type` | 数据类型。 |
-| `data_value` | 单值结果。 |
-| `validate_result` | 判定结果 JSON。 |
-
-### XYZ 结果
-
-`ComplianceXYZModel` 保存色彩/光学相关的多分量结果。
-
-| 字段 | 说明 |
-| --- | --- |
-| `data_value_x/y/z` | XYZ 分量。 |
-| `data_value_u/v` | 色度坐标分量。 |
-| `data_value_yyy/xxx/zzz` | 扩展分量字段，按算法服务写回解释。 |
-| `data_value_cct` | 色温。 |
-| `data_value_wave` | 波长或主波长相关结果。 |
-| `validate_result` | 判定结果 JSON。 |
-
-### JND 结果
-
-`ComplianceJNDModel` 保存横向和纵向 JND 判定结果。
-
-| 字段 | 说明 |
-| --- | --- |
-| `data_val_h` | 横向 JND 值。 |
-| `data_val_v` | 纵向 JND 值。 |
-| `validate_result` | 判定结果 JSON。 |
+| 模型 | 关键字段 | 说明 |
+| --- | --- | --- |
+| `ComplianceYModel` | `pid`、`name`、`data_type`、`data_value`、`validate_result` | 单值亮度或对比类结果 |
+| `ComplianceXYZModel` | `data_value_x/y/z`、`data_value_u/v`、`data_value_yyy/xxx/zzz`、`data_value_cct`、`data_value_wave`、`validate_result` | 色彩和光学多分量结果 |
+| `ComplianceJNDModel` | `data_val_h`、`data_val_v`、`validate_result` | 横向和纵向 JND 判定结果 |
 
 ## 判定逻辑
 
-三个结果模型的 `Validate` 属性逻辑一致：
-
-1. 如果 `ValidateResult` 为空，`ValidateSingles` 为 `null`，最终返回 `false`。
-2. 如果 `ValidateResult` 可以反序列化为 `ObservableCollection<ValidateRuleResult>`，逐条检查。
-3. 只有所有规则的 `Result == ValidateRuleResultType.M`，才返回 `true`。
-4. 任意一条不是 `M`，最终结果就是 `false`。
-
-这意味着 Compliance 页展示的通过/失败不是重新计算阈值，而是解释算法服务或上游流程已经写回的 `ValidateResult`。
+三个结果模型的 `Validate` 属性逻辑一致：`ValidateResult` 为空时失败；能反序列化为 `ObservableCollection<ValidateRuleResult>` 时逐条检查；只有所有规则的 `Result == ValidateRuleResultType.M` 才通过。Compliance 页展示的是上游写回的判定解释，不重新计算阈值。
 
 ## 展示链路
 
@@ -99,18 +63,11 @@
 | XYZ 值为空 | 检查 ListView 绑定列和 `ComplianceXYZModel` 的字段名是否一致。 |
 | 项目报表和结果页不一致 | 项目包是否对 Compliance 结果又做了二次筛选、排序或聚合。 |
 
-## 交接清单
+## 检查清单
 
-- 说明 Compliance 目录是结果展示和判定解释层，不是规则创建层。
-- 新增结果类型时，必须补 handler、DAO、数据表和文档映射。
-- 修改 `ValidateResult` JSON 结构时，同步验证 Y、XYZ、JND 三类模型。
-- 现场验收时保留主结果、明细表、原图路径、Validate 模板和项目导出文件。
-- 若项目使用 JND 结果，需同时阅读 [JND 模板](./jnd-template.md) 和项目页。
-
-## 继续阅读
-
-- [Validate 判定规则模板](./validate-rules.md)
-- [BuzProduct 产品业务参数模板](./buz-product-template.md)
-- [JND 模板](./jnd-template.md)
-- [Engine 结果展示与项目交接链路](../../engine-components/result-handoff-chain.md)
-- [当前算法模板覆盖清单](../current-algorithm-template-coverage.md)
+| 改动 | 同步检查 |
+| --- | --- |
+| 新增结果类型 | handler、DAO、数据表和文档映射 |
+| 修改 `ValidateResult` JSON | Y、XYZ、JND 三类模型 |
+| 现场验收 | 主结果、明细表、原图路径、Validate 模板和项目导出文件 |
+| 项目使用 JND | 同步看 [JND 模板](./jnd-template.md) 和项目页 |

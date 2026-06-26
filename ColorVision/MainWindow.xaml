@@ -16,6 +16,43 @@
         Background="{DynamicResource GlobalBackground}"
         Initialized="Window_Initialized">
     <Window.Resources>
+        <Style x:Key="UpdateNotificationButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#2D9CFF" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <TextBlock x:Name="ButtonText"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="{TemplateBinding FontSize}"
+                                   FontWeight="{TemplateBinding FontWeight}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   Text="{TemplateBinding Content}" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonText" Property="Foreground" Value="#62B8FF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonText" Property="Foreground" Value="#1677D2" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonText" Property="Opacity" Value="0.58" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <DataTemplate x:Key="DocumentHeaderTemplate">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
@@ -29,11 +66,17 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True">
-            <DockPanel>
+            <DockPanel LastChildFill="False">
                 <StackPanel x:Name="RightMenuItemPanel" DockPanel.Dock="Right" Orientation="Horizontal" />
 
                 <Menu x:Name="Menu1" Padding="2" HorizontalAlignment="Left" Background="Transparent" />
                 <search:SearchControl x:Name="SearchControl1" Width="210" Margin="10,1" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <Button x:Name="UpdateNotificationButton"
+                        Click="UpdateNotificationButton_Click"
+                        Content="{x:Static properties:Resources.UpdatePreviewFoundUpdatesHeading}"
+                        Style="{StaticResource UpdateNotificationButtonStyle}"
+                        ToolTip="{x:Static properties:Resources.UpdatePreviewUpdateNowButtonText}"
+                        Visibility="Collapsed" />
 
             </DockPanel>
         </Border>

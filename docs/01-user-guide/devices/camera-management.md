@@ -55,14 +55,7 @@
 - 关注配置变更后是否需要重启相关服务
 - 若涉及路径和资源调整，确认相关文件已经落到新位置
 
-## 继续阅读
-
-- [相机服务](./camera.md)
-- [相机参数配置](./camera-configuration.md)
-- [校准服务](./calibration.md)
-
 ## 说明
 
 - 本页只保留设备接入和管理视角，不再继续维护详细代码分析。
 - 相关实现主要位于 `Engine/ColorVision.Engine/Services/PhyCameras/`。
-

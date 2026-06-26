@@ -6,10 +6,7 @@
 
 ## 使用方式
 
-1. 先确认当前现场使用的是哪个主程序版本、项目包、插件包和配置目录。
-2. 按本页顺序做最小验收，不要一开始就跑完整生产流程。
-3. 每项都记录通过结果、失败现象、日志时间点和回退方式。
-4. 如果涉及项目包或插件替换，还要补对应的发布证据页。
+先记录主程序版本、项目包、插件包和配置目录，再按本页顺序做最小验收。每项都记录通过结果、失败现象、日志时间点和回退方式；涉及项目包或插件替换时，同时记录包版本、结果样例和回退包位置。
 
 ## 验收总表
 
@@ -25,10 +22,10 @@
 | 图像与 overlay | 打开一张结果图并查看 ROI/POI/overlay | 图像、图层和坐标对齐 | [图像编辑器概览](./image-editor/overview.md)、Engine 结果展示链路 |
 | 数据落库 | 按 SN、时间或批次查一条结果 | SQLite/MySQL 有对应记录，字段基本完整 | [数据库操作](./data-management/database.md) |
 | 文件导出 | 导出 CSV/Excel/PDF/图片或项目结果 | 文件存在、字段顺序和客户格式正确 | [数据导出与导入](./data-management/export-import.md)、项目页 |
-| Socket/MES/Modbus | 发送现场最小命令或联机样例 | 外部系统能触发并收到正确状态码/数据 | [SocketProtocol](../04-api-reference/ui-components/ColorVision.SocketProtocol.md)、项目包矩阵 |
+| Socket/MES/Modbus | 发送现场最小命令或联机样例 | 外部系统能触发并收到正确状态码/数据 | [SocketProtocol](../04-api-reference/ui-components/ColorVision.SocketProtocol.md)、[项目包总览](../04-api-reference/projects/README.md) |
 | 插件能力 | 打开现场插件并执行最小功能 | 插件菜单、窗口、设备连接、结果或导出正常 | [现有插件能力说明](../04-api-reference/plugins/README.md) |
 | 项目包流程 | 打开客户项目，输入 SN，运行最小流程 | 客户结果、文件、Socket/MES 返回符合项目页 | [项目说明](../00-projects/README.md) |
-| 回退证据 | 找到上一版包、配置和数据库备份 | 现场可退回到上一套可运行状态 | 插件/项目包发布证据页 |
+| 回退材料 | 找到上一版包、配置和数据库备份 | 现场可退回到上一套可运行状态 | 插件或项目包总览、现场记录 |
 
 ## 设备验收
 
@@ -46,17 +43,7 @@
 
 ## 流程验收
 
-流程验收的目标不是证明所有生产分支都跑完，而是证明“当前版本能稳定进入、执行、定位失败、查看结果”。
-
-| 检查项 | 通过标准 |
-| --- | --- |
-| 模板版本 | 当前选中的 Flow 模板名称和现场要求一致 |
-| 起始节点 | 有明确起点，执行后节点状态开始刷新 |
-| 关键参数 | 设备、模板、图片、SN、批次号或项目配置都能读取 |
-| 失败定位 | 故障时能找到第一个失败节点和对应日志 |
-| 结果回看 | 结果列表、图像、数据库或导出文件能找到同一轮记录 |
-
-不要在流程失败时同时改多个节点。先固定当前模板版本，再按第一个失败节点拆分设备、模板、输入数据和项目映射。
+流程验收只证明当前版本能稳定进入、执行、定位失败、查看结果。确认当前 Flow 模板名称符合现场要求，有起始节点，关键设备/模板/图片/SN 能读取，失败时能找到第一个失败节点和对应日志，完成后结果列表、图像、数据库或导出文件能找到同一轮记录。
 
 ## 数据和导出验收
 
@@ -103,13 +90,3 @@ rollback package/config:
 operator trained:
 owner/date:
 ```
-
-## 继续阅读
-
-- [使用手册操作工作流矩阵](./operation-workflow-matrix.md)
-- [UI 组件使用手册](./interface/ui-component-handbook.md)
-- [设备服务概览](./devices/overview.md)
-- [流程执行与调试](./workflow/execution.md)
-- [数据管理概览](./data-management/README.md)
-- [项目说明](../00-projects/README.md)
-- [现有插件能力说明](../04-api-reference/plugins/README.md)

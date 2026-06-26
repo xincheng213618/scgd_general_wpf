@@ -34,14 +34,15 @@ namespace ColorVision.UI.Desktop.Feedback
 
         public IFeedbackLogCollector Collector { get; }
         public string Name => Collector.Name;
-        public string Description { get; set; } = string.Empty;
+        public string Description => Collector.Description ?? string.Empty;
 
         public bool IsChecked { get => _isChecked; set { _isChecked = value; OnPropertyChanged(); } }
-        private bool _isChecked = true;
+        private bool _isChecked;
 
         public CollectorItem(IFeedbackLogCollector collector)
         {
             Collector = collector;
+            _isChecked = collector.IsSelectedByDefault;
         }
     }
 
@@ -140,6 +141,17 @@ namespace ColorVision.UI.Desktop.Feedback
             {
                 _placeholderActive = false;
                 MessageTextBox.Text = string.Empty;
+                MessageTextBox.SetResourceReference(Control.ForegroundProperty, "GlobalTextBrush");
+            }
+        }
+
+        private void MessageTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(MessageTextBox.Text))
+            {
+                _placeholderActive = true;
+                MessageTextBox.Text = Properties.Resources.FeedbackPlaceholder;
+                MessageTextBox.SetResourceReference(Control.ForegroundProperty, "SecondaryTextBrush");
             }
         }
 
@@ -195,75 +207,165 @@ namespace ColorVision.UI.Desktop.Feedback
             }
         }
 
-        private void PackLogs_Click(object sender, RoutedEventArgs e)
+        private async void PackLogs_Click(object sender, RoutedEventArgs e)
         {
+            await AddLogPackageAttachmentAsync();
+        }
+
+        private async Task<bool> AddLogPackageAttachmentAsync(bool manageButtonState = true)
+        {
+            var selectedCollectors = _collectorItems.Where(c => c.IsChecked).Select(c => c.Collector).ToList();
+            if (selectedCollectors.Count == 0)
+            {
+                StatusText.Text = Properties.Resources.NoLocalLog4Output;
+                return false;
+            }
+
+            if (manageButtonState)
+                PackLogsButton.IsEnabled = false;
+
             try
             {
-                // Get only the checked collectors
-                var selectedCollectors = _collectorItems.Where(c => c.IsChecked).Select(c => c.Collector).ToList();
+                var progress = new Progress<string>(collectorName =>
+                {
+                    StatusText.Text = string.Format(Properties.Resources.CollectingLogs, collectorName);
+                });
 
-                if (selectedCollectors.Count == 0)
+                var result = await Task.Run(() => CreateLogPackage(selectedCollectors, progress));
+
+                if (result.TotalFiles == 0)
                 {
                     StatusText.Text = Properties.Resources.NoLocalLog4Output;
-                    return;
+                    TryDeleteFile(result.ZipPath);
+                    return false;
                 }
 
-                string zipPath = Path.Combine(Path.GetTempPath(), $"ColorVision_Diagnostics_{DateTime.Now:yyyyMMdd_HHmmss}.zip");
-                var tempFiles = new List<string>();
-                int totalFiles = 0;
-
-                using (var zipArchive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-                {
-                    foreach (var collector in selectedCollectors)
-                    {
-                        try
-                        {
-                            StatusText.Text = string.Format(Properties.Resources.CollectingLogs, collector.Name);
-
-                            foreach (var (entryPath, filePath) in collector.CollectFiles())
-                            {
-                                try
-                                {
-                                    if (File.Exists(filePath))
-                                    {
-                                        zipArchive.CreateEntryFromFile(filePath, entryPath);
-                                        tempFiles.Add(filePath);
-                                        totalFiles++;
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    log.Debug($"Could not add {entryPath} from {collector.Name}: {ex.Message}");
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Debug($"Collector '{collector.Name}' failed: {ex.Message}");
-                        }
-                    }
-                }
-
-                // Clean up temp files
-                foreach (var tempFile in tempFiles)
-                {
-                    try { File.Delete(tempFile); } catch { }
-                }
-
-                if (totalFiles == 0)
-                {
-                    StatusText.Text = Properties.Resources.NoLocalLog4Output;
-                    try { File.Delete(zipPath); } catch { }
-                    return;
-                }
-
-                _attachments.Add(new AttachmentItem { FilePath = zipPath });
-                StatusText.Text = string.Format(Properties.Resources.LogsPackaged, Path.GetFileName(zipPath));
+                _attachments.Add(new AttachmentItem { FilePath = result.ZipPath });
+                StatusText.Text = string.Format(Properties.Resources.LogsPackaged, Path.GetFileName(result.ZipPath));
+                return true;
             }
             catch (Exception ex)
             {
                 log.Error($"PackLogs failed: {ex.Message}");
                 StatusText.Text = string.Format(Properties.Resources.SendFailed, ex.Message);
+                return false;
+            }
+            finally
+            {
+                if (manageButtonState)
+                    PackLogsButton.IsEnabled = true;
+            }
+        }
+
+        private static LogPackageResult CreateLogPackage(IReadOnlyList<IFeedbackLogCollector> collectors, IProgress<string> progress)
+        {
+            string zipPath = Path.Combine(Path.GetTempPath(), $"ColorVision_Diagnostics_{DateTime.Now:yyyyMMdd_HHmmss}.zip");
+            var collectedFiles = new List<string>();
+            var usedEntryPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int totalFiles = 0;
+
+            using (var zipArchive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                foreach (var collector in collectors)
+                {
+                    try
+                    {
+                        progress.Report(collector.Name);
+
+                        foreach (var (entryPath, filePath) in collector.CollectFiles())
+                        {
+                            try
+                            {
+                                if (!File.Exists(filePath))
+                                    continue;
+
+                                string safeEntryPath = NormalizeZipEntryPath(entryPath, Path.GetFileName(filePath));
+                                safeEntryPath = EnsureUniqueEntryPath(safeEntryPath, usedEntryPaths);
+                                zipArchive.CreateEntryFromFile(filePath, safeEntryPath);
+                                collectedFiles.Add(filePath);
+                                totalFiles++;
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Debug($"Could not add {entryPath} from {collector.Name}: {ex.Message}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Debug($"Collector '{collector.Name}' failed: {ex.Message}");
+                    }
+                }
+            }
+
+            CleanupCollectedFiles(collectedFiles);
+            return new LogPackageResult(zipPath, totalFiles);
+        }
+
+        private static string NormalizeZipEntryPath(string entryPath, string fallbackFileName)
+        {
+            string normalized = string.IsNullOrWhiteSpace(entryPath) || Path.IsPathRooted(entryPath)
+                ? fallbackFileName
+                : entryPath.Replace('\\', '/').Trim('/');
+
+            var parts = normalized
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .Where(part => part != "." && part != "..")
+                .ToArray();
+
+            return parts.Length == 0 ? fallbackFileName : string.Join("/", parts);
+        }
+
+        private static string EnsureUniqueEntryPath(string entryPath, HashSet<string> usedEntryPaths)
+        {
+            if (usedEntryPaths.Add(entryPath))
+                return entryPath;
+
+            string directory = Path.GetDirectoryName(entryPath)?.Replace('\\', '/') ?? string.Empty;
+            string fileName = Path.GetFileNameWithoutExtension(entryPath);
+            string extension = Path.GetExtension(entryPath);
+
+            for (int index = 2; ; index++)
+            {
+                string candidateName = $"{fileName}_{index}{extension}";
+                string candidate = string.IsNullOrEmpty(directory) ? candidateName : $"{directory}/{candidateName}";
+                if (usedEntryPaths.Add(candidate))
+                    return candidate;
+            }
+        }
+
+        private static void CleanupCollectedFiles(IEnumerable<string> collectedFiles)
+        {
+            foreach (var filePath in collectedFiles)
+            {
+                if (IsUnderTempPath(filePath))
+                    TryDeleteFile(filePath);
+            }
+        }
+
+        private static bool IsUnderTempPath(string filePath)
+        {
+            try
+            {
+                string tempPath = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                string fullPath = Path.GetFullPath(filePath);
+                return fullPath.StartsWith(tempPath, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void TryDeleteFile(string filePath)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                    File.Delete(filePath);
+            }
+            catch
+            {
             }
         }
 
@@ -279,16 +381,17 @@ namespace ColorVision.UI.Desktop.Feedback
         {
             string message = _placeholderActive ? string.Empty : MessageTextBox.Text.Trim();
 
+            SetInputEnabled(false);
+
+            if (!HasDiagnosticPackage() && _collectorItems.Any(c => c.IsChecked))
+                await AddLogPackageAttachmentAsync(false);
+
             if (string.IsNullOrEmpty(message) && _attachments.Count == 0)
             {
+                SetInputEnabled(true);
                 MessageBox.Show(this, Properties.Resources.FeedbackEmptyWarning, Properties.Resources.SendFeedback, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-
-            SendButton.IsEnabled = false;
-            PackLogsButton.IsEnabled = false;
-            AddFileButton.IsEnabled = false;
-            AddScreenshotButton.IsEnabled = false;
 
             UploadProgressBar.Value = 0;
             UploadProgressBar.Visibility = Visibility.Visible;
@@ -349,16 +452,32 @@ namespace ColorVision.UI.Desktop.Feedback
             }
             finally
             {
-                SendButton.IsEnabled = true;
-                PackLogsButton.IsEnabled = true;
-                AddFileButton.IsEnabled = true;
-                AddScreenshotButton.IsEnabled = true;
+                SetInputEnabled(true);
             }
+        }
+
+        private bool HasDiagnosticPackage()
+        {
+            return _attachments.Any(attachment =>
+                attachment.FileName.StartsWith("ColorVision_Diagnostics_", StringComparison.OrdinalIgnoreCase)
+                && attachment.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void SetInputEnabled(bool isEnabled)
+        {
+            SendButton.IsEnabled = isEnabled;
+            PackLogsButton.IsEnabled = isEnabled;
+            AddFileButton.IsEnabled = isEnabled;
+            AddScreenshotButton.IsEnabled = isEnabled;
+            CollectorsList.IsEnabled = isEnabled;
+            AttachmentsList.IsEnabled = isEnabled;
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
         }
+
+        private readonly record struct LogPackageResult(string ZipPath, int TotalFiles);
     }
 }

@@ -219,7 +219,6 @@ public class MainWindowConfig : WindowConfig, IConfig, IConfigSettingProvider
 - `SpectrometerManager.cs` - 光谱仪核心管理器
 - `SpectrometerType.cs` - 设备类型枚举
 - `SpectrumStatusBarProvider.cs` - 状态栏提供者
-- `Assets/Image/` - CIE 色度图参考图
 - `Calibration/` - 校正管理界面
 - `Configs/` - 设备配置
 - `Data/` - 数据管理

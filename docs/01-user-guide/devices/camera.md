@@ -59,15 +59,7 @@
 - 优先排查是连接问题还是参数问题
 - 需要时查看相机日志确认后台服务状态
 
-## 继续阅读
-
-- [物理相机管理](./camera-management.md)
-- [相机参数配置](./camera-configuration.md)
-- [校准服务](./calibration.md)
-- [流程执行与调试](../workflow/execution.md)
-
 ## 说明
 
 - 本页只保留使用视角，不再继续维护代码分析稿。
 - 实现入口主要在 `Engine/ColorVision.Engine/Services/Devices/Camera/` 和 `Engine/ColorVision.Engine/Services/PhyCameras/`。
-

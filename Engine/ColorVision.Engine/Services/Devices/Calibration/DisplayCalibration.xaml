@@ -22,6 +22,28 @@
     </UserControl.Resources>
     <StackPanel Margin="0,3">
         <DockPanel Margin="0,0,5,0">
+            <Grid DockPanel.Dock="Right">
+                <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
+                <Image Height="18" Margin="0,0,0,0" Source="{DynamicResource DrawingImageProperty}" />
+                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
+            </Grid>
+            <Button Padding="3" Background="Transparent" BorderThickness="0" Command="{Binding RefreshCommand}" DockPanel.Dock="Right">
+                <Button.Triggers>
+                    <EventTrigger RoutedEvent="Button.Click">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Button.Triggers>
+                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE72C;" ToolTip="{x:Static properties:Resources.Refresh}">
+                    <TextBlock.RenderTransform>
+                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Button>
+
             <ToggleButton Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
@@ -40,7 +62,7 @@
                         <Button Grid.Column="1" Margin="0,0,5,0" HorizontalAlignment="Right" Click="Open_File" Content="..." />
                         <Button Grid.Column="2" Click="Button_OpenLocal_Click" Content="{x:Static properties:Resources.Open}" />
                     </Grid>
-                    <DockPanel Margin="0,0,0,3" Visibility="{Binding ElementName=RadioLocal, Path=IsSelected, Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,0,0,3" >
                         <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureR}" />
                         <TextBox x:Name="TextBoxExpR" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeR}" />
                         <hc:PreviewSlider x:Name="SliderExpR" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeR}">
@@ -49,7 +71,7 @@
                             </hc:PreviewSlider.PreviewContent>
                         </hc:PreviewSlider>
                     </DockPanel>
-                    <DockPanel Margin="0,0,0,3" Visibility="{Binding ElementName=RadioLocal, Path=IsSelected, Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,0,0,3" >
                         <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureG}" />
                         <TextBox x:Name="TextBoxExpG" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeG}" />
                         <hc:PreviewSlider x:Name="SliderExpG" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeG}">
@@ -58,7 +80,7 @@
                             </hc:PreviewSlider.PreviewContent>
                         </hc:PreviewSlider>
                     </DockPanel>
-                    <DockPanel Margin="0,0,0,3" Visibility="{Binding ElementName=RadioLocal, Path=IsSelected, Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,0,0,3">
                         <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureB}" />
                         <TextBox x:Name="TextBoxExpB" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeB}" />
                         <hc:PreviewSlider x:Name="SliderExpB" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeB}">

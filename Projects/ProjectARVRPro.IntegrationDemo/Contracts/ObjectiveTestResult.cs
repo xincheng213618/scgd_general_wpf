@@ -95,9 +95,14 @@ namespace ProjectARVRPro
         }
         private bool _TotalResult = true;
 
-    /// <summary>
-    /// 总体测试结果字符串，通常为 PASS 或 Fail。
-    /// </summary>
+        /// <summary>
+        /// 测试失败时的总体失败说明。
+        /// </summary>
+        public string Msg { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 总体测试结果字符串，通常为 PASS 或 Fail。
+        /// </summary>
         public string TotalResultString { get { return TotalResult ? "PASS" : "Fail"; } }
     }
 }

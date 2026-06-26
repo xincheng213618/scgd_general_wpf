@@ -62,13 +62,6 @@
 - 再回到相关设备专题页确认服务状态和配置
 - 同时结合 [日志查看器](../interface/log-viewer.md) 缩小范围
 
-## 继续阅读
-
-- [流程设计](./design.md)
-- [流程执行与调试](./execution.md)
-- [设备服务概览](../devices/overview.md)
-- [数据管理](../data-management/README.md)
-
 ## 说明
 
 - 本页只保留工作流程的使用入口，不再继续维护架构和 API 导航。

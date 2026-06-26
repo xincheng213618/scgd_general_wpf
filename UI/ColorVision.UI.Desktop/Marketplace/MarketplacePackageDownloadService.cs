@@ -295,6 +295,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return existingFile;
             }
 
+            DeleteInvalidPreferredPackage(request);
             cancellationToken.ThrowIfCancellationRequested();
             _ui.ShowDownloadWindow();
             return await StartDownloadAsync(request, showFailureDialog, cancellationToken).ConfigureAwait(false);
@@ -326,6 +327,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
                 else
                 {
+                    DeleteInvalidPreferredPackage(request);
                     missingRequests.Add(request);
                 }
             }
@@ -347,6 +349,30 @@ namespace ColorVision.UI.Desktop.Marketplace
             return packagePaths
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        private void DeleteInvalidPreferredPackage(MarketplacePackageRequest request)
+        {
+            string filePath = Path.Combine(_ui.DownloadDirectory, $"{request.PluginId}-{request.Version}.cvxp");
+            if (!File.Exists(filePath))
+                return;
+
+            bool isValid = false;
+            try
+            {
+                isValid = _client.VerifyFileHash(filePath, request.ExpectedHash);
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Marketplace package cache validation failed for {request.PluginId} v{request.Version}: {ex.Message}");
+            }
+
+            if (isValid)
+                return;
+
+            TryDeleteFile(filePath);
+            TryDeleteFile(filePath + ".aria2");
+            log.Warn($"Deleted invalid marketplace package cache: {filePath}");
         }
 
         public async Task<bool> OpenDownloadedPackageFolderAsync(MarketplacePackageRequest request, CancellationToken cancellationToken = default)
@@ -501,6 +527,19 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
 
             return await completionSource.Task.ConfigureAwait(false);
+        }
+
+        private static void TryDeleteFile(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Failed to delete file: {filePath}", ex);
+            }
         }
 
         private static void RunOnUIThread(Action action)

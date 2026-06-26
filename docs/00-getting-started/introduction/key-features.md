@@ -1,26 +1,17 @@
-# 主要特性（旧入口）
+---
+search: false
+outline: false
+redirect_from_deleted_page: true
+---
 
-本页保留是为了兼容旧链接。当前文档已经不再在入门章节里维护这种“功能百科式”长清单，因为它很容易把历史能力、项目定制能力和当前仓库可验证能力混在一起。
+<script setup>
+import { onMounted } from 'vue'
 
-## 想快速了解产品，先看哪里
+onMounted(() => {
+  window.location.replace('../what-is-colorvision')
+})
+</script>
 
-- [什么是 ColorVision](../what-is-colorvision.md)
-- [安装与首次使用](../README.md)
-- [快速上手](../quick-start.md)
+# 页面已整理
 
-## 想按主题继续阅读
-
-- 想看界面和日常操作：前往 [使用手册](../../01-user-guide/README.md)
-- 想看设备和采集链路：前往 [设备服务概览](../../01-user-guide/devices/overview.md)
-- 想看流程设计与执行：前往 [工作流程概览](../../01-user-guide/workflow/README.md)
-- 想看系统设计边界：前往 [架构设计](../../03-architecture/README.md)
-
-## 为什么这里不再直接列能力清单
-
-- 旧版特性列表里混入了难以从当前仓库直接核对的描述
-- 一部分能力只在特定项目、插件或交付环境里成立，不适合作为通用入口承诺
-- 当前结构已经把“项目说明”“使用手册”“开发手册”“插件开发手册”“现有插件能力说明”“模块参考”拆开，读者应沿着这些入口进入
-
-## 当前判断原则
-
-如果某项能力没有在现行专题页、源码或当前插件目录中得到印证，应优先以现行文档和源码为准，而不是以旧特性清单为准。
+旧的主要特性页已经合并到 [什么是 ColorVision](../what-is-colorvision.md)。

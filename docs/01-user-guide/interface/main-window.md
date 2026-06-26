@@ -61,14 +61,6 @@
 - 先确认相关服务、设备或插件是否已经真正启动
 - 再查看 [日志查看器](./log-viewer.md) 获取更明确的信息
 
-## 继续阅读
-
-- [UI 组件使用手册](./ui-component-handbook.md)
-- [属性编辑器](./property-editor.md)
-- [日志查看器](./log-viewer.md)
-- [终端](./terminal.md)
-- [图像编辑器概览](../image-editor/overview.md)
-
 ## 说明
 
 - 本页只保留主窗口使用视角，不再继续维护源码结构拆解。

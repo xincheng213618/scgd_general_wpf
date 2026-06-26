@@ -55,6 +55,45 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="TopChromeUpdateNotificationButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#2D9CFF" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <TextBlock x:Name="ButtonText"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="{TemplateBinding FontSize}"
+                                   FontWeight="{TemplateBinding FontWeight}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   Text="{TemplateBinding Content}" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonText" Property="Foreground" Value="#62B8FF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonText" Property="Foreground" Value="#1677D2" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonText" Property="Opacity" Value="0.58" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="TopChromeCaptionButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True" />
             <Setter Property="Width" Value="48" />
@@ -194,15 +233,26 @@
                                    Opacity="0.62"
                                    Text="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                    TextTrimming="CharacterEllipsis" />
-                        <search:SearchControl x:Name="SearchControl1"
-                                              Margin="0"
-                                              MinWidth="260"
-                                              MaxWidth="360"
-                                              SearchBoxHeight="30"
-                                              Width="{Binding ActualWidth, ElementName=SearchHostGrid}"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              shell:WindowChrome.IsHitTestVisibleInChrome="True" />
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal"
+                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <search:SearchControl x:Name="SearchControl1"
+                                                  Margin="0"
+                                                  MinWidth="260"
+                                                  Width="320"
+                                                  MaxWidth="360"
+                                                  SearchBoxHeight="30"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  shell:WindowChrome.IsHitTestVisibleInChrome="True" />
+                            <Button x:Name="UpdateNotificationButton"
+                                    Click="UpdateNotificationButton_Click"
+                                    Content="{x:Static properties:Resources.UpdatePreviewFoundUpdatesHeading}"
+                                    Style="{StaticResource TopChromeUpdateNotificationButtonStyle}"
+                                    ToolTip="{x:Static properties:Resources.UpdatePreviewUpdateNowButtonText}"
+                                    Visibility="Collapsed" />
+                        </StackPanel>
                     </Grid>
 
                     <StackPanel x:Name="RightMenuItemPanel"

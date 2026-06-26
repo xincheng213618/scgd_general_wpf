@@ -44,7 +44,7 @@
                     </DockPanel>
                     <DockPanel x:Name="GroupFilterPanel" Grid.Row="1" Margin="10,0,10,6">
                         <TextBlock Text="{x:Static properties:Resources.Group}" Margin="0,0,8,0" Foreground="{DynamicResource ThirdlyTextBrush}" />
-                        <hc:ComboBox x:Name="SourceGroupComboBox" Width="180" Height="28" SelectionChanged="SourceGroupComboBox_SelectionChanged" />
+                        <hc:ComboBox x:Name="SourceGroupComboBox" Width="180" Height="28" IsTextSearchEnabled="False" SelectionChanged="SourceGroupComboBox_SelectionChanged" />
                     </DockPanel>
                     <ScrollViewer Grid.Row="2" Margin="8,0,8,8" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <WrapPanel x:Name="TemplateStackPanels" Orientation="Horizontal" />
@@ -56,7 +56,7 @@
                 <StackPanel>
                     <TextBlock Text="{x:Static properties:Resources.NewTemplateName}" Margin="0,0,0,5" Foreground="{DynamicResource ThirdlyTextBrush}" />
                     <DockPanel Grid.Row="1">
-                        <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
+                        <hc:ComboBox x:Name="CreateCode" IsEditable="True" IsTextSearchEnabled="False" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                     </DockPanel>
                     <Button Content="{x:Static properties:Resources.Create}" Foreground="White" Background="{StaticResource PrimaryBrush}" Margin="0,8,0,0" Height="32" Click="Button_Click" />
                 </StackPanel>

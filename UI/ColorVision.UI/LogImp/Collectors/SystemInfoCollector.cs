@@ -14,6 +14,7 @@ namespace ColorVision.UI.LogImp
         private static readonly ILog log = LogManager.GetLogger(typeof(SystemInfoCollector));
 
         public string Name => "System Information";
+        public string Description => "OS, process, runtime, and loaded assembly summary";
         public int Order => 10;
 
         public IEnumerable<(string EntryPath, string FilePath)> CollectFiles()
