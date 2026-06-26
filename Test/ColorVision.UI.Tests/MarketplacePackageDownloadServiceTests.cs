@@ -39,6 +39,41 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public async Task EnsurePackageAvailableAsync_DeletesInvalidPreferredPackageBeforeDownloading()
+        {
+            string stalePath = Path.Combine(_downloadDirectory, "PluginA-1.0.0.cvxp");
+            Directory.CreateDirectory(_downloadDirectory);
+            File.WriteAllBytes(stalePath, new byte[] { 1, 2, 3 });
+
+            int verifyCalls = 0;
+            var client = new FakeMarketplacePackageClient
+            {
+                VerifyFileHashResolver = (_, _) => ++verifyCalls > 1,
+            };
+            var downloader = new FakeMarketplacePackageDownloader
+            {
+                DownloadFactory = invocation =>
+                {
+                    Assert.False(File.Exists(stalePath));
+                    return new DownloadTask
+                    {
+                        Status = DownloadStatus.Completed,
+                        SavePath = Path.Combine(invocation.DownloadDirectory, invocation.FileName),
+                    };
+                },
+            };
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, downloader, installer, ui);
+
+            string? result = await service.EnsurePackageAvailableAsync(CreateRequest("PluginA", "1.0.0", "expected-hash"), showFailureDialog: false);
+
+            Assert.Equal(stalePath, result);
+            Assert.Single(downloader.Invocations);
+            Assert.Equal(2, client.VerifyFileHashCalls);
+        }
+
+        [Fact]
         public async Task InstallPackageAsync_DoesNotInstallWhenHashVerificationFails()
         {
             var client = new FakeMarketplacePackageClient
@@ -251,6 +286,7 @@ namespace ColorVision.UI.Tests
         private sealed class FakeMarketplacePackageClient : IMarketplacePackageClient
         {
             public Func<string, string, string, string?, string?>? ExistingFileResolver { get; set; }
+            public Func<string, string?, bool>? VerifyFileHashResolver { get; set; }
             public bool VerifyFileHashResult { get; set; } = true;
             public int VerifyFileHashCalls { get; private set; }
 
@@ -272,6 +308,9 @@ namespace ColorVision.UI.Tests
             public bool VerifyFileHash(string filePath, string? expectedHash)
             {
                 VerifyFileHashCalls++;
+                if (VerifyFileHashResolver != null)
+                    return VerifyFileHashResolver(filePath, expectedHash);
+
                 return VerifyFileHashResult;
             }
 
