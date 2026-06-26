@@ -60,10 +60,10 @@
                 <DataGrid Grid.Row="1" x:Name="DataGridValues" AutoGenerateColumns="False" IsReadOnly="True"  Style="{StaticResource DataGrid.Small}"
                           CanUserAddRows="False" CanUserDeleteRows="False" AlternatingRowBackground="LightGray">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Series" Binding="{Binding SeriesName}" Width="100"/>
+                        <DataGridTextColumn Header="Series" Binding="{Binding SeriesName}" Width="100"/>    
                         <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60"/>
                         <DataGridTextColumn Header="Voltage (V)" Binding="{Binding Voltage, StringFormat=F6}" Width="120"/>
-                        <DataGridTextColumn Header="Current (A)" Binding="{Binding Current, StringFormat=F6}" Width="120"/>
+                        <DataGridTextColumn Header="Current (mA)" Binding="{Binding Current, StringFormat=F6}" Width="120"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
