@@ -1,5 +1,6 @@
 #pragma warning disable CS8603,CS8625
 using ColorVision.Database;
+using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -50,6 +51,8 @@ namespace ColorVision.Engine.Templates.Flow
     /// </summary>
     public static class FlowPackageHelper
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(FlowPackageHelper));
+
         /// <summary>
         /// 已知的模板属性名称集合 (STNodeProperty 标记的模板引用属性)
         /// </summary>
@@ -471,7 +474,8 @@ namespace ColorVision.Engine.Templates.Flow
             var nameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (manifest?.Templates == null) return nameMap;
             var reservedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var importPlans = new List<(ITemplate Template, string NewName, FlowPackageTemplate PackageTemplate)>();
+            var plannedNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var importPlans = new List<(ITemplate Template, string OriginalName, string NewName, FlowPackageTemplate PackageTemplate)>();
 
             foreach (var pkgTemplate in manifest.Templates)
             {
@@ -491,17 +495,29 @@ namespace ColorVision.Engine.Templates.Flow
                 }
 
                 reservedNames.Add(newName);
-                importPlans.Add((iTemplate, newName, pkgTemplate));
+                importPlans.Add((iTemplate, originalName, newName, pkgTemplate));
 
                 if (!originalName.Equals(newName, StringComparison.OrdinalIgnoreCase))
                 {
-                    nameMap[originalName] = newName;
+                    plannedNameMap[originalName] = newName;
                 }
             }
 
             foreach (var importPlan in importPlans)
             {
-                CreateTemplateFromPackage(importPlan.Template, importPlan.NewName, importPlan.PackageTemplate, nameMap);
+                try
+                {
+                    CreateTemplateFromPackage(importPlan.Template, importPlan.NewName, importPlan.PackageTemplate, plannedNameMap);
+                    if (!importPlan.OriginalName.Equals(importPlan.NewName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        nameMap[importPlan.OriginalName] = importPlan.NewName;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    importPlan.Template.ClearCreateTemplateSource();
+                    log.Warn($"Skip importing flow package template '{importPlan.OriginalName}' ({importPlan.PackageTemplate.TemplateCode}).", ex);
+                }
             }
 
             return nameMap;
