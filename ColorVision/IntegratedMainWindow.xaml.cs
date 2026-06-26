@@ -37,6 +37,7 @@ namespace ColorVision
         private const double TopChromeSearchReservedWidth = 320;
         private const double TopChromeSpacingReservedWidth = 80;
         private const double TopChromeButtonFallbackWidth = 32;
+        private const double TopChromeUpdateNotificationFallbackWidth = 76;
 
         private bool _topChromeVisibilityUpdateQueued;
         private WindowChrome? _integratedWindowChrome;
@@ -375,7 +376,7 @@ namespace ColorVision
             UpdateNotificationButton.IsEnabled = false;
             try
             {
-                await CombinedUpdateCoordinator.OpenPendingStartupUpdateAsync();
+                await CombinedUpdateCoordinator.StartPendingStartupUpdateAsync();
             }
             finally
             {
@@ -461,9 +462,9 @@ namespace ColorVision
                                       + rightPanelWidth
                                       + GetWindowCommandButtonsWidth()
                                       + TopChromeSpacingReservedWidth;
-            double updateNotificationWidth = UpdateNotificationButton.Visibility == Visibility.Visible
-                ? TopChromeButtonFallbackWidth
-                : 0;
+            double updateNotificationWidth = GetVisibleElementWidth(UpdateNotificationButton);
+            if (UpdateNotificationButton.Visibility == Visibility.Visible && updateNotificationWidth <= 0)
+                updateNotificationWidth = TopChromeUpdateNotificationFallbackWidth;
 
             SetVisibilityIfChanged(
                 SearchControl1,

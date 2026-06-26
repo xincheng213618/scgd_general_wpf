@@ -285,7 +285,7 @@ namespace ColorVision
             UpdateNotificationButton.IsEnabled = false;
             try
             {
-                await CombinedUpdateCoordinator.OpenPendingStartupUpdateAsync();
+                await CombinedUpdateCoordinator.StartPendingStartupUpdateAsync();
             }
             finally
             {

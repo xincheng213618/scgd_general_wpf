@@ -252,6 +252,43 @@ namespace ColorVision.Update
             }
         }
 
+        public static async Task StartPendingStartupUpdateAsync(CancellationToken cancellationToken = default)
+        {
+            await _locker.WaitAsync(cancellationToken);
+            try
+            {
+                AutoUpdatePlan? applicationPlan = _pendingStartupApplicationPlan;
+                CombinedPluginUpdatePlan? pluginPlan = _pendingStartupPluginPlan;
+
+                if (!HasUpdates(applicationPlan, pluginPlan))
+                {
+                    ClearPendingStartupUpdate();
+                    return;
+                }
+
+                UpdatePreviewDialogContext defaultContext = BuildUpdatePreviewContext(applicationPlan, pluginPlan, allowSkipVersion: false, isStartupCheck: true);
+                ApplySelectedApplicationChoices(
+                    ref applicationPlan,
+                    GetSelectedApplicationUpdateMode(defaultContext),
+                    GetSelectedCreateBackupBeforeIncrementalUpdate(defaultContext));
+                ApplySelectedPluginUpdates(pluginPlan, defaultContext);
+                ClearPendingStartupUpdate();
+                await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Pending startup update start canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            finally
+            {
+                _locker.Release();
+            }
+        }
+
         private static void SetPendingStartupUpdate(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
         {
             bool hadUpdates = HasPendingStartupUpdate;
