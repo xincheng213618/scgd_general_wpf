@@ -44,7 +44,7 @@
                     </DockPanel>
                     <DockPanel x:Name="GroupFilterPanel" Grid.Row="1" Margin="10,0,10,6">
                         <TextBlock Text="{x:Static properties:Resources.Group}" Margin="0,0,8,0" Foreground="{DynamicResource ThirdlyTextBrush}" />
-                        <hc:ComboBox x:Name="SourceGroupComboBox" Width="180" Height="28" SelectionChanged="SourceGroupComboBox_SelectionChanged" />
+                        <hc:ComboBox x:Name="SourceGroupComboBox" Width="180" Height="28" IsTextSearchEnabled="False" SelectionChanged="SourceGroupComboBox_SelectionChanged" />
                     </DockPanel>
                     <ScrollViewer Grid.Row="2" Margin="8,0,8,8" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <WrapPanel x:Name="TemplateStackPanels" Orientation="Horizontal" />

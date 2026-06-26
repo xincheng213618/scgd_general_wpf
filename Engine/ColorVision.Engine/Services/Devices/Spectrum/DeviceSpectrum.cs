@@ -29,6 +29,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -95,6 +96,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
+        private const int CalibrationRestartDebounceMilliseconds = 1000;
+        private const int CalibrationRestartCooldownMilliseconds = 4000;
+        private readonly object calibrationRestartSync = new object();
+        private readonly SemaphoreSlim calibrationRestartGate = new SemaphoreSlim(1, 1);
+        private CancellationTokenSource? calibrationRestartCts;
+
         public MQTTSpectrum DService { get; set; }
         public ViewSpectrum View { get; set; }
         public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Config.Code);
@@ -267,12 +274,58 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (!changed && !forceRestart)
                 return false;
 
+            SaveConfig();
+
             if (restartService)
-                Save();
-            else
-                SaveConfig();
+                QueueCalibrationRestart();
 
             return true;
+        }
+
+        private void QueueCalibrationRestart()
+        {
+            var restartCts = new CancellationTokenSource();
+            CancellationTokenSource? previousCts;
+
+            lock (calibrationRestartSync)
+            {
+                previousCts = calibrationRestartCts;
+                calibrationRestartCts = restartCts;
+            }
+
+            previousCts?.Cancel();
+            previousCts?.Dispose();
+
+            _ = RestartCalibrationServiceAfterIdleAsync(restartCts);
+        }
+
+        private async Task RestartCalibrationServiceAfterIdleAsync(CancellationTokenSource restartCts)
+        {
+            try
+            {
+                await Task.Delay(CalibrationRestartDebounceMilliseconds, restartCts.Token);
+                await calibrationRestartGate.WaitAsync(restartCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            try
+            {
+                lock (calibrationRestartSync)
+                {
+                    if (!ReferenceEquals(restartCts, calibrationRestartCts))
+                        return;
+                }
+
+                RestartRCService();
+                await Task.Delay(CalibrationRestartCooldownMilliseconds);
+            }
+            finally
+            {
+                calibrationRestartGate.Release();
+            }
         }
 
         public static int MyCallback(IntPtr strText, int nLen)
