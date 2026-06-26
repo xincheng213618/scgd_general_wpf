@@ -56,7 +56,7 @@
                 <StackPanel>
                     <TextBlock Text="{x:Static properties:Resources.NewTemplateName}" Margin="0,0,0,5" Foreground="{DynamicResource ThirdlyTextBrush}" />
                     <DockPanel Grid.Row="1">
-                        <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
+                        <hc:ComboBox x:Name="CreateCode" IsEditable="True" IsTextSearchEnabled="False" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                     </DockPanel>
                     <Button Content="{x:Static properties:Resources.Create}" Foreground="White" Background="{StaticResource PrimaryBrush}" Margin="0,8,0,0" Height="32" Click="Button_Click" />
                 </StackPanel>

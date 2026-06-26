@@ -633,6 +633,11 @@ namespace ProjectARVRPro.Process
             }
         }
 
+        public void SaveProcessGroups()
+        {
+            SavePersistedGroups();
+        }
+
         private ProcessGroupsRoot CreateProcessGroupsRoot()
         {
             return new ProcessGroupsRoot

@@ -4,6 +4,7 @@ using ColorVision.Solution;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
+using ColorVision.Update;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.LogImp;
@@ -49,6 +50,7 @@ namespace ColorVision
             Title = "ColorVision";
             this.ApplyCaption();
             this.SetWindowFull(Config);
+            HookUpdateNotification();
             
         }
 
@@ -256,6 +258,39 @@ namespace ColorVision
                 {
                     DirectoryInfo directoryInfo = new DirectoryInfo(fn);
                 }
+            }
+        }
+
+        private void HookUpdateNotification()
+        {
+            UpdateUpdateNotificationButton();
+            CombinedUpdateCoordinator.PendingStartupUpdateChanged += CombinedUpdateCoordinator_PendingStartupUpdateChanged;
+            Closed += (_, _) => CombinedUpdateCoordinator.PendingStartupUpdateChanged -= CombinedUpdateCoordinator_PendingStartupUpdateChanged;
+        }
+
+        private void CombinedUpdateCoordinator_PendingStartupUpdateChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(UpdateUpdateNotificationButton));
+        }
+
+        private void UpdateUpdateNotificationButton()
+        {
+            UpdateNotificationButton.Visibility = CombinedUpdateCoordinator.HasPendingStartupUpdate
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private async void UpdateNotificationButton_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateNotificationButton.IsEnabled = false;
+            try
+            {
+                await CombinedUpdateCoordinator.OpenPendingStartupUpdateAsync();
+            }
+            finally
+            {
+                UpdateNotificationButton.IsEnabled = true;
+                UpdateUpdateNotificationButton();
             }
         }
 

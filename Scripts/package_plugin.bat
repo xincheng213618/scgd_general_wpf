@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "SCRIPT_DIR=%~dp0"
 
 if "%~1"=="" (
     echo Usage: package_plugin.bat PluginName [package_cvxp arguments]
@@ -18,7 +19,6 @@ goto collect_args
 
 :run_package
 
-set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%..") do set "REPO_ROOT=%%~fI"
 set "PYTHON_EXE=%REPO_ROOT%\.venv\Scripts\python.exe"
 set "PROJECT_FILE=%REPO_ROOT%\Plugins\%PLUGIN_NAME%\%PLUGIN_NAME%.csproj"

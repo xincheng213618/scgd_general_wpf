@@ -6,6 +6,7 @@ using ColorVision.Solution;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
+using ColorVision.Update;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.LogImp;
@@ -64,6 +65,7 @@ namespace ColorVision
             this.SetWindowFull(Config);
             ApplyIntegratedMainWindowShell();
             UpdateWindowCommandButtonState();
+            HookUpdateNotification();
         }
 
         private static WindowChrome CreateIntegratedWindowChrome()
@@ -345,6 +347,44 @@ namespace ColorVision
             ActivateTerminalPanel();
         }
 
+        private void HookUpdateNotification()
+        {
+            UpdateUpdateNotificationButton();
+            CombinedUpdateCoordinator.PendingStartupUpdateChanged += CombinedUpdateCoordinator_PendingStartupUpdateChanged;
+            Closed += (_, _) => CombinedUpdateCoordinator.PendingStartupUpdateChanged -= CombinedUpdateCoordinator_PendingStartupUpdateChanged;
+        }
+
+        private void CombinedUpdateCoordinator_PendingStartupUpdateChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                UpdateUpdateNotificationButton();
+                QueueTopChromeVisibilityUpdate();
+            }));
+        }
+
+        private void UpdateUpdateNotificationButton()
+        {
+            UpdateNotificationButton.Visibility = CombinedUpdateCoordinator.HasPendingStartupUpdate
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private async void UpdateNotificationButton_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateNotificationButton.IsEnabled = false;
+            try
+            {
+                await CombinedUpdateCoordinator.OpenPendingStartupUpdateAsync();
+            }
+            finally
+            {
+                UpdateNotificationButton.IsEnabled = true;
+                UpdateUpdateNotificationButton();
+                QueueTopChromeVisibilityUpdate();
+            }
+        }
+
         private void ShowChangelogIfUpdated()
         {
             try
@@ -421,10 +461,13 @@ namespace ColorVision
                                       + rightPanelWidth
                                       + GetWindowCommandButtonsWidth()
                                       + TopChromeSpacingReservedWidth;
+            double updateNotificationWidth = UpdateNotificationButton.Visibility == Visibility.Visible
+                ? TopChromeButtonFallbackWidth
+                : 0;
 
             SetVisibilityIfChanged(
                 SearchControl1,
-                ActualWidth < fixedChromeWidth + TopChromeSearchReservedWidth
+                ActualWidth < fixedChromeWidth + TopChromeSearchReservedWidth + updateNotificationWidth
                     ? Visibility.Collapsed
                     : Visibility.Visible);
 

@@ -4,6 +4,7 @@ using ColorVision.Engine.Batch;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.SocketProtocol;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.ServiceHost;
@@ -160,6 +161,9 @@ namespace ColorVision.Engine.Templates.Flow
 
         private async void Button_RestartServices_Click(object sender, RoutedEventArgs e)
         {
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否重启 ColorVision 服务？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
             TimedButtonOperationScope? operationScope = EnsureTimedButtonOperations().Begin(RestartServicesButton, GetExpectedRestartDurationMs(), "重启服务");
             bool success = false;
             try

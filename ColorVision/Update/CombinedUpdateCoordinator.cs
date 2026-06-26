@@ -23,8 +23,14 @@ namespace ColorVision.Update
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CombinedUpdateCoordinator));
         private static readonly SemaphoreSlim _locker = new(1, 1);
+        private static AutoUpdatePlan? _pendingStartupApplicationPlan;
+        private static CombinedPluginUpdatePlan? _pendingStartupPluginPlan;
 
         private static CombinedUpdateWorkflowConfig WorkflowConfig => CombinedUpdateWorkflowConfig.Instance;
+
+        public static event EventHandler? PendingStartupUpdateChanged;
+
+        public static bool HasPendingStartupUpdate => HasUpdates(_pendingStartupApplicationPlan, _pendingStartupPluginPlan);
 
         private readonly struct UpdatePreviewResult
         {
@@ -107,7 +113,10 @@ namespace ColorVision.Update
                     return;
 
                 if (!HasUpdates(applicationPlan, pluginPlan))
+                {
+                    ClearPendingStartupUpdate();
                     return;
+                }
 
                 if (window.ResultAction != UpdatePreviewAction.UpdateNow)
                 {
@@ -119,6 +128,7 @@ namespace ColorVision.Update
                     GetSelectedApplicationUpdateMode(context),
                     GetSelectedCreateBackupBeforeIncrementalUpdate(context));
                 ApplySelectedPluginUpdates(pluginPlan, context);
+                ClearPendingStartupUpdate();
                 await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
             }
             catch (OperationCanceledException)
@@ -165,7 +175,40 @@ namespace ColorVision.Update
                     cancellationToken);
 
                 if (!HasUpdates(applicationPlan, pluginPlan))
+                {
+                    ClearPendingStartupUpdate();
                     return;
+                }
+
+                SetPendingStartupUpdate(applicationPlan, pluginPlan);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Startup update check canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            finally
+            {
+                _locker.Release();
+            }
+        }
+
+        public static async Task OpenPendingStartupUpdateAsync(CancellationToken cancellationToken = default)
+        {
+            await _locker.WaitAsync(cancellationToken);
+            try
+            {
+                AutoUpdatePlan? applicationPlan = _pendingStartupApplicationPlan;
+                CombinedPluginUpdatePlan? pluginPlan = _pendingStartupPluginPlan;
+
+                if (!HasUpdates(applicationPlan, pluginPlan))
+                {
+                    ClearPendingStartupUpdate();
+                    return;
+                }
 
                 UpdatePreviewResult previewResult = await ShowUpdatePreviewAsync(applicationPlan, pluginPlan, allowSkipVersion: applicationPlan != null, isStartupCheck: true);
                 UpdatePreviewAction action = previewResult.Action;
@@ -176,6 +219,7 @@ namespace ColorVision.Update
                     {
                         AutoUpdateConfig.Instance.SkippedVersion = applicationPlan.LatestVersion.ToString();
                         ConfigService.Instance.SaveConfigs();
+                        ClearPendingStartupUpdate();
                         return;
                     }
 
@@ -191,11 +235,12 @@ namespace ColorVision.Update
                     ref applicationPlan,
                     previewResult.ApplicationUpdateMode,
                     previewResult.CreateBackupBeforeIncrementalUpdate);
+                ClearPendingStartupUpdate();
                 await StartWorkflowAsync(applicationPlan, pluginPlan, showNoUpdatesMessage: false);
             }
             catch (OperationCanceledException)
             {
-                log.Debug("Startup update check canceled.");
+                log.Debug("Pending startup update preview canceled.");
             }
             catch (Exception ex)
             {
@@ -205,6 +250,27 @@ namespace ColorVision.Update
             {
                 _locker.Release();
             }
+        }
+
+        private static void SetPendingStartupUpdate(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
+        {
+            bool hadUpdates = HasPendingStartupUpdate;
+            _pendingStartupApplicationPlan = applicationPlan;
+            _pendingStartupPluginPlan = pluginPlan;
+            if (hadUpdates != HasPendingStartupUpdate || HasPendingStartupUpdate)
+                PendingStartupUpdateChanged?.Invoke(null, EventArgs.Empty);
+        }
+
+        private static void ClearPendingStartupUpdate()
+        {
+            bool hadUpdates = HasPendingStartupUpdate;
+            if (_pendingStartupApplicationPlan == null && _pendingStartupPluginPlan == null)
+                return;
+
+            _pendingStartupApplicationPlan = null;
+            _pendingStartupPluginPlan = null;
+            if (hadUpdates)
+                PendingStartupUpdateChanged?.Invoke(null, EventArgs.Empty);
         }
 
         public static async Task ResumeIfNeededAsync()
