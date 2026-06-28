@@ -14,6 +14,7 @@ namespace ColorVision.ImageEditor.Realtime
         private readonly DefaultRealtimeCameraConfig _config;
         private bool _isAttached;
         private bool _isRoiVisible = true;
+        private bool _isStatusVisible = true;
         private string _statusText = string.Empty;
 
         public RealtimeCameraOverlayVisual(DefaultRealtimeCameraConfig? config = null)
@@ -28,6 +29,17 @@ namespace ColorVision.ImageEditor.Realtime
             {
                 if (_isRoiVisible == value) return;
                 _isRoiVisible = value;
+                RequestRender();
+            }
+        }
+
+        public bool IsStatusVisible
+        {
+            get => _isStatusVisible;
+            set
+            {
+                if (_isStatusVisible == value) return;
+                _isStatusVisible = value;
                 RequestRender();
             }
         }
@@ -112,7 +124,7 @@ namespace ColorVision.ImageEditor.Realtime
 
         private void DrawStatus(DrawingContext dc, RectangleTextProperties rectangle)
         {
-            if (!rectangle.IsShowText || string.IsNullOrWhiteSpace(_statusText)) return;
+            if (!_isStatusVisible || !rectangle.IsShowText || string.IsNullOrWhiteSpace(_statusText)) return;
 
             FormattedText formattedText = new(
                 _statusText,

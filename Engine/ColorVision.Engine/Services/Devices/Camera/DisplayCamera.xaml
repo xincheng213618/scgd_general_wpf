@@ -338,6 +338,32 @@
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Flip}" />
                             <ComboBox x:Name="CBFilp2" DisplayMemberPath="Value" SelectedValue="{Binding DisplayConfig.LocalVideoTransform}" SelectedValuePath="Key" SelectionChanged="CBFilp2_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
                         </DockPanel>
+                        <StackPanel>
+                            <Grid Margin="0,0,0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" MinWidth="76" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" MinWidth="76" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" MinWidth="18" Margin="0,0,4,3" VerticalAlignment="Center" Text="X" />
+                                <TextBox Grid.Row="0" Grid.Column="1" MinWidth="76" Margin="0,0,8,3" Text="{Binding DisplayConfig.LocalVideoRoiX}" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" MinWidth="18" Margin="0,0,4,3" VerticalAlignment="Center" Text="Y" />
+                                <TextBox Grid.Row="0" Grid.Column="3" MinWidth="76" Margin="0,0,0,3" Text="{Binding DisplayConfig.LocalVideoRoiY}" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" MinWidth="18" Margin="0,0,4,0" VerticalAlignment="Center" Text="W" />
+                                <TextBox Grid.Row="1" Grid.Column="1" MinWidth="76" Margin="0,0,8,0" Text="{Binding DisplayConfig.LocalVideoRoiWidth}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" MinWidth="18" Margin="0,0,4,0" VerticalAlignment="Center" Text="H" />
+                                <TextBox Grid.Row="1" Grid.Column="3" MinWidth="76" Text="{Binding DisplayConfig.LocalVideoRoiHeight}" />
+                            </Grid>
+                            <UniformGrid Margin="0,0,0,3" Columns="2">
+                                <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="默认区域" />
+                                <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="全幅" />
+                            </UniformGrid>
+                        </StackPanel>
                         <StackPanel Margin="0,0,0,3">
                             <CheckBox Margin="0,0,0,3" Content="十字导引" IsChecked="{Binding DisplayConfig.IsCrossGuideEnabled}" />
                             <StackPanel Visibility="{Binding DisplayConfig.IsCrossGuideEnabled, Converter={StaticResource bool2VisibilityConverter}}">
@@ -371,16 +397,7 @@
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideMinCoverageRatio}" />
                                     </DockPanel>
                                 </UniformGrid>
-                                <StackPanel x:Name="LocalVideoCrossGuideRoiEditorHost" Margin="0,0,0,3" />
-                                <TextBlock Text="{Binding DisplayConfig.CrossGuideStatus}" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap" />
                             </StackPanel>
-                        </StackPanel>
-                        <StackPanel Visibility="{Binding CameraVideoControl.Config.IsCalArtculation, Converter={StaticResource bool2VisibilityConverter}}">
-                            <StackPanel x:Name="LocalVideoRoiEditorHost" Margin="0,0,0,3" />
-                            <UniformGrid Margin="0,0,0,3" Columns="2">
-                                <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="默认区域" />
-                                <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="全幅" />
-                            </UniformGrid>
                         </StackPanel>
                         <DockPanel Margin="0,0,0,3">
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Gain}" />

@@ -8,6 +8,8 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
+    internal readonly record struct RealtimeCameraMetrics(double Fps, double? Articulation);
+
     internal sealed class CameraRealtimeFramePipeline : IDisposable
     {
         private readonly DefaultRealtimeCameraConfig _config = DefaultRealtimeCameraConfig.Current;
@@ -24,6 +26,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _configSubscribed;
         private bool _isRunning;
         private bool _showOverlayRoi = true;
+        private bool _showOverlayMetrics = true;
         private int _transform = RealtimeFramePresenter.TransformNone;
 
         public CameraRealtimeFramePipeline()
@@ -37,21 +40,36 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             set => System.Threading.Volatile.Write(ref _transform, value & RealtimeFramePresenter.TransformFlipXY);
         }
 
-        public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone, bool showOverlayRoi = true)
+        public bool IsMetricsVisible
+        {
+            get => _showOverlayMetrics;
+            set
+            {
+                if (_showOverlayMetrics == value) return;
+                _showOverlayMetrics = value;
+                _overlayVisual.IsStatusVisible = value;
+            }
+        }
+
+        public RealtimeCameraMetrics CurrentMetrics => new(_lastFps, IsArticulationEnabled ? _articulation : null);
+
+        public void Start(ImageView imageView, int transform = RealtimeFramePresenter.TransformNone, bool showOverlayRoi = true, bool showOverlayMetrics = true)
         {
             ArgumentNullException.ThrowIfNull(imageView);
             ThrowIfDisposed();
 
             if (!imageView.Dispatcher.CheckAccess())
             {
-                imageView.Dispatcher.Invoke(() => Start(imageView, transform, showOverlayRoi));
+                imageView.Dispatcher.Invoke(() => Start(imageView, transform, showOverlayRoi, showOverlayMetrics));
                 return;
             }
 
             _imageView = imageView;
             Transform = transform;
             _showOverlayRoi = showOverlayRoi;
+            _showOverlayMetrics = showOverlayMetrics;
             _overlayVisual.IsRoiVisible = showOverlayRoi && IsArticulationEnabled;
+            _overlayVisual.IsStatusVisible = showOverlayMetrics;
             _isRunning = true;
             _frameCount = 0;
             _lastFps = 0;
