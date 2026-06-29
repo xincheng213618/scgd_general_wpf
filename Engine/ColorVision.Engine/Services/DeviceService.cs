@@ -176,7 +176,7 @@ namespace ColorVision.Engine.Services
                 window.ApplyCaption();
                 window.ShowDialog();
             });
-            RefreshCommand = new RelayCommand(a => RestartRCService());
+            RefreshCommand = new RelayCommand(a => Save());
 
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.RestartService, Command = RefreshCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = PropertyCommand });
@@ -238,7 +238,7 @@ namespace ColorVision.Engine.Services
 
         }
 
-        public void RestartRCService()
+        public virtual void RestartRCService()
         {
             using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 

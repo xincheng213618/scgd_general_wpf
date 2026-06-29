@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 PhyCamera.DeviceCamera = this;
             }
 
-            RefreshCommand = new RelayCommand(a => RestartRCService());
+            RefreshCommand = new RelayCommand(a => Save());
 
             EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
 
@@ -170,7 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public VideoReader CameraVideoControl { get; set; } = new VideoReader();
 
-        public new void RestartRCService()
+        public override void RestartRCService()
         {
             if (DService.IsVideoOpen)
             {
