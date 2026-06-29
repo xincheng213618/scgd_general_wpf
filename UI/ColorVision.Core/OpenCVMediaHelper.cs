@@ -222,6 +222,8 @@ namespace ColorVision.Core
             }
         }
 
+        // Returns raw pixel-unit focus measure, not a normalized 0..1 score.
+        // Use SFR/MTF APIs for calibrated optical resolution measurements.
         [DllImport(LibPath, EntryPoint = "M_CalArtculation", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         public unsafe static extern double M_CalArtculation(HImage image, FocusAlgorithm  evaFunc, RoiRect roi);
 

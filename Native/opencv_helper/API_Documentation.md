@@ -556,7 +556,9 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 - `type` - Focus algorithm type (see FocusAlgorithm enum)
 - `roi` - Region of interest (width/height=0 for full image)
 
-**Returns:** Focus measure value (higher = sharper)
+**Returns:** Raw pixel-unit focus measure value (higher = sharper). The value is not normalized to `0..1`.
+
+There is no single industry-standard numeric scale or threshold for these general-purpose focus measures. Values depend on the selected algorithm, bit depth, exposure, ROI, demosaicing/preprocessing, and target content. Use the SFR/MTF APIs when a calibrated optical-resolution measurement is required.
 
 **Algorithms:**
 
@@ -569,6 +571,8 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 | VarianceOfLaplacian | **Recommended** - Variance of Laplacian | General autofocus |
 | EnergyOfGradient | Gradient energy | Texture analysis |
 | SpatialFrequency | Row/Column frequency | Periodic patterns |
+
+For example, `VarianceOfLaplacian` returns the variance of the Laplacian response in the input image's pixel units. An 8-bit image and a 16-bit image are therefore not expected to share the same threshold unless the caller explicitly normalizes them before or after this API call.
 
 **C# Usage:**
 ```csharp

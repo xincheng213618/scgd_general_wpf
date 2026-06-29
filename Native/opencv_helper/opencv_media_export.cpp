@@ -643,28 +643,12 @@ bool TryConvertToGray(const cv::Mat& mat, cv::Mat& grayMat)
 	return !grayMat.empty();
 }
 
-double GetFocusLinearScale(int depth)
-{
-	switch (depth)
-	{
-	case CV_8U:
-		return 1.0 / 255.0;
-	case CV_16U:
-		return 1.0 / 65535.0;
-	default:
-		return 1.0;
-	}
-}
-
-bool TryBuildGrayFocusInput(const HImage& img, const RoiRect& roi, cv::Mat& grayMat, double& linearScale, double& squaredScale)
+bool TryBuildGrayFocusInput(const HImage& img, const RoiRect& roi, cv::Mat& grayMat)
 {
 	cv::Mat mat = ClipToRoi(CreateMatView(img), roi);
 	if (mat.empty() || mat.data == nullptr) {
 		return false;
 	}
-
-	linearScale = GetFocusLinearScale(mat.depth());
-	squaredScale = linearScale * linearScale;
 
 	if (mat.depth() == CV_64F) {
 		cv::Mat mat32;
@@ -673,8 +657,6 @@ bool TryBuildGrayFocusInput(const HImage& img, const RoiRect& roi, cv::Mat& gray
 			return false;
 		}
 		cv::patchNaNs(grayMat, 0.0f);
-		linearScale = 1.0;
-		squaredScale = 1.0;
 		return true;
 	}
 
@@ -710,9 +692,7 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 {
 	return GuardDoubleExport([&]() -> double {
 		cv::Mat gray_mat;
-		double linearScale = 1.0;
-		double squaredScale = 1.0;
-		if (!TryBuildGrayFocusInput(img, roi, gray_mat, linearScale, squaredScale)) {
+		if (!TryBuildGrayFocusInput(img, roi, gray_mat)) {
 			return -1.0;
 		}
 
@@ -728,12 +708,12 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 		{
 		case Variance:
 			cv::meanStdDev(gray_mat, mean, stddev);
-			value = Square(stddev.at<double>(0, 0)) * squaredScale;
+			value = Square(stddev.at<double>(0, 0));
 			break;
 
 		case StandardDeviation:
 			cv::meanStdDev(gray_mat, mean, stddev);
-			value = stddev.at<double>(0, 0) * linearScale;
+			value = stddev.at<double>(0, 0);
 			break;
 
 		case Tenengrad:
@@ -743,7 +723,7 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 			cv::Sobel(gray_mat, grad_x, CV_32F, 1, 0, 3);
 			cv::Sobel(gray_mat, grad_y, CV_32F, 0, 1, 3);
 			cv::magnitude(grad_x, grad_y, gradient_mat);
-			value = cv::mean(gradient_mat)[0] * linearScale;
+			value = cv::mean(gradient_mat)[0];
 			break;
 
 		case Laplacian:
@@ -751,7 +731,7 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 				return 0.0;
 			}
 			cv::Laplacian(gray_mat, laplacian_mat, CV_32F, 3);
-			value = cv::mean(cv::abs(laplacian_mat))[0] * linearScale;
+			value = cv::mean(cv::abs(laplacian_mat))[0];
 			break;
 
 		case VarianceOfLaplacian:
@@ -760,7 +740,7 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 			}
 			cv::Laplacian(gray_mat, laplacian_mat, CV_32F, 3);
 			cv::meanStdDev(laplacian_mat, mean, stddev);
-			value = Square(stddev.at<double>(0, 0)) * squaredScale;
+			value = Square(stddev.at<double>(0, 0));
 			break;
 
 		case EnergyOfGradient:
@@ -771,7 +751,7 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 			cv::subtract(gray_mat(cv::Rect(0, 1, gray_mat.cols, gray_mat.rows - 1)), gray_mat(cv::Rect(0, 0, gray_mat.cols, gray_mat.rows - 1)), grad_y, cv::noArray(), CV_32F);
 			cv::multiply(grad_x, grad_x, grad_x);
 			cv::multiply(grad_y, grad_y, grad_y);
-			value = (cv::mean(grad_x)[0] + cv::mean(grad_y)[0]) * squaredScale;
+			value = cv::mean(grad_x)[0] + cv::mean(grad_y)[0];
 			break;
 
 		case SpatialFrequency:
@@ -791,12 +771,12 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 			cv::multiply(diff_y, diff_y, diff_y);
 			RF = std::sqrt(cv::mean(diff_x)[0]);
 			CF = std::sqrt(cv::mean(diff_y)[0]);
-			value = std::sqrt(RF * RF + CF * CF) * linearScale;
+			value = std::sqrt(RF * RF + CF * CF);
 			break;
 		}
 		default:
 			cv::meanStdDev(gray_mat, mean, stddev);
-			value = Square(stddev.at<double>(0, 0)) * squaredScale;
+			value = Square(stddev.at<double>(0, 0));
 			break;
 		}
 

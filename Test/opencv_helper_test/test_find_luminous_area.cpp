@@ -285,6 +285,35 @@ bool smokeCalArtculationInvalidImageDoesNotThrow()
     return M_CalArtculation(invalid, Variance, roi) == -1.0;
 }
 
+bool smokeCalArtculationUsesRawPixelScale()
+{
+    cv::Mat image8(2, 2, CV_8UC1);
+    image8.at<unsigned char>(0, 0) = 0;
+    image8.at<unsigned char>(0, 1) = 255;
+    image8.at<unsigned char>(1, 0) = 255;
+    image8.at<unsigned char>(1, 1) = 0;
+
+    cv::Mat image16(2, 2, CV_16UC1);
+    image16.at<unsigned short>(0, 0) = 0;
+    image16.at<unsigned short>(0, 1) = 65535;
+    image16.at<unsigned short>(1, 0) = 65535;
+    image16.at<unsigned short>(1, 1) = 0;
+
+    RoiRect roi = { 0, 0, 0, 0 };
+    HImage hImage8 = createHImageFromMat(image8);
+    HImage hImage16 = createHImageFromMat(image16);
+
+    const double variance8 = M_CalArtculation(hImage8, Variance, roi);
+    const double stddev8 = M_CalArtculation(hImage8, StandardDeviation, roi);
+    const double variance16 = M_CalArtculation(hImage16, Variance, roi);
+    const double stddev16 = M_CalArtculation(hImage16, StandardDeviation, roi);
+
+    return nearlyEqual(variance8, 16256.25, 1e-9)
+        && nearlyEqual(stddev8, 127.5, 1e-9)
+        && nearlyEqual(variance16, 1073709056.25, 1e-3)
+        && nearlyEqual(stddev16, 32767.5, 1e-9);
+}
+
 bool smokeGetMinMaxClearsOutputsOnFailure()
 {
     uint minValue = 123;
@@ -1741,6 +1770,11 @@ int main(int argc, char* argv[])
 
     if (!smokeCalArtculationInvalidImageDoesNotThrow()) {
         std::cerr << "M_CalArtculation invalid image guard test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeCalArtculationUsesRawPixelScale()) {
+        std::cerr << "M_CalArtculation raw pixel scale test failed" << std::endl;
         return 1;
     }
 
