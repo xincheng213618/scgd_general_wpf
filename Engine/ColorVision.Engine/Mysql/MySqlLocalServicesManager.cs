@@ -161,6 +161,8 @@ namespace ColorVision.Database
         [
             "t_scgd_algorithm_poi_template_detail",
             "t_scgd_algorithm_poi_template_master",
+            "t_scgd_buz_product_detail",
+            "t_scgd_buz_product_master",
             "t_scgd_camera_license",
             "t_scgd_mod_param_detail",
             "t_scgd_mod_param_master",

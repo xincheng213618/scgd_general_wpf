@@ -2089,9 +2089,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (selectedItems[i] is DVRectangleText rect)
                     {
-                        var newRect = new Rect(rect.Attribute.Rect.X, rect.Attribute.Rect.Y,
-                            firstRect.Attribute.Rect.Width, firstRect.Attribute.Rect.Height);
-                        rect.Attribute.Rect = newRect;
+                        rect.Attribute.Rect = ResizeRectKeepingCenter(rect.Attribute.Rect, firstRect.Attribute.Rect.Width, firstRect.Attribute.Rect.Height);
                         rect.Render();
                     }
                 }
@@ -2207,16 +2205,23 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (item is DVRectangleText rect)
                     {
-                        rect.Attribute.Rect = new Rect(rect.Attribute.Rect.X, rect.Attribute.Rect.Y, width, height);
+                        rect.Attribute.Rect = ResizeRectKeepingCenter(rect.Attribute.Rect, width, height);
                         rect.Render();
                     }
                     else if (item is DVRectangle r)
                     {
-                        r.Attribute.Rect = new Rect(r.Attribute.Rect.X, r.Attribute.Rect.Y, width, height);
+                        r.Attribute.Rect = ResizeRectKeepingCenter(r.Attribute.Rect, width, height);
                         r.Render();
                     }
                 }
             }
+        }
+
+        private static Rect ResizeRectKeepingCenter(Rect rect, double width, double height)
+        {
+            double centerX = rect.X + rect.Width / 2;
+            double centerY = rect.Y + rect.Height / 2;
+            return new Rect(centerX - width / 2, centerY - height / 2, width, height);
         }
 
         #endregion
