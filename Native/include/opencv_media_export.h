@@ -53,6 +53,10 @@ extern "C" COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPix
 
 extern "C" COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data);
 
+// Returns the raw pixel-unit focus measure for the selected algorithm.
+// This value is not normalized to 0..1; thresholds depend on algorithm, bit depth,
+// exposure, ROI, and preprocessing. Use SFR/MTF exports for calibrated optical
+// resolution measurements.
 extern "C" COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, RoiRect roi);
 
 extern "C" COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, double redBalance, double greenBalance, double blueBalance);
