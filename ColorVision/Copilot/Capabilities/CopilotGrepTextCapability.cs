@@ -64,6 +64,37 @@ namespace ColorVision.Copilot
 
         private static readonly Regex QuotedPatternRegex = new("[`\"\\u201C](?<term>[^`\"\\u201D\r\n]{2,100})[`\"\\u201D]", RegexOptions.Compiled);
         private static readonly Regex IdentifierRegex = new(@"(?<term>[A-Za-z_][A-Za-z0-9_\.]{2,80})", RegexOptions.Compiled);
+        private static readonly Regex ChinesePhraseRegex = new(@"(?<term>[\u4e00-\u9fff]{2,30})", RegexOptions.Compiled);
+        private static readonly string[] ChineseQuestionWords =
+        {
+            "怎么",
+            "如何",
+            "怎样",
+            "为什么",
+            "什么",
+            "哪里",
+            "哪个",
+            "是否",
+            "能否",
+            "可以",
+            "一下",
+            "实现",
+            "原理",
+            "介绍",
+            "说明",
+            "请问",
+            "帮我",
+            "这个",
+            "那个",
+            "的是",
+            "的吗",
+            "是",
+            "的",
+            "了",
+            "吗",
+            "呢",
+            "啊",
+        };
 
         public static CopilotTextSearchResult Search(
             IEnumerable<string> searchRootPaths,
@@ -176,11 +207,12 @@ namespace ColorVision.Copilot
 
             AddPatterns(patterns, QuotedPatternRegex.Matches(source));
             AddPatterns(patterns, IdentifierRegex.Matches(source));
+            AddChinesePatterns(patterns, source);
 
             return patterns
                 .OrderByDescending(pattern => pattern.Length)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(3)
+                .Take(5)
                 .ToArray();
         }
 
@@ -197,6 +229,40 @@ namespace ColorVision.Copilot
 
                 patterns.Add(term);
             }
+        }
+
+        private static void AddChinesePatterns(List<string> patterns, string source)
+        {
+            foreach (Match match in ChinesePhraseRegex.Matches(source ?? string.Empty))
+            {
+                var term = NormalizeChineseSearchTerm(match.Groups["term"].Value);
+                if (term.Length < 2)
+                    continue;
+
+                patterns.Add(term);
+                AddChineseBigrams(patterns, term);
+            }
+        }
+
+        private static string NormalizeChineseSearchTerm(string value)
+        {
+            var term = (value ?? string.Empty).Trim();
+            if (term.Length == 0)
+                return string.Empty;
+
+            foreach (var word in ChineseQuestionWords)
+                term = term.Replace(word, string.Empty, StringComparison.Ordinal);
+
+            return term.Trim();
+        }
+
+        private static void AddChineseBigrams(List<string> patterns, string term)
+        {
+            if (string.IsNullOrWhiteSpace(term) || term.Length <= 2)
+                return;
+
+            for (var index = 0; index < term.Length - 1; index++)
+                patterns.Add(term.Substring(index, 2));
         }
     }
 }

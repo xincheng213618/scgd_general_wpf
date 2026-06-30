@@ -100,7 +100,7 @@ namespace ColorVision.Copilot
             {
                 $"[Web Page Fetch Failed] {url}",
                 $"Failure reason: {failureMessage}",
-                "The application could not fetch real web page content. The answer must state that it cannot continue from actual page content and must not assume unavailable page information.",
+                "The application could not fetch real web page content. Do not assume unavailable page-specific facts, but answer from other available context or general knowledge when the question still allows it.",
             });
         }
 

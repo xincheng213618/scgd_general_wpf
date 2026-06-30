@@ -14,34 +14,6 @@ namespace ColorVision.Copilot
         Diagnose,
     }
 
-    public sealed class CopilotAgentModeOption
-    {
-        public CopilotAgentMode Mode { get; init; }
-
-        public string Label { get; init; } = string.Empty;
-
-        public string Description { get; init; } = string.Empty;
-
-        public static IReadOnlyList<CopilotAgentModeOption> CreateDefaultOptions()
-        {
-            return new[]
-            {
-                new CopilotAgentModeOption
-                {
-                    Mode = CopilotAgentMode.Chat,
-                    Label = "Ask",
-                    Description = "Regular chat without proactive tool calls.",
-                },
-                new CopilotAgentModeOption
-                {
-                    Mode = CopilotAgentMode.Auto,
-                    Label = "Agent",
-                    Description = "Analyze the task and call tools as needed.",
-                },
-            };
-        }
-    }
-
     public sealed class CopilotAgentToolInput
     {
         public static CopilotAgentToolInput Empty { get; } = new();

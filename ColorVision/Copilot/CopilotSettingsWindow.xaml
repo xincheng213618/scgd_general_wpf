@@ -359,13 +359,16 @@
                                         <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.MaxToolRounds, UpdateSourceTrigger=PropertyChanged}" />
 
                                         <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" VerticalAlignment="Top" Text="{x:Static properties:Resources.CopilotSystemPrompt}" />
-                                        <TextBox Grid.Row="4"
-                                                 Grid.Column="1"
-                                                 Height="140"
-                                                 AcceptsReturn="True"
-                                                 VerticalScrollBarVisibility="Auto"
-                                                 TextWrapping="Wrap"
-                                                 Text="{Binding SelectedProfile.SystemPrompt, UpdateSourceTrigger=PropertyChanged}" />
+                                        <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,10">
+                                            <TextBox Height="110"
+                                                     AcceptsReturn="True"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     TextWrapping="Wrap"
+                                                     Text="{Binding SelectedProfile.CustomSystemPrompt, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock Margin="0,6,0,0"
+                                                       Style="{StaticResource SettingsHintTextStyle}"
+                                                       Text="Optional instructions appended after ColorVision's built-in prompt. Leave empty to use the app default." />
+                                        </StackPanel>
                                     </Grid>
                                 </StackPanel>
                             </Expander>

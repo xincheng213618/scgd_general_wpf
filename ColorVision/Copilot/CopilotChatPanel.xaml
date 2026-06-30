@@ -654,55 +654,39 @@
                                                 Visibility="Collapsed">
                                         <Expander Margin="0,0,0,8"
                                                   Style="{StaticResource TraceExpanderStyle}"
-                                                  IsExpanded="{Binding IsExecutionExpanded, Mode=TwoWay}"
-                                                  Visibility="{Binding HasExecutionTrace, Converter={StaticResource bool2VisibilityConverter}}">
+                                                  IsExpanded="{Binding IsThinkingExpanded, Mode=TwoWay}"
+                                                  Visibility="{Binding HasThinkingTrace, Converter={StaticResource bool2VisibilityConverter}}">
                                             <Expander.Header>
-                                                <Grid Margin="0,0,0,0" ToolTip="{Binding ExecutionSummaryToolTip}">
+                                                <Grid Margin="0,0,0,0" ToolTip="{Binding ThinkingSummaryToolTip}">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="8" />
-                                                        <ColumnDefinition Width="*" />
                                                     </Grid.ColumnDefinitions>
 
-                                                    <TextBlock Grid.Column="0"
-                                                               VerticalAlignment="Center"
-                                                               FontSize="12"
-                                                               FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                                               Opacity="0.72"
-                                                               Text="{Binding ExecutionHeader}" />
-                                                    <Border Grid.Column="2"
-                                                            MaxWidth="360"
+                                                    <Border Grid.Column="0"
+                                                            Padding="0"
                                                             Style="{StaticResource ExecutionSummaryPillBorderStyle}">
-                                                        <TextBlock Style="{StaticResource ExecutionSummaryTextStyle}"
-                                                                   Text="{Binding ExecutionSummary}" />
+                                                        <DockPanel LastChildFill="False">
+                                                            <TextBlock VerticalAlignment="Center"
+                                                                       FontSize="12"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                                       Opacity="0.72"
+                                                                       Text="{Binding ThinkingHeader}" />
+                                                        </DockPanel>
                                                     </Border>
                                                 </Grid>
                                             </Expander.Header>
                                             <Border Margin="0,6,0,0"
-                                                    Padding="12,8"
+                                                    Padding="10,7"
+                                                    MaxHeight="176"
                                                     Style="{StaticResource CopilotInsetBorderStyle}"
                                                     BorderThickness="1"
                                                     CornerRadius="10">
                                                 <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
-                                                         Opacity="0.9"
-                                                         Text="{Binding ExecutionContent, Mode=OneWay}" />
-                                            </Border>
-                                        </Expander>
-
-                                        <Expander Margin="0,0,0,8"
-                                                  Foreground="{DynamicResource GlobalTextBrush}"
-                                                  Header="{Binding ReasoningHeader}"
-                                                  IsExpanded="{Binding IsReasoningExpanded, Mode=TwoWay}"
-                                                  Visibility="{Binding HasReasoning, Converter={StaticResource bool2VisibilityConverter}}">
-                                            <Border Margin="0,6,0,0"
-                                                    Padding="12,8"
-                                                    Style="{StaticResource CopilotInsetBorderStyle}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="10">
-                                                <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
-                                                         Opacity="0.88"
-                                                         Text="{Binding ReasoningContent, Mode=OneWay}" />
+                                                         MaxHeight="160"
+                                                         Opacity="0.82"
+                                                         VerticalScrollBarVisibility="Auto"
+                                                         Text="{Binding ThinkingContent, Mode=OneWay}" />
                                             </Border>
                                         </Expander>
 
@@ -992,29 +976,10 @@
                               Grid.Column="1"
                               Margin="8,0,8,0"
                               VerticalAlignment="Center">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="8" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-
-                            <ComboBox x:Name="AgentModeComboBox"
-                                      Grid.Column="0"
-                                      Width="84"
-                                      Style="{StaticResource ComposerComboBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      ItemsSource="{Binding AgentModes}"
-                                      DisplayMemberPath="Label"
-                                      SelectedValuePath="Mode"
-                                      SelectedValue="{Binding SelectedAgentMode, Mode=TwoWay}"
-                                      IsEnabled="{Binding CanSelectAgentMode}"
-                                      ToolTip="{Binding SelectedAgentModeDescription}" />
-
                             <ComboBox x:Name="ProfileComboBox"
-                                      Grid.Column="2"
                                       MinWidth="72"
                                       MaxWidth="132"
-                                      HorizontalAlignment="Stretch"
+                                      HorizontalAlignment="Center"
                                       Style="{StaticResource ComposerComboBoxStyle}"
                                       VerticalAlignment="Center"
                                       ItemsSource="{Binding Profiles}"
@@ -1029,58 +994,21 @@
                                     Grid.Column="2"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
-                            <Border Width="30"
+                            <Button x:Name="VoiceInputButton"
+                                    Width="30"
                                     Height="30"
                                     Margin="0,0,8,0"
-                                    CornerRadius="999"
-                                    BorderThickness="1"
-                                    ToolTip="{Binding ComposerTokenDetails}">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
-                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-                                        <Setter Property="Opacity" Value="0.72" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasRealTokenUsage}" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
-                                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
-                                                <Setter Property="Opacity" Value="0.92" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsTokenUsagePending}" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
-                                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
-                                                <Setter Property="Opacity" Value="0.86" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsTokenUsageUnavailable}" Value="True">
-                                                <Setter Property="Opacity" Value="0.64" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <Viewbox Margin="6" StretchDirection="DownOnly">
-                                    <TextBlock FontWeight="SemiBold"
-                                               Text="{Binding TokenUsageBadgeText}">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-                                                <Setter Property="Opacity" Value="0.84" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasRealTokenUsage}" Value="True">
-                                                        <Setter Property="Foreground" Value="White" />
-                                                        <Setter Property="Opacity" Value="1" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding IsTokenUsagePending}" Value="True">
-                                                        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-                                                        <Setter Property="Opacity" Value="0.92" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </Viewbox>
-                            </Border>
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    Click="VoiceInputButton_Click"
+                                    ToolTip="语音输入（Windows + H）">
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="15"
+                                           Text="&#xE720;" />
+                            </Button>
 
-                                <Button Margin="2,0,0,0"
+                            <Button Margin="2,0,0,0"
                                     Command="{Binding PrimaryActionCommand}"
                                     Style="{StaticResource ComposerPrimaryActionButtonStyle}"
                                     Content="{Binding PrimaryActionGlyph}"

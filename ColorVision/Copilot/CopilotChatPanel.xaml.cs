@@ -1,5 +1,8 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -13,6 +16,9 @@ namespace ColorVision.Copilot
         private const double CompactComposerThreshold = 560;
         private const double ExpandedSidebarWidth = 220;
         private const double CollapsedSidebarWidth = 48;
+        private const byte VirtualKeyLeftWindows = 0x5B;
+        private const byte VirtualKeyH = 0x48;
+        private const uint KeyEventKeyUp = 0x0002;
 
         private CopilotChatViewModel? _attachedViewModel;
         private INotifyCollectionChanged? _attachedMessages;
@@ -162,6 +168,14 @@ namespace ColorVision.Copilot
             element.ContextMenu.IsOpen = true;
         }
 
+        private async void VoiceInputButton_Click(object sender, RoutedEventArgs e)
+        {
+            PromptTextBox.Focus();
+            Keyboard.Focus(PromptTextBox);
+            await Task.Delay(80);
+            SendWindowsVoiceTypingShortcut();
+        }
+
         private void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
@@ -247,12 +261,22 @@ namespace ColorVision.Copilot
             Grid.SetRow(ComposerActionStack, isCompactComposer ? 1 : 0);
             Grid.SetColumn(ComposerActionStack, 2);
 
-            AgentModeComboBox.Width = isCompactComposer ? 76 : 84;
             ProfileComboBox.MaxWidth = isCompactComposer ? double.PositiveInfinity : 132;
 
             CurrentLiveContextSummaryText.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
             CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(10, 7, 10, 7) : new Thickness(12, 9, 12, 9);
             CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(10, 4, 10, 4) : new Thickness(12, 5, 12, 5);
         }
+
+        private static void SendWindowsVoiceTypingShortcut()
+        {
+            keybd_event(VirtualKeyLeftWindows, 0, 0, UIntPtr.Zero);
+            keybd_event(VirtualKeyH, 0, 0, UIntPtr.Zero);
+            keybd_event(VirtualKeyH, 0, KeyEventKeyUp, UIntPtr.Zero);
+            keybd_event(VirtualKeyLeftWindows, 0, KeyEventKeyUp, UIntPtr.Zero);
+        }
+
+        [DllImport("user32.dll")]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
     }
 }

@@ -477,7 +477,7 @@
     <value>Tours d'outils</value>
   </data>
   <data name="CopilotSystemPrompt" xml:space="preserve">
-    <value>Invite système</value>
+    <value>Invite personnalisée</value>
   </data>
 
   <data name="Cancel" xml:space="preserve">

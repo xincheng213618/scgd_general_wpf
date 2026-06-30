@@ -38,14 +38,13 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly DispatcherTimer _pendingActionExpiryTimer;
-        private readonly IReadOnlyList<CopilotAgentModeOption> _agentModes = CopilotAgentModeOption.CreateDefaultOptions();
         private CancellationTokenSource? _currentRequestCts;
         private CancellationTokenSource? _pendingActionFeedbackCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
-        private CopilotAgentMode _selectedAgentMode = CopilotAgentMode.Auto;
+        private CopilotAgentMode? _pendingRequestModeOverride;
         private string _activeDocumentPath = string.Empty;
         private string _pendingActionFeedbackText = string.Empty;
         private bool _hasPendingMcpActions;
@@ -198,8 +197,6 @@ namespace ColorVision.Copilot
             }
         }
 
-        public IReadOnlyList<CopilotAgentModeOption> AgentModes => _agentModes;
-
         public ICommand SendCommand { get; }
 
         public ICommand NewChatCommand { get; }
@@ -306,9 +303,7 @@ namespace ColorVision.Copilot
                 if (IsBusy)
                     return Properties.Resources.CopilotStopGeneration;
 
-                var action = SelectedAgentMode == CopilotAgentMode.Chat
-                    ? Properties.Resources.CopilotSend
-                    : Properties.Resources.CopilotExecuteAgent;
+                var action = Properties.Resources.CopilotSend;
                 var preview = BuildComposerRequestPreview();
                 return string.IsNullOrWhiteSpace(preview)
                     ? action
@@ -347,22 +342,6 @@ namespace ColorVision.Copilot
             }
         }
 
-        public CopilotAgentMode SelectedAgentMode
-        {
-            get => _selectedAgentMode;
-            set
-            {
-                if (SetProperty(ref _selectedAgentMode, value))
-                {
-                    OnPropertyChanged(nameof(SelectedAgentModeDescription));
-                    OnPropertyChanged(nameof(PrimaryActionToolTip));
-                    RefreshComposerTokenEstimate();
-                }
-            }
-        }
-
-        public string SelectedAgentModeDescription => AgentModes.FirstOrDefault(option => option.Mode == SelectedAgentMode)?.Description ?? string.Empty;
-
         public string ComposerTokenSummary
         {
             get => _composerTokenSummary;
@@ -376,31 +355,6 @@ namespace ColorVision.Copilot
             private set => SetProperty(ref _composerTokenDetails, value ?? string.Empty);
         }
         private string _composerTokenDetails = "Local estimates are disabled. This panel shows only token usage returned by the API.";
-
-        public string TokenUsageBadgeText
-        {
-            get
-            {
-                if (IsTokenUsagePending)
-                    return "...";
-
-                if (HasRealTokenUsage)
-                    return CopilotTokenUsage.FormatCount(SelectedConversation?.LastUsage.EffectiveTotalTokens ?? 0);
-
-                return SelectedConversation?.Messages.Count > 0
-                    ? "NA"
-                    : "--";
-            }
-        }
-
-        public bool HasRealTokenUsage => SelectedConversation?.LastUsage.HasAny == true;
-
-        public bool IsTokenUsagePending => IsBusy && SelectedProfile != null;
-
-        public bool IsTokenUsageUnavailable => !IsTokenUsagePending
-            && !HasRealTokenUsage
-            && SelectedProfile != null
-            && SelectedConversation?.Messages.Count > 0;
 
         public string InputText
         {
@@ -425,7 +379,6 @@ namespace ColorVision.Copilot
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanSwitchConversation));
                 OnPropertyChanged(nameof(CanSelectProfile));
-                OnPropertyChanged(nameof(CanSelectAgentMode));
                 OnPropertyChanged(nameof(PrimaryActionGlyph));
                 OnPropertyChanged(nameof(PrimaryActionToolTip));
                 OnPropertyChanged(nameof(AttachmentMenuToolTip));
@@ -438,8 +391,6 @@ namespace ColorVision.Copilot
         public bool CanSwitchConversation => !IsBusy;
 
         public bool CanSelectProfile => !IsBusy && Profiles.Count > 0;
-
-        public bool CanSelectAgentMode => !IsBusy;
 
         public bool IsMcpEnabled => _config.McpEnabled;
 
@@ -522,12 +473,13 @@ namespace ColorVision.Copilot
 
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
             {
-                RequestMode = SelectedAgentMode,
+                RequestMode = ConsumeRequestModeOverride(),
             };
             var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
             {
                 AssistantName = ResolveAssistantHeader(requestProfile),
             };
+            assistantMessage.MarkThinkingStarted();
 
             Messages.Add(userMessage);
             Messages.Add(assistantMessage);
@@ -551,6 +503,7 @@ namespace ColorVision.Copilot
             {
                 assistantMessage.IsExecutionInProgress = false;
                 assistantMessage.IsReasoningInProgress = false;
+                assistantMessage.MarkThinkingCompleted();
 
                 if (string.IsNullOrWhiteSpace(assistantMessage.Content))
                     assistantMessage.Content = "The current reply was cancelled.";
@@ -564,6 +517,7 @@ namespace ColorVision.Copilot
             {
                 assistantMessage.IsExecutionInProgress = false;
                 assistantMessage.IsReasoningInProgress = false;
+                assistantMessage.MarkThinkingCompleted();
                 assistantMessage.Content = string.IsNullOrWhiteSpace(assistantMessage.Content)
                     ? $"Request failed: {ex.Message}"
                     : assistantMessage.Content;
@@ -1037,11 +991,13 @@ namespace ColorVision.Copilot
             switch (agentEvent.Type)
             {
                 case CopilotAgentEventType.Status:
+                    assistantMessage.MarkThinkingStarted();
                     AppendAssistantExecutionTrace(assistantMessage, agentEvent.Text);
                     assistantMessage.IsExecutionInProgress = true;
                     assistantMessage.IsExecutionExpanded = true;
                     break;
                 case CopilotAgentEventType.ToolResult:
+                    assistantMessage.MarkThinkingStarted();
                     AppendAssistantExecutionTrace(assistantMessage, BuildToolTraceText(agentEvent.ToolResult));
                     assistantMessage.IsExecutionInProgress = true;
                     assistantMessage.IsExecutionExpanded = true;
@@ -1056,10 +1012,12 @@ namespace ColorVision.Copilot
                     AppendAssistantExecutionTrace(assistantMessage, agentEvent.Text);
                     assistantMessage.IsExecutionInProgress = false;
                     assistantMessage.IsReasoningInProgress = false;
+                    assistantMessage.MarkThinkingCompleted();
                     break;
                 case CopilotAgentEventType.Completed:
                     assistantMessage.IsExecutionInProgress = false;
                     assistantMessage.IsReasoningInProgress = false;
+                    assistantMessage.MarkThinkingCompleted();
                     break;
             }
         }
@@ -1103,6 +1061,7 @@ namespace ColorVision.Copilot
         {
             assistantMessage.IsExecutionInProgress = false;
             assistantMessage.IsReasoningInProgress = false;
+            assistantMessage.MarkThinkingCompleted();
 
             if (!string.IsNullOrWhiteSpace(assistantMessage.Content))
                 return;
@@ -1116,6 +1075,7 @@ namespace ColorVision.Copilot
         {
             if (delta.HasReasoning)
             {
+                assistantMessage.MarkThinkingStarted();
                 assistantMessage.ReasoningContent += delta.ReasoningContent;
                 assistantMessage.IsReasoningInProgress = true;
                 assistantMessage.IsReasoningExpanded = true;
@@ -1134,6 +1094,7 @@ namespace ColorVision.Copilot
         private void StartNewChat()
         {
             CancelCurrentReply();
+            ClearPendingRequestModeOverride();
 
             if (IsReusableEmptyConversation(SelectedConversation))
                 return;
@@ -1171,6 +1132,39 @@ namespace ColorVision.Copilot
             _ = SendAsync();
         }
 
+        private CopilotAgentMode ResolveComposerRequestMode()
+        {
+            return _pendingRequestModeOverride ?? CopilotAgentMode.Auto;
+        }
+
+        private CopilotAgentMode ConsumeRequestModeOverride()
+        {
+            var mode = ResolveComposerRequestMode();
+            _pendingRequestModeOverride = null;
+            return mode;
+        }
+
+        private void SetPendingRequestModeOverride(CopilotAgentMode mode)
+        {
+            _pendingRequestModeOverride = mode == CopilotAgentMode.Auto ? null : mode;
+            OnComposerRequestModeChanged();
+        }
+
+        private void ClearPendingRequestModeOverride()
+        {
+            if (_pendingRequestModeOverride == null)
+                return;
+
+            _pendingRequestModeOverride = null;
+            OnComposerRequestModeChanged();
+        }
+
+        private void OnComposerRequestModeChanged()
+        {
+            OnPropertyChanged(nameof(PrimaryActionToolTip));
+            RefreshComposerTokenEstimate();
+        }
+
         public CopilotPromptQueueResult QueueExternalPrompt(
             string prompt,
             bool startNewConversation = true,
@@ -1205,7 +1199,7 @@ namespace ColorVision.Copilot
                     contextAttachmentItems);
             }
 
-            SelectedAgentMode = mode;
+            SetPendingRequestModeOverride(mode);
             InputText = normalizedPrompt;
 
             if (!sendNow || IsBusy)
@@ -1482,7 +1476,7 @@ namespace ColorVision.Copilot
 
             try
             {
-                requestProfile.SystemPrompt = "You are a conversation title generator. Generate a short, natural English title for the given conversation. Return only the title itself, with no explanation.";
+                requestProfile.UseSystemPromptOverride("You are a conversation title generator. Generate a short, natural English title for the given conversation. Return only the title itself, with no explanation.");
                 requestProfile.MaxTokens = Math.Min(requestProfile.MaxTokens, 32);
                 requestProfile.Temperature = 0.2;
 
@@ -1810,6 +1804,7 @@ namespace ColorVision.Copilot
                 {
                     AssistantName = ResolveAssistantHeader(requestProfile),
                 };
+                replacementAssistantMessage.MarkThinkingStarted();
                 conversation.Messages.Add(replacementAssistantMessage);
 
                 var usage = await RunConversationTurnAsync(conversation, requestProfile, userMessage, replacementAssistantMessage, refreshWebContext);
@@ -1827,6 +1822,7 @@ namespace ColorVision.Copilot
 
                 replacementAssistantMessage.IsExecutionInProgress = false;
                 replacementAssistantMessage.IsReasoningInProgress = false;
+                replacementAssistantMessage.MarkThinkingCompleted();
 
                 if (string.IsNullOrWhiteSpace(replacementAssistantMessage.Content))
                     replacementAssistantMessage.Content = "The current reply was cancelled.";
@@ -1844,11 +1840,13 @@ namespace ColorVision.Copilot
                     {
                         AssistantName = ResolveAssistantHeader(requestProfile),
                     };
+                    replacementAssistantMessage.MarkThinkingStarted();
                     conversation.Messages.Add(replacementAssistantMessage);
                 }
 
                 replacementAssistantMessage.IsExecutionInProgress = false;
                 replacementAssistantMessage.IsReasoningInProgress = false;
+                replacementAssistantMessage.MarkThinkingCompleted();
                 replacementAssistantMessage.Content = string.IsNullOrWhiteSpace(replacementAssistantMessage.Content)
                     ? $"Request failed: {ex.Message}"
                     : replacementAssistantMessage.Content;
@@ -2048,15 +2046,6 @@ namespace ColorVision.Copilot
             ComposerTokenSummary = summary;
             ComposerTokenDetails = details;
             OnPropertyChanged(nameof(PrimaryActionToolTip));
-            NotifyTokenUsageBadgeChanged();
-        }
-
-        private void NotifyTokenUsageBadgeChanged()
-        {
-            OnPropertyChanged(nameof(TokenUsageBadgeText));
-            OnPropertyChanged(nameof(HasRealTokenUsage));
-            OnPropertyChanged(nameof(IsTokenUsagePending));
-            OnPropertyChanged(nameof(IsTokenUsageUnavailable));
         }
 
         private void InvalidateChatAttachmentTokenEstimate()
@@ -2071,18 +2060,13 @@ namespace ColorVision.Copilot
 
         private string BuildActualUsageDetails(CopilotConversationRecord conversation, CopilotTokenUsage usage)
         {
-            var mode = ResolveLastRequestMode(conversation);
             var builder = new StringBuilder();
             builder.AppendLine($"Model: {ResolveUsageModelLabel(conversation)}");
-            builder.AppendLine($"Mode: {ResolveModeLabel(mode)}");
             builder.AppendLine($"Input tokens: {CopilotTokenUsage.FormatCount(usage.InputTokens)}");
             builder.AppendLine($"Output tokens: {CopilotTokenUsage.FormatCount(usage.OutputTokens)}");
             builder.AppendLine($"Total tokens: {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}");
             builder.AppendLine();
             builder.Append("Note: this shows the most recent usage returned by the API.");
-
-            if (mode != CopilotAgentMode.Chat)
-                builder.Append(" Agent mode includes multiple model calls from planning and the final answer.");
 
             return builder.ToString().TrimEnd();
         }
@@ -2100,7 +2084,6 @@ namespace ColorVision.Copilot
         {
             var builder = new StringBuilder();
             builder.AppendLine($"Model: {ResolveUsageModelLabel(conversation)}");
-            builder.AppendLine($"Mode: {ResolveModeLabel(ResolveLastRequestMode(conversation))}");
             builder.AppendLine();
             builder.Append("Note: local estimates are disabled. The last request did not return a usage field, so input and output token counts are unavailable.");
             return builder.ToString();
@@ -2125,11 +2108,6 @@ namespace ColorVision.Copilot
         private void AppendComposerRequestPreview(StringBuilder builder)
         {
             builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel ?? "No model selected"}");
-            builder.AppendLine($"Mode: {ResolveModeLabel(SelectedAgentMode)}");
-
-            if (!string.IsNullOrWhiteSpace(SelectedAgentModeDescription))
-                builder.AppendLine($"Mode detail: {SelectedAgentModeDescription}");
-
             builder.AppendLine($"Prompt: {BuildPromptSummary()}");
             builder.AppendLine($"Attachments: {BuildAttachmentSummary()}");
             builder.AppendLine($"Window context: {BuildWindowContextSummary()}");
@@ -2192,16 +2170,6 @@ namespace ColorVision.Copilot
                 return SelectedProfile.DisplayLabel;
 
             return "Unnamed model";
-        }
-
-        private CopilotAgentMode ResolveLastRequestMode(CopilotConversationRecord conversation)
-        {
-            return conversation.Messages.LastOrDefault(message => message.IsUser)?.RequestMode ?? SelectedAgentMode;
-        }
-
-        private string ResolveModeLabel(CopilotAgentMode mode)
-        {
-            return AgentModes.FirstOrDefault(option => option.Mode == mode)?.Label ?? mode.ToString();
         }
 
         private static string BuildConversationTitlePrompt(CopilotConversationRecord conversation)

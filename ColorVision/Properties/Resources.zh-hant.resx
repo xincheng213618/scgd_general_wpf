@@ -477,7 +477,7 @@
     <value>工具輪次</value>
   </data>
   <data name="CopilotSystemPrompt" xml:space="preserve">
-    <value>系統提示詞</value>
+    <value>自訂提示詞</value>
   </data>
 
   <data name="Cancel" xml:space="preserve">

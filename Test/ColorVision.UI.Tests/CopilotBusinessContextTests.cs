@@ -85,6 +85,33 @@ public class CopilotBusinessContextTests
     }
 
     [Fact]
+    public void AgentContextBuilder_AnswerPromptDoesNotAskForMissingFiles()
+    {
+        var builder = new CopilotAgentContextBuilder();
+        var request = new CopilotAgentRequest
+        {
+            UserText = "畸变校正是怎么实现的？",
+            Profile = new CopilotProfileConfig(),
+            Mode = CopilotAgentMode.Auto,
+        };
+
+        var prepared = builder.BuildMessages(request, new[]
+        {
+            new CopilotToolResult
+            {
+                ToolName = "SearchFiles",
+                Success = false,
+                Summary = "No candidate files were found.",
+                ErrorMessage = "No search root is available.",
+            },
+        });
+
+        Assert.Contains("Do not end with a request for more context.", prepared.PreparedUserMessageContent);
+        Assert.DoesNotContain("state exactly what is missing", prepared.PreparedUserMessageContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("specific code or files still required", prepared.PreparedUserMessageContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task LocalFileTools_WorkInsideTemporaryDirectoryAndRejectOutsidePaths()
     {
         using var temp = new TemporaryDirectory();

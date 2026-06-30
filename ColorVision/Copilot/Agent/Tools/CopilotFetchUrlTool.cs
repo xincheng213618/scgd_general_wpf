@@ -20,7 +20,7 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
 
-            return CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0;
+            return true;
         }
 
         public async Task<CopilotToolResult> ExecuteAsync(

@@ -1070,7 +1070,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            profile.SystemPrompt = ModelConnectionTestSystemPrompt;
+            profile.UseSystemPromptOverride(ModelConnectionTestSystemPrompt);
             profile.MaxTokens = 128;
             profile.Temperature = 0;
 
@@ -1566,7 +1566,6 @@ namespace ColorVision.Copilot
                 Id = Guid.NewGuid().ToString("N"),
                 VendorType = vendorType,
                 Name = $"{CopilotVendorCatalog.GetLabel(vendorType)} {Profiles.Count + 1}",
-                SystemPrompt = CopilotProfileConfig.DefaultSystemPrompt,
                 MaxTokens = CopilotProfileConfig.DefaultMaxTokens,
                 Temperature = CopilotProfileConfig.DefaultTemperature,
             };

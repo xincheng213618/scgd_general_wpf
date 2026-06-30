@@ -89,10 +89,11 @@ namespace ColorVision.Copilot
                 request.Headers.Add("x-api-key", config.ApiKey);
                 request.Headers.Add("anthropic-version", "2023-06-01");
 
+                var systemPrompt = config.EffectiveSystemPrompt;
                 payload = new
                 {
                     model = config.Model,
-                    system = config.SystemPrompt,
+                    system = systemPrompt,
                     max_tokens = config.MaxTokens,
                     temperature = config.Temperature,
                     stream = true,
@@ -107,13 +108,14 @@ namespace ColorVision.Copilot
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
 
+                var systemPrompt = config.EffectiveSystemPrompt;
                 var payloadMessages = new List<object>();
-                if (!string.IsNullOrWhiteSpace(config.SystemPrompt))
+                if (!string.IsNullOrWhiteSpace(systemPrompt))
                 {
                     payloadMessages.Add(new
                     {
                         role = "system",
-                        content = config.SystemPrompt,
+                        content = systemPrompt,
                     });
                 }
 

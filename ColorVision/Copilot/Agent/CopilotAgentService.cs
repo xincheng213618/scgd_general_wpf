@@ -268,6 +268,7 @@ namespace ColorVision.Copilot
 
             if ((string.Equals(plan.ToolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "GrepText", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(plan.ToolName, "WebSearch", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "FetchUrl", StringComparison.OrdinalIgnoreCase))
                 && !string.IsNullOrWhiteSpace(plan.ToolQuery))
@@ -298,7 +299,8 @@ namespace ColorVision.Copilot
             }
 
             if (string.Equals(toolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "WebSearch", StringComparison.OrdinalIgnoreCase))
             {
                 return string.Join("|", new[]
                 {

@@ -1,5 +1,7 @@
 #pragma warning disable CA1707
 using ColorVision.Copilot;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 
@@ -8,28 +10,43 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotProfileConfigTests
 {
     [Fact]
-    public void EnsureValid_ReplacesLegacyChineseDefaultSystemPrompt()
+    public void Deserialize_IgnoresSystemPromptField()
     {
-        var profile = new CopilotProfileConfig
-        {
-            SystemPrompt = "\u4f60\u662f ColorVision Copilot\uff0c\u662f ColorVision \u8f6f\u4ef6\u5185\u7f6e\u7684\u5de5\u7a0b\u52a9\u624b\u3002\u4e0d\u8981\u58f0\u79f0\u81ea\u5df1\u5df2\u7ecf\u6267\u884c\u4e86\u672a\u7531\u5e94\u7528\u4e0a\u4e0b\u6587\u660e\u786e\u63d0\u4f9b\u7684\u64cd\u4f5c\u3002",
-        };
+        var profile = JsonConvert.DeserializeObject<CopilotProfileConfig>(
+            JsonConvert.SerializeObject(new { VendorType = CopilotVendorType.DeepSeek, SystemPrompt = "legacy prompt" }))!;
 
-        Assert.True(profile.EnsureValid());
+        Assert.False(profile.EnsureValid());
+        Assert.Equal(string.Empty, profile.CustomSystemPrompt);
         Assert.Equal(CopilotProfileConfig.DefaultSystemPrompt, profile.SystemPrompt);
     }
 
     [Fact]
-    public void EnsureValid_KeepsCustomSystemPrompt()
+    public void Serialize_DoesNotPersistBuiltInSystemPrompt()
     {
         var profile = new CopilotProfileConfig
         {
-            VendorType = CopilotVendorType.DeepSeek,
-            SystemPrompt = "\u8bf7\u7528\u4e2d\u6587\u56de\u7b54\uff0c\u4f46\u4fdd\u6301\u5b89\u5168\u8fb9\u754c\u3002",
+            CustomSystemPrompt = "\u7528\u7b80\u4f53\u4e2d\u6587\u56de\u7b54\u3002",
         };
 
-        Assert.False(profile.EnsureValid());
-        Assert.Equal("\u8bf7\u7528\u4e2d\u6587\u56de\u7b54\uff0c\u4f46\u4fdd\u6301\u5b89\u5168\u8fb9\u754c\u3002", profile.SystemPrompt);
+        var json = JsonConvert.SerializeObject(profile);
+        var root = JObject.Parse(json);
+
+        Assert.Null(root.Property("SystemPrompt"));
+        Assert.Equal("\u7528\u7b80\u4f53\u4e2d\u6587\u56de\u7b54\u3002", root.Value<string>("CustomSystemPrompt"));
+    }
+
+    [Fact]
+    public void UseSystemPromptOverride_DoesNotReplaceCustomPrompt()
+    {
+        var profile = new CopilotProfileConfig
+        {
+            CustomSystemPrompt = "\u7528\u4e2d\u6587\u56de\u7b54\u3002",
+        };
+
+        profile.UseSystemPromptOverride("Return only a short title.");
+
+        Assert.Equal("Return only a short title.", profile.EffectiveSystemPrompt);
+        Assert.Equal("\u7528\u4e2d\u6587\u56de\u7b54\u3002", profile.CustomSystemPrompt);
     }
 
     [Fact]

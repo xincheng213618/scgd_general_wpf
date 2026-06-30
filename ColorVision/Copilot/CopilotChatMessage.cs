@@ -184,8 +184,11 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(HasExecutionTrace));
                     OnPropertyChanged(nameof(HasExecutionFailures));
+                    OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(ThinkingContent));
                     OnPropertyChanged(nameof(ExecutionSummary));
                     OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+                    OnPropertyChanged(nameof(ThinkingSummaryToolTip));
                 }
             }
         }
@@ -211,6 +214,10 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _isExecutionInProgress, value))
                 {
+                    OnPropertyChanged(nameof(IsThinkingInProgress));
+                    OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(ThinkingHeader));
+                    OnPropertyChanged(nameof(ThinkingSummaryToolTip));
                     OnPropertyChanged(nameof(ExecutionHeader));
                     OnPropertyChanged(nameof(ExecutionSummary));
                     OnPropertyChanged(nameof(ExecutionSummaryToolTip));
@@ -242,8 +249,13 @@ namespace ColorVision.Copilot
             get => _reasoningContent;
             set
             {
-                SetProperty(ref _reasoningContent, value ?? string.Empty);
-                OnPropertyChanged(nameof(HasReasoning));
+                if (SetProperty(ref _reasoningContent, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(HasReasoning));
+                    OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(ThinkingContent));
+                    OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+                }
             }
         }
         private string _reasoningContent = string.Empty;
@@ -258,19 +270,115 @@ namespace ColorVision.Copilot
         }
         private bool _isReasoningExpanded = true;
 
+        public bool IsThinkingExpanded
+        {
+            get => _isThinkingExpanded;
+            set => SetProperty(ref _isThinkingExpanded, value);
+        }
+        private bool _isThinkingExpanded;
+
         public bool IsReasoningInProgress
         {
             get => _isReasoningInProgress;
             set
             {
-                SetProperty(ref _isReasoningInProgress, value);
-                OnPropertyChanged(nameof(ReasoningHeader));
+                if (SetProperty(ref _isReasoningInProgress, value))
+                {
+                    OnPropertyChanged(nameof(IsThinkingInProgress));
+                    OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(ThinkingHeader));
+                    OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+                    OnPropertyChanged(nameof(ReasoningHeader));
+                }
             }
         }
         private bool _isReasoningInProgress;
 
         [JsonIgnore]
         public string ReasoningHeader => IsReasoningInProgress ? CopilotUiText.ReasoningInProgressHeader : CopilotUiText.ReasoningHeader;
+
+        public DateTime ThinkingStartedAt
+        {
+            get => _thinkingStartedAt;
+            set
+            {
+                if (SetProperty(ref _thinkingStartedAt, value))
+                {
+                    OnPropertyChanged(nameof(ThinkingHeader));
+                    OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+                }
+            }
+        }
+        private DateTime _thinkingStartedAt;
+
+        public DateTime ThinkingCompletedAt
+        {
+            get => _thinkingCompletedAt;
+            set
+            {
+                if (SetProperty(ref _thinkingCompletedAt, value))
+                {
+                    OnPropertyChanged(nameof(ThinkingHeader));
+                    OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+                }
+            }
+        }
+        private DateTime _thinkingCompletedAt;
+
+        [JsonIgnore]
+        public bool IsThinkingInProgress => IsExecutionInProgress || IsReasoningInProgress;
+
+        [JsonIgnore]
+        public bool HasThinkingTrace => HasExecutionTrace || HasReasoning || IsThinkingInProgress;
+
+        [JsonIgnore]
+        public string ThinkingHeader
+        {
+            get
+            {
+                var header = IsThinkingInProgress
+                    ? CopilotUiText.ThinkingInProgressHeader
+                    : CopilotUiText.ThinkingCompletedHeader;
+                var elapsed = FormatThinkingElapsed();
+                return string.IsNullOrWhiteSpace(elapsed) ? header : $"{header}（用时 {elapsed}）";
+            }
+        }
+
+        [JsonIgnore]
+        public string ThinkingContent => BuildThinkingContent(ExecutionContent, ReasoningContent);
+
+        [JsonIgnore]
+        public string ThinkingSummaryToolTip => string.IsNullOrWhiteSpace(ThinkingContent)
+            ? ThinkingHeader
+            : ThinkingHeader + Environment.NewLine + Environment.NewLine + TrimForTooltip(ThinkingContent);
+
+        public void MarkThinkingStarted()
+        {
+            if (ThinkingStartedAt == default)
+                ThinkingStartedAt = DateTime.Now;
+
+            ThinkingCompletedAt = default;
+            IsThinkingExpanded = true;
+            OnPropertyChanged(nameof(IsThinkingInProgress));
+            OnPropertyChanged(nameof(HasThinkingTrace));
+            OnPropertyChanged(nameof(ThinkingHeader));
+            OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+        }
+
+        public void MarkThinkingCompleted()
+        {
+            if (ThinkingStartedAt == default)
+                ThinkingStartedAt = CreatedAt == default ? DateTime.Now : CreatedAt;
+
+            if (ThinkingCompletedAt == default)
+                ThinkingCompletedAt = DateTime.Now;
+
+            IsThinkingExpanded = false;
+            OnPropertyChanged(nameof(IsThinkingInProgress));
+            OnPropertyChanged(nameof(HasThinkingTrace));
+            OnPropertyChanged(nameof(ThinkingHeader));
+            OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+        }
 
         public bool EnsureValid()
         {
@@ -300,6 +408,12 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (ThinkingCompletedAt == default && !IsThinkingInProgress && HasThinkingTrace)
+            {
+                IsThinkingExpanded = false;
+                OnPropertyChanged(nameof(ThinkingHeader));
+            }
+
             if (_requestContent == null)
             {
                 RequestContent = string.Empty;
@@ -319,6 +433,52 @@ namespace ColorVision.Copilot
             }
 
             return changed;
+        }
+
+        private string FormatThinkingElapsed()
+        {
+            var startedAt = ThinkingStartedAt == default ? CreatedAt : ThinkingStartedAt;
+            if (startedAt == default)
+                return string.Empty;
+
+            var endedAt = ThinkingCompletedAt == default
+                ? IsThinkingInProgress ? DateTime.Now : default
+                : ThinkingCompletedAt;
+            if (endedAt == default || endedAt < startedAt)
+                return string.Empty;
+
+            var elapsed = endedAt - startedAt;
+            if (elapsed.TotalSeconds < 1)
+                return "<1秒";
+
+            if (elapsed.TotalMinutes < 1)
+                return $"{Math.Max(1, (int)Math.Round(elapsed.TotalSeconds))}秒";
+
+            return $"{(int)elapsed.TotalMinutes}分 {elapsed.Seconds}秒";
+        }
+
+        private static string BuildThinkingContent(string? executionContent, string? reasoningContent)
+        {
+            var builder = new StringBuilder();
+            var execution = (executionContent ?? string.Empty).Trim();
+            var reasoning = (reasoningContent ?? string.Empty).Trim();
+
+            if (!string.IsNullOrWhiteSpace(execution))
+            {
+                builder.AppendLine("执行");
+                builder.AppendLine(execution);
+            }
+
+            if (!string.IsNullOrWhiteSpace(reasoning))
+            {
+                if (builder.Length > 0)
+                    builder.AppendLine().AppendLine();
+
+                builder.AppendLine(CopilotUiText.ThinkingDetailsHeader);
+                builder.AppendLine(reasoning);
+            }
+
+            return builder.ToString().TrimEnd();
         }
 
         private static string BuildExecutionSummary(string? content, bool isInProgress)
