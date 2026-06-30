@@ -10,6 +10,18 @@
              d:DataContext="{d:DesignInstance Type=local:CopilotChatViewModel}" d:Height="500" d:Width="600">
     <UserControl.Resources>
         <SolidColorBrush x:Key="CopilotExecutionFailureBrush" Color="#DB3340" />
+        <SolidColorBrush x:Key="CopilotControlBrush" Color="#6EA8FF" />
+        <SolidColorBrush x:Key="CopilotControlSurfaceBrush" Color="#226EA8FF" />
+        <SolidColorBrush x:Key="CopilotControlBorderBrush" Color="#526EA8FF" />
+        <SolidColorBrush x:Key="CopilotControlMutedBrush" Color="#9CA3AF" />
+        <SolidColorBrush x:Key="CopilotControlMutedSurfaceBrush" Color="#1F9CA3AF" />
+        <SolidColorBrush x:Key="CopilotControlMutedBorderBrush" Color="#3A9CA3AF" />
+        <SolidColorBrush x:Key="CopilotControlWarningBrush" Color="#D6A84E" />
+        <SolidColorBrush x:Key="CopilotControlWarningSurfaceBrush" Color="#22D6A84E" />
+        <SolidColorBrush x:Key="CopilotControlWarningBorderBrush" Color="#52D6A84E" />
+        <SolidColorBrush x:Key="CopilotControlDangerBrush" Color="#F87171" />
+        <SolidColorBrush x:Key="CopilotControlDangerSurfaceBrush" Color="#22F87171" />
+        <SolidColorBrush x:Key="CopilotControlDangerBorderBrush" Color="#52F87171" />
         <Style x:Key="AssistantPlainTextStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
             <Setter Property="TextWrapping" Value="Wrap" />
@@ -95,11 +107,11 @@
             </Setter>
         </Style>
         <Style x:Key="ComposerPrimaryActionButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="36" />
-            <Setter Property="Height" Value="36" />
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+            <Setter Property="Background" Value="#8E8E93" />
+            <Setter Property="BorderBrush" Value="#8E8E93" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Foreground" Value="White" />
@@ -131,7 +143,7 @@
             </Setter>
         </Style>
         <Style x:Key="UserMessageTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ReadOnlyMessageTextBoxStyle}">
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>
         <Style x:Key="UserMessageMetaTextStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White" />
@@ -156,15 +168,52 @@
         <Style x:Key="ComposerShellBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotSurfaceBorderStyle}">
             <Setter Property="Background" Value="{DynamicResource GlobalBackground}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="CornerRadius" Value="22" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="26"
+                                      Direction="270"
+                                      Opacity="0.13"
+                                      ShadowDepth="6"
+                                      Color="#000000" />
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="McpStatusPillBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotPillBorderStyle}">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="Opacity" Value="0.64" />
+            <Setter Property="Padding" Value="9,5" />
+            <Setter Property="Background" Value="{StaticResource CopilotControlSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CopilotControlBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Opacity" Value="1" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMcpEnabled}" Value="False">
+                    <Setter Property="Background" Value="{StaticResource CopilotControlMutedSurfaceBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource CopilotControlMutedBorderBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasPendingMcpActions}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource CopilotControlWarningSurfaceBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource CopilotControlWarningBorderBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasRecentMcpFailures}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource CopilotControlDangerSurfaceBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource CopilotControlDangerBorderBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="ControlModeTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource CopilotControlBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMcpEnabled}" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource CopilotControlMutedBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasPendingMcpActions}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasRecentMcpFailures}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="ContextActionButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Padding" Value="12,5" />
@@ -253,7 +302,8 @@
                         <StackPanel>
                             <ToggleButton x:Name="HeaderSite"
                                           Padding="0"
-                                          HorizontalContentAlignment="Stretch"
+                                          HorizontalAlignment="Left"
+                                          HorizontalContentAlignment="Left"
                                           Background="Transparent"
                                           BorderBrush="Transparent"
                                           BorderThickness="0"
@@ -263,32 +313,33 @@
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
                                         <Border x:Name="HeaderChrome"
-                                                Padding="0,2"
+                                                Padding="0,3"
                                                 Background="Transparent"
                                                 CornerRadius="8">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="16" />
-                                                    <ColumnDefinition Width="*" />
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock x:Name="Chevron"
-                                                           Grid.Column="0"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"
-                                                           FontSize="13"
-                                                           Foreground="{DynamicResource GlobalTextBrush}"
-                                                           Opacity="0.42"
-                                                           Text="›" />
-                                                <ContentPresenter Grid.Column="1"
-                                                                  HorizontalAlignment="Stretch"
+                                                <ContentPresenter Grid.Column="0"
+                                                                  HorizontalAlignment="Left"
                                                                   VerticalAlignment="Center"
                                                                   Content="{TemplateBinding Content}"
                                                                   ContentTemplate="{TemplateBinding ContentTemplate}" />
+                                                <TextBlock x:Name="Chevron"
+                                                           Grid.Column="1"
+                                                           Margin="4,0,0,0"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Opacity="0.42"
+                                                           Text="⌄" />
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsChecked" Value="True">
-                                                <Setter TargetName="Chevron" Property="Text" Value="⌄" />
+                                                <Setter TargetName="Chevron" Property="Text" Value="⌃" />
                                                 <Setter TargetName="Chevron" Property="Opacity" Value="0.58" />
                                             </Trigger>
                                             <Trigger Property="IsMouseOver" Value="True">
@@ -300,7 +351,7 @@
                                 <ContentPresenter ContentSource="Header" />
                             </ToggleButton>
                             <ContentPresenter x:Name="ExpandSite"
-                                              Margin="18,6,0,0"
+                                              Margin="0,6,0,0"
                                               ContentSource="Content"
                                               Visibility="Collapsed" />
                         </StackPanel>
@@ -435,18 +486,6 @@
                                        FontSize="15"
                                        Text="&#xE8A7;" />
                         </Button>
-
-                        <Border x:Name="McpStatusPill"
-                                Margin="0,0,6,0"
-                                VerticalAlignment="Center"
-                                Style="{StaticResource McpStatusPillBorderStyle}"
-                                ToolTip="{Binding McpStatusToolTip}"
-                                Visibility="{Binding IsMcpStatusVisible, Converter={StaticResource bool2VisibilityConverter}}">
-                            <TextBlock FontSize="11"
-                                       Foreground="{DynamicResource GlobalTextBrush}"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding McpStatusLabel}" />
-                        </Border>
 
                         <Button Margin="0,0,6,0"
                                 Style="{StaticResource CopilotIconButtonStyle}"
@@ -635,13 +674,13 @@
                             <DataTemplate DataType="{x:Type local:CopilotChatMessage}">
                                 <Grid Margin="0,0,0,22">
                                     <Border x:Name="UserBubble"
-                                            MaxWidth="440"
-                                            Padding="14,11"
+                                            MaxWidth="760"
+                                            Padding="16,12"
                                             HorizontalAlignment="Right"
-                                            Background="{DynamicResource PrimaryBrush}"
-                                            BorderBrush="{DynamicResource PrimaryBrush}"
+                                            Background="{DynamicResource GlobalBorderBrush1}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
                                             BorderThickness="1"
-                                            CornerRadius="16"
+                                            CornerRadius="18"
                                             Visibility="Collapsed">
                                         <StackPanel>
                                             <TextBox Style="{StaticResource UserMessageTextBoxStyle}"
@@ -650,7 +689,7 @@
                                     </Border>
 
                                     <StackPanel x:Name="AssistantPanel"
-                                                Margin="2,0,30,0"
+                                                Margin="2,0,36,0"
                                                 Visibility="Collapsed">
                                         <Expander Margin="0,0,0,8"
                                                   Style="{StaticResource TraceExpanderStyle}"
@@ -677,14 +716,16 @@
                                                 </Grid>
                                             </Expander.Header>
                                             <Border Margin="0,6,0,0"
-                                                    Padding="10,7"
-                                                    MaxHeight="176"
+                                                    Padding="12,9"
+                                                    MaxHeight="132"
                                                     Style="{StaticResource CopilotInsetBorderStyle}"
                                                     BorderThickness="1"
-                                                    CornerRadius="10">
+                                                    CornerRadius="12"
+                                                    Visibility="{Binding HasThinkingContent, Converter={StaticResource bool2VisibilityConverter}}">
                                                 <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
-                                                         MaxHeight="160"
-                                                         Opacity="0.82"
+                                                         MaxHeight="116"
+                                                         FontSize="12"
+                                                         Opacity="0.7"
                                                          VerticalScrollBarVisibility="Auto"
                                                          Text="{Binding ThinkingContent, Mode=OneWay}" />
                                             </Border>
@@ -731,8 +772,10 @@
             </Grid>
 
             <Border Grid.Row="2"
-                    Margin="14,0,14,14"
-                    Padding="14,10,14,12"
+                    x:Name="ComposerShellBorder"
+                    MaxWidth="980"
+                    Margin="64,0,64,18"
+                    Padding="18,12,16,12"
                     Style="{StaticResource ComposerShellBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -921,20 +964,29 @@
                         </ScrollViewer>
                     </StackPanel>
 
-                    <TextBox x:Name="PromptTextBox"
-                             Grid.Row="2"
-                             MinHeight="44"
-                             MaxHeight="104"
-                             Padding="0,6,0,6"
-                             AcceptsReturn="True"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             Foreground="{DynamicResource GlobalTextBrush}"
-                             PreviewKeyDown="PromptTextBox_PreviewKeyDown"
-                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
-                             TextWrapping="Wrap"
-                             VerticalContentAlignment="Top"
-                             VerticalScrollBarVisibility="Auto" />
+                    <Grid Grid.Row="2"
+                          MinHeight="38">
+                        <TextBlock Padding="0,3,0,3"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   IsHitTestVisible="False"
+                                   Opacity="0.28"
+                                   Text="{Binding InputPlaceholder}"
+                                   VerticalAlignment="Top"
+                                   Visibility="{Binding IsInputEmpty, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <TextBox x:Name="PromptTextBox"
+                                 MinHeight="38"
+                                 MaxHeight="96"
+                                 Padding="0,3,0,3"
+                                 AcceptsReturn="True"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{DynamicResource GlobalTextBrush}"
+                                 PreviewKeyDown="PromptTextBox_PreviewKeyDown"
+                                 Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                                 TextWrapping="Wrap"
+                                 VerticalContentAlignment="Top"
+                                 VerticalScrollBarVisibility="Auto" />
+                    </Grid>
 
                     <Grid x:Name="ComposerFooterGrid" Grid.Row="3" Margin="0,8,0,0">
                         <Grid.RowDefinitions>
@@ -943,7 +995,9 @@
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
@@ -971,15 +1025,38 @@
                                        Text="✚" />
                         </Button>
 
+                        <Border x:Name="ControlModePill"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Margin="4,0,0,0"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource McpStatusPillBorderStyle}"
+                                ToolTip="{Binding McpStatusToolTip}"
+                                Visibility="{Binding IsControlModeVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                            <DockPanel LastChildFill="False">
+                                <TextBlock VerticalAlignment="Center"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="13"
+                                           Style="{StaticResource ControlModeTextStyle}"
+                                           Text="&#xE83D;" />
+                                <TextBlock Margin="5,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Style="{StaticResource ControlModeTextStyle}"
+                                           Text="{Binding McpStatusLabel}" />
+                            </DockPanel>
+                        </Border>
+
                         <Grid x:Name="ComposerSelectorGrid"
                               Grid.Row="0"
-                              Grid.Column="1"
-                              Margin="8,0,8,0"
+                              Grid.Column="3"
+                              Margin="10,0,10,0"
                               VerticalAlignment="Center">
                             <ComboBox x:Name="ProfileComboBox"
                                       MinWidth="72"
-                                      MaxWidth="132"
-                                      HorizontalAlignment="Center"
+                                      MaxWidth="180"
+                                      HorizontalAlignment="Right"
                                       Style="{StaticResource ComposerComboBoxStyle}"
                                       VerticalAlignment="Center"
                                       ItemsSource="{Binding Profiles}"
@@ -991,7 +1068,7 @@
 
                         <StackPanel x:Name="ComposerActionStack"
                                     Grid.Row="0"
-                                    Grid.Column="2"
+                                    Grid.Column="4"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
                             <Button x:Name="VoiceInputButton"

@@ -94,6 +94,7 @@ namespace ColorVision.Copilot
     public sealed class CopilotChatMessage : ViewModelBase
     {
         private static readonly char[] ExecutionLineSeparators = { '\r', '\n' };
+        private static readonly string[] ExecutionBlockSeparators = { "\r\n\r\n", "\n\n", "\r\r" };
 
         public CopilotChatMessage()
         {
@@ -186,6 +187,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasExecutionFailures));
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingContent));
+                    OnPropertyChanged(nameof(HasThinkingContent));
                     OnPropertyChanged(nameof(ExecutionSummary));
                     OnPropertyChanged(nameof(ExecutionSummaryToolTip));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
@@ -198,7 +200,7 @@ namespace ColorVision.Copilot
         public bool HasExecutionTrace => !string.IsNullOrWhiteSpace(ExecutionContent);
 
         [JsonIgnore]
-        public bool HasExecutionFailures => AnalyzeExecutionTrace(ExecutionContent).FailedCount > 0;
+        public bool HasExecutionFailures => AnalyzeExecutionTrace(FilterDisplayableExecutionContent(ExecutionContent)).FailedCount > 0;
 
         public bool IsExecutionExpanded
         {
@@ -254,6 +256,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasReasoning));
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingContent));
+                    OnPropertyChanged(nameof(HasThinkingContent));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
                 }
             }
@@ -329,7 +332,10 @@ namespace ColorVision.Copilot
         public bool IsThinkingInProgress => IsExecutionInProgress || IsReasoningInProgress;
 
         [JsonIgnore]
-        public bool HasThinkingTrace => HasExecutionTrace || HasReasoning || IsThinkingInProgress;
+        public bool HasThinkingTrace => HasExecutionTrace || HasReasoning || IsThinkingInProgress || ThinkingStartedAt != default;
+
+        [JsonIgnore]
+        public bool HasThinkingContent => !string.IsNullOrWhiteSpace(ThinkingContent);
 
         [JsonIgnore]
         public string ThinkingHeader
@@ -361,6 +367,7 @@ namespace ColorVision.Copilot
             IsThinkingExpanded = true;
             OnPropertyChanged(nameof(IsThinkingInProgress));
             OnPropertyChanged(nameof(HasThinkingTrace));
+            OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(ThinkingHeader));
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
         }
@@ -376,6 +383,7 @@ namespace ColorVision.Copilot
             IsThinkingExpanded = false;
             OnPropertyChanged(nameof(IsThinkingInProgress));
             OnPropertyChanged(nameof(HasThinkingTrace));
+            OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(ThinkingHeader));
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
         }
@@ -408,9 +416,10 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
-            if (ThinkingCompletedAt == default && !IsThinkingInProgress && HasThinkingTrace)
+            if (!IsThinkingInProgress && HasThinkingTrace)
             {
                 IsThinkingExpanded = false;
+                OnPropertyChanged(nameof(IsThinkingExpanded));
                 OnPropertyChanged(nameof(ThinkingHeader));
             }
 
@@ -460,14 +469,11 @@ namespace ColorVision.Copilot
         private static string BuildThinkingContent(string? executionContent, string? reasoningContent)
         {
             var builder = new StringBuilder();
-            var execution = (executionContent ?? string.Empty).Trim();
+            var execution = FilterDisplayableExecutionContent(executionContent);
             var reasoning = (reasoningContent ?? string.Empty).Trim();
 
             if (!string.IsNullOrWhiteSpace(execution))
-            {
-                builder.AppendLine("执行");
                 builder.AppendLine(execution);
-            }
 
             if (!string.IsNullOrWhiteSpace(reasoning))
             {
@@ -479,6 +485,54 @@ namespace ColorVision.Copilot
             }
 
             return builder.ToString().TrimEnd();
+        }
+
+        private static string FilterDisplayableExecutionContent(string? content)
+        {
+            var text = (content ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(text))
+                return string.Empty;
+
+            var blocks = text.Split(ExecutionBlockSeparators, StringSplitOptions.RemoveEmptyEntries);
+            var keptBlocks = blocks
+                .Select(FilterExecutionBlock)
+                .Where(block => !string.IsNullOrWhiteSpace(block))
+                .ToArray();
+
+            return string.Join(Environment.NewLine + Environment.NewLine, keptBlocks).Trim();
+        }
+
+        private static string FilterExecutionBlock(string block)
+        {
+            var lines = block
+                .Split(ExecutionLineSeparators, StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToArray();
+
+            if (lines.Length == 0 || IsHiddenExecutionBlock(lines))
+                return string.Empty;
+
+            var keptLines = lines.Where(line => !IsHiddenExecutionLine(line)).ToArray();
+            return string.Join(Environment.NewLine, keptLines).Trim();
+        }
+
+        private static bool IsHiddenExecutionBlock(string[] lines)
+        {
+            if (lines.Any(line => line.StartsWith("Status: Failed", StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            return lines.All(IsHiddenExecutionLine);
+        }
+
+        private static bool IsHiddenExecutionLine(string line)
+        {
+            return line.Equals("Analyzing task...", StringComparison.OrdinalIgnoreCase)
+                || line.Equals("Generating answer...", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("Round ", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("Tool phase converged", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("No extra tools are needed", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("Reused the context", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string BuildExecutionSummary(string? content, bool isInProgress)

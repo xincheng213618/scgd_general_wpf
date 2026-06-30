@@ -50,6 +50,15 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
+        <Style x:Key="MessageDirectionTextBlock" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Direction}" Value="{x:Static local:SocketMessageDirection.Sent}">
+                    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="MetaLabelTextBlock" TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="FontSize" Value="12"/>
@@ -212,7 +221,6 @@
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -356,49 +364,11 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="1"
-                Style="{StaticResource PaneCardBorder}"
-                Padding="12,10"
-                Margin="0,10,0,10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBox x:Name="SearchTextBox"
-                             Width="330"
-                             Height="30"
-                             TextChanged="Filter_Changed"
-                             ToolTip="{x:Static properties:Resources.SearchTooltip}"/>
-                    <ComboBox x:Name="DirectionFilterCombo" Width="96" Height="30" Margin="8,0,0,0" SelectedIndex="0" SelectionChanged="Filter_Changed">
-                        <ComboBoxItem Content="{x:Static properties:Resources.FilterAll}" Tag="All"/>
-                        <ComboBoxItem Content="{x:Static properties:Resources.FilterReceived}" Tag="Received"/>
-                        <ComboBoxItem Content="{x:Static properties:Resources.FilterSent}" Tag="Sent"/>
-                    </ComboBox>
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <CheckBox x:Name="AutoScrollCheckBox" Content="{x:Static properties:Resources.AutoScroll}" IsChecked="True" Margin="0,0,14,0"/>
-                    <CheckBox x:Name="PrettyPrintCheckBox" Content="{x:Static properties:Resources.PrettyPrintView}" IsChecked="True" Checked="PrettyPrintCheckBox_Changed" Unchecked="PrettyPrintCheckBox_Changed"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="{x:Static properties:Resources.Query}" Command="{Binding MessageManager.QueryCommand}" Style="{StaticResource ChromeButton}" Margin="0,0,8,0"/>
-                    <Button Content="{x:Static properties:Resources.AdvancedQuery}" Command="{Binding MessageManager.GenericQueryCommand}" Style="{StaticResource ChromeButton}" MinWidth="90" Margin="0,0,8,0"/>
-                    <Button Content="{x:Static properties:Resources.ClearMessages}" Command="{Binding MessageManager.MessagesClearCommand}" Style="{StaticResource DangerChromeButton}" MinWidth="90"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="1" Margin="0,10,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="460"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="460" MinWidth="400"/>
+                <ColumnDefinition Width="*" MinWidth="620"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="380" MinWidth="320"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource PaneCardBorder}" Padding="0">
@@ -408,15 +378,34 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <DockPanel Grid.Row="0" Margin="14,12,14,8">
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock x:Name="FilteredCountTextBlock" Foreground="{DynamicResource SecondaryTextBrush}" MinWidth="86" TextAlignment="Right" Margin="0,0,8,0"/>
+                    <DockPanel Grid.Row="0" Margin="14,10,14,8" LastChildFill="True">
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="&#xE8BD;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="16" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static properties:Resources.MessageLog}" Style="{StaticResource SectionTitleTextBlock}" Margin="0,0,10,0"/>
+                            <TextBlock x:Name="FilteredCountTextBlock" Foreground="{DynamicResource SecondaryTextBrush}" MinWidth="72" TextAlignment="Right" Margin="0,0,6,0"/>
                             <TextBlock x:Name="TotalCountTextBlock" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#xE8BD;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="16" Margin="0,0,8,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.MessageLog}" Style="{StaticResource SectionTitleTextBlock}"/>
-                        </StackPanel>
+
+                        <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,4">
+                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox x:Name="SearchTextBox"
+                                         Width="190"
+                                         Height="28"
+                                         TextChanged="Filter_Changed"
+                                         ToolTip="{x:Static properties:Resources.SearchTooltip}"/>
+                                <ComboBox x:Name="DirectionFilterCombo" Width="74" Height="28" Margin="6,0,0,0" SelectedIndex="0" SelectionChanged="Filter_Changed">
+                                    <ComboBoxItem Content="{x:Static properties:Resources.FilterAll}" Tag="All"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.FilterReceived}" Tag="Received"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.FilterSent}" Tag="Sent"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <CheckBox x:Name="AutoScrollCheckBox" Content="{x:Static properties:Resources.AutoScroll}" IsChecked="True" Margin="0,0,12,4"/>
+                            <Button Content="{x:Static properties:Resources.Query}" Command="{Binding MessageManager.QueryCommand}" Style="{StaticResource ChromeButton}" Width="62" MinWidth="62" Height="28" Padding="8,0" Margin="0,0,6,4"/>
+                            <Button Content="{x:Static properties:Resources.AdvancedQuery}" Command="{Binding MessageManager.GenericQueryCommand}" Style="{StaticResource ChromeButton}" Width="78" MinWidth="78" Height="28" Padding="8,0" Margin="0,0,6,4"/>
+                            <Button Content="{x:Static properties:Resources.ClearMessages}" Command="{Binding MessageManager.MessagesClearCommand}" Style="{StaticResource DangerChromeButton}" Width="78" MinWidth="78" Height="28" Padding="8,0" Margin="0,0,0,4"/>
+                        </WrapPanel>
                     </DockPanel>
 
                     <ListView Grid.Row="1"
@@ -429,7 +418,8 @@
                               Style="{DynamicResource ListView.Small}"
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling"
-                              ScrollViewer.CanContentScroll="True">
+                              ScrollViewer.CanContentScroll="True"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto">
                         <ListView.Resources>
                             <ContextMenu x:Key="MessageContextMenu">
                                 <MenuItem Header="{x:Static properties:Resources.Copy}" Click="CopyMessage_Click" Tag="{Binding .}"/>
@@ -450,35 +440,10 @@
                                         <Setter Property="Background" Value="Transparent"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="{x:Static properties:Resources.Time}" Width="92">
+                                <GridViewColumn Header="{x:Static properties:Resources.Time}" Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                            <TextBlock Text="{Binding MessageTime, StringFormat=HH:mm:ss.fff}" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="{x:Static properties:Resources.Direction}" Width="60">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                            <TextBlock Text="{Binding DirectionDisplay}" FontWeight="SemiBold">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="{x:Type TextBlock}">
-                                                        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Direction}" Value="{x:Static local:SocketMessageDirection.Sent}">
-                                                                <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="{x:Static properties:Resources.Client}" Width="158">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                            <TextBlock Text="{Binding ClientEndPoint}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ClientEndPoint}"/>
+                                            <TextBlock Text="{Binding MessageTime, StringFormat=HH:mm:ss.fff}" Style="{StaticResource MessageDirectionTextBlock}" FontWeight="SemiBold"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -489,7 +454,7 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="{x:Static properties:Resources.Content}" Width="420">
+                                <GridViewColumn Header="{x:Static properties:Resources.Content}" Width="720">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:SocketMessage}">
                                             <TextBlock Text="{Binding Content}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Content}" Foreground="{DynamicResource SecondaryTextBrush}"/>
@@ -502,79 +467,30 @@
                 </Grid>
             </Border>
 
-            <GridSplitter Grid.Column="1" Width="10" HorizontalAlignment="Stretch" Background="Transparent"/>
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" Background="Transparent"/>
 
             <Border Grid.Column="2" Style="{StaticResource PaneCardBorder}" Padding="0">
                 <Grid x:Name="DetailPanel" Margin="14,12,14,12" d:DataContext="{d:DesignInstance local:SocketMessage}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding DirectionDisplay}" FontSize="13" FontWeight="SemiBold">
-                            <TextBlock.Style>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Direction}" Value="{x:Static local:SocketMessageDirection.Sent}">
-                                            <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <CheckBox DockPanel.Dock="Right" x:Name="PrettyPrintCheckBox" Content="{x:Static properties:Resources.PrettyPrintView}" IsChecked="True" Checked="PrettyPrintCheckBox_Changed" Unchecked="PrettyPrintCheckBox_Changed"/>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="16" Margin="0,0,8,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.MessageDetail}" Style="{StaticResource SectionTitleTextBlock}"/>
+                            <TextBlock Text="消息" Style="{StaticResource SectionTitleTextBlock}"/>
                         </StackPanel>
                     </DockPanel>
 
-                    <Border Grid.Row="1" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,12">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,10">
-                                <TextBlock Text="{x:Static properties:Resources.Time}" Style="{StaticResource MetaLabelTextBlock}"/>
-                                <TextBlock Text="{Binding MessageTime, StringFormat=yyyy-MM-dd HH:mm:ss.fff}" TextTrimming="CharacterEllipsis"/>
-                            </StackPanel>
-                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,10">
-                                <TextBlock Text="{x:Static properties:Resources.Client}" Style="{StaticResource MetaLabelTextBlock}"/>
-                                <TextBlock Text="{Binding ClientEndPoint}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ClientEndPoint}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,10">
-                                <TextBlock Text="{x:Static properties:Resources.EventName}" Style="{StaticResource MetaLabelTextBlock}"/>
-                                <TextBlock Text="{Binding EventName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding EventName}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,10">
-                                <TextBlock Text="MsgID" Style="{StaticResource MetaLabelTextBlock}"/>
-                                <TextBlock Text="{Binding MsgID}" TextTrimming="CharacterEllipsis" ToolTip="{Binding MsgID}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,10,0">
-                                <TextBlock Text="{x:Static properties:Resources.ResponseCode}" Style="{StaticResource MetaLabelTextBlock}"/>
-                                <TextBlock Text="{Binding ResponseCode}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Row="2" Grid.Column="1">
-                                <TextBlock Text="{x:Static properties:Resources.Direction}" Style="{StaticResource MetaLabelTextBlock}"/>
-                                <TextBlock Text="{Binding DirectionDisplay}"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-
-                    <TextBox Grid.Row="2"
+                    <TextBox Grid.Row="1"
                              x:Name="DetailContentTextBox"
                              IsReadOnly="True"
+                             AcceptsReturn="True"
                              TextWrapping="Wrap"
+                             VerticalContentAlignment="Top"
+                             HorizontalContentAlignment="Left"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              BorderBrush="{DynamicResource ButtonBorderBrush}"
@@ -583,13 +499,6 @@
                              FontFamily="Consolas"
                              FontSize="13"
                              Padding="10"/>
-
-                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                        <Button Content="{x:Static properties:Resources.Copy}" Click="CopyContent_Click" Style="{StaticResource ChromeButton}" Margin="0,0,8,0"/>
-                        <Button Content="{x:Static properties:Resources.CopyFormatted}" Click="CopyFormattedContent_Click" Style="{StaticResource ChromeButton}" MinWidth="98" Margin="0,0,8,0"/>
-                        <Button Content="{x:Static properties:Resources.Resend}" Click="ResendContent_Click" Style="{StaticResource ChromeButton}" Margin="0,0,8,0"/>
-                        <Button Content="{x:Static properties:Resources.Delete}" Click="DeleteContent_Click" Style="{StaticResource DangerChromeButton}"/>
-                    </StackPanel>
                 </Grid>
             </Border>
         </Grid>

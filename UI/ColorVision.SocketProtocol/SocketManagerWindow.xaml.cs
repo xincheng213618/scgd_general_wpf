@@ -236,50 +236,6 @@ namespace ColorVision.SocketProtocol
             }
         }
 
-        /// <summary>
-        /// 复制消息内容(底部按钮)
-        /// </summary>
-        private void CopyContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailPanel.DataContext is SocketMessage message)
-            {
-                Common.Clipboard.SetText(message.Content ?? string.Empty);
-            }
-        }
-
-        /// <summary>
-        /// 复制格式化后的消息内容(底部按钮)
-        /// </summary>
-        private void CopyFormattedContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailPanel.DataContext is SocketMessage message && !string.IsNullOrEmpty(message.Content))
-            {
-                Common.Clipboard.SetText(FormatContent(message.Content, true));
-            }
-        }
-
-        /// <summary>
-        /// 重发消息(底部按钮)
-        /// </summary>
-        private void ResendContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailPanel.DataContext is SocketMessage message)
-            {
-                ResendMessageToClient(message);
-            }
-        }
-
-        /// <summary>
-        /// 删除消息(底部按钮)
-        /// </summary>
-        private void DeleteContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailPanel.DataContext is SocketMessage message)
-            {
-                DeleteMessage(message);
-            }
-        }
-
         private void DeleteMessage(SocketMessage message)
         {
             _socketManager.MessageManager.DeleteMessage(message);

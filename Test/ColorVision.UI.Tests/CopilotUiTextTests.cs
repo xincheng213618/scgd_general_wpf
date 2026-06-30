@@ -51,4 +51,26 @@ public sealed class CopilotUiTextTests
         Assert.Equal("Image", CopilotAttachmentItem.CreateImage("C:\\temp\\sample.png", "sample").BadgeText);
         Assert.Equal("Web", CopilotAttachmentItem.CreateWebPage("https://example.com", "Example", "content").BadgeText);
     }
+
+    [Fact]
+    public void ThinkingContent_HidesInternalPlanningAndFailedSearchTrace()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+
+        message.MarkThinkingStarted();
+        message.ExecutionContent = string.Join(Environment.NewLine + Environment.NewLine, new[]
+        {
+            "Analyzing task...",
+            "Round 1: planning next step.",
+            "[SearchFiles]" + Environment.NewLine + "Status: Failed" + Environment.NewLine + "Summary: Missing searchable roots.",
+        });
+        message.MarkThinkingCompleted();
+
+        Assert.True(message.HasThinkingTrace);
+        Assert.False(message.HasThinkingContent);
+        Assert.StartsWith("已思考", message.ThinkingHeader);
+        Assert.DoesNotContain("Analyzing task", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Round 1", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("SearchFiles", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
+    }
 }

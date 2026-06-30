@@ -362,10 +362,17 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _inputText, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(IsInputEmpty));
                     RefreshComposerTokenEstimate();
+                }
             }
         }
         private string _inputText = string.Empty;
+
+        public string InputPlaceholder => "要求后续变更";
+
+        public bool IsInputEmpty => string.IsNullOrWhiteSpace(InputText);
 
         public bool IsBusy
         {
@@ -396,11 +403,11 @@ namespace ColorVision.Copilot
 
         public bool IsMcpRunning => _config.McpEnabled && CopilotMcpServer.Instance.IsRunning;
 
+        public bool IsControlModeVisible => _config.McpEnabled || HasPendingMcpActions || HasRecentMcpFailures;
+
         public bool HasPendingMcpActions => _hasPendingMcpActions;
 
         public bool HasRecentMcpFailures => _hasRecentMcpFailures;
-
-        public bool IsMcpStatusVisible => _config.McpEnabled || HasPendingMcpActions || HasRecentMcpFailures;
 
         public string McpStatusLabel
         {
@@ -408,15 +415,15 @@ namespace ColorVision.Copilot
             {
                 var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
                 if (pendingCount > 0)
-                    return $"MCP review {pendingCount}";
+                    return pendingCount == 1 ? "等待确认" : $"等待确认 {pendingCount}";
 
                 if (HasRecentMcpFailures)
-                    return "MCP failed";
+                    return "控制异常";
 
                 if (!_config.McpEnabled)
-                    return "MCP off";
+                    return string.Empty;
 
-                return CopilotMcpServer.Instance.IsRunning ? "MCP on" : "MCP stopped";
+                return CopilotMcpServer.Instance.IsRunning ? "完全访问" : "控制停止";
             }
         }
 
@@ -596,7 +603,7 @@ namespace ColorVision.Copilot
         {
             if (!refreshExternalContext && !string.IsNullOrWhiteSpace(userMessage.RequestContent))
             {
-                AppendAssistantExecutionTrace(assistantMessage, "Reused the context from the previous run without calling tools again.");
+                assistantMessage.MarkThinkingStarted();
                 assistantMessage.IsExecutionInProgress = true;
                 assistantMessage.IsExecutionExpanded = true;
 
@@ -693,9 +700,9 @@ namespace ColorVision.Copilot
 
             OnPropertyChanged(nameof(IsMcpEnabled));
             OnPropertyChanged(nameof(IsMcpRunning));
+            OnPropertyChanged(nameof(IsControlModeVisible));
             OnPropertyChanged(nameof(HasPendingMcpActions));
             OnPropertyChanged(nameof(HasRecentMcpFailures));
-            OnPropertyChanged(nameof(IsMcpStatusVisible));
             OnPropertyChanged(nameof(McpStatusLabel));
             OnPropertyChanged(nameof(McpStatusToolTip));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
@@ -992,7 +999,6 @@ namespace ColorVision.Copilot
             {
                 case CopilotAgentEventType.Status:
                     assistantMessage.MarkThinkingStarted();
-                    AppendAssistantExecutionTrace(assistantMessage, agentEvent.Text);
                     assistantMessage.IsExecutionInProgress = true;
                     assistantMessage.IsExecutionExpanded = true;
                     break;
@@ -1038,21 +1044,18 @@ namespace ColorVision.Copilot
             if (result == null)
                 return string.Empty;
 
+            if (!result.Success)
+                return string.Empty;
+
             var builder = new StringBuilder();
-            builder.Append('[').Append(result.ToolName).Append(']').AppendLine();
-            builder.Append("Status: ").AppendLine(result.Success ? "Success" : "Failed");
-
             if (!string.IsNullOrWhiteSpace(result.Summary))
-                builder.Append("Summary: ").AppendLine(result.Summary);
+                builder.Append(result.Summary.Trim());
 
-            if (!string.IsNullOrWhiteSpace(result.Content))
+            if (builder.Length == 0 && !string.IsNullOrWhiteSpace(result.Content))
             {
-                builder.AppendLine("Result:");
-                builder.AppendLine(result.Content.Trim());
+                var content = result.Content.Trim();
+                builder.Append(content.Length <= 500 ? content : content[..500].TrimEnd() + "...");
             }
-
-            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
-                builder.Append("Error: ").Append(result.ErrorMessage);
 
             return builder.ToString().TrimEnd();
         }
@@ -1087,7 +1090,10 @@ namespace ColorVision.Copilot
                 assistantMessage.Content += delta.Content;
                 assistantMessage.IsReasoningInProgress = false;
                 if (isFirstContentChunk && assistantMessage.HasReasoning)
+                {
                     assistantMessage.IsReasoningExpanded = false;
+                    assistantMessage.IsThinkingExpanded = false;
+                }
             }
         }
 
@@ -2112,8 +2118,8 @@ namespace ColorVision.Copilot
             builder.AppendLine($"Attachments: {BuildAttachmentSummary()}");
             builder.AppendLine($"Window context: {BuildWindowContextSummary()}");
 
-            if (IsMcpStatusVisible)
-                builder.AppendLine($"MCP: {McpStatusLabel}");
+            if (IsControlModeVisible)
+                builder.AppendLine($"Control: {McpStatusLabel}");
         }
 
         private string BuildPromptSummary()

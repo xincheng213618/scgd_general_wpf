@@ -249,19 +249,23 @@ namespace ColorVision.Copilot
 
             var isCompactComposer = ActualWidth > 0 && ActualWidth < CompactComposerThreshold;
             ComposerFooterSecondRowDefinition.Height = isCompactComposer ? GridLength.Auto : new GridLength(0);
+            ComposerShellBorder.Margin = isCompactComposer ? new Thickness(14, 0, 14, 14) : new Thickness(64, 0, 64, 18);
 
             Grid.SetRow(ComposerSelectorGrid, 0);
-            Grid.SetColumn(ComposerSelectorGrid, isCompactComposer ? 0 : 1);
-            Grid.SetColumnSpan(ComposerSelectorGrid, isCompactComposer ? 3 : 1);
-            ComposerSelectorGrid.Margin = isCompactComposer ? new Thickness(0, 0, 0, 8) : new Thickness(8, 0, 8, 0);
+            Grid.SetColumn(ComposerSelectorGrid, isCompactComposer ? 0 : 3);
+            Grid.SetColumnSpan(ComposerSelectorGrid, isCompactComposer ? 5 : 1);
+            ComposerSelectorGrid.Margin = isCompactComposer ? new Thickness(0, 0, 0, 8) : new Thickness(10, 0, 10, 0);
 
             Grid.SetRow(AttachMenuButton, isCompactComposer ? 1 : 0);
             Grid.SetColumn(AttachMenuButton, 0);
 
-            Grid.SetRow(ComposerActionStack, isCompactComposer ? 1 : 0);
-            Grid.SetColumn(ComposerActionStack, 2);
+            Grid.SetRow(ControlModePill, isCompactComposer ? 1 : 0);
+            Grid.SetColumn(ControlModePill, 1);
 
-            ProfileComboBox.MaxWidth = isCompactComposer ? double.PositiveInfinity : 132;
+            Grid.SetRow(ComposerActionStack, isCompactComposer ? 1 : 0);
+            Grid.SetColumn(ComposerActionStack, 4);
+
+            ProfileComboBox.MaxWidth = isCompactComposer ? double.PositiveInfinity : 180;
 
             CurrentLiveContextSummaryText.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
             CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(10, 7, 10, 7) : new Thickness(12, 9, 12, 9);

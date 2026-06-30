@@ -207,8 +207,9 @@ namespace ColorVision.Copilot
             }
 
             builder.AppendLine("# Answer requirements");
-            builder.AppendLine("For ColorVision-specific implementation, project code, device, flow, file, log, or app-state questions, answer only from the ColorVision context above. For general knowledge questions, you may answer from general knowledge when no ColorVision-specific context is required, but clearly distinguish general principles from this project's actual implementation.");
-            builder.AppendLine("If web search or fetched web page observations are used, mention the relevant source URLs. If local ColorVision context is incomplete, do not make the missing context the main answer and do not ask the user to provide source files, configuration, screenshots, or documentation. Give the best supported answer from available context and general knowledge, then add at most one brief boundary sentence when needed, such as that the project-specific implementation was not confirmed in the current context.");
+            builder.AppendLine("For ColorVision-specific implementation, project code, device, flow, file, log, or app-state questions, answer only from the ColorVision context above. If the provided context does not confirm a project-specific fact, omit that fact instead of guessing or inventing an implementation.");
+            builder.AppendLine("For general knowledge questions, answer normally from general knowledge when no ColorVision-specific context is required. Do not create a section about missing ColorVision context, do not say that context was not found, and do not ask the user to provide source files, configuration, screenshots, or documentation unless they explicitly ask what to attach next.");
+            builder.AppendLine("If web search or fetched web page observations are used, mention the relevant source URLs.");
             builder.AppendLine("Do not end with a request for more context. If a tool failed, do not dwell on the failure unless it materially changes the answer.");
             builder.AppendLine(BuildModeInstruction(request.Mode));
 

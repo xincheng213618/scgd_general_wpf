@@ -21,6 +21,14 @@ public sealed class CopilotProfileConfigTests
     }
 
     [Fact]
+    public void DefaultSystemPrompt_HidesMissingContextAndForbidsProjectGuessing()
+    {
+        Assert.Contains("do not guess or invent project-specific implementation details", CopilotProfileConfig.DefaultSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("do not create a visible section about missing context", CopilotProfileConfig.DefaultSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("do not ask the user to provide files", CopilotProfileConfig.DefaultSystemPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Serialize_DoesNotPersistBuiltInSystemPrompt()
     {
         var profile = new CopilotProfileConfig

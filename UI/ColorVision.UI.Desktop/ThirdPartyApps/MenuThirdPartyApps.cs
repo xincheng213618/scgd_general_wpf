@@ -19,6 +19,17 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
+            var icon = new System.Windows.Controls.TextBlock
+            {
+                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                Text = "\xE74C",
+                TextAlignment = System.Windows.TextAlignment.Center,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            };
+            icon.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "GlobalTextBrush");
+
             return new[]
             {
                 new MenuItemMetadata
@@ -29,12 +40,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                     {
                         ThirdPartyAppsWindow.ShowInstance();
                     }),
-                    Icon = new System.Windows.Controls.TextBlock
-                    {
-                        Text = "\xE74C",
-                        FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
-                        FontSize = 16,
-                    }
+                    Icon = icon
                 }
             };
         }

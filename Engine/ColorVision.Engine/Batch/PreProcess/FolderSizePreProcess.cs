@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace ColorVision.Engine.Batch.PreProcess
 {
     /// <summary>
-    /// Configuration for folder size monitoring and cleanup
+    /// Configuration for cache size monitoring and cleanup.
     /// </summary>
     public class FolderSizePreProcessConfig : PreProcessConfigBase
     {
@@ -21,30 +21,35 @@ namespace ColorVision.Engine.Batch.PreProcess
         private const long DefaultTargetBytes = 50L * OneGb;
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        [Display(Name = "Engine_PG_MonitorFolders", Description = "Engine_PG_MonitorFoldersDesc", ResourceType = typeof(Properties.Resources))]
+        [Category("缓存清理")]
+        [Display(Name = "缓存目录", Description = "需要监控和清理的缓存目录。可以配置多个目录。")]
         public List<string> FolderPaths { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private List<string> _FolderPath = new List<string>() { "D:\\CVTest\\DEV.Camera.Default" };
 
-        [Display(Name = "Engine_PG_TriggerSize", Description = "Engine_PG_TriggerSizeDesc", ResourceType = typeof(Properties.Resources))]
+        [Category("缓存清理")]
+        [Display(Name = "缓存上限", Description = "缓存总大小超过该值后开始清理。")]
         [PropertyEditorType(typeof(FolderSizeBytesPropertiesEditor))]
         public long TriggerSizeBytes { get => _TriggerSizeBytes; set { _TriggerSizeBytes = value; OnPropertyChanged(); } }
         private long _TriggerSizeBytes = DefaultTriggerBytes;
 
-        [Display(Name = "Engine_PG_TargetSize", Description = "Engine_PG_TargetSizeDesc", ResourceType = typeof(Properties.Resources))]
+        [Category("缓存清理")]
+        [Display(Name = "清理到", Description = "触发清理后删除最旧的缓存文件，直到缓存大小低于该值。")]
         [PropertyEditorType(typeof(FolderSizeBytesPropertiesEditor))]
         public long TargetSizeBytes { get => _TargetSizeBytes; set { _TargetSizeBytes = value; OnPropertyChanged(); } }
         private long _TargetSizeBytes = DefaultTargetBytes;
 
-        [Display(Name = "Engine_PG_FileExtensions", Description = "Engine_PG_MonitorFileExtensionsDesc", ResourceType = typeof(Properties.Resources))]
+        [Category("缓存清理")]
+        [Display(Name = "缓存文件类型", Description = "只清理这些扩展名的文件；为空表示所有文件。")]
         public string FileExtensions { get => _FileExtensions; set { _FileExtensions = value; OnPropertyChanged(); } }
         private string _FileExtensions = ".jpg,.png,.tiff,.bmp,.cvraw,.cvcie";
 
-        [Display(Name = "Engine_PG_IncludeSubfolders", Description = "Engine_PG_IncludeSubfoldersDesc", ResourceType = typeof(Properties.Resources))]
+        [Category("缓存清理")]
+        [Display(Name = "包含子目录", Description = "启用后会统计并清理缓存目录下的子目录文件。")]
         public bool IncludeSubfolders { get => _IncludeSubfolders; set { _IncludeSubfolders = value; OnPropertyChanged(); } }
         private bool _IncludeSubfolders = true;
     }
 
-    [PreProcess("文件夹大小检测", "检测文件夹大小，超出限制后删除最早的文件")]
+    [PreProcess("缓存大小清理", "缓存超过上限后，按时间删除最旧的缓存文件")]
     public class FolderSizePreProcess : PreProcessBase<FolderSizePreProcessConfig>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FolderSizePreProcess));
@@ -61,17 +66,17 @@ namespace ColorVision.Engine.Batch.PreProcess
                 return Task.FromResult(true);
             }
 
-            foreach (var FolderPath in Config.FolderPaths)
+            foreach (var cachePath in Config.FolderPaths)
             {
-                if (string.IsNullOrWhiteSpace(FolderPath))
+                if (string.IsNullOrWhiteSpace(cachePath))
                 {
-                    log.Warn("FolderSizePreProcess: 文件夹路径未配置");
+                    log.Warn("CacheCleanupPreProcess: 缓存目录未配置");
                     continue;
                 }
 
-                if (!Directory.Exists(FolderPath))
+                if (!Directory.Exists(cachePath))
                 {
-                    log.Warn($"FolderSizePreProcess: 文件夹不存在 {FolderPath}");
+                    log.Warn($"CacheCleanupPreProcess: 缓存目录不存在 {cachePath}");
                     continue;
                 }
 
@@ -82,7 +87,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
                     // Get all files matching the criteria
                     var searchOption = Config.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-                    var allFiles = Directory.GetFiles(FolderPath, "*.*", searchOption);
+                    var allFiles = Directory.GetFiles(cachePath, "*.*", searchOption);
 
                     // Filter by extensions if specified
                     var files = extensions.Count > 0
@@ -91,7 +96,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
                     if (files.Count == 0)
                     {
-                        log.Info($"FolderSizePreProcess: 文件夹中没有匹配的文件 {FolderPath}");
+                        log.Info($"CacheCleanupPreProcess: 缓存目录中没有匹配的文件 {cachePath}");
                         continue;
                     }
 
@@ -120,7 +125,7 @@ namespace ColorVision.Engine.Batch.PreProcess
                     long triggerMB = triggerBytes / OneMb;
                     long targetMB = targetBytes / OneMb;
 
-                    log.Info($"FolderSizePreProcess: 文件夹 {FolderPath} 当前大小 {totalSizeMB}MB, 触发上限 {triggerMB}MB, 清理下限 {targetMB}MB");
+                    log.Info($"CacheCleanupPreProcess: 缓存目录 {cachePath} 当前大小 {totalSizeMB}MB, 缓存上限 {triggerMB}MB, 清理到 {targetMB}MB");
                     if (totalSize <= triggerBytes)
                     {
                         continue;
@@ -155,11 +160,11 @@ namespace ColorVision.Engine.Batch.PreProcess
                     }
 
                     long finalSize = (totalSize - deletedSize) / (1024 * 1024);
-                    log.Info($"FolderSizePreProcess: 清理完成。删除了 {deletedCount} 个文件，释放了 {deletedSize / (1024 * 1024)}MB。当前大小: {finalSize}MB");
+                    log.Info($"CacheCleanupPreProcess: 清理完成。删除了 {deletedCount} 个缓存文件，释放了 {deletedSize / (1024 * 1024)}MB。当前大小: {finalSize}MB");
                 }
                 catch (Exception ex)
                 {
-                    log.Error("FolderSizePreProcess 执行失败", ex);
+                    log.Error("CacheCleanupPreProcess 执行失败", ex);
                     return Task.FromResult(false);
 
                 }

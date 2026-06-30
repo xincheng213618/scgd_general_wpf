@@ -15,12 +15,21 @@ namespace ColorVision.Rbac
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
-            MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
-            menuItemMetadata.Command = new RelayCommand(a => new RbacManagerWindow() {  Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog() );
-            menuItemMetadata.Icon = new Image()
+            var icon = new TextBlock
             {
-                Source = (ImageSource)Application.Current.Resources["DrawingImageUser"],
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Text = "\uE77B",
+                TextAlignment = TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
             };
+            icon.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+
+            MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
+            menuItemMetadata.Order = 300;
+            menuItemMetadata.Command = new RelayCommand(a => new RbacManagerWindow() {  Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog() );
+            menuItemMetadata.Icon = icon;
             return new MenuItemMetadata[] { menuItemMetadata };
         }
     }

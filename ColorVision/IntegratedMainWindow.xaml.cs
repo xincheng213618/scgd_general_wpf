@@ -37,6 +37,7 @@ namespace ColorVision
         private const double TopChromeSearchReservedWidth = 320;
         private const double TopChromeSpacingReservedWidth = 80;
         private const double TopChromeButtonFallbackWidth = 32;
+        private const double TopChromeRightMenuGlyphFontSize = 15;
         private const double TopChromeUpdateNotificationFallbackWidth = 76;
 
         private bool _topChromeVisibilityUpdateQueued;
@@ -446,10 +447,35 @@ namespace ColorVision
                     Style = topChromeButtonStyle,
                 };
                 WindowChrome.SetIsHitTestVisibleInChrome(button, true);
-                button.Content = item.Icon;
+                button.Content = NormalizeRightMenuIcon(item.Icon);
                 button.Command = item.Command;
                 RightMenuItemPanel.Children.Add(button);
             }
+        }
+
+        private static object? NormalizeRightMenuIcon(object? icon)
+        {
+            switch (icon)
+            {
+                case TextBlock textBlock:
+                    textBlock.FontSize = TopChromeRightMenuGlyphFontSize;
+                    textBlock.HorizontalAlignment = HorizontalAlignment.Center;
+                    textBlock.VerticalAlignment = VerticalAlignment.Center;
+                    textBlock.TextAlignment = TextAlignment.Center;
+                    textBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                    break;
+                case Image image:
+                    image.Width = TopChromeRightMenuGlyphFontSize;
+                    image.Height = TopChromeRightMenuGlyphFontSize;
+                    image.Stretch = Stretch.Uniform;
+                    break;
+                case Viewbox viewbox:
+                    viewbox.Width = TopChromeRightMenuGlyphFontSize;
+                    viewbox.Height = TopChromeRightMenuGlyphFontSize;
+                    break;
+            }
+
+            return icon;
         }
 
         private void UpdateTopChromeVisibility()

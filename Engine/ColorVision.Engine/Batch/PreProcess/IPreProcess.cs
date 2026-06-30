@@ -2,8 +2,6 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Batch
@@ -42,39 +40,10 @@ namespace ColorVision.Engine.Batch
     }
 
     /// <summary>
-    /// Base configuration class for pre-processors with enable/disable and template filtering support.
+    /// Base configuration class for pre-processors.
     /// </summary>
     public abstract class PreProcessConfigBase : ViewModelBase
     {
-        /// <summary>
-        /// Gets or sets whether this pre-processor is enabled for execution.
-        /// </summary>
-        [Display(Name = "Engine_PG_EnablePreProcess", Description = "Engine_PG_EnablePreProcessDesc", ResourceType = typeof(Properties.Resources))]
-        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
-        private bool _IsEnabled = false;
-
-        /// <summary>
-        /// Gets or sets the template names (comma-separated) this preprocessor applies to.
-        /// Empty means applies to all templates.
-        /// </summary>
-        [Display(Name = "Engine_PG_ApplyTemplate", Description = "Engine_PG_ApplyTemplateDesc", ResourceType = typeof(Properties.Resources))]
-        public string TemplateNames { get => _TemplateNames; set { _TemplateNames = value; OnPropertyChanged(); } }
-        private string _TemplateNames = string.Empty;
-
-        /// <summary>
-        /// Checks if this preprocessor applies to the given template.
-        /// </summary>
-        public bool AppliesToTemplate(string templateName)
-        {
-            if (string.IsNullOrWhiteSpace(TemplateNames))
-                return true; // Apply to all templates
-            
-            var templates = TemplateNames.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-                                        .Select(t => t.Trim())
-                                        .Where(t => !string.IsNullOrEmpty(t));
-            
-            return templates.Any(t => string.Equals(t, templateName, StringComparison.OrdinalIgnoreCase));
-        }
     }
 
     /// <summary>
