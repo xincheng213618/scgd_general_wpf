@@ -67,7 +67,7 @@ CSV 文件名为 `ObjectiveTestResults_{yyyyMMdd_HHmmss}.csv`。注意当前 `Te
 
 ## 版本和构建
 
-`manifest.json` 当前为 `Id=ProjectARVR`、`version=1.0`、`dllpath=ProjectARVR.dll`、`requires=1.3.9.10`。构建用 `dotnet build Projects/ProjectARVR/ProjectARVR.csproj -c Release -p:Platform=x64`，打包用 `Scripts\package_project.bat ProjectARVR --no-upload`。
+`manifest.json` 当前为 `Id=ProjectARVR`、`version=1.0`、`dllpath=ProjectARVR.dll`、`requires=1.3.9.10`。构建用 `dotnet build Projects/ProjectARVR/ProjectARVR.csproj -c Release -p:Platform=x64`，打包用 `Scripts\package_project.bat ProjectARVR`。
 
 ## 检查表
 

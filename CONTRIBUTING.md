@@ -98,13 +98,13 @@ python -m unittest Scripts.test.test_backend_client Scripts.test.test_build Scri
 插件变更：
 
 - 保持 `manifest.json`、插件 README、CHANGELOG、构建复制规则和 `.cvxp` 打包行为一致。
-- 打包行为变化时运行 `Scripts\package_plugin.bat <PluginName> --no-upload`。
+- 打包行为变化时运行 `Scripts\package_plugin.bat <PluginName>`。
 - 视情况更新 [插件开发](docs/02-developer-guide/plugin-development/README.md) 或 [现有插件能力](docs/04-api-reference/plugins/README.md)。
 
 客户项目变更：
 
 - 保持项目 README、CHANGELOG、manifest/配置、流程组、协议字段和结果导出文档一致。
-- 交付打包变化时运行 `Scripts\package_project.bat <ProjectName> --no-upload`。
+- 交付打包变化时运行 `Scripts\package_project.bat <ProjectName>`。
 - 更新 [项目说明](docs/00-projects/README.md) 和受影响项目页。
 
 ## 发布规则

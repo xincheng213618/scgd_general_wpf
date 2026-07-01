@@ -129,7 +129,7 @@ python C:\Path\To\ColorVision\Scripts\package_cvxp.py `
   --configuration Release `
   --framework net10.0-windows `
   --output-dir C:\Path\To\Packages `
-  --no-upload
+
 ```
 
 包名格式为 `{PluginId}-{version}.cvxp`。压缩包内部顶层目录必须是插件 ID，例如 `DemoPlugin/manifest.json`、`DemoPlugin/DemoPlugin.dll`。

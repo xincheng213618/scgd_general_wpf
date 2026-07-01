@@ -78,7 +78,7 @@
 
 ```powershell
 dotnet build Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj -c Release -p:Platform=x64
-Scripts\package_plugin.bat WindowsServicePlugin --no-upload
+Scripts\package_plugin.bat WindowsServicePlugin
 ```
 
 ## 交付验收

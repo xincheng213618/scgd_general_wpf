@@ -1443,37 +1443,6 @@ namespace ColorVision.ImageEditor
         }
 
 
-        public void ApplyCurrentImage()
-        {
-            InvalidatePseudoColorRender();
-            if (FunctionImage is WriteableBitmap writeableBitmap)
-            {
-                ViewBitmapSource = writeableBitmap;
-                ImageShow.Source = ViewBitmapSource; ;
-                HImageCache = writeableBitmap.ToHImage();
-                FunctionImage = null;
-                SetLayerController(BitmapImageLayerController.CreateForCurrentImage(this));
-            }
-        }
-
-        public void ReloadImage()
-        {
-            InvalidatePseudoColorRender();
-            string filepath = Config.FilePath;
-            Config.ClearProperties();
-            OpenImage(filepath);
-        }
-
-        private void Apply_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyCurrentImage();
-        }
-
-        private void Reload_Click(object sender, RoutedEventArgs e)
-        {
-            ReloadImage();
-        }
-
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (sender is WpfTextBox textBox && textBox.AcceptsReturn)

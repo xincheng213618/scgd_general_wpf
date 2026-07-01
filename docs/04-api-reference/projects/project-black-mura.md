@@ -63,7 +63,7 @@ None -> White -> Black -> Red -> Green -> Blue
 
 ```powershell
 dotnet build Projects/ProjectBlackMura/ProjectBlackMura.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectBlackMura --no-upload
+Scripts\package_project.bat ProjectBlackMura
 ```
 
 ## 验收

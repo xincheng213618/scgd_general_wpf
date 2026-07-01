@@ -51,7 +51,7 @@ Conoscope 是 `Plugins/Conoscope/` 下的 VAM/锥镜分析插件，用于锥镜�
 
 ```powershell
 dotnet build Plugins/Conoscope/Conoscope.csproj -c Release -p:Platform=x64
-Scripts\package_plugin.bat Conoscope --no-upload
+Scripts\package_plugin.bat Conoscope
 ```
 
 PostBuild 会把主 DLL 和静态元数据复制到：

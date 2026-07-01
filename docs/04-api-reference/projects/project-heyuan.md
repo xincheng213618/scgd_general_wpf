@@ -64,7 +64,7 @@
 
 ```powershell
 dotnet build Projects/ProjectHeyuan/ProjectHeyuan.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectHeyuan --no-upload
+Scripts\package_project.bat ProjectHeyuan
 ```
 
 ## 验收和注意事项

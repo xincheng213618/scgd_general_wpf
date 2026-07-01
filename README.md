@@ -127,8 +127,8 @@ Scripts\release.bat
 本地打包插件或客户项目：
 
 ```powershell
-Scripts\package_plugin.bat Spectrum --no-upload
-Scripts\package_project.bat ProjectARVR --no-upload
+Scripts\package_plugin.bat Spectrum
+Scripts\package_project.bat ProjectARVR
 ```
 
 更多说明：

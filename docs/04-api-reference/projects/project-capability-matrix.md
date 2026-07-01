@@ -76,7 +76,7 @@
 
 ## 打包
 
-构建和打包命令：`dotnet build Projects/<Project>/<Project>.csproj -c Release -p:Platform=x64`，再运行 `Scripts\package_project.bat <Project> --no-upload`。
+构建和打包命令：`dotnet build Projects/<Project>/<Project>.csproj -c Release -p:Platform=x64`，再运行 `Scripts\package_project.bat <Project>`。
 
 交付时额外确认：ARVR 系列看 Socket、切图、CSV/Legacy；BlackMura/Heyuan 看串口和客户报表；KB 看 `FunTestDll.dll`、Modbus 和 MES；LUX 看 `SocketCode`、Recipe/Fix 和输出目录；Shiyuan 看 `DataPath`。`ProjectARVRPro.IntegrationDemo` 不是插件包，发布给客户时走 `dotnet publish`。
 

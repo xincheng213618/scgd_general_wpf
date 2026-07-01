@@ -13,6 +13,10 @@ set "PACKAGE_ARGS="
 
 :collect_args
 if "%~1"=="" goto run_package
+if /I "%~1"=="--no-upload" (
+    echo --no-upload has been removed. Plugin packages are always uploaded and the local cvxp is deleted after packaging.
+    exit /b 1
+)
 set PACKAGE_ARGS=%PACKAGE_ARGS% "%~1"
 shift
 goto collect_args

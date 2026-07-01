@@ -49,7 +49,7 @@ C:\Users\17917\Desktop\yolo-wpf-demo\cvplugin.exe
 ## 6. 直接调用脚本
 
 ```powershell
-python C:\Users\17917\Desktop\scgd_general_wpf\SDK\ColorVision.PluginKit\scripts\package_cvxp.py --config C:\Users\17917\Desktop\scgd_general_wpf\SDK\ColorVision.PluginKit\pluginkit.config.json --build --no-upload
+python C:\Users\17917\Desktop\scgd_general_wpf\SDK\ColorVision.PluginKit\scripts\package_cvxp.py --config C:\Users\17917\Desktop\scgd_general_wpf\SDK\ColorVision.PluginKit\pluginkit.config.json --build
 ```
 
 无参数方式也已经可用：

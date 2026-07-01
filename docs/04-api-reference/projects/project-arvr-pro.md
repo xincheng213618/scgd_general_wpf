@@ -82,5 +82,5 @@ AOI 相关流程还要看 `SocketRelay/`。只连通主 Socket 端口不代表 R
 
 ```powershell
 dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectARVRPro --no-upload
+Scripts\package_project.bat ProjectARVRPro
 ```

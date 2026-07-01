@@ -55,7 +55,7 @@ C:\Windows\System32\pic\luminance.tif
 
 ```powershell
 dotnet build Projects/ProjectShiyuan/ProjectShiyuan.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectShiyuan --no-upload
+Scripts\package_project.bat ProjectShiyuan
 ```
 
 | 验收项 | 通过标准 |

@@ -62,7 +62,7 @@
 
 ```powershell
 dotnet build Projects/ProjectLUX/ProjectLUX.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectLUX --no-upload
+Scripts\package_project.bat ProjectLUX
 ```
 
 | 验收项 | 通过标准 |

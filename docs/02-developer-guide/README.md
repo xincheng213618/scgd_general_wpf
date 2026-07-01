@@ -38,8 +38,8 @@ npm run docs:validate
 插件和项目包打包：
 
 ```powershell
-Scripts\package_plugin.bat Spectrum --no-upload
-Scripts\package_project.bat ProjectARVR --no-upload
+Scripts\package_plugin.bat Spectrum
+Scripts\package_project.bat ProjectARVR
 ```
 
 正式发布：

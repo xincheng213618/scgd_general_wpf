@@ -34,7 +34,7 @@
 ## 打包
 
 ```powershell
-Scripts\package_project.bat ProjectLUX --no-upload
+Scripts\package_project.bat ProjectLUX
 ```
 
 ## 维护要求

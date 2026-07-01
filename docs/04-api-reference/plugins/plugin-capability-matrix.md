@@ -53,11 +53,11 @@
 
 | 插件 | 构建命令 | 打包命令 | PostBuild 复制到 | 必带文件 |
 | --- | --- | --- | --- | --- |
-| Conoscope | `dotnet build Plugins/Conoscope/Conoscope.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Conoscope --no-upload` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/Conoscope/` | `Conoscope.dll`、`manifest.json`、`README.md`、`CHANGELOG.md`、MVS/native 依赖 |
-| Spectrum | `dotnet build Plugins/Spectrum/Spectrum.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Spectrum --no-upload` 或专用 `Scripts\build_spectrum.py` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/Spectrum/` | `Spectrum.dll`、`manifest.json`、`README.md`、`CHANGELOG.md`、`Magiude.dat`、`WavaLength.dat`、CIE 图片、光谱仪 native DLL |
-| SystemMonitor | `dotnet build Plugins/SystemMonitor/SystemMonitor.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat SystemMonitor --no-upload` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/SystemMonitor/` | `SystemMonitor.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
-| EventVWR | `dotnet build Plugins/EventVWR/EventVWR.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat EventVWR --no-upload` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/EventVWR/` | `EventVWR.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
-| WindowsServicePlugin | `dotnet build Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat WindowsServicePlugin --no-upload` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/WindowsServicePlugin/` | `WindowsServicePlugin.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
+| Conoscope | `dotnet build Plugins/Conoscope/Conoscope.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Conoscope` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/Conoscope/` | `Conoscope.dll`、`manifest.json`、`README.md`、`CHANGELOG.md`、MVS/native 依赖 |
+| Spectrum | `dotnet build Plugins/Spectrum/Spectrum.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Spectrum` 或专用 `Scripts\build_spectrum.py` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/Spectrum/` | `Spectrum.dll`、`manifest.json`、`README.md`、`CHANGELOG.md`、`Magiude.dat`、`WavaLength.dat`、CIE 图片、光谱仪 native DLL |
+| SystemMonitor | `dotnet build Plugins/SystemMonitor/SystemMonitor.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat SystemMonitor` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/SystemMonitor/` | `SystemMonitor.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
+| EventVWR | `dotnet build Plugins/EventVWR/EventVWR.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat EventVWR` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/EventVWR/` | `EventVWR.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
+| WindowsServicePlugin | `dotnet build Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat WindowsServicePlugin` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/WindowsServicePlugin/` | `WindowsServicePlugin.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
 
 通用 `.cvxp` 打包逻辑在 `Scripts/package_cvxp.py`：
 

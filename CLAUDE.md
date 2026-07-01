@@ -90,10 +90,10 @@ Located in `Scripts/` directory:
 Scripts\release.bat
 
 # Build plugin package
-Scripts\package_plugin.bat Pattern --no-upload
+Scripts\package_plugin.bat Pattern
 
 # Build project package
-Scripts\package_project.bat ProjectARVR --no-upload
+Scripts\package_project.bat ProjectARVR
 ```
 
 ### Backend (Flask)
