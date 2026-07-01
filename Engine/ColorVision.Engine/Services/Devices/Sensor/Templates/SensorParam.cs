@@ -22,6 +22,9 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     public class TemplateSensor : ITemplate<SensorParam>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateSensor));
+        private const string DefaultCommandSymbol = "defaultcommand";
+        private const string DefaultCommandValue = "\n,,Ascii,1000/0,0";
+
         public static Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>>();
 
         public static ObservableCollection<TemplateModel<SensorParam>> AllParams { get => new(Params.SelectMany(p => p.Value)); }
@@ -84,6 +87,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                         item.Pid = modMaster.Id;
                     }
                 }
+                if (details.Count == 0)
+                {
+                    AddDefaultCommandDetails(details, modMaster.Id, TemplateDicId);
+                }
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
                 Db.Insertable(details).ExecuteCommand();
 
@@ -114,6 +121,46 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                     }
                 }
             }
+        }
+
+        internal static void EnsureDefaultCommandDefinition(int templateDicId)
+        {
+            GetOrCreateCommandDefinitions(templateDicId);
+        }
+
+        private static void AddDefaultCommandDetails(List<ModDetailModel> details, int modMasterId, int templateDicId)
+        {
+            foreach (var item in GetOrCreateCommandDefinitions(templateDicId))
+            {
+                details.Add(new ModDetailModel() { SysPid = item.Id, Pid = modMasterId, ValueA = item.DefaultValue });
+            }
+        }
+
+        private static List<SysDictionaryModDetaiModel> GetOrCreateCommandDefinitions(int templateDicId)
+        {
+            var definitions = SysDictionaryModDetailDao.Instance.GetAllByPid(templateDicId);
+            if (definitions.Count > 0)
+            {
+                return definitions;
+            }
+
+            int id = SysDictionaryModDetailDao.Instance.GetNextAvailableId();
+            var defaultCommand = new SysDictionaryModDetaiModel()
+            {
+                Id = id,
+                AddressCode = id,
+                PId = templateDicId,
+                Symbol = DefaultCommandSymbol,
+                Name = DefaultCommandSymbol,
+                DefaultValue = DefaultCommandValue,
+                ValueType = SValueType.String,
+                CreateDate = DateTime.Now,
+                IsEnable = true,
+                IsDelete = false
+            };
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            Db.Insertable(defaultCommand).ExecuteCommand();
+            return new List<SysDictionaryModDetaiModel>() { defaultCommand };
         }
 
         public override string Title { get => Code + Properties.Resources.Edit; set { } }

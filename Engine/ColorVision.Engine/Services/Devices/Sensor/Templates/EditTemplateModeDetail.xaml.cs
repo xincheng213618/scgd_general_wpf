@@ -53,13 +53,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
-        private void UserControl_Initialized(object sender, System.EventArgs e)
-        {
-            string sql = "INSERT IGNORE INTO `t_scgd_sys_dictionary_mod_item` \r\n(`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) \r\nVALUES (506009, 'defaultcommand', 506009, 'defaultcommand', 0, NULL, '\\n,,Ascii,1000/0,0', 50, '2026-01-31 21:17:11', 1, 0, NULL);";
-            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            db.Ado.ExecuteCommand(sql);
-        }
-
         private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName != nameof(EditTemplateSensorConfig.UseControlNamesInBracketText))
@@ -87,6 +80,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public void SetParam(ParamModBase param)
         {
             Param = param;
+            if (param is SensorParam sensorParam)
+            {
+                TemplateSensor.EnsureDefaultCommandDefinition(sensorParam.ModMaster.Pid);
+            }
             this.DataContext = Param;
         }
 

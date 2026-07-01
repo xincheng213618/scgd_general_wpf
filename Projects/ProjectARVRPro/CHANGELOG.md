@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## [1.1.7.20] 2026.07.01
+
+1. Demura GenText 中 W128/G255 CSV 也改为仅显示文件名，并支持双击打开文件位置。
+2. Demura 结果恢复显示本批次拍摄图像，CSV/bin 不再占用主图位置。
+3. 增加烧录状态说明：当前仅生成待烧录 bin，烧录接口未接入。
+
+## [1.1.7.19] 2026.07.01
+
+1. 优化 Demura GenText：仅显示 Dynamic/Merged 两个 bin 文件名，并支持在结果文本中双击文件名打开文件位置。
+
+## [1.1.7.18] 2026.07.01
+
+1. 简化 DemuraTool 运行目录：不再按批次复制多份工具，直接在用户目录 DemuraTool 下覆盖写入 G128/G255 和 bin 文件。
+
+## [1.1.7.17] 2026.07.01
+
+1. 修复 Demura 结果主文件指向 DemuraMerged.bin 后，结果界面按图片加载并弹出“不支持的图片格式 .bin”的问题。
+
+## [1.1.7.16] 2026.07.01
+
+1. 新增 Demura 解析流程：按批次读取 ImageConvert(type=93) 结果，自动识别 W128/W255 CSV。
+2. 自动准备现场工具目录，将 W128/W255 复制为 G128.csv/G255.csv。
+3. 打包 DemuraTool_x64 及 DLL，直接调用 DemuraSaveBin.dll 生成 DemuraStatic.bin、DemuraDynamic.bin、DemuraMerged.bin。
+
 ## [1.1.7.7] 2026.06.04
 
 1. 修复流程组切换后，ARVRWindow 执行链仍可能使用窗口创建时旧流程组的问题。

@@ -116,6 +116,7 @@ namespace ProjectARVRPro
         private string _lastFlowFailureMessage = string.Empty;
         private int _flowFailureCode;
         private static readonly Regex FindDotsArrayFailureRegex = new(@"findDotsArray\s+return\s+fail(?:e)?d\s*[\(（]\s*(?<code>-?\d+)\s*[\)）]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex OutputFileLinkRegex = new(@"\[\[file\|(?<path>[^|\]]+)\|(?<name>[^\]]+)\]\]", RegexOptions.Compiled);
         private static readonly Dictionary<int, (string Name, string Message)> CVOledErrors = new Dictionary<int, (string Name, string Message)>
         {
             [0] = ("CVLED_SUCCESS", "成功"),
@@ -1337,9 +1338,10 @@ namespace ProjectARVRPro
 
             string outtext = string.Empty;
             outtext += $"Model:{result.Model}  SN:{result.SN}  {DateTime.Now:yyyy/MM//dd HH:mm:ss}";
+            double outputFontSize = outputText.FontSize > 0 ? outputText.FontSize + 1 : 13;
             Run run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
+            run.FontSize = outputFontSize;
 
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
@@ -1372,13 +1374,69 @@ namespace ProjectARVRPro
 
 
 
-            run = new Run(outtext);
-            run.Foreground = result.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-            paragraph = new Paragraph(run);
+            paragraph = CreateOutputParagraph(outtext, result.Result ? Brushes.Black : Brushes.White, outputFontSize);
             outtext = string.Empty;
             outputText.Document.Blocks.Add(paragraph);
             SNtextBox.Focus();
+        }
+
+        private Paragraph CreateOutputParagraph(string text, Brush foreground, double fontSize)
+        {
+            var paragraph = new Paragraph();
+            string[] lines = Regex.Split(text, "\r\n|\r|\n");
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (i > 0)
+                    paragraph.Inlines.Add(new LineBreak());
+
+                AppendOutputInlines(paragraph, lines[i], foreground, fontSize);
+            }
+
+            return paragraph;
+        }
+
+        private void AppendOutputInlines(Paragraph paragraph, string text, Brush foreground, double fontSize)
+        {
+            int lastIndex = 0;
+            foreach (Match match in OutputFileLinkRegex.Matches(text))
+            {
+                if (match.Index > lastIndex)
+                    paragraph.Inlines.Add(CreateOutputRun(text.Substring(lastIndex, match.Index - lastIndex), foreground, fontSize));
+
+                string filePath = match.Groups["path"].Value;
+                string displayName = match.Groups["name"].Value;
+                var link = new Hyperlink(CreateOutputRun(displayName, Brushes.Blue, fontSize))
+                {
+                    CommandParameter = filePath,
+                    Foreground = Brushes.Blue,
+                    TextDecorations = TextDecorations.Underline
+                };
+                link.PreviewMouseLeftButtonDown += OutputFileLink_PreviewMouseLeftButtonDown;
+                paragraph.Inlines.Add(link);
+                lastIndex = match.Index + match.Length;
+            }
+
+            if (lastIndex < text.Length)
+                paragraph.Inlines.Add(CreateOutputRun(text.Substring(lastIndex), foreground, fontSize));
+        }
+
+        private static Run CreateOutputRun(string text, Brush foreground, double fontSize)
+        {
+            return new Run(text)
+            {
+                Foreground = foreground,
+                FontSize = fontSize
+            };
+        }
+
+        private void OutputFileLink_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount < 2 || sender is not Hyperlink link || link.CommandParameter is not string filePath)
+                return;
+
+            PlatformHelper.OpenFolderAndSelectFile(filePath);
+            e.Handled = true;
         }
 
 

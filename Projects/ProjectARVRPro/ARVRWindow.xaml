@@ -213,7 +213,7 @@
                         <hc:StepBar x:Name="stepBar" Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
                         </hc:StepBar>
                     </Border>
-                    <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0">
+                    <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" IsReadOnly="True" IsDocumentEnabled="True">
                         <FlowDocument>
                             <Paragraph>
 

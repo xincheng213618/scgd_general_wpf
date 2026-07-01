@@ -64,6 +64,12 @@ namespace ColorVision.Update
         public bool CreateBackupBeforeIncrementalUpdate { get => _CreateBackupBeforeIncrementalUpdate; set { _CreateBackupBeforeIncrementalUpdate = value; OnPropertyChanged(); } }
         private bool _CreateBackupBeforeIncrementalUpdate = true;
 
+        public string CachedPendingStartupApplicationVersion { get => _CachedPendingStartupApplicationVersion; set { _CachedPendingStartupApplicationVersion = value; OnPropertyChanged(); } }
+        private string _CachedPendingStartupApplicationVersion = string.Empty;
+
+        public string CachedPendingStartupApplicationDetectedAtUtc { get => _CachedPendingStartupApplicationDetectedAtUtc; set { _CachedPendingStartupApplicationDetectedAtUtc = value; OnPropertyChanged(); } }
+        private string _CachedPendingStartupApplicationDetectedAtUtc = string.Empty;
+
     }
 
 
@@ -137,7 +143,7 @@ namespace ColorVision.Update
 
         public async Task ForceUpdate(CancellationToken cancellationToken = default)
         {
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl, cancellationToken);
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, allowStaleFallback: false, cancellationToken: cancellationToken);
             if (LatestVersion == new Version()) return;
             await InvokeOnUiThreadAsync(() =>
             {
@@ -187,7 +193,7 @@ namespace ColorVision.Update
             try
             {
                 // 获取服务器版本
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl, cancellationToken);
+                LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, allowStaleFallback: false, cancellationToken: cancellationToken);
                 log.Info(LatestVersion);
                 if (LatestVersion == new Version()) return;
 
@@ -288,7 +294,7 @@ namespace ColorVision.Update
             try
             {
                 // 获取服务器版本
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl, cancellationToken);
+                LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, allowStaleFallback: false, cancellationToken: cancellationToken);
                 if (LatestVersion == new Version()) return;
 
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -393,7 +399,12 @@ namespace ColorVision.Update
 
 
 
-        public static async Task<Version> GetLatestVersionNumber(string url, CancellationToken cancellationToken = default)
+        public static Task<Version> GetLatestVersionNumber(string url, CancellationToken cancellationToken = default)
+        {
+            return GetLatestVersionNumber(url, forceRefresh: false, allowStaleFallback: true, cancellationToken: cancellationToken);
+        }
+
+        public static async Task<Version> GetLatestVersionNumber(string url, bool forceRefresh, bool allowStaleFallback, CancellationToken cancellationToken = default)
         {
             string? versionString = null;
             if (string.IsNullOrWhiteSpace(url))
@@ -402,7 +413,7 @@ namespace ColorVision.Update
                 return new Version();
             }
 
-            if (TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
+            if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
             {
                 return freshCachedVersion;
             }
@@ -410,7 +421,7 @@ namespace ColorVision.Update
             await _latestVersionSemaphore.WaitAsync(cancellationToken);
             try
             {
-                if (TryGetFreshCachedLatestVersion(url, out freshCachedVersion))
+                if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out freshCachedVersion))
                 {
                     return freshCachedVersion;
                 }
@@ -419,7 +430,7 @@ namespace ColorVision.Update
                 timeoutSource.CancelAfter(MetadataRequestTimeout);
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
                 ApplyAuthorizationHeader(request);
-                string? cachedETag = GetCachedLatestVersionETag(url);
+                string? cachedETag = forceRefresh ? null : GetCachedLatestVersionETag(url);
                 if (!string.IsNullOrWhiteSpace(cachedETag))
                 {
                     request.Headers.TryAddWithoutValidation("If-None-Match", cachedETag);
@@ -439,7 +450,7 @@ namespace ColorVision.Update
                 if (!Version.TryParse(versionString.Trim(), out Version? latestVersion))
                 {
                     log.Warn($"Invalid update version payload from {url}: {versionString}");
-                    return TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
+                    return allowStaleFallback && TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
                         ? fallbackVersion
                         : new Version();
                 }
@@ -454,21 +465,21 @@ namespace ColorVision.Update
             catch (HttpRequestException ex)
             {
                 log.Warn($"Failed to fetch update metadata from {url}: {ex.GetBaseException().Message}");
-                return TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
+                return allowStaleFallback && TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
                     ? fallbackVersion
                     : new Version();
             }
             catch (OperationCanceledException ex)
             {
                 log.Warn($"Timed out fetching update metadata from {url}: {ex.GetBaseException().Message}");
-                return TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
+                return allowStaleFallback && TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
                     ? fallbackVersion
                     : new Version();
             }
             catch (Exception ex)
             {
                 log.Error($"Unexpected failure checking update metadata from {url}.", ex);
-                return TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
+                return allowStaleFallback && TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
                     ? fallbackVersion
                     : new Version();
             }
@@ -543,9 +554,14 @@ namespace ColorVision.Update
             }
         }
 
-        public async Task<AutoUpdatePlan?> GetUpdatePlanAsync(CancellationToken cancellationToken = default)
+        public Task<AutoUpdatePlan?> GetUpdatePlanAsync(CancellationToken cancellationToken = default)
         {
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl, cancellationToken);
+            return GetUpdatePlanAsync(forceRefresh: false, allowStaleFallback: true, cancellationToken: cancellationToken);
+        }
+
+        public async Task<AutoUpdatePlan?> GetUpdatePlanAsync(bool forceRefresh, bool allowStaleFallback, CancellationToken cancellationToken = default)
+        {
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh, allowStaleFallback, cancellationToken);
             if (LatestVersion == new Version())
                 return null;
 

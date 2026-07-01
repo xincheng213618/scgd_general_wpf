@@ -30,7 +30,8 @@ namespace ColorVision.Update
 
         public static event EventHandler? PendingStartupUpdateChanged;
 
-        public static bool HasPendingStartupUpdate => HasUpdates(_pendingStartupApplicationPlan, _pendingStartupPluginPlan);
+        public static bool HasPendingStartupUpdate => HasUpdates(_pendingStartupApplicationPlan, _pendingStartupPluginPlan)
+            || HasCachedPendingStartupApplicationUpdate;
 
         private readonly struct UpdatePreviewResult
         {
@@ -66,7 +67,9 @@ namespace ColorVision.Update
                             includeApplicationUpdates: true,
                             includePluginUpdates: true,
                             respectSkippedVersion: false,
-                            previewCancellation.Token);
+                            forceRefresh: true,
+                            allowStaleFallback: false,
+                            cancellationToken: previewCancellation.Token);
 
                         if (currentWindow.IsClosed)
                             return;
@@ -169,10 +172,10 @@ namespace ColorVision.Update
                     return;
 
                 (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
-                    includeApplicationUpdates,
-                    includePluginUpdates,
+                    includeApplicationUpdates: includeApplicationUpdates,
+                    includePluginUpdates: includePluginUpdates,
                     respectSkippedVersion: true,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
 
                 if (!HasUpdates(applicationPlan, pluginPlan))
                 {
@@ -201,14 +204,16 @@ namespace ColorVision.Update
             await _locker.WaitAsync(cancellationToken);
             try
             {
-                AutoUpdatePlan? applicationPlan = _pendingStartupApplicationPlan;
-                CombinedPluginUpdatePlan? pluginPlan = _pendingStartupPluginPlan;
+                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildPendingStartupPlansAsync(cancellationToken);
 
                 if (!HasUpdates(applicationPlan, pluginPlan))
                 {
                     ClearPendingStartupUpdate();
+                    ShowNoUpdatesMessage(pluginPlan);
                     return;
                 }
+
+                SetPendingStartupUpdate(applicationPlan, pluginPlan);
 
                 UpdatePreviewResult previewResult = await ShowUpdatePreviewAsync(applicationPlan, pluginPlan, allowSkipVersion: applicationPlan != null, isStartupCheck: true);
                 UpdatePreviewAction action = previewResult.Action;
@@ -257,14 +262,16 @@ namespace ColorVision.Update
             await _locker.WaitAsync(cancellationToken);
             try
             {
-                AutoUpdatePlan? applicationPlan = _pendingStartupApplicationPlan;
-                CombinedPluginUpdatePlan? pluginPlan = _pendingStartupPluginPlan;
+                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildPendingStartupPlansAsync(cancellationToken);
 
                 if (!HasUpdates(applicationPlan, pluginPlan))
                 {
                     ClearPendingStartupUpdate();
+                    ShowNoUpdatesMessage(pluginPlan);
                     return;
                 }
+
+                SetPendingStartupUpdate(applicationPlan, pluginPlan);
 
                 UpdatePreviewDialogContext defaultContext = BuildUpdatePreviewContext(applicationPlan, pluginPlan, allowSkipVersion: false, isStartupCheck: true);
                 ApplySelectedApplicationChoices(
@@ -294,6 +301,7 @@ namespace ColorVision.Update
             bool hadUpdates = HasPendingStartupUpdate;
             _pendingStartupApplicationPlan = applicationPlan;
             _pendingStartupPluginPlan = pluginPlan;
+            SaveConfigsIfChanged(CachePendingStartupApplicationUpdate(applicationPlan));
             if (hadUpdates != HasPendingStartupUpdate || HasPendingStartupUpdate)
                 PendingStartupUpdateChanged?.Invoke(null, EventArgs.Empty);
         }
@@ -301,11 +309,9 @@ namespace ColorVision.Update
         private static void ClearPendingStartupUpdate()
         {
             bool hadUpdates = HasPendingStartupUpdate;
-            if (_pendingStartupApplicationPlan == null && _pendingStartupPluginPlan == null)
-                return;
-
             _pendingStartupApplicationPlan = null;
             _pendingStartupPluginPlan = null;
+            SaveConfigsIfChanged(ClearCachedPendingStartupApplicationUpdate());
             if (hadUpdates)
                 PendingStartupUpdateChanged?.Invoke(null, EventArgs.Empty);
         }
@@ -327,12 +333,23 @@ namespace ColorVision.Update
             }
         }
 
-        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(bool includeApplicationUpdates, bool includePluginUpdates, bool respectSkippedVersion, CancellationToken cancellationToken = default)
+        private static Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildPendingStartupPlansAsync(CancellationToken cancellationToken)
+        {
+            return BuildUpdatePlansAsync(
+                includeApplicationUpdates: AutoUpdateConfig.Instance.IsAutoUpdate,
+                includePluginUpdates: MarketplaceWindowConfig.Instance.IsAutoUpdate,
+                respectSkippedVersion: false,
+                forceRefresh: true,
+                allowStaleFallback: false,
+                cancellationToken: cancellationToken);
+        }
+
+        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(bool includeApplicationUpdates, bool includePluginUpdates, bool respectSkippedVersion, bool forceRefresh = false, bool allowStaleFallback = true, CancellationToken cancellationToken = default)
         {
             AutoUpdatePlan? applicationPlan = null;
             if (includeApplicationUpdates)
             {
-                applicationPlan = await AutoUpdater.GetInstance().GetUpdatePlanAsync(cancellationToken);
+                applicationPlan = await AutoUpdater.GetInstance().GetUpdatePlanAsync(forceRefresh, allowStaleFallback, cancellationToken);
                 if (respectSkippedVersion && ShouldSkipApplicationPlan(applicationPlan))
                 {
                     applicationPlan = null;
@@ -350,6 +367,76 @@ namespace ColorVision.Update
             }
 
             return (applicationPlan, pluginPlan);
+        }
+
+        private static bool HasCachedPendingStartupApplicationUpdate
+        {
+            get
+            {
+                if (Debugger.IsAttached || WorkflowConfig.IsActive)
+                    return false;
+
+                try
+                {
+                    if (!AutoUpdateConfig.Instance.IsAutoUpdate)
+                        return false;
+
+                    string versionText = AutoUpdateConfig.Instance.CachedPendingStartupApplicationVersion;
+                    if (string.IsNullOrWhiteSpace(versionText)
+                        || !Version.TryParse(versionText.Trim(), out Version? cachedVersion))
+                    {
+                        return false;
+                    }
+
+                    if (string.Equals(AutoUpdateConfig.Instance.SkippedVersion?.Trim(), cachedVersion.ToString(), StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    Version? currentVersion = AutoUpdater.CurrentVersion;
+                    return currentVersion != null && cachedVersion > currentVersion;
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Read cached startup update state failed: {ex.Message}");
+                    return false;
+                }
+            }
+        }
+
+        private static bool CachePendingStartupApplicationUpdate(AutoUpdatePlan? applicationPlan)
+        {
+            if (applicationPlan == null)
+                return ClearCachedPendingStartupApplicationUpdate();
+
+            AutoUpdateConfig config = AutoUpdateConfig.Instance;
+            string versionText = applicationPlan.LatestVersion.ToString();
+            if (string.Equals(config.CachedPendingStartupApplicationVersion, versionText, StringComparison.Ordinal))
+                return false;
+
+            config.CachedPendingStartupApplicationVersion = versionText;
+            config.CachedPendingStartupApplicationDetectedAtUtc = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        private static bool ClearCachedPendingStartupApplicationUpdate()
+        {
+            AutoUpdateConfig config = AutoUpdateConfig.Instance;
+            if (string.IsNullOrWhiteSpace(config.CachedPendingStartupApplicationVersion)
+                && string.IsNullOrWhiteSpace(config.CachedPendingStartupApplicationDetectedAtUtc))
+            {
+                return false;
+            }
+
+            config.CachedPendingStartupApplicationVersion = string.Empty;
+            config.CachedPendingStartupApplicationDetectedAtUtc = string.Empty;
+            return true;
+        }
+
+        private static void SaveConfigsIfChanged(bool changed)
+        {
+            if (changed)
+            {
+                ConfigService.Instance.SaveConfigs();
+            }
         }
 
         private static async Task StartWorkflowAsync(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool showNoUpdatesMessage)
