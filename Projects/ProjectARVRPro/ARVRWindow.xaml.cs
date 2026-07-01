@@ -7,6 +7,7 @@ using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.ImageEditor;
 using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
@@ -104,6 +105,7 @@ namespace ProjectARVRPro
         public ARVRWindow()
         {
             InitializeComponent();
+            ImageView.SelectedImageChanged += ImageView_SelectedImageChanged;
             this.ApplyCaption(false);
             Config.SetWindow(this);
             this.Title += Assembly.GetAssembly(typeof(ARVRWindow))?.GetName().Version?.ToString() ?? "";
@@ -1214,102 +1216,159 @@ namespace ProjectARVRPro
                 {
                     log.Error(ex);
                 }
-                Task.Run((Func<Task?>)(async () =>
+                Task.Run(() =>
                 {
-                    if (File.Exists(result.FileName))
+                    try
                     {
+                        var imagePaths = BuildResultImagePaths(result);
                         _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            ImageView.OpenImage(result.FileName);
-                            ImageView.ImageShow.Clear();
-                            ApplyResultOverlayConfig();
-
-                            if (result.FlowStatus != FlowStatus.Completed)
-                                return;
-
-                            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
-                            if (meta?.Process != null)
+                            if (imagePaths.Count > 0)
                             {
-                                bool executed = false;
-                                try
-                                {
-                                    var ctx = new IProcessExecutionContext
-                                    {
-                                        Result = result,
-                                        ObjectiveTestResult = ObjectiveTestResult,
-                                        ImageView = ImageView,
-                                    };
-                                    meta.Process.Render(ctx);
-                                }
-                                catch (Exception ex)
-                                {
-                                    log.Error("自定义 IProcess 执行异常", ex);
-                                }
+                                ImageView.OpenImages(imagePaths, GetPreferredImageIndex(imagePaths, result.FileName));
+                                SaveImageResultIfNeeded(result);
                             }
-
-                            if (IsSaveImageReuslt)
+                            else
                             {
-                                log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
-                                IsSaveImageReuslt = false;
-                                _ = Task.Run(async () =>
-                                {
-                                    try
-                                    {
-                                        await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
-                                        string linkPath = ViewResultManager.Config.CsvSavePath;
-                                        string sn = result.SN;
-
-                                        if (ViewResultManager.Config.SaveByDate)
-                                        {
-                                            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                                            linkPath = Path.Combine(linkPath, dateFolder);
-                                        }
-
-                                        // 处理 SN 不为空的情况
-                                        if (!string.IsNullOrWhiteSpace(sn))
-                                        {
-                                            // 移除 SN 中的非法文件名字符
-                                            foreach (char c in Path.GetInvalidFileNameChars())
-                                            {
-                                                sn = sn.Replace(c.ToString(), "");
-                                            }
-
-                                            // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
-                                            if (!string.IsNullOrWhiteSpace(sn))
-                                            {
-                                                linkPath = Path.Combine(linkPath, sn);
-                                            }
-                                        }
-
-                                        // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
-
-                                        // 注意：原始代码中是 if (Directory.Exists) Create... 
-                                        // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
-                                        if (!Directory.Exists(linkPath))
-                                            Directory.CreateDirectory(linkPath);
-
-                                        string FileName = Path.GetFileNameWithoutExtension(result.FileName);
-
-                                        string FilePath = Path.Combine(linkPath, $"{FileName}_{result.Model}result.png");
-                                        log.Info(FilePath);
-                                        Application.Current?.Dispatcher.Invoke(() =>
-                                        {
-                                            ImageView.Save(FilePath);
-                                        });
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        log.Error("保存结果截图失败", ex);
-                                    }
-                                });
+                                ImageView.Clear();
                             }
-
-
                         });
                     }
-                }));
+                    catch (Exception ex)
+                    {
+                        log.Error("加载结果图片组失败", ex);
+                    }
+                });
 
             }
+        }
+
+        private void ImageView_SelectedImageChanged(object? sender, ImageViewImageChangedEventArgs e)
+        {
+            if (listView1.SelectedItem is ProjectARVRReuslt result)
+                RenderResultImage(result);
+        }
+
+        private void RenderResultImage(ProjectARVRReuslt result)
+        {
+            ImageView.ImageShow.Clear();
+            ApplyResultOverlayConfig();
+
+            if (result.FlowStatus != FlowStatus.Completed)
+                return;
+
+            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+            if (meta?.Process == null) return;
+
+            try
+            {
+                var ctx = new IProcessExecutionContext
+                {
+                    Result = result,
+                    ObjectiveTestResult = ObjectiveTestResult,
+                    ImageView = ImageView,
+                };
+                meta.Process.Render(ctx);
+            }
+            catch (Exception ex)
+            {
+                log.Error("自定义 IProcess 执行异常", ex);
+            }
+        }
+
+        private static List<string> BuildResultImagePaths(ProjectARVRReuslt result)
+        {
+            var imagePaths = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            AddImagePath(imagePaths, seen, result.FileName);
+
+            if (result.BatchId > 0)
+            {
+                var images = MeasureImgResultDao.Instance.GetAllByBatchId(result.BatchId)
+                    .Where(image => !string.IsNullOrWhiteSpace(image.FileUrl))
+                    .OrderBy(image => image.ZIndex ?? int.MaxValue)
+                    .ThenBy(image => image.Id);
+
+                foreach (var image in images)
+                {
+                    AddImagePath(imagePaths, seen, image.FileUrl);
+                }
+            }
+
+            return imagePaths;
+        }
+
+        private static void AddImagePath(List<string> imagePaths, HashSet<string> seen, string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return;
+            if (!File.Exists(filePath)) return;
+            if (!seen.Add(filePath)) return;
+
+            imagePaths.Add(filePath);
+        }
+
+        private static int GetPreferredImageIndex(List<string> imagePaths, string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return 0;
+
+            for (int i = 0; i < imagePaths.Count; i++)
+            {
+                if (string.Equals(imagePaths[i], filePath, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return 0;
+        }
+
+        private void SaveImageResultIfNeeded(ProjectARVRReuslt result)
+        {
+            if (!IsSaveImageReuslt) return;
+
+            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
+            IsSaveImageReuslt = false;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                    string linkPath = ViewResultManager.Config.CsvSavePath;
+                    string sn = result.SN;
+
+                    if (ViewResultManager.Config.SaveByDate)
+                    {
+                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                        linkPath = Path.Combine(linkPath, dateFolder);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(sn))
+                    {
+                        foreach (char c in Path.GetInvalidFileNameChars())
+                        {
+                            sn = sn.Replace(c.ToString(), "");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(sn))
+                        {
+                            linkPath = Path.Combine(linkPath, sn);
+                        }
+                    }
+
+                    if (!Directory.Exists(linkPath))
+                        Directory.CreateDirectory(linkPath);
+
+                    string fileName = Path.GetFileNameWithoutExtension(result.FileName);
+                    string filePath = Path.Combine(linkPath, $"{fileName}_{result.Model}result.png");
+                    log.Info(filePath);
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        ImageView.Save(filePath);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    log.Error("保存结果截图失败", ex);
+                }
+            });
         }
 
         private void ApplyResultOverlayConfig()
@@ -1746,6 +1805,7 @@ namespace ProjectARVRPro
         public void Dispose()
         {
             ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
+            ImageView.SelectedImageChanged -= ImageView_SelectedImageChanged;
             flowControl.Stop();
             STNodeEditorMain.Dispose();
             timer.Change(Timeout.Infinite, 500); // 停止定时器

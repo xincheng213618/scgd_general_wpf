@@ -179,6 +179,43 @@
                     <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" />
                 </ToolBarTray>
 
+                <Border x:Name="ImageGroupNavigator"
+                        Margin="8,0,0,42"
+                        Padding="4,3"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Panel.ZIndex="20"
+                        Background="{DynamicResource GlobalBackground}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Opacity="0.88"
+                        Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="ImageGroupPreviousButton"
+                                Width="26"
+                                Height="22"
+                                Padding="0"
+                                Content="&lt;"
+                                Click="ImageGroupPreviousButton_Click"
+                                Style="{StaticResource CompactInspectorButtonStyle}" />
+                        <TextBlock x:Name="ImageGroupStatusText"
+                                   MinWidth="42"
+                                   Margin="7,0"
+                                   VerticalAlignment="Center"
+                                   TextAlignment="Center"
+                                   FontSize="12"
+                                   Text="1/1" />
+                        <Button x:Name="ImageGroupNextButton"
+                                Width="26"
+                                Height="22"
+                                Padding="0"
+                                Content="&gt;"
+                                Click="ImageGroupNextButton_Click"
+                                Style="{StaticResource CompactInspectorButtonStyle}" />
+                    </StackPanel>
+                </Border>
+
             </Grid>
         </Grid>
     </Grid>
