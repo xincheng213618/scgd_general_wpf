@@ -13,6 +13,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Filters;
@@ -29,6 +30,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -213,6 +216,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
 
+        private readonly ObservableCollection<AutoExpTimeTemplateOption> _autoExpTimeTemplateOptions = new();
+        private readonly ObservableCollection<AutoExpTimeTemplateOption> _autoExpTimeTemplateOptionsWithEmpty = new();
+
         // Video display related fields
         private readonly CameraRealtimeFramePipeline _localRealtimePipeline;
         private readonly VideoCrossGuideProcessor _crossGuideProcessor;
@@ -224,6 +230,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _localVideoImageEditModeSnapshot;
         private bool _isLocalVideoRoiVisualRemoveSubscribed;
         private bool _crossGuideOverlayAdded;
+
+        private enum AutoExpTimeTemplateKind
+        {
+            Empty,
+            V1Detail,
+            V2Json
+        }
+
+        private sealed class AutoExpTimeTemplateOption
+        {
+            public string DisplayName { get; init; } = string.Empty;
+            public ParamBase Value { get; init; } = new();
+            public AutoExpTimeTemplateKind Kind { get; init; }
+        }
 
         public DisplayCamera(DeviceCamera device)
         {
@@ -255,11 +275,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             ComboxCalibrationTemplate.DataContext = Device.DisplayConfig;
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
-            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTime.Params;
+            BindAutoExpTimeTemplateSources();
+
+            ComboxAutoExpTimeParamTemplate.ItemsSource = _autoExpTimeTemplateOptions;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
             ComboxAutoExpTimeParamTemplate.DataContext = Device.DisplayConfig;
 
-            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTime.Params.CreateEmpty();
+            ComboxAutoExpTimeParamTemplate1.ItemsSource = _autoExpTimeTemplateOptionsWithEmpty;
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
             ComboxAutoExpTimeParamTemplate1.DataContext = Device.DisplayConfig;
 
@@ -302,6 +324,84 @@ namespace ColorVision.Engine.Services.Devices.Camera
             vb.ConverterParameter = DeviceStatusType.Closed;
             LocalVideo.SetBinding(StackPanel.VisibilityProperty, vb);
 
+        }
+
+        private void BindAutoExpTimeTemplateSources()
+        {
+            TemplateAutoExpTime.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
+            TemplateAutoExpTime.Params.CollectionChanged += AutoExpTimeTemplateParams_CollectionChanged;
+            TemplateAutoExpTimeV2.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
+            TemplateAutoExpTimeV2.Params.CollectionChanged += AutoExpTimeTemplateParams_CollectionChanged;
+            RefreshAutoExpTimeTemplateOptions();
+        }
+
+        private void AutoExpTimeTemplateParams_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            RefreshAutoExpTimeTemplateOptions();
+        }
+
+        private void RefreshAutoExpTimeTemplateOptions()
+        {
+            var selectedOption = ComboxAutoExpTimeParamTemplate?.SelectedItem as AutoExpTimeTemplateOption;
+            var selectedOptionWithEmpty = ComboxAutoExpTimeParamTemplate1?.SelectedItem as AutoExpTimeTemplateOption;
+
+            _autoExpTimeTemplateOptions.Clear();
+            foreach (var option in EnumerateAutoExpTimeTemplateOptions())
+                _autoExpTimeTemplateOptions.Add(option);
+
+            _autoExpTimeTemplateOptionsWithEmpty.Clear();
+            _autoExpTimeTemplateOptionsWithEmpty.Add(new AutoExpTimeTemplateOption
+            {
+                DisplayName = "Empty",
+                Value = new ParamBase { Id = -1, Name = "Empty" },
+                Kind = AutoExpTimeTemplateKind.Empty
+            });
+            foreach (var option in EnumerateAutoExpTimeTemplateOptions())
+                _autoExpTimeTemplateOptionsWithEmpty.Add(option);
+
+            RestoreAutoExpTimeSelection(ComboxAutoExpTimeParamTemplate, _autoExpTimeTemplateOptions, selectedOption, 0);
+            RestoreAutoExpTimeSelection(ComboxAutoExpTimeParamTemplate1, _autoExpTimeTemplateOptionsWithEmpty, selectedOptionWithEmpty, 0);
+        }
+
+        private static IEnumerable<AutoExpTimeTemplateOption> EnumerateAutoExpTimeTemplateOptions()
+        {
+            foreach (var template in TemplateAutoExpTime.Params)
+            {
+                yield return new AutoExpTimeTemplateOption
+                {
+                    DisplayName = $"[V1] {template.Key}",
+                    Value = template.Value,
+                    Kind = AutoExpTimeTemplateKind.V1Detail
+                };
+            }
+
+            foreach (var template in TemplateAutoExpTimeV2.Params)
+            {
+                yield return new AutoExpTimeTemplateOption
+                {
+                    DisplayName = $"[V2] {template.Key}",
+                    Value = template.Value,
+                    Kind = AutoExpTimeTemplateKind.V2Json
+                };
+            }
+        }
+
+        private static void RestoreAutoExpTimeSelection(ComboBox? comboBox, ObservableCollection<AutoExpTimeTemplateOption> options, AutoExpTimeTemplateOption? previousSelection, int defaultIndex)
+        {
+            if (comboBox == null || comboBox.ItemsSource == null || options.Count == 0)
+                return;
+
+            if (previousSelection != null)
+            {
+                var matched = options.FirstOrDefault(option => option.Kind == previousSelection.Kind && option.Value.Id == previousSelection.Value.Id);
+                if (matched != null)
+                {
+                    comboBox.SelectedItem = matched;
+                    return;
+                }
+            }
+
+            comboBox.SelectedIndex = defaultIndex >= 0 && defaultIndex < options.Count ? defaultIndex : -1;
         }
 
         private void DisplayCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -816,7 +916,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void GetData_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return;
 
             if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param)
             {
@@ -1051,7 +1151,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord? TakePhoto(double exp = 0)
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return null;
 
             if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
             {
@@ -1090,7 +1190,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord? GetData()
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return null;
             if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return null;
 
             double[] expTime = null;
@@ -1107,7 +1207,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (sender is Button button)
             {
-                if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
+                if (ComboxAutoExpTimeParamTemplate.SelectedValue is ParamBase param && param.Id != -1)
                 {
                     var msgRecord = DService.GetAutoExpTime(param);
                     msgRecord.MsgRecordStateChanged += (s, e) =>
@@ -1235,8 +1335,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EditAutoExpTime(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
-            windowTemplate.ShowDialog();
+            EditSelectedAutoExpTimeTemplate(ComboxAutoExpTimeParamTemplate);
         }
 
         private void EditAutoFocus(object sender, RoutedEventArgs e)
@@ -1247,8 +1346,39 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EditAutoExpTime1(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime(), ComboxAutoExpTimeParamTemplate1.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            EditSelectedAutoExpTimeTemplate(ComboxAutoExpTimeParamTemplate1);
+        }
+
+        private void EditSelectedAutoExpTimeTemplate(ComboBox comboBox)
+        {
+            ITemplate template;
+            int defaultIndex;
+
+            if (comboBox.SelectedItem is AutoExpTimeTemplateOption { Kind: AutoExpTimeTemplateKind.V1Detail } v1Option)
+            {
+                template = new TemplateAutoExpTime();
+                defaultIndex = FindTemplateIndex(TemplateAutoExpTime.Params, v1Option.Value);
+            }
+            else if (comboBox.SelectedItem is AutoExpTimeTemplateOption { Kind: AutoExpTimeTemplateKind.V2Json } v2Option)
+            {
+                template = new TemplateAutoExpTimeV2();
+                defaultIndex = FindTemplateIndex(TemplateAutoExpTimeV2.Params, v2Option.Value);
+            }
+            else
+            {
+                template = new TemplateAutoExpTimeV2();
+                defaultIndex = 0;
+            }
+
+            var windowTemplate = new TemplateEditorWindow(template, defaultIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
+            RefreshAutoExpTimeTemplateOptions();
+        }
+
+        private static int FindTemplateIndex<T>(ObservableCollection<TemplateModel<T>> templates, ParamBase selectedValue) where T : ParamBase
+        {
+            int index = templates.ToList().FindIndex(item => item.Value.Id == selectedValue.Id);
+            return index < 0 ? 0 : index;
         }
 
 
@@ -1337,7 +1467,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void ComboxAutoExpTimeParamTemplate1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return;
 
             Device.Config.IsAutoExpose = autoExpTimeParam.Id != -1;
         }
@@ -1381,6 +1511,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            TemplateAutoExpTime.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
+            TemplateAutoExpTimeV2.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
             DisplayCameraConfig.PropertyChanged -= DisplayCameraConfig_PropertyChanged;
             Device.CameraVideoControl.Config.PropertyChanged -= RealtimeCameraConfig_PropertyChanged;
             RemoveLocalVideoRoiVisual(restoreImageEditMode: true);

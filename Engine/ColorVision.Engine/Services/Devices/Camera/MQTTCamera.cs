@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS0168
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
@@ -372,7 +371,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        public MsgRecord GetData(double[] expTime, CalibrationParam param, AutoExpTimeParam autoExpTimeParam,ParamBase HDRparamBase)
+        public MsgRecord GetData(double[] expTime, CalibrationParam param, ParamBase autoExpTimeParam, ParamBase HDRparamBase)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>() { };
@@ -410,7 +409,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 else
                 {
-                    Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = param.Name });
+                    Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
                 }
             }
 
@@ -449,7 +448,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg, param.nTimeout);
         }
 
-        public MsgRecord GetAutoExpTime(AutoExpTimeParam autoExpTimeParam)
+        public MsgRecord GetAutoExpTime(ParamBase autoExpTimeParam)
         {
             var Params = new Dictionary<string, object>() { };
             Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });

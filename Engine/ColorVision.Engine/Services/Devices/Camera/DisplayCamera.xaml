@@ -196,7 +196,7 @@
                                         </Button.Triggers>
                                     </Button>
                                 </Grid>
-                                <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate" DisplayMemberPath="Key" SelectedIndex="{Binding ExpTimeParamTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
+                                <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate" DisplayMemberPath="DisplayName" SelectedIndex="{Binding ExpTimeParamTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
                             </DockPanel>
                         </StackPanel>
 
@@ -230,7 +230,7 @@
                                                 </Button.Triggers>
                                             </Button>
                                         </Grid>
-                                        <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate1" DisplayMemberPath="Key" SelectedIndex="{Binding ExpTimeParamTemplate1Index}" SelectedValuePath="Value" SelectionChanged="ComboxAutoExpTimeParamTemplate1_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
+                                        <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate1" DisplayMemberPath="DisplayName" SelectedIndex="{Binding ExpTimeParamTemplate1Index}" SelectedValuePath="Value" SelectionChanged="ComboxAutoExpTimeParamTemplate1_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
                                     </DockPanel>
                                     <DockPanel Margin="0,0">
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
