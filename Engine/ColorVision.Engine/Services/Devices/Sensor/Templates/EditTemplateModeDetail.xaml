@@ -92,7 +92,7 @@
                                             <TextBox TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding  RetryCount}"/>
                                         </DockPanel>
                                     </StackPanel>
-                                    <TextBox Grid.Column="1" Width="300" Text="{Binding PreviewText}" IsReadOnly="True" Margin="8,0,0,0" Padding="8" BorderThickness="0" Background="Transparent" FontFamily="Consolas" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Visibility="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=IsCommandPreviewVisible, Converter={StaticResource bool2VisibilityConverter}}"/>
+                                    <TextBox Grid.Column="1" Width="300" Text="{Binding PreviewText, Mode=OneWay}" IsReadOnly="True" Margin="8,0,0,0" Padding="8" BorderThickness="0" Background="Transparent" FontFamily="Consolas" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Visibility="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=IsCommandPreviewVisible, Converter={StaticResource bool2VisibilityConverter}}"/>
                                 </Grid>
 
                             </DataTemplate>
