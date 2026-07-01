@@ -15,6 +15,8 @@
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="2">
             <Button Content="{x:Static properties:Resources.AddCmd}" Command="{Binding CreateCommand}"/>
+            <CheckBox Margin="12,0,0,0" VerticalAlignment="Center" Content="显示预览" IsChecked="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=IsCommandPreviewVisible}"/>
+            <CheckBox Margin="12,0,0,0" VerticalAlignment="Center" Content="控制字符用名称" IsChecked="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=UseControlNamesInBracketText}"/>
         </StackPanel>
         <ListView x:Name="ListView1" Grid.Row="1" Padding="5,0" ItemsSource="{Binding SensorCommands}"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
             <ListView.Resources>
@@ -39,18 +41,35 @@
                             <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Width="650">
+                    <GridViewColumn Width="780">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SensorCommand}">
-                                <Grid>
+                                <Grid Margin="0,5">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Row="0"  Width="400" Margin="0,5">
+                                    <StackPanel Grid.Row="0" Margin="0,0,8,0">
                                         <DockPanel Margin="0,0,0,5">
                                             <TextBlock Text="{x:Static properties:Resources.CommandType}" Width="60"/>
                                             <ComboBox x:Name="ComboBoxType" Initialized="ComboBoxType_Initialized" SelectedValue="{Binding SensorCmdType}" Style="{StaticResource ComboBox.Small}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,0,0,5">
+                                            <TextBlock Text="括号格式" Width="60"/>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <TextBox Height="42" Padding="5" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" Style="{StaticResource TextBox.Small}" Text="{Binding BracketText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                <WrapPanel Grid.Row="1" Margin="0,4,0,0">
+                                                    <Button Content="转发送" Command="{Binding BracketTextToRequestCommand}" Margin="0,0,5,0"/>
+                                                    <Button Content="转返回" Command="{Binding BracketTextToResponseCommand}" Margin="0,0,5,0"/>
+                                                    <Button Content="发送回显" Command="{Binding RequestToBracketTextCommand}" Margin="0,0,5,0"/>
+                                                    <Button Content="返回回显" Command="{Binding ResponseToBracketTextCommand}" Margin="0,0,5,0"/>
+                                                    <TextBlock Text="{Binding ConvertStatus}" VerticalAlignment="Center"/>
+                                                </WrapPanel>
+                                            </Grid>
                                         </DockPanel>
                                         <DockPanel Margin="0,0,0,5">
                                             <TextBlock Text="{x:Static properties:Resources.SendCmd}" Width="60"/>
@@ -73,7 +92,7 @@
                                             <TextBox TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding  RetryCount}"/>
                                         </DockPanel>
                                     </StackPanel>
-                                    <TextBox Grid.Column="1" Text="{Binding OriginText}" IsReadOnly="True"  Margin="10" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Center" TextWrapping="Wrap"/>
+                                    <TextBox Grid.Column="1" Width="300" Text="{Binding PreviewText}" IsReadOnly="True" Margin="8,0,0,0" Padding="8" BorderThickness="0" Background="Transparent" FontFamily="Consolas" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Visibility="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=IsCommandPreviewVisible, Converter={StaticResource bool2VisibilityConverter}}"/>
                                 </Grid>
 
                             </DataTemplate>

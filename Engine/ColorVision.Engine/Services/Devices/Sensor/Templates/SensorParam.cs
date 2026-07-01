@@ -154,62 +154,67 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public SensorCommand(ModDetailModel modDetailModel)
         {
             Model = modDetailModel ?? new ModDetailModel();
+            BracketTextToRequestCommand = new RelayCommand(_ => ApplyBracketTextToRequest());
+            BracketTextToResponseCommand = new RelayCommand(_ => ApplyBracketTextToResponse());
+            RequestToBracketTextCommand = new RelayCommand(_ => ShowRequestAsBracketText());
+            ResponseToBracketTextCommand = new RelayCommand(_ => ShowResponseAsBracketText());
             ParseRequestString();
         }
+
+        public RelayCommand BracketTextToRequestCommand { get; }
+        public RelayCommand BracketTextToResponseCommand { get; }
+        public RelayCommand RequestToBracketTextCommand { get; }
+        public RelayCommand ResponseToBracketTextCommand { get; }
 
 
         public void ParseRequestString()
         {
             string? str = Model.ValueA;
-            if (str == null)
+            if (string.IsNullOrEmpty(str))
             {
                 GenerateRequestString();
             }
-            else
+            else if (TryParseStoredCommand(str, out string request, out string response, out SensorCmdType cmdType, out int timeout, out int delay, out int retryCount))
             {
-                var parts = str.Split(',');
-
-                if (parts.Length >= 5)
-                {
-                    Request = parts[0];
-                    Response = parts[1];
-
-                    // 解析 CmdType（SensorCmdType）
-                    if (Enum.TryParse(parts[2], out SensorCmdType cmdType))
-                    {
-                        SensorCmdType = cmdType;
-                    }
-
-                    // 解析 Timeout 和 Delay
-                    var timeParts = parts[3].Split('/');
-                    if (timeParts.Length == 2)
-                    {
-                        if (int.TryParse(timeParts[0], out int timeout))
-                            Timeout = timeout;
-
-                        if (int.TryParse(timeParts[1], out int delay))
-                            Delay = delay;
-                    }
-                    // 解析 RetryCount
-                    if (int.TryParse(parts[4], out int retryCount))
-                        RetryCount = retryCount;
-                }
-
+                _isLoading = true;
+                Request = request;
+                Response = response;
+                SensorCmdType = cmdType;
+                Timeout = timeout;
+                Delay = delay;
+                RetryCount = retryCount;
+                _isLoading = false;
+                RefreshPreviewProperties();
             }
         }
 
 
         public void GenerateRequestString()
         {
+            if (_isLoading)
+            {
+                return;
+            }
+
             _Request = _Request.Replace("\\r\\n", "\r\n")
                  .Replace("\\n", "\n")
                  .Replace("\\r", "\r")
                  .Replace("\\t", "\t");
             Model.ValueA = $"{_Request},{_Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
-            OnPropertyChanged(nameof(OriginText));
+            RefreshPreviewProperties();
         }
 
         public string? OriginText { get => Model.ValueA; set { } }
+
+        public string BracketText { get => _BracketText; set { _BracketText = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _BracketText = string.Empty;
+
+        public string ConvertStatus { get => _ConvertStatus; set { _ConvertStatus = value; OnPropertyChanged(); } }
+        private string _ConvertStatus = string.Empty;
+
+        public string RequestBracketText => SensorCmdType == SensorCmdType.Hex ? SensorCommandTextFormatter.ToBracketTextOrOriginal(Request, EditTemplateSensor.Config.UseControlNamesInBracketText) : Request;
+        public string ResponseBracketText => SensorCmdType == SensorCmdType.Hex ? SensorCommandTextFormatter.ToBracketTextOrOriginal(Response, EditTemplateSensor.Config.UseControlNamesInBracketText) : Response;
+        public string PreviewText => $"保存值\r\n{OriginText}\r\n\r\n发送回显\r\n{RequestBracketText}\r\n\r\n返回回显\r\n{ResponseBracketText}";
 
         public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; OnPropertyChanged(); GenerateRequestString(); } }
         private SensorCmdType _SensorCmdType = SensorCmdType.Ascii;
@@ -227,6 +232,87 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         public int RetryCount { get => _RetryCount; set { _RetryCount = value; OnPropertyChanged(); GenerateRequestString(); } }
         private int _RetryCount;
+
+        private bool _isLoading;
+
+        private void ApplyBracketTextToRequest()
+        {
+            Request = SensorCommandTextFormatter.BracketTextToHex(BracketText);
+            SensorCmdType = SensorCmdType.Hex;
+            ConvertStatus = "已转到发送";
+        }
+
+        private void ApplyBracketTextToResponse()
+        {
+            Response = SensorCommandTextFormatter.BracketTextToHex(BracketText);
+            SensorCmdType = SensorCmdType.Hex;
+            ConvertStatus = "已转到返回";
+        }
+
+        private void ShowRequestAsBracketText()
+        {
+            BracketText = RequestBracketText;
+            ConvertStatus = "已回显发送";
+        }
+
+        private void ShowResponseAsBracketText()
+        {
+            BracketText = ResponseBracketText;
+            ConvertStatus = "已回显返回";
+        }
+
+        public void RefreshPreviewProperties()
+        {
+            OnPropertyChanged(nameof(OriginText));
+            OnPropertyChanged(nameof(RequestBracketText));
+            OnPropertyChanged(nameof(ResponseBracketText));
+            OnPropertyChanged(nameof(PreviewText));
+        }
+
+        private static bool TryParseStoredCommand(string str, out string request, out string response, out SensorCmdType cmdType, out int timeout, out int delay, out int retryCount)
+        {
+            request = string.Empty;
+            response = string.Empty;
+            cmdType = SensorCmdType.Ascii;
+            timeout = 1000;
+            delay = 0;
+            retryCount = 0;
+
+            string[] parts = str.Split(',');
+            if (parts.Length < 5)
+            {
+                return false;
+            }
+
+            request = parts[0];
+            response = string.Join(",", parts.Skip(1).Take(parts.Length - 4));
+
+            if (!Enum.TryParse(parts[^3], out cmdType))
+            {
+                cmdType = SensorCmdType.Ascii;
+            }
+
+            string[] timeParts = parts[^2].Split('/');
+            if (timeParts.Length == 2)
+            {
+                if (!int.TryParse(timeParts[0], out timeout))
+                {
+                    timeout = 1000;
+                }
+
+                if (!int.TryParse(timeParts[1], out delay))
+                {
+                    delay = 0;
+                }
+            }
+
+            if (!int.TryParse(parts[^1], out retryCount))
+            {
+                retryCount = 0;
+            }
+
+            return true;
+        }
     }
 
 
