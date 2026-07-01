@@ -65,6 +65,7 @@ namespace ColorVision.Copilot
             _attachedViewModel = viewModel;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             ResetMessageSubscriptions(viewModel.Messages);
+            UpdateEmptyStateVisibility();
         }
 
         private void DetachViewModel(CopilotChatViewModel? viewModel)
@@ -86,6 +87,14 @@ namespace ColorVision.Copilot
             {
                 ResetMessageSubscriptions(_attachedViewModel.Messages);
                 ScrollToBottom();
+            }
+
+            if (e.PropertyName == nameof(CopilotChatViewModel.Messages)
+                || e.PropertyName == nameof(CopilotChatViewModel.SelectedConversation)
+                || e.PropertyName == nameof(CopilotChatViewModel.IsConversationEmpty)
+                || e.PropertyName == nameof(CopilotChatViewModel.CanShowCompactHistory))
+            {
+                UpdateEmptyStateVisibility();
             }
         }
 
@@ -136,6 +145,7 @@ namespace ColorVision.Copilot
             }
 
             ScrollToBottom();
+            UpdateEmptyStateVisibility();
         }
 
         private void Message_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -270,6 +280,22 @@ namespace ColorVision.Copilot
             CurrentLiveContextSummaryText.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
             CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(10, 7, 10, 7) : new Thickness(12, 9, 12, 9);
             CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(10, 4, 10, 4) : new Thickness(12, 5, 12, 5);
+
+            UpdateEmptyStateVisibility();
+        }
+
+        private void UpdateEmptyStateVisibility()
+        {
+            if (DataContext is not CopilotChatViewModel viewModel)
+            {
+                CompactHistoryPanel.Visibility = Visibility.Collapsed;
+                EmptyStateTextBlock.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var showCompactHistory = _isCompactSidebar && viewModel.IsConversationEmpty && viewModel.CanShowCompactHistory;
+            CompactHistoryPanel.Visibility = showCompactHistory ? Visibility.Visible : Visibility.Collapsed;
+            EmptyStateTextBlock.Visibility = viewModel.IsConversationEmpty && !showCompactHistory ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private static void SendWindowsVoiceTypingShortcut()

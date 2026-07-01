@@ -439,6 +439,37 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="10,2" />
         </Style>
+        <Style x:Key="CompactHistoryButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Padding="10,8"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.48" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource GlobalBackground}">
@@ -657,7 +688,8 @@
                     </StackPanel>
                 </Border>
 
-                <TextBlock Grid.Row="1"
+                <TextBlock x:Name="EmptyStateTextBlock"
+                           Grid.Row="1"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            MaxWidth="320"
@@ -666,7 +698,77 @@
                            Text="{Binding EmptyStateText}"
                            TextAlignment="Center"
                            TextWrapping="Wrap"
-                           Visibility="{Binding IsConversationEmpty, Converter={StaticResource bool2VisibilityConverter}}" />
+                           Visibility="Collapsed" />
+
+                <StackPanel x:Name="CompactHistoryPanel"
+                            Grid.Row="1"
+                            MaxWidth="460"
+                            Margin="24,0,24,18"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            Visibility="Collapsed">
+                    <DockPanel Margin="0,0,0,8" LastChildFill="False">
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.82"
+                                   Text="最近对话" />
+                        <TextBlock DockPanel.Dock="Right"
+                                   Margin="16,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.46"
+                                   Text="{Binding CompactHistoryFooterText}"
+                                   Visibility="{Binding HasCompactHistoryOverflow, Converter={StaticResource bool2VisibilityConverter}}" />
+                    </DockPanel>
+
+                    <ItemsControl ItemsSource="{Binding CompactHistoryConversations}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type local:CopilotConversationRecord}">
+                                <Button Style="{StaticResource CompactHistoryButtonStyle}"
+                                        Command="{Binding DataContext.SelectConversationCommand, Source={x:Reference Root}}"
+                                        CommandParameter="{Binding}"
+                                        IsEnabled="{Binding DataContext.CanSwitchConversation, Source={x:Reference Root}}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Row="0"
+                                                   Grid.Column="0"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Text="{Binding Title}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Row="0"
+                                                   Grid.Column="1"
+                                                   Margin="12,0,0,0"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.44"
+                                                   Text="{Binding UpdatedLabel}" />
+                                        <TextBlock Grid.Row="1"
+                                                   Grid.ColumnSpan="2"
+                                                   Margin="0,3,0,0"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.58"
+                                                   Text="{Binding PreviewText}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
 
                 <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <ItemsControl Margin="18,14,18,14" ItemsSource="{Binding Messages}">

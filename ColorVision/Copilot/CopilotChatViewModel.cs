@@ -26,6 +26,7 @@ namespace ColorVision.Copilot
         private const int AgentHistoryMessageLimit = 8;
         private const int AttachmentContentLimit = 12000;
         private const int MaxWebPageInjectionChars = 8000;
+        private const int CompactHistoryLimit = 4;
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
 
         private readonly CopilotChatService _chatService;
@@ -79,6 +80,8 @@ namespace ColorVision.Copilot
             if (_state.EnsureInitialized(_config))
                 PersistState();
 
+            Conversations.CollectionChanged += Conversations_CollectionChanged;
+
             var initialConversation = Conversations.Count > 0
                 ? Conversations[0]
                 : CopilotConversationRecord.CreateEmpty(_state.ActiveProfileId, string.Empty);
@@ -90,6 +93,9 @@ namespace ColorVision.Copilot
 
             SendCommand = new RelayCommand(_ => _ = SendAsync());
             NewChatCommand = new RelayCommand(_ => StartNewChat());
+            SelectConversationCommand = new RelayCommand<CopilotConversationRecord>(
+                conversation => SelectConversation(conversation, persist: true),
+                conversation => CanSwitchConversation && conversation != null);
             CancelCommand = new RelayCommand(_ => CancelCurrentReply());
             PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction());
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
@@ -120,9 +126,27 @@ namespace ColorVision.Copilot
 
             RefreshPendingActions();
             RefreshComposerTokenEstimate();
+            RefreshCompactHistoryConversations();
         }
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
+
+        public ObservableCollection<CopilotConversationRecord> CompactHistoryConversations { get; } = new();
+
+        public bool HasCompactHistoryConversations => CompactHistoryConversations.Count > 0;
+
+        public bool CanShowCompactHistory => _config.IsConfigured && HasCompactHistoryConversations;
+
+        public bool HasCompactHistoryOverflow => CountHistoryConversations() > CompactHistoryLimit;
+
+        public string CompactHistoryFooterText
+        {
+            get
+            {
+                var count = CountHistoryConversations();
+                return count > CompactHistoryLimit ? $"查看全部（{count} 个）" : string.Empty;
+            }
+        }
 
         public ObservableCollection<CopilotProfileConfig> Profiles => _config.Profiles;
 
@@ -200,6 +224,8 @@ namespace ColorVision.Copilot
         public ICommand SendCommand { get; }
 
         public ICommand NewChatCommand { get; }
+
+        public ICommand SelectConversationCommand { get; }
 
         public ICommand CancelCommand { get; }
 
@@ -370,7 +396,7 @@ namespace ColorVision.Copilot
         }
         private string _inputText = string.Empty;
 
-        public string InputPlaceholder => "要求后续变更";
+        public string InputPlaceholder => IsConversationEmpty ? "随心输入" : "要求后续变更";
 
         public bool IsInputEmpty => string.IsNullOrWhiteSpace(InputText);
 
@@ -1322,8 +1348,46 @@ namespace ColorVision.Copilot
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             OnPropertyChanged(nameof(IsConversationEmpty));
+            OnPropertyChanged(nameof(InputPlaceholder));
+            RefreshCompactHistoryConversations();
             RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void Conversations_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            RefreshCompactHistoryConversations();
+            OnPropertyChanged(nameof(Conversations));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void RefreshCompactHistoryConversations()
+        {
+            var history = Conversations
+                .Where(IsHistoryConversation)
+                .Take(CompactHistoryLimit)
+                .ToArray();
+
+            CompactHistoryConversations.Clear();
+            foreach (var conversation in history)
+            {
+                CompactHistoryConversations.Add(conversation);
+            }
+
+            OnPropertyChanged(nameof(HasCompactHistoryConversations));
+            OnPropertyChanged(nameof(CanShowCompactHistory));
+            OnPropertyChanged(nameof(HasCompactHistoryOverflow));
+            OnPropertyChanged(nameof(CompactHistoryFooterText));
+        }
+
+        private int CountHistoryConversations()
+        {
+            return Conversations.Count(IsHistoryConversation);
+        }
+
+        private static bool IsHistoryConversation(CopilotConversationRecord? conversation)
+        {
+            return conversation?.Messages.Any(message => !string.IsNullOrWhiteSpace(message.Content)) == true;
         }
 
         private void Attachments_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -1363,6 +1427,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Attachments));
             OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
+            OnPropertyChanged(nameof(InputPlaceholder));
 
             _state.ActiveConversationId = conversation?.Id ?? string.Empty;
 
@@ -2245,6 +2310,7 @@ namespace ColorVision.Copilot
         {
             ConfigHandler.GetInstance().Save<CopilotConfig>();
             OnPropertyChanged(nameof(EmptyStateText));
+            OnPropertyChanged(nameof(CanShowCompactHistory));
             OnPropertyChanged(nameof(CanSelectProfile));
         }
 
