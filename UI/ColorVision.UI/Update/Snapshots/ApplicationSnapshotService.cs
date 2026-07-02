@@ -94,7 +94,12 @@ namespace ColorVision.Update
         public Task<ApplicationSnapshotInfo> EnsureDefaultSnapshotAsync(CancellationToken cancellationToken = default)
         {
             if (File.Exists(DefaultSnapshotPath))
-                return Task.FromResult(ReadSnapshotInfo(DefaultSnapshotPath));
+            {
+                if (TryReadSnapshotInfo(DefaultSnapshotPath, out ApplicationSnapshotInfo? snapshotInfo) && snapshotInfo != null)
+                    return Task.FromResult(snapshotInfo);
+
+                TryDeleteCorruptedSnapshot(DefaultSnapshotPath);
+            }
 
             return CreateDefaultSnapshotAsync(force: true, cancellationToken);
         }
@@ -136,6 +141,7 @@ namespace ColorVision.Update
             if (string.IsNullOrWhiteSpace(snapshotPath) || !File.Exists(snapshotPath))
                 throw new FileNotFoundException("Snapshot file does not exist.", snapshotPath);
 
+            EnsureSnapshotArchiveReadable(snapshotPath);
             return ReadSnapshotInfo(snapshotPath);
         }
 
@@ -143,7 +149,8 @@ namespace ColorVision.Update
         {
             Directory.CreateDirectory(SnapshotDirectory);
             return Directory.EnumerateFiles(SnapshotDirectory, "*.zip", SearchOption.TopDirectoryOnly)
-                .Select(ReadSnapshotInfo)
+                .Select(TryReadSnapshotInfoOrDelete)
+                .OfType<ApplicationSnapshotInfo>()
                 .OrderByDescending(item => item.IsDefault)
                 .ThenByDescending(item => item.CreatedAt)
                 .ToList();
@@ -246,6 +253,53 @@ namespace ColorVision.Update
                 IsDefault = isDefault,
                 IsUpdate = isUpdate,
             };
+        }
+
+        private static ApplicationSnapshotInfo? TryReadSnapshotInfoOrDelete(string snapshotPath)
+        {
+            if (TryReadSnapshotInfo(snapshotPath, out ApplicationSnapshotInfo? snapshotInfo))
+                return snapshotInfo;
+
+            TryDeleteCorruptedSnapshot(snapshotPath);
+            return null;
+        }
+
+        private static bool TryReadSnapshotInfo(string snapshotPath, out ApplicationSnapshotInfo? snapshotInfo)
+        {
+            try
+            {
+                EnsureSnapshotArchiveReadable(snapshotPath);
+                snapshotInfo = ReadSnapshotInfo(snapshotPath);
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                log.Warn($"Snapshot file is invalid and will be ignored: {snapshotPath}. {ex.Message}");
+                snapshotInfo = null;
+                return false;
+            }
+        }
+
+        private static void EnsureSnapshotArchiveReadable(string snapshotPath)
+        {
+            using ZipArchive archive = ZipFile.OpenRead(snapshotPath);
+            _ = archive.Entries.Count;
+        }
+
+        private static void TryDeleteCorruptedSnapshot(string snapshotPath)
+        {
+            try
+            {
+                if (!File.Exists(snapshotPath))
+                    return;
+
+                File.Delete(snapshotPath);
+                log.Warn($"Deleted corrupted snapshot file: {snapshotPath}");
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Failed to delete corrupted snapshot file: {snapshotPath}", ex);
+            }
         }
 
         private static ApplicationSnapshotManifest? TryReadManifest(string snapshotPath)

@@ -171,6 +171,9 @@ namespace ColorVision.Update
                     case UpdateApplyState.Applied:
                         MarkCompleted();
                         break;
+                    case UpdateApplyState.Failed when state.CompletedAt.HasValue:
+                        CleanupOldBackups();
+                        break;
                     case UpdateApplyState.Prepared:
                     case UpdateApplyState.Applying:
                     case UpdateApplyState.Failed:
@@ -281,9 +284,7 @@ namespace ColorVision.Update
                 return;
             }
 
-            string backupPath = string.IsNullOrWhiteSpace(state.BackupPath) ? BackupRoot : state.BackupPath;
-            string restorePath = !string.IsNullOrWhiteSpace(state.SnapshotPath) ? state.SnapshotPath : backupPath;
-            MessageBox.Show(owner, $"{Resources.UpdateRecovery_Failed}\n\n{restorePath}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            CleanupOldBackups();
         }
 
         private string CreateBackupDirectory()
