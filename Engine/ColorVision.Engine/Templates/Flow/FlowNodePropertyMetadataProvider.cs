@@ -14,11 +14,6 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly HashSet<string> DefaultHiddenProperties = new(StringComparer.OrdinalIgnoreCase)
         {
             "DeviceCode",
-            "ImgFileName",
-            "ImgFileName1",
-            "ImgFileName2",
-            "ImgFileName3",
-            "ImgFileName4",
             "NodeName",
             "NodeID",
             "NodeType",

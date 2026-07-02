@@ -505,7 +505,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void RefreshActiveNodePropertyPanel()
         {
-            STNodePropertyGrid propertyGrid;
+            STNodePropertyGrid propertyGrid = null;
             StackPanel signPanel;
 
             if (UseDockPanel)
@@ -513,7 +513,6 @@ namespace ColorVision.Engine.Templates.Flow
                 var dockPanel = FlowNodePropertyPanel.Instance;
                 if (dockPanel == null) return;
                 dockPanel.EditorHelper = this;
-                propertyGrid = dockPanel.NodePropertyGrid;
                 signPanel = dockPanel.SignStackPanel;
             }
             else
@@ -524,7 +523,7 @@ namespace ColorVision.Engine.Templates.Flow
                 signPanel = SignStackPanel;
             }
 
-            propertyGrid.SetNode(STNodeEditor.ActiveNode);
+            propertyGrid?.SetNode(STNodeEditor.ActiveNode);
             signPanel.Children.Clear();
 
             if (STNodeEditor.ActiveNode == null)

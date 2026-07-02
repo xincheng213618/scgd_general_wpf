@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 
         public STNode Node { get; set; }
         public StackPanel SignStackPanel { get; set; }
-        public STNodePropertyGrid STNodePropertyGrid { get; set; }
+        public STNodePropertyGrid? STNodePropertyGrid { get; set; }
         public STNodeEditor STNodeEditor { get; set; }
         public StackPanel PropertyStackPanel { get; set; }
         public Action OnActiveChanged { get; set; }

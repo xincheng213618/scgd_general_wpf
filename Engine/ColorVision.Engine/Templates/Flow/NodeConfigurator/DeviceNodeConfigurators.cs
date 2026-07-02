@@ -92,7 +92,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.Algorithm.CalibrationNode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
-            context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
 
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)

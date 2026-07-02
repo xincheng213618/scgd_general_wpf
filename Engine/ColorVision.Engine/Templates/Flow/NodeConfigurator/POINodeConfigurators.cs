@@ -44,7 +44,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.POINode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.POITemplate, new TemplatePoi());
             context.AddTemplatePanel(name => node.FilterTemplateName = name, node.FilterTemplateName, Properties.Resources.POIFilter, new TemplatePoiFilterParam());
             context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.ReviseTemplateName, Properties.Resources.POIRevise, new TemplatePoiReviseParam());
@@ -59,7 +58,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.BuildPOINode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
             context.AddTemplatePanel(name => node.TemplateName = name, node.TemplateName, Properties.Resources.BuildTemplate, new TemplateBuildPoi());
             context.AddTemplateJsonPanel(name => node.TemplateName = name, node.TemplateName, "ABuildPOIAAA", new TemplateBuildPOIAA());
             context.AddTemplatePanel(name => node.RePOITemplateName = name, node.RePOITemplateName, "RePOI", new TemplatePoi());

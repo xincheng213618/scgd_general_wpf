@@ -40,6 +40,7 @@ public class RealPOINode : CVBaseServerNodeHub
 	private STNodeEditText<string> m_ctrl_outtemp;
 
 	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName
 	{
 		get
