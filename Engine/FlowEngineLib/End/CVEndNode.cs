@@ -18,6 +18,9 @@ public class CVEndNode : CVCommonNode
 	public CVEndNode()
 		: base("EndNode", "EndNode", "EN1", "DEV01")
 	{
+		base.AutoSize = false;
+		base.Width = StandardNodeWidth;
+		base.Height = 100;
 	}
 
 	protected override void OnCreate()

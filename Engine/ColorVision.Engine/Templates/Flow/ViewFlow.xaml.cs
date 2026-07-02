@@ -266,7 +266,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public void AutoAlignment()
         {
-            STNodeEditorHelper.ApplyTreeLayout(startX: 0, startY: 0, Config.horizontalSpacing, Config.verticalSpacing);
+            STNodeEditorHelper.ApplyTreeLayout();
             STNodeEditorHelper.AutoSize();
         }
 

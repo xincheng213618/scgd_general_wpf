@@ -125,9 +125,8 @@ public class RealCommonSensorNode : CVBaseServerNode
 		_CmdSend = "";
 		_CmdReceive = "";
 		_CmdType = CommSensorCmdType.Hex;
-		base.Width = 250;
 		base.Height += 125;
-		m_custom_item = new Rectangle(5, 30, 240, 18);
+		m_custom_item = new Rectangle(StandardNodeContentPadding, 30, StandardNodeContentWidth, 18);
 	}
 
 	protected override void OnCreate()

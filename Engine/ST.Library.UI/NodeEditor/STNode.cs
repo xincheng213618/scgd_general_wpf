@@ -56,6 +56,8 @@ public abstract class STNode
 
 	private Font _Font;
 
+	private bool _ShowControls = true;
+
 	private bool _LockOption;
 
 	private bool _LockLocation;
@@ -417,6 +419,29 @@ public abstract class STNode
 
 	public int ControlsCount => _Controls.Count;
 
+	protected bool ShowControls
+	{
+		get
+		{
+			return _ShowControls;
+		}
+		set
+		{
+			if (_ShowControls == value)
+			{
+				return;
+			}
+			_ShowControls = value;
+			if (!_ShowControls)
+			{
+				m_ctrl_active = null;
+				m_ctrl_hover = null;
+				m_ctrl_down = null;
+			}
+			Invalidate();
+		}
+	}
+
 	public Point Location
 	{
 		get
@@ -441,6 +466,68 @@ public abstract class STNode
 			Width = value.Width;
 			Height = value.Height;
 		}
+	}
+
+	public void SetFixedWidth(int width)
+	{
+		SetFixedSize(width, _Height);
+	}
+
+	public void SetAutoSize(bool autoSize)
+	{
+		if (_AutoSize == autoSize)
+		{
+			if (_AutoSize)
+			{
+				BuildSize(bBuildNode: true, bBuildMark: true, bRedraw: false);
+			}
+			return;
+		}
+		_AutoSize = autoSize;
+		if (_AutoSize)
+		{
+			BuildSize(bBuildNode: true, bBuildMark: true, bRedraw: false);
+		}
+		else
+		{
+			SetOptionsLocation();
+			BuildSize(bBuildNode: false, bBuildMark: true, bRedraw: false);
+			OnResize(EventArgs.Empty);
+		}
+		if (_Owner != null)
+		{
+			_Owner.BuildLinePath();
+			_Owner.BuildBounds();
+		}
+		Invalidate();
+	}
+
+	public void SetFixedSize(int width, int height)
+	{
+		if (width < 50)
+		{
+			width = 50;
+		}
+		if (height < 40)
+		{
+			height = 40;
+		}
+		if (!_AutoSize && width == _Width && height == _Height)
+		{
+			return;
+		}
+		_AutoSize = false;
+		_Width = width;
+		_Height = height;
+		SetOptionsLocation();
+		BuildSize(bBuildNode: false, bBuildMark: true, bRedraw: false);
+		OnResize(EventArgs.Empty);
+		if (_Owner != null)
+		{
+			_Owner.BuildLinePath();
+			_Owner.BuildBounds();
+		}
+		Invalidate();
 	}
 
 	protected Font Font
@@ -653,6 +740,10 @@ public abstract class STNode
 	{
 	}
 
+	protected virtual void OnCreated()
+	{
+	}
+
 	protected internal virtual void OnDrawNode(DrawingTools dt)
 	{
 		dt.Graphics.SmoothingMode = SmoothingMode.None;
@@ -726,7 +817,7 @@ public abstract class STNode
 				OnDrawOptionText(dt, outputOption);
 			}
 		}
-		if (_Controls.Count == 0)
+		if (!_ShowControls || _Controls.Count == 0)
 		{
 			return;
 		}
@@ -1037,6 +1128,15 @@ public abstract class STNode
 
 	protected internal virtual void OnMouseDown(MouseEventArgs e)
 	{
+		if (!_ShowControls)
+		{
+			if (m_ctrl_active != null)
+			{
+				m_ctrl_active.OnLostFocus(EventArgs.Empty);
+			}
+			m_ctrl_active = null;
+			return;
+		}
 		Point location = e.Location;
 		location.Y -= _TitleHeight;
 		for (int num = _Controls.Count - 1; num >= 0; num--)
@@ -1074,6 +1174,16 @@ public abstract class STNode
 
 	protected internal virtual void OnMouseMove(MouseEventArgs e)
 	{
+		if (!_ShowControls)
+		{
+			m_ctrl_down = null;
+			if (m_ctrl_hover != null)
+			{
+				m_ctrl_hover.OnMouseLeave(EventArgs.Empty);
+			}
+			m_ctrl_hover = null;
+			return;
+		}
 		Point location = e.Location;
 		location.Y -= _TitleHeight;
 		if (m_ctrl_down != null)
@@ -1111,6 +1221,11 @@ public abstract class STNode
 
 	protected internal virtual void OnMouseUp(MouseEventArgs e)
 	{
+		if (!_ShowControls)
+		{
+			m_ctrl_down = null;
+			return;
+		}
 		Point location = e.Location;
 		location.Y -= _TitleHeight;
 		if (m_ctrl_down != null && m_ctrl_down.Enabled && m_ctrl_down.Visable)
@@ -1131,6 +1246,10 @@ public abstract class STNode
 
 	protected internal virtual void OnMouseClick(MouseEventArgs e)
 	{
+		if (!_ShowControls)
+		{
+			return;
+		}
 		Point location = e.Location;
 		location.Y -= _TitleHeight;
 		if (m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_active.Visable)
@@ -1141,6 +1260,10 @@ public abstract class STNode
 
 	protected internal virtual void OnMouseWheel(MouseEventArgs e)
 	{
+		if (!_ShowControls)
+		{
+			return;
+		}
 		Point location = e.Location;
 		location.Y -= _TitleHeight;
 		if (m_ctrl_hover != null && m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_hover.Visable)
@@ -1384,5 +1507,6 @@ public abstract class STNode
 	public void Create()
 	{
 		OnCreate();
+		OnCreated();
 	}
 }

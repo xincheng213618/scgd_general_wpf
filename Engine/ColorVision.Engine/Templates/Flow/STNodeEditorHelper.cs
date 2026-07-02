@@ -888,13 +888,16 @@ namespace ColorVision.Engine.Templates.Flow
             STNodeEditor.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
         }
 
-        public void ApplyTreeLayout(int startX, int startY, int horizontalSpacing, int verticalSpacing)
+        private const int AutoLayoutHorizontalSpacing = 220;
+        private const int AutoLayoutVerticalSpacing = 80;
+
+        public void ApplyTreeLayout(int startX = 0, int startY = 0)
         {
             ConnectionInfo = GetLiveConnectionInfo();
             STNode rootNode = GetRootNode();
             if (rootNode == null) return;
 
-            var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, horizontalSpacing, verticalSpacing,
+            var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, AutoLayoutHorizontalSpacing, AutoLayoutVerticalSpacing,
                 STNodeEditor.Width, STNodeEditor.Height);
             layout.Execute(rootNode);
         }

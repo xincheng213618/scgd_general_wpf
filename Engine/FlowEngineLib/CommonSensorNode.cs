@@ -83,9 +83,8 @@ public class CommonSensorNode : CVBaseServerNode
 		_CmdType = CommCmdType.None;
 		_CmdSend = "";
 		_CmdReceive = "";
-		base.Width = 220;
 		base.Height += 75;
-		m_custom_item = new Rectangle(5, 30, 210, 18);
+		m_custom_item = new Rectangle(StandardNodeContentPadding, 30, StandardNodeContentWidth, 18);
 	}
 
 	protected override void OnCreate()

@@ -178,8 +178,6 @@ public class CVAOICameraNode : CVBaseServerNode
 		_IsWithND = false;
 		_IsAutoExp = false;
 		_ImgSaveMode = ImgSaveBppMode.Bit16;
-		base.Width = 180;
-		m_custom_item.Width += 30;
 		base.Height += 100;
 	}
 

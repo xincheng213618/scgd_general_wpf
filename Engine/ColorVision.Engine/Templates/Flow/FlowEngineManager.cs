@@ -67,11 +67,6 @@ namespace ColorVision.Engine.Templates.Flow
         public int TemplateLargeFlowParamsIndex { get => _TemplateLargeFlowParamsIndex; set { _TemplateLargeFlowParamsIndex = value; OnPropertyChanged(); } }
         private int _TemplateLargeFlowParamsIndex;
 
-        public int horizontalSpacing { get => _horizontalSpacing; set { _horizontalSpacing = value; OnPropertyChanged(); } }
-        private int _horizontalSpacing = 200;
-
-        public int verticalSpacing { get => _verticalSpacing; set { _verticalSpacing = value; OnPropertyChanged(); } }   
-        private int _verticalSpacing = 170;
     }
 
 

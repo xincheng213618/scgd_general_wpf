@@ -242,7 +242,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public void AutoAlignment()
         {
-            STNodeEditorHelper.ApplyTreeLayout(startX: 0, startY: 0, horizontalSpacing: 300, verticalSpacing: 300);
+            STNodeEditorHelper.ApplyTreeLayout();
             STNodeEditorHelper.AutoSize();
         }
         public void Refresh()
@@ -380,7 +380,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void AutoAlignment_Click(object sender, RoutedEventArgs e)
         {
-            STNodeEditorHelper.ApplyTreeLayout(startX: 0, startY: 0, horizontalSpacing: 300, verticalSpacing: 300);
+            STNodeEditorHelper.ApplyTreeLayout();
             STNodeEditorHelper.AutoSize();
         }
 

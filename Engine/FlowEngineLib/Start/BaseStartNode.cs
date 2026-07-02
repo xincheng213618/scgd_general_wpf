@@ -39,7 +39,9 @@ public abstract class BaseStartNode : CVCommonNode
 		topicServer = new Dictionary<string, List<CVBaseServerNode>>();
 		topicServerProxy = new Dictionary<string, List<CVServiceProxy>>();
 		startActions = new Dictionary<string, CVStartCFC>();
-		base.Width = 170;
+		base.AutoSize = false;
+		base.Width = StandardNodeWidth;
+		base.Height = Math.Max(90, base.TitleHeight + (LoopNum + 1) * OptionItemHeight + 10);
 		Ready = false;
 		Running = false;
 	}

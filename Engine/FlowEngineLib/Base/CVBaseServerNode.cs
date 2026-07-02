@@ -126,9 +126,9 @@ public class CVBaseServerNode : CVCommonNode
 		_MaxTime = 5000;
 		_TempName = "";
 		base.AutoSize = false;
-		base.Width = 150;
+		base.Width = StandardNodeWidth;
 		base.Height = 85;
-		m_custom_item = new Rectangle(5, 30, 140, 18);
+		m_custom_item = new Rectangle(StandardNodeContentPadding, 30, StandardNodeContentWidth, 18);
 	}
 
 
