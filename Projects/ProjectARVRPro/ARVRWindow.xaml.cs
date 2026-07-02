@@ -9,10 +9,8 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor;
-using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
-using ColorVision.UI;
 using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -20,11 +18,9 @@ using log4net;
 using Newtonsoft.Json;
 using ProjectARVRPro.Exports;
 using ProjectARVRPro.LegacyARVR;
-using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
 using ProjectARVRPro.SocketRelay;
-using Quartz;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -42,46 +38,9 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro
 {
-    public class ProjectARVRLitetestJob : IJob
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectARVRLitetestJob));
-
-        public Task Execute(IJobExecutionContext context)
-        {
-            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
-            schedulerInfo.RunCount++;
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                schedulerInfo.Status = SchedulerStatus.Running;
-            });
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ProjectWindowInstance.WindowInstance.SwitchPGCompleted();
-
-                ProjectWindowInstance.WindowInstance.RunTemplate();
-
-                schedulerInfo.Status = SchedulerStatus.Ready;
-            });
-            return Task.CompletedTask;
-        }
-    }
-
-
-    public class SwitchPG
-    {
-        public int ARVRTestType { get; set; }
-    }
-
-
-    public class ARVRWindowConfig : WindowConfig
-    {
-        public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
-    }
-
     public partial class ARVRWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
-        public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
 
         public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
 
@@ -108,7 +67,7 @@ namespace ProjectARVRPro
             InitializeComponent();
             ImageView.SelectedImageChanged += ImageView_SelectedImageChanged;
             this.ApplyCaption(false);
-            Config.SetWindow(this);
+            ARVRWindowConfig.Instance.SetWindow(this);
             this.Title += Assembly.GetAssembly(typeof(ARVRWindow))?.GetName().Version?.ToString() ?? "";
         }
 
@@ -150,6 +109,7 @@ namespace ProjectARVRPro
             [25] = ("JSON_PARSE_E", "JSON解析错误(预留)"),
             [26] = ("IMAGE_FORMAT_E", "图片格式不支持(预留)")
         };
+
         Random Random = new Random();
         public void InitTest(string SN)
         {
@@ -159,20 +119,10 @@ namespace ProjectARVRPro
             _lastFlowFailureMessage = string.Empty;
             _flowFailureCode = 0;
             CurrentTestType = -1;
-            if (string.IsNullOrWhiteSpace(SN))
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectARVRProConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
-                });
-            }
-            else
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectARVRProConfig.Instance.SN = SN;
-                });
-            }
+                ProjectARVRProConfig.Instance.SN  = string.IsNullOrWhiteSpace(SN) ? "SN" + Random.NextInt64(10000, 90000).ToString() : SN.Trim(); 
+            });
         }
 
         bool IsSwitchRun;
@@ -230,10 +180,8 @@ namespace ProjectARVRPro
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
         private Timer timer;
+
         Stopwatch stopwatch = new Stopwatch();
-
-
-
 
         private LogOutput? logOutput;
         private void Window_Initialized(object sender, EventArgs e)
@@ -451,16 +399,6 @@ namespace ProjectARVRPro
         }
 
         #endregion
-
-        private void ServicesChanged(object? sender, EventArgs e)
-        {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                log.Info("Service触发拍照，执行流程");
-                RunTemplate();
-            });
-        }
-
 
         public async Task Refresh()
         {
