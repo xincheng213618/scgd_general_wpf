@@ -400,34 +400,20 @@ namespace ProjectARVRPro
 
         #endregion
 
-        public async Task Refresh()
+        public Task Refresh()
         {
-            if (FlowTemplate.SelectedIndex < 0) return;
+            if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
+
             MqttRCService.GetInstance().QueryServices();
             string Refreshdata = TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64;
+            flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
 
-            try
+            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent -= UpdateMsg;
-
-                flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
-
-                for (int i = 0; i < 200; i++)
-                {
-                    if (flowEngine.IsReady)
-                        break;
-                    await Task.Delay(10);
-                }
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent += UpdateMsg;
-
+                item.nodeRunEvent -= UpdateMsg;
+                item.nodeRunEvent += UpdateMsg;
             }
-            catch (Exception ex)
-            {
-                flowEngine.LoadFromBase64(string.Empty);
-            }
-            log.Info($"IsReady{flowEngine.IsReady}");
+            return Task.CompletedTask;
         }
 
 
@@ -538,14 +524,6 @@ namespace ProjectARVRPro
             await Refresh();
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
-
-            if (!flowEngine.IsReady)
-            {
-                string base64 = string.Empty;
-                flowEngine.LoadFromBase64(base64);
-                await Refresh();
-                log.Info($"IsReady{flowEngine.IsReady}");
-            }
 
             if (!await ExecutePictureSwitchAsync(runProcessMeta))
             {
@@ -1571,12 +1549,6 @@ namespace ProjectARVRPro
                     {
                         log.Info($"找不到完整流程 {meta.FlowTemplate}，跳过");
                         continue;
-                    }
-
-                    if (!flowEngine.IsReady)
-                    {
-                        flowEngine.LoadFromBase64(string.Empty);
-                        await Refresh();
                     }
 
                     if (!await ExecutePictureSwitchAsync(meta))

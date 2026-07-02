@@ -235,30 +235,18 @@ namespace ProjectLUX
         }
 
 
-        public async Task Refresh()
+        public Task Refresh()
         {
-            if (FlowTemplate.SelectedIndex < 0) return;
+            if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
 
-            try
+            flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+
+            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent -= UpdateMsg;
-
-                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
-
-                for (int i = 0; i < 200; i++)
-                {
-                    if (flowEngine.IsReady)
-                        break;
-                    await Task.Delay(10);
-                }
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent += UpdateMsg;
+                item.nodeRunEvent -= UpdateMsg;
+                item.nodeRunEvent += UpdateMsg;
             }
-            catch (Exception ex)
-            {
-                flowEngine.LoadFromBase64(string.Empty);
-            }
+            return Task.CompletedTask;
         }
 
 
@@ -368,14 +356,6 @@ namespace ProjectLUX
             await Refresh();
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
-
-            if (!flowEngine.IsReady)
-            {
-                string base64 = string.Empty;
-                flowEngine.LoadFromBase64(base64);
-                await Refresh();
-                log.Info($"IsReady{flowEngine.IsReady}");
-            }
 
             if (!await PreProcessing(FlowName, CurrentFlowResult.Code))
             {

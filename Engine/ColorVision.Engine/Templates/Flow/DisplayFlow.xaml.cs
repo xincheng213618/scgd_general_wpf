@@ -266,7 +266,7 @@ namespace ColorVision.Engine.Templates.Flow
             _refreshCts = null;
         }
 
-        private async Task SelectFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate, bool waitReady)
+        private async Task SelectFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate)
         {
             CancelPendingRefresh();
 
@@ -283,11 +283,11 @@ namespace ColorVision.Engine.Templates.Flow
                 _suppressSelectionRefresh = false;
             }
 
-            await Refresh(waitReady);
+            await Refresh();
         }
 
         bool IsRefresh;
-        public async Task Refresh(bool waitReady = false)
+        public async Task Refresh()
         {
             if (IsRefresh) return;
             IsRefresh = true;
@@ -322,7 +322,7 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeEndEvent -= nodeEndEvent;
                 }
                 View.FlowEngineControl.FlowClear();
-                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens, waitReady);
+                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
                 FlowEngineManager.SlectFlowParam = flowParam;
 
@@ -411,7 +411,7 @@ namespace ColorVision.Engine.Templates.Flow
                 return null;
             }
 
-            await SelectFlowTemplateAsync(flowTemplate, waitReady: true);
+            await SelectFlowTemplateAsync(flowTemplate);
             return await RunFlowAndWaitAsync();
         }
 
