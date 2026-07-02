@@ -22,6 +22,7 @@ public class AlgorithmCaliNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
 	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName
 	{

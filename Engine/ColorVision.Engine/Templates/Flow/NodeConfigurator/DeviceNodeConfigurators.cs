@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Properties;
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.CfwPort;
@@ -16,7 +16,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.PG.PGNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DevicePG>().ToList());
         }
     }
 
@@ -26,7 +25,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.FWNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().ToList());
         }
     }
 
@@ -36,7 +34,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.SMUModelNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
             context.AddTemplatePanel(name => node.ModelName = name, node.ModelName, Properties.Resources.SMUParamSetting, new TemplateSMUParam());
         }
     }
@@ -47,7 +44,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.SMUFromCSVNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
             context.AddImagePath(name => node.CsvFileName = name, node.CsvFileName, "CSV");
         }
     }
@@ -58,7 +54,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.SMUNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
         }
     }
 
@@ -68,7 +63,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.CommonSensorNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
             context.AddSensorTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.TemplateName,
                 () => ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(x => x.Code == node.DeviceCode)?.Config?.Category);
         }
@@ -80,7 +74,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.TempCommonSensorNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
             context.AddSensorTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.TemplateName);
         }
     }
@@ -91,7 +84,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Algorithm.CalibrationNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
 
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)

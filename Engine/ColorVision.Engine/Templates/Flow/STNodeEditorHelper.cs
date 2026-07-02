@@ -560,6 +560,8 @@ namespace ColorVision.Engine.Templates.Flow
                     PropertyStackPanel = StackPanel,
                     OnActiveChanged = RefreshActiveNodePropertyPanel
                 };
+                if (STNodeEditor.ActiveNode is CVCommonNode commonNode)
+                    context.RebindNodeEvent(commonNode, nameof(RefreshActiveNodePropertyPanel), RefreshActiveNodePropertyPanel);
                 configurator.Configure(context);
             }
 

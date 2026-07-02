@@ -34,7 +34,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
     {
         protected override void Configure(TNode node, NodePanelBuilder panels)
         {
-            panels.Device<TDevice>(() => node.DeviceCode, name => node.DeviceCode = name);
         }
     }
 }

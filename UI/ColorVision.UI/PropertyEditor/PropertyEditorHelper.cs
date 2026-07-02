@@ -3,6 +3,7 @@ using ColorVision.Themes;
 using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Reflection;
 using System.Resources;
@@ -22,6 +23,7 @@ namespace ColorVision.UI
     {
         bool IsPropertyManaged(PropertyInfo propertyInfo);
         bool IsBrowsable(PropertyInfo propertyInfo);
+        Type? GetEditorType(PropertyInfo propertyInfo);
         string? GetDisplayName(PropertyInfo propertyInfo);
         string? GetDescription(PropertyInfo propertyInfo);
         string? GetCategory(PropertyInfo propertyInfo);
@@ -332,6 +334,11 @@ namespace ColorVision.UI
             return depth;
         }
 
+        private static int GetDisplayOrder(PropertyInfo property)
+        {
+            return property.GetCustomAttribute<DisplayAttribute>()?.GetOrder() ?? 0;
+        }
+
         public static DockPanel GenProperties(PropertyInfo property, object obj)
         {
             ArgumentNullException.ThrowIfNull(property);
@@ -363,8 +370,21 @@ namespace ColorVision.UI
             try
             {
                 DockPanel? createdPanel = null;
+                var metadataEditorType = MetadataProviderContext.Value?.GetEditorType(property);
+                if (metadataEditorType != null)
+                {
+                    try
+                    {
+                        var editor = GetOrCreateEditor(metadataEditorType);
+                        createdPanel = editor.GenProperties(property, obj);
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
                 var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-                if (editorAttr?.EditorType != null)
+                if (createdPanel == null && editorAttr?.EditorType != null)
                 {
                     try
                     {
@@ -669,7 +689,9 @@ namespace ColorVision.UI
                             .ToList();
                     }
 
-                    var sortedProps = orderBy ? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType ?? type)) : allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType ?? type));
+                    var sortedProps = orderBy
+                        ? allProps.OrderBy(GetDisplayOrder).ThenBy(p => GetInheritanceDepth(p.DeclaringType ?? type))
+                        : allProps.OrderBy(GetDisplayOrder).ThenByDescending(p => GetInheritanceDepth(p.DeclaringType ?? type));
 
                     foreach (var prop in sortedProps)
                     {

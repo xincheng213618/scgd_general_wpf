@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1707
+#pragma warning disable CA1707
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm;
@@ -20,7 +20,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.SubPixelLedCheck, new TemplateLedCheck2());
             context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, "PoiOutPut", new TemplatePoiOutputParam());
         }
@@ -37,7 +36,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.OLED.OLEDImageCroppingNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ParamTemplate, new TemplateImageCropping());
         }
     }
@@ -48,7 +46,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.OLED.AlgorithmCompoundImgNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.ParamTemplate, new TemplateCompoundImg());
         }
     }
@@ -59,7 +56,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmOLEDNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.SubPixel, new TemplateLedCheck2());
         }
     }
@@ -70,7 +66,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmOLED_AOINode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "AOI", new TemplateOLEDAOI());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.DefectCheckV2, new TemplateFPForRePicGradingV2());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.BrightSpotCheck, new TemplateFPForQuardImg());
@@ -88,7 +83,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             void Refresh()
             {
                 context.SignStackPanel.Children.Clear();
-                context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 switch (node.Algorithm)
                 {

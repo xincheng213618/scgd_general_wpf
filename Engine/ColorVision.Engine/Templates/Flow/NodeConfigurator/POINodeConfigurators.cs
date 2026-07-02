@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Properties;
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -19,7 +19,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.POI.POIReviseNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplatePanel(name => node.TemplateName = name, node.TemplateName, Properties.Resources.POIReviseCalib, new TemplatePoiGenCalParam());
         }
     }
@@ -30,7 +29,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.POI.RealPOINode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplatePanel(name => node.FilterTemplateName = name, node.FilterTemplateName, Properties.Resources.POIFilter, new TemplatePoiFilterParam());
             context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.ReviseTemplateName, Properties.Resources.POIRevise, new TemplatePoiReviseParam());
             context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, Properties.Resources.FileOutputTemplate, new TemplatePoiOutputParam());
@@ -43,7 +41,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.POINode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.POITemplate, new TemplatePoi());
             context.AddTemplatePanel(name => node.FilterTemplateName = name, node.FilterTemplateName, Properties.Resources.POIFilter, new TemplatePoiFilterParam());
             context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.ReviseTemplateName, Properties.Resources.POIRevise, new TemplatePoiReviseParam());
@@ -57,7 +54,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.BuildPOINode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplatePanel(name => node.TemplateName = name, node.TemplateName, Properties.Resources.BuildTemplate, new TemplateBuildPoi());
             context.AddTemplateJsonPanel(name => node.TemplateName = name, node.TemplateName, "ABuildPOIAAA", new TemplateBuildPOIAA());
             context.AddTemplatePanel(name => node.RePOITemplateName = name, node.RePOITemplateName, "RePOI", new TemplatePoi());
@@ -72,7 +68,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.POI.POIAnalysisNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "PoiAnalysis", new TemplatePoiAnalysis());
         }
     }

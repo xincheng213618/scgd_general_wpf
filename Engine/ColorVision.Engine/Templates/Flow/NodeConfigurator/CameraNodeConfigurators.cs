@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Properties;
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
@@ -23,7 +23,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Camera.CVAOICameraNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
             context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, Properties.Resources.CameraTemplate, new TemplateCameraRunParam());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
@@ -41,7 +40,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (AOILocatePixelsCameraNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
             context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
             context.AddTemplateJsonPanel(name => node.AutoExpTempName = name, node.AutoExpTempName, $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
@@ -57,7 +55,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (AOILocAndRegPixelsCameraNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
             context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
             context.AddTemplateJsonPanel(name => node.AutoExpTempName = name, node.AutoExpTempName, $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
@@ -75,7 +72,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Camera.CVAOI2CameraNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
             context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, Properties.Resources.CameraTemplate, new TemplateCameraRunParam());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
@@ -93,7 +89,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.CamMotorNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
             context.AddTemplatePanel(name => node.AutoFocusTemp = name, node.AutoFocusTemp, Properties.Resources.CameraTemplate, new TemplateAutoFocus());
         }
     }
@@ -104,7 +99,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Camera.CommCameraNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
                 context.AddTemplatePanel(name => node.CalibTempName = name, node.CalibTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));
@@ -125,7 +119,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.CVCameraNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
@@ -143,7 +136,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.LVCameraNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
             var result = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == node.DeviceCode);
             if (result?.PhyCamera != null)
                 context.AddTemplatePanel(name => node.CaliTempName = name, node.CaliTempName, Properties.Resources.Calibration, new TemplateCalibrationParam(result.PhyCamera));

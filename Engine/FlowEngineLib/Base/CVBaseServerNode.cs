@@ -53,6 +53,20 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected CVServerResponse svrRecvResp;
 
+	[System.ComponentModel.DataAnnotations.Display(Order = -200)]
+	[STNodeProperty("设备代码", "设备代码", false, false)]
+	public new string DeviceCode
+	{
+		get
+		{
+			return base.DeviceCode;
+		}
+		set
+		{
+			base.DeviceCode = value;
+		}
+	}
+
 	[STNodeProperty("Token", "Token", true)]
 	public string Token
 	{

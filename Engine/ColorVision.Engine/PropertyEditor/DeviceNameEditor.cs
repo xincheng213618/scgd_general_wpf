@@ -1,5 +1,17 @@
 ﻿using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.Motor;
+using ColorVision.Engine.Services.Devices.PG;
+using ColorVision.Engine.Services.Devices.Sensor;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.UI;
+using FlowEngineLib;
+using FlowEngineLib.Base;
 using System;
 using System.ComponentModel;
 using System.Linq;
@@ -34,30 +46,41 @@ namespace ColorVision.Engine.PropertyEditor
             {
                 Margin = new Thickness(5, 0, 0, 0),
                 Style = PropertyEditorHelper.ComboBoxSmallStyle,
-                IsEditable = true
+                IsEditable = true,
+                DisplayMemberPath = "Name",
+                SelectedValuePath = "Code"
             };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
+            combo.SetBinding(Selector.SelectedValueProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
 
 
-            var sourceTypeAttr = property.GetCustomAttribute<DeviceSourceTypeAttribute>();
-            Type targetType = sourceTypeAttr?.DeviceType ?? typeof(object); // 默认为 object 或你的设备基类
+            Type targetType = ResolveDeviceType(property, obj);
 
             var ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(d => targetType.IsInstanceOfType(d)).ToList();
 
             combo.ItemsSource = ItemsSource;
-            combo.DisplayMemberPath = "Name";
 
 
             string? code = property.GetValue(obj)?.ToString();
-            var selectedItem = ItemsSource.FirstOrDefault(x => x.Name == code);
+            var selectedItem = ItemsSource.FirstOrDefault(x => x.Code == code);
             if (selectedItem != null)
-                combo.SelectedIndex = ItemsSource.IndexOf(selectedItem);
+                combo.SelectedItem = selectedItem;
 
             Grid myGrid = new Grid();
             myGrid.DataContext = selectedItem;
 
-            combo.SelectionChanged += (s, e) =>  myGrid.DataContext = combo.SelectedValue;
+            combo.SelectionChanged += (s, e) =>
+            {
+                myGrid.DataContext = combo.SelectedItem;
+                if (combo.SelectedValue is string selectedCode)
+                    SetValueAndNotify(property, obj, selectedCode);
+            };
+
+            combo.LostFocus += (s, e) =>
+            {
+                if (combo.SelectedValue is not string && !string.IsNullOrWhiteSpace(combo.Text))
+                    SetValueAndNotify(property, obj, combo.Text);
+            };
 
 
             var button = new Button
@@ -101,6 +124,40 @@ namespace ColorVision.Engine.PropertyEditor
             dockPanel.Children.Add(textBlock);
             dockPanel.Children.Add(combo);
             return dockPanel;
+        }
+
+        private static Type ResolveDeviceType(PropertyInfo property, object obj)
+        {
+            var sourceTypeAttr = property.GetCustomAttribute<DeviceSourceTypeAttribute>();
+            if (sourceTypeAttr?.DeviceType != null)
+                return sourceTypeAttr.DeviceType;
+
+            var nodeType = obj.GetType().GetProperty("NodeType")?.GetValue(obj)?.ToString();
+            return nodeType?.ToUpperInvariant() switch
+            {
+                "ALGORITHM" => typeof(DeviceAlgorithm),
+                "CALIBRATION" => typeof(DeviceCalibration),
+                "CAMERA" => typeof(DeviceCamera),
+                "FILTERWHEEL" => typeof(DeviceCfwPort),
+                "MOTOR" => typeof(DeviceMotor),
+                "PG" => typeof(DevicePG),
+                "SENSOR" => typeof(DeviceSensor),
+                "SMU" => typeof(DeviceSMU),
+                "SPECTRUM" => typeof(DeviceSpectrum),
+                "TPALGORITHMS" => typeof(DeviceThirdPartyAlgorithms),
+                _ => typeof(DeviceService)
+            };
+        }
+
+        private static void SetValueAndNotify(PropertyInfo property, object obj, string value)
+        {
+            var oldValue = property.GetValue(obj)?.ToString();
+            if (oldValue == value)
+                return;
+
+            property.SetValue(obj, value);
+            if (obj is CVCommonNode node)
+                node.nodeEvent?.Invoke(node, new FlowEngineNodeEventArgs());
         }
     }
 }

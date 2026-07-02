@@ -1,4 +1,5 @@
 using ColorVision.UI;
+using ColorVision.Engine.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private static readonly HashSet<string> DefaultHiddenProperties = new(StringComparer.OrdinalIgnoreCase)
         {
-            "DeviceCode",
             "NodeName",
             "NodeID",
             "NodeType",
@@ -44,6 +44,13 @@ namespace ColorVision.Engine.Templates.Flow
         public string? GetDisplayName(PropertyInfo propertyInfo)
         {
             return propertyInfo.GetCustomAttribute<STNodePropertyAttribute>(inherit: true)?.Name;
+        }
+
+        public Type? GetEditorType(PropertyInfo propertyInfo)
+        {
+            return propertyInfo.Name.Equals("DeviceCode", StringComparison.OrdinalIgnoreCase)
+                ? typeof(DeviceNameEditor)
+                : null;
         }
 
         public string? GetDescription(PropertyInfo propertyInfo)

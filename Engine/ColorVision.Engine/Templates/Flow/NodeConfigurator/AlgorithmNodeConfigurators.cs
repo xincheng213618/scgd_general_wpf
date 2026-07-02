@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Properties;
+using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.DataLoad;
@@ -41,7 +41,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmCaliNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.ColorDifference, new TemplateCaliAngleShift());
         }
     }
@@ -52,7 +51,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.FindAAArea, new TemplateAAFindPoints());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.LightAreaLocation, new TemplateRoi());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, "FocusPoints", new TemplateFocusPoints());
@@ -66,7 +64,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmFindLEDNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.SubPixelLedCheck, new TemplateLedCheck2());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.PixelLedCheck, new TemplateLedCheck());
         }
@@ -78,7 +75,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "GhostQK", new TemplateGhostQK());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, "Ghost", new TemplateGhost());
         }
@@ -90,7 +86,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "BlackMura", new TemplateBlackMura());
         }
     }
@@ -101,7 +96,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmKBNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateKBPanel(name => node.TempName = name, node.TempName, "KB", new TemplateKB());
         }
     }
@@ -112,7 +106,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmKBOutputNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateKBPanel(name => node.TempName = name, node.TempName, "KB", new TemplateKB());
         }
     }
@@ -123,7 +116,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmImageROINode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.TemplateName, new TemplateImageROI());
         }
     }
@@ -134,7 +126,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgDataLoadNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.Template, new TemplateDataLoad());
         }
     }
@@ -149,7 +140,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             void Refresh()
             {
                 context.SignStackPanel.Children.Clear();
-                context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 switch (node.Algorithm)
                 {
@@ -199,7 +189,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             void Refresh()
             {
                 context.SignStackPanel.Children.Clear();
-                context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI", new TemplatePoi());
 
                 switch (node.Algorithm)
@@ -277,7 +266,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             void Refresh()
             {
                 context.SignStackPanel.Children.Clear();
-                context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 switch (node.ComplianceMath)
                 {
                     case FlowEngineLib.Node.Algorithm.ComplianceMathType.CIE:
