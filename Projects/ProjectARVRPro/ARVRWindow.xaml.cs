@@ -6,6 +6,7 @@ using ColorVision.Engine;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor;
 using ColorVision.Scheduler;
@@ -207,16 +208,23 @@ namespace ProjectARVRPro
                 if (nextTestType >= 0 && nextTestType < ProcessMetas.Count)
                 {
                     ProcessMeta processMeta = ProcessMetas[nextTestType];
-                    ProjectConfig.StepIndex = nextTestType;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
+                    TemplateModel<FlowParam> template = SelectFlowTemplate(processMeta);
                     CurrentTestType = nextTestType;
-                    RunTemplate();
+                    ProjectConfig.StepIndex = nextTestType;
+                    RunTemplate(template.Key, processMeta);
                 }
             }
             finally
             {
                 IsSwitchRun = false;
             }
+        }
+
+        private TemplateModel<FlowParam> SelectFlowTemplate(ProcessMeta processMeta)
+        {
+            var template = TemplateFlow.Params.First(a => string.Equals(a.Key, processMeta.FlowTemplate, StringComparison.OrdinalIgnoreCase));
+            FlowTemplate.SelectedItem = template;
+            return template;
         }
  
         public STNodeEditor STNodeEditorMain { get; set; }
@@ -545,7 +553,16 @@ namespace ProjectARVRPro
         ProjectARVRReuslt CurrentFlowResult { get; set; }
         int TryCount;
 
-        public async Task RunTemplate()
+        public Task RunTemplate()
+        {
+            if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
+                return Task.CompletedTask;
+
+            ProcessMeta? processMeta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, template.Key, StringComparison.OrdinalIgnoreCase));
+            return RunTemplate(template.Key, processMeta);
+        }
+
+        private async Task RunTemplate(string flowTemplateKey, ProcessMeta? runProcessMeta)
         {
             if (flowControl.IsFlowRun || _isFlowLifecycleActive)
             {
@@ -554,22 +571,18 @@ namespace ProjectARVRPro
             }
 
             TryCount++;
-            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowTemplateKey, out long time) ? time : 0;
 
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
-            CurrentFlowResult.Model = FlowTemplate.Text;
-
-            ProcessMeta? runProcessMeta = null;
+            CurrentFlowResult.Model = flowTemplateKey;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
+                if (runProcessMeta != null)
                 {
-                    runProcessMeta = processMeta;
-                    CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
+                    CurrentFlowResult.TestType = ProcessMetas.IndexOf(runProcessMeta);
                     ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
-
                 }
                 else
                 {
@@ -579,7 +592,7 @@ namespace ProjectARVRPro
             });
 
 
-            FlowName = FlowTemplate.Text;
+            FlowName = flowTemplateKey;
 
             string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
             CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
@@ -602,7 +615,7 @@ namespace ProjectARVRPro
                 CurrentFlowResult.Msg = "PictureSwitchFailed";
                 RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
-                SendProjectResultResponse(GetProjectResultCode(-1), GetProjectResultMessage("ARVR Test Fail"), CreateProjectResponseData());
+                SendProjectResultResponse(HasFlowFailure ? _flowFailureCode : -1, HasFlowFailure ? _flowFailureMessage : "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
                 TryCount = 0;
                 return;
             }
@@ -613,7 +626,7 @@ namespace ProjectARVRPro
                 CurrentFlowResult.Msg = "PreProcessFailed";
                 RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
-                SendProjectResultResponse(GetProjectResultCode(-1), GetProjectResultMessage("ARVR Test Fail"), CreateProjectResponseData());
+                SendProjectResultResponse(HasFlowFailure ? _flowFailureCode : -1, HasFlowFailure ? _flowFailureMessage : "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
                 TryCount = 0;
                 return;
             }
@@ -679,21 +692,6 @@ namespace ProjectARVRPro
             return (oledErrorCode, detail);
         }
 
-        private string GetProjectResultMessage(string defaultMessage)
-        {
-            return HasFlowFailure ? _flowFailureMessage : defaultMessage;
-        }
-
-        private string GetSwitchPGMessage()
-        {
-            return string.IsNullOrWhiteSpace(_lastFlowFailureMessage) ? "Switch PG" : $"上一流程失败: {_lastFlowFailureMessage}";
-        }
-
-        private int GetProjectResultCode(int defaultCode = 0)
-        {
-            return HasFlowFailure ? _flowFailureCode : defaultCode;
-        }
-
         private string GetFlowControlMessage(FlowControlData flowControlData)
         {
             if (!string.IsNullOrWhiteSpace(flowControlData.Params))
@@ -714,7 +712,7 @@ namespace ProjectARVRPro
             if (result == null) return;
 
             if (string.IsNullOrWhiteSpace(result.Model))
-                result.Model = !string.IsNullOrWhiteSpace(FlowName) ? FlowName : FlowTemplate.Text;
+                result.Model = FlowName;
 
             try
             {
@@ -748,13 +746,6 @@ namespace ProjectARVRPro
             {
                 log.Warn("失败结果回填拍照图像失败", ex);
             }
-        }
-
-        private object CreateProjectResponseData()
-        {
-            return ViewResultManager.Config.UseLegacyARVROutput
-                ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult)
-                : ObjectiveTestResult;
         }
 
         private void SendProjectResultResponse(int code, string message, object responseData)
@@ -805,7 +796,7 @@ namespace ProjectARVRPro
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+            FlowEngineConfig.Instance.FlowRunTime[FlowName] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             CurrentFlowResult.RunTime  = stopwatch.ElapsedMilliseconds;
@@ -868,8 +859,8 @@ namespace ProjectARVRPro
                         MsgID = "",
                         EventName = "ProjectARVRResult",
                         Code = -2,
-                        Msg = GetProjectResultMessage(CurrentFlowResult.Msg),
-                        Data = CreateProjectResponseData()
+                        Msg = HasFlowFailure ? _flowFailureMessage : CurrentFlowResult.Msg,
+                        Data = ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult
                     };
                     string respString = JsonConvert.SerializeObject(response);
                     log.Info(respString);
@@ -914,9 +905,9 @@ namespace ProjectARVRPro
                             Version = "1.0",
                             MsgID = "",
                             EventName = "ProjectARVRResult",
-                            Code = GetProjectResultCode(-1),
-                            Msg = GetProjectResultMessage("ARVR Test Fail"),
-                            Data = CreateProjectResponseData()
+                            Code = HasFlowFailure ? _flowFailureCode : -1,
+                            Msg = HasFlowFailure ? _flowFailureMessage : "ARVR Test Fail",
+                            Data = ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult
                         };
                         string respString = JsonConvert.SerializeObject(response);
                         log.Info(respString);
@@ -1081,7 +1072,7 @@ namespace ProjectARVRPro
                 nextTestType = nextTestType + 1;
             }
 
-            string switchPGMessage = GetSwitchPGMessage();
+            string switchPGMessage = string.IsNullOrWhiteSpace(_lastFlowFailureMessage) ? "Switch PG" : $"上一流程失败: {_lastFlowFailureMessage}";
             var response = new SocketResponse
             {
                 Version = "1.0",
@@ -1196,9 +1187,9 @@ namespace ProjectARVRPro
                 Version = "1.0",
                 MsgID = string.Empty,
                 EventName = "ProjectARVRResult",
-                Code = GetProjectResultCode(),
+                Code = HasFlowFailure ? _flowFailureCode : 0,
                 SerialNumber = SNtextBox.Text,
-                Msg = GetProjectResultMessage(ObjectiveTestResult.TotalResult ? "ARVR Test Completed" : "ARVR Test Fail"),
+                Msg = HasFlowFailure ? _flowFailureMessage : (ObjectiveTestResult.TotalResult ? "ARVR Test Completed" : "ARVR Test Fail"),
                 Data = responseData
             };
             string respString = JsonConvert.SerializeObject(response);
@@ -1614,13 +1605,7 @@ namespace ProjectARVRPro
 
                     log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
 
-                    var templateParam = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(meta.FlowTemplate));
-                    if (templateParam == null)
-                    {
-                        log.Error($"找不到流程模板: {meta.FlowTemplate}");
-                        continue;
-                    }
-                    FlowTemplate.SelectedValue = templateParam.Value;
+                    TemplateModel<FlowParam> templateParam = SelectFlowTemplate(meta);
 
                     // 执行流程并等待完成
                     var tcs = new TaskCompletionSource<FlowControlData>();
@@ -1634,11 +1619,11 @@ namespace ProjectARVRPro
                     TryCount = 0;
                     CurrentFlowResult = new ProjectARVRReuslt();
                     CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
-                    CurrentFlowResult.Model = FlowTemplate.Text;
+                    CurrentFlowResult.Model = templateParam.Key;
                     CurrentFlowResult.TestType = CurrentTestType;
                     ProjectARVRProConfig.Instance.StepIndex = CurrentTestType;
 
-                    FlowName = FlowTemplate.Text;
+                    FlowName = CurrentFlowResult.Model;
                     string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
                     CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
 
@@ -1691,7 +1676,7 @@ namespace ProjectARVRPro
 
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
-                    LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+                    LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowName, out long time) ? time : 0;
 
                     MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
                     using (var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true }))
@@ -1728,7 +1713,7 @@ namespace ProjectARVRPro
 
                     stopwatch.Stop();
                     timer.Change(Timeout.Infinite, 500);
-                    FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+                    FlowEngineConfig.Instance.FlowRunTime[FlowName] = stopwatch.ElapsedMilliseconds;
                     log.Info($"流程 {meta.Name} 完成: {flowResult.EventName}, 耗时 {stopwatch.ElapsedMilliseconds}ms");
 
                     CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
