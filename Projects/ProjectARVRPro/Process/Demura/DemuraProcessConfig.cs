@@ -48,7 +48,7 @@ namespace ProjectARVRPro.Process.Demura
 
         [Category("工具配置")]
         [DisplayName("准备DemuraTool")]
-        [Description("复制打包的DemuraTool_x64到用户可写目录，并把CSV改名为G128.csv/G255.csv")]
+        [Description("首次复制打包的DemuraTool_x64到用户可写目录，并把CSV改名为G128.csv/G255.csv")]
         public bool PrepareDemuraTool { get => _PrepareDemuraTool; set { _PrepareDemuraTool = value; OnPropertyChanged(); } }
         private bool _PrepareDemuraTool = true;
 

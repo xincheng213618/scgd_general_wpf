@@ -116,7 +116,7 @@ namespace ProjectARVRPro.Process.Demura
             }
 
             string workDirectory = BuildWorkDirectory();
-            CopyDirectory(bundledToolDir, workDirectory);
+            CopyMissingDirectoryFiles(bundledToolDir, workDirectory);
 
             string csvDirectory = Path.Combine(workDirectory, "csv");
             Directory.CreateDirectory(csvDirectory);
@@ -461,7 +461,7 @@ flash_address = 0x00003000
             return string.IsNullOrWhiteSpace(value) ? "Batch" : value;
         }
 
-        private static void CopyDirectory(string sourceDirectory, string targetDirectory)
+        private static void CopyMissingDirectoryFiles(string sourceDirectory, string targetDirectory)
         {
             Directory.CreateDirectory(targetDirectory);
 
@@ -476,7 +476,8 @@ flash_address = 0x00003000
                 string relative = Path.GetRelativePath(sourceDirectory, file);
                 string targetFile = Path.Combine(targetDirectory, relative);
                 Directory.CreateDirectory(Path.GetDirectoryName(targetFile) ?? targetDirectory);
-                File.Copy(file, targetFile, true);
+                if (!File.Exists(targetFile))
+                    File.Copy(file, targetFile, false);
             }
         }
 

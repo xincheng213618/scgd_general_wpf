@@ -175,6 +175,7 @@ namespace ProjectARVRPro
         }
 
         bool IsSwitchRun;
+        private bool _isFlowLifecycleActive;
         public void SwitchPGCompleted()
         {
             if (IsSwitchRun)
@@ -184,33 +185,38 @@ namespace ProjectARVRPro
             }
             IsSwitchRun = true;
 
-            if (flowControl.IsFlowRun)
+            try
             {
-                log.Info("PG切换错误，正在执行流程");
-                return;
-            }
-
-            // Find next enabled ProcessMeta
-            int nextTestType = -1;
-            for (int i = CurrentTestType + 1; i < ProcessMetas.Count; i++)
-            {
-                if (ProcessMetas[i].IsEnabled)
+                if (flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
                 {
-                    nextTestType = i;
-                    break;
+                    log.Info("PG切换错误，正在执行流程或处理流程结果");
+                    return;
+                }
+
+                // Find next enabled ProcessMeta
+                int nextTestType = -1;
+                for (int i = CurrentTestType + 1; i < ProcessMetas.Count; i++)
+                {
+                    if (ProcessMetas[i].IsEnabled)
+                    {
+                        nextTestType = i;
+                        break;
+                    }
+                }
+
+                if (nextTestType >= 0 && nextTestType < ProcessMetas.Count)
+                {
+                    ProcessMeta processMeta = ProcessMetas[nextTestType];
+                    ProjectConfig.StepIndex = nextTestType;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
+                    CurrentTestType = nextTestType;
+                    RunTemplate();
                 }
             }
-
-            if (nextTestType >= 0 && nextTestType < ProcessMetas.Count)
+            finally
             {
-                ProcessMeta processMeta = ProcessMetas[nextTestType];
-                ProjectConfig.StepIndex = nextTestType;
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
-                CurrentTestType = nextTestType;
-                RunTemplate();
+                IsSwitchRun = false;
             }
-
-            IsSwitchRun = false;
         }
  
         public STNodeEditor STNodeEditorMain { get; set; }
@@ -541,9 +547,9 @@ namespace ProjectARVRPro
 
         public async Task RunTemplate()
         {
-            if (flowControl.IsFlowRun)
+            if (flowControl.IsFlowRun || _isFlowLifecycleActive)
             {
-                log.Info("当前flowControl存在流程执行");
+                log.Info("当前flowControl存在流程执行或正在处理流程结果");
                 return;
             }
 
@@ -614,6 +620,7 @@ namespace ProjectARVRPro
 
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
+            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
@@ -623,6 +630,7 @@ namespace ProjectARVRPro
             int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
 
+            _isFlowLifecycleActive = true;
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
@@ -701,6 +709,47 @@ namespace ProjectARVRPro
             return string.IsNullOrWhiteSpace(FlowName) ? eventName : $"{FlowName}:{eventName}";
         }
 
+        private void TryAttachCapturedImage(ProjectARVRReuslt result, string? serialNumber = null)
+        {
+            if (result == null) return;
+
+            if (string.IsNullOrWhiteSpace(result.Model))
+                result.Model = !string.IsNullOrWhiteSpace(FlowName) ? FlowName : FlowTemplate.Text;
+
+            try
+            {
+                int batchId = result.BatchId;
+                if (batchId <= 0)
+                {
+                    string code = !string.IsNullOrWhiteSpace(serialNumber) ? serialNumber : result.Code;
+                    if (!string.IsNullOrWhiteSpace(code))
+                    {
+                        MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByCode(code);
+                        if (batch != null)
+                        {
+                            batchId = batch.Id;
+                            result.BatchId = batch.Id;
+                        }
+                    }
+                }
+
+                if (batchId <= 0) return;
+
+                var image = MeasureImgResultDao.Instance.GetAllByBatchId(batchId)
+                    .Where(x => !string.IsNullOrWhiteSpace(x.FileUrl))
+                    .OrderBy(x => x.ZIndex ?? int.MaxValue)
+                    .ThenBy(x => x.Id)
+                    .FirstOrDefault(x => File.Exists(x.FileUrl));
+
+                if (image != null)
+                    result.FileName = image.FileUrl;
+            }
+            catch (Exception ex)
+            {
+                log.Warn("失败结果回填拍照图像失败", ex);
+            }
+        }
+
         private object CreateProjectResponseData()
         {
             return ViewResultManager.Config.UseLegacyARVROutput
@@ -767,19 +816,20 @@ namespace ProjectARVRPro
                 CurrentFlowResult.Msg = "Completed";
                 try
                 {
-                    //如果没有执行完，先切换PG，并且提前设置流程
+                    Processing(FlowControlData.SerialNumber);
                     if (!IsTestTypeCompleted())
                     {
+                        _isFlowLifecycleActive = false;
                         SwitchPG();
                     }
-
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    else
                     {
-                        Processing(FlowControlData.SerialNumber);
-                    });
+                        _isFlowLifecycleActive = false;
+                    }
                 }
                 catch (Exception ex)
                 {
+                    _isFlowLifecycleActive = false;
                     MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                 }
                 TryCount = 0;
@@ -789,6 +839,7 @@ namespace ProjectARVRPro
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
                 CurrentFlowResult.Msg = GetFlowControlMessage(FlowControlData);
+                TryAttachCapturedImage(CurrentFlowResult, FlowControlData.SerialNumber);
                 ViewResultManager.Save(CurrentFlowResult);
 
                 flowEngine.LoadFromBase64(string.Empty);
@@ -796,6 +847,7 @@ namespace ProjectARVRPro
 
                 if (TryCount < ProjectARVRProConfig.Instance.TryCountMax)
                 {
+                    _isFlowLifecycleActive = false;
                     Task.Delay(200).ContinueWith(t =>
                     {
                         log.Info("重新尝试运行流程");
@@ -809,6 +861,7 @@ namespace ProjectARVRPro
                 else
                 {
                     RecordFlowFailure(CurrentFlowResult.Msg, -2);
+                    _isFlowLifecycleActive = false;
                     var response = new SocketResponse
                     {
                         Version = "1.0",
@@ -830,21 +883,7 @@ namespace ProjectARVRPro
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = GetFlowControlMessage(FlowControlData);
                 RecordFlowFailure(CurrentFlowResult.Msg);
-
-                //算法失败但是图像是有的，可以帮助用户即使发现原因
-                if (CurrentFlowResult.Msg.Contains("SDK return failed") || CurrentFlowResult.Msg.Contains("BinocularFusion calculation failed") || CurrentFlowResult.Msg.Contains("Not get cie file"))
-                {
-                    MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-                    if (Batch != null)
-                    {
-                        var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-                        if (values.Count > 0)
-                        {
-                            CurrentFlowResult.FileName = values[0].FileUrl;
-                        }
-                    }
-                }
-
+                TryAttachCapturedImage(CurrentFlowResult, FlowControlData.SerialNumber);
 
                 ViewResultManager.Save(CurrentFlowResult);
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + CurrentFlowResult.Msg;
@@ -856,15 +895,18 @@ namespace ProjectARVRPro
                     //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
                     if (!IsTestTypeCompleted())
                     {
+                        _isFlowLifecycleActive = false;
                         SwitchPG();
                     }
                     else
                     {
+                        _isFlowLifecycleActive = false;
                         TestCompleted();
                     }
                 }
                 else
                 {
+                    _isFlowLifecycleActive = false;
                     if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
                     {
                         var response = new SocketResponse
@@ -1702,6 +1744,7 @@ namespace ProjectARVRPro
                         CurrentFlowResult.FlowStatus = flowResult.EventName == "OverTime" ? FlowStatus.OverTime : FlowStatus.Failed;
                         CurrentFlowResult.Msg = GetFlowControlMessage(flowResult);
                         RecordFlowFailure(CurrentFlowResult.Msg, flowResult.EventName == "OverTime" ? -2 : -1);
+                        TryAttachCapturedImage(CurrentFlowResult, flowResult.SerialNumber);
                         logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName + Environment.NewLine + CurrentFlowResult.Msg;
                         ViewResultManager.Save(CurrentFlowResult);
 
