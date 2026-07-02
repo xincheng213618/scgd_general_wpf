@@ -1,12 +1,18 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace ProjectARVRPro.Process
 {
     public interface IProcess
     {
         public bool Execute(IProcessExecutionContext ctx);
+
+        public Task<bool> ExecuteAsync(IProcessExecutionContext ctx)
+        {
+            return Task.Run(() => Execute(ctx));
+        }
 
         public void Render(IProcessExecutionContext ctx);
 
@@ -100,6 +106,7 @@ namespace ProjectARVRPro.Process
         }
 
         public abstract bool Execute(IProcessExecutionContext ctx);
+        public virtual Task<bool> ExecuteAsync(IProcessExecutionContext ctx) => Task.Run(() => Execute(ctx));
         public abstract void Render(IProcessExecutionContext ctx);
         public abstract string GenText(IProcessExecutionContext ctx);
 

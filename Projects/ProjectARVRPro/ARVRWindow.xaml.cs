@@ -833,7 +833,7 @@ namespace ProjectARVRPro
             }
         }
 
-        private void Processing(string SerialNumber)
+        private async void Processing(string SerialNumber)
         {
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
@@ -870,7 +870,7 @@ namespace ProjectARVRPro
                             ObjectiveTestResult = ObjectiveTestResult,
                             ImageView =ImageView,
                         };
-                        executed = meta.Process.Execute(ctx);
+                        executed = await meta.Process.ExecuteAsync(ctx);
                     }
                     catch (Exception ex)
                     {

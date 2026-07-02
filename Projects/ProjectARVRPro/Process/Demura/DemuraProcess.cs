@@ -1,14 +1,20 @@
 #pragma warning disable CS8601, CS8602, CS8604
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Sensor;
+using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace ProjectARVRPro.Process.Demura
 {
@@ -22,6 +28,16 @@ namespace ProjectARVRPro.Process.Demura
         private static readonly HashSet<string> PreviewImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".bmp", ".jpg", ".jpeg", ".png", ".tif", ".tiff" };
 
         public override bool Execute(IProcessExecutionContext ctx)
+        {
+            return ExecuteCoreAsync(ctx).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        public override Task<bool> ExecuteAsync(IProcessExecutionContext ctx)
+        {
+            return Task.Run(() => ExecuteCoreAsync(ctx));
+        }
+
+        private async Task<bool> ExecuteCoreAsync(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null) return false;
 
@@ -42,7 +58,7 @@ namespace ProjectARVRPro.Process.Demura
                 {
                     if (hasRequiredCsv)
                     {
-                        PrepareDemuraTool(testResult);
+                        await PrepareDemuraToolAsync(testResult, log).ConfigureAwait(false);
                     }
                     else
                     {
@@ -93,7 +109,21 @@ namespace ProjectARVRPro.Process.Demura
             AppendBinLinkText(sb, "MergedBin", testResult.MergedBinFile);
             if (testResult.MergedBinExists)
                 sb.AppendLine("FlashAddress:0x00003000");
-            sb.AppendLine("BurnStatus:未接入烧录接口，当前仅生成待烧录bin。");
+            sb.AppendLine($"BurnStatus:{BuildBurnStatusText(testResult)}");
+            if (testResult.BurnEnabled)
+            {
+                AppendFileLinkText(sb, "BurnSource", testResult.BurnSourceFile);
+                sb.AppendLine($"BurnTarget:{testResult.BurnTargetFileName}");
+                sb.AppendLine($"BurnSensor:{testResult.BurnSensorName}({testResult.BurnSensorCode}) {testResult.BurnAddress}:{testResult.BurnPort}");
+                sb.AppendLine("BurnConnectionMode:TCPIP");
+                sb.AppendLine($"BurnCommand:{testResult.BurnCommand}");
+                if (!string.IsNullOrWhiteSpace(testResult.BurnCommandHex))
+                    sb.AppendLine($"BurnCommandHex:{testResult.BurnCommandHex}");
+                if (!string.IsNullOrWhiteSpace(testResult.BurnResponseText))
+                    sb.AppendLine($"BurnResponse:{testResult.BurnResponseText}");
+                if (!string.IsNullOrWhiteSpace(testResult.BurnMessage))
+                    sb.AppendLine($"BurnMessage:{testResult.BurnMessage}");
+            }
             if (!string.IsNullOrWhiteSpace(testResult.Message))
                 sb.AppendLine($"Message:{testResult.Message}");
 
@@ -106,16 +136,18 @@ namespace ProjectARVRPro.Process.Demura
             return sb.ToString();
         }
 
-        private void PrepareDemuraTool(DemuraViewTestResult testResult)
+        private async Task PrepareDemuraToolAsync(DemuraViewTestResult testResult, ILog? log)
         {
             string? bundledToolDir = ResolveBundledToolDirectory();
             if (string.IsNullOrWhiteSpace(bundledToolDir))
             {
                 testResult.Message = "未找到打包的DemuraTool_x64资源。";
+                log?.Warn(testResult.Message);
                 return;
             }
 
             string workDirectory = BuildWorkDirectory();
+            log?.Info($"Demura准备工具目录: source={bundledToolDir}, work={workDirectory}");
             CopyMissingDirectoryFiles(bundledToolDir, workDirectory);
 
             string csvDirectory = Path.Combine(workDirectory, "csv");
@@ -123,8 +155,12 @@ namespace ProjectARVRPro.Process.Demura
 
             string g128 = Path.Combine(csvDirectory, Prepared128FileName);
             string g255 = Path.Combine(csvDirectory, Prepared255FileName);
-            File.Copy(testResult.W128.SourceFile, g128, true);
-            File.Copy(testResult.W255.SourceFile, g255, true);
+            double w128ExposureTime = ValidateExposureTime(Config.W128ExposureTime, "W128");
+            double w255ExposureTime = ValidateExposureTime(Config.W255ExposureTime, "W255");
+            testResult.W128.ExposureTime = w128ExposureTime;
+            testResult.W255.ExposureTime = w255ExposureTime;
+            WriteExposureCalibratedCsv(testResult.W128.SourceFile, g128, w128ExposureTime, "W128", log);
+            WriteExposureCalibratedCsv(testResult.W255.SourceFile, g255, w255ExposureTime, "W255", log);
             testResult.W128.PreparedFile = g128;
             testResult.W255.PreparedFile = g255;
 
@@ -150,17 +186,20 @@ namespace ProjectARVRPro.Process.Demura
             {
                 try
                 {
+                    log?.Info($"Demura开始生成bin: work={workDirectory}, g128={g128}, g255={g255}, w128Exposure={w128ExposureTime}, w255Exposure={w255ExposureTime}, input={Config.InputWidth}x{Config.InputHeight}, output={Config.OutputWidth}x{Config.OutputHeight}");
                     var binResult = DemuraBinGenerator.Generate(workDirectory, g128, g255, Config.InputWidth, Config.InputHeight, Config.OutputWidth, Config.OutputHeight, Config.BlockMode, Config.PaddingMode);
                     testResult.StaticBinFile = binResult.StaticBinFile;
                     testResult.DynamicBinFile = binResult.DynamicBinFile;
                     testResult.MergedBinFile = binResult.MergedBinFile;
                     testResult.BinGenerated = binResult.Success;
+                    log?.Info($"Demura生成bin完成: success={binResult.Success}, static={testResult.StaticBinFile}, dynamic={testResult.DynamicBinFile}, merged={testResult.MergedBinFile}, message={binResult.Message}");
                     if (!binResult.Success)
                         AppendMessage(testResult, binResult.Message);
                 }
                 catch (Exception ex)
                 {
                     testResult.BinGenerated = false;
+                    log?.Error("Demura bin生成异常", ex);
                     AppendMessage(testResult, $"Demura bin生成失败：{ex.Message}");
                 }
             }
@@ -172,6 +211,310 @@ namespace ProjectARVRPro.Process.Demura
             }
 
             testResult.MergedBinExists = File.Exists(mergedBin);
+
+            if (Config.BurnAfterGenerate)
+            {
+                await BurnDemuraBinAsync(testResult, log).ConfigureAwait(false);
+            }
+        }
+
+        private async Task BurnDemuraBinAsync(DemuraViewTestResult testResult, ILog? log)
+        {
+            testResult.BurnEnabled = true;
+            testResult.BurnTargetFileName = string.IsNullOrWhiteSpace(Config.BurnTargetFileName) ? "DemuraMerged.bin" : Config.BurnTargetFileName.Trim();
+            testResult.BurnSourceFile = ResolveBurnSourceFile(testResult);
+
+            try
+            {
+                log?.Info($"Demura烧录开始: source={testResult.BurnSourceFile}, target={testResult.BurnTargetFileName}");
+                if (!File.Exists(testResult.BurnSourceFile))
+                {
+                    SetBurnFailure(testResult, $"烧录源bin不存在：{testResult.BurnSourceFile}", log);
+                    return;
+                }
+
+                DeviceSensor? sensor = FindGeneralSensor();
+                if (sensor == null)
+                {
+                    SetBurnFailure(testResult, $"未找到通用传感器服务，Code={Config.GeneralSensorCode}, Category={Config.GeneralSensorCategory}", log);
+                    return;
+                }
+
+                testResult.BurnSensorCode = sensor.Code;
+                testResult.BurnSensorName = sensor.Name;
+                testResult.BurnAddress = sensor.Config.Addr;
+                testResult.BurnPort = sensor.Config.Port;
+
+                if (string.IsNullOrWhiteSpace(sensor.Config.Addr) || sensor.Config.Port <= 0)
+                {
+                    SetBurnFailure(testResult, $"通用传感器PG连接配置无效：{sensor.Config.Addr}:{sensor.Config.Port}", log);
+                    return;
+                }
+
+                log?.Info($"Demura烧录使用TCPIP直连PG，不关闭通用传感器服务: {sensor.Name}({sensor.Code})");
+                TcpBurnResult burnResult = await SendBurnCommandAsync(sensor.Config.Addr, sensor.Config.Port, testResult.BurnSourceFile, testResult.BurnTargetFileName, log).ConfigureAwait(false);
+                testResult.BurnCommand = burnResult.CommandText;
+                testResult.BurnCommandHex = burnResult.CommandHex;
+                testResult.BurnResponseText = burnResult.ResponseText;
+                testResult.BurnResponseHex = burnResult.ResponseHex;
+                testResult.BurnSucceeded = burnResult.Success;
+                testResult.BurnMessage = burnResult.Message;
+                if (!burnResult.Success)
+                    AppendMessage(testResult, burnResult.Message);
+            }
+            catch (Exception ex)
+            {
+                testResult.BurnSucceeded = false;
+                testResult.BurnMessage = $"Demura烧录异常：{ex.Message}";
+                log?.Error("Demura烧录异常", ex);
+                AppendMessage(testResult, testResult.BurnMessage);
+            }
+            finally
+            {
+                log?.Info($"Demura烧录结束: success={testResult.BurnSucceeded}, response={testResult.BurnResponseText}, message={testResult.BurnMessage}");
+            }
+        }
+
+        private async Task<TcpBurnResult> SendBurnCommandAsync(string address, int port, string sourceFile, string targetFileName, ILog? log)
+        {
+            string powerOnBody = "PG,1,POWER,ON";
+            string powerOnFrame = BuildLengthPrefixedBody(powerOnBody);
+            byte[] powerOnBytes = BuildBurnCommandBytes(powerOnBody);
+            string powerOnText = $"[02][FF]{powerOnFrame}[03]";
+            string powerOnHex = ToHex(powerOnBytes);
+
+            string pgChannel = string.IsNullOrWhiteSpace(Config.BurnPgChannel) ? "01" : Config.BurnPgChannel.Trim();
+            string sendFileBody = $"PG,{pgChannel},SENDFILE,START,{Config.BurnFileIndex},{sourceFile},{targetFileName}";
+            string sendFileFrame = BuildLengthPrefixedBody(sendFileBody);
+            byte[] sendFileBytes = BuildBurnCommandBytes(sendFileBody);
+            string sendFileText = $"[02][FF]{sendFileFrame}[03]";
+            string sendFileHex = ToHex(sendFileBytes);
+            string powerOffBody = "PG,1,POWER,OFF";
+            string powerOffFrame = BuildLengthPrefixedBody(powerOffBody);
+            byte[] powerOffBytes = BuildBurnCommandBytes(powerOffBody);
+            string powerOffText = $"[02][FF]{powerOffFrame}[03]";
+            string powerOffHex = ToHex(powerOffBytes);
+            string commandText = $"PowerOn={powerOnText};SendFile={sendFileText};PowerOff={powerOffText}";
+            string commandHex = $"PowerOn={powerOnHex};SendFile={sendFileHex};PowerOff={powerOffHex}";
+            string successResponse = string.IsNullOrWhiteSpace(Config.BurnSuccessResponse) ? "SENDFILE,END,OK" : Config.BurnSuccessResponse;
+
+            log?.Info($"Demura烧录TCP连接PG: {address}:{port}, commands={commandText}, hex={commandHex}");
+            using TcpClient tcpClient = new();
+            try
+            {
+                await tcpClient.ConnectAsync(address, port).WaitAsync(TimeSpan.FromMilliseconds(Math.Max(1000, Config.BurnTcpConnectTimeoutMs))).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                return TcpBurnResult.FromFailure(commandText, commandHex, string.Empty, string.Empty, $"连接PG超时：{address}:{port}");
+            }
+
+            tcpClient.NoDelay = true;
+
+            using NetworkStream stream = tcpClient.GetStream();
+            List<CommandExchange> exchanges = new();
+            CommandExchange? failure = null;
+            bool powerOnAccepted = false;
+
+            CommandExchange powerOn = await SendCommandAndWaitAsync(stream, "PowerOn", powerOnText, powerOnBytes, "POWER,ON,END,OK", log).ConfigureAwait(false);
+            exchanges.Add(powerOn);
+            if (powerOn.Success)
+                powerOnAccepted = true;
+            else
+                failure = powerOn;
+
+            if (failure == null)
+            {
+                CommandExchange sendFile = await SendCommandAndWaitAsync(stream, "SendFile", sendFileText, sendFileBytes, successResponse, log).ConfigureAwait(false);
+                exchanges.Add(sendFile);
+                if (!sendFile.Success)
+                    failure = sendFile;
+            }
+
+            if (powerOnAccepted)
+            {
+                CommandExchange powerOff = await SendCommandAndWaitAsync(stream, "PowerOff", powerOffText, powerOffBytes, "POWER,OFF,END,OK", log).ConfigureAwait(false);
+                exchanges.Add(powerOff);
+                if (!powerOff.Success && failure == null)
+                    failure = powerOff;
+            }
+
+            string responseText = BuildExchangeText(exchanges);
+            string responseHex = BuildExchangeHex(exchanges);
+            if (failure != null)
+                return TcpBurnResult.FromFailure(commandText, commandHex, responseText, responseHex, $"PG指令失败({failure.Name})：{failure.Message}");
+
+            return TcpBurnResult.FromSuccess(commandText, commandHex, responseText, responseHex, "烧录成功，上电、烧录、下电均收到回包。");
+        }
+
+        private async Task<CommandExchange> SendCommandAndWaitAsync(NetworkStream stream, string name, string commandText, byte[] commandBytes, string expectedResponse, ILog? log)
+        {
+            await stream.WriteAsync(commandBytes.AsMemory(0, commandBytes.Length)).ConfigureAwait(false);
+            await stream.FlushAsync().ConfigureAwait(false);
+            log?.Info($"Demura烧录指令已发送: step={name}, command={commandText}, hex={ToHex(commandBytes)}, bytes={commandBytes.Length}, expected={expectedResponse}");
+
+            List<byte> received = new();
+            byte[] buffer = new byte[1024];
+            DateTime deadline = DateTime.Now.AddMilliseconds(Math.Max(1000, Config.BurnTcpResponseTimeoutMs));
+
+            while (DateTime.Now < deadline)
+            {
+                TimeSpan remaining = deadline - DateTime.Now;
+                int read;
+                try
+                {
+                    read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length)).AsTask().WaitAsync(remaining).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                    break;
+                }
+
+                if (read <= 0)
+                    break;
+
+                for (int i = 0; i < read; i++)
+                    received.Add(buffer[i]);
+
+                string responseText = DecodeAscii(received);
+                string responseHex = ToHex(received);
+                log?.Info($"Demura烧录收到PG回包片段: step={name}, text={responseText}, hex={responseHex}");
+                if (responseText.Contains(expectedResponse, StringComparison.OrdinalIgnoreCase))
+                    return CommandExchange.FromSuccess(name, responseText, responseHex);
+
+                if (ContainsBurnFailureResponse(responseText))
+                    return CommandExchange.FromFailure(name, responseText, responseHex, $"PG返回失败：{responseText}");
+            }
+
+            string finalText = DecodeAscii(received);
+            string finalHex = ToHex(received);
+            string message = string.IsNullOrWhiteSpace(finalText) ? $"等待{name}回包超时，未收到数据。" : $"等待{name}期望回包超时：{finalText}";
+            return CommandExchange.FromFailure(name, finalText, finalHex, message);
+        }
+
+        private string ResolveBurnSourceFile(DemuraTestResult testResult)
+        {
+            string configured = Config.BurnSourceBinName?.Trim() ?? string.Empty;
+            if (Path.IsPathRooted(configured))
+                return configured;
+
+            if (string.Equals(configured, Path.GetFileName(testResult.StaticBinFile), StringComparison.OrdinalIgnoreCase))
+                return testResult.StaticBinFile;
+
+            if (string.Equals(configured, Path.GetFileName(testResult.MergedBinFile), StringComparison.OrdinalIgnoreCase))
+                return testResult.MergedBinFile;
+
+            if (string.IsNullOrWhiteSpace(configured) || string.Equals(configured, Path.GetFileName(testResult.DynamicBinFile), StringComparison.OrdinalIgnoreCase))
+                return testResult.DynamicBinFile;
+
+            return string.IsNullOrWhiteSpace(testResult.WorkDirectory) ? configured : Path.Combine(testResult.WorkDirectory, configured);
+        }
+
+        private static double ValidateExposureTime(double exposureTime, string name)
+        {
+            if (double.IsNaN(exposureTime) || double.IsInfinity(exposureTime) || exposureTime <= 0)
+                throw new InvalidOperationException($"{name}曝光时间必须大于0。");
+
+            return exposureTime;
+        }
+
+        private static void WriteExposureCalibratedCsv(string sourceFile, string targetFile, double exposureTime, string name, ILog? log)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(targetFile) ?? ".");
+            int numericCount = 0;
+            using StreamReader reader = new(sourceFile, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            using StreamWriter writer = new(targetFile, false, new UTF8Encoding(false));
+
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                string calibratedLine = Regex.Replace(line, @"(?<![A-Za-z0-9_+\-.])[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?", match =>
+                {
+                    if (!TryParseDouble(match.Value, out double value))
+                        return match.Value;
+
+                    numericCount++;
+                    return (value / exposureTime).ToString("G17", CultureInfo.InvariantCulture);
+                });
+                writer.WriteLine(calibratedLine);
+            }
+
+            log?.Info($"Demura {name} CSV曝光校准完成: source={sourceFile}, target={targetFile}, exposure={exposureTime}, numericCount={numericCount}");
+        }
+
+        private DeviceSensor? FindGeneralSensor()
+        {
+            var services = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>();
+            DeviceSensor? sensor = null;
+            if (!string.IsNullOrWhiteSpace(Config.GeneralSensorCode))
+                sensor = services.FirstOrDefault(x => string.Equals(x.Code, Config.GeneralSensorCode, StringComparison.OrdinalIgnoreCase));
+
+            if (sensor == null && !string.IsNullOrWhiteSpace(Config.GeneralSensorCategory))
+                sensor = services.FirstOrDefault(x => string.Equals(x.Config.Category, Config.GeneralSensorCategory, StringComparison.OrdinalIgnoreCase));
+
+            return sensor;
+        }
+
+        private static byte[] BuildBurnCommandBytes(string commandBody)
+        {
+            string framedBody = BuildLengthPrefixedBody(commandBody);
+            byte[] bodyBytes = Encoding.ASCII.GetBytes(framedBody);
+            byte[] bytes = new byte[bodyBytes.Length + 3];
+            bytes[0] = 0x02;
+            bytes[1] = 0xFF;
+            Array.Copy(bodyBytes, 0, bytes, 2, bodyBytes.Length);
+            bytes[^1] = 0x03;
+            return bytes;
+        }
+
+        private static string BuildLengthPrefixedBody(string commandBody)
+        {
+            int length = Encoding.ASCII.GetByteCount(commandBody);
+            return $"{length:X4}{commandBody}";
+        }
+
+        private static bool ContainsBurnFailureResponse(string responseText)
+        {
+            return responseText.Contains("END,NG", StringComparison.OrdinalIgnoreCase) ||
+                   responseText.Contains("FAIL", StringComparison.OrdinalIgnoreCase) ||
+                   responseText.Contains("ERROR", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string DecodeAscii(IEnumerable<byte> bytes)
+        {
+            return Encoding.ASCII.GetString(bytes.ToArray()).Replace("\u0002", "[02]").Replace("\u0003", "[03]");
+        }
+
+        private static string ToHex(IEnumerable<byte> bytes)
+        {
+            StringBuilder builder = new();
+            foreach (byte value in bytes)
+            {
+                if (builder.Length > 0)
+                    builder.Append(' ');
+
+                builder.Append(value.ToString("X2", CultureInfo.InvariantCulture));
+            }
+
+            return builder.ToString();
+        }
+
+        private static string BuildExchangeText(IEnumerable<CommandExchange> exchanges)
+        {
+            return string.Join(" | ", exchanges.Select(exchange => $"{exchange.Name}:{exchange.Text}"));
+        }
+
+        private static string BuildExchangeHex(IEnumerable<CommandExchange> exchanges)
+        {
+            return string.Join(" | ", exchanges.Select(exchange => $"{exchange.Name}:{exchange.Hex}"));
+        }
+
+        private static void SetBurnFailure(DemuraTestResult testResult, string message, ILog? log)
+        {
+            testResult.BurnSucceeded = false;
+            testResult.BurnMessage = message;
+            log?.Warn(message);
+            AppendMessage(testResult, message);
         }
 
         private string BuildDemuraConfig()
@@ -226,6 +569,12 @@ flash_address = 0x00003000
             {
                 AddBoolItem(testResult.Items, "DemuraMergedBin", testResult.MergedBinExists, testResult.MergedBinFile);
             }
+
+            if (Config.BurnAfterGenerate)
+            {
+                AddBoolItem(testResult.Items, "DemuraBurnSourceBin", File.Exists(testResult.BurnSourceFile), testResult.BurnSourceFile);
+                AddBoolItem(testResult.Items, "DemuraBurnSendFile", testResult.BurnSucceeded, testResult.BurnMessage);
+            }
         }
 
         private void AddCsvItems(ObservableCollection<ObjectiveTestItem> items, string prefix, DemuraCsvFileResult csv, int expectedCount)
@@ -233,6 +582,7 @@ flash_address = 0x00003000
             AddBoolItem(items, $"{prefix}FileExists", csv.SourceExists, csv.SourceFile);
             AddItem(items, $"{prefix}FileSize", csv.FileSize, csv.FileSize.ToString(CultureInfo.InvariantCulture), "byte");
             AddItem(items, $"{prefix}LineCount", csv.LineCount, csv.LineCount.ToString(CultureInfo.InvariantCulture), "line");
+            AddItem(items, $"{prefix}ExposureTime", csv.ExposureTime, csv.ExposureTime.ToString("G17", CultureInfo.InvariantCulture), "ms");
 
             if (Config.ValidateInputSize && expectedCount > 0)
                 AddItem(items, $"{prefix}ValueCount", csv.ValueCount, csv.ValueCount.ToString(CultureInfo.InvariantCulture), "count", expectedCount, expectedCount);
@@ -504,10 +854,22 @@ flash_address = 0x00003000
                 result.Message += Environment.NewLine + message;
         }
 
+        private static string BuildBurnStatusText(DemuraTestResult result)
+        {
+            if (!result.BurnEnabled)
+                return "未启用自动烧录。";
+
+            if (result.BurnSucceeded)
+                return "烧录成功，TCP/IP直连PG完成。";
+
+            return string.IsNullOrWhiteSpace(result.BurnMessage) ? "烧录失败。" : result.BurnMessage;
+        }
+
         private static void AppendCsvText(StringBuilder sb, string name, DemuraCsvFileResult result)
         {
             AppendFileLinkText(sb, $"{name}Source", result.SourceFile);
             AppendFileLinkText(sb, $"{name}Csv", result.PreparedFile);
+            sb.AppendLine($"{name} ExposureTime:{result.ExposureTime:G17}");
             sb.AppendLine($"{name} MasterId:{result.MasterId} Field:{result.SourceField}");
             sb.AppendLine($"{name} Count:{result.ValueCount} Lines:{result.LineCount} Size:{result.FileSize} Min:{result.Min:F4} Max:{result.Max:F4} Average:{result.Average:F4}");
             if (!string.IsNullOrWhiteSpace(result.ParseMessage))
@@ -527,6 +889,54 @@ flash_address = 0x00003000
                 displayName = new DirectoryInfo(filePath).Name;
             string fileLink = string.IsNullOrWhiteSpace(filePath) ? displayName : $"[[file|{filePath}|{displayName}]]";
             sb.AppendLine($"{name}:{fileLink} Exists:{exists}");
+        }
+
+        private sealed class CommandExchange
+        {
+            public string Name { get; private init; } = string.Empty;
+
+            public bool Success { get; private init; }
+
+            public string Text { get; private init; } = string.Empty;
+
+            public string Hex { get; private init; } = string.Empty;
+
+            public string Message { get; private init; } = string.Empty;
+
+            public static CommandExchange FromSuccess(string name, string text, string hex)
+            {
+                return new CommandExchange { Name = name, Success = true, Text = text, Hex = hex, Message = "OK" };
+            }
+
+            public static CommandExchange FromFailure(string name, string text, string hex, string message)
+            {
+                return new CommandExchange { Name = name, Success = false, Text = text, Hex = hex, Message = message };
+            }
+        }
+
+        private sealed class TcpBurnResult
+        {
+            public bool Success { get; private init; }
+
+            public string CommandText { get; private init; } = string.Empty;
+
+            public string CommandHex { get; private init; } = string.Empty;
+
+            public string ResponseText { get; private init; } = string.Empty;
+
+            public string ResponseHex { get; private init; } = string.Empty;
+
+            public string Message { get; private init; } = string.Empty;
+
+            public static TcpBurnResult FromSuccess(string commandText, string commandHex, string responseText, string responseHex, string message)
+            {
+                return new TcpBurnResult { Success = true, CommandText = commandText, CommandHex = commandHex, ResponseText = responseText, ResponseHex = responseHex, Message = message };
+            }
+
+            public static TcpBurnResult FromFailure(string commandText, string commandHex, string responseText, string responseHex, string message)
+            {
+                return new TcpBurnResult { Success = false, CommandText = commandText, CommandHex = commandHex, ResponseText = responseText, ResponseHex = responseHex, Message = message };
+            }
         }
 
         private sealed class DemuraBinGenerationResult

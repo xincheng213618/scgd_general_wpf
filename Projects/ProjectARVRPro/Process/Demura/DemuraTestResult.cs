@@ -41,6 +41,32 @@ namespace ProjectARVRPro.Process.Demura
 
         public bool MergedBinExists { get; set; }
 
+        public bool BurnEnabled { get; set; }
+
+        public bool BurnSucceeded { get; set; }
+
+        public string BurnSourceFile { get; set; } = string.Empty;
+
+        public string BurnTargetFileName { get; set; } = string.Empty;
+
+        public string BurnSensorCode { get; set; } = string.Empty;
+
+        public string BurnSensorName { get; set; } = string.Empty;
+
+        public string BurnAddress { get; set; } = string.Empty;
+
+        public int BurnPort { get; set; }
+
+        public string BurnCommand { get; set; } = string.Empty;
+
+        public string BurnCommandHex { get; set; } = string.Empty;
+
+        public string BurnResponseText { get; set; } = string.Empty;
+
+        public string BurnResponseHex { get; set; } = string.Empty;
+
+        public string BurnMessage { get; set; } = string.Empty;
+
         public string Message { get; set; } = string.Empty;
     }
 
@@ -51,6 +77,8 @@ namespace ProjectARVRPro.Process.Demura
         public string SourceFile { get; set; } = string.Empty;
 
         public string PreparedFile { get; set; } = string.Empty;
+
+        public double ExposureTime { get; set; } = 1;
 
         public string SourceField { get; set; } = string.Empty;
 

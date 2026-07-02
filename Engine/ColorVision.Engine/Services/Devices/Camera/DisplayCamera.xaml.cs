@@ -1622,6 +1622,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
+        private static void SaveLocalPreferences()
+        {
+            ConfigHandler.GetInstance().SaveConfigs();
+        }
+
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
             if (!Device.DisplayConfig.IsLocalVideoOpen)
@@ -1734,6 +1739,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
             }
+            else
+            {
+                cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
+            }
 
             string cameraId = ResolveLocalCameraId();
             if (string.IsNullOrWhiteSpace(cameraId))
@@ -1741,37 +1750,85 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return (false, "CameraID is empty, please check CameraCode configuration");
             }
 
-            Device.Config.CameraID = cameraId;
-            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
-            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
-            cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
+            ApplyLocalVideoCameraSettings(cameraId);
 
             int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
             logger.Info("CM_Open");
-            if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+            if (!TryOpenLocalVideoCamera(out nErr, out string errorMessage))
             {
-                string szMsg = string.Empty;
-                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                return (false, szMsg);
-            }
-
-            if (Device.PhyCamera?.Config?.CameraCfg?.IsRoiConfigured == true)
-            {
-                cvCameraCSLib.CM_Close(m_hCamHandle);
-                if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+                string retryCameraId = ResolveLocalCameraId(ignoreConfiguredId: true);
+                if (IsCameraIdMismatchError(errorMessage) && !string.IsNullOrWhiteSpace(retryCameraId) && !retryCameraId.Equals(cameraId, StringComparison.OrdinalIgnoreCase))
                 {
-                    string szMsg = string.Empty;
-                    cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                    return (false, szMsg);
+                    logger.Warn($"CM_Open failed because camera ID did not match, retry with refreshed CameraID. old={cameraId}, new={retryCameraId}");
+                    ApplyLocalVideoCameraSettings(retryCameraId);
+                    cameraId = retryCameraId;
+                    if (!TryOpenLocalVideoCamera(out nErr, out errorMessage))
+                    {
+                        return (false, errorMessage);
+                    }
+                }
+                else
+                {
+                    return (false, errorMessage);
                 }
             }
 
+            if (!Device.Config.CameraID.Equals(cameraId, StringComparison.OrdinalIgnoreCase))
+            {
+                Device.Config.CameraID = cameraId;
+            }
+            SaveLocalPreferences();
             cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
             cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
             callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
             cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
 
             return (true, string.Empty);
+        }
+
+        private void ApplyLocalVideoCameraSettings(string cameraId)
+        {
+            Device.Config.CameraID = cameraId;
+            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
+            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
+            cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
+        }
+
+        private bool TryOpenLocalVideoCamera(out int errorCode, out string errorMessage)
+        {
+            errorCode = cvCameraCSLib.CM_Open(m_hCamHandle);
+            if (errorCode != cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                errorMessage = GetCameraErrorMessage(errorCode);
+                return false;
+            }
+
+            if (Device.PhyCamera?.Config?.CameraCfg?.IsRoiConfigured == true)
+            {
+                cvCameraCSLib.CM_Close(m_hCamHandle);
+                errorCode = cvCameraCSLib.CM_Open(m_hCamHandle);
+                if (errorCode != cvErrorDefine.CV_ERR_SUCCESS)
+                {
+                    errorMessage = GetCameraErrorMessage(errorCode);
+                    return false;
+                }
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        private static string GetCameraErrorMessage(int errorCode)
+        {
+            string message = string.Empty;
+            cvCameraCSLib.CM_GetErrorMessage(errorCode, ref message);
+            return string.IsNullOrWhiteSpace(message) ? $"CM_Open failed: {errorCode}" : message;
+        }
+
+        private static bool IsCameraIdMismatchError(string errorMessage)
+        {
+            return errorMessage.Contains("camera ID", StringComparison.OrdinalIgnoreCase)
+                && errorMessage.Contains("match", StringComparison.OrdinalIgnoreCase);
         }
 
         private void SetLocalVideoPoiTemplateSupported(bool isSupported)
@@ -1798,43 +1855,57 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private string ResolveLocalCameraId()
+        private string ResolveLocalCameraId(bool ignoreConfiguredId = false)
         {
-            if (!string.IsNullOrWhiteSpace(Device.Config.CameraID))
+            if (!TryGetLocalCameraIds(out IReadOnlyList<string> cameraIds))
+            {
+                return ignoreConfiguredId ? string.Empty : Device.Config.CameraID ?? string.Empty;
+            }
+
+            if (!ignoreConfiguredId
+                && !string.IsNullOrWhiteSpace(Device.Config.CameraID)
+                && cameraIds.Contains(Device.Config.CameraID, StringComparer.OrdinalIgnoreCase))
             {
                 return Device.Config.CameraID;
             }
 
-            string szText = string.Empty;
-            if (!cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
-            {
-                return string.Empty;
-            }
-
-            JObject jObject = JsonConvert.DeserializeObject<JObject>(szText);
-            JToken[] data = jObject?["ID"]?.ToArray();
-            if (data == null)
-            {
-                return string.Empty;
-            }
-
             string cameraCode = Device.Config.CameraCode ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(cameraCode))
+            if (!string.IsNullOrWhiteSpace(cameraCode))
             {
-                return string.Empty;
-            }
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                string cameraId = data[i].ToString();
-                string md5 = ColorVision.Common.Utilities.Tool.GetMD5(cameraId);
-                if (md5.Contains(cameraCode, StringComparison.OrdinalIgnoreCase))
+                foreach (string cameraId in cameraIds)
                 {
-                    return cameraId;
+                    string md5 = ColorVision.Common.Utilities.Tool.GetMD5(cameraId);
+                    if (md5.Contains(cameraCode, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return cameraId;
+                    }
                 }
             }
 
-            return string.Empty;
+            return cameraIds.Count > 0 ? cameraIds[0] : string.Empty;
+        }
+
+        private bool TryGetLocalCameraIds(out IReadOnlyList<string> cameraIds)
+        {
+            cameraIds = Array.Empty<string>();
+
+            string szText = string.Empty;
+            if (!cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
+            {
+                logger.Warn($"GetAllCameraIDV1 failed for {Device.Config.CameraModel}");
+                return false;
+            }
+
+            JObject jObject = JsonConvert.DeserializeObject<JObject>(szText);
+            cameraIds = jObject?["ID"]?
+                .ToArray()
+                .Select(token => token.ToString().Trim())
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray()
+                ?? Array.Empty<string>();
+
+            return cameraIds.Count > 0;
         }
 
         private void PreviewSliderLocalExp_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
