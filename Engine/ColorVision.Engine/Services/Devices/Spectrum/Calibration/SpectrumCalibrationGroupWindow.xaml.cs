@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -119,12 +120,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
 
         private void BtnSelectWavelength_Click(object sender, RoutedEventArgs e)
         {
-            SelectFile(file => SelectedGroup!.WavelengthFile = file);
+            SelectFile(SelectedGroup?.WavelengthFile, file => SelectedGroup!.WavelengthFile = file);
         }
 
         private void BtnSelectMaguide_Click(object sender, RoutedEventArgs e)
         {
-            SelectFile(file => SelectedGroup!.MaguideFile = file);
+            SelectFile(SelectedGroup?.MaguideFile, file => SelectedGroup!.MaguideFile = file);
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -149,7 +150,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
             Close();
         }
 
-        private void SelectFile(Action<string> apply)
+        private void SelectFile(string? currentPath, Action<string> apply)
         {
             if (SelectedGroup == null)
                 return;
@@ -159,6 +160,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
                 Filter = "DAT files (*.dat)|*.dat|All Files|*.*",
                 RestoreDirectory = true,
             };
+
+            var initialDirectory = PathSelectionHelper.GetExistingDirectory(currentPath);
+            if (!string.IsNullOrWhiteSpace(initialDirectory))
+                dialog.InitialDirectory = initialDirectory;
+
+            var fileName = System.IO.Directory.Exists(currentPath) ? null : PathSelectionHelper.GetFileName(currentPath);
+            if (!string.IsNullOrWhiteSpace(fileName))
+                dialog.FileName = fileName;
 
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 apply(dialog.FileName);

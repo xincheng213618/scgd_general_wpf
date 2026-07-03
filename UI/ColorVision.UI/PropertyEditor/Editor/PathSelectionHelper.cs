@@ -3,7 +3,7 @@ using System.IO;
 
 namespace System.ComponentModel
 {
-    internal static class PathSelectionHelper
+    public static class PathSelectionHelper
     {
         public static string? GetExistingDirectory(string? path)
         {
