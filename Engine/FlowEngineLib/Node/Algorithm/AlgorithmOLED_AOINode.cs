@@ -177,6 +177,9 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		case AlgorithmOLED_AOIType.亮点检测:
 			operatorCode = "OLED.FindPixelDefectsForQuardImg";
 			break;
+		case AlgorithmOLED_AOIType.亮点检测V2:
+			operatorCode = "OLED.FindPixelDefectsForQuardImgCheck";
+			break;
 		case AlgorithmOLED_AOIType.黑画面检测:
 			operatorCode = "OLED.DetectBrightPixelsForBlackScreen";
 			break;

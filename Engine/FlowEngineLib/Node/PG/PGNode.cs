@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.PG;
 
-[STNode("/07 传感器")]
+[STNode("/06 PG")]
 public class PGNode : CVBaseServerNode
 {
 	private PGCommCmdType _PGCmd;

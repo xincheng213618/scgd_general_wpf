@@ -94,7 +94,6 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
-
 	[STNodeProperty("最大超时", "最大超时", false, false)]
 	public int MaxTime
 	{
@@ -139,6 +138,7 @@ public class CVBaseServerNode : CVCommonNode
 		_TempId = -1;
 		_MaxTime = 5000;
 		_TempName = "";
+		_ImgFileName = string.Empty;
 		base.AutoSize = false;
 		base.Width = StandardNodeWidth;
 		base.Height = 85;
@@ -728,7 +728,7 @@ public class CVBaseServerNode : CVCommonNode
 			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
 		}
 
-        trans.AddTTL();
+		trans.AddTTL();
         TimeSpan timeSpan = DateTime.Now - trans.startTime;
 		if (logger.IsInfoEnabled)
 		{
