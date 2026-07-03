@@ -54,7 +54,7 @@ namespace ColorVision.SocketProtocol
         {
             this.DataContext = _socketManager;
             // 加载最近的消息记录
-            _socketManager.MessageManager.LoadAll();
+            _socketManager.MessageManager.LoadAll(_socketManager.MessageManager.Config.Count);
             _messagesView = CollectionViewSource.GetDefaultView(_socketManager.MessageManager.Messages);
             _messagesView.Filter = FilterMessage;
             _socketManager.MessageManager.Messages.CollectionChanged += Messages_CollectionChanged;
@@ -96,6 +96,11 @@ namespace ColorVision.SocketProtocol
             UpdateDetailContent(DetailPanel.DataContext as SocketMessage);
         }
 
+        private void MessagesListView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateContentColumnWidth();
+        }
+
         private void ServerEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             if (!_isWindowInitialized)
@@ -135,6 +140,7 @@ namespace ColorVision.SocketProtocol
         {
             _messagesView?.Refresh();
             UpdateFilteredCount();
+            UpdateContentColumnWidth();
         }
 
         private void UpdateFilteredCount()
@@ -146,6 +152,18 @@ namespace ColorVision.SocketProtocol
             var filtered = _messagesView?.Cast<object>().Count() ?? total;
             FilteredCountTextBlock.Text = $"{filtered} / {total}";
             TotalCountTextBlock.Text = FormatResource(Properties.Resources.MessageCountFormat, total);
+        }
+
+        private void UpdateContentColumnWidth()
+        {
+            if (ContentColumn == null || MessagesListView == null)
+                return;
+
+            double availableWidth = MessagesListView.ActualWidth
+                - 100
+                - 140
+                - 42; // padding, row chrome, and scrollbar breathing room
+            ContentColumn.Width = Math.Max(260, availableWidth);
         }
 
         private static string FormatResource(string format, params object?[] args)

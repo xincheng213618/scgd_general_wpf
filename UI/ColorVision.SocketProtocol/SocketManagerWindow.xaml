@@ -286,32 +286,6 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="20" Margin="0,0,10,0"/>
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="{x:Static properties:Resources.EnabledStatus}" Style="{StaticResource MetaLabelTextBlock}"/>
-                                <TextBlock Text="{Binding EnabledStatusText}" FontSize="16" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                    <Border Style="{StaticResource MetricCardBorder}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="&#xE768;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource SuccessBrush}" FontSize="20" Margin="0,0,10,0"/>
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="{x:Static properties:Resources.OpenStatus}" Style="{StaticResource MetaLabelTextBlock}"/>
-                                <TextBlock Text="{Binding OpenStatusText}" Style="{StaticResource StatusValueTextBlock}" FontSize="16"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                    <Border Style="{StaticResource MetricCardBorder}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="&#xE839;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource WarningBrush}" FontSize="20" Margin="0,0,10,0"/>
                             <StackPanel Grid.Column="1">
                                 <TextBlock Text="{x:Static properties:Resources.ListenAddress}" Style="{StaticResource MetaLabelTextBlock}"/>
@@ -319,7 +293,7 @@
                             </StackPanel>
                         </Grid>
                     </Border>
-                    <Border Style="{StaticResource MetricCardBorder}" Margin="0">
+                    <Border Style="{StaticResource MetricCardBorder}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -333,6 +307,100 @@
                                     <TextBlock Text="{Binding ClientCountText}" FontSize="16" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource MetricCardBorder}">
+                        <Grid ToolTip="{Binding PrivateFirewallTooltip}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="20" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="防火墙 - 专用" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding PrivateFirewallStatusText}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CanAllowPrivateFirewall}" Value="True">
+                                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    Content="放行"
+                                    Command="{Binding AllowFirewallRuleCommand}"
+                                    CommandParameter="private"
+                                    Height="28"
+                                    Width="54"
+                                    MinWidth="54"
+                                    Padding="8,0"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    ToolTip="为当前程序创建专用网络入站允许规则。">
+                                <Button.Style>
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ChromeButton}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CanAllowPrivateFirewall}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource MetricCardBorder}" Margin="0">
+                        <Grid ToolTip="{Binding PublicFirewallTooltip}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryBrush}" FontSize="20" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="防火墙 - 公用" Style="{StaticResource MetaLabelTextBlock}"/>
+                                <TextBlock Text="{Binding PublicFirewallStatusText}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CanAllowPublicFirewall}" Value="True">
+                                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    Content="放行"
+                                    Command="{Binding AllowFirewallRuleCommand}"
+                                    CommandParameter="public"
+                                    Height="28"
+                                    Width="54"
+                                    MinWidth="54"
+                                    Padding="8,0"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    ToolTip="为当前程序创建公用网络入站允许规则。">
+                                <Button.Style>
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ChromeButton}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CanAllowPublicFirewall}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
                         </Grid>
                     </Border>
                 </UniformGrid>
@@ -366,9 +434,9 @@
 
         <Grid Grid.Row="1" Margin="0,10,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="620"/>
+                <ColumnDefinition Width="3*" MinWidth="620"/>
                 <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="380" MinWidth="320"/>
+                <ColumnDefinition Width="2*" MinWidth="360"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource PaneCardBorder}" Padding="0">
@@ -414,6 +482,7 @@
                               BorderThickness="0"
                               ItemsSource="{Binding MessageManager.Messages}"
                               SelectionChanged="MessagesListView_SelectionChanged"
+                              SizeChanged="MessagesListView_SizeChanged"
                               Padding="8,0,8,8"
                               Style="{DynamicResource ListView.Small}"
                               VirtualizingPanel.IsVirtualizing="True"
@@ -454,7 +523,7 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="{x:Static properties:Resources.Content}" Width="720">
+                                <GridViewColumn x:Name="ContentColumn" Header="{x:Static properties:Resources.Content}" Width="420">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:SocketMessage}">
                                             <TextBlock Text="{Binding Content}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Content}" Foreground="{DynamicResource SecondaryTextBrush}"/>

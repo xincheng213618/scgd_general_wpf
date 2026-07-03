@@ -45,6 +45,7 @@ internal sealed class ServiceHostCommandHandler
                 "self-update" => SelfUpdate(request),
                 "run-maintenance-task" => RunMaintenanceTask(request, GetRequiredDataValue(request, "taskId")),
                 "register-file-associations" => RunMaintenanceTask(request, "register-file-associations"),
+                "firewall-allow-application" => FirewallCommandService.AllowApplication(request),
                 "install-mysql-from-zip" => InstallMySqlFromZip(request),
                 "install-existing-mysql-service" => RepairMySqlService(request),
                 "repair-mysql-service" => RepairMySqlService(request),

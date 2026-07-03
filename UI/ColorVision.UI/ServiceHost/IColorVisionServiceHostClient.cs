@@ -23,6 +23,8 @@ namespace ColorVision.UI.ServiceHost
 
         Task<ServiceHostResponse> UnregisterThumbnailAsync(string appDirectory, string? thumbnailCacheDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
+        Task<ServiceHostResponse> AllowFirewallApplicationAsync(string appPath, string profile, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
         Task<ServiceHostResponse> RepairMySqlServiceAsync(string serviceName, string mysqldExePath, int timeoutSeconds = 60, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> InstallMySqlFromZipAsync(string serviceName, string zipFilePath, string targetDirectory, int port, string rootPassword, string appUser, string appPassword, string database, int timeoutSeconds = 120, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -121,6 +123,15 @@ namespace ColorVision.UI.ServiceHost
                 "unregister-thumbnail",
                 new { appDirectory, thumbnailCacheDirectory, timeoutSeconds = 30 },
                 timeout ?? TimeSpan.FromSeconds(45),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> AllowFirewallApplicationAsync(string appPath, string profile, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "firewall-allow-application",
+                new { appPath, profile },
+                timeout ?? TimeSpan.FromSeconds(15),
                 cancellationToken);
         }
 
