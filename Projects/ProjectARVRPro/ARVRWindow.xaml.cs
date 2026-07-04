@@ -65,7 +65,6 @@ namespace ProjectARVRPro
         public ARVRWindow()
         {
             InitializeComponent();
-            ImageView.SelectedImageChanged += ImageView_SelectedImageChanged;
             this.ApplyCaption(false);
             ARVRWindowConfig.Instance.SetWindow(this);
             this.Title += Assembly.GetAssembly(typeof(ARVRWindow))?.GetName().Version?.ToString() ?? "";
@@ -1169,12 +1168,13 @@ namespace ProjectARVRPro
                 {
                     try
                     {
-                        var imagePaths = BuildResultImagePaths(result);
+                        string filePath = result.FileName;
                         _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            if (imagePaths.Count > 0)
+                            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
                             {
-                                ImageView.OpenImages(imagePaths, GetPreferredImageIndex(imagePaths, result.FileName));
+                                ImageView.OpenImage(filePath);
+                                RenderResultImage(result);
                                 SaveImageResultIfNeeded(result);
                             }
                             else
@@ -1185,17 +1185,11 @@ namespace ProjectARVRPro
                     }
                     catch (Exception ex)
                     {
-                        log.Error("加载结果图片组失败", ex);
+                        log.Error("加载结果图片失败", ex);
                     }
                 });
 
             }
-        }
-
-        private void ImageView_SelectedImageChanged(object? sender, ImageViewImageChangedEventArgs e)
-        {
-            if (listView1.SelectedItem is ProjectARVRReuslt result)
-                RenderResultImage(result);
         }
 
         private void RenderResultImage(ProjectARVRReuslt result)
@@ -1223,50 +1217,6 @@ namespace ProjectARVRPro
             {
                 log.Error("自定义 IProcess 执行异常", ex);
             }
-        }
-
-        private static List<string> BuildResultImagePaths(ProjectARVRReuslt result)
-        {
-            var imagePaths = new List<string>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            AddImagePath(imagePaths, seen, result.FileName);
-
-            if (result.BatchId > 0)
-            {
-                var images = MeasureImgResultDao.Instance.GetAllByBatchId(result.BatchId)
-                    .Where(image => !string.IsNullOrWhiteSpace(image.FileUrl))
-                    .OrderBy(image => image.ZIndex ?? int.MaxValue)
-                    .ThenBy(image => image.Id);
-
-                foreach (var image in images)
-                {
-                    AddImagePath(imagePaths, seen, image.FileUrl);
-                }
-            }
-
-            return imagePaths;
-        }
-
-        private static void AddImagePath(List<string> imagePaths, HashSet<string> seen, string? filePath)
-        {
-            if (string.IsNullOrWhiteSpace(filePath)) return;
-            if (!File.Exists(filePath)) return;
-            if (!seen.Add(filePath)) return;
-
-            imagePaths.Add(filePath);
-        }
-
-        private static int GetPreferredImageIndex(List<string> imagePaths, string? filePath)
-        {
-            if (string.IsNullOrWhiteSpace(filePath)) return 0;
-
-            for (int i = 0; i < imagePaths.Count; i++)
-            {
-                if (string.Equals(imagePaths[i], filePath, StringComparison.OrdinalIgnoreCase))
-                    return i;
-            }
-
-            return 0;
         }
 
         private void SaveImageResultIfNeeded(ProjectARVRReuslt result)
@@ -1743,7 +1693,6 @@ namespace ProjectARVRPro
         public void Dispose()
         {
             ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
-            ImageView.SelectedImageChanged -= ImageView_SelectedImageChanged;
             flowControl.Stop();
             STNodeEditorMain.Dispose();
             timer.Change(Timeout.Infinite, 500); // 停止定时器

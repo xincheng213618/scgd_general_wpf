@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.7.33</VersionPrefix>
+		<VersionPrefix>1.1.7.34</VersionPrefix>
 		<ProjectRootDir Condition="'$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)</ProjectRootDir>
 		<ProjectRootDir Condition="'$(ProjectRootDir)' == ''">$(MSBuildProjectDirectory)\..\..\</ProjectRootDir>
 	</PropertyGroup>
@@ -19,14 +19,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<PackageReference Include="NPOI" Version="2.8.0" />
-		<Reference Include="FlowEngineLib" Condition="!Exists('..\..\Engine\FlowEngineLib\FlowEngineLib.csproj')">
-			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
-		<Reference Include="ST.Library.UI" Condition="!Exists('..\..\Engine\ST.Library.UI\ST.Library.UI.csproj')">
-			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
