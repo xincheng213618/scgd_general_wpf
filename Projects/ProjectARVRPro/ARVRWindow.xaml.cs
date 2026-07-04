@@ -183,10 +183,13 @@ namespace ProjectARVRPro
         Stopwatch stopwatch = new Stopwatch();
 
         private LogOutput? logOutput;
+        private bool _isDisposed;
+        private EventHandler? _activeGroupChangedHandler;
         private void Window_Initialized(object sender, EventArgs e)
         {
             ProcessManager.GenStepBar(stepBar);
-            ProcessManager.ActiveGroupChanged += (s, ev) => ProcessManager.GenStepBar(stepBar);
+            _activeGroupChangedHandler = ProcessManager_ActiveGroupChanged;
+            ProcessManager.ActiveGroupChanged += _activeGroupChangedHandler;
             this.DataContext = ProjectARVRProConfig.Instance;
             ProjectConfig.PropertyChanged += ProjectConfig_PropertyChanged;
             ApplyResultOverlayConfig();
@@ -233,6 +236,12 @@ namespace ProjectARVRPro
             UpdateThunderbirdStatusIndicator();
             _ = TryAutoConnectThunderbirdAsync();
 
+        }
+
+        private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
+        {
+            if (!_isDisposed)
+                ProcessManager.GenStepBar(stepBar);
         }
 
         private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
@@ -1144,6 +1153,9 @@ namespace ProjectARVRPro
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            if (_isDisposed)
+                return;
+
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
@@ -1166,11 +1178,17 @@ namespace ProjectARVRPro
                 }
                 Task.Run(() =>
                 {
+                    if (_isDisposed)
+                        return;
+
                     try
                     {
                         string filePath = result.FileName;
                         _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
+                            if (_isDisposed)
+                                return;
+
                             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
                             {
                                 ImageView.OpenImage(filePath);
@@ -1221,7 +1239,7 @@ namespace ProjectARVRPro
 
         private void SaveImageResultIfNeeded(ProjectARVRReuslt result)
         {
-            if (!IsSaveImageReuslt) return;
+            if (!IsSaveImageReuslt || _isDisposed) return;
 
             log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
             IsSaveImageReuslt = false;
@@ -1230,6 +1248,9 @@ namespace ProjectARVRPro
                 try
                 {
                     await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                    if (_isDisposed)
+                        return;
+
                     string linkPath = ViewResultManager.Config.CsvSavePath;
                     string sn = result.SN;
 
@@ -1260,6 +1281,9 @@ namespace ProjectARVRPro
                     log.Info(filePath);
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
+                        if (_isDisposed)
+                            return;
+
                         ImageView.Save(filePath);
                     });
                 }
@@ -1692,14 +1716,36 @@ namespace ProjectARVRPro
 
         public void Dispose()
         {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
             ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
+            if (_activeGroupChangedHandler != null)
+            {
+                ProcessManager.ActiveGroupChanged -= _activeGroupChangedHandler;
+                _activeGroupChangedHandler = null;
+            }
+            if (ReferenceEquals(ViewResultManager.ListView, listView1))
+                ViewResultManager.ListView = null;
+
+            listView1.SelectionChanged -= listView1_SelectionChanged;
+            listView1.ItemsSource = null;
+            listView1.ContextMenu = null;
+            listView1.CommandBindings.Clear();
+
+            ImageView.Dispose();
             flowControl.Stop();
             STNodeEditorMain.Dispose();
-            timer.Change(Timeout.Infinite, 500); // 停止定时器
+            timer?.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();
             logOutput?.Dispose();
+            logOutput = null;
             _thunderbirdController.ConnectionStateChanged -= ThunderbirdController_ConnectionStateChanged;
             _thunderbirdController?.Close();
+            _thunderbirdDebugWindow?.Close();
+            _thunderbirdDebugWindow = null;
+            DataContext = null;
             GC.SuppressFinalize(this);
         }
 

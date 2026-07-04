@@ -116,7 +116,7 @@ namespace ProjectARVRPro
 
         public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
         private int _ViewReslutsSelectedIndex = -1;
-        public ListView ListView { get; set; }
+        public ListView? ListView { get; set; }
 
         public RelayCommand EditConfigCommand { get; set; }
         public RelayCommand ViewReslutsClearCommand { get; set; }

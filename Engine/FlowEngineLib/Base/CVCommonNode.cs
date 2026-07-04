@@ -208,6 +208,6 @@ public class CVCommonNode : STNode
 
 	public string ToShortString()
 	{
-		return $"{base.Title}/{DeviceCode}/{NodeID}/{ZIndex}";
+		return base.Title;
 	}
 }

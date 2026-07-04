@@ -1478,6 +1478,9 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
+            if (EditorContext != null)
+                DebounceTimer.Cancel("ImageLayoutUpdatedRender" + EditorContext.Id);
+            DebounceTimer.Cancel(_pixelValueOverlayRefreshDebounceKey);
             _realtime?.Dispose();
             Clear();
             _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;

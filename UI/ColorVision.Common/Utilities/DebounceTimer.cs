@@ -48,11 +48,7 @@ namespace ColorVision.Common.Utilities
         public static void AddOrResetTimer(string actionType, int delayMilliseconds, ElapsedEventHandler action)
         {
             // Stop and dispose the existing timer if it exists.
-            if (_timers.TryRemove(actionType, out var existingTimer))
-            {
-                existingTimer.Stop();
-                existingTimer.Dispose();
-            }
+            Cancel(actionType);
 
             // Create a new timer and configure it.
             var timer = new Timer(delayMilliseconds)
@@ -73,6 +69,15 @@ namespace ColorVision.Common.Utilities
             // Start the timer and add it to the dictionary.
             timer.Start();
             _timers.TryAdd(actionType, timer);
+        }
+
+        public static void Cancel(string actionType)
+        {
+            if (_timers.TryRemove(actionType, out var existingTimer))
+            {
+                existingTimer.Stop();
+                existingTimer.Dispose();
+            }
         }
 
         /// <summary>
