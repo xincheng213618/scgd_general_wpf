@@ -107,17 +107,9 @@ namespace ProjectARVRPro.Process
             }
         }
 
-        public abstract bool Execute(IProcessExecutionContext ctx);
+        public abstract Task<bool> Execute(IProcessExecutionContext ctx);
 
-        protected virtual Task<bool> ExecuteAsyncCore(IProcessExecutionContext ctx) => Task.FromResult(Execute(ctx));
-
-        Task<bool> IProcess.Execute(IProcessExecutionContext ctx) => ExecuteAsyncCore(ctx);
-
-        public virtual bool ExecuteFailure(IProcessExecutionContext ctx) => false;
-
-        protected virtual Task<bool> ExecuteFailureAsyncCore(IProcessExecutionContext ctx) => Task.FromResult(ExecuteFailure(ctx));
-
-        Task<bool> IProcess.ExecuteFailure(IProcessExecutionContext ctx) => ExecuteFailureAsyncCore(ctx);
+        public virtual Task<bool> ExecuteFailure(IProcessExecutionContext ctx) => Task.FromResult(false);
 
         public abstract void Render(IProcessExecutionContext ctx);
         public abstract void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize);

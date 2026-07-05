@@ -15,7 +15,7 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
 {
     public class MTFHV058Process : ProcessBase<MTFHV058ProcessConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;

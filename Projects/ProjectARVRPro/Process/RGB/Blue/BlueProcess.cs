@@ -16,7 +16,7 @@ namespace ProjectARVRPro.Process.RGB.Blue
 
     public class BlueProcess : ProcessBase<BlueProcessConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;

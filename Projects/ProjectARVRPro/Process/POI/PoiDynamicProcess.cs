@@ -15,7 +15,7 @@ namespace ProjectARVRPro.Process.POI
 {
     public class PoiDynamicProcess : ProcessBase<PoiDynamicProcessConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null) return false;
 

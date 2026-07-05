@@ -64,7 +64,7 @@ namespace ProjectARVRPro.Process.AOI
             return detail;
         }
 
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
@@ -171,7 +171,7 @@ namespace ProjectARVRPro.Process.AOI
             }
         }
 
-        public override bool ExecuteFailure(IProcessExecutionContext ctx)
+        public override async Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
         {
             if (ctx?.Result == null || ctx.ObjectiveTestResult == null) return false;
 

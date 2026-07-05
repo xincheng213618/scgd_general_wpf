@@ -13,7 +13,7 @@ namespace ProjectARVRPro.Process.Black
 {
     public class BlackProcess : ProcessBase<BlackProcessConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;

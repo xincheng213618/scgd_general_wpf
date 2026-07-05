@@ -32,22 +32,12 @@ namespace ProjectARVRPro.Process.Demura
         private static readonly char[] CsvSeparators = new[] { ',', ';', '\t', ' ' };
         private static readonly HashSet<string> PreviewImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".bmp", ".jpg", ".jpeg", ".png", ".tif", ".tiff" };
 
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
-            return ExecuteCoreAsync(ctx).ConfigureAwait(false).GetAwaiter().GetResult();
+            return await ExecuteCoreAsync(ctx).ConfigureAwait(false);
         }
 
-        protected override Task<bool> ExecuteAsyncCore(IProcessExecutionContext ctx)
-        {
-            return ExecuteCoreAsync(ctx);
-        }
-
-        public override bool ExecuteFailure(IProcessExecutionContext ctx)
-        {
-            return ExecuteFailureAsyncCore(ctx).ConfigureAwait(false).GetAwaiter().GetResult();
-        }
-
-        protected override async Task<bool> ExecuteFailureAsyncCore(IProcessExecutionContext ctx)
+        public override async Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
         {
             string failureMessage = string.IsNullOrWhiteSpace(ctx?.Result?.Msg) ? "Demura流程失败" : ctx.Result.Msg;
             if (ctx?.Result != null)

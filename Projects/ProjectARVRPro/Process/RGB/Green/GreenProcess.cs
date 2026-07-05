@@ -15,7 +15,7 @@ namespace ProjectARVRPro.Process.RGB.Green
 {
     public class GreenProcess : ProcessBase<GreenProcessConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;

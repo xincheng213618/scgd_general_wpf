@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.1.7.38] 2026.07.06
+
+1. `IProcess.Execute` 和 `ExecuteFailure` 统一改为异步 `Task<bool>` 签名，调用侧可直接等待流程处理完成。
+2. ProjectARVRPro 各 Process 实现同步调整为异步接口，移除同步桥接和阻塞等待写法。
+3. Demura 成功处理和失败下电均直接走内部异步流程，避免外层封装或同步阻塞。
+
 ## [1.1.7.37] 2026.07.06
 
 1. `IProcess` 增加同步失败处理入口 `ExecuteFailure`，失败路径统一交给对应 Process 做解析和收尾。

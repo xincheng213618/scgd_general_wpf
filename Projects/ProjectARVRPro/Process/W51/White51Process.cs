@@ -14,7 +14,7 @@ namespace ProjectARVRPro.Process.W51
 {
     public class White51Process : ProcessBase<W51ProcessConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;

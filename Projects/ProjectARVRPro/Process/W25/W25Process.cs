@@ -13,7 +13,7 @@ namespace ProjectARVRPro.Process.W25
 {
     public class W25Process : ProcessBase<W25ProcessConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
