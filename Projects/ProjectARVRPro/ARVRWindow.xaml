@@ -253,9 +253,6 @@
                 </StackPanel>
             </StatusBarItem>
             <StatusBarItem >
-                <Button x:Name="ThunderbirdConnectionStatusText" Foreground="Gray" Content="切图: 未连接" Click="OpenThunderbirdSerialDebug_Click" Padding="10,2"/>
-            </StatusBarItem>
-            <StatusBarItem >
                 <Button x:Name="RelayServerStatusButton" Foreground="Gray" Content="中转: 未启动" Click="OpenSocketRelay_Click" Padding="10,2"/>
             </StatusBarItem>
             <StatusBarItem >

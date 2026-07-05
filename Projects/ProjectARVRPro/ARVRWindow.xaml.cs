@@ -49,8 +49,7 @@ namespace ProjectARVRPro
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public ObservableCollection<ProcessMeta> ProcessMetas => ProcessManager.ProcessMetas;
 
-        // 雷鸟切图控制器
-        private ThunderbirdSerialController _thunderbirdController = ThunderbirdSerialController.GetInstance();
+        private readonly PictureSwitchService _pictureSwitchService;
 
         private static readonly HashSet<string> ResultOverlayConfigNames =
         [
@@ -62,6 +61,7 @@ namespace ProjectARVRPro
 
         public ARVRWindow()
         {
+            _pictureSwitchService = new PictureSwitchService(ThunderbirdSerialController.GetInstance());
             InitializeComponent();
             this.ApplyCaption(false);
             ARVRWindowConfig.Instance.SetWindow(this);
@@ -198,10 +198,6 @@ namespace ProjectARVRPro
             // 构建 ListView 统一的右键菜单（替代原先每个实体各自创建 ContextMenu 的方案）
             BuildListViewContextMenu();
 
-            _thunderbirdController.ConnectionStateChanged += ThunderbirdController_ConnectionStateChanged;
-            UpdateThunderbirdStatusIndicator();
-            _ = TryAutoConnectThunderbirdAsync();
-
         }
 
         private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
@@ -213,64 +209,6 @@ namespace ProjectARVRPro
         private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
         {
             DatabaseCleanupWindow.OpenWindow();
-        }
-
-        private void ThunderbirdController_ConnectionStateChanged(object? sender, EventArgs e)
-        {
-            UpdateThunderbirdStatusIndicator();
-        }
-
-        private async Task TryAutoConnectThunderbirdAsync()
-        {
-            if (_thunderbirdController.IsConnected)
-            {
-                UpdateThunderbirdStatusIndicator();
-                return;
-            }
-
-            if (!ProjectConfig.ThunderbirdAutoConnect)
-                return;
-
-            if (string.IsNullOrWhiteSpace(ProjectConfig.ThunderbirdPortName))
-            {
-                log.Warn("雷鸟自动连接已启用，但未配置串口号");
-                return;
-            }
-
-            try
-            {
-                int timeoutMs = ProjectConfig.ThunderbirdTimeoutMs > 0 ? ProjectConfig.ThunderbirdTimeoutMs : 1000;
-                _thunderbirdController.Open(ProjectConfig.ThunderbirdPortName, ProjectConfig.ThunderbirdBaudRate, timeoutMs);
-                log.Info($"雷鸟自动连接成功: {ProjectConfig.ThunderbirdPortName}");
-                UpdateThunderbirdStatusIndicator();
-                await _thunderbirdController.QueryBrightnessAsync(timeoutMs);
-            }
-            catch (Exception ex)
-            {
-                log.Warn("雷鸟自动连接失败", ex);
-                UpdateThunderbirdStatusIndicator();
-            }
-        }
-
-        private void UpdateThunderbirdStatusIndicator()
-        {
-            if (!Dispatcher.CheckAccess())
-            {
-                Dispatcher.BeginInvoke(() => UpdateThunderbirdStatusIndicator());
-                return;
-            }
-
-            if (_thunderbirdController.IsConnected)
-            {
-                string port = string.IsNullOrWhiteSpace(_thunderbirdController.CurrentPortName) ? "未知串口" : _thunderbirdController.CurrentPortName;
-                ThunderbirdConnectionStatusText.Content = $"切图: 已连接 {port}";
-                ThunderbirdConnectionStatusText.Foreground = Brushes.LimeGreen;
-            }
-            else
-            {
-                ThunderbirdConnectionStatusText.Content = "切图: 未连接";
-                ThunderbirdConnectionStatusText.Foreground = Brushes.Gray;
-            }
         }
 
         public void Delete()
@@ -500,7 +438,7 @@ namespace ProjectARVRPro
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
 
-            if (!await ExecutePictureSwitchAsync(runProcessMeta))
+            if (!await _pictureSwitchService.ExecuteAsync(runProcessMeta))
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PictureSwitchFailed";
@@ -1386,7 +1324,7 @@ namespace ProjectARVRPro
                         continue;
                     }
 
-                    if (!await ExecutePictureSwitchAsync(meta))
+                    if (!await _pictureSwitchService.ExecuteAsync(meta))
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PictureSwitchFailed";
@@ -1526,55 +1464,6 @@ namespace ProjectARVRPro
             return builder.Length == 0 ? "ProjectARVRPro" : builder.ToString();
         }
 
-        private async Task<bool> ExecutePictureSwitchAsync(ProcessMeta? meta)
-        {
-            PictureSwitchConfig? config = meta?.PictureSwitchConfig;
-            if (config == null || !config.IsEnabled)
-                return true;
-
-            if (config.Mode != PictureSwitchMode.Thunderbird)
-            {
-                log.Error($"不支持的切图模式: {config.Mode}");
-                return false;
-            }
-
-            if (!_thunderbirdController.IsConnected)
-            {
-                log.Error($"流程 {meta?.Name} 已启用雷鸟切图，但雷鸟串口未连接");
-                return false;
-            }
-
-            try
-            {
-                int timeoutMs = config.TimeoutMs > 0 ? config.TimeoutMs : 1000;
-                ThunderbirdSerialController.CommandResult result = await _thunderbirdController.SendConfiguredCommandAsync(
-                    config.SendCommand,
-                    config.ExpectedResponse,
-                    timeoutMs);
-
-                if (!result.Success)
-                {
-                    log.Error($"流程 {meta?.Name} 雷鸟切图失败: Command={result.Command}, Expected={config.ExpectedResponse}, Response={result.Response ?? "<null>"}");
-                    return false;
-                }
-
-                if (config.SuccessDelayMs > 0)
-                {
-                    log.Info($"流程 {meta?.Name} 雷鸟切图成功，等待图像稳定 {config.SuccessDelayMs}ms");
-                    await Task.Delay(config.SuccessDelayMs);
-                }
-
-                log.Info($"流程 {meta?.Name} 雷鸟切图完成，执行流程");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"流程 {meta?.Name} 雷鸟切图异常", ex);
-                return false;
-            }
-        }
-
-
         public void Dispose()
         {
             if (_isDisposed)
@@ -1602,10 +1491,7 @@ namespace ProjectARVRPro
             timer?.Dispose();
             logOutput?.Dispose();
             logOutput = null;
-            _thunderbirdController.ConnectionStateChanged -= ThunderbirdController_ConnectionStateChanged;
-            _thunderbirdController?.Close();
-            _thunderbirdDebugWindow?.Close();
-            _thunderbirdDebugWindow = null;
+            _pictureSwitchService.Dispose();
             DataContext = null;
             GC.SuppressFinalize(this);
         }
@@ -1616,20 +1502,5 @@ namespace ProjectARVRPro
             SocketRelayWindow.OpenWindow();
         }
 
-        private ThunderbirdSerialDebugWindow? _thunderbirdDebugWindow;
-
-        private void OpenThunderbirdSerialDebug_Click(object sender, RoutedEventArgs e)
-        {
-            if (_thunderbirdDebugWindow == null)
-            {
-                _thunderbirdDebugWindow = new ThunderbirdSerialDebugWindow();
-                _thunderbirdDebugWindow.Closed += (s, args) => _thunderbirdDebugWindow = null;
-                _thunderbirdDebugWindow.Show();
-            }
-            else
-            {
-                _thunderbirdDebugWindow.Activate();
-            }
-        }
     }
 }
