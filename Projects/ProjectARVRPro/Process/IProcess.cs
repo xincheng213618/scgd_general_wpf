@@ -7,6 +7,11 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process
 {
+    public interface IFlowFailureFormatter
+    {
+        string? TryFormatFailureMessage(string message);
+    }
+
     public interface IProcess
     {
         public bool Execute(IProcessExecutionContext ctx);
@@ -19,12 +24,6 @@ namespace ProjectARVRPro.Process
         public void Render(IProcessExecutionContext ctx);
 
         public void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize);
-
-        public (int Code, string Message) NormalizeFailure(string? message, int defaultCode)
-        {
-            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
-            return (defaultCode, normalizedMessage);
-        }
 
         /// <summary>
         /// Gets the recipe configuration for this process.
@@ -132,12 +131,6 @@ namespace ProjectARVRPro.Process
                     FontSize = fontSize
                 });
             }
-        }
-
-        public virtual (int Code, string Message) NormalizeFailure(string? message, int defaultCode)
-        {
-            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
-            return (defaultCode, normalizedMessage);
         }
 
         public virtual IRecipeConfig GetRecipeConfig() => null;

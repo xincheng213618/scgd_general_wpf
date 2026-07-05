@@ -15,7 +15,7 @@ using System.Text.RegularExpressions;
 
 namespace ProjectARVRPro.Process.AOI
 {
-    public class AOIProcess : ProcessBase<AoIProcessConfig>
+    public class AOIProcess : ProcessBase<AoIProcessConfig>, IFlowFailureFormatter
     {
         public override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
 
@@ -51,18 +51,17 @@ namespace ProjectARVRPro.Process.AOI
             [26] = ("IMAGE_FORMAT_E", "图片格式不支持(预留)")
         };
 
-        public override (int Code, string Message) NormalizeFailure(string? message, int defaultCode)
+        public string? TryFormatFailureMessage(string message)
         {
-            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
-            Match match = FindDotsArrayFailureRegex.Match(normalizedMessage);
+            Match match = FindDotsArrayFailureRegex.Match(message);
             if (!match.Success || !int.TryParse(match.Groups["code"].Value, out int oledErrorCode))
-                return (defaultCode, normalizedMessage);
+                return null;
 
             if (!CVOledErrors.TryGetValue(oledErrorCode, out var oledError))
                 oledError = ("UNKNOWN_CVOLED_ERROR", "未知CVOLED错误码");
 
-            string detail = $"检测失败: {normalizedMessage}; 错误码: {oledErrorCode}, 枚举: {oledError.Name}, 错误信息: {oledError.Message}";
-            return (oledErrorCode, detail);
+            string detail = $"检测失败: {message}; 错误码: {oledErrorCode}, 枚举: {oledError.Name}, 错误信息: {oledError.Message}";
+            return detail;
         }
 
         public override bool Execute(IProcessExecutionContext ctx)
