@@ -15,7 +15,7 @@ using System.Text.RegularExpressions;
 
 namespace ProjectARVRPro.Process.AOI
 {
-    public class AOIProcess : ProcessBase<AoIProcessConfig>, IFlowFailureFormatter
+    public class AOIProcess : ProcessBase<AoIProcessConfig>
     {
         public override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
 
@@ -51,7 +51,7 @@ namespace ProjectARVRPro.Process.AOI
             [26] = ("IMAGE_FORMAT_E", "图片格式不支持(预留)")
         };
 
-        public string? TryFormatFailureMessage(string message)
+        private static string? TryFormatFailureMessage(string message)
         {
             Match match = FindDotsArrayFailureRegex.Match(message);
             if (!match.Success || !int.TryParse(match.Groups["code"].Value, out int oledErrorCode))
@@ -169,6 +169,50 @@ namespace ProjectARVRPro.Process.AOI
                 log?.Error(ex);
                 return false;
             }
+        }
+
+        public override bool ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            if (ctx?.Result == null || ctx.ObjectiveTestResult == null) return false;
+
+            string rawMessage = ctx.Result.Msg;
+            string detail = TryFormatFailureMessage(rawMessage) ?? (string.IsNullOrWhiteSpace(rawMessage) ? "AOI流程失败" : rawMessage);
+            AoiViewTestResult testResult = new AoiViewTestResult();
+            testResult.Items.Add(new ObjectiveTestItem
+            {
+                Name = "AOIFailure",
+                TestValue = detail,
+                Value = 0,
+                LowLimit = 1,
+                UpLimit = 1,
+                Unit = string.Empty
+            });
+
+            if (ctx.Batch?.Id > 0)
+            {
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                string? firstFileUrl = values.FirstOrDefault()?.FileUrl;
+                if (!string.IsNullOrWhiteSpace(firstFileUrl))
+                    ctx.Result.FileName = firstFileUrl;
+            }
+
+            ctx.Result.Result = false;
+            ctx.Result.Msg = detail;
+            ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+            ctx.ObjectiveTestResult.TotalResult = false;
+            ctx.ObjectiveTestResult.Msg = detail;
+
+            if (!ctx.ObjectiveTestResult.DynamicTestResults.TryGetValue(Config.Name, out var dynamicItems))
+            {
+                dynamicItems = new ObservableCollection<ObjectiveTestItem>();
+                ctx.ObjectiveTestResult.DynamicTestResults[Config.Name] = dynamicItems;
+            }
+
+            dynamicItems.Clear();
+            foreach (var item in testResult.Items)
+                dynamicItems.Add(item);
+
+            return true;
         }
 
         public override void Render(IProcessExecutionContext ctx)

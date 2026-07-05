@@ -1,24 +1,18 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
-using System.Threading.Tasks;
 using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process
 {
-    public interface IFlowFailureFormatter
-    {
-        string? TryFormatFailureMessage(string message);
-    }
-
     public interface IProcess
     {
         public bool Execute(IProcessExecutionContext ctx);
 
-        public Task<bool> ExecuteAsync(IProcessExecutionContext ctx)
+        public bool ExecuteFailure(IProcessExecutionContext ctx)
         {
-            return Task.Run(() => Execute(ctx));
+            return false;
         }
 
         public void Render(IProcessExecutionContext ctx);
@@ -113,7 +107,7 @@ namespace ProjectARVRPro.Process
         }
 
         public abstract bool Execute(IProcessExecutionContext ctx);
-        public virtual Task<bool> ExecuteAsync(IProcessExecutionContext ctx) => Task.Run(() => Execute(ctx));
+        public virtual bool ExecuteFailure(IProcessExecutionContext ctx) => false;
         public abstract void Render(IProcessExecutionContext ctx);
         public abstract void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize);
 

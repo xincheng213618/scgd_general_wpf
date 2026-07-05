@@ -37,9 +37,50 @@ namespace ProjectARVRPro.Process.Demura
             return ExecuteCoreAsync(ctx).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        public override Task<bool> ExecuteAsync(IProcessExecutionContext ctx)
+        public override bool ExecuteFailure(IProcessExecutionContext ctx)
         {
-            return Task.Run(() => ExecuteCoreAsync(ctx));
+            string failureMessage = string.IsNullOrWhiteSpace(ctx?.Result?.Msg) ? "Demura流程失败" : ctx.Result.Msg;
+            if (ctx?.Result != null)
+            {
+                ctx.Result.Result = false;
+                ctx.Result.Msg = failureMessage;
+            }
+
+            if (ctx?.ObjectiveTestResult != null)
+            {
+                ctx.ObjectiveTestResult.TotalResult = false;
+                ctx.ObjectiveTestResult.Msg = failureMessage;
+            }
+
+            var log = ctx?.Log;
+            try
+            {
+                DeviceSensor? sensor = FindGeneralSensor();
+                if (sensor == null)
+                {
+                    log?.Warn($"Demura失败处理下电失败：未找到通用传感器服务，Code={Config.GeneralSensorCode}, Category={Config.GeneralSensorCategory}");
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(sensor.Config.Addr) || sensor.Config.Port <= 0)
+                {
+                    log?.Warn($"Demura失败处理下电失败：通用传感器PG连接配置无效：{sensor.Config.Addr}:{sensor.Config.Port}");
+                    return false;
+                }
+
+                CommandExchange powerOff = SendPowerOffCommandAsync(sensor.Config.Addr, sensor.Config.Port, log).ConfigureAwait(false).GetAwaiter().GetResult();
+                string powerOffMessage = powerOff.Success ? "Demura失败处理PG下电成功。" : $"Demura失败处理PG下电失败：{powerOff.Message}";
+                log?.Info(powerOffMessage);
+                if (ctx?.Result != null)
+                    ctx.Result.Msg = string.IsNullOrWhiteSpace(ctx.Result.Msg) ? powerOffMessage : $"{ctx.Result.Msg}; {powerOffMessage}";
+
+                return powerOff.Success;
+            }
+            catch (Exception ex)
+            {
+                log?.Error("Demura失败处理PG下电异常", ex);
+                return false;
+            }
         }
 
         private async Task<bool> ExecuteCoreAsync(IProcessExecutionContext ctx)
@@ -383,36 +424,85 @@ namespace ProjectARVRPro.Process.Demura
             List<CommandExchange> exchanges = new();
             CommandExchange? failure = null;
             bool powerOnAccepted = false;
+            bool powerOffAttempted = false;
 
-            CommandExchange powerOn = await SendCommandAndWaitAsync(stream, "PowerOn", powerOnText, powerOnBytes, "POWER,ON,END,OK", log).ConfigureAwait(false);
-            exchanges.Add(powerOn);
-            if (powerOn.Success)
-                powerOnAccepted = true;
-            else
-                failure = powerOn;
-
-            if (failure == null)
+            try
             {
-                CommandExchange sendFile = await SendCommandAndWaitAsync(stream, "SendFile", sendFileText, sendFileBytes, successResponse, log).ConfigureAwait(false);
-                exchanges.Add(sendFile);
-                if (!sendFile.Success)
-                    failure = sendFile;
+                CommandExchange powerOn = await SendCommandAndWaitAsync(stream, "PowerOn", powerOnText, powerOnBytes, "POWER,ON,END,OK", log).ConfigureAwait(false);
+                exchanges.Add(powerOn);
+                if (powerOn.Success)
+                    powerOnAccepted = true;
+                else
+                    failure = powerOn;
+
+                if (failure == null)
+                {
+                    CommandExchange sendFile = await SendCommandAndWaitAsync(stream, "SendFile", sendFileText, sendFileBytes, successResponse, log).ConfigureAwait(false);
+                    exchanges.Add(sendFile);
+                    if (!sendFile.Success)
+                        failure = sendFile;
+                }
             }
-
-            if (powerOnAccepted)
+            catch (Exception ex)
             {
-                CommandExchange powerOff = await SendCommandAndWaitAsync(stream, "PowerOff", powerOffText, powerOffBytes, "POWER,OFF,END,OK", log).ConfigureAwait(false);
-                exchanges.Add(powerOff);
-                if (!powerOff.Success && failure == null)
-                    failure = powerOff;
+                CommandExchange exception = CommandExchange.FromFailure("BurnException", string.Empty, string.Empty, ex.Message);
+                exchanges.Add(exception);
+                failure ??= exception;
+                log?.Error("Demura烧录指令执行异常", ex);
+            }
+            finally
+            {
+                if (powerOnAccepted)
+                {
+                    powerOffAttempted = true;
+                    try
+                    {
+                        CommandExchange powerOff = await SendCommandAndWaitAsync(stream, "PowerOff", powerOffText, powerOffBytes, "POWER,OFF,END,OK", log).ConfigureAwait(false);
+                        exchanges.Add(powerOff);
+                        if (!powerOff.Success && failure == null)
+                            failure = powerOff;
+                    }
+                    catch (Exception ex)
+                    {
+                        CommandExchange powerOff = CommandExchange.FromFailure("PowerOff", string.Empty, string.Empty, ex.Message);
+                        exchanges.Add(powerOff);
+                        failure ??= powerOff;
+                        log?.Error("Demura烧录下电异常", ex);
+                    }
+                }
             }
 
             string responseText = BuildExchangeText(exchanges);
             string responseHex = BuildExchangeHex(exchanges);
             if (failure != null)
-                return TcpBurnResult.FromFailure(commandText, commandHex, responseText, responseHex, $"PG指令失败({failure.Name})：{failure.Message}");
+            {
+                string powerOffSuffix = powerOnAccepted && powerOffAttempted ? "，已尝试下电" : string.Empty;
+                return TcpBurnResult.FromFailure(commandText, commandHex, responseText, responseHex, $"PG指令失败({failure.Name})：{failure.Message}{powerOffSuffix}");
+            }
 
             return TcpBurnResult.FromSuccess(commandText, commandHex, responseText, responseHex, "烧录成功，上电、烧录、下电均收到回包。");
+        }
+
+        private async Task<CommandExchange> SendPowerOffCommandAsync(string address, int port, ILog? log)
+        {
+            string powerOffBody = "PG,1,POWER,OFF";
+            string powerOffFrame = BuildLengthPrefixedBody(powerOffBody);
+            byte[] powerOffBytes = BuildBurnCommandBytes(powerOffBody);
+            string powerOffText = $"[02][FF]{powerOffFrame}[03]";
+
+            using TcpClient tcpClient = new();
+            try
+            {
+                await tcpClient.ConnectAsync(address, port).WaitAsync(TimeSpan.FromMilliseconds(Math.Max(1000, Config.BurnTcpConnectTimeoutMs))).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                return CommandExchange.FromFailure("PowerOff", string.Empty, string.Empty, $"连接PG超时：{address}:{port}");
+            }
+
+            tcpClient.NoDelay = true;
+            using NetworkStream stream = tcpClient.GetStream();
+            return await SendCommandAndWaitAsync(stream, "PowerOff", powerOffText, powerOffBytes, "POWER,OFF,END,OK", log).ConfigureAwait(false);
         }
 
         private async Task<CommandExchange> SendCommandAndWaitAsync(NetworkStream stream, string name, string commandText, byte[] commandBytes, string expectedResponse, ILog? log)

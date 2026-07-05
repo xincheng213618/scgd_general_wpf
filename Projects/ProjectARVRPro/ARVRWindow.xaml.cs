@@ -442,7 +442,8 @@ namespace ProjectARVRPro
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PictureSwitchFailed";
-                RecordFlowFailure(CurrentFlowResult.Msg, process: runProcessMeta?.Process);
+                ExecuteProcessFailure(runProcessMeta?.Process);
+                RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
                 SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
                 TryCount = 0;
@@ -453,7 +454,8 @@ namespace ProjectARVRPro
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PreProcessFailed";
-                RecordFlowFailure(CurrentFlowResult.Msg, process: runProcessMeta?.Process);
+                ExecuteProcessFailure(runProcessMeta?.Process);
+                RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                 SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
                 TryCount = 0;
@@ -487,12 +489,44 @@ namespace ProjectARVRPro
 
         private FlowControl flowControl;
 
-        private void RecordFlowFailure(string? message, int code = -1, IProcess? process = null)
+        private void ExecuteProcessFailure(IProcess? process)
+        {
+            if (process == null || CurrentFlowResult == null)
+                return;
+
+            try
+            {
+                MeasureBatchModel? batch = null;
+                if (CurrentFlowResult.BatchId > 0)
+                    batch = BatchResultMasterDao.Instance.GetById(CurrentFlowResult.BatchId);
+
+                batch ??= new MeasureBatchModel
+                {
+                    Id = CurrentFlowResult.BatchId,
+                    Name = CurrentFlowResult.SN,
+                    Code = CurrentFlowResult.Code
+                };
+
+                var ctx = new IProcessExecutionContext
+                {
+                    Batch = batch,
+                    Result = CurrentFlowResult,
+                    ObjectiveTestResult = ObjectiveTestResult,
+                    ImageView = ImageView
+                };
+
+                process.ExecuteFailure(ctx);
+            }
+            catch (Exception ex)
+            {
+                log.Error("自定义 IProcess 失败处理异常", ex);
+            }
+        }
+
+        private void RecordFlowFailure(string? message, int code = -1)
         {
             string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
-            string failureMessage = process is IFlowFailureFormatter formatter
-                ? formatter.TryFormatFailureMessage(normalizedMessage) ?? normalizedMessage
-                : normalizedMessage;
+            string failureMessage = normalizedMessage;
 
             _lastFlowFailureMessage = failureMessage;
             _firstFlowFailure ??= (code, failureMessage);
@@ -523,7 +557,7 @@ namespace ProjectARVRPro
                     .ThenBy(x => x.Id)
                     .FirstOrDefault(x => File.Exists(x.FileUrl));
 
-                if (image != null)
+                if (!string.IsNullOrWhiteSpace(image?.FileUrl))
                     result.FileName = image.FileUrl;
             }
             catch (Exception ex)
@@ -635,7 +669,8 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    RecordFlowFailure(CurrentFlowResult.Msg, -2, _currentFlowProcess);
+                    ExecuteProcessFailure(_currentFlowProcess);
+                    RecordFlowFailure(CurrentFlowResult.Msg, -2);
                     _isFlowLifecycleActive = false;
                     var response = new SocketResponse
                     {
@@ -657,7 +692,8 @@ namespace ProjectARVRPro
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
-                RecordFlowFailure(CurrentFlowResult.Msg, process: _currentFlowProcess);
+                ExecuteProcessFailure(_currentFlowProcess);
+                RecordFlowFailure(CurrentFlowResult.Msg, _firstFlowFailure?.Code ?? -1);
                 TryAttachCapturedImage(CurrentFlowResult);
 
                 ViewResultManager.Save(CurrentFlowResult);
@@ -738,7 +774,7 @@ namespace ProjectARVRPro
                             ObjectiveTestResult = ObjectiveTestResult,
                             ImageView =ImageView,
                         };
-                        executed = await meta.Process.ExecuteAsync(ctx);
+                        executed = meta.Process.Execute(ctx);
                     }
                     catch (Exception ex)
                     {
@@ -1328,7 +1364,8 @@ namespace ProjectARVRPro
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PictureSwitchFailed";
-                        RecordFlowFailure(CurrentFlowResult.Msg, process: meta.Process);
+                        ExecuteProcessFailure(meta.Process);
+                        RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
 
                         if (!ProjectARVRProConfig.Instance.AllowTestFailures)
@@ -1344,7 +1381,8 @@ namespace ProjectARVRPro
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PreProcessFailed";
-                        RecordFlowFailure(CurrentFlowResult.Msg, process: meta.Process);
+                        ExecuteProcessFailure(meta.Process);
+                        RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                         ViewResultManager.Save(CurrentFlowResult);
 
@@ -1411,7 +1449,8 @@ namespace ProjectARVRPro
                     {
                         CurrentFlowResult.FlowStatus = flowResult.EventName == "OverTime" ? FlowStatus.OverTime : FlowStatus.Failed;
                         CurrentFlowResult.Msg = flowResult.Params;
-                        RecordFlowFailure(CurrentFlowResult.Msg, flowResult.EventName == "OverTime" ? -2 : -1, meta.Process);
+                        ExecuteProcessFailure(meta.Process);
+                        RecordFlowFailure(CurrentFlowResult.Msg, flowResult.EventName == "OverTime" ? -2 : -1);
                         TryAttachCapturedImage(CurrentFlowResult);
                         logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName + Environment.NewLine + CurrentFlowResult.Msg;
                         ViewResultManager.Save(CurrentFlowResult);
