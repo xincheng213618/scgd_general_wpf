@@ -135,7 +135,6 @@ namespace ProjectARVRPro
             ViewReslutsClearCommand = new RelayCommand(a => ViewReslutsClear());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
-            SaveCommand = new RelayCommand(a => Save());
             SlectSqlLiteDbCommand = new RelayCommand(a => SlectSqlLiteDb());
 
 
@@ -149,24 +148,17 @@ namespace ProjectARVRPro
             // 确保表存在
             _db.CodeFirst.InitTables<ProjectARVRReuslt>();
             LoadAll(Config.Count);
-                DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
-                    "sqlite.projectarvr",
-                    "ARVR 结果",
-                    () => SqliteDbPath,
-                    dbPath => new SqlSugarClient(new ConnectionConfig
-                    {
-                        ConnectionString = $"Data Source={dbPath}",
-                        DbType = DbType.Sqlite,
-                        IsAutoCloseConnection = true,
-                        InitKeyType = InitKeyType.Attribute
-                    })));
-
-            if (!Directory.Exists(Config.TextSavePath))
-                Directory.CreateDirectory(Config.TextSavePath);
-            if (!Directory.Exists(Config.CsvSavePath))
-                Directory.CreateDirectory(Config.CsvSavePath);
-            if (!string.IsNullOrWhiteSpace(Config.CustomXlsxSavePath) && !Directory.Exists(Config.CustomXlsxSavePath))
-                Directory.CreateDirectory(Config.CustomXlsxSavePath);
+            DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
+    "sqlite.projectarvr",
+    "ARVR 结果",
+    () => SqliteDbPath,
+    dbPath => new SqlSugarClient(new ConnectionConfig
+    {
+        ConnectionString = $"Data Source={dbPath}",
+        DbType = DbType.Sqlite,
+        IsAutoCloseConnection = true,
+        InitKeyType = InitKeyType.Attribute
+    })));
         }
         public void SlectSqlLiteDb()
         {
@@ -189,31 +181,6 @@ namespace ProjectARVRPro
             Query(null,null,Config.Count);
         }
 
-        public void Delete(int index)
-        {
-            ViewResluts.RemoveAt(index);
-        }
-
-        public void Save()
-        {
-            if (ViewResluts.Count >0 &&  ViewReslutsSelectedIndex > -1)
-            {
-                //if (ViewResluts[ViewReslutsSelectedIndex] is ProjectARVRReuslt kbItemMaster)
-                //{
-                //    string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-                //    string regexPattern = $"[{Regex.Escape(invalidChars)}]";
-                //    string csvpath = Config.SavePathCsv + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
-                    
-                //    using var dialog = new System.Windows.Forms.SaveFileDialog();
-                //    dialog.Filter = "CSV files (*.csv) | *.csv";
-                //    dialog.FileName = csvpath;
-                //    dialog.RestoreDirectory = true;
-                //    if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                //    kbItemMaster.SaveCsv(dialog.FileName);
-                //}
-            }
-
-        }
 
         /// <summary>
         /// 初始化，从数据库读取数据到ViewResluts，count=-1为全部，否则仅取最新count条
