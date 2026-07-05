@@ -121,15 +121,15 @@ namespace ProjectARVRPro.Process.Chessboard
             }
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
             outtext += "棋盘格结果数据：" + Environment.NewLine;
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
             ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return outtext;
+            if (testResult == null) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
             foreach (var item in testResult.PoixyuvDatas)
             {
@@ -137,7 +137,7 @@ namespace ProjectARVRPro.Process.Chessboard
             }
 
             outtext += $"ChessboardContrast:{testResult.ChessboardContrast.TestValue} LowLimit:{testResult.ChessboardContrast.LowLimit}  UpLimit:{testResult.ChessboardContrast.UpLimit},Rsult{(testResult.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
         public override IRecipeConfig GetRecipeConfig()

@@ -27,9 +27,8 @@ namespace ProjectARVRPro.Process.Blank
         {
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
-            return string.Empty;
         }
     }
 }

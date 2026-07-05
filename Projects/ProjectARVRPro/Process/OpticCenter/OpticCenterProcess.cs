@@ -101,15 +101,15 @@ namespace ProjectARVRPro.Process.OpticCenter
             TestValue = value.ToString(fmt)
         };
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
             outtext += $"光轴校准" + Environment.NewLine;
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
             OpticCenterTestResult testResult = JsonConvert.DeserializeObject<OpticCenterTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return outtext;
+            if (testResult == null) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
             if (testResult.OptCenterXTilt != null)
                 outtext += $"OptCenterXTilt:{testResult.OptCenterXTilt.TestValue} LowLimit:{testResult.OptCenterXTilt.LowLimit}  UpLimit:{testResult.OptCenterXTilt.UpLimit},Rsult{(testResult.OptCenterXTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
@@ -123,7 +123,7 @@ namespace ProjectARVRPro.Process.OpticCenter
                 outtext += $"ImageCenterYTilt:{testResult.ImageCenterYTilt.TestValue} LowLimit:{testResult.ImageCenterYTilt.LowLimit}  UpLimit:{testResult.ImageCenterYTilt.UpLimit},Rsult{(testResult.ImageCenterYTilt.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             if (testResult.ImageCenterRotation != null)
                 outtext += $"ImageCenterRotation:{testResult.ImageCenterRotation.TestValue} LowLimit:{testResult.ImageCenterRotation.LowLimit}  UpLimit:{testResult.ImageCenterRotation.UpLimit},Rsult{(testResult.ImageCenterRotation.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
         public override void Render(IProcessExecutionContext ctx)

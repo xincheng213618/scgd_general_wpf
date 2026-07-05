@@ -151,22 +151,22 @@ namespace ProjectARVRPro.Process.W25
 
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
             outtext += $"W25 画面结果" + Environment.NewLine;
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
             W25ViewTestResult testResult = JsonConvert.DeserializeObject<W25ViewTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return outtext;
+            if (testResult == null) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
             foreach (var item in testResult.ViewPoixyuvDatas)
             {
                 outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
             }
 
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
         public override IRecipeConfig GetRecipeConfig()

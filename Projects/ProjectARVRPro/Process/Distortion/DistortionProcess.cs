@@ -154,15 +154,15 @@ namespace ProjectARVRPro.Process.Distortion
 
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
             outtext += $"Distortion" + Environment.NewLine;
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
             DistortionViewTestResult testResult = JsonConvert.DeserializeObject<DistortionViewTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return outtext;
+            if (testResult == null) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
             AppendItemText(ref outtext, testResult.HorizontalTVDistortion);
             AppendItemText(ref outtext, testResult.VerticalTVDistortion);
@@ -173,7 +173,7 @@ namespace ProjectARVRPro.Process.Distortion
             AppendItemText(ref outtext, testResult.DistortionRight);
             AppendItemText(ref outtext, testResult.KeystoneHoriz);
             AppendItemText(ref outtext, testResult.KeystoneVert);
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
         public override IRecipeConfig GetRecipeConfig()

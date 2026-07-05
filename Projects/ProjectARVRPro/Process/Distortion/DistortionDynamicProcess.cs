@@ -161,15 +161,15 @@ namespace ProjectARVRPro.Process.Distortion
             }
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"{GetOutputName()} 画面结果");
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return sb.ToString();
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
             DistortionDynamicTestResult? testResult = JsonConvert.DeserializeObject<DistortionDynamicTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return sb.ToString();
+            if (testResult == null) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
             sb.AppendLine("Name,Value,Unit,LowLimit,UpLimit,Result");
             foreach (var item in testResult.Items)
@@ -177,7 +177,7 @@ namespace ProjectARVRPro.Process.Distortion
                 sb.AppendLine($"{item.Name},{item.Value},{item.Unit},{item.LowLimit},{item.UpLimit},{item.TestResult}");
             }
 
-            return sb.ToString();
+            AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
         public override IRecipeConfig GetRecipeConfig()

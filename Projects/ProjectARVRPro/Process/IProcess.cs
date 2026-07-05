@@ -2,6 +2,8 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using System.Windows.Documents;
+using System.Windows.Media;
 
 namespace ProjectARVRPro.Process
 {
@@ -16,7 +18,13 @@ namespace ProjectARVRPro.Process
 
         public void Render(IProcessExecutionContext ctx);
 
-        public string GenText(IProcessExecutionContext ctx);
+        public void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize);
+
+        public (int Code, string Message) NormalizeFailure(string? message, int defaultCode)
+        {
+            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
+            return (defaultCode, normalizedMessage);
+        }
 
         /// <summary>
         /// Gets the recipe configuration for this process.
@@ -108,7 +116,29 @@ namespace ProjectARVRPro.Process
         public abstract bool Execute(IProcessExecutionContext ctx);
         public virtual Task<bool> ExecuteAsync(IProcessExecutionContext ctx) => Task.Run(() => Execute(ctx));
         public abstract void Render(IProcessExecutionContext ctx);
-        public abstract string GenText(IProcessExecutionContext ctx);
+        public abstract void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize);
+
+        protected static void AppendPlainText(Paragraph paragraph, string text, Brush foreground, double fontSize)
+        {
+            string[] lines = (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (i > 0)
+                    paragraph.Inlines.Add(new LineBreak());
+
+                paragraph.Inlines.Add(new Run(lines[i])
+                {
+                    Foreground = foreground,
+                    FontSize = fontSize
+                });
+            }
+        }
+
+        public virtual (int Code, string Message) NormalizeFailure(string? message, int defaultCode)
+        {
+            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
+            return (defaultCode, normalizedMessage);
+        }
 
         public virtual IRecipeConfig GetRecipeConfig() => null;
     }

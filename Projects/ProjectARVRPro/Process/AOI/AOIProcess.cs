@@ -11,6 +11,7 @@ using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ProjectARVRPro.Process.AOI
 {
@@ -18,6 +19,51 @@ namespace ProjectARVRPro.Process.AOI
     {
         public override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
 
+        private static readonly Regex FindDotsArrayFailureRegex = new(@"findDotsArray\s+return\s+fail(?:e)?d\s*[\(（]\s*(?<code>-?\d+)\s*[\)）]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Dictionary<int, (string Name, string Message)> CVOledErrors = new Dictionary<int, (string Name, string Message)>
+        {
+            [0] = ("CVLED_SUCCESS", "成功"),
+            [1] = ("CVLED_PARAM_E", "参数错误"),
+            [2] = ("CVLED_INPUT_E", "输入错误"),
+            [3] = ("CVLED_SCRREN_NOT_SUPPORT", "屏幕类型不支持(预留)"),
+            [4] = ("CVLED_INIT_E", "初始化错误"),
+            [5] = ("SAVE_E", "保存文件错误"),
+            [6] = ("OUT_OF_BOUNDRY", "越界"),
+            [7] = ("ALGORITHM_E", "算法错误"),
+            [8] = ("MORIE_E", "摩尔纹"),
+            [9] = ("PARTICLE_E", "灰尘检测错误"),
+            [10] = ("EXT_LIGHT_E", "侧光点亮异常"),
+            [11] = ("FOCUS_E", "清晰度异常/聚焦异常"),
+            [12] = ("AAROT_E", "AA区平转"),
+            [13] = ("PERPENDICULAR_E", "垂直不佳"),
+            [14] = ("PATTERN_E", "显示画面错误"),
+            [15] = ("DONGLE_E", "加密狗缺失"),
+            [16] = ("BLACKSCREEN_E", "黑屏错误(屏幕未点亮)"),
+            [17] = ("VH_LINE_E", "横竖线缺陷"),
+            [18] = ("CONSISTANT_STAIN_E", "固定位置缺陷"),
+            [19] = ("MURA_E", "Mura缺陷"),
+            [20] = ("PARTICLE_WARN", "灰尘检测警告(非致命)"),
+            [21] = ("POSITION_QUALITY_E", "定位质量差"),
+            [22] = ("CVLED_BUILD_E", "提取/重建错误"),
+            [23] = ("FILE_NOT_FOUND_E", "文件不存在(预留)"),
+            [24] = ("FILE_FORMAT_E", "文件格式错误(预留)"),
+            [25] = ("JSON_PARSE_E", "JSON解析错误(预留)"),
+            [26] = ("IMAGE_FORMAT_E", "图片格式不支持(预留)")
+        };
+
+        public override (int Code, string Message) NormalizeFailure(string? message, int defaultCode)
+        {
+            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
+            Match match = FindDotsArrayFailureRegex.Match(normalizedMessage);
+            if (!match.Success || !int.TryParse(match.Groups["code"].Value, out int oledErrorCode))
+                return (defaultCode, normalizedMessage);
+
+            if (!CVOledErrors.TryGetValue(oledErrorCode, out var oledError))
+                oledError = ("UNKNOWN_CVOLED_ERROR", "未知CVOLED错误码");
+
+            string detail = $"检测失败: {normalizedMessage}; 错误码: {oledErrorCode}, 枚举: {oledError.Name}, 错误信息: {oledError.Message}";
+            return (oledErrorCode, detail);
+        }
 
         public override bool Execute(IProcessExecutionContext ctx)
         {
@@ -134,15 +180,15 @@ namespace ProjectARVRPro.Process.AOI
 
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"{Config.Name} 画面结果");
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return sb.ToString();
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
             AoiTestResult testResult = JsonConvert.DeserializeObject<AoiTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return sb.ToString();
+            if (testResult == null) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
             sb.AppendLine("Name,Value,Unit,LowLimit,UpLimit,Result");
 
@@ -151,7 +197,7 @@ namespace ProjectARVRPro.Process.AOI
                 sb.AppendLine($"{item.Name},{item.Value},{item.Unit},{item.LowLimit},{item.UpLimit},{item.TestResult}");
             }
 
-            return sb.ToString();
+            AppendPlainText(paragraph, sb.ToString(), foreground, fontSize);
         }
 
         private static string GetExportDirectory(string batchName)

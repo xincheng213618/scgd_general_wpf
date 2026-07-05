@@ -129,18 +129,18 @@ namespace ProjectARVRPro.Process.Black
             }
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
 
             outtext += $"黑画面" + Environment.NewLine;
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return string.Empty;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return string.Empty;
+            if (testResult == null) return;
 
             outtext += $"FOFOContrast:{testResult.FOFOContrast.TestValue}  LowLimit:{testResult.FOFOContrast.LowLimit} UpLimit:{testResult.FOFOContrast.UpLimit},Rsult{(testResult.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
         public override IRecipeConfig GetRecipeConfig()

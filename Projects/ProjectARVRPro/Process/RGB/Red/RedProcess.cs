@@ -199,15 +199,15 @@ namespace ProjectARVRPro.Process.RGB.Red
 
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
 
             string outtext = string.Empty;
             outtext += $"Red" + Environment.NewLine;
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
             RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
-            if (redTestResult == null) return outtext;
+            if (redTestResult == null) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
             foreach (var item in redTestResult.ViewPoixyuvDatas)
             {
@@ -217,7 +217,7 @@ namespace ProjectARVRPro.Process.RGB.Red
             outtext += $"Luminance_uniformity:{redTestResult.LuminanceUniformity.TestValue} LowLimit:{redTestResult.LuminanceUniformity.LowLimit}  UpLimit:{redTestResult.LuminanceUniformity.UpLimit},Rsult{(redTestResult.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"Color_uniformity:{redTestResult.ColorUniformity.TestValue} LowLimit:{redTestResult.ColorUniformity.LowLimit} UpLimit:{redTestResult.ColorUniformity.UpLimit},Rsult{(redTestResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
         public override IRecipeConfig GetRecipeConfig()

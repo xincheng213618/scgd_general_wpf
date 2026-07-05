@@ -1,4 +1,5 @@
 #pragma warning disable CS8601, CS8602, CS8604
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Services;
@@ -15,6 +16,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Demura
 {
@@ -90,50 +95,113 @@ namespace ProjectARVRPro.Process.Demura
         {
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize)
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"{Config.Name} 画面结果");
+            AppendOutputLine(paragraph, $"{Config.Name} 画面结果", foreground, fontSize);
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return sb.ToString();
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
 
             DemuraTestResult? testResult = JsonConvert.DeserializeObject<DemuraTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return sb.ToString();
+            if (testResult == null) return;
 
-            AppendCsvText(sb, "W128", testResult.W128);
-            AppendCsvText(sb, "W255", testResult.W255);
-            AppendFileLinkText(sb, "PreviewImage", testResult.PreviewImageFile);
-            AppendFileLinkText(sb, "ToolDirectory", testResult.ToolDirectory);
-            AppendFileLinkText(sb, "DemuraConfig", testResult.DemuraConfigFile);
-            AppendBinLinkText(sb, "DynamicBin", testResult.DynamicBinFile);
-            AppendBinLinkText(sb, "MergedBin", testResult.MergedBinFile);
+            AppendCsvOutput(paragraph, "W128", testResult.W128, foreground, fontSize);
+            AppendCsvOutput(paragraph, "W255", testResult.W255, foreground, fontSize);
+            AppendFileLinkOutput(paragraph, "PreviewImage", testResult.PreviewImageFile, foreground, fontSize);
+            AppendFileLinkOutput(paragraph, "ToolDirectory", testResult.ToolDirectory, foreground, fontSize);
+            AppendFileLinkOutput(paragraph, "DemuraConfig", testResult.DemuraConfigFile, foreground, fontSize);
+            AppendFileLinkOutput(paragraph, "DynamicBin", testResult.DynamicBinFile, foreground, fontSize);
+            AppendFileLinkOutput(paragraph, "MergedBin", testResult.MergedBinFile, foreground, fontSize);
             if (testResult.MergedBinExists)
-                sb.AppendLine("FlashAddress:0x00003000");
-            sb.AppendLine($"BurnStatus:{BuildBurnStatusText(testResult)}");
+                AppendOutputLine(paragraph, "FlashAddress:0x00003000", foreground, fontSize);
+            AppendOutputLine(paragraph, $"BurnStatus:{BuildBurnStatusText(testResult)}", foreground, fontSize);
             if (testResult.BurnEnabled)
             {
-                AppendFileLinkText(sb, "BurnSource", testResult.BurnSourceFile);
-                sb.AppendLine($"BurnTarget:{testResult.BurnTargetFileName}");
-                sb.AppendLine($"BurnSensor:{testResult.BurnSensorName}({testResult.BurnSensorCode}) {testResult.BurnAddress}:{testResult.BurnPort}");
-                sb.AppendLine("BurnConnectionMode:TCPIP");
-                sb.AppendLine($"BurnCommand:{testResult.BurnCommand}");
+                AppendFileLinkOutput(paragraph, "BurnSource", testResult.BurnSourceFile, foreground, fontSize);
+                AppendOutputLine(paragraph, $"BurnTarget:{testResult.BurnTargetFileName}", foreground, fontSize);
+                AppendOutputLine(paragraph, $"BurnSensor:{testResult.BurnSensorName}({testResult.BurnSensorCode}) {testResult.BurnAddress}:{testResult.BurnPort}", foreground, fontSize);
+                AppendOutputLine(paragraph, "BurnConnectionMode:TCPIP", foreground, fontSize);
+                AppendOutputLine(paragraph, $"BurnCommand:{testResult.BurnCommand}", foreground, fontSize);
                 if (!string.IsNullOrWhiteSpace(testResult.BurnCommandHex))
-                    sb.AppendLine($"BurnCommandHex:{testResult.BurnCommandHex}");
+                    AppendOutputLine(paragraph, $"BurnCommandHex:{testResult.BurnCommandHex}", foreground, fontSize);
                 if (!string.IsNullOrWhiteSpace(testResult.BurnResponseText))
-                    sb.AppendLine($"BurnResponse:{testResult.BurnResponseText}");
+                    AppendOutputLine(paragraph, $"BurnResponse:{testResult.BurnResponseText}", foreground, fontSize);
                 if (!string.IsNullOrWhiteSpace(testResult.BurnMessage))
-                    sb.AppendLine($"BurnMessage:{testResult.BurnMessage}");
+                    AppendOutputLine(paragraph, $"BurnMessage:{testResult.BurnMessage}", foreground, fontSize);
             }
             if (!string.IsNullOrWhiteSpace(testResult.Message))
-                sb.AppendLine($"Message:{testResult.Message}");
+                AppendOutputLine(paragraph, $"Message:{testResult.Message}", foreground, fontSize);
 
-            sb.AppendLine("Name,Value,Unit,LowLimit,UpLimit,Result");
+            AppendOutputLine(paragraph, "Name,Value,Unit,LowLimit,UpLimit,Result", foreground, fontSize);
             foreach (var item in testResult.Items)
             {
-                sb.AppendLine($"{item.Name},{item.Value},{item.Unit},{item.LowLimit},{item.UpLimit},{(item.TestResult ? "PASS" : "Fail")}");
+                AppendOutputLine(paragraph, $"{item.Name},{item.Value},{item.Unit},{item.LowLimit},{item.UpLimit},{(item.TestResult ? "PASS" : "Fail")}", foreground, fontSize);
             }
+        }
 
-            return sb.ToString();
+        private static void AppendCsvOutput(Paragraph paragraph, string name, DemuraCsvFileResult result, Brush foreground, double fontSize)
+        {
+            AppendFileLinkOutput(paragraph, $"{name}Source", result.SourceFile, foreground, fontSize);
+            AppendFileLinkOutput(paragraph, $"{name}Csv", result.PreparedFile, foreground, fontSize);
+            AppendOutputLine(paragraph, $"{name} ExposureTime:{result.ExposureTime:G17}", foreground, fontSize);
+            AppendOutputLine(paragraph, $"{name} MasterId:{result.MasterId} Field:{result.SourceField}", foreground, fontSize);
+            AppendOutputLine(paragraph, $"{name} Count:{result.ValueCount} Lines:{result.LineCount} Size:{result.FileSize} Min:{result.Min:F4} Max:{result.Max:F4} Average:{result.Average:F4}", foreground, fontSize);
+            if (!string.IsNullOrWhiteSpace(result.ParseMessage))
+                AppendOutputLine(paragraph, $"{name} Message:{result.ParseMessage}", foreground, fontSize);
+        }
+
+        private static void AppendFileLinkOutput(Paragraph paragraph, string name, string filePath, Brush foreground, double fontSize)
+        {
+            bool exists = File.Exists(filePath) || Directory.Exists(filePath);
+            string displayName = string.IsNullOrWhiteSpace(filePath) ? "-" : Path.GetFileName(filePath);
+            if (!string.IsNullOrWhiteSpace(filePath) && Directory.Exists(filePath))
+                displayName = new DirectoryInfo(filePath).Name;
+
+            if (paragraph.Inlines.Count > 0)
+                paragraph.Inlines.Add(new LineBreak());
+
+            paragraph.Inlines.Add(CreateOutputRun($"{name}:", foreground, fontSize));
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                paragraph.Inlines.Add(CreateOutputRun(displayName, foreground, fontSize));
+            }
+            else
+            {
+                var link = new Hyperlink(CreateOutputRun(displayName, Brushes.Blue, fontSize))
+                {
+                    CommandParameter = filePath,
+                    Foreground = Brushes.Blue,
+                    TextDecorations = TextDecorations.Underline
+                };
+                link.PreviewMouseLeftButtonDown += OutputFileLink_PreviewMouseLeftButtonDown;
+                paragraph.Inlines.Add(link);
+            }
+            paragraph.Inlines.Add(CreateOutputRun($" Exists:{exists}", foreground, fontSize));
+        }
+
+        private static void AppendOutputLine(Paragraph paragraph, string text, Brush foreground, double fontSize)
+        {
+            if (paragraph.Inlines.Count > 0)
+                paragraph.Inlines.Add(new LineBreak());
+
+            paragraph.Inlines.Add(CreateOutputRun(text, foreground, fontSize));
+        }
+
+        private static Run CreateOutputRun(string text, Brush foreground, double fontSize)
+        {
+            return new Run(text)
+            {
+                Foreground = foreground,
+                FontSize = fontSize
+            };
+        }
+
+        private static void OutputFileLink_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount < 2 || sender is not Hyperlink link || link.CommandParameter is not string filePath)
+                return;
+
+            PlatformHelper.OpenFolderAndSelectFile(filePath);
+            e.Handled = true;
         }
 
         private async Task PrepareDemuraToolAsync(DemuraViewTestResult testResult, ILog? log)
@@ -883,12 +951,9 @@ flash_address = 0x00003000
 
         private static void AppendFileLinkText(StringBuilder sb, string name, string filePath)
         {
-            string displayName = string.IsNullOrWhiteSpace(filePath) ? "-" : Path.GetFileName(filePath);
+            string displayName = string.IsNullOrWhiteSpace(filePath) ? "-" : filePath;
             bool exists = File.Exists(filePath) || Directory.Exists(filePath);
-            if (!string.IsNullOrWhiteSpace(filePath) && Directory.Exists(filePath))
-                displayName = new DirectoryInfo(filePath).Name;
-            string fileLink = string.IsNullOrWhiteSpace(filePath) ? displayName : $"[[file|{filePath}|{displayName}]]";
-            sb.AppendLine($"{name}:{fileLink} Exists:{exists}");
+            sb.AppendLine($"{name}:{displayName} Exists:{exists}");
         }
 
         private sealed class CommandExchange

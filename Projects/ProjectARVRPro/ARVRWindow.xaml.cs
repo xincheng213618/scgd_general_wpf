@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1822,CS0168,CS0219,CS4014,CS8601
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -29,7 +28,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -76,38 +74,6 @@ namespace ProjectARVRPro
         private string _flowFailureMessage = string.Empty;
         private string _lastFlowFailureMessage = string.Empty;
         private int _flowFailureCode;
-        private static readonly Regex FindDotsArrayFailureRegex = new(@"findDotsArray\s+return\s+fail(?:e)?d\s*[\(（]\s*(?<code>-?\d+)\s*[\)）]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex OutputFileLinkRegex = new(@"\[\[file\|(?<path>[^|\]]+)\|(?<name>[^\]]+)\]\]", RegexOptions.Compiled);
-        private static readonly Dictionary<int, (string Name, string Message)> CVOledErrors = new Dictionary<int, (string Name, string Message)>
-        {
-            [0] = ("CVLED_SUCCESS", "成功"),
-            [1] = ("CVLED_PARAM_E", "参数错误"),
-            [2] = ("CVLED_INPUT_E", "输入错误"),
-            [3] = ("CVLED_SCRREN_NOT_SUPPORT", "屏幕类型不支持(预留)"),
-            [4] = ("CVLED_INIT_E", "初始化错误"),
-            [5] = ("SAVE_E", "保存文件错误"),
-            [6] = ("OUT_OF_BOUNDRY", "越界"),
-            [7] = ("ALGORITHM_E", "算法错误"),
-            [8] = ("MORIE_E", "摩尔纹"),
-            [9] = ("PARTICLE_E", "灰尘检测错误"),
-            [10] = ("EXT_LIGHT_E", "侧光点亮异常"),
-            [11] = ("FOCUS_E", "清晰度异常/聚焦异常"),
-            [12] = ("AAROT_E", "AA区平转"),
-            [13] = ("PERPENDICULAR_E", "垂直不佳"),
-            [14] = ("PATTERN_E", "显示画面错误"),
-            [15] = ("DONGLE_E", "加密狗缺失"),
-            [16] = ("BLACKSCREEN_E", "黑屏错误(屏幕未点亮)"),
-            [17] = ("VH_LINE_E", "横竖线缺陷"),
-            [18] = ("CONSISTANT_STAIN_E", "固定位置缺陷"),
-            [19] = ("MURA_E", "Mura缺陷"),
-            [20] = ("PARTICLE_WARN", "灰尘检测警告(非致命)"),
-            [21] = ("POSITION_QUALITY_E", "定位质量差"),
-            [22] = ("CVLED_BUILD_E", "提取/重建错误"),
-            [23] = ("FILE_NOT_FOUND_E", "文件不存在(预留)"),
-            [24] = ("FILE_FORMAT_E", "文件格式错误(预留)"),
-            [25] = ("JSON_PARSE_E", "JSON解析错误(预留)"),
-            [26] = ("IMAGE_FORMAT_E", "图片格式不支持(预留)")
-        };
 
         Random Random = new Random();
         public void InitTest(string SN)
@@ -602,18 +568,28 @@ namespace ProjectARVRPro
             ObjectiveTestResult.Msg = _flowFailureMessage;
         }
 
-        private static (int Code, string Message) NormalizeFlowFailure(string? message, int defaultCode)
+        private (int Code, string Message) NormalizeFlowFailure(string? message, int defaultCode)
+        {
+            IProcess? process = GetCurrentProcess();
+            return process?.NormalizeFailure(message, defaultCode) ?? NormalizeDefaultFailure(message, defaultCode);
+        }
+
+        private IProcess? GetCurrentProcess()
+        {
+            string? model = CurrentFlowResult?.Model;
+            if (!string.IsNullOrWhiteSpace(model))
+                return ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, model, StringComparison.OrdinalIgnoreCase))?.Process;
+
+            if (CurrentTestType >= 0 && CurrentTestType < ProcessMetas.Count)
+                return ProcessMetas[CurrentTestType].Process;
+
+            return null;
+        }
+
+        private static (int Code, string Message) NormalizeDefaultFailure(string? message, int defaultCode)
         {
             string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
-            Match match = FindDotsArrayFailureRegex.Match(normalizedMessage);
-            if (!match.Success || !int.TryParse(match.Groups["code"].Value, out int oledErrorCode))
-                return (defaultCode, normalizedMessage);
-
-            if (!CVOledErrors.TryGetValue(oledErrorCode, out var oledError))
-                oledError = ("UNKNOWN_CVOLED_ERROR", "未知CVOLED错误码");
-
-            string detail = $"检测失败: {normalizedMessage}; 错误码: {oledErrorCode}, 枚举: {oledError.Name}, 错误信息: {oledError.Message}";
-            return (oledErrorCode, detail);
+            return (defaultCode, normalizedMessage);
         }
 
         private string GetFlowControlMessage(FlowControlData flowControlData)
@@ -948,7 +924,7 @@ namespace ProjectARVRPro
             }
             catch (Exception ex)
             {
-                log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
+                log.Error("匹配/执行自定义 IProcess 出错", ex);
             }
             ViewResultManager.Save(result);
         }
@@ -1318,8 +1294,7 @@ namespace ProjectARVRPro
             outputText.Background = result.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
-            string outtext = string.Empty;
-            outtext += $"Model:{result.Model}  SN:{result.SN}  {DateTime.Now:yyyy/MM//dd HH:mm:ss}";
+            string outtext = $"Model:{result.Model}  SN:{result.SN}  {DateTime.Now:yyyy/MM//dd HH:mm:ss}";
             double outputFontSize = outputText.FontSize > 0 ? outputText.FontSize + 1 : 13;
             Run run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
@@ -1328,13 +1303,12 @@ namespace ProjectARVRPro
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
             outputText.Document.Blocks.Add(paragraph);
-            outtext = string.Empty;
-
 
             var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+            Brush foreground = result.Result ? Brushes.Black : Brushes.White;
+            paragraph = new Paragraph();
             if (meta?.Process != null)
             {
-                bool executed = false;
                 try
                 {
                     var ctx = new IProcessExecutionContext
@@ -1343,7 +1317,7 @@ namespace ProjectARVRPro
                         ObjectiveTestResult = ObjectiveTestResult,
                         ImageView = ImageView,
                     };
-                    outtext += meta.Process.GenText(ctx);
+                    meta.Process.GenText(ctx, paragraph, foreground, outputFontSize);
                 }
                 catch (Exception ex)
                 {
@@ -1351,56 +1325,19 @@ namespace ProjectARVRPro
                 }
             }
 
-            outtext += Environment.NewLine + $"Pass/Fail Criteria:" + Environment.NewLine;
-            outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;
-
-
-
-            paragraph = CreateOutputParagraph(outtext, result.Result ? Brushes.Black : Brushes.White, outputFontSize);
-            outtext = string.Empty;
+            AppendOutputLine(paragraph, string.Empty, foreground, outputFontSize);
+            AppendOutputLine(paragraph, "Pass/Fail Criteria:", foreground, outputFontSize);
+            AppendOutputLine(paragraph, result.Result ? "Pass" : "Fail", foreground, outputFontSize);
             outputText.Document.Blocks.Add(paragraph);
             SNtextBox.Focus();
         }
 
-        private Paragraph CreateOutputParagraph(string text, Brush foreground, double fontSize)
+        private static void AppendOutputLine(Paragraph paragraph, string text, Brush foreground, double fontSize)
         {
-            var paragraph = new Paragraph();
-            string[] lines = Regex.Split(text, "\r\n|\r|\n");
+            if (paragraph.Inlines.Count > 0)
+                paragraph.Inlines.Add(new LineBreak());
 
-            for (int i = 0; i < lines.Length; i++)
-            {
-                if (i > 0)
-                    paragraph.Inlines.Add(new LineBreak());
-
-                AppendOutputInlines(paragraph, lines[i], foreground, fontSize);
-            }
-
-            return paragraph;
-        }
-
-        private void AppendOutputInlines(Paragraph paragraph, string text, Brush foreground, double fontSize)
-        {
-            int lastIndex = 0;
-            foreach (Match match in OutputFileLinkRegex.Matches(text))
-            {
-                if (match.Index > lastIndex)
-                    paragraph.Inlines.Add(CreateOutputRun(text.Substring(lastIndex, match.Index - lastIndex), foreground, fontSize));
-
-                string filePath = match.Groups["path"].Value;
-                string displayName = match.Groups["name"].Value;
-                var link = new Hyperlink(CreateOutputRun(displayName, Brushes.Blue, fontSize))
-                {
-                    CommandParameter = filePath,
-                    Foreground = Brushes.Blue,
-                    TextDecorations = TextDecorations.Underline
-                };
-                link.PreviewMouseLeftButtonDown += OutputFileLink_PreviewMouseLeftButtonDown;
-                paragraph.Inlines.Add(link);
-                lastIndex = match.Index + match.Length;
-            }
-
-            if (lastIndex < text.Length)
-                paragraph.Inlines.Add(CreateOutputRun(text.Substring(lastIndex), foreground, fontSize));
+            paragraph.Inlines.Add(CreateOutputRun(text, foreground, fontSize));
         }
 
         private static Run CreateOutputRun(string text, Brush foreground, double fontSize)
@@ -1411,17 +1348,6 @@ namespace ProjectARVRPro
                 FontSize = fontSize
             };
         }
-
-        private void OutputFileLink_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ClickCount < 2 || sender is not Hyperlink link || link.CommandParameter is not string filePath)
-                return;
-
-            PlatformHelper.OpenFolderAndSelectFile(filePath);
-            e.Handled = true;
-        }
-
-
 
         private void listView1_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {

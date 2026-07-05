@@ -198,15 +198,15 @@ namespace ProjectARVRPro.Process.RGB.Blue
 
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
 
             string outtext = string.Empty;
             outtext += $"Blue" + Environment.NewLine;
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
             BlueViewTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueViewTestResult>(ctx.Result.ViewResultJson);
-            if (BlueTestResult == null) return outtext;
+            if (BlueTestResult == null) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
             foreach (var item in BlueTestResult.ViewPoixyuvDatas)
             {
@@ -216,7 +216,7 @@ namespace ProjectARVRPro.Process.RGB.Blue
             outtext += $"Luminance_uniformity:{BlueTestResult.LuminanceUniformity.TestValue} LowLimit:{BlueTestResult.LuminanceUniformity.LowLimit}  UpLimit:{BlueTestResult.LuminanceUniformity.UpLimit},Rsult{(BlueTestResult.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"Color_uniformity:{BlueTestResult.ColorUniformity.TestValue} LowLimit:{BlueTestResult.ColorUniformity.LowLimit} UpLimit:{BlueTestResult.ColorUniformity.UpLimit},Rsult{(BlueTestResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
         public override IRecipeConfig GetRecipeConfig()
