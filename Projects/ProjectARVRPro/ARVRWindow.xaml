@@ -244,6 +244,12 @@
                 <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
+                <Button Content="切图" Command="{Binding ThunderbirdSerialManager.EditCommand}" Padding="10,2"/>
+            </StatusBarItem>
+            <StatusBarItem >
+                <Button Content="中转" Command="{Binding SocketRelayManager.EditCommand}" Padding="10,2"/>
+            </StatusBarItem>
+            <StatusBarItem>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="5,0,5,0"/>
                     <ComboBox x:Name="GroupSelector" ItemsSource="{Binding ProcessManager.ProcessGroups}" 
@@ -252,9 +258,7 @@
                               Width="120" SelectionChanged="GroupSelector_SelectionChanged"/>
                 </StackPanel>
             </StatusBarItem>
-            <StatusBarItem >
-                <Button x:Name="RelayServerStatusButton" Foreground="Gray" Content="中转: 未启动" Click="OpenSocketRelay_Click" Padding="10,2"/>
-            </StatusBarItem>
+
             <StatusBarItem >
                 <Button Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,5"/>
             </StatusBarItem>

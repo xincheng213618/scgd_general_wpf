@@ -1496,11 +1496,5 @@ namespace ProjectARVRPro
             GC.SuppressFinalize(this);
         }
 
-
-        private void OpenSocketRelay_Click(object sender, RoutedEventArgs e)
-        {
-            SocketRelayWindow.OpenWindow();
-        }
-
     }
 }

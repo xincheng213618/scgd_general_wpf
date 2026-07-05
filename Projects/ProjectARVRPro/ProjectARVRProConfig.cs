@@ -6,6 +6,7 @@ using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
+using ProjectARVRPro.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
@@ -19,6 +20,8 @@ namespace ProjectARVRPro
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
+        public static ThunderbirdSerialManager ThunderbirdSerialManager => ThunderbirdSerialManager.GetInstance();
+        public static SocketRelayManager SocketRelayManager => ProjectARVRPro.Services.SocketRelayManager.GetInstance();
 
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
