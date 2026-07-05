@@ -73,6 +73,7 @@ namespace ProjectARVRPro
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
         private (int Code, string Message)? _firstFlowFailure;
         private string _lastFlowFailureMessage = string.Empty;
+        private IProcess? _currentFlowProcess;
 
         Random Random = new Random();
         public void InitTest(string SN)
@@ -81,6 +82,7 @@ namespace ProjectARVRPro
             ObjectiveTestResult = new ObjectiveTestResult();
             _firstFlowFailure = null;
             _lastFlowFailureMessage = string.Empty;
+            _currentFlowProcess = null;
             CurrentTestType = -1;
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -467,6 +469,7 @@ namespace ProjectARVRPro
             }
 
             TryCount++;
+            _currentFlowProcess = runProcessMeta?.Process;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowTemplateKey, out long time) ? time : 0;
 
             CurrentFlowResult = new ProjectARVRReuslt();
@@ -562,14 +565,6 @@ namespace ProjectARVRPro
             }
             ObjectiveTestResult.TotalResult = false;
             ObjectiveTestResult.Msg = _firstFlowFailure?.Message ?? failureMessage;
-        }
-
-        private IProcess? FindProcessByFlowTemplate(string? flowTemplate)
-        {
-            if (string.IsNullOrWhiteSpace(flowTemplate))
-                return null;
-
-            return ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, flowTemplate, StringComparison.OrdinalIgnoreCase))?.Process;
         }
 
         private void TryAttachCapturedImage(ProjectARVRReuslt result)
@@ -702,7 +697,7 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    RecordFlowFailure(CurrentFlowResult.Msg, -2, FindProcessByFlowTemplate(CurrentFlowResult.Model));
+                    RecordFlowFailure(CurrentFlowResult.Msg, -2, _currentFlowProcess);
                     _isFlowLifecycleActive = false;
                     var response = new SocketResponse
                     {
@@ -724,7 +719,7 @@ namespace ProjectARVRPro
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
-                RecordFlowFailure(CurrentFlowResult.Msg, process: FindProcessByFlowTemplate(CurrentFlowResult.Model));
+                RecordFlowFailure(CurrentFlowResult.Msg, process: _currentFlowProcess);
                 TryAttachCapturedImage(CurrentFlowResult);
 
                 ViewResultManager.Save(CurrentFlowResult);
