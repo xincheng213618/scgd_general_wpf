@@ -413,6 +413,12 @@ namespace ColorVision.Update
                 return new Version();
             }
 
+            if (!WindowsNetworkState.IsConnectedToInternet())
+            {
+                log.Info("Skipped update metadata check because Windows reports no internet connectivity.");
+                return new Version();
+            }
+
             if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
             {
                 return freshCachedVersion;

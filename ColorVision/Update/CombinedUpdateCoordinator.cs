@@ -346,6 +346,12 @@ namespace ColorVision.Update
 
         private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(bool includeApplicationUpdates, bool includePluginUpdates, bool respectSkippedVersion, bool forceRefresh = false, bool allowStaleFallback = true, CancellationToken cancellationToken = default)
         {
+            if (!WindowsNetworkState.IsConnectedToInternet())
+            {
+                log.Info("Skipped update plan check because Windows reports no internet connectivity.");
+                return (null, null);
+            }
+
             AutoUpdatePlan? applicationPlan = null;
             if (includeApplicationUpdates)
             {
