@@ -37,7 +37,17 @@ namespace ProjectARVRPro.Process.Demura
             return ExecuteCoreAsync(ctx).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
+        protected override Task<bool> ExecuteAsyncCore(IProcessExecutionContext ctx)
+        {
+            return ExecuteCoreAsync(ctx);
+        }
+
         public override bool ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            return ExecuteFailureAsyncCore(ctx).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        protected override async Task<bool> ExecuteFailureAsyncCore(IProcessExecutionContext ctx)
         {
             string failureMessage = string.IsNullOrWhiteSpace(ctx?.Result?.Msg) ? "Demura流程失败" : ctx.Result.Msg;
             if (ctx?.Result != null)
@@ -68,7 +78,7 @@ namespace ProjectARVRPro.Process.Demura
                     return false;
                 }
 
-                CommandExchange powerOff = SendPowerOffCommandAsync(sensor.Config.Addr, sensor.Config.Port, log).ConfigureAwait(false).GetAwaiter().GetResult();
+                CommandExchange powerOff = await SendPowerOffCommandAsync(sensor.Config.Addr, sensor.Config.Port, log).ConfigureAwait(false);
                 string powerOffMessage = powerOff.Success ? "Demura失败处理PG下电成功。" : $"Demura失败处理PG下电失败：{powerOff.Message}";
                 log?.Info(powerOffMessage);
                 if (ctx?.Result != null)

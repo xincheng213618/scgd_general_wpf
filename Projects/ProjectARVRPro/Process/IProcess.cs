@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 using System.Windows.Documents;
 using System.Windows.Media;
 
@@ -8,11 +9,11 @@ namespace ProjectARVRPro.Process
 {
     public interface IProcess
     {
-        public bool Execute(IProcessExecutionContext ctx);
+        public Task<bool> Execute(IProcessExecutionContext ctx);
 
-        public bool ExecuteFailure(IProcessExecutionContext ctx)
+        public Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
         {
-            return false;
+            return Task.FromResult(false);
         }
 
         public void Render(IProcessExecutionContext ctx);
@@ -107,7 +108,17 @@ namespace ProjectARVRPro.Process
         }
 
         public abstract bool Execute(IProcessExecutionContext ctx);
+
+        protected virtual Task<bool> ExecuteAsyncCore(IProcessExecutionContext ctx) => Task.FromResult(Execute(ctx));
+
+        Task<bool> IProcess.Execute(IProcessExecutionContext ctx) => ExecuteAsyncCore(ctx);
+
         public virtual bool ExecuteFailure(IProcessExecutionContext ctx) => false;
+
+        protected virtual Task<bool> ExecuteFailureAsyncCore(IProcessExecutionContext ctx) => Task.FromResult(ExecuteFailure(ctx));
+
+        Task<bool> IProcess.ExecuteFailure(IProcessExecutionContext ctx) => ExecuteFailureAsyncCore(ctx);
+
         public abstract void Render(IProcessExecutionContext ctx);
         public abstract void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize);
 

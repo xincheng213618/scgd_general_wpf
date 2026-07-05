@@ -442,7 +442,7 @@ namespace ProjectARVRPro
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PictureSwitchFailed";
-                ExecuteProcessFailure(runProcessMeta?.Process);
+                await ExecuteProcessFailureAsync(runProcessMeta?.Process);
                 RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
                 SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
@@ -454,7 +454,7 @@ namespace ProjectARVRPro
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PreProcessFailed";
-                ExecuteProcessFailure(runProcessMeta?.Process);
+                await ExecuteProcessFailureAsync(runProcessMeta?.Process);
                 RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                 SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
@@ -489,7 +489,7 @@ namespace ProjectARVRPro
 
         private FlowControl flowControl;
 
-        private void ExecuteProcessFailure(IProcess? process)
+        private async Task ExecuteProcessFailureAsync(IProcess? process)
         {
             if (process == null || CurrentFlowResult == null)
                 return;
@@ -515,7 +515,7 @@ namespace ProjectARVRPro
                     ImageView = ImageView
                 };
 
-                process.ExecuteFailure(ctx);
+                await process.ExecuteFailure(ctx);
             }
             catch (Exception ex)
             {
@@ -609,7 +609,7 @@ namespace ProjectARVRPro
             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
         }
 
-        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
+        private async void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
@@ -625,7 +625,7 @@ namespace ProjectARVRPro
                 CurrentFlowResult.Msg = "Completed";
                 try
                 {
-                    Processing(FlowControlData.SerialNumber);
+                    await Processing(FlowControlData.SerialNumber);
                     if (!IsTestTypeCompleted())
                     {
                         _isFlowLifecycleActive = false;
@@ -669,7 +669,7 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    ExecuteProcessFailure(_currentFlowProcess);
+                    await ExecuteProcessFailureAsync(_currentFlowProcess);
                     RecordFlowFailure(CurrentFlowResult.Msg, -2);
                     _isFlowLifecycleActive = false;
                     var response = new SocketResponse
@@ -692,7 +692,7 @@ namespace ProjectARVRPro
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = FlowControlData.Params;
-                ExecuteProcessFailure(_currentFlowProcess);
+                await ExecuteProcessFailureAsync(_currentFlowProcess);
                 RecordFlowFailure(CurrentFlowResult.Msg, _firstFlowFailure?.Code ?? -1);
                 TryAttachCapturedImage(CurrentFlowResult);
 
@@ -737,7 +737,7 @@ namespace ProjectARVRPro
             }
         }
 
-        private async void Processing(string SerialNumber)
+        private async Task Processing(string SerialNumber)
         {
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
@@ -774,7 +774,7 @@ namespace ProjectARVRPro
                             ObjectiveTestResult = ObjectiveTestResult,
                             ImageView =ImageView,
                         };
-                        executed = meta.Process.Execute(ctx);
+                        executed = await meta.Process.Execute(ctx);
                     }
                     catch (Exception ex)
                     {
@@ -1364,7 +1364,7 @@ namespace ProjectARVRPro
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PictureSwitchFailed";
-                        ExecuteProcessFailure(meta.Process);
+                        await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
 
@@ -1381,7 +1381,7 @@ namespace ProjectARVRPro
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PreProcessFailed";
-                        ExecuteProcessFailure(meta.Process);
+                        await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                         ViewResultManager.Save(CurrentFlowResult);
@@ -1443,13 +1443,13 @@ namespace ProjectARVRPro
                     if (flowResult.EventName == "Completed")
                     {
                         CurrentFlowResult.Msg = "Completed";
-                        Processing(flowResult.SerialNumber);
+                        await Processing(flowResult.SerialNumber);
                     }
                     else
                     {
                         CurrentFlowResult.FlowStatus = flowResult.EventName == "OverTime" ? FlowStatus.OverTime : FlowStatus.Failed;
                         CurrentFlowResult.Msg = flowResult.Params;
-                        ExecuteProcessFailure(meta.Process);
+                        await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg, flowResult.EventName == "OverTime" ? -2 : -1);
                         TryAttachCapturedImage(CurrentFlowResult);
                         logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName + Environment.NewLine + CurrentFlowResult.Msg;
