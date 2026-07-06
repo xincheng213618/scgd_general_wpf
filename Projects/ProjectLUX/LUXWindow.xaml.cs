@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1805,CA1822,CS0168,CS0219,CS4014,CS8601
+using Azure;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -6,6 +7,7 @@ using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
@@ -445,6 +447,12 @@ namespace ProjectLUX
                     if (!string.IsNullOrWhiteSpace(ReturnCode))
                     {
                         ReturnCode += $"FlowFailed:{FlowControlData.EventName},{FlowControlData.Params};";
+                        SocketMessageManager.GetInstance().AddMessage(new SocketMessage
+                        {
+                            Direction = SocketMessageDirection.Sent,
+                            Content = ReturnCode,
+                            MessageTime = DateTime.Now,
+                        });
                         if (SocketControl.Current.Stream != null)
                             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     }
@@ -456,6 +464,12 @@ namespace ProjectLUX
                 if (!string.IsNullOrWhiteSpace(ReturnCode))
                 {
                     ReturnCode += $"FlowFailed:{FlowControlData.EventName},{FlowControlData.Params};";
+                    SocketMessageManager.GetInstance().AddMessage(new SocketMessage
+                    {
+                        Direction = SocketMessageDirection.Sent,
+                        Content = ReturnCode,
+                        MessageTime = DateTime.Now,
+                    });
                     if (SocketControl.Current.Stream != null)
                         SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
