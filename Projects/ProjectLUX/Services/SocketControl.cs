@@ -209,6 +209,7 @@ namespace ProjectLUX.Services
                         if (lastTwo == "00")
                         {
                             log.Info("拍图窗口握手");
+                            // 多工位循环时，A站握手可能发生在上一组仍在测；这里只回ACK，不重置结果。
                             //ProjectWindowInstance.WindowInstance.InitTest(sn);
                             return string.Join(",", strings) + ";";
                         }
@@ -237,6 +238,7 @@ namespace ProjectLUX.Services
                         {
 
                             log.Info("拍图窗口握手");
+                            // 多工位循环时，A站握手可能发生在上一组仍在测；这里只回ACK，不重置结果。
                             //ProjectWindowInstance.WindowInstance.InitTest(sn);
                         }
                         else

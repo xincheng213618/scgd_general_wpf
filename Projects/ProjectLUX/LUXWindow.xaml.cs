@@ -70,6 +70,7 @@ namespace ProjectLUX
             get => stream;
             set
             {
+                // 多工位并行时，后续握手/消息不能覆盖当前流程的回包连接。
                 if (value != null && flowControl != null && flowControl.IsFlowRun)
                 {
                     log.Info("流程运行中，保持当前执行Stream");
