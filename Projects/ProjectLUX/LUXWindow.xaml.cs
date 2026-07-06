@@ -397,22 +397,24 @@ namespace ProjectLUX
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            ProjectLUXReuslt completedResult = CurrentFlowResult;
+            ObjectiveTestResult completedObjectiveTestResult = ObjectiveTestResult;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-            CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+            completedResult.RunTime = stopwatch.ElapsedMilliseconds;
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
             if (FlowControlData.EventName == "Completed")
             {
-                CurrentFlowResult.Msg = "Completed";
+                completedResult.Msg = "Completed";
                 try
                 {
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        Processing(FlowControlData.SerialNumber);
+                        Processing(FlowControlData.SerialNumber, completedResult, completedObjectiveTestResult);
                     });
                 }
                 catch (Exception ex)
@@ -498,7 +500,7 @@ namespace ProjectLUX
             }
         }
 
-        private void Processing(string SerialNumber)
+        private void Processing(string SerialNumber, ProjectLUXReuslt result, ObjectiveTestResult objectiveTestResult)
         {
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
@@ -507,7 +509,6 @@ namespace ProjectLUX
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
-            ProjectLUXReuslt result = CurrentFlowResult ?? new ProjectLUXReuslt();
 
             result.BatchId = Batch.Id;
             result.FlowStatus = FlowStatus.Completed;
@@ -530,7 +531,7 @@ namespace ProjectLUX
                         {
                             Batch = Batch,
                             Result = result,
-                            ObjectiveTestResult = ObjectiveTestResult,
+                            ObjectiveTestResult = objectiveTestResult,
                             FixConfig = ObjectiveTestResultFix,
                             RecipeConfig = RecipeConfig,
                             ImageView = ImageView,
@@ -549,7 +550,8 @@ namespace ProjectLUX
                         if (Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
                         {
                             log.Info("savepath" + path);
-                            ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
+                            log.Info($"ObjectiveTestResult导出状态 W51AR:{objectiveTestResult.W51ARTestResult != null} W255AR:{objectiveTestResult.W255ARTestResult != null} W255:{objectiveTestResult.W255TestResult != null}");
+                            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResult, path);
                         }
                         else
                         {
@@ -557,17 +559,17 @@ namespace ProjectLUX
                         }
 
                         ViewResultManager.Save(result);
-                        ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+                        objectiveTestResult.TotalResult = objectiveTestResult.TotalResult && result.Result;
                         IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
 
                         if (!string.IsNullOrWhiteSpace(ReturnCode))
                         {
-                            if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR"&&CurrentFlowResult?.TestType == 0)
+                            if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR"&& result.TestType == 0)
                             {
                                 log.Info("IsOC");
-                                if(ObjectiveTestResult.OpticCenterTestResult != null)
+                                if(objectiveTestResult.OpticCenterTestResult != null)
                                 {
-                                    ReturnCode += $",{ObjectiveTestResult.OpticCenterTestResult.OptCenterRotation.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterXTilt.Value},{ObjectiveTestResult.OpticCenterTestResult.OptCenterYTilt.Value},00;";
+                                    ReturnCode += $",{objectiveTestResult.OpticCenterTestResult.OptCenterRotation.Value},{objectiveTestResult.OpticCenterTestResult.OptCenterXTilt.Value},{objectiveTestResult.OpticCenterTestResult.OptCenterYTilt.Value},00;";
                                 }
                                 else
                                 {
@@ -606,7 +608,7 @@ namespace ProjectLUX
                 log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
             }
             ViewResultManager.Save(result);
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+            objectiveTestResult.TotalResult = objectiveTestResult.TotalResult && result.Result;
         }
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
@@ -843,6 +845,37 @@ namespace ProjectLUX
                 TestResult.VRMTFHTestResult.ObjectiveTestItems.Add(objectiveTestItem);
             }
             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+        }
+
+        private void ExportObjectiveTestResult_Click(object sender, RoutedEventArgs e)
+        {
+            string sn = string.IsNullOrWhiteSpace(ProjectLUXConfig.Instance.SN) ? "SN" : ProjectLUXConfig.Instance.SN;
+            foreach (char c in Path.GetInvalidFileNameChars())
+            {
+                sn = sn.Replace(c, '_');
+            }
+
+            string defaultPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "导出 ObjectiveTestResult",
+                InitialDirectory = defaultPath
+            };
+
+            if (dialog.ShowDialog(this) != true) return;
+
+            try
+            {
+                string path = Path.Combine(dialog.FolderName, $"C_{sn}.csv");
+                ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
+                log.Info("手动导出 ObjectiveTestResult：" + path);
+                MessageBox.Show(this, "导出完成：" + path, "ColorVision");
+            }
+            catch (Exception ex)
+            {
+                log.Error("手动导出 ObjectiveTestResult 失败", ex);
+                MessageBox.Show(this, "导出失败：" + ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }
