@@ -209,7 +209,7 @@ namespace ProjectLUX.Services
                         if (lastTwo == "00")
                         {
                             log.Info("拍图窗口握手");
-                            ProjectWindowInstance.WindowInstance.InitTest(sn);
+                            //ProjectWindowInstance.WindowInstance.InitTest(sn);
                             return string.Join(",", strings) + ";";
                         }
                         else if (lastTwo == "02")
@@ -217,11 +217,13 @@ namespace ProjectLUX.Services
                             log.Info("oc测试 ");
                             strings.RemoveAt(2);
                             ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings);
+                            ProjectWindowInstance.WindowInstance.Stream = stream;
                             ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
                         else
                         {
+                            ProjectWindowInstance.WindowInstance.Stream = stream;
                             ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
@@ -235,10 +237,11 @@ namespace ProjectLUX.Services
                         {
 
                             log.Info("拍图窗口握手");
-                            ProjectWindowInstance.WindowInstance.InitTest(sn);
+                            //ProjectWindowInstance.WindowInstance.InitTest(sn);
                         }
                         else
                         {
+                            ProjectWindowInstance.WindowInstance.Stream = stream;
                             ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }

@@ -22,6 +22,7 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -63,6 +64,20 @@ namespace ProjectLUX
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
         private int ObjectiveTestResultRecordId;
+        private NetworkStream? stream;
+        public NetworkStream? Stream
+        {
+            get => stream;
+            set
+            {
+                if (value != null && flowControl != null && flowControl.IsFlowRun)
+                {
+                    log.Info("流程运行中，保持当前执行Stream");
+                    return;
+                }
+                stream = value;
+            }
+        }
 
 
         Random Random = new Random();
@@ -84,20 +99,10 @@ namespace ProjectLUX
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(SN))
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectLUXConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
-                });
-            }
-            else
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectLUXConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
-                });
-            }
+                ProjectLUXConfig.Instance.SN = string.IsNullOrWhiteSpace(SN) ? "SN" + Random.NextInt64(1000, 9000).ToString() : SN.Trim();
+            });
         }
 
         /// <summary>
@@ -107,12 +112,18 @@ namespace ProjectLUX
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                if (flowControl != null && flowControl.IsFlowRun)
+                {
+                    log.Info($"流程运行中，忽略 SocketCode={socketCode}");
+                    return;
+                }
+
                 var activeGroup = ProcessManager.ActiveGroup;
                 if (activeGroup == null)
                 {
                     log.Error($"未设置活动流程组，无法执行 SocketCode={socketCode}");
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (Stream != null)
+                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     return;
                 }
 
@@ -120,8 +131,8 @@ namespace ProjectLUX
                 if (processMeta == null)
                 {
                     log.Error($"未在组 {activeGroup.Name} 中找到 SocketCode={socketCode} 对应的流程");
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (Stream != null)
+                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     return;
                 }
 
@@ -136,8 +147,8 @@ namespace ProjectLUX
                 else
                 {
                     log.Error($"未找到 FlowTemplate={processMeta.FlowTemplate} 对应的模板");
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (Stream != null)
+                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
             });
         }
@@ -456,8 +467,8 @@ namespace ProjectLUX
                             Content = ReturnCode,
                             MessageTime = DateTime.Now,
                         });
-                        if (SocketControl.Current.Stream != null)
-                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                        if (Stream != null)
+                            Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     }
                 }
                 TryCount = 0;
@@ -473,8 +484,8 @@ namespace ProjectLUX
                         Content = ReturnCode,
                         MessageTime = DateTime.Now,
                     });
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (Stream != null)
+                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
 
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
@@ -547,7 +558,7 @@ namespace ProjectLUX
                     if (executed)
                     {
                         //每次结束都保存
-                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{ProjectLUXConfig.Instance.SN}.csv");
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{result.SN}.csv");
                         if (Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
                         {
                             log.Info("savepath" + path);
@@ -580,8 +591,8 @@ namespace ProjectLUX
 
                             try
                             {
-                                if (SocketControl.Current.Stream != null)
-                                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                                if (Stream != null)
+                                    Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                                 else
                                 {
                                     log.Info("找不到通信连接");
@@ -864,11 +875,7 @@ namespace ProjectLUX
 
         private void ExportObjectiveTestResult_Click(object sender, RoutedEventArgs e)
         {
-            string sn = string.IsNullOrWhiteSpace(ProjectLUXConfig.Instance.SN) ? "SN" : ProjectLUXConfig.Instance.SN;
-            foreach (char c in Path.GetInvalidFileNameChars())
-            {
-                sn = sn.Replace(c, '_');
-            }
+            string sn = ProjectLUXConfig.Instance.SN;
 
             string defaultPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             var dialog = new Microsoft.Win32.OpenFolderDialog
