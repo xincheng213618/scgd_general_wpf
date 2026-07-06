@@ -548,6 +548,7 @@ namespace ProjectLUX
                         string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{ProjectLUXConfig.Instance.SN}.csv");
                         if (Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
                         {
+                            log.Info("savepath" + path);
                             ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
                         }
                         else
