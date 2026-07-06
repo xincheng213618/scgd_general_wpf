@@ -252,6 +252,9 @@
                 <Button Content="导出结果" Click="ExportObjectiveTestResult_Click"/>
             </StatusBarItem>
             <StatusBarItem>
+                <Button Content="结果记录" Click="ObjectiveTestResultRecord_Click"/>
+            </StatusBarItem>
+            <StatusBarItem>
                 <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>

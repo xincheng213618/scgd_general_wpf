@@ -192,6 +192,7 @@ namespace ProjectARVRPro
                         }
                         else if (property.Value is Newtonsoft.Json.Linq.JObject childObj)
                         {
+                            bool handled = false;
                             // Check if this looks like a PoixyuvData object
                             if (childObj.ContainsKey("Name") && childObj.ContainsKey("Y"))
                             {
@@ -202,7 +203,7 @@ namespace ProjectARVRPro
                                     {
                                         // Convert PoixyuvData to multiple ObjectiveTestItem entries
                                         AddPoixyuvDataAsTestItems(poiData, items);
-                                        continue;
+                                        handled = true;
                                     }
                                 }
                                 catch
@@ -220,13 +221,20 @@ namespace ProjectARVRPro
                                     if (testItem != null)
                                     {
                                         items.Add(testItem);
+                                        handled = true;
                                     }
                                 }
                                 catch
                                 {
                                     // Not an ObjectiveTestItem, try to recurse
                                     CollectTestItems(childObj, items);
+                                    handled = true;
                                 }
+                            }
+
+                            if (!handled)
+                            {
+                                CollectTestItems(childObj, items);
                             }
                         }
 

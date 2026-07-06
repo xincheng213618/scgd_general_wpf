@@ -1,0 +1,60 @@
+<Window x:Class="ProjectARVRPro.ObjectiveTestResultRecordWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjectARVRPro"
+        mc:Ignorable="d"
+        Title="ObjectiveTestResult 记录" Height="560" Width="1160"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="SN" VerticalAlignment="Center" Margin="0,0,4,0"/>
+            <TextBox x:Name="SnTextBox" Width="180" Margin="0,0,12,0"/>
+            <TextBlock Text="数量" VerticalAlignment="Center" Margin="0,0,4,0"/>
+            <TextBox x:Name="CountTextBox" Text="100" Width="64" Margin="0,0,12,0"/>
+            <Button Content="查询" Width="72" Click="Query_Click"/>
+        </StackPanel>
+
+        <DataGrid Grid.Row="1"
+                  x:Name="RecordDataGrid"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  HeadersVisibility="Column"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  GridLinesVisibility="All">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="64"/>
+                <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="140"/>
+                <DataGridTextColumn Header="LastModel" Binding="{Binding LastModel}" Width="150"/>
+                <DataGridTextColumn Header="LastTestType" Binding="{Binding LastTestType}" Width="90"/>
+                <DataGridCheckBoxColumn Header="LastResult" Binding="{Binding LastResult}" Width="90"/>
+                <DataGridCheckBoxColumn Header="TotalResult" Binding="{Binding TotalResult}" Width="90"/>
+                <DataGridCheckBoxColumn Header="HasFov" Binding="{Binding HasFov}" Width="80"/>
+                <DataGridCheckBoxColumn Header="W51" Binding="{Binding HasW51}" Width="72"/>
+                <DataGridCheckBoxColumn Header="W255" Binding="{Binding HasW255}" Width="72"/>
+                <DataGridTextColumn Header="DynamicTest" Binding="{Binding DynamicTestCount}" Width="90"/>
+                <DataGridTextColumn Header="DynamicPoi" Binding="{Binding DynamicPoiCount}" Width="90"/>
+                <DataGridTextColumn Header="BatchId" Binding="{Binding BatchId}" Width="80"/>
+                <DataGridTextColumn Header="ResultId" Binding="{Binding ResultId}" Width="80"/>
+                <DataGridTextColumn Header="Msg" Binding="{Binding Msg}" Width="160"/>
+                <DataGridTextColumn Header="UpdateTime" Binding="{Binding UpdateTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="150"/>
+                <DataGridTextColumn Header="CreateTime" Binding="{Binding CreateTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="150"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="查看测试项" Width="96" Margin="0,0,8,0" Click="ViewItems_Click"/>
+            <Button Content="查看Json" Width="88" Margin="0,0,8,0" Click="ViewJson_Click"/>
+            <Button Content="导出CSV" Width="88" Click="ExportCsv_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -71,6 +71,7 @@ namespace ProjectARVRPro
         private int CurrentTestType = -1;
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
+        private int ObjectiveTestResultRecordId;
         private (int Code, string Message)? _firstFlowFailure;
         private string _lastFlowFailureMessage = string.Empty;
         private IProcess? _currentFlowProcess;
@@ -80,6 +81,7 @@ namespace ProjectARVRPro
         {
             ProjectConfig.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
+            ObjectiveTestResultRecordId = 0;
             _firstFlowFailure = null;
             _lastFlowFailureMessage = string.Empty;
             _currentFlowProcess = null;
@@ -650,6 +652,7 @@ namespace ProjectARVRPro
                 CurrentFlowResult.Msg = FlowControlData.Params;
                 TryAttachCapturedImage(CurrentFlowResult);
                 ViewResultManager.Save(CurrentFlowResult);
+                SaveObjectiveTestResultRecord(CurrentFlowResult);
 
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
@@ -671,6 +674,8 @@ namespace ProjectARVRPro
                 {
                     await ExecuteProcessFailureAsync(_currentFlowProcess);
                     RecordFlowFailure(CurrentFlowResult.Msg, -2);
+                    ViewResultManager.Save(CurrentFlowResult);
+                    SaveObjectiveTestResultRecord(CurrentFlowResult);
                     _isFlowLifecycleActive = false;
                     var response = new SocketResponse
                     {
@@ -697,6 +702,7 @@ namespace ProjectARVRPro
                 TryAttachCapturedImage(CurrentFlowResult);
 
                 ViewResultManager.Save(CurrentFlowResult);
+                SaveObjectiveTestResultRecord(CurrentFlowResult);
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + CurrentFlowResult.Msg;
 
                 TryCount = 0;
@@ -784,6 +790,7 @@ namespace ProjectARVRPro
                     {
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+                        SaveObjectiveTestResultRecord(result);
 
                         if (ViewResultManager.Config.IsSaveLink)
                         {
@@ -847,6 +854,20 @@ namespace ProjectARVRPro
                 log.Error("匹配/执行自定义 IProcess 出错", ex);
             }
             ViewResultManager.Save(result);
+            SaveObjectiveTestResultRecord(result);
+        }
+
+        private void SaveObjectiveTestResultRecord(ProjectARVRReuslt result)
+        {
+            try
+            {
+                ObjectiveTestResultRecordId = ViewResultManager.SaveObjectiveTestResult(ObjectiveTestResultRecordId, result, ObjectiveTestResult);
+                log.Info($"保存 ObjectiveTestResult 记录：{ObjectiveTestResultRecordId}");
+            }
+            catch (Exception ex)
+            {
+                log.Error("保存 ObjectiveTestResult 记录失败", ex);
+            }
         }
 
         public bool IsSaveImageReuslt { get;set; }
@@ -1291,6 +1312,16 @@ namespace ProjectARVRPro
             ProcessManager.GenStepBar(stepBar);
         }
 
+        private void ObjectiveTestResultRecord_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new ObjectiveTestResultRecordWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.ShowDialog();
+        }
+
         private bool _isRunAllRunning;
 
         private async void RunAllClick(object sender, RoutedEventArgs e)
@@ -1385,6 +1416,7 @@ namespace ProjectARVRPro
                         RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                         ViewResultManager.Save(CurrentFlowResult);
+                        SaveObjectiveTestResultRecord(CurrentFlowResult);
 
                         if (!ProjectARVRProConfig.Instance.AllowTestFailures)
                         {
@@ -1454,6 +1486,7 @@ namespace ProjectARVRPro
                         TryAttachCapturedImage(CurrentFlowResult);
                         logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName + Environment.NewLine + CurrentFlowResult.Msg;
                         ViewResultManager.Save(CurrentFlowResult);
+                        SaveObjectiveTestResultRecord(CurrentFlowResult);
 
                         if (!ProjectARVRProConfig.Instance.AllowTestFailures)
                         {

@@ -85,7 +85,7 @@ namespace ProjectLUX
                 IsAutoCloseConnection = true
             });
             // 确保表存在
-            _db.CodeFirst.InitTables<ProjectLUXReuslt>();
+            _db.CodeFirst.InitTables<ProjectLUXReuslt, ObjectiveTestResultRecord>();
             LoadAll(Config.Count);
                 DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
                     "sqlite.projectlux",
@@ -192,6 +192,39 @@ namespace ProjectLUX
                 }
             }
 
+        }
+
+        public int SaveObjectiveTestResult(int currentRecordId, ProjectLUXReuslt result, ObjectiveTestResult objectiveTestResult)
+        {
+            if (result == null || objectiveTestResult == null) return currentRecordId;
+
+            var record = ObjectiveTestResultRecord.Create(result, objectiveTestResult);
+            if (currentRecordId > 0)
+            {
+                var oldRecord = _db.Queryable<ObjectiveTestResultRecord>().Where(x => x.Id == currentRecordId).First();
+                if (oldRecord != null)
+                {
+                    record.Id = currentRecordId;
+                    record.CreateTime = oldRecord.CreateTime;
+                    _db.Updateable(record).Where(x => x.Id == record.Id).ExecuteCommand();
+                    return record.Id;
+                }
+            }
+
+            record.Id = _db.Insertable(record).ExecuteReturnIdentity();
+            return record.Id;
+        }
+
+        public List<ObjectiveTestResultRecord> QueryObjectiveTestResultRecords(string sn = null, int count = 100)
+        {
+            var query = _db.Queryable<ObjectiveTestResultRecord>();
+            if (!string.IsNullOrWhiteSpace(sn))
+            {
+                query = query.Where(x => x.SN.Contains(sn));
+            }
+
+            query = query.OrderBy(x => x.Id, OrderByType.Desc);
+            return count > 0 ? query.Take(count).ToList() : query.ToList();
         }
 
         public void GenericQuery()
