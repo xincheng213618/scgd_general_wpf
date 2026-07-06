@@ -29,6 +29,15 @@ namespace ProjectLUX
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
+        [DisplayName("按日期保存")]
+        public bool SaveByDate { get => _SaveByDate; set { _SaveByDate = value; OnPropertyChanged(); } }
+        private bool _SaveByDate;
+
+        public bool IsSaveImageReuslt { get => _IsSaveImageReuslt; set { _IsSaveImageReuslt = value; OnPropertyChanged(); } }
+        private bool _IsSaveImageReuslt;
+
+        public int SaveImageReusltDelay { get => _SaveImageReusltDelay; set { if (value >= 0) _SaveImageReusltDelay = value; OnPropertyChanged(); } }
+        private int _SaveImageReusltDelay = 1000;
 
         [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }

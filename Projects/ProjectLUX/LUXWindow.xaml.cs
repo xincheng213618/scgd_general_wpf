@@ -312,6 +312,7 @@ namespace ProjectLUX
 
         ProjectLUXReuslt CurrentFlowResult { get; set; }
         int TryCount = 0;
+        public bool IsSaveImageReuslt { get; set; }
 
         public async Task RunTemplate()
         {
@@ -556,6 +557,7 @@ namespace ProjectLUX
 
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+                        IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
 
                         if (!string.IsNullOrWhiteSpace(ReturnCode))
                         {
@@ -678,11 +680,64 @@ namespace ProjectLUX
                                 }
                             }
 
+                            SaveImageResultIfNeeded(result);
                         });
                     }
                 });
 
             }
+        }
+
+        private void SaveImageResultIfNeeded(ProjectLUXReuslt result)
+        {
+            if (!IsSaveImageReuslt) return;
+
+            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
+            IsSaveImageReuslt = false;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+
+                    string linkPath = ViewResultManager.Config.CsvSavePath;
+                    string sn = result.SN;
+
+                    if (ViewResultManager.Config.SaveByDate)
+                    {
+                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                        linkPath = Path.Combine(linkPath, dateFolder);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(sn))
+                    {
+                        foreach (char c in Path.GetInvalidFileNameChars())
+                        {
+                            sn = sn.Replace(c.ToString(), "");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(sn))
+                        {
+                            linkPath = Path.Combine(linkPath, sn);
+                        }
+                    }
+
+                    if (!Directory.Exists(linkPath))
+                        Directory.CreateDirectory(linkPath);
+
+                    string fileName = Path.GetFileNameWithoutExtension(result.FileName);
+                    string filePath = Path.Combine(linkPath, $"{fileName}_{result.Model}result.png");
+                    log.Info(filePath);
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        ImageView.Save(filePath);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    log.Error("保存结果截图失败", ex);
+                }
+            });
         }
 
         public void GenoutputText(ProjectLUXReuslt result)
