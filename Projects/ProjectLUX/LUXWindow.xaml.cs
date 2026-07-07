@@ -755,8 +755,7 @@ namespace ProjectLUX
                     if (!Directory.Exists(linkPath))
                         Directory.CreateDirectory(linkPath);
 
-                    string fileName = Path.GetFileNameWithoutExtension(result.FileName);
-                    string filePath = Path.Combine(linkPath, $"{fileName}_{result.Model}result.png");
+                    string filePath = Path.Combine(linkPath, $"{result.Model}.png");
                     log.Info(filePath);
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
