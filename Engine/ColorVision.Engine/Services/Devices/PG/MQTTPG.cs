@@ -122,25 +122,42 @@ namespace ColorVision.Engine.Services.Devices.PG
 
 
 
-        public bool Open(CommunicateType communicateType, string value1, int value2)
+        public MsgRecord Open(CommunicateType communicateType, string value1, int value2)
         {
-            //Dictionary<string, string> cmd = new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } };
-            //Dictionary<string, string> cmd = new Dictionary<string, string>() { { "CM_StartPG", "open\r" }, { "CM_StopPG", "close\r" }, { "CM_ReSetPG", "reset\r" } , { "CM_SwitchUpPG", "Key UP\r" }, { "CM_SwitchDownPG", "Key DN\r" }, { "CM_SwitchFramePG", "pat {0}\r" } };
-            //Dictionary<string, string> cmd;
-            //if (!PGCategoryLib.TryGetValue(Config.Category,out cmd))
-            //    cmd = new Dictionary<string, string>();
+            if (!PGCategoryLib.TryGetValue(Config.Category, out Dictionary<string, string> cmd))
+                cmd = new Dictionary<string, string>();
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "eCOM_Type", (int)communicateType },
+                { "PGCustomCmd", cmd }
+            };
+
+            if (communicateType == CommunicateType.Serial)
+            {
+                parameters.Add("szComName", value1);
+                parameters.Add("BaudRate", value2);
+            }
+            else
+            {
+                parameters.Add("szIPAddress", value1);
+                parameters.Add("nPort", value2);
+            }
+
+            if (Config.Category == "CH431.I2C")
+            {
+                parameters.Add("RegisterAddress", Config.RegisterAddress);
+                parameters.Add("CH341_Stream_Speed", Config.BaudRate);
+            }
 
             MsgSend msg = new()
             {
                 EventName = "Open",
                 ServiceName = Config.Code,
-                //CIEParams = communicateType == CommunicateType.Serial ?
-                //new Dictionary<string, object>() { { "eCOM_Type", (int)communicateType }, { "szComName", value1 }, { "BaudRate", value2 }, { "PGCustomCmd", cmd } } :
-                //new Dictionary<string, object>() { { "eCOM_Type", (int)communicateType }, { "szIPAddress", value1 }, { "nPort", value2 },{ "PGCustomCmd", cmd } }
+                Params = parameters
             };
 
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
 
@@ -154,15 +171,14 @@ namespace ColorVision.Engine.Services.Devices.PG
             return true;
         }
 
-        public bool Close()
+        public MsgRecord Close()
         {
             MsgSend msg = new()
             {
                 EventName = "Close",
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public void ReLoadCategoryLib()

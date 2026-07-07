@@ -53,24 +53,6 @@
                 <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Center" Text="{x:Static properties:Resources.offline}" />
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.Unregistered}" />
                 <StackPanel x:Name="StackPanelContent">
-                    <DockPanel Margin="0,0,0,5" IsEnabled="False">
-                        <TextBlock Text="{x:Static properties:Resources.CategoryModel}" />
-                        <TextBox BorderThickness="0,0,0,1" Text="{Binding Config.Category}" />
-                    </DockPanel>
-                    <DockPanel Margin="0,0,0,5" IsEnabled="False">
-                        <RadioButton Margin="0,0,5,0" Content="TCPIP" IsChecked="{Binding Config.IsNet}" />
-                        <RadioButton Margin="0,0,5,0" Content="{x:Static properties:Resources.SerialPortCom}" IsChecked="{Binding Config.IsNet, Converter={StaticResource Boolean2BooleanReConverter}}" />
-                    </DockPanel>
-                    <UniformGrid Columns="2" IsEnabled="False">
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock x:Name="TextBlockPGIP" Text="IP" />
-                            <TextBox x:Name="TextBoxPGIP" BorderThickness="0,0,0,1" Text="{Binding Config.Addr}" />
-                        </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock x:Name="TextBlockPGPort" Text="Port" />
-                            <TextBox x:Name="TextBoxPGPort" BorderThickness="0,0,0,1" Text="{Binding Config.Port}" />
-                        </DockPanel>
-                    </UniformGrid>
                     <UniformGrid Columns="2">
                         <Button x:Name="btn_open" Margin="2" Click="PGOpen" Content="{x:Static properties:Resources.Open}" />
                         <Button Margin="2" Click="PGReSetPG" Content="ReSet" />
