@@ -55,6 +55,9 @@ namespace ProjectARVRPro
         [DisplayName("MTF058")]
         public List<MTFHV058TestResult> MTFHV058TestResults { get; set; } = new List<MTFHV058TestResult>();
 
+        [DisplayName("DynamicMTFHV058")]
+        public Dictionary<string, MTFHV058TestResult> DynamicMTFHV058TestResults { get; set; } = new Dictionary<string, MTFHV058TestResult>();
+
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }
 
