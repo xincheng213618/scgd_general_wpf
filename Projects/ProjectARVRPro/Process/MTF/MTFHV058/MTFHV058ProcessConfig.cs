@@ -8,6 +8,12 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F1";
 
+        [Category("输出配置")]
+        [DisplayName("导出名称")]
+        [Description("为空时保持原有List输出；填写后作为DynamicMTFHV058TestResults的Key")]
+        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
+        private string _Name = string.Empty;
+
         [Category("解析配置")]
         [DisplayName("Center_0F解析Key")]
         [Description("用于解析Center_0F数据的Key")]

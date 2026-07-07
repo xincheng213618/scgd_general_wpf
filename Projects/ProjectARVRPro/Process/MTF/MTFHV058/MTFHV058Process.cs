@@ -251,7 +251,12 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
 
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.MTFHV058TestResults.Add(JsonConvert.DeserializeObject<MTFHV058TestResult>(ctx.Result.ViewResultJson) ?? new MTFHV058TestResult());
+                MTFHV058TestResult objectiveResult = JsonConvert.DeserializeObject<MTFHV058TestResult>(ctx.Result.ViewResultJson) ?? new MTFHV058TestResult();
+                string outputName = GetOutputName();
+                if (string.IsNullOrWhiteSpace(outputName))
+                    ctx.ObjectiveTestResult.MTFHV058TestResults.Add(objectiveResult);
+                else
+                    ctx.ObjectiveTestResult.DynamicMTFHV058TestResults[outputName] = objectiveResult;
                 return true;
             }
             catch (Exception ex)
@@ -319,6 +324,11 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHV058RecipeConfig>();
+        }
+
+        private string GetOutputName()
+        {
+            return Config.Name?.Trim() ?? string.Empty;
         }
     }
 }
