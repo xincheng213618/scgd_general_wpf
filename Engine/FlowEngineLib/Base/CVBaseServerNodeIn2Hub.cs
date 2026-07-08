@@ -75,6 +75,12 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 						CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
 						if (cVStartCFC2 != null)
 						{
+							if (!cVStartCFC.IsSameFlow(cVStartCFC2))
+							{
+								sTNodeOption.Data = null;
+								masterInput[i] = null;
+								continue;
+							}
 							cVStartCFC2.NormalizeStopStatus();
 							if (!cVStartCFC2.IsRunning)
 							{

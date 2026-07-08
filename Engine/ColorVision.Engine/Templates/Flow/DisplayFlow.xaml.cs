@@ -12,6 +12,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using SqlSugar;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -123,7 +124,6 @@ namespace ColorVision.Engine.Templates.Flow
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s, e) =>
             {
-                View.FlowEngineControl.LoadFromBase64(string.Empty);
                 _=Refresh();
             };
             
@@ -293,6 +293,7 @@ namespace ColorVision.Engine.Templates.Flow
             IsRefresh = true;
             try
             {
+                await CloseRunningFlowBeforeRefreshAsync();
                 MqttRCService.GetInstance().QueryServices();
 
                 if (View == null)
@@ -347,6 +348,16 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 IsRefresh = false;
             }
+        }
+
+        private async Task CloseRunningFlowBeforeRefreshAsync()
+        {
+            if (FlowControl?.IsFlowRun != true)
+                return;
+
+            log.Info("流程运行中触发刷新，先关闭当前流程。");
+            StopFlow();
+            await Task.Delay(100);
         }
 
         private TemplateModel<FlowParam> GetSelectedFlowTemplate()
@@ -696,6 +707,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 item.TitleColor = System.Drawing.Color.Blue;
             }
+            ClearFlowRuntimeData();
 
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
             FlowEngineManager.BatchProgress = 0;
@@ -740,6 +752,17 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             FlowControl.Start(sn);
+        }
+
+        private void ClearFlowRuntimeData()
+        {
+            foreach (STNode node in View.STNodeEditorMain.Nodes)
+            {
+                foreach (STNodeOption option in node.GetAllInputOptions())
+                    option.Data = null;
+                foreach (STNodeOption option in node.GetAllOutputOptions())
+                    option.Data = null;
+            }
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
