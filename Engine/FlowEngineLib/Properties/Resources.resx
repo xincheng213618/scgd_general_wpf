@@ -140,6 +140,10 @@
     <value>循环下一节点</value>
   </data>
 
+  <data name="切图" xml:space="preserve">
+    <value>切图</value>
+  </data>
+
   <data name="EndNode" xml:space="preserve">
     <value>EndNode</value>
   </data>
