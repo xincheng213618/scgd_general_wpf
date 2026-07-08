@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.Globalization;
 using System.Windows.Forms;
 using FlowEngineLib.Node.Algorithm;
 using Newtonsoft.Json;
@@ -71,26 +72,36 @@ public class FormOLEDNodeProperty : Form
 		{
 			new PointFloat
 			{
-				X = int.Parse(textBox_lefttop_x.Text),
-				Y = int.Parse(textBox_lefttop_y.Text)
+				X = ParseFloat(textBox_lefttop_x.Text),
+				Y = ParseFloat(textBox_lefttop_y.Text)
 			},
 			new PointFloat
 			{
-				X = int.Parse(textBox_righttop_x.Text),
-				Y = int.Parse(textBox_righttop_y.Text)
+				X = ParseFloat(textBox_righttop_x.Text),
+				Y = ParseFloat(textBox_righttop_y.Text)
 			},
 			new PointFloat
 			{
-				X = int.Parse(textBox_rightbottom_x.Text),
-				Y = int.Parse(textBox_rightbottom_y.Text)
+				X = ParseFloat(textBox_rightbottom_x.Text),
+				Y = ParseFloat(textBox_rightbottom_y.Text)
 			},
 			new PointFloat
 			{
-				X = int.Parse(textBox_leftbottom_x.Text),
-				Y = int.Parse(textBox_leftbottom_y.Text)
+				X = ParseFloat(textBox_leftbottom_x.Text),
+				Y = ParseFloat(textBox_leftbottom_y.Text)
 			}
 		});
 		base.DialogResult = DialogResult.OK;
+	}
+
+	private static float ParseFloat(string text)
+	{
+		if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ||
+			float.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value))
+		{
+			return value;
+		}
+		return 0f;
 	}
 
 	private void button_close_Click(object sender, EventArgs e)
