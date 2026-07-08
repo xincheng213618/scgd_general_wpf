@@ -224,7 +224,16 @@ namespace ColorVision.Engine.Services.Devices.PG
         private void PGSwitchUpPG(object sender, RoutedEventArgs e) => PGService.PGSwitchUpPG();
         private void PGSwitchDownPG(object sender, RoutedEventArgs e) => PGService.PGSwitchDownPG();
 
-        private void PGSwitchFramePG(object sender, RoutedEventArgs e) => PGService.PGSwitchFramePG(int.Parse(PGFrameText.Text));
+        private void PGSwitchFramePG(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(PGFrameText.Text, out int frameIndex))
+            {
+                PGService.PGSwitchFramePG(frameIndex);
+                return;
+            }
+
+            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.SetCorrectParameters, "ColorVision");
+        }
 
         private void PGSendCmd(object sender, RoutedEventArgs e)
         {
