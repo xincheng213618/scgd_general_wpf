@@ -11,7 +11,7 @@ public class PGGECSNode : CVBaseServerNode
 
 	private STNodeEditText<PGGECSCommCmdType> m_ctrl_editText;
 
-	[STNodeProperty("命令", "命令", true)]
+	[STNodeProperty("命令", "命令", true, DescriptorType = typeof(PGGECSCommandPropertyDescriptor))]
 	public PGGECSCommCmdType PGCmd
 	{
 		get
@@ -71,7 +71,7 @@ public class PGGECSNode : CVBaseServerNode
 				Name = "CM_SwitchDownPG"
 			};
 			break;
-		case PGGECSCommCmdType.指定:
+		case PGGECSCommCmdType.切图:
 			pGParamFunction = new PGParamFunction
 			{
 				Name = "CM_SwitchFramePG",
@@ -103,5 +103,13 @@ public class PGGECSNode : CVBaseServerNode
 			list.Add(pGParamFunction);
 		}
 		return list;
+	}
+}
+
+public class PGGECSCommandPropertyDescriptor : STNodePropertyDescriptor
+{
+	protected override object GetValueFromString(string strText)
+	{
+		return strText?.Trim().Trim('[', ']') == "指定" ? PGGECSCommCmdType.切图 : base.GetValueFromString(strText);
 	}
 }

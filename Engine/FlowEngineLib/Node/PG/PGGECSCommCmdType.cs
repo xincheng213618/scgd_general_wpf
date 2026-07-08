@@ -6,7 +6,7 @@ public enum PGGECSCommCmdType
 	下电,
 	上,
 	下,
-	指定,
+	切图,
 	电压电流,
 	EFUSE_DieId,
 	OSC_TRIM

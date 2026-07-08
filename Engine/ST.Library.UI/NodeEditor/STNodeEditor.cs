@@ -1286,9 +1286,13 @@ public class STNodeEditor : Control
 			}
 		}
 		m_p_line_hover.Color = _HighLineColor;
-		if (m_gp_hover != null)
+		if (m_gp_hover != null && m_dic_gp_info.ContainsKey(m_gp_hover))
 		{
 			graphics.DrawPath(m_p_line_hover, m_gp_hover);
+		}
+		else
+		{
+			m_gp_hover = null;
 		}
 		m_is_buildpath = false;
 	}
@@ -1525,6 +1529,7 @@ public class STNodeEditor : Control
 
 	internal void BuildLinePath()
 	{
+		m_gp_hover = null;
 		foreach (KeyValuePair<GraphicsPath, ConnectionInfo> item in m_dic_gp_info)
 		{
 			item.Key.Dispose();
