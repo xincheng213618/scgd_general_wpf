@@ -52,7 +52,6 @@ public class CVCommonNode : STNode
 		}
 	}
 
-	[System.ComponentModel.Browsable(false)]
 	[STNodeProperty("设备代码", "设备代码", false, true)]
 	public string DeviceCode
 	{

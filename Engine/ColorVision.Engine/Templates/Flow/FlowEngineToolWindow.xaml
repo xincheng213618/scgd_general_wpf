@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
-        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
@@ -64,18 +63,11 @@
                 <DockPanel Grid.Row="0">
                     <Button DockPanel.Dock="Right" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" Width="30" Height="28"
                             Click="PropertyEditorClose_Click" Background="Transparent" BorderThickness="0"/>
-                    <Button Content="{x:Static properties:Resources.Switch}" Click="TogglePropertyEditorMode_Click" HorizontalAlignment="Stretch" Height="28"/>
                 </DockPanel>
 
-                <Grid Grid.Row="1">
-                    <WindowsFormsHost x:Name="PropertyGridHost" Visibility="Visible">
-                        <st:STNodePropertyGrid x:Name="STNodePropertyGrid1"/>
-                    </WindowsFormsHost>
-
-                    <ScrollViewer x:Name="SignStackScrollViewer" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel x:Name="SignStackPanelContainer" Orientation="Vertical" Margin="5"/>
-                    </ScrollViewer>
-                </Grid>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="SignStackPanelContainer" Orientation="Vertical" Margin="5"/>
+                </ScrollViewer>
             </Grid>
         </Grid>
     </Grid>

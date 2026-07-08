@@ -54,7 +54,8 @@ public class CVBaseServerNode : CVCommonNode
 	protected CVServerResponse svrRecvResp;
 
 	[System.ComponentModel.DataAnnotations.Display(Order = -200)]
-	[STNodeProperty("设备代码", "设备代码", false, false)]
+    [System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowDeviceNameEditor))]
+    [STNodeProperty("设备代码", "设备代码", false, false)]
 	public new string DeviceCode
 	{
 		get

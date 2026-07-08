@@ -55,6 +55,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowLedCheck2JsonTemplateEditor))]
 	public string TempName
 	{
 		get

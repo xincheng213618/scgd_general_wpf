@@ -34,6 +34,7 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeHub
 	}
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowLedCheck2JsonTemplateEditor))]
 	public string TempName
 	{
 		get
@@ -63,6 +64,7 @@ public class OLEDRebuildPixelsNode : CVBaseServerNodeHub
 	}
 
 	[STNodeProperty("输出模板", "输出模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiOutputTemplateEditor))]
 	public string OutputTemplateName
 	{
 		get

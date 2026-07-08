@@ -27,6 +27,7 @@ public class CalibrationNode : CVBaseServerNode
 	private STNodeEditText<bool> m_ctrl_saveCIE;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowCalibrationTemplateEditor))]
 	public string TempName
 	{
 		get

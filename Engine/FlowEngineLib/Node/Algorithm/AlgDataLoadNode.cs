@@ -9,6 +9,7 @@ public class AlgDataLoadNode : CVBaseServerNode
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgDataLoadNode));
 
 	[STNodeProperty("模板", "模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowDataLoadTemplateEditor))]
 	public string TempName
 	{
 		get

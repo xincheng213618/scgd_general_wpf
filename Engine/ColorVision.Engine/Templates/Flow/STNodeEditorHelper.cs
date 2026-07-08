@@ -19,7 +19,6 @@ using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms.Integration;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Flow
@@ -31,22 +30,13 @@ namespace ColorVision.Engine.Templates.Flow
 
         public STNodeEditor STNodeEditor { get; set; }
 
-        /// <summary>
-        /// Direct panel references for standalone windows (FlowEngineToolWindow).
-        /// When set, embedded mode is used. When null, dock panel mode is used.
-        /// </summary>
-        public STNodePropertyGrid STNodePropertyGrid1 { get; set; }
         public StackPanel SignStackPanel { get; set; }
         public System.Windows.Controls.Grid PropertyEditorPanel { get; set; }
-        public WindowsFormsHost PropertyGridHost { get; set; }
-        public ScrollViewer SignStackScrollViewer { get; set; }
 
         /// <summary>
         /// Whether to use the AvalonDock panel (true) or embedded panel references (false).
         /// </summary>
         public bool UseDockPanel { get; set; }
-
-        private bool _isPropertyGridMode = true;
 
 
         public static STNodeTreeView STNodeTreeView { get 
@@ -505,7 +495,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void RefreshActiveNodePropertyPanel()
         {
-            STNodePropertyGrid propertyGrid = null;
             StackPanel signPanel;
 
             if (UseDockPanel)
@@ -517,13 +506,11 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else
             {
-                if (STNodePropertyGrid1 == null || SignStackPanel == null || PropertyEditorPanel == null)
+                if (SignStackPanel == null || PropertyEditorPanel == null)
                     return;
-                propertyGrid = STNodePropertyGrid1;
                 signPanel = SignStackPanel;
             }
 
-            propertyGrid?.SetNode(STNodeEditor.ActiveNode);
             signPanel.Children.Clear();
 
             if (STNodeEditor.ActiveNode == null)
@@ -555,7 +542,6 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     Node = STNodeEditor.ActiveNode,
                     SignStackPanel = signPanel,
-                    STNodePropertyGrid = propertyGrid,
                     STNodeEditor = STNodeEditor,
                     PropertyStackPanel = StackPanel,
                     OnActiveChanged = RefreshActiveNodePropertyPanel
@@ -576,16 +562,6 @@ namespace ColorVision.Engine.Templates.Flow
             signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
         public StackPanel StackPanel { get; set; } = new StackPanel();
-
-        public void TogglePropertyEditorMode()
-        {
-            if (UseDockPanel) return; // Dock panel handles its own toggle
-            _isPropertyGridMode = !_isPropertyGridMode;
-            if (PropertyGridHost != null)
-                PropertyGridHost.Visibility = _isPropertyGridMode ? Visibility.Visible : Visibility.Collapsed;
-            if (SignStackScrollViewer != null)
-                SignStackScrollViewer.Visibility = _isPropertyGridMode ? Visibility.Collapsed : Visibility.Visible;
-        }
 
         public void HidePropertyEditor()
         {

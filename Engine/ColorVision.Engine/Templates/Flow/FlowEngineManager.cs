@@ -89,9 +89,6 @@ namespace ColorVision.Engine.Templates.Flow
        
 
         public ContextMenu ContextMenu { get; set; }
-
-        public RelayCommand EditFlowCommand { get; set; }
-
         public RelayCommand EditTemplateFlowCommand { get; set; }
 
         public RelayCommand MeasureBatchManagerCommand { get; set; }
@@ -127,8 +124,6 @@ namespace ColorVision.Engine.Templates.Flow
         public FlowEngineManager()
         {
             ContextMenu = new ContextMenu();
-
-            EditFlowCommand = new RelayCommand(a => EditFlow());
             EditTemplateFlowCommand = new RelayCommand(a=> EditTemplateFlow());
 
 
@@ -343,14 +338,6 @@ namespace ColorVision.Engine.Templates.Flow
             Window window = new Window() { Title = ColorVision.Engine.Properties.Resources.Inquire, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner, Height = 720, Width = 1280 };
             window.Content = frame;
             window.Show();
-        }
-
-        public void EditFlow()
-        {
-            if (TemplateFlowParamsIndex < 0 || TemplateFlowParamsIndex >= FlowParams.Count)
-                return;
-            new FlowEngineToolWindow(FlowParams[TemplateFlowParamsIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
-            _=View.DisplayFlow.Refresh();
         }
 
         public void EditTemplateFlow()

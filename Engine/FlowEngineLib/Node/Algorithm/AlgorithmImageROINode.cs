@@ -9,6 +9,7 @@ public class AlgorithmImageROINode : CVBaseServerNode
 	private string _OutputFileName;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowImageRoiJsonTemplateEditor))]
 	public string TempName
 	{
 		get

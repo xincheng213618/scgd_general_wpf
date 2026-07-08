@@ -51,6 +51,7 @@ public class BuildPOINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("POI模板(Re)", "POI模板(ReMapping)", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiTemplateEditor))]
 	public string RePOITemplateName
 	{
 		get
@@ -64,6 +65,7 @@ public class BuildPOINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("布点ROI", "布点ROI(区域)", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiTemplateEditor))]
 	public string LayoutROITemplate
 	{
 		get
@@ -199,6 +201,7 @@ public class BuildPOINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("输出POI模板", "输出POI模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiTemplateEditor))]
 	public string SavePOITempName
 	{
 		get

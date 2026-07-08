@@ -12,6 +12,7 @@ public class SMUModelNode : SMUBaseNode
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUModelNode));
 
 	[STNodeProperty("模板", "模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowSmuTemplateEditor))]
 	public string ModelName
 	{
 		get

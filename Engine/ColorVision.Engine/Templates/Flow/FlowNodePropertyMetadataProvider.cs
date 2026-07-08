@@ -1,5 +1,6 @@
 using ColorVision.UI;
 using ColorVision.Engine.PropertyEditor;
+using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private FlowNodePropertyMetadataProvider()
         {
+            FlowNodePropertyEditorRegistration.EnsureRegistered();
         }
 
         public bool IsPropertyManaged(PropertyInfo propertyInfo)
@@ -48,9 +50,11 @@ namespace ColorVision.Engine.Templates.Flow
 
         public Type? GetEditorType(PropertyInfo propertyInfo)
         {
-            return propertyInfo.Name.Equals("DeviceCode", StringComparison.OrdinalIgnoreCase)
-                ? typeof(DeviceNameEditor)
-                : null;
+            var nodeType = propertyInfo.ReflectedType ?? propertyInfo.DeclaringType;
+            if (nodeType != null && FlowNodePropertyEditorAttribute.Resolve(nodeType, propertyInfo.Name) != null)
+                return typeof(FlowNodePropertyEditorSelector);
+
+            return null;
         }
 
         public string? GetDescription(PropertyInfo propertyInfo)

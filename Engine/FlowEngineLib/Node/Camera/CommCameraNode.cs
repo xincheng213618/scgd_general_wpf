@@ -6,6 +6,10 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Camera;
 
 [STNode("/02 相机")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CalibTempName", typeof(FlowEngineLib.PropertyEditor.FlowCalibrationTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("POITempName", typeof(FlowEngineLib.PropertyEditor.FlowPoiTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("POIFilterTempName", typeof(FlowEngineLib.PropertyEditor.FlowPoiFilterTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("POIReviseTempName", typeof(FlowEngineLib.PropertyEditor.FlowPoiReviseTemplateEditor))]
 public class CommCameraNode : CVBaseServerNode
 {
 	protected string _GlobalVariableName;

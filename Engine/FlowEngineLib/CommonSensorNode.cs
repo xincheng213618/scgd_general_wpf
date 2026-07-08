@@ -20,6 +20,7 @@ public class CommonSensorNode : CVBaseServerNode
 	private STNodeEditText<CommCmdType> m_ctrl_cmd_type;
 
 	[STNodeProperty("参数模板", "参数模板名称", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowSensorTemplateEditor))]
 	public string TempName
 	{
 		get

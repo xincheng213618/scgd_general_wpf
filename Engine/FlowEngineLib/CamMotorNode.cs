@@ -6,6 +6,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/07 传感器")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("AutoFocusTemp", typeof(FlowEngineLib.PropertyEditor.FlowAutoFocusTemplateEditor))]
 public class CamMotorNode : CVBaseServerNode
 {
 	private CamMotorRunType _RunType;

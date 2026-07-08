@@ -7,6 +7,9 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Camera;
 
 [STNode("/02 相机")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CamTempName", typeof(FlowEngineLib.PropertyEditor.FlowCameraRunTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CalibTempName", typeof(FlowEngineLib.PropertyEditor.FlowCalibrationTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("AlgTempName", typeof(FlowEngineLib.PropertyEditor.FlowOledAoiJsonTemplateEditor))]
 public class CVAOI2CameraNode : CVBaseServerNodeHub
 {
 	private string _CamTempName;
