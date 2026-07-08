@@ -53,11 +53,18 @@
                 <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Center" Text="{x:Static properties:Resources.offline}" />
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.Unregistered}" />
                 <StackPanel x:Name="StackPanelContent">
-                    <UniformGrid Columns="2">
-                        <Button x:Name="btn_open" Margin="2" Click="PGOpen" Content="{x:Static properties:Resources.Open}" />
+                    <DockPanel x:Name="ButtonOpen" Margin="0,0,0,3">
+                        <Grid>
+                            <Button x:Name="OpenButton" Click="PGOpen" Content="{x:Static properties:Resources.Open}" />
+                        </Grid>
+                    </DockPanel>
+                    <DockPanel x:Name="ButtonClose" Margin="0,0,0,3">
+                        <Grid>
+                            <Button x:Name="CloseButton" Background="Red" Click="PGClose" Content="{x:Static properties:Resources.Close}" Foreground="White" />
+                        </Grid>
+                    </DockPanel>
+                    <UniformGrid x:Name="PGOperationPanel" Columns="2">
                         <Button Margin="2" Click="PGReSetPG" Content="ReSet" />
-                    </UniformGrid>
-                    <UniformGrid Columns="2">
                         <Button Margin="2" Click="PGStartPG" Content="{x:Static properties:Resources.PowerOn}" />
                         <Button Margin="2" Click="PGStopPG" Content="{x:Static properties:Resources.PowerOff}" />
                         <Button Margin="2" Click="PGSwitchUpPG" Content="{x:Static properties:Resources.Up}" />

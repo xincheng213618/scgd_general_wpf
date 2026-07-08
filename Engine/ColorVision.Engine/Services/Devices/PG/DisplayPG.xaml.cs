@@ -39,6 +39,9 @@ namespace ColorVision.Engine.Services.Devices.PG
             void HideAllButtons()
             {
                 SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(ButtonOpen, Visibility.Collapsed);
+                SetVisibility(ButtonClose, Visibility.Collapsed);
+                SetVisibility(PGOperationPanel, Visibility.Collapsed);
                 SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                 SetVisibility(StackPanelContent, Visibility.Collapsed);
                 SetVisibility(TextBlockOffLine, Visibility.Collapsed);
@@ -59,22 +62,32 @@ namespace ColorVision.Engine.Services.Devices.PG
                     break;
                 case DeviceStatusType.UnInit:
                     SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    SetVisibility(PGOperationPanel, Visibility.Visible);
                     break;
                 case DeviceStatusType.Closing:
                 case DeviceStatusType.Closed:
                     SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    SetVisibility(PGOperationPanel, Visibility.Visible);
                     break;
                 case DeviceStatusType.LiveOpened:
                 case DeviceStatusType.Opening:
                 case DeviceStatusType.Opened:
                     SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+                    SetVisibility(PGOperationPanel, Visibility.Visible);
                     break;
                 default:
                     SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    SetVisibility(PGOperationPanel, Visibility.Visible);
                     break;
             }
 
-            this.TryGetTimedButtonOperations()?.RefreshIdleState(btn_open);
+            TimedButtonOperationRegistry? operations = this.TryGetTimedButtonOperations();
+            operations?.RefreshIdleState(OpenButton);
+            operations?.RefreshIdleState(CloseButton);
         }
 
         public event RoutedEventHandler Selected;
@@ -89,9 +102,25 @@ namespace ColorVision.Engine.Services.Devices.PG
             if (sender is not Button button) return;
 
             EnsureTimedButtonOperations();
-            bool isClosing = IsPGOpenOrOpening(PGService.DeviceStatus);
-            MsgRecord msgRecord = isClosing ? PGService.Close() : OpenPGFromConfig();
-            SendTimedPGCommand(button, msgRecord, isClosing ? Properties.Resources.Close : Properties.Resources.Open);
+            MsgRecord msgRecord = OpenPGFromConfig();
+            SendTimedPGCommand(button, msgRecord, Properties.Resources.Open, state =>
+            {
+                if (state == MsgRecordState.Success)
+                    ShowOpenedState();
+            });
+        }
+
+        private void PGClose(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button) return;
+
+            EnsureTimedButtonOperations();
+            MsgRecord msgRecord = PGService.Close();
+            SendTimedPGCommand(button, msgRecord, Properties.Resources.Close, state =>
+            {
+                if (state == MsgRecordState.Success)
+                    ShowClosedState();
+            });
         }
 
         private MsgRecord OpenPGFromConfig()
@@ -100,7 +129,7 @@ namespace ColorVision.Engine.Services.Devices.PG
             return PGService.Open(communicateType, PGService.Config.Addr, PGService.Config.Port);
         }
 
-        private void SendTimedPGCommand(Button button, MsgRecord msgRecord, string operationName)
+        private void SendTimedPGCommand(Button button, MsgRecord msgRecord, string operationName, Action<MsgRecordState>? onTerminalStateChanged = null)
         {
             TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             TimedButtonOperationScope? operationScope = operations.Begin(button, runningText: operationName);
@@ -116,6 +145,7 @@ namespace ColorVision.Engine.Services.Devices.PG
                 operationScope?.Complete(state == MsgRecordState.Success);
                 operationScope = null;
                 operations.RefreshIdleState(button);
+                onTerminalStateChanged?.Invoke(state);
 
                 if (state != MsgRecordState.Success)
                 {
@@ -133,14 +163,15 @@ namespace ColorVision.Engine.Services.Devices.PG
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
-            operations.Register(btn_open, "open-close", options =>
+            operations.Register(OpenButton, "open", options =>
             {
-                options.ContentFactory = stats => IsPGOpenOrOpening(PGService.DeviceStatus)
-                    ? Properties.Resources.Close
-                    : TimedButtonOperationTextFormatter.BuildCompactContent(Properties.Resources.Open, stats);
-                options.ToolTipFactory = stats => IsPGOpenOrOpening(PGService.DeviceStatus)
-                    ? Properties.Resources.Close
-                    : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.Open, stats);
+                options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(Properties.Resources.Open, stats);
+                options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.Open, stats);
+            });
+            operations.Register(CloseButton, "close", options =>
+            {
+                options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(Properties.Resources.Close, stats);
+                options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.Close, stats);
             });
 
             return operations;
@@ -151,11 +182,24 @@ namespace ColorVision.Engine.Services.Devices.PG
             return $"pg:{Device.Config.Code}:{actionKey}";
         }
 
-        private static bool IsPGOpenOrOpening(DeviceStatusType status)
+        private void ShowOpenedState()
         {
-            return status == DeviceStatusType.Opened
-                || status == DeviceStatusType.Opening
-                || status == DeviceStatusType.LiveOpened;
+            ButtonOpen.Visibility = Visibility.Collapsed;
+            ButtonClose.Visibility = Visibility.Visible;
+            PGOperationPanel.Visibility = Visibility.Visible;
+            TimedButtonOperationRegistry? operations = this.TryGetTimedButtonOperations();
+            operations?.RefreshIdleState(OpenButton);
+            operations?.RefreshIdleState(CloseButton);
+        }
+
+        private void ShowClosedState()
+        {
+            ButtonOpen.Visibility = Visibility.Visible;
+            ButtonClose.Visibility = Visibility.Collapsed;
+            PGOperationPanel.Visibility = Visibility.Visible;
+            TimedButtonOperationRegistry? operations = this.TryGetTimedButtonOperations();
+            operations?.RefreshIdleState(OpenButton);
+            operations?.RefreshIdleState(CloseButton);
         }
 
         private static bool IsTerminalMsgRecordState(MsgRecordState state)
