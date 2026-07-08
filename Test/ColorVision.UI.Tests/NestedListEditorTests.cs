@@ -1,5 +1,6 @@
 #pragma warning disable CA1707,CA1852
 using System.ComponentModel;
+using ColorVision.UI.Properties;
 using ColorVision.UI.PropertyEditor.Editor.List;
 
 namespace ColorVision.UI.Tests;
@@ -123,8 +124,7 @@ public class NestedListEditorTests
         var displayValue = viewModel.DisplayValue;
 
         // Assert
-        Assert.Contains("5", displayValue); // Should show count
-        Assert.Contains("列表", displayValue); // Should indicate it's a list
+        Assert.Equal(string.Format(Resources.ListEditor_ListCount, innerList.Count), displayValue);
     }
 
     [Fact]
