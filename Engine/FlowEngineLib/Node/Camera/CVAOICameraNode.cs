@@ -237,6 +237,6 @@ public class CVAOICameraNode : CVBaseServerNode
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		string algParamType = "FindLed";
-		return new CVAOICameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, (int)_ImgSaveMode);
+		return new CVAOICameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, (int)_ImgSaveMode, _FlipMode);
 	}
 }

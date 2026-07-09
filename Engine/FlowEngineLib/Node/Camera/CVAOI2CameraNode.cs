@@ -241,6 +241,6 @@ public class CVAOI2CameraNode : CVBaseServerNodeHub
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		getPreStepParam(1, algorithmPreStepParam);
 		string algParamType = "OLED_RebuildPixelsMem";
-		return new CVAOI2CameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, algorithmPreStepParam.MasterId, (int)_ImgSaveMode);
+		return new CVAOI2CameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, algorithmPreStepParam.MasterId, (int)_ImgSaveMode, _FlipMode);
 	}
 }
