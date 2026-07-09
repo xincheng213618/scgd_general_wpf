@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Messages;
+using System;
 using ColorVision.Engine.Services;
-using System;
 using System.Windows;
 using System.Windows.Controls;
 

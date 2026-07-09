@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1725
-using ColorVision.Common.Algorithms;
+using ColorVision.Common.Algorithms;
+using ColorVision.Engine.Services;
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
@@ -9,7 +10,6 @@ using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Matching
 {

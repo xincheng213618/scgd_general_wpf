@@ -1,9 +1,9 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
+using ColorVision.Engine.Services;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
@@ -88,7 +88,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.cvcie)|*.cvcie|All files (*.*)|*.*";
+            openFileDialog.Filter = ServicesHelper.ImageFileDialogFilter;
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

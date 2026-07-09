@@ -2,8 +2,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1725
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Extension;
@@ -13,7 +14,6 @@ using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.Distortion2
 {

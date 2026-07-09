@@ -1,14 +1,14 @@
 ﻿#pragma warning disable CA1725
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Services;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {

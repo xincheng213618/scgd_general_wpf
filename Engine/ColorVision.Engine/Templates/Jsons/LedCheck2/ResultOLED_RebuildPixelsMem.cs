@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CA1707,CA1725,CS8601,CS8602
 
 using ColorVision.Database;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;

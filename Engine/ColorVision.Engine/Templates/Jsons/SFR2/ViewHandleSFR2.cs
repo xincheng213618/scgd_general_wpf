@@ -1,9 +1,9 @@
 #pragma warning disable CA1725,CS8602,CS8604
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Services;
 using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
 using Newtonsoft.Json;

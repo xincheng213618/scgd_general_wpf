@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1725,CS8602,CS8604,CS8629
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using CVCommCore.CVAlgorithm;
 using log4net;
@@ -11,7 +12,6 @@ using System.Linq;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {

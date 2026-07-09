@@ -3,7 +3,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
@@ -19,7 +20,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
-using ColorVision.Engine.Services;
 using ColorVision.Solution.Editor.AvalonEditor;
 
 namespace ColorVision.Engine.Templates.Jsons.FindCross

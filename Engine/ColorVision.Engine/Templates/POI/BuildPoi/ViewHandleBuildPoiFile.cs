@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1725,CS8603,CS8604
-using ColorVision.Common.MVVM;
-using ColorVision.Database;
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
+using ColorVision.Database;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Rasterized;

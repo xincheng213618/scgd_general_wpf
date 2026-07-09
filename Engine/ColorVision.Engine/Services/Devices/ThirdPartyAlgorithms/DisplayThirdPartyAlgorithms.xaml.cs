@@ -15,6 +15,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
@@ -146,7 +147,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.cvcie;*.cvraw|All files (*.*)|*.*";
+            openFileDialog.Filter = ServicesHelper.ImageFileDialogFilter;
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

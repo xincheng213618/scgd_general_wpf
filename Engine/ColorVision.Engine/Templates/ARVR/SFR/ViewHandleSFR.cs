@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CA1725,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Templates.ARVR.SFR;
+using ColorVision.Engine.Templates.ARVR.SFR;
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System;
@@ -13,7 +14,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.SFR
 {
