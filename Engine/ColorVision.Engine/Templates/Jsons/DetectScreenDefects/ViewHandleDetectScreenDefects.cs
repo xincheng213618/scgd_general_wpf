@@ -137,6 +137,7 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 
             result.ContextMenu.Items.Add(new MenuItem() { Header = "选中屏幕缺陷检测结果", Command = selectCommand });
             result.ContextMenu.Items.Add(new MenuItem() { Header = "打开屏幕缺陷检测结果", Command = openCommand });
+            result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDetectScreenDefects), ImageFilePath = result.FilePath })) });
         }
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
