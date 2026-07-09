@@ -101,6 +101,8 @@ EQE 是衡量 LED / 光源将注入电子转换为发射光子能力的关键指
 【计算公式】
   EQE = N_photon / N_electron
 
+软件界面和 CSV 导出的 EQE(%) = EQE x 100；内部数据库仍保存 EQE 原始比值。
+
 其中：
   N_electron = I / q    （I 为电流，q = 1.602×10⁻¹⁹ C 为元电荷）
   N_photon = Σ [ S(λ) × fPlambda × Δλ × λ × 10⁻⁹ ] / (h × c)
