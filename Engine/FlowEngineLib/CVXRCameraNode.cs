@@ -381,6 +381,9 @@ public class CVXRCameraNode : CVBaseServerNode
 		case AlgorithmARVRType.十字计算:
 			operatorCodeXR = "FindCross";
 			break;
+		case AlgorithmARVRType.屏幕缺陷检测:
+			operatorCodeXR = "ARVR.DetectScreenDefects";
+			break;
 		}
 		base.nodeEvent?.Invoke(this, new FlowEngineNodeEventArgs());
 	}

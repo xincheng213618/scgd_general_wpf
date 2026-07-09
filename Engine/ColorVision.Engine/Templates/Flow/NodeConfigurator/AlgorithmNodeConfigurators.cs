@@ -9,6 +9,7 @@ using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.CompoundImg;
+using ColorVision.Engine.Templates.Jsons.DetectScreenDefects;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FindCross;
 using ColorVision.Engine.Templates.Jsons.FOV2;
@@ -101,6 +102,9 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.十字计算:
                         context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.CrossCalc, new TemplateFindCross());
                         context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "ROI", new TemplatePoi());
+                        break;
+                    case FlowEngineLib.Algorithm.AlgorithmARVRType.屏幕缺陷检测:
+                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "屏幕缺陷检测", new TemplateDetectScreenDefects());
                         break;
                     default:
                         break;

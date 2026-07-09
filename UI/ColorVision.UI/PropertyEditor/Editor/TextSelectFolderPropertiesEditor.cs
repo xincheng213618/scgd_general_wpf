@@ -29,7 +29,9 @@ namespace System.ComponentModel
                 }
 
                 if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
-                    property.SetValue(obj, folderDialog.SelectedPath);
+                {
+                    textbox.Text = folderDialog.SelectedPath;
+                }
             };
 
             var openFolderBtn = new Button { Content = "🗁", Margin = new Thickness(5, 0, 0, 0), ToolTip = ColorVision.UI.Properties.Resources.OpenFolder };

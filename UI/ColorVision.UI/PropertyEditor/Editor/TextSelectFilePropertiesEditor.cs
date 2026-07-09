@@ -39,6 +39,7 @@ namespace System.ComponentModel
                 if (ofd.ShowDialog() == true)
                 {
                     property.SetValue(obj, ofd.FileName);
+                    textbox.Text = ofd.FileName;
                 }
             };
 
