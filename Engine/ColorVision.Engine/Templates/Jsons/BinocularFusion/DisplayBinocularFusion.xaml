@@ -1,5 +1,6 @@
 <UserControl x:Class="ColorVision.Engine.Templates.Jsons.BinocularFusion.DisplayBinocularFusion"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             Foreground="{DynamicResource GlobalTextBrush}"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
@@ -21,11 +22,13 @@
             </DockPanel>
             <Grid Margin="0,2">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="ImageFile" Grid.Column="0" Style="{StaticResource TextBox.Small}" Text="{Binding ImageFilePath}" Margin="0,0,2,0" HorizontalAlignment="Stretch" />
-                <Button Grid.Column="1" Content="..." Click="Open_File" />
+                <TextBlock Grid.Column="0" Width="60" VerticalAlignment="Center" Text="{x:Static properties:Resources.Image}" />
+                <TextBox x:Name="ImageFile" Grid.Column="1" Style="{StaticResource TextBox.Small}" Text="{Binding ImageFilePath}" Margin="0,0,2,0" HorizontalAlignment="Stretch" />
+                <Button Grid.Column="2" Content="..." Click="Open_File" />
             </Grid>
         
         </StackPanel>
