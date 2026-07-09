@@ -1,5 +1,6 @@
 ﻿<UserControl x:Class="ColorVision.Engine.Templates.Jsons.CompoundImg.DisplayCompoundImg"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             Foreground="{DynamicResource GlobalTextBrush}"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
@@ -20,12 +21,12 @@
                 </Grid>
             </DockPanel>
             <DockPanel Margin="0,0,0,5">
-                <TextBlock Text="FilePath" Width="60" Margin="0,2"/>
+                <TextBlock Width="60" Margin="0,2"><Run Text="{x:Static properties:Resources.Image}"/><Run Text=" 1"/></TextBlock>
                 <TextBox Text="{Binding FilePath}" Width="180" Margin="5,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}"/>
                 <Button  Content="..." Command="{Binding SetFilePathCommand}"/>
             </DockPanel>
             <DockPanel Margin="0,0,0,5">
-                <TextBlock Text="FilePath1" Width="60" Margin="0,2"/>
+                <TextBlock Width="60" Margin="0,2"><Run Text="{x:Static properties:Resources.Image}"/><Run Text=" 2"/></TextBlock>
                 <TextBox Text="{Binding FilePath1}" Width="180" Margin="5,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}"/>
                 <Button  Content="..." Command="{Binding SetFilePath1Command}"/>
             </DockPanel>
