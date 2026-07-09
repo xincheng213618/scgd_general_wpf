@@ -64,8 +64,6 @@ namespace ColorVision.Engine
     
     public interface IDisplayAlgorithm
     {
-        public bool IsLocalFile { get; set; }
-
         public string ImageFilePath { get; set; }
 
         public UserControl GetUserControl();
@@ -73,9 +71,6 @@ namespace ColorVision.Engine
 
     public abstract class DisplayAlgorithmBase : ViewModelBase, IDisplayAlgorithm
     {
-        public bool IsLocalFile { get => _IsLocalFile; set { _IsLocalFile = value; OnPropertyChanged(); } }
-        private bool _IsLocalFile;
-
         public string ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; OnPropertyChanged(); } }
         private string _ImageFilePath;
 

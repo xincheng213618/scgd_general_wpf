@@ -85,9 +85,6 @@ namespace ColorVision.Engine.Templates.Matching
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType )
         {
             MatchParam Param = TemplateMatch.Params[TemplateSelectedIndex].Value;
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
-
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateFile", TemplateFile);
             Params.Add("TemplateParam", new CVTemplateParam() { ID = Param.Id, Name = Param.Name });

@@ -130,7 +130,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     CB_AlgorithmTypes.SelectedItem = allAlgorithmsGroup;
                     var visibleAlgorithmMetas = GetVisibleAlgorithmMetas();
                     CB_Algorithms.SelectedItem = visibleAlgorithmMetas.FirstOrDefault(a=>a.Type == e.Type);
-                    algorithm.IsLocalFile = true;
                     algorithm.ImageFilePath = e.ImageFilePath ?? string.Empty;
                 }
 

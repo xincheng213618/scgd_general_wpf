@@ -56,8 +56,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
             ParamBase paramBase = TemplateKB.Params[TemplateSelectedIndex].Value;
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new Dictionary<string,object>() { { "ID", paramBase.Id },{ "Name", paramBase.Name } });
             MsgSend msg = new()

@@ -51,8 +51,6 @@ namespace ColorVision.Engine.Templates.Ghost
 
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, GhostParam ghostParam)
         {
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
 
             Params.Add("TemplateParam", new CVTemplateParam() { ID = ghostParam.Id, Name = ghostParam.Name });

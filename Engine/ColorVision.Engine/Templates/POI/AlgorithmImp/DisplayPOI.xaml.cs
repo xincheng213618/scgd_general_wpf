@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Utilities;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI.POIFilters;
@@ -8,7 +8,6 @@ using ColorVision.Themes.Controls;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -45,16 +44,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             ComboxPoiRevise.ItemsSource = TemplatePoiReviseParam.Params.CreateEmpty();
             ComboxPoiRevise.SelectedIndex = 0;
 
-            CBPOIStorageModel.ItemsSource = EnumExtensions.ToKeyValuePairs<POIStorageModel>();
-
-            void UpdateCB_SourceImageFiles()
-            {
-                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
-                CB_SourceImageFiles.SelectedIndex = 0;
-            }
-            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
-            UpdateCB_SourceImageFiles();
-        }
+            CBPOIStorageModel.ItemsSource = EnumExtensions.ToKeyValuePairs<POIStorageModel>();        }
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
@@ -71,11 +61,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             {
                 string type = string.Empty;
                 string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
+                
                 MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, poiOutputParam);
                 ServicesHelper.SendCommand(sender, msg);
             }
@@ -84,7 +70,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         private bool TryGetImageInput(out string imgFileName)
         {
-            imgFileName = LoaclFileTabItem.IsSelected ? ImageFile.Text : CB_CIEImageFiles.Text;
+            imgFileName = ImageFile.Text;
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
                 MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
@@ -95,17 +81,9 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         }
 
 
-        private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
-            IAlgorithm.DService.GetCIEFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
-        }
 
-        private void Button_Click_Open(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_CIEImageFiles.Text, FileExtType.CIE);
-        }
+
+
 
         private void Open_File(object sender, RoutedEventArgs e)
         {
@@ -119,14 +97,5 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             }
         }
 
-        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
-        {
-            if (!File.Exists(ImageFile.Text))
-            {
-                MessageBox.Show("找不到图像文件");
-                return;
-            }
-            IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
-        }
     }
 }

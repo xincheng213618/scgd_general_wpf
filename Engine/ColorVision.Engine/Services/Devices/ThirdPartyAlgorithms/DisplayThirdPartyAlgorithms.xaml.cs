@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1816,CA1822,CS0168,CS8602,CS8604,CS8629
+#pragma warning disable CA1816,CA1822,CS0168,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.IO;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
 using ColorVision.Database;
 
@@ -69,16 +68,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
             this.AddViewConfig(View, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
-
-            void UpdateCB_SourceImageFiles()
-            {
-                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCamera || item is DeviceCalibration);
-                CB_SourceImageFiles.SelectedIndex = 0;
-            }
-            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
-            UpdateCB_SourceImageFiles();
-
-            DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);
+            DService_DeviceStatusChanged(sender, Device.DService.DeviceStatus);
             Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged;
         }
 
@@ -115,16 +105,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
 
-        private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
-        {
-            string type = string.Empty;
-            string code = string.Empty;
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-            {
-                type = deviceService.ServiceTypes.ToString();
-                code = deviceService.Code;
-            }
-        }
+
 
 
         private void TemplateSetting_Click(object sender, RoutedEventArgs e)
@@ -136,13 +117,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         private void Templates_Click(object sender, RoutedEventArgs e)
         {
             if (CB_Templates.SelectedValue is not TemplateJsonParam findDotsArrayParam) return;
-            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
-
             if (!TryGetImageInput(out string imgFileName, out FileExtType fileExtType)) return;
 
-            string type = deviceService.ServiceTypes.ToString();
-            string code = deviceService.Code;
-
+            string type = string.Empty;
+            string code = string.Empty;
             DService.CallFunction(findDotsArrayParam, imgFileName, fileExtType, code, type);
         }
 
@@ -150,7 +128,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         private bool TryGetImageInput(out string imgFileName, out FileExtType fileExtType)
         {
             fileExtType = FileExtType.Tif;
-            imgFileName = AlgRawSelect.IsSelected == true ? CB_RawImageFiles.Text : ImageFile.Text;
+            imgFileName = ImageFile.Text;
 
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
@@ -177,25 +155,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             }
         }
 
-        private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void MenuItem_Template(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
-        {
-            if (!File.Exists(ImageFile.Text))
-            {
-                MessageBox.Show(Properties.Resources.ImageFileNotFound);
-                return;
-            }
-            Device.View.ImageView.OpenImage(ImageFile.Text);
-        }
 
         public void Dispose()
         {

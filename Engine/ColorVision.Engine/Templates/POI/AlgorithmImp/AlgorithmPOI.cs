@@ -111,8 +111,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, PoiParam poiParam, PoiFilterParam filter, PoiReviseParam revise, PoiOutputParam output)
         {
 
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
             FileExtType fileExtType = FileExtType.CIE;
             if (Path.GetExtension(fileName).Contains("cvraw"))
             {

@@ -1,9 +1,8 @@
-﻿using ColorVision.Engine.Services;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -29,22 +28,13 @@ namespace ColorVision.Engine.Templates.MTF
             ComboxMTFTemplate.SelectedIndex = 0;
 
             ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
-            ComboxPoiTemplate2.SelectedIndex = 0;
-
-            void UpdateCB_SourceImageFiles()
-            {
-                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
-                CB_SourceImageFiles.SelectedIndex = 0;
-            }
-            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
-            UpdateCB_SourceImageFiles();
-        }
+            ComboxPoiTemplate2.SelectedIndex = 0;        }
 
 
         private bool TryGetImageInput(out string imgFileName, out FileExtType fileExtType)
         {
             fileExtType = FileExtType.Tif;
-            imgFileName = AlgRawSelect.IsSelected == true ? CB_RawImageFiles.Text : ImageFile.Text;
+            imgFileName = ImageFile.Text;
 
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
@@ -70,26 +60,6 @@ namespace ColorVision.Engine.Templates.MTF
             }
         }
 
-        private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
-            IAlgorithm.DService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
-        }
-
-        private void Button_Click_Open(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
-        }
-        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
-        {
-            if (!File.Exists(ImageFile.Text))
-            {
-                MessageBox.Show("找不到图像文件");
-                return;
-            }
-            IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
-        }
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
             if (!ServicesHelper.IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
@@ -98,11 +68,7 @@ namespace ColorVision.Engine.Templates.MTF
             {
                 string type = string.Empty;
                 string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
+                
                 var pm = TemplateMTF.Params[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = TemplatePoi.Params[ComboxPoiTemplate2.SelectedIndex].Value;
                 var msg = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, poi_pm.Id, ComboxPoiTemplate2.Text);

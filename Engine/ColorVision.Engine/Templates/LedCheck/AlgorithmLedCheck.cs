@@ -56,12 +56,6 @@ namespace ColorVision.Engine.Templates.LedCheck
         public MsgRecord SendCommand(LedCheckParam param, PoiParam poiParam ,string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
 
-            // 文件路径处理优化
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullPath))
-            {
-                fileName = fullPath;
-            }
-
             // 组装参数，使用集合初始化器
             var Params = new Dictionary<string, object>
             {

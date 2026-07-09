@@ -1,9 +1,8 @@
-﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -26,16 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
             DataContext = IAlgorithm;
             
             ComboxTemplate.ItemsSource = TemplateBinocularFusion.Params;
-            ComboxTemplate.SelectedIndex = 0;
-
-            void UpdateCB_SourceImageFiles()
-            {
-                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
-                CB_SourceImageFiles.SelectedIndex = 0;
-            }
-            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
-            UpdateCB_SourceImageFiles();
-        }
+            ComboxTemplate.SelectedIndex = 0;        }
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
@@ -49,11 +39,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
             {
                 string type = string.Empty;
                 string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
+                
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType);
                 ServicesHelper.SendCommand(sender, msg);
             }
@@ -62,7 +48,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
         private bool TryGetImageInput(out string imgFileName, out FileExtType fileExtType)
         {
             fileExtType = FileExtType.Tif;
-            imgFileName = AlgRawSelect.IsSelected == true ? CB_RawImageFiles.Text : ImageFile.Text;
+            imgFileName = ImageFile.Text;
 
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
@@ -88,27 +74,6 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
             }
         }
 
-        private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
-            IAlgorithm.DService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
-        }
-
-        private void Button_Click_Open(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
-        }
-
-        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
-        {
-            if (!File.Exists(ImageFile.Text))
-            {
-                MessageBox.Show("找不到图像文件");
-                return;
-            }
-            IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
-        }
 
         public void Dispose()
         {

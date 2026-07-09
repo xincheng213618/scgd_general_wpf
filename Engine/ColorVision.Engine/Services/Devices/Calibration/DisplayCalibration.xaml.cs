@@ -273,15 +273,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             return true;
         }
 
-        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
-        {
-            if (!File.Exists(ImageFile.Text))
-            {
-                MessageBox.Show(Properties.Resources.ImageFileNotFound);
-                return;
-            }
-            Device.View.ImageView.OpenImage(ImageFile.Text);
-        }
 
         public void Dispose()
         {
