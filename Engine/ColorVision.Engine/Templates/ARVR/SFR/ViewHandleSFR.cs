@@ -142,9 +142,9 @@ namespace ColorVision.Engine.Templates.SFR
                 DVRectangleText Rectangle = new();
                 Rectangle.Attribute.Rect = new Rect((double)item.RoiX, (double)item.RoiY, (double)item.RoiWidth, (double)item.RoiHeight);
                 Rectangle.Attribute.Brush = Brushes.Transparent;
-                Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                Rectangle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                 Rectangle.Attribute.Id = item.Id;
-                Rectangle.Attribute.FontSize = RenderConfig.FontSize;
+                Rectangle.Attribute.FontSize = OverlayFontSize;
                 Rectangle.Render();
                 ctx.ImageView.AddVisual(Rectangle);
             }

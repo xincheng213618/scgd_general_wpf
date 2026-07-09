@@ -184,12 +184,12 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
             var csvBuilder = new StringBuilder();
             csvBuilder.AppendLine($"GradeLevel,{detectResult.GradeLevel}");
             csvBuilder.AppendLine($"DefectCount,{detectResult.DefectCount}");
-            csvBuilder.AppendLine($"AvgBrightness,{RenderConfig.FormatNumber(detectResult.AvgBrightness)}");
+            csvBuilder.AppendLine($"AvgBrightness,{FormatNumber(detectResult.AvgBrightness)}");
             csvBuilder.AppendLine($"TimeStamp,{detectResult.TimeStamp}");
             csvBuilder.AppendLine("id,type,x,y,width,height,area,contrast,mean_value,local_mean");
             foreach (var item in detectResult.Defects)
             {
-                csvBuilder.AppendLine($"{item.Id},{item.Type},{item.X},{item.Y},{item.Width},{item.Height},{item.Area},{RenderConfig.FormatNumber(item.Contrast)},{RenderConfig.FormatNumber(item.MeanValue)},{RenderConfig.FormatNumber(item.LocalMean)}");
+                csvBuilder.AppendLine($"{item.Id},{item.Type},{item.X},{item.Y},{item.Width},{item.Height},{item.Area},{FormatNumber(item.Contrast)},{FormatNumber(item.MeanValue)},{FormatNumber(item.LocalMean)}");
             }
             File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
         }
@@ -199,16 +199,16 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
             DVRectangleText rectangle = new();
             rectangle.Attribute.Rect = new Rect(item.X, item.Y, item.Width, item.Height);
             rectangle.Attribute.Brush = Brushes.Transparent;
-            rectangle.Attribute.Pen = new Pen(GetDefectBrush(item.Type), RenderConfig.PenThickness);
+            rectangle.Attribute.Pen = new Pen(GetDefectBrush(item.Type), OverlayPenThickness);
             rectangle.Attribute.Id = item.Id;
             rectangle.Attribute.Text = item.Id.ToString();
-            rectangle.Attribute.FontSize = RenderConfig.FontSize;
+            rectangle.Attribute.FontSize = OverlayFontSize;
             rectangle.Attribute.Msg =
                 $"type:{item.Type}{Environment.NewLine}" +
-                $"area:{RenderConfig.FormatNumber(item.Area)}{Environment.NewLine}" +
-                $"contrast:{RenderConfig.FormatNumber(item.Contrast)}{Environment.NewLine}" +
-                $"mean:{RenderConfig.FormatNumber(item.MeanValue)}{Environment.NewLine}" +
-                $"local:{RenderConfig.FormatNumber(item.LocalMean)}";
+                $"area:{FormatNumber(item.Area)}{Environment.NewLine}" +
+                $"contrast:{FormatNumber(item.Contrast)}{Environment.NewLine}" +
+                $"mean:{FormatNumber(item.MeanValue)}{Environment.NewLine}" +
+                $"local:{FormatNumber(item.LocalMean)}";
             rectangle.Render();
             ctx.ImageView.AddVisual(rectangle);
         }

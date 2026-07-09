@@ -8,38 +8,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class RCSettingProvider : IStatusBarProviderUpdatable
-    {
-        public event EventHandler StatusBarItemsChanged;
-
-        public RCSettingProvider()
-        {
-            MqttRCService.GetInstance().RCServiceConnectChanged += (s, e) =>
-                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
-        {
-            bool isConnected = MqttRCService.GetInstance().IsConnect;
-            RelayCommand relayCommand = new RelayCommand(a => new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            return new List<StatusBarMeta>
-            {
-                new StatusBarMeta()
-                {
-                    Id = "RC",
-                    Name = "RC",
-                    Description = isConnected ? "RC Service Connected" : "RC Service Disconnected",
-                    Order = 999,
-                    Type = StatusBarType.Icon,
-                    IconResourceKey = isConnected ? "DrawingImageRCService" : "DrawingImageRCServiceRed",
-                    Source = RCSetting.Instance,
-                    Command = relayCommand
-                }
-            };
-        }
-    }
-
-
     public class RCSetting : ViewModelBase, IConfigSecure
     {
         public static RCSetting Instance => ConfigService.Instance.GetRequiredService<RCSetting>();

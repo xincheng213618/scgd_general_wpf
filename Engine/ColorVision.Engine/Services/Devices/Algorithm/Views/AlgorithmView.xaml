@@ -2,7 +2,6 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Views"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:media="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
@@ -57,19 +56,10 @@
 
                         <Button x:Name="Button222" Click="SideSave_Click" Content="{x:Static properties:Resources.SaveDataColumn}" />
 
-                        <Border Width="1" Height="20" Margin="6,0" Background="{DynamicResource ButtonBorderBrush}"/>
-                        <TextBlock x:Name="TextBlockHandlerName" Margin="4,0" VerticalAlignment="Center" FontWeight="Bold" />
-                        <TextBlock Margin="4,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.DecimalPlaces}" />
-                        <hc:NumericUpDown x:Name="NumDecimalPlaces" Width="70" Minimum="0" Maximum="10" Value="3" ValueChanged="NumDecimalPlaces_ValueChanged" />
-                        <TextBlock Margin="4,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.FontSizeLabel}" />
-                        <hc:NumericUpDown x:Name="NumFontSize" Width="80" Minimum="1" Maximum="200" Increment="1" Value="10" ValueChanged="NumFontSize_ValueChanged" />
-                        <TextBlock Margin="4,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.LineWidth}" />
-                        <hc:NumericUpDown x:Name="NumPenThickness" Width="80" Minimum="0.1" Maximum="20" Increment="0.5" Value="1" ValueChanged="NumPenThickness_ValueChanged" />
-                        <Button Margin="2,0,0,0" x:Name="ButtonReRender" Click="ReRender_Click" Content="{x:Static properties:Resources.ReRendering}" />
                 </StackPanel>
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                     <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Button_Click">
-                        <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                     </Button>
                     <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Command="{Binding ClearListCommand}">
                         <Button.Triggers>

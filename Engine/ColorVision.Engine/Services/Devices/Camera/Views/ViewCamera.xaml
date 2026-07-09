@@ -44,7 +44,7 @@
             </StackPanel>
             <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
                 <Button Click="Button_Click_Export" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
-                    <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                    <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                 </Button>
                 <Button  Command="{Binding ClearListCommand}" Padding="2" Height="25" Width="25">
                     <Button.Triggers>

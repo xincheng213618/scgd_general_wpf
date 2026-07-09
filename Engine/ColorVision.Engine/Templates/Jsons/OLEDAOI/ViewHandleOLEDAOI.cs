@@ -234,11 +234,11 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.x,item.y,item.w,item.h);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                             Rectangle.Attribute.Id = id;
                             Rectangle.Attribute.Text = item.name;
-                            Rectangle.Attribute.FontSize = RenderConfig.FontSize;
-                            Rectangle.Attribute.Msg = RenderConfig.FormatNumber(item.mtfValue);
+                            Rectangle.Attribute.FontSize = OverlayFontSize;
+                            Rectangle.Attribute.Msg = FormatNumber(item.mtfValue);
                             Rectangle.Render();
                             ctx.ImageView.AddVisual(Rectangle);
                         }

@@ -48,7 +48,7 @@
                         </ToolBarTray>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
                             <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
-                                <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                                <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                             </Button>
                             <Button  Click="Button_Click_Clear" Command="{Binding ViewResultManager.ViewReslutsClearCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                                 <Button.Triggers>

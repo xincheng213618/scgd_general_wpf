@@ -215,11 +215,11 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                                 cricle.Attribute.Center = new Point(item.center.x,item.center.y);
                                 cricle.Attribute.Radius = 10;
                                 cricle.Attribute.Brush = Brushes.Red;
-                                cricle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                                cricle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                                 cricle.Attribute.Id = id;
                                 cricle.Attribute.Text = id.ToString();
-                                cricle.Attribute.FontSize = RenderConfig.FontSize;
-                                cricle.Attribute.Msg =  $"({RenderConfig.FormatNumber(item.center.x)},{RenderConfig.FormatNumber(item.center.y)}){Environment.NewLine}xtilt:{RenderConfig.FormatNumber(item.tilt.tilt_x)}{Environment.NewLine}ytilt:{RenderConfig.FormatNumber(item.tilt.tilt_y)}{Environment.NewLine}rotation:{RenderConfig.FormatNumber(item.rotationAngle)}"  ;
+                                cricle.Attribute.FontSize = OverlayFontSize;
+                                cricle.Attribute.Msg =  $"({FormatNumber(item.center.x)},{FormatNumber(item.center.y)}){Environment.NewLine}xtilt:{FormatNumber(item.tilt.tilt_x)}{Environment.NewLine}ytilt:{FormatNumber(item.tilt.tilt_y)}{Environment.NewLine}rotation:{FormatNumber(item.rotationAngle)}"  ;
                                 cricle.Render();
                                 view.ImageView.AddVisual(cricle);
                             }
