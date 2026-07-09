@@ -1681,17 +1681,20 @@ public class STNodeEditor : Control
 
 	private ConnectionStatus DisConnectionHover()
 	{
-		if (!m_dic_gp_info.ContainsKey(m_gp_hover))
+		GraphicsPath gpHover = m_gp_hover;
+		if (gpHover == null || !m_dic_gp_info.TryGetValue(gpHover, out ConnectionInfo connectionInfo))
 		{
 			return ConnectionStatus.DisConnected;
 		}
-		ConnectionInfo connectionInfo = m_dic_gp_info[m_gp_hover];
 		ConnectionStatus connectionStatus = connectionInfo.Output.DisConnectOption(connectionInfo.Input);
 		if (connectionStatus == ConnectionStatus.DisConnected)
 		{
-			m_dic_gp_info.Remove(m_gp_hover);
-			m_gp_hover.Dispose();
-			m_gp_hover = null;
+			m_dic_gp_info.Remove(gpHover);
+			gpHover.Dispose();
+			if (ReferenceEquals(m_gp_hover, gpHover))
+			{
+				m_gp_hover = null;
+			}
 			Invalidate();
 		}
 		return connectionStatus;
