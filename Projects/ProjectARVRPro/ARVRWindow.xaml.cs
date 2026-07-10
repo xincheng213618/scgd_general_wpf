@@ -10,6 +10,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -36,6 +37,11 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro
 {
+    public class ARVRWindowConfig : WindowConfig
+    {
+        public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
+    }
+
     public partial class ARVRWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
