@@ -14,7 +14,7 @@ using System.Windows.Media;
 namespace ProjectARVRPro.Process.RGB.Blue
 {
 
-    public class BlueProcess : ProcessBase<BlueProcessConfig>
+    public class BlueProcess : ProcessBase<BlueProcessConfig, BlueRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -219,9 +219,5 @@ namespace ProjectARVRPro.Process.RGB.Blue
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<BlueRecipeConfig>();
-        }
     }
 }

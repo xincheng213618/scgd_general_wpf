@@ -132,4 +132,14 @@ namespace ProjectARVRPro.Process
 
         public virtual IRecipeConfig GetRecipeConfig() => null;
     }
+
+    /// <summary>
+    /// Base class for processes that use a shared recipe configuration managed by <see cref="ProcessManager"/>.
+    /// </summary>
+    public abstract class ProcessBase<TConfig, TRecipeConfig> : ProcessBase<TConfig>
+        where TConfig : ViewModelBase, new()
+        where TRecipeConfig : IRecipeConfig
+    {
+        public sealed override IRecipeConfig GetRecipeConfig() => ProcessManager.GetInstance().RecipeConfig.GetRequiredService<TRecipeConfig>();
+    }
 }

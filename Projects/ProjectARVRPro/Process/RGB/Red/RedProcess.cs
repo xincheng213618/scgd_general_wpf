@@ -16,7 +16,7 @@ namespace ProjectARVRPro.Process.RGB.Red
 
 
 
-    public class RedProcess : ProcessBase<RedProcessConfig>
+    public class RedProcess : ProcessBase<RedProcessConfig, RedRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -220,9 +220,5 @@ namespace ProjectARVRPro.Process.RGB.Red
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<RedRecipeConfig>();
-        }
     }
 }

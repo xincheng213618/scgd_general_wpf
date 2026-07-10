@@ -13,7 +13,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Chessboard
 {
-    public class ChessboardProcess : ProcessBase<ChessboardProcessConfig>
+    public class ChessboardProcess : ProcessBase<ChessboardProcessConfig, ChessboardRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -140,9 +140,5 @@ namespace ProjectARVRPro.Process.Chessboard
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
-        }
     }
 }

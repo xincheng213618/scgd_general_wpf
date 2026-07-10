@@ -17,7 +17,7 @@ namespace ProjectARVRPro.Process.MTF.MTFV
     /// <summary>
     /// 旧版MTFV解析 - 使用 MTFResult.result + mtfValue
     /// </summary>
-    public class MTFVProcess : ProcessBase<MTFVProcessConfig>
+    public class MTFVProcess : ProcessBase<MTFVProcessConfig, MTFVRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -203,9 +203,5 @@ namespace ProjectARVRPro.Process.MTF.MTFV
             AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFVRecipeConfig>();
-        }
     }
 }

@@ -8,13 +8,8 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.DemuraAOI
 {
-    public class DemuraAoiProcess : ProcessBase<DemuraAoiProcessConfig>
+    public class DemuraAoiProcess : ProcessBase<DemuraAoiProcessConfig, DemuraAoiRecipeConfig>
     {
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<DemuraAoiRecipeConfig>();
-        }
-
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null) return false;

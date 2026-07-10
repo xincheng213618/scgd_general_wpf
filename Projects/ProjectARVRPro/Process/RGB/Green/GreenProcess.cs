@@ -13,7 +13,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.RGB.Green
 {
-    public class GreenProcess : ProcessBase<GreenProcessConfig>
+    public class GreenProcess : ProcessBase<GreenProcessConfig, GreenRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -217,9 +217,5 @@ namespace ProjectARVRPro.Process.RGB.Green
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<GreenRecipeConfig>();
-        }
     }
 }

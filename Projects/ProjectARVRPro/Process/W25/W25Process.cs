@@ -11,7 +11,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.W25
 {
-    public class W25Process : ProcessBase<W25ProcessConfig>
+    public class W25Process : ProcessBase<W25ProcessConfig, W25RecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -169,9 +169,5 @@ namespace ProjectARVRPro.Process.W25
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W25RecipeConfig>();
-        }
     }
 }

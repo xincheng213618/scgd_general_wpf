@@ -14,7 +14,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Chessboard
 {
-    public class ChessboardDynamicProcess : ProcessBase<ChessboardDynamicProcessConfig>
+    public class ChessboardDynamicProcess : ProcessBase<ChessboardDynamicProcessConfig, ChessboardRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -145,10 +145,6 @@ namespace ProjectARVRPro.Process.Chessboard
             AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
-        }
 
         private ObjectiveTestItem Build(string name, double value, double low, double up) => new ObjectiveTestItem
         {
