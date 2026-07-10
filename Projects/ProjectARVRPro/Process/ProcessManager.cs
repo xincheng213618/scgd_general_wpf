@@ -515,22 +515,24 @@ namespace ProjectARVRPro.Process
                 {
                     MigrateFromOldFormat();
                 }
-                // Ensure we have at least one group
-                if (ProcessGroups.Count == 0)
-                {
-                    ProcessGroups.Add(new ProcessGroup { Name = "Default" });
-                    _ActiveGroupIndex = 0;
-                }
-
-                OnPropertyChanged(nameof(ActiveGroupIndex));
-                OnPropertyChanged(nameof(ActiveGroup));
-                OnPropertyChanged(nameof(ProcessMetas));
-                HookProcessMetasEvents();
             }
             catch (Exception ex)
             {
                 log.Error("加载ProcessGroups失败", ex);
+                ProcessGroups.Clear();
+                RecipeConfig = new RecipeConfig();
             }
+
+            if (ProcessGroups.Count == 0)
+            {
+                ProcessGroups.Add(new ProcessGroup { Name = "Default" });
+                _ActiveGroupIndex = 0;
+            }
+
+            OnPropertyChanged(nameof(ActiveGroupIndex));
+            OnPropertyChanged(nameof(ActiveGroup));
+            OnPropertyChanged(nameof(ProcessMetas));
+            HookProcessMetasEvents();
         }
 
         private void LoadFromGroupsFile()

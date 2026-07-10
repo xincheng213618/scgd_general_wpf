@@ -26,6 +26,10 @@ namespace ProjectARVRPro.Exports
             if (mtf058Item != null)
                 return mtf058Item;
 
+            ObjectiveTestItem? luminanceChromaticityItem = FindLuminanceChromaticity(testScreenName, itemName);
+            if (luminanceChromaticityItem != null)
+                return luminanceChromaticityItem;
+
             object? screen = FindScreenObject(testScreenName);
             return FindItem(screen, itemName);
         }
@@ -65,13 +69,25 @@ namespace ProjectARVRPro.Exports
             return FindItem(result, itemName);
         }
 
+        private ObjectiveTestItem? FindLuminanceChromaticity(string testScreenName, string itemName)
+        {
+            if (_result.LuminanceChromaticityTestResults == null)
+                return null;
+
+            if (!_result.LuminanceChromaticityTestResults.TryGetValue(testScreenName, out var result))
+                return null;
+
+            return FindItem(result, itemName);
+        }
+
         private object? FindScreenObject(string testScreenName)
         {
             foreach (PropertyInfo property in typeof(ObjectiveTestResult).GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 if (property.Name == nameof(ObjectiveTestResult.DynamicTestResults) ||
                     property.Name == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
-                    property.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults))
+                    property.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
+                    property.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults))
                     continue;
 
                 string displayName = property.GetCustomAttributes(false)

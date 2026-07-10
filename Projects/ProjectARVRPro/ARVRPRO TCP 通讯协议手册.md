@@ -445,7 +445,11 @@ JSON
 
   "TotalResultString": "PASS",
 
-  "W25TestResult": { ... },
+  "LuminanceChromaticityTestResults": {
+
+   "W25": { ... }
+
+  },
 
   "MTFHVTestResult": { ... },
 
