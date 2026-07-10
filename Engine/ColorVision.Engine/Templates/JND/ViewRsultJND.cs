@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.JND
         public static void SaveCsv(ObservableCollection<ViewRsultJND> ViewRsultJNDs, string FileName)
         {
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Id", "名称", "位置", "大小", "形状", "h_jnd", "v_jnd" };
+            List<string> properties = new() { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "h_jnd", "v_jnd" };
             // 写入列头
             csvBuilder.AppendLine(string.Join(",", properties));
             // 写入数据行

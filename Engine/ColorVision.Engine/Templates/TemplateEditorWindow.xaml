@@ -78,7 +78,7 @@
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}"  />
                         <MenuItem Header="{x:Static properties:Resources.CreateCopy}"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
                         <MenuItem Header="{x:Static properties:Resources.CreateSample}"   Click="CreateTemplate_Click" Tag="{Binding .}"  />
-                        <MenuItem Header="设置为默认参数" Click="MenuItem_SetJsonAsDefault_Click" Tag="SetJsonAsDefault" Visibility="Collapsed" />
+                        <MenuItem Header="{x:Static properties:Resources.TemplateEditor_SetAsDefaultParameters}" Click="MenuItem_SetJsonAsDefault_Click" Tag="SetJsonAsDefault" Visibility="Collapsed" />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>

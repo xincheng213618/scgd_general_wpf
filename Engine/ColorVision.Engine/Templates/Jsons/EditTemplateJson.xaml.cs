@@ -379,7 +379,7 @@ namespace ColorVision.Engine.Templates.Jsons
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"切换到属性编辑器失败: {ex.Message}\n\n请检查 JSON 格式是否正确。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.Copilot_PropertyEditorSwitchFailed, ex.Message), Properties.Resources.Error, MessageBoxButton.OK, MessageBoxImage.Error);
                 
                 // Revert toggle state
                 EditorModeToggle.IsChecked = false;
@@ -411,7 +411,7 @@ namespace ColorVision.Engine.Templates.Jsons
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"切换到文本编辑器失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Properties.Resources.Copilot_TextEditorSwitchFailed, ex.Message), Properties.Resources.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -467,7 +467,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             AskCopilot(
                 CopilotPromptMode.Explain,
-                "请结合已附加的模板快照，先说明这个模板大致用于什么检测逻辑，再按字段解释主要参数的作用和彼此关系。",
+                Properties.Resources.Copilot_ExplainTemplatePrompt,
                 sendNow: true);
         }
 
@@ -475,7 +475,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             AskCopilot(
                 CopilotPromptMode.Explain,
-                "请结合已附加的模板快照，逐项解释当前 JSON 参数的含义、典型影响范围，以及哪些参数组合需要一起看。",
+                Properties.Resources.Copilot_ExplainParametersPrompt,
                 sendNow: true);
         }
 
@@ -483,7 +483,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             AskCopilot(
                 CopilotPromptMode.Diagnose,
-                "请结合已附加的模板快照，检查当前配置里是否存在明显异常、矛盾阈值或高风险参数，并给出判断理由与调整建议。",
+                Properties.Resources.Copilot_DiagnoseTemplatePrompt,
                 sendNow: true);
         }
 
@@ -491,7 +491,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             AskCopilot(
                 CopilotPromptMode.Explain,
-                "请基于已附加的模板快照继续分析当前内容。",
+                Properties.Resources.Copilot_ContinueAnalysisPrompt,
                 sendNow: false);
         }
 
@@ -502,7 +502,7 @@ namespace ColorVision.Engine.Templates.Jsons
             {
                 MessageBox.Show(
                     Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
-                    "当前模板上下文尚未准备好，无法发送给 Copilot。",
+                    Properties.Resources.Copilot_ContextNotReady,
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using ColorVision.Engine.Utilities;
 
 namespace ColorVision.Engine.Batch
 {
@@ -91,11 +92,11 @@ namespace ColorVision.Engine.Batch
 
             if (attribute != null)
             {
-                displayName = !string.IsNullOrWhiteSpace(attribute.DisplayName) 
-                    ? attribute.DisplayName 
+                displayName = !string.IsNullOrWhiteSpace(attribute.DisplayName)
+                    ? Localize(attribute.DisplayName, attribute.ResourceType)
                     : type.Name;
-                description = attribute.Description ?? string.Empty;
-                category = attribute.Category ?? string.Empty;
+                description = Localize(attribute.Description, attribute.ResourceType);
+                category = Localize(attribute.Category, attribute.ResourceType);
                 order = attribute.Order;
             }
             else
@@ -117,6 +118,14 @@ namespace ColorVision.Engine.Batch
             );
         }
 
+        private static string Localize(string? value, Type? resourceType)
+        {
+            if (string.IsNullOrWhiteSpace(value) || resourceType == null)
+                return value ?? string.Empty;
+
+            return LocalizedResourceResolver.GetString(LocalizedResourceResolver.GetResourceManager(resourceType), value);
+        }
+
         /// <summary>
         /// Gets the display text for the pre-processor, including description if available.
         /// </summary>
@@ -136,8 +145,8 @@ namespace ColorVision.Engine.Batch
             if (!string.IsNullOrWhiteSpace(Description))
                 text += $"\n\n{Description}";
             if (!string.IsNullOrWhiteSpace(Category))
-                text += $"\n\n类别: {Category}";
-            text += $"\n\n类型: {TypeName}";
+                text += $"\n\n{string.Format(Properties.Resources.Flow_PreProcess_CategoryFormat, Category)}";
+            text += $"\n\n{string.Format(Properties.Resources.Flow_PreProcess_TypeFormat, TypeName)}";
             return text;
         }
     }

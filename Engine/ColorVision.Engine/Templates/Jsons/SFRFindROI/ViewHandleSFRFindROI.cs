@@ -84,7 +84,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewSFRFindROI>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Id", "Name", "位置", "大小", "形状","Angle","Center"};
+            List<string> properties = new() { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, Properties.Resources.Angle, Properties.Resources.Center };
             csvBuilder.AppendLine(string.Join(",", properties));
 
             foreach (var item in ViewResults)
@@ -146,8 +146,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                     }
                 }
                 RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFRFindROI), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFRFindROI), ImageFilePath = result.FilePath })) });
             }
 
         }
@@ -197,7 +197,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
             List<string> header;
             List<string> bdHeader;
-            header = new() { "Name", "PoiX", "PoiY", "PoiWidth", "PoiHeight", "形状" ,"angle","Center"};
+            header = new() { "Name", "PoiX", "PoiY", "PoiWidth", "PoiHeight", Properties.Resources.Shape, "angle", "Center" };
             bdHeader = new() { "PoiName", "PoiX", "PoiY", "PoiWidth", "PoiHeight", "PoiType", "Value.Angle", "Value.Center" };
 
             if (ctx.ListView.View is GridView gridView)

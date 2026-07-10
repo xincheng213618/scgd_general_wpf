@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 
     public class ViewHandleDetectScreenDefects : IResultHandleBase
     {
-        public override string Name => "屏幕缺陷检测";
+        public override string Name => Properties.Resources.ScreenDefectDetection;
         public override List<ViewResultAlgType> CanHandle { get; } = new() { ViewResultAlgType.ARVR_DetectScreenDefects };
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
@@ -135,9 +135,9 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
                 avalonEditWindow.ShowDialog();
             }, a => File.Exists(detectResult.ResultFileName));
 
-            result.ContextMenu.Items.Add(new MenuItem() { Header = "选中屏幕缺陷检测结果", Command = selectCommand });
-            result.ContextMenu.Items.Add(new MenuItem() { Header = "打开屏幕缺陷检测结果", Command = openCommand });
-            result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDetectScreenDefects), ImageFilePath = result.FilePath })) });
+            result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.ScreenDefect_SelectResultFile, Command = selectCommand });
+            result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.ScreenDefect_OpenResultFile, Command = openCommand });
+            result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDetectScreenDefects), ImageFilePath = result.FilePath })) });
         }
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)

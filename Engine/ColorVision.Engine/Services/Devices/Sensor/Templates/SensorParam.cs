@@ -316,7 +316,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         public string RequestBracketText => SensorCmdType == SensorCmdType.Hex ? SensorCommandTextFormatter.ToBracketTextOrOriginal(Request, EditTemplateSensor.Config.UseControlNamesInBracketText) : Request;
         public string ResponseBracketText => SensorCmdType == SensorCmdType.Hex ? SensorCommandTextFormatter.ToBracketTextOrOriginal(Response, EditTemplateSensor.Config.UseControlNamesInBracketText) : Response;
-        public string PreviewText => $"保存值\r\n{OriginText}\r\n\r\n发送回显\r\n{RequestBracketText}\r\n\r\n返回回显\r\n{ResponseBracketText}";
+        public string PreviewText => string.Format(Properties.Resources.Sensor_PreviewFormat, OriginText, RequestBracketText, ResponseBracketText);
 
         public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; OnPropertyChanged(); GenerateRequestString(); } }
         private SensorCmdType _SensorCmdType = SensorCmdType.Ascii;
@@ -341,26 +341,26 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             Request = SensorCommandTextFormatter.BracketTextToHex(BracketText);
             SensorCmdType = SensorCmdType.Hex;
-            ConvertStatus = "已转到发送";
+            ConvertStatus = Properties.Resources.Sensor_ConvertedToRequest;
         }
 
         private void ApplyBracketTextToResponse()
         {
             Response = SensorCommandTextFormatter.BracketTextToHex(BracketText);
             SensorCmdType = SensorCmdType.Hex;
-            ConvertStatus = "已转到返回";
+            ConvertStatus = Properties.Resources.Sensor_ConvertedToResponse;
         }
 
         private void ShowRequestAsBracketText()
         {
             BracketText = RequestBracketText;
-            ConvertStatus = "已回显发送";
+            ConvertStatus = Properties.Resources.Sensor_RequestEchoed;
         }
 
         private void ShowResponseAsBracketText()
         {
             BracketText = ResponseBracketText;
-            ConvertStatus = "已回显返回";
+            ConvertStatus = Properties.Resources.Sensor_ResponseEchoed;
         }
 
         public void RefreshPreviewProperties()

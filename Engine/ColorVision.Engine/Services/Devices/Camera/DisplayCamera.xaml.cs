@@ -14,6 +14,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.AutoExpTime;
+using ColorVision.Engine.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Filters;
@@ -59,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public double CloseTime { get; set; } = 10;
         public double LocalVideoOpenTime { get; set; } = 3000;
 
-        [DisplayName("ROI区域")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_RoiRegion))]
         public Rect LocalVideoRoi
         {
             get => _LocalVideoRoi;
@@ -89,12 +90,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Browsable(false), JsonIgnore]
         public double LocalVideoRoiHeight { get => LocalVideoRoi.Height; set => LocalVideoRoi = new Rect(LocalVideoRoi.X, LocalVideoRoi.Y, LocalVideoRoi.Width, value); }
 
-        [DisplayName("启用十字导引")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_EnableCrossGuide))]
         public bool IsCrossGuideEnabled { get => _IsCrossGuideEnabled; set { _IsCrossGuideEnabled = value; OnPropertyChanged(); } }
         private bool _IsCrossGuideEnabled;
 
         [Browsable(false)]
-        [DisplayName("十字导引区域")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_CrossGuideRegion))]
         public Rect CrossGuideRoi
         {
             get => _CrossGuideRoi;
@@ -108,27 +109,27 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         private Rect _CrossGuideRoi = Rect.Empty;
 
-        [DisplayName("标准中心X")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_StandardCenterX))]
         public double CrossGuideStandardCenterX { get => _CrossGuideStandardCenterX; set { _CrossGuideStandardCenterX = value; OnPropertyChanged(); } }
         private double _CrossGuideStandardCenterX;
 
-        [DisplayName("标准中心Y")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_StandardCenterY))]
         public double CrossGuideStandardCenterY { get => _CrossGuideStandardCenterY; set { _CrossGuideStandardCenterY = value; OnPropertyChanged(); } }
         private double _CrossGuideStandardCenterY;
 
-        [DisplayName("合格阈值(px)")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_TolerancePx))]
         public double CrossGuideTolerancePx { get => _CrossGuideTolerancePx; set { _CrossGuideTolerancePx = Math.Max(0, value); OnPropertyChanged(); } }
         private double _CrossGuideTolerancePx = 3;
 
-        [DisplayName("刷新间隔(ms)")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_RefreshIntervalMs))]
         public int CrossGuideIntervalMs { get => _CrossGuideIntervalMs; set { _CrossGuideIntervalMs = Math.Max(50, value); OnPropertyChanged(); } }
         private int _CrossGuideIntervalMs = 300;
 
-        [DisplayName("亮度阈值比例")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_BrightnessThresholdRatio))]
         public double CrossGuideThresholdRatio { get => _CrossGuideThresholdRatio; set { _CrossGuideThresholdRatio = Math.Clamp(value, 0.05, 0.95); OnPropertyChanged(); } }
         private double _CrossGuideThresholdRatio = 0.45;
 
-        [DisplayName("最小覆盖比例")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_MinCoverageRatio))]
         public double CrossGuideMinCoverageRatio { get => _CrossGuideMinCoverageRatio; set { _CrossGuideMinCoverageRatio = Math.Clamp(value, 0.01, 0.95); OnPropertyChanged(); } }
         private double _CrossGuideMinCoverageRatio = 0.02;
 
@@ -1122,8 +1123,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private static string BuildMeasureResultErrorMessage(MeasureResultImgModel result)
         {
-            string message = string.IsNullOrWhiteSpace(result.Result) ? "未知错误" : result.Result;
-            return $"数据库失败记录 Id:{result.Id}, ResultCode:{result.ResultCode}, Message:{message}";
+            string message = string.IsNullOrWhiteSpace(result.Result) ? Properties.Resources.Camera_UnknownError : result.Result;
+            return string.Format(Properties.Resources.Camera_DatabaseFailureRecord, result.Id, result.ResultCode, message);
         }
 
         private async void HandleCaptureFail(string? message, bool refreshResults = true)
@@ -1133,8 +1134,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 View.SearchAll();
             }
 
-            string errorMessage = string.IsNullOrWhiteSpace(message) ? "取图失败" : message;
-            string prompt = errorMessage + Environment.NewLine + Properties.Resources.TryRestartService + Environment.NewLine + "是否重启服务？";
+            string errorMessage = string.IsNullOrWhiteSpace(message) ? Properties.Resources.Camera_CaptureFailed : message;
+            string prompt = errorMessage + Environment.NewLine + Properties.Resources.TryRestartService + Environment.NewLine + Properties.Resources.Camera_ConfirmRestartService;
             if (MessageBox.Show(Application.Current.GetActiveWindow(), prompt, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 try
@@ -1841,7 +1842,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     PoiImageViewComponent.IsTemplateSupportedRuntimeKey,
                     isSupported,
                     nameof(DisplayCamera),
-                    "本地视频模式是否允许选择 POI 模板");
+                    Properties.Resources.Camera_LocalVideoPoiTemplateSupport);
                 imageView.ImageShow.RaiseImageInitialized();
             }
 

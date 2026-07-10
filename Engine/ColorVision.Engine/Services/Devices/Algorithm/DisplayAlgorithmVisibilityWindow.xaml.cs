@@ -15,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private readonly DisplayAlgorithmVisibilityConfig _config;
 
         public string Name { get; set; }
+        public string DefaultDisplayName { get; set; }
         public string Group { get; set; }
         public int DefaultOrder { get; set; }
 
@@ -40,17 +41,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public string DisplayName
         {
-            get => _config.GetNameOverride(Name);
+            get => _config.GetNameOverride(Name, DefaultDisplayName);
             set
             {
-                _config.SetNameOverride(Name, value);
+                _config.SetNameOverride(Name, value == DefaultDisplayName ? Name : value);
                 OnPropertyChanged();
             }
         }
 
-        public AlgorithmVisibilityItem(string name, string group, int defaultOrder, DisplayAlgorithmVisibilityConfig config)
+        public AlgorithmVisibilityItem(string name, string displayName, string group, int defaultOrder, DisplayAlgorithmVisibilityConfig config)
         {
             Name = name;
+            DefaultDisplayName = displayName;
             Group = group;
             DefaultOrder = defaultOrder;
             _config = config;
@@ -83,13 +85,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     var attr = type.GetCustomAttribute<DisplayAlgorithmAttribute>();
                     if (attr != null)
                     {
-                        AlgorithmItems.Add(new AlgorithmVisibilityItem(attr.Name, attr.Group, attr.Order, config));
+                        AlgorithmItems.Add(new AlgorithmVisibilityItem(attr.Name, attr.DisplayName, attr.Group, attr.Order, config));
                     }
                 }
             }
 
             var sorted = new ObservableCollection<AlgorithmVisibilityItem>(
-                AlgorithmItems.OrderBy(a => a.Group).ThenBy(a => a.Order).ThenBy(a => a.Name));
+                AlgorithmItems.OrderBy(a => a.Group).ThenBy(a => a.Order).ThenBy(a => a.DisplayName));
             AlgorithmItems = sorted;
 
             AlgorithmListView.ItemsSource = AlgorithmItems;

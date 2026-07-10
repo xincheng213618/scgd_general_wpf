@@ -15,8 +15,8 @@
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="2">
             <Button Content="{x:Static properties:Resources.AddCmd}" Command="{Binding CreateCommand}"/>
-            <CheckBox Margin="12,0,0,0" VerticalAlignment="Center" Content="显示预览" IsChecked="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=IsCommandPreviewVisible}"/>
-            <CheckBox Margin="12,0,0,0" VerticalAlignment="Center" Content="控制字符用名称" IsChecked="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=UseControlNamesInBracketText}"/>
+            <CheckBox Margin="12,0,0,0" VerticalAlignment="Center" Content="{x:Static properties:Resources.Sensor_ShowPreview}" IsChecked="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=IsCommandPreviewVisible}"/>
+            <CheckBox Margin="12,0,0,0" VerticalAlignment="Center" Content="{x:Static properties:Resources.Sensor_UseControlCharacterNames}" IsChecked="{Binding Source={x:Static local:EditTemplateSensor.Config}, Path=UseControlNamesInBracketText}"/>
         </StackPanel>
         <ListView x:Name="ListView1" Grid.Row="1" Padding="5,0" ItemsSource="{Binding SensorCommands}"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
             <ListView.Resources>
@@ -55,7 +55,7 @@
                                             <ComboBox x:Name="ComboBoxType" Initialized="ComboBoxType_Initialized" SelectedValue="{Binding SensorCmdType}" Style="{StaticResource ComboBox.Small}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,0,0,5">
-                                            <TextBlock Text="括号格式" Width="60"/>
+                                            <TextBlock Text="{x:Static properties:Resources.Sensor_BracketFormat}" Width="60"/>
                                             <Grid>
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto"/>
@@ -63,10 +63,10 @@
                                                 </Grid.RowDefinitions>
                                                 <TextBox Height="42" Padding="5" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" Style="{StaticResource TextBox.Small}" Text="{Binding BracketText, UpdateSourceTrigger=PropertyChanged}"/>
                                                 <WrapPanel Grid.Row="1" Margin="0,4,0,0">
-                                                    <Button Content="转发送" Command="{Binding BracketTextToRequestCommand}" Margin="0,0,5,0"/>
-                                                    <Button Content="转返回" Command="{Binding BracketTextToResponseCommand}" Margin="0,0,5,0"/>
-                                                    <Button Content="发送回显" Command="{Binding RequestToBracketTextCommand}" Margin="0,0,5,0"/>
-                                                    <Button Content="返回回显" Command="{Binding ResponseToBracketTextCommand}" Margin="0,0,5,0"/>
+                                                    <Button Content="{x:Static properties:Resources.Sensor_ConvertToRequest}" Command="{Binding BracketTextToRequestCommand}" Margin="0,0,5,0"/>
+                                                    <Button Content="{x:Static properties:Resources.Sensor_ConvertToResponse}" Command="{Binding BracketTextToResponseCommand}" Margin="0,0,5,0"/>
+                                                    <Button Content="{x:Static properties:Resources.Sensor_RequestEcho}" Command="{Binding RequestToBracketTextCommand}" Margin="0,0,5,0"/>
+                                                    <Button Content="{x:Static properties:Resources.Sensor_ResponseEcho}" Command="{Binding ResponseToBracketTextCommand}" Margin="0,0,5,0"/>
                                                     <TextBlock Text="{Binding ConvertStatus}" VerticalAlignment="Center"/>
                                                 </WrapPanel>
                                             </Grid>

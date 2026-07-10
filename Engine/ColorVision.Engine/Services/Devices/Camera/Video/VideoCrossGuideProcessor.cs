@@ -243,13 +243,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             Rect displayRoi = TransformRoiToDisplay(sourceRoi, frameWidth, frameHeight, request.Transform);
 
             if (frame.pData == IntPtr.Zero || frameWidth <= 0 || frameHeight <= 0 || frame.cols <= 0 || frame.rows <= 0 || frame.channels <= 0 || frame.depth <= 0)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, "无有效视频帧");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_NoValidFrame);
 
             if (sourceRoi.Width <= 2 || sourceRoi.Height <= 2)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, "ROI 无效");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_InvalidRoi);
 
             if (frame.depth != 8 && frame.depth != 16)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, $"暂不支持 {frame.depth}bit 视频帧");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, string.Format(Properties.Resources.VideoCrossGuide_UnsupportedBitDepth, frame.depth));
 
             double thresholdRatio = Clamp(request.ThresholdRatio, 0.05, 0.95);
             double minCoverageRatio = Clamp(request.MinCoverageRatio, 0.01, 0.95);
@@ -257,7 +257,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             RoiRect localRoi = new(0, 0, frame.cols, frame.rows);
             double maxGray = FindMaxGray(frame, localRoi);
             if (maxGray < 8)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, "亮度过低，未找到十字");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_CrossNotFoundLowBrightness);
 
             double threshold = Math.Max(4, maxGray * thresholdRatio);
             double[] rowSum = new double[localRoi.Height];
@@ -271,7 +271,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             int rowPeak = IndexOfMax(rowSum);
             int columnPeak = IndexOfMax(columnSum);
             if (rowPeak < 0 || columnPeak < 0 || rowSum[rowPeak] <= 0 || columnSum[columnPeak] <= 0)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, "未找到足够亮的十字线");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_BrightCrossLinesNotFound);
 
             double rowCoverage = (double)rowHits[rowPeak] / localRoi.Width;
             double columnCoverage = (double)columnHits[columnPeak] / localRoi.Height;
@@ -283,7 +283,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             AngleEstimate horizontalAngle = EstimateLineAngle(brightPixels, localCenterX, localCenterY, 0);
             AngleEstimate verticalAngle = EstimateLineAngle(brightPixels, localCenterX, localCenterY, 90);
             if (!horizontalAngle.Found && !verticalAngle.Found && rowCoverage < minCoverageRatio && columnCoverage < minCoverageRatio)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, $"亮线覆盖不足 行:{rowCoverage:P0} 列:{columnCoverage:P0}");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, string.Format(Properties.Resources.VideoCrossGuide_InsufficientCoverage, rowCoverage, columnCoverage));
 
             double rotationZDeg = ResolveRotationZ(horizontalAngle, verticalAngle);
             double displayRotationZDeg = TransformAngleToDisplay(rotationZDeg, request.Transform);

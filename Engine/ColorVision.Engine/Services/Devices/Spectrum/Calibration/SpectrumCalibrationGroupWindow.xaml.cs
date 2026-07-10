@@ -50,9 +50,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
                 .Select(a => new CfwServiceOption(a.Code, string.IsNullOrWhiteSpace(a.Name) ? a.Code : $"{a.Name} ({a.Code})"))
                 .ToList();
 
-            options.Insert(0, new CfwServiceOption(string.Empty, "未选择"));
+            options.Insert(0, new CfwServiceOption(string.Empty, Properties.Resources.SpectrumCalibrationGroups_NotSelected));
             if (!string.IsNullOrWhiteSpace(currentCode) && options.All(a => a.Code != currentCode))
-                options.Add(new CfwServiceOption(currentCode, $"{currentCode} (未加载)"));
+                options.Add(new CfwServiceOption(currentCode, string.Format(Properties.Resources.SpectrumCalibrationGroups_NotLoadedFormat, currentCode)));
 
             ComboBoxCfwService.ItemsSource = options;
             ComboBoxCfwService.SelectedValue = currentCode;
@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
 
         private void RefreshNDHoleOptions()
         {
-            var options = new List<NDHoleOption> { new NDHoleOption(-1, "无关联") };
+            var options = new List<NDHoleOption> { new NDHoleOption(-1, Properties.Resources.SpectrumCalibrationGroups_NoAssociation) };
             options.AddRange(_device.GetNDHoleMappings().OrderBy(a => a.HoleIndex).Select(a => new NDHoleOption(a.HoleIndex, $"{a.HoleIndex}: {a.HoleName}")));
             ComboBoxNDHole.ItemsSource = options;
         }
@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
         {
             if (_device.Config.CalibrationGroups.Count <= 1)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "至少保留一个分组", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SpectrumCalibrationGroups_KeepAtLeastOneGroup, "ColorVision");
                 return;
             }
 
@@ -157,7 +157,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
 
             using var dialog = new System.Windows.Forms.OpenFileDialog
             {
-                Filter = "DAT files (*.dat)|*.dat|All Files|*.*",
+                Filter = Properties.Resources.SpectrumCalibrationGroups_DatFileFilter,
                 RestoreDirectory = true,
             };
 

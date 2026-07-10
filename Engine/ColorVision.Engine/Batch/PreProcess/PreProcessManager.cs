@@ -157,7 +157,7 @@ namespace ColorVision.Engine.Batch
         public int EnabledCount => Processes.Count(p => p.IsEnabled);
 
         public string LastSaveStatus { get => _LastSaveStatus; private set { _LastSaveStatus = value; OnPropertyChanged(); } }
-        private string _LastSaveStatus = "尚未保存";
+        private string _LastSaveStatus = Properties.Resources.Flow_PreProcess_NotSaved;
 
         public PreProcessManager()
         {
@@ -415,7 +415,7 @@ namespace ColorVision.Engine.Batch
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
                 if (!File.Exists(PersistFilePath))
                 {
-                    LastSaveStatus = "未找到配置文件";
+                    LastSaveStatus = Properties.Resources.Flow_PreProcess_ConfigNotFound;
                     return false;
                 }
 
@@ -456,14 +456,14 @@ namespace ColorVision.Engine.Batch
 
                 SelectedProcess = Processes.FirstOrDefault();
                 LastSaveStatus = skippedCount > 0
-                    ? $"已加载配置 {DateTime.Now:HH:mm:ss}，忽略 {skippedCount} 个不可用动作"
-                    : $"已加载配置 {DateTime.Now:HH:mm:ss}";
+                    ? string.Format(Properties.Resources.Flow_PreProcess_ConfigLoadedWithSkipped, DateTime.Now.ToString("HH:mm:ss"), skippedCount)
+                    : string.Format(Properties.Resources.Flow_PreProcess_ConfigLoaded, DateTime.Now.ToString("HH:mm:ss"));
                 return true;
             }
             catch (Exception ex)
             {
                 log.Error("加载预处理配置失败", ex);
-                LastSaveStatus = "加载配置失败";
+                LastSaveStatus = Properties.Resources.Flow_PreProcess_ConfigLoadFailed;
                 return true;
             }
             finally
@@ -560,12 +560,12 @@ namespace ColorVision.Engine.Batch
 
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);
-                LastSaveStatus = $"已自动保存 {DateTime.Now:HH:mm:ss}";
+                LastSaveStatus = string.Format(Properties.Resources.Flow_PreProcess_AutoSaved, DateTime.Now.ToString("HH:mm:ss"));
             }
             catch (Exception ex)
             {
                 log.Error("保存预处理器配置失败", ex);
-                LastSaveStatus = "保存失败，请查看日志";
+                LastSaveStatus = Properties.Resources.Flow_PreProcess_SaveFailedCheckLog;
             }
         }
 

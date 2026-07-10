@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Templates
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
                 ITemplate.Save();
-                HandyControl.Controls.Growl.SuccessGlobal(Title + "保存成功");
+                HandyControl.Controls.Growl.SuccessGlobal(string.Format(Properties.Resources.TemplateEditor_SaveSuccess, Title));
             }, (s, e) => e.CanExecute = true));
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
             MainGrid.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
@@ -284,7 +284,7 @@ namespace ColorVision.Engine.Templates
         }
         private void Delete()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板,删除后无法恢复!", "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateEditor_ConfirmDelete, ITemplate.Code), "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
             {
                 int index = ListView1.SelectedIndex;
                 ITemplate.Delete(ListView1.SelectedIndex);
@@ -303,7 +303,7 @@ namespace ColorVision.Engine.Templates
             }
             else
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
             }
         }
 
@@ -319,7 +319,7 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex < 0)
             {
-                MessageBox1.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox1.Show(Properties.Resources.TemplateEditor_SelectFlowToExport, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             ITemplate.Export(ListView1.SelectedIndex);
@@ -363,7 +363,7 @@ namespace ColorVision.Engine.Templates
                     if (filteredResults.Count == 0)
                     {
                         SearchNoneText.Visibility = Visibility.Visible;
-                        SearchNoneText.Text = $"未找到{textBox.Text}相关模板";
+                        SearchNoneText.Text = string.Format(Properties.Resources.TemplateEditor_NoSearchResults, textBox.Text);
                     }
                     else
                     {
@@ -390,7 +390,7 @@ namespace ColorVision.Engine.Templates
             int selectedIndex = GetSelectedTemplateSourceIndex();
             if (selectedIndex < 0)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
                 return;
             }
 
@@ -434,7 +434,7 @@ namespace ColorVision.Engine.Templates
             }
             else
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
             }
 
 
@@ -487,7 +487,7 @@ namespace ColorVision.Engine.Templates
 
             if (selectedEntries.Count == 0)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
                 return;
             }
 
@@ -510,11 +510,11 @@ namespace ColorVision.Engine.Templates
                     sampleLibrary.SaveFromTemplate(ITemplate, entry.Index, saveWindow.GroupName, sampleName, saveWindow.Description);
                 }
 
-                HandyControl.Controls.Growl.SuccessGlobal($"已保存 {selectedEntries.Count} 个模板样例");
+                HandyControl.Controls.Growl.SuccessGlobal(string.Format(Properties.Resources.TemplateEditor_SamplesSaved, selectedEntries.Count));
             }
             catch (Exception ex)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), $"保存模板样例失败: {ex.Message}", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateEditor_SaveSamplesFailed, ex.Message), "ColorVision");
             }
         }
 
@@ -524,7 +524,7 @@ namespace ColorVision.Engine.Templates
             if (ITemplate.SwapTemplateOrder(currentIndex, newIndex))
             {
                 ListView1.SelectedIndex = newIndex;
-                HandyControl.Controls.Growl.SuccessGlobal("模板顺序已交换");
+                HandyControl.Controls.Growl.SuccessGlobal(Properties.Resources.TemplateEditor_OrderSwapped);
             }
             else
             {
@@ -536,11 +536,11 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex > 0)
             {
-                SwapTemplateAndUpdateUI(ListView1.SelectedIndex - 1, "交换失败");
+                SwapTemplateAndUpdateUI(ListView1.SelectedIndex - 1, Properties.Resources.TemplateEditor_SwapFailed);
             }
             else
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "已是第一个，无法上移", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_AlreadyFirst, "ColorVision");
             }
         }
 
@@ -548,11 +548,11 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex < ITemplate.Count - 1 && ListView1.SelectedIndex >= 0)
             {
-                SwapTemplateAndUpdateUI(ListView1.SelectedIndex + 1, "交换失败");
+                SwapTemplateAndUpdateUI(ListView1.SelectedIndex + 1, Properties.Resources.TemplateEditor_SwapFailed);
             }
             else
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "已是最后一个，无法下移", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_AlreadyLast, "ColorVision");
             }
         }
 
@@ -560,13 +560,13 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex < 0)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SelectFirst, "ColorVision");
                 return;
             }
 
             if (MessageBox1.Show(
                     Application.Current.GetActiveWindow(),
-                    "将把当前模板的 JSON 设置为默认参数，新建或重置模板时会使用该 JSON。是否继续？",
+                    Properties.Resources.TemplateEditor_ConfirmSetJsonAsDefault,
                     "ColorVision",
                     MessageBoxButton.OKCancel,
                     MessageBoxImage.Warning) != MessageBoxResult.OK)

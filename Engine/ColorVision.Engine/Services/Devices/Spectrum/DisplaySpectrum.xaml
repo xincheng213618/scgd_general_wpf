@@ -55,7 +55,7 @@
                         <Button x:Name="btn_connect" Margin="0,0,0,2" Click="Button_Click_Open" Content="{x:Static properties:Resources.Open}" />
                     </DockPanel>
                     <DockPanel Margin="0,0,0,5">
-                        <Button Width="24" Height="24" Margin="5,0,0,0" Padding="2" DockPanel.Dock="Right" Command="{Binding OpenCalibrationGroupWindowCommand}" ToolTip="标定文件分组">
+                        <Button Width="24" Height="24" Margin="5,0,0,0" Padding="2" DockPanel.Dock="Right" Command="{Binding OpenCalibrationGroupWindowCommand}" ToolTip="{x:Static properties:Resources.SpectrumCalibrationGroups_Title}">
                             <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE713;" />
                         </Button>
                         <ComboBox x:Name="ComboBoxCalibrationGroups"

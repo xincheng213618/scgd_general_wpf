@@ -81,12 +81,6 @@ namespace FlowEngineLib.Properties {
             }
         }
 
-        internal static string K__5 {
-            get {
-                return ResourceManager.GetString("03_3 第三方算法", resourceCulture);
-            }
-        }
-
         internal static string KB {
             get {
                 return ResourceManager.GetString("03_4 KB", resourceCulture);
@@ -1011,12 +1005,6 @@ namespace FlowEngineLib.Properties {
             }
         }
 
-        internal static string ID {
-            get {
-                return ResourceManager.GetString("参数模板ID", resourceCulture);
-            }
-        }
-
         internal static string K__32 {
             get {
                 return ResourceManager.GetString("双目融合", resourceCulture);
@@ -1122,12 +1110,6 @@ namespace FlowEngineLib.Properties {
         internal static string K__47 {
             get {
                 return ResourceManager.GetString("图像格式", resourceCulture);
-            }
-        }
-
-        internal static string K__48 {
-            get {
-                return ResourceManager.GetString("图像水平翻转", resourceCulture);
             }
         }
 
@@ -1284,12 +1266,6 @@ namespace FlowEngineLib.Properties {
         internal static string K__73 {
             get {
                 return ResourceManager.GetString("最大超时", resourceCulture);
-            }
-        }
-
-        internal static string K__74 {
-            get {
-                return ResourceManager.GetString("最小超时", resourceCulture);
             }
         }
 
@@ -1452,12 +1428,6 @@ namespace FlowEngineLib.Properties {
         internal static string K__98 {
             get {
                 return ResourceManager.GetString("物理设备控制", resourceCulture);
-            }
-        }
-
-        internal static string K__99 {
-            get {
-                return ResourceManager.GetString("状态触发", resourceCulture);
             }
         }
 

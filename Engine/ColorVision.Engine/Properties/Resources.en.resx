@@ -73,9 +73,6 @@
   <data name="Video" xml:space="preserve">
     <value>Video Mode</value>
   </data>
-  <data name="UserPwd" xml:space="preserve">
-    <value>Password</value>
-  </data>
   <data name="UserName" xml:space="preserve">
     <value>Username</value>
   </data>
@@ -288,9 +285,6 @@
     <value>Loading</value>
   </data>
 
-  <data name="Layers" xml:space="preserve">
-    <value>Layers</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Started successfully</value>
   </data>
@@ -304,9 +298,6 @@
 
   <data name="Import" xml:space="preserve">
     <value>Import</value>
-  </data>
-  <data name="ImageSource" xml:space="preserve">
-    <value>Image Source</value>
   </data>
   <data name="ImageInfo" xml:space="preserve">
     <value>Image Info</value>
@@ -503,17 +494,8 @@
   </data>
 
 
-  <data name="InsertAtBeginning" xml:space="preserve">
-    <value>Insert at Beginning</value>
-  </data>
-  <data name="AutoRefreshView" xml:space="preserve">
-    <value>Auto-refresh View</value>
-  </data>
   <data name="IsShowListView" xml:space="preserve">
     <value>Show List View</value>
-  </data>
-  <data name="ViewImageReadDelay" xml:space="preserve">
-    <value>Image Read Delay</value>
   </data>
   <data name="Threshold" xml:space="preserve">
     <value>Threshold</value>
@@ -625,9 +607,6 @@
 
   <data name="FlowTemplate" xml:space="preserve">
     <value>Flow Template</value>
-  </data>
-  <data name="SearchResults" xml:space="preserve">
-    <value>Search Results</value>
   </data>
   <data name="FlowResultManagement" xml:space="preserve">
     <value>Flow Result Management</value>
@@ -822,9 +801,6 @@
   <data name="CategoryModel" xml:space="preserve">
     <value>Category Model</value>
   </data>
-  <data name="SerialPortCom" xml:space="preserve">
-    <value>Serial communication</value>
-  </data>
   <data name="PowerOn" xml:space="preserve">
     <value>Power On</value>
   </data>
@@ -905,12 +881,6 @@
   </data>
   <data name="StartIntegrationTime_Ms" xml:space="preserve">
     <value>Starting integration time (ms)</value>
-  </data>
-  <data name="OpenCmd" xml:space="preserve">
-    <value>Open command</value>
-  </data>
-  <data name="CloseCmd" xml:space="preserve">
-    <value>Close command</value>
   </data>
 
   <data name="CalibrationFile" xml:space="preserve">
@@ -1433,9 +1403,6 @@
   <data name="SortByType" xml:space="preserve">
     <value>Sort by Type</value>
   </data>
-  <data name="CreateToPOI" xml:space="preserve">
-    <value>Create as POI</value>
-  </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>Select File in Folder</value>
   </data>
@@ -1714,16 +1681,10 @@
 
 
 
-  <data name="ImageFileNotFound" xml:space="preserve">
-    <value>Image file not found</value>
-  </data>
 
 
 
 
-  <data name="AlgorithmView" xml:space="preserve">
-    <value>Algorithm View</value>
-  </data>
   <data name="StartTimeMs" xml:space="preserve">
     <value>Start time (ms)</value>
   </data>
@@ -1812,9 +1773,6 @@
   <data name="DeleteSelected" xml:space="preserve">
     <value>Delete selected</value>
   </data>
-  <data name="HandleClass" xml:space="preserve">
-    <value>ProcessingClass</value>
-  </data>
   <data name="Description" xml:space="preserve">
     <value>Describe</value>
   </data>
@@ -1861,12 +1819,6 @@
   <data name="Compress" xml:space="preserve">
     <value>Compress</value>
   </data>
-  <data name="MqttConfig" xml:space="preserve">
-    <value>Mqtt configuration</value>
-  </data>
-  <data name="ConfigureMqttConnection_DefaultsToLocalOptional" xml:space="preserve">
-    <value>Configure the MQTT connection; the default is a local connection, which can be left unconfigured.</value>
-  </data>
   <data name="SelectSaveLocation" xml:space="preserve">
     <value>Choose the location to save.</value>
   </data>
@@ -1901,9 +1853,6 @@
     <value>Toggle List</value>
   </data>
 
-  <data name="License" xml:space="preserve">
-    <value>License</value>
-  </data>
   <data name="ModifyLicense" xml:space="preserve">
     <value>Modify License</value>
   </data>
@@ -2213,32 +2162,14 @@
   <data name="ExposureTemplate" xml:space="preserve">
     <value>Exposure Template</value>
   </data>
-  <data name="POITemplate" xml:space="preserve">
-    <value>POI Template</value>
-  </data>
   <data name="POIFilter" xml:space="preserve">
     <value>POI Filter</value>
   </data>
   <data name="POIRevise" xml:space="preserve">
     <value>POI Correction</value>
   </data>
-  <data name="POIReviseCalib" xml:space="preserve">
-    <value>POI Correction Calibration</value>
-  </data>
-  <data name="FileOutputTemplate" xml:space="preserve">
-    <value>File Output Template</value>
-  </data>
   <data name="BuildTemplate" xml:space="preserve">
     <value>Build Template</value>
-  </data>
-  <data name="BuildROI" xml:space="preserve">
-    <value>Build ROI</value>
-  </data>
-  <data name="ParamTemplate" xml:space="preserve">
-    <value>Parameter Template</value>
-  </data>
-  <data name="SMUParamSetting" xml:space="preserve">
-    <value>SMU Param Settings</value>
   </data>
   <data name="SubPixel" xml:space="preserve">
     <value>Sub-pixel</value>
@@ -2630,9 +2561,6 @@
   <data name="BasicParamSettings" xml:space="preserve">
     <value>Basic Parameter Settings</value>
   </data>
-  <data name="BatchNumberCannotBeEmpty" xml:space="preserve">
-    <value>Batch number cannot be empty, enter first</value>
-  </data>
 
   <data name="BindDLL" xml:space="preserve">
     <value>Bind DLL</value>
@@ -2826,9 +2754,6 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="ChannelParamSettings" xml:space="preserve">
     <value>Channel Parameter Settings</value>
   </data>
-  <data name="CloseCamera" xml:space="preserve">
-    <value>Close Camera</value>
-  </data>
   <data name="CloseCameraTimeoutCheckLog" xml:space="preserve">
     <value>Close camera timeout, check logs</value>
   </data>
@@ -2862,9 +2787,6 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   </data>
   <data name="DebugMode" xml:space="preserve">
     <value>Debug mode</value>
-  </data>
-  <data name="DecimalPlaces" xml:space="preserve">
-    <value>Decimal Places:</value>
   </data>
   <data name="DescriptionAngleShiftShort" xml:space="preserve">
     <value>Angle Correction</value>
@@ -2987,9 +2909,6 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   <data name="FileServiceCleanupComplete" xml:space="preserve">
     <value>File Service Cleanup Complete</value>
   </data>
-  <data name="FontSizeLabel" xml:space="preserve">
-    <value>Font Size:</value>
-  </data>
   <data name="FrameSelect" xml:space="preserve">
     <value>Frame Select</value>
   </data>
@@ -3017,9 +2936,6 @@ Configuration: Binary format (V0/V1 header + float factor matrix)</value>
   </data>
   <data name="HeartbeatTimeLabel" xml:space="preserve">
     <value>Heartbeat Time</value>
-  </data>
-  <data name="IgniteMeasurement" xml:space="preserve">
-    <value>Ignition Measurement</value>
   </data>
   <data name="ImageFileCannotBeEmpty" xml:space="preserve">
     <value>Image file cannot be empty, select image first</value>
@@ -3120,9 +3036,6 @@ Please check serial port settings.</value>
   <data name="LimitEnd" xml:space="preserve">
     <value>End Value</value>
   </data>
-  <data name="LineWidth" xml:space="preserve">
-    <value>Line Width</value>
-  </data>
   <data name="LocalCamera" xml:space="preserve">
     <value>Local Camera</value>
   </data>
@@ -3158,9 +3071,6 @@ Please check serial port settings.</value>
     <value>NoDeviceDetected</value>
   </data>
 
-  <data name="OpenCamera" xml:space="preserve">
-    <value>Open Camera</value>
-  </data>
 
   <data name="OpenSourceMeter" xml:space="preserve">
     <value>Open Source Meter</value>
@@ -3176,16 +3086,10 @@ Please check serial port settings.</value>
   </data>
 
 
-  <data name="PortConfigError" xml:space="preserve">
-    <value>PortConfigError</value>
-  </data>
 
 
   <data name="RadiantFlux" xml:space="preserve">
     <value>RadiantFlux(W)</value>
-  </data>
-  <data name="ReRendering" xml:space="preserve">
-    <value>ReRendering</value>
   </data>
   <data name="RegisterAddress" xml:space="preserve">
     <value>Register Address</value>
@@ -3194,28 +3098,28 @@ Please check serial port settings.</value>
     <value>Cannot reset, check DB config</value>
   </data>
   <data name="SMUKeithley2450MaxCurrentAboveThreshold" xml:space="preserve">
-    <value>Keithley 2450: when output voltage &gt;20V, max output current is 100mA. Please adjust measurement parameters and retry!</value>
+    <value>Keithley 2450: when output voltage &gt;{0}V, max output current is {1}mA. Please adjust measurement parameters and retry!</value>
   </data>
   <data name="SMUKeithley2450MaxCurrentBelowThreshold" xml:space="preserve">
-    <value>Keithley 2450: when output voltage &lt;20V, max output current is 1A. Please adjust measurement parameters and retry!</value>
+    <value>Keithley 2450: when output voltage &lt;{0}V, max output current is {1}A. Please adjust measurement parameters and retry!</value>
   </data>
   <data name="SMUKeithley2450MaxVoltage" xml:space="preserve">
-    <value>Keithley 2450: max output voltage is 200V. Please adjust measurement parameters and retry!</value>
+    <value>Keithley 2450: max output voltage is {0}V. Please adjust measurement parameters and retry!</value>
   </data>
   <data name="SMUKeithley2600MaxCurrentAboveThreshold" xml:space="preserve">
-    <value>Keithley 2600: when output voltage &gt;6V, max output current is 1A. Please adjust measurement parameters and retry!</value>
+    <value>Keithley 2600: when output voltage &gt;{0}V, max output current is {1}A. Please adjust measurement parameters and retry!</value>
   </data>
   <data name="SMUKeithley2600MaxCurrentBelowThreshold" xml:space="preserve">
-    <value>Keithley 2600: when output voltage &lt;6V, max output current is 3A. Please adjust measurement parameters and retry!</value>
+    <value>Keithley 2600: when output voltage &lt;{0}V, max output current is {1}A. Please adjust measurement parameters and retry!</value>
   </data>
   <data name="SMUKeithley2600MaxVoltage" xml:space="preserve">
-    <value>Keithley 2600: max output voltage is 40V. Please adjust measurement parameters and retry!</value>
+    <value>Keithley 2600: max output voltage is {0}V. Please adjust measurement parameters and retry!</value>
   </data>
   <data name="SMUPreciseS100MaxCurrentBelowThreshold" xml:space="preserve">
-    <value>Precise S100: when output voltage &lt;30V, max output current is 1A. Please adjust measurement parameters and retry!</value>
+    <value>Precise S100: when output voltage &lt;{0}V, max output current is {1}A. Please adjust measurement parameters and retry!</value>
   </data>
   <data name="SMUPreciseS100MaxVoltage" xml:space="preserve">
-    <value>Precise S100: max output voltage is 30V. Please adjust measurement parameters and retry!</value>
+    <value>Precise S100: max output voltage is {0}V. Please adjust measurement parameters and retry!</value>
   </data>
 
   <data name="SaveChart" xml:space="preserve">
@@ -3282,9 +3186,6 @@ Please close camera or other programs using this serial port, or check device co
     <value>Show Center Line</value>
   </data>
 
-  <data name="SourceMeterSwitch" xml:space="preserve">
-    <value>SourceMeterSwitch</value>
-  </data>
 
   <data name="SwapRB" xml:space="preserve">
     <value>Swap R/B</value>
@@ -3376,12 +3277,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="TryRestartService" xml:space="preserve">
     <value>Try restarting service</value>
   </data>
-  <data name="VIScan" xml:space="preserve">
-    <value>VIScan</value>
-  </data>
-  <data name="VideoCaptureMode" xml:space="preserve">
-    <value>VideoCaptureMode</value>
-  </data>
   <data name="VideoCaptureTimeoutCheckLog" xml:space="preserve">
     <value>VideoCaptureTimeoutCheckLog</value>
   </data>
@@ -3407,12 +3302,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_ImportTemplateAsModule" xml:space="preserve">
     <value>Import Template as Module</value>
   </data>
-  <data name="Flow_Module" xml:space="preserve">
-    <value> Module</value>
-  </data>
-  <data name="Flow_NewFlow" xml:space="preserve">
-    <value>New Flow</value>
-  </data>
   <data name="Flow_NoFlowParamSelected" xml:space="preserve">
     <value>No flow parameter selected, cannot save</value>
   </data>
@@ -3421,9 +3310,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="Flow_NodeTimeAnalysis" xml:space="preserve">
     <value>Node Time Analysis</value>
-  </data>
-  <data name="Flow_RunFlowFirst" xml:space="preserve">
-    <value>Please run the flow first</value>
   </data>
   <data name="Flow_SaveFailed" xml:space="preserve">
     <value>Save failed: {0}</value>
@@ -3437,20 +3323,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_PreProcess_SaveNow" xml:space="preserve">
     <value>Save Now</value>
   </data>
-  <data name="Flow_PreProcess_ProcessorCountFormat" xml:space="preserve">
-    <value>{0} processors</value>
-  </data>
-  <data name="Flow_PreProcess_EnabledCountFormat" xml:space="preserve">
-    <value>{0} enabled</value>
-  </data>
-  <data name="Flow_PreProcess_Processor" xml:space="preserve">
-    <value>Processor</value>
-  </data>
   <data name="Flow_PreProcess_AppliedTemplates" xml:space="preserve">
     <value>Applied Templates</value>
-  </data>
-  <data name="Flow_PreProcess_SelectProcessorToViewConfig" xml:space="preserve">
-    <value>Please select a preprocessor to view configuration</value>
   </data>
   <data name="Flow_PreProcess_EnabledStatus" xml:space="preserve">
     <value>Enabled</value>
@@ -3460,12 +3334,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="Flow_PreProcess_AllTemplates" xml:space="preserve">
     <value>All Templates</value>
-  </data>
-  <data name="Flow_PreProcess_ProcessorConfig" xml:space="preserve">
-    <value>Preprocessor Configuration</value>
-  </data>
-  <data name="Flow_PreProcess_Category" xml:space="preserve">
-    <value>Category</value>
   </data>
   <data name="Flow_MeasureBatch_PostProcessExecution" xml:space="preserve">
     <value>Post-Process Execution</value>
@@ -3922,15 +3790,6 @@ Please close camera or other programs using this serial port, or check device co
     <value>Select DAT File to Read</value>
   </data>
 
-  <data name="Engine_PG_DecimalPlaces" xml:space="preserve">
-    <value>Decimal Places</value>
-  </data>
-  <data name="Engine_PG_FontSize" xml:space="preserve">
-    <value>Font Size</value>
-  </data>
-  <data name="Engine_PG_PenThickness" xml:space="preserve">
-    <value>Pen Thickness</value>
-  </data>
 
   <data name="Engine_PG_Tag" xml:space="preserve">
     <value>Tag</value>
@@ -3972,13 +3831,7 @@ Please close camera or other programs using this serial port, or check device co
     <value>Show Plot</value>
   </data>
 
-  <data name="Engine_PG_TriggerSize" xml:space="preserve">
-    <value>Trigger Size</value>
-  </data>
 
-  <data name="Engine_PG_ApplyTemplate" xml:space="preserve">
-    <value>Apply Template</value>
-  </data>
   <data name="Engine_PG_SampleShape" xml:space="preserve">
     <value>Sample Shape</value>
   </data>
@@ -4521,5 +4374,248 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="DataCleanup" xml:space="preserve">
     <value>Data Cleanup</value>
+  </data>
+  <data name="Cache" xml:space="preserve"><value>Cache</value></data>
+  <data name="Camera_BrightnessThresholdRatio" xml:space="preserve"><value>Brightness threshold ratio</value></data>
+  <data name="Camera_CaptureFailed" xml:space="preserve"><value>Image capture failed</value></data>
+  <data name="Camera_ConfirmRestartService" xml:space="preserve"><value>Restart the service?</value></data>
+  <data name="Camera_CrossGuide" xml:space="preserve"><value>Crosshair guide</value></data>
+  <data name="Camera_CrossGuideRegion" xml:space="preserve"><value>Crosshair guide region</value></data>
+  <data name="Camera_DefaultRegion" xml:space="preserve"><value>Default region</value></data>
+  <data name="Camera_EnableCrossGuide" xml:space="preserve"><value>Enable crosshair guide</value></data>
+  <data name="Camera_MinCoverageRatio" xml:space="preserve"><value>Minimum coverage ratio</value></data>
+  <data name="Camera_RefreshIntervalMs" xml:space="preserve"><value>Refresh interval (ms)</value></data>
+  <data name="Camera_RoiRegion" xml:space="preserve"><value>ROI region</value></data>
+  <data name="Camera_StandardCenterX" xml:space="preserve"><value>Reference center X</value></data>
+  <data name="Camera_StandardCenterY" xml:space="preserve"><value>Reference center Y</value></data>
+  <data name="Camera_TolerancePx" xml:space="preserve"><value>Pass tolerance (px)</value></data>
+  <data name="Camera_UnknownError" xml:space="preserve"><value>Unknown error</value></data>
+  <data name="Channel" xml:space="preserve"><value>Channel</value></data>
+  <data name="Copilot_Ask" xml:space="preserve"><value>Ask Copilot</value></data>
+  <data name="Copilot_ContextNotReady" xml:space="preserve"><value>The current template context is not ready and cannot be sent to Copilot.</value></data>
+  <data name="Copilot_ContinueAnalysisPrompt" xml:space="preserve"><value>Continue analyzing the current content using the attached template snapshot.</value></data>
+  <data name="Copilot_DiagnoseTemplatePrompt" xml:space="preserve"><value>Using the attached template snapshot, check the current configuration for obvious anomalies, conflicting thresholds, or high-risk parameters. Explain your reasoning and suggest adjustments.</value></data>
+  <data name="Copilot_ExplainParametersPrompt" xml:space="preserve"><value>Using the attached template snapshot, explain each current JSON parameter, its typical impact range, and which parameter combinations should be considered together.</value></data>
+  <data name="Copilot_ExplainTemplatePrompt" xml:space="preserve"><value>Using the attached template snapshot, first explain the detection logic this template is intended for, then explain the main parameters and their relationships field by field.</value></data>
+  <data name="Copilot_PropertyEditorSwitchFailed" xml:space="preserve"><value>Failed to switch to the property editor: {0}&#13;&#10;&#13;&#10;Check that the JSON format is valid.</value></data>
+  <data name="Copilot_SendWithEllipsis" xml:space="preserve"><value>Send to Copilot...</value></data>
+  <data name="Copilot_TextEditorSwitchFailed" xml:space="preserve"><value>Failed to switch to the text editor: {0}</value></data>
+  <data name="Coverage" xml:space="preserve"><value>Coverage</value></data>
+  <data name="Error" xml:space="preserve"><value>Error</value></data>
+  <data name="FilterWheel_CalibrationGroups" xml:space="preserve"><value>Calibration groups</value></data>
+  <data name="FilterWheel_MaxExposure" xml:space="preserve"><value>Maximum exposure</value></data>
+  <data name="FilterWheel_MinExposure" xml:space="preserve"><value>Minimum exposure</value></data>
+  <data name="FilterWheel_NdDevice" xml:space="preserve"><value>ND device</value></data>
+  <data name="FilterWheel_NdPort" xml:space="preserve"><value>ND port</value></data>
+  <data name="FilterWheel_Rate" xml:space="preserve"><value>Ratio</value></data>
+  <data name="FilterWheel_ResetNd" xml:space="preserve"><value>Reset ND</value></data>
+  <data name="Flow_ConfirmRestartColorVisionServices" xml:space="preserve"><value>Restart the ColorVision services?</value></data>
+  <data name="Flow_PreProcess_ActionConfig" xml:space="preserve"><value>Action configuration</value></data>
+  <data name="Flow_PreProcess_ActionName" xml:space="preserve"><value>Action name</value></data>
+  <data name="Flow_PreProcess_Actions" xml:space="preserve"><value>Pre-process actions</value></data>
+  <data name="Flow_PreProcess_ActionSettings" xml:space="preserve"><value>Action settings</value></data>
+  <data name="Flow_PreProcess_AllTemplatesHint" xml:space="preserve"><value>Leave empty to apply to all templates. Separate multiple templates with commas or semicolons.</value></data>
+  <data name="Flow_PreProcess_AppliedTemplatesFormat" xml:space="preserve"><value>Applied templates: {0}</value></data>
+  <data name="Flow_PreProcess_AutoSaved" xml:space="preserve"><value>Automatically saved at {0}</value></data>
+  <data name="Flow_PreProcess_CategoryFormat" xml:space="preserve"><value>Category: {0}</value></data>
+  <data name="Flow_PreProcess_ConfigLoaded" xml:space="preserve"><value>Configuration loaded at {0}</value></data>
+  <data name="Flow_PreProcess_ConfigLoadedWithSkipped" xml:space="preserve"><value>Configuration loaded at {0}; skipped {1} unavailable action(s)</value></data>
+  <data name="Flow_PreProcess_ConfigLoadFailed" xml:space="preserve"><value>Failed to load configuration</value></data>
+  <data name="Flow_PreProcess_ConfigNotFound" xml:space="preserve"><value>Configuration file not found</value></data>
+  <data name="Flow_PreProcess_NotSaved" xml:space="preserve"><value>Not saved yet</value></data>
+  <data name="Flow_PreProcess_SaveFailedCheckLog" xml:space="preserve"><value>Save failed. Check the log.</value></data>
+  <data name="Flow_PreProcess_SelectAction" xml:space="preserve"><value>Select a pre-process action</value></data>
+  <data name="Flow_PreProcess_TypeFormat" xml:space="preserve"><value>Type: {0}</value></data>
+  <data name="Flow_RestartServiceVersionFormat" xml:space="preserve"><value>Restart {0}</value></data>
+  <data name="Flow_ShowDebugPropertiesTooltip" xml:space="preserve"><value>Show debug properties such as node ID, token, and device code</value></data>
+  <data name="Flow_StartServiceFailed" xml:space="preserve"><value>Failed to start {0}: {1}</value></data>
+  <data name="Flow_StopServiceFailed" xml:space="preserve"><value>Failed to stop {0}: {1}</value></data>
+  <data name="FullFrame" xml:space="preserve"><value>Full frame</value></data>
+  <data name="Interval" xml:space="preserve"><value>Interval</value></data>
+  <data name="OutputFile" xml:space="preserve"><value>Output file</value></data>
+  <data name="PG_ImageNumberTooltip" xml:space="preserve"><value>Specify an image number</value></data>
+  <data name="PG_NextImage" xml:space="preserve"><value>Next</value></data>
+  <data name="PG_NextImageTooltip" xml:space="preserve"><value>Next image</value></data>
+  <data name="PG_PreviousImage" xml:space="preserve"><value>Previous</value></data>
+  <data name="PG_PreviousImageTooltip" xml:space="preserve"><value>Previous image</value></data>
+  <data name="PG_SwitchImageTooltip" xml:space="preserve"><value>Switch to the specified image</value></data>
+  <data name="POI_SaveAsRequiresSavedData" xml:space="preserve"><value>Save the data before using Save As; unsaved data cannot be copied yet</value></data>
+  <data name="POITransformTooltip" xml:space="preserve"><value>Batch-adjust POI positions and sizes</value></data>
+  <data name="PreProcess_Arguments" xml:space="preserve"><value>Arguments</value></data>
+  <data name="PreProcess_ArgumentsDesc" xml:space="preserve"><value>Arguments passed to the script or executable. Supports {FlowName}, {SerialNumber}, and {SN} placeholders.</value></data>
+  <data name="PreProcess_CacheCleanupDesc" xml:space="preserve"><value>Delete the oldest cache files by time when the cache exceeds its limit</value></data>
+  <data name="PreProcess_CacheCleanupGroup" xml:space="preserve"><value>Cache cleanup</value></data>
+  <data name="PreProcess_CacheCleanupName" xml:space="preserve"><value>Cache size cleanup</value></data>
+  <data name="PreProcess_CacheFileTypes" xml:space="preserve"><value>Cache file types</value></data>
+  <data name="PreProcess_CacheFileTypesDesc" xml:space="preserve"><value>Only clean files with these extensions. Leave empty for all files.</value></data>
+  <data name="PreProcess_CacheFolders" xml:space="preserve"><value>Cache folders</value></data>
+  <data name="PreProcess_CacheFoldersDesc" xml:space="preserve"><value>Cache folders to monitor and clean. Multiple folders can be configured.</value></data>
+  <data name="PreProcess_CacheLimit" xml:space="preserve"><value>Cache limit</value></data>
+  <data name="PreProcess_CacheLimitDesc" xml:space="preserve"><value>Start cleanup when the total cache size exceeds this value.</value></data>
+  <data name="PreProcess_CleanupTarget" xml:space="preserve"><value>Clean down to</value></data>
+  <data name="PreProcess_CleanupTargetDesc" xml:space="preserve"><value>After cleanup starts, delete the oldest cache files until the cache is below this value.</value></data>
+  <data name="PreProcess_CommandText" xml:space="preserve"><value>Command text</value></data>
+  <data name="PreProcess_CommandTextDesc" xml:space="preserve"><value>Command to execute when no script file is specified. Auto mode uses cmd.exe /c.</value></data>
+  <data name="PreProcess_ExecutionGroup" xml:space="preserve"><value>Execution</value></data>
+  <data name="PreProcess_IncludeSubfolders" xml:space="preserve"><value>Include subfolders</value></data>
+  <data name="PreProcess_IncludeSubfoldersDesc" xml:space="preserve"><value>Include files in cache subfolders when calculating and cleaning.</value></data>
+  <data name="PreProcess_MaxOutputChars" xml:space="preserve"><value>Maximum output characters</value></data>
+  <data name="PreProcess_MaxOutputCharsDesc" xml:space="preserve"><value>Maximum stdout/stderr characters written to the log, preventing oversized logs.</value></data>
+  <data name="PreProcess_PythonExecutable" xml:space="preserve"><value>Python executable</value></data>
+  <data name="PreProcess_PythonExecutableDesc" xml:space="preserve"><value>Path or command name of python.exe for Python mode, such as python, py, or python.exe in a conda environment.</value></data>
+  <data name="PreProcess_ScriptDesc" xml:space="preserve"><value>Run a user-defined script or command before the flow starts</value></data>
+  <data name="PreProcess_ScriptFile" xml:space="preserve"><value>Script file</value></data>
+  <data name="PreProcess_ScriptFileDesc" xml:space="preserve"><value>Supports .py/.pyw, .cmd/.bat, .ps1, or exe. Executes command text when empty.</value></data>
+  <data name="PreProcess_ScriptGroup" xml:space="preserve"><value>Script</value></data>
+  <data name="PreProcess_ScriptName" xml:space="preserve"><value>Run script</value></data>
+  <data name="PreProcess_ScriptType" xml:space="preserve"><value>Script type</value></data>
+  <data name="PreProcess_ScriptTypeDesc" xml:space="preserve"><value>Auto selects Python, Cmd, PowerShell, or Executable from the script extension. When no script file is specified, command text runs through Cmd.</value></data>
+  <data name="PreProcess_StopFlowOnFailure" xml:space="preserve"><value>Stop flow on failure</value></data>
+  <data name="PreProcess_StopFlowOnFailureDesc" xml:space="preserve"><value>Cancel flow startup when the script times out or returns a failed exit code.</value></data>
+  <data name="PreProcess_SuccessExitCodes" xml:space="preserve"><value>Successful exit codes</value></data>
+  <data name="PreProcess_SuccessExitCodesDesc" xml:space="preserve"><value>Comma-, semicolon-, or space-separated values and ranges, such as 0, 0,2, or 0-3.</value></data>
+  <data name="PreProcess_TimeoutMs" xml:space="preserve"><value>Timeout (ms)</value></data>
+  <data name="PreProcess_TimeoutMsDesc" xml:space="preserve"><value>Maximum script execution time. A value less than or equal to 0 means no limit.</value></data>
+  <data name="PreProcess_WorkingDirectory" xml:space="preserve"><value>Working directory</value></data>
+  <data name="PreProcess_WorkingDirectoryDesc" xml:space="preserve"><value>Optional. If empty, use the script directory first, otherwise the application's current directory.</value></data>
+  <data name="RoiEditor_CenterCurrent" xml:space="preserve"><value>Center current</value></data>
+  <data name="RoiEditor_CenterHalf" xml:space="preserve"><value>Centered 1/2</value></data>
+  <data name="RoiEditor_CenterQuarter" xml:space="preserve"><value>Centered 1/4</value></data>
+  <data name="RoiEditor_CenterTwoThirds" xml:space="preserve"><value>Centered 2/3</value></data>
+  <data name="RoiEditor_FullFrameSummary" xml:space="preserve"><value>Full frame / {0} x {1}</value></data>
+  <data name="RoiEditor_SensorHeight" xml:space="preserve"><value>Camera height</value></data>
+  <data name="RoiEditor_SensorWidth" xml:space="preserve"><value>Camera width</value></data>
+  <data name="RoiEditor_Title" xml:space="preserve"><value>ROI settings</value></data>
+  <data name="RunOnce" xml:space="preserve"><value>Run once</value></data>
+  <data name="ScreenDefect_OpenResultFile" xml:space="preserve"><value>Open screen-defect result</value></data>
+  <data name="ScreenDefect_SelectResultFile" xml:space="preserve"><value>Select screen-defect result in folder</value></data>
+  <data name="ScreenDefect_SelectTemplateFirst" xml:space="preserve"><value>Select a screen-defect detection template first</value></data>
+  <data name="ScreenDefect_TemplateManagement" xml:space="preserve"><value>Screen-defect detection template management</value></data>
+  <data name="ScreenDefectDetection" xml:space="preserve"><value>Screen-defect detection</value></data>
+  <data name="SelectWithEllipsis" xml:space="preserve"><value>Select...</value></data>
+  <data name="Sensor_BracketFormat" xml:space="preserve"><value>Bracket format</value></data>
+  <data name="Sensor_ConvertedToRequest" xml:space="preserve"><value>Converted to request</value></data>
+  <data name="Sensor_ConvertedToResponse" xml:space="preserve"><value>Converted to response</value></data>
+  <data name="Sensor_ConvertToRequest" xml:space="preserve"><value>To request</value></data>
+  <data name="Sensor_ConvertToResponse" xml:space="preserve"><value>To response</value></data>
+  <data name="Sensor_PreviewFormat" xml:space="preserve"><value>Saved value&#13;&#10;{0}&#13;&#10;&#13;&#10;Request echo&#13;&#10;{1}&#13;&#10;&#13;&#10;Response echo&#13;&#10;{2}</value></data>
+  <data name="Sensor_RequestEcho" xml:space="preserve"><value>Request echo</value></data>
+  <data name="Sensor_RequestEchoed" xml:space="preserve"><value>Request echoed</value></data>
+  <data name="Sensor_ResponseEcho" xml:space="preserve"><value>Response echo</value></data>
+  <data name="Sensor_ResponseEchoed" xml:space="preserve"><value>Response echoed</value></data>
+  <data name="Sensor_ShowPreview" xml:space="preserve"><value>Show preview</value></data>
+  <data name="Sensor_UseControlCharacterNames" xml:space="preserve"><value>Use names for control characters</value></data>
+  <data name="SfrPlot_EmptyOrInvalidResult" xml:space="preserve"><value>The result is empty or its format does not match</value></data>
+  <data name="SfrPlot_EnterSeriesName" xml:space="preserve"><value>Enter a series name, such as Point_1-Left or Point_1-horAverage</value></data>
+  <data name="SfrPlot_FileNotFound" xml:space="preserve"><value>File not found: {0}</value></data>
+  <data name="SfrPlot_InvalidFrequency" xml:space="preserve"><value>Invalid frequency</value></data>
+  <data name="SfrPlot_InvalidMtf" xml:space="preserve"><value>Invalid MTF value</value></data>
+  <data name="SfrPlot_SeriesExample" xml:space="preserve"><value>Example: Point_1-Left or Point_1-horAverage</value></data>
+  <data name="SfrPlot_SeriesNotFoundOrCalculationFailed" xml:space="preserve"><value>Series not found or calculation failed</value></data>
+  <data name="SpectrumCalibrationGroups_AddGroup" xml:space="preserve"><value>Add group</value></data>
+  <data name="SpectrumCalibrationGroups_AmplitudeCalibration" xml:space="preserve"><value>Amplitude calibration</value></data>
+  <data name="SpectrumCalibrationGroups_AutoApplyNdHint" xml:space="preserve"><value>Apply automatically when switching to this ND position</value></data>
+  <data name="SpectrumCalibrationGroups_CurrentAmplitude" xml:space="preserve"><value>Current amplitude</value></data>
+  <data name="SpectrumCalibrationGroups_CurrentGroup" xml:space="preserve"><value>Current group:</value></data>
+  <data name="SpectrumCalibrationGroups_CurrentWavelength" xml:space="preserve"><value>Current wavelength</value></data>
+  <data name="SpectrumCalibrationGroups_DatFileFilter" xml:space="preserve"><value>DAT files (*.dat)|*.dat|All files|*.*</value></data>
+  <data name="SpectrumCalibrationGroups_FilterWheelPosition" xml:space="preserve"><value>Filter-wheel position</value></data>
+  <data name="SpectrumCalibrationGroups_FilterWheelService" xml:space="preserve"><value>Filter-wheel service</value></data>
+  <data name="SpectrumCalibrationGroups_GroupDetails" xml:space="preserve"><value>Group details</value></data>
+  <data name="SpectrumCalibrationGroups_GroupName" xml:space="preserve"><value>Group name</value></data>
+  <data name="SpectrumCalibrationGroups_KeepAtLeastOneGroup" xml:space="preserve"><value>Keep at least one group</value></data>
+  <data name="SpectrumCalibrationGroups_NoAssociation" xml:space="preserve"><value>No association</value></data>
+  <data name="SpectrumCalibrationGroups_NotLoadedFormat" xml:space="preserve"><value>{0} (not loaded)</value></data>
+  <data name="SpectrumCalibrationGroups_NotSelected" xml:space="preserve"><value>Not selected</value></data>
+  <data name="SpectrumCalibrationGroups_RemoveGroup" xml:space="preserve"><value>Remove group</value></data>
+  <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>Saving writes the calibration files for the current group. The spectrum service restarts if a calibration file changes.</value></data>
+  <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>Calibration file groups</value></data>
+  <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>Wavelength calibration</value></data>
+  <data name="TemplateEditor_AlreadyFirst" xml:space="preserve"><value>This is already the first item and cannot be moved up</value></data>
+  <data name="TemplateEditor_AlreadyLast" xml:space="preserve"><value>This is already the last item and cannot be moved down</value></data>
+  <data name="TemplateEditor_ConfirmDelete" xml:space="preserve"><value>Delete the {0} template? This cannot be undone.</value></data>
+  <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>Use the current template JSON as the default parameters for new and reset templates. Continue?</value></data>
+  <data name="TemplateEditor_DefaultParametersNotSupported" xml:space="preserve"><value>This template does not support setting default parameters</value></data>
+  <data name="TemplateEditor_NoSearchResults" xml:space="preserve"><value>No templates found for “{0}”</value></data>
+  <data name="TemplateEditor_OrderSwapped" xml:space="preserve"><value>Template order updated</value></data>
+  <data name="TemplateEditor_SamplesSaved" xml:space="preserve"><value>Saved {0} template sample(s)</value></data>
+  <data name="TemplateEditor_SaveSamplesFailed" xml:space="preserve"><value>Failed to save template samples: {0}</value></data>
+  <data name="TemplateEditor_SaveSuccess" xml:space="preserve"><value>{0} saved successfully</value></data>
+  <data name="TemplateEditor_SelectFirst" xml:space="preserve"><value>Select an item first</value></data>
+  <data name="TemplateEditor_SelectFlowToExport" xml:space="preserve"><value>Select the flow to export</value></data>
+  <data name="TemplateEditor_SetAsDefaultParameters" xml:space="preserve"><value>Set as default parameters</value></data>
+  <data name="TemplateEditor_SwapFailed" xml:space="preserve"><value>Failed to change the order</value></data>
+  <data name="AARegion" xml:space="preserve"><value>AA region</value></data>
+  <data name="Analyze" xml:space="preserve"><value>Analyze</value></data>
+  <data name="AxisX" xml:space="preserve"><value>X axis</value></data>
+  <data name="AxisY" xml:space="preserve"><value>Y axis</value></data>
+  <data name="AxisZ" xml:space="preserve"><value>Z axis</value></data>
+  <data name="BottomLeftPointX" xml:space="preserve"><value>Bottom-left X</value></data>
+  <data name="BottomLeftPointY" xml:space="preserve"><value>Bottom-left Y</value></data>
+  <data name="BottomRightPointX" xml:space="preserve"><value>Bottom-right X</value></data>
+  <data name="BottomRightPointY" xml:space="preserve"><value>Bottom-right Y</value></data>
+  <data name="Center" xml:space="preserve"><value>Center</value></data>
+  <data name="CenterPointX" xml:space="preserve"><value>Center point X</value></data>
+  <data name="CenterPointY" xml:space="preserve"><value>Center point Y</value></data>
+  <data name="CentroidCoordinates" xml:space="preserve"><value>Centroid coordinates</value></data>
+  <data name="CommandLineScript_ArgumentsDesc" xml:space="preserve"><value>Arguments passed to the script or executable. Supports {SerialNumber}, {BatchName}, {NodeName}, {NodeID}, and {ZIndex} placeholders.</value></data>
+  <data name="CommandLineScript_MaxOutputCharsDesc" xml:space="preserve"><value>Maximum stdout/stderr characters saved in the node result, preventing oversized flow data.</value></data>
+  <data name="CommandLineScript_NodeName" xml:space="preserve"><value>Command-line script</value></data>
+  <data name="Coordinates" xml:space="preserve"><value>Coordinates</value></data>
+  <data name="Flow_AiAnalyzeCurrentFlowPrompt" xml:space="preserve"><value>Using the attached flow context, explain the current flow structure, key node parameters, and recent run or failure information, then provide prioritized troubleshooting advice. Do not assume the flow has been rerun; use only information available in the snapshot.</value></data>
+  <data name="Flow_AskAiAnalyzeCurrentFlow" xml:space="preserve"><value>Ask AI to analyze this flow</value></data>
+  <data name="Flow_OpenServiceLogFailed" xml:space="preserve"><value>Failed to open the service log: {0}</value></data>
+  <data name="Flow_ServiceLogNotFound" xml:space="preserve"><value>No matching service log was found. Confirm that the service is installed and has generated logs.</value></data>
+  <data name="GhostGrayscale" xml:space="preserve"><value>Ghost grayscale</value></data>
+  <data name="OpenOutputFileLocation" xml:space="preserve"><value>Open output file location</value></data>
+  <data name="OpenResultSetFormat" xml:space="preserve"><value>Open {0} result set</value></data>
+  <data name="Score" xml:space="preserve"><value>Score</value></data>
+  <data name="ScreenDefect_RestoreDatabase" xml:space="preserve"><value>Restore screen-defect detection</value></data>
+  <data name="SelectResultSetFormat" xml:space="preserve"><value>Select {0} result set</value></data>
+  <data name="SfrWindowPreview" xml:space="preserve"><value>SFR window preview</value></data>
+  <data name="SplitDiagram" xml:space="preserve"><value>Segmentation diagram</value></data>
+  <data name="SpotGrayscale" xml:space="preserve"><value>Spot grayscale</value></data>
+  <data name="TopLeftPointX" xml:space="preserve"><value>Top-left X</value></data>
+  <data name="TopLeftPointY" xml:space="preserve"><value>Top-left Y</value></data>
+  <data name="TopRightPointX" xml:space="preserve"><value>Top-right X</value></data>
+  <data name="TopRightPointY" xml:space="preserve"><value>Top-right Y</value></data>
+  <data name="OpenLatestServiceImageFailed" xml:space="preserve"><value>Failed to open the latest image captured by the service</value></data>
+  <data name="OpenLatestServiceImageFailedNoPath" xml:space="preserve"><value>Failed to open the latest image captured by the service because the file path is unavailable</value></data>
+  <data name="CvcieProbe" xml:space="preserve"><value>CVCIE Probe</value></data>
+  <data name="CurrentView" xml:space="preserve"><value>Current View</value></data>
+  <data name="VideoCrossGuide_NoValidFrame" xml:space="preserve"><value>No valid video frame</value></data>
+  <data name="VideoCrossGuide_InvalidRoi" xml:space="preserve"><value>Invalid ROI</value></data>
+  <data name="VideoCrossGuide_UnsupportedBitDepth" xml:space="preserve"><value>{0}-bit video frames are not supported</value></data>
+  <data name="VideoCrossGuide_CrossNotFoundLowBrightness" xml:space="preserve"><value>Brightness is too low; cross not found</value></data>
+  <data name="VideoCrossGuide_BrightCrossLinesNotFound" xml:space="preserve"><value>No sufficiently bright cross lines were found</value></data>
+  <data name="VideoCrossGuide_InsufficientCoverage" xml:space="preserve"><value>Insufficient bright-line coverage. Row: {0:P0}; column: {1:P0}</value></data>
+  <data name="Flow_CustomNodes" xml:space="preserve"><value>99 Custom Nodes</value></data>
+  <data name="LocalImage_FilePathDesc" xml:space="preserve"><value>Path to the local image file</value></data>
+  <data name="LocalImage_PathEmpty" xml:space="preserve"><value>The local image path is empty</value></data>
+  <data name="LocalImage_FileNotFound" xml:space="preserve"><value>Local image not found: {0}</value></data>
+  <data name="Flow_BatchNotFound" xml:space="preserve"><value>Batch not found: {0}</value></data>
+  <data name="LocalImage_WriteResultFailed" xml:space="preserve"><value>Failed to write the image result: {0}</value></data>
+  <data name="CommandLineScript_StartFailed" xml:space="preserve"><value>Failed to start the command-line script</value></data>
+  <data name="CommandLineScript_Timeout" xml:space="preserve"><value>Command-line script timed out after {0} ms</value></data>
+  <data name="CommandLineScript_ExecutionException" xml:space="preserve"><value>Command-line script execution error: {0}</value></data>
+  <data name="CommandLineScript_FileAndCommandEmpty" xml:space="preserve"><value>The script file and command text cannot both be empty</value></data>
+  <data name="CommandLineScript_WorkingDirectoryNotFound" xml:space="preserve"><value>Working directory not found: {0}</value></data>
+  <data name="CommandLineScript_FileNotFound" xml:space="preserve"><value>Script file not found: {0}</value></data>
+  <data name="CommandLineScript_ExecutionFailed" xml:space="preserve"><value>Command-line script failed with exit code {0}</value></data>
+  <data name="CommandLineScript_ExecutionFailedWithDetail" xml:space="preserve"><value>Command-line script failed with exit code {0}: {1}</value></data>
+  <data name="PreProcess_FailureIgnored" xml:space="preserve"><value>{0}. The flow is configured to continue after a failure.</value></data>
+  <data name="Mysql_DictionaryDependenciesAdded" xml:space="preserve"><value>Added dictionary dependencies referenced by the template</value></data>
+  <data name="Mysql_DictionaryDependenciesAddFailed" xml:space="preserve"><value>Failed to add template dictionary dependencies: {0}</value></data>
+  <data name="Camera_DatabaseFailureRecord" xml:space="preserve"><value>Database failure record Id:{0}, ResultCode:{1}, Message:{2}</value></data>
+  <data name="Camera_LocalVideoPoiTemplateSupport" xml:space="preserve"><value>Whether POI templates can be selected in local video mode</value></data>
+  <data name="VideoCrossGuide_MetricsWithClarity" xml:space="preserve"><value>fps:{0:F1}  clarity:{1:F5}</value></data>
+  <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>The width and height of an HK camera ROI must use {0}-pixel increments; integer values alone are not sufficient.&#xD;&#xA;&#xD;&#xA;Current ROI: Width={1}, Height={2}&#xD;&#xA;Invalid fields: {3}&#xD;&#xA;&#xD;&#xA;Adjust these values to multiples of {0} before saving.</value></data>
+  <data name="Calibration_PackageFileNotFound" xml:space="preserve"><value>File not found in the calibration package: {0}&#xD;&#xA;{1}</value></data>
+  <data name="Statistics" xml:space="preserve"><value>Statistics</value></data>
+  <data name="MtfStatisticsCsvHeader" xml:space="preserve"><value>Property,Maximum,Maximum Name,Minimum,Minimum Name,Average,Variance,Uniformity</value></data>
+  <data name="CommonTools" xml:space="preserve"><value>Common Tools</value></data>
+  <data name="SelectTemplateFirstFormat" xml:space="preserve"><value>Please select the {0} template first</value></data>
+  <data name="CreateToPOI" xml:space="preserve">
+    <value>Create as POI</value>
   </data>
 </root>

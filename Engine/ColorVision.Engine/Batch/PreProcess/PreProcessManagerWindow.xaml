@@ -65,7 +65,7 @@
                     </Grid.RowDefinitions>
 
                     <DockPanel LastChildFill="False">
-                        <TextBlock Text="预处理动作" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_Actions}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
                         <Button x:Name="AddProcessButton"
                                 Content="{x:Static properties:Resources.Add}"
                                 DockPanel.Dock="Right"
@@ -192,12 +192,12 @@
                     </Grid.RowDefinitions>
 
                     <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="14,10">
-                        <TextBlock Text="动作配置" FontWeight="SemiBold" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_ActionConfig}" FontWeight="SemiBold" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
                     </Border>
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12">
                         <StackPanel x:Name="PropertyPanel">
-                            <TextBlock Text="请选择一个预处理动作" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.58" HorizontalAlignment="Center" Margin="0,32,0,0"/>
+                            <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_SelectAction}" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.58" HorizontalAlignment="Center" Margin="0,32,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

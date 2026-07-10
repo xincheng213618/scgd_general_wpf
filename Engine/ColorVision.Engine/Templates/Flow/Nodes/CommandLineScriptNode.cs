@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string? StandardError { get; set; }
     }
 
-    [STNode("/99 自定义节点", "命令行脚本节点")]
+    [STNode("Flow_CustomNodes", "CommandLineScript_NodeName")]
     public class CommandLineScriptNode : CVBaseServerNode
     {
         private const string LocalTopic = "LOCAL";
@@ -59,82 +59,66 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         private string _SuccessExitCodes;
         private int _MaxOutputChars;
 
-        [Category("命令行脚本")]
-        [DisplayName("脚本类型")]
-        [Description("Auto 会根据脚本扩展名自动选择 Python/Cmd/PowerShell/Executable；未填写脚本文件时按 Cmd 执行命令文本。")]
-        [STNodeProperty("脚本类型", "脚本执行类型", true)]
+        [Category("PreProcess_ScriptGroup")]
+        [STNodeProperty("PreProcess_ScriptType", "PreProcess_ScriptTypeDesc", true)]
         public CommandLineScriptType ScriptType
         {
             get => _ScriptType;
             set => _ScriptType = value;
         }
 
-        [Category("命令行脚本")]
-        [DisplayName("脚本文件")]
-        [Description("可选。支持 .py/.pyw、.cmd/.bat、.ps1 或 exe；为空时执行命令文本。")]
+        [Category("PreProcess_ScriptGroup")]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-        [STNodeProperty("脚本文件", "脚本文件路径", true)]
+        [STNodeProperty("PreProcess_ScriptFile", "PreProcess_ScriptFileDesc", true)]
         public string ScriptFile
         {
             get => _ScriptFile;
             set => _ScriptFile = value ?? string.Empty;
         }
 
-        [Category("命令行脚本")]
-        [DisplayName("命令文本")]
-        [Description("脚本文件为空时执行的命令。Auto 模式下会使用 cmd.exe /c 执行。")]
-        [STNodeProperty("命令文本", "命令文本", true)]
+        [Category("PreProcess_ScriptGroup")]
+        [STNodeProperty("PreProcess_CommandText", "PreProcess_CommandTextDesc", true)]
         public string CommandText
         {
             get => _CommandText;
             set => _CommandText = value ?? string.Empty;
         }
 
-        [Category("命令行脚本")]
-        [DisplayName("参数")]
-        [Description("传给脚本或 exe 的参数。支持 {SerialNumber}、{BatchName}、{NodeName}、{NodeID}、{ZIndex} 占位符。")]
-        [STNodeProperty("参数", "命令行参数", true)]
+        [Category("PreProcess_ScriptGroup")]
+        [STNodeProperty("PreProcess_Arguments", "CommandLineScript_ArgumentsDesc", true)]
         public string Arguments
         {
             get => _Arguments;
             set => _Arguments = value ?? string.Empty;
         }
 
-        [Category("命令行脚本")]
-        [DisplayName("工作目录")]
-        [Description("可选。为空时优先使用脚本所在目录，否则使用程序当前目录。")]
+        [Category("PreProcess_ScriptGroup")]
         [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
-        [STNodeProperty("工作目录", "进程工作目录", true)]
+        [STNodeProperty("PreProcess_WorkingDirectory", "PreProcess_WorkingDirectoryDesc", true)]
         public string WorkingDirectory
         {
             get => _WorkingDirectory;
             set => _WorkingDirectory = value ?? string.Empty;
         }
 
-        [Category("命令行脚本")]
-        [DisplayName("Python执行器")]
-        [Description("Python 模式使用的 python.exe 路径或命令名，例如 python、py、conda 环境下的 python.exe。")]
-        [STNodeProperty("Python执行器", "Python执行器路径或命令名", true)]
+        [Category("PreProcess_ScriptGroup")]
+        [STNodeProperty("PreProcess_PythonExecutable", "PreProcess_PythonExecutableDesc", true)]
         public string PythonExecutable
         {
             get => _PythonExecutable;
             set => _PythonExecutable = value ?? string.Empty;
         }
 
-        [Category("命令行脚本")]
-        [DisplayName("成功退出码")]
-        [Description("逗号/分号/空格分隔，支持范围，例如 0 或 0,2 或 0-3。")]
-        [STNodeProperty("成功退出码", "视为成功的进程退出码", true)]
+        [Category("PreProcess_ScriptGroup")]
+        [STNodeProperty("PreProcess_SuccessExitCodes", "PreProcess_SuccessExitCodesDesc", true)]
         public string SuccessExitCodes
         {
             get => _SuccessExitCodes;
             set => _SuccessExitCodes = value ?? string.Empty;
         }
 
-        [Category("命令行脚本")]
-        [DisplayName("最大输出字符")]
-        [Description("保存到节点结果中的 stdout/stderr 最大字符数，避免流程数据过大。")]
-        [STNodeProperty("最大输出字符", "stdout/stderr最大保存字符数", true)]
+        [Category("PreProcess_ScriptGroup")]
+        [STNodeProperty("PreProcess_MaxOutputChars", "CommandLineScript_MaxOutputCharsDesc", true)]
         public int MaxOutputChars
         {
             get => _MaxOutputChars;
@@ -142,7 +126,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         }
 
         public CommandLineScriptNode()
-            : base("命令行脚本", "CommandLine", "SVR.CommandLine.Default", "DEV.CommandLine.Default")
+            : base(Properties.Resources.CommandLineScript_NodeName, "CommandLine", "SVR.CommandLine.Default", "DEV.CommandLine.Default")
         {
             operatorCode = "Execute";
             _MaxTime = 60000;
@@ -225,7 +209,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
 
                 if (!process.Start())
                 {
-                    FailCommandLineNode(trans, "命令行脚本启动失败", resultData, -1);
+                    FailCommandLineNode(trans, Properties.Resources.CommandLineScript_StartFailed, resultData, -1);
                     return;
                 }
 
@@ -260,7 +244,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
                 {
                     resultData.TimedOut = true;
                     SetResultData(action, resultData);
-                    FailCommandLineNode(trans, $"命令行脚本超时: {GetMaxDelay()} ms", resultData, -2);
+                    FailCommandLineNode(trans, string.Format(Properties.Resources.CommandLineScript_Timeout, GetMaxDelay()), resultData, -2);
                     return;
                 }
 
@@ -284,7 +268,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
                 stopwatch.Stop();
                 resultData.TotalTime = ToIntMilliseconds(stopwatch.ElapsedMilliseconds);
                 SetResultData(action, resultData);
-                FailCommandLineNode(trans, $"命令行脚本执行异常: {ex.Message}", resultData, -1);
+                FailCommandLineNode(trans, string.Format(Properties.Resources.CommandLineScript_ExecutionException, ex.Message), resultData, -1);
             }
         }
 
@@ -302,7 +286,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
 
             if (string.IsNullOrWhiteSpace(scriptFile) && string.IsNullOrWhiteSpace(commandText))
             {
-                errorMessage = "脚本文件和命令文本不能同时为空";
+                errorMessage = Properties.Resources.CommandLineScript_FileAndCommandEmpty;
                 return false;
             }
 
@@ -313,7 +297,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
 
             if (!Directory.Exists(workingDirectory))
             {
-                errorMessage = $"工作目录不存在: {workingDirectory}";
+                errorMessage = string.Format(Properties.Resources.CommandLineScript_WorkingDirectoryNotFound, workingDirectory);
                 return false;
             }
 
@@ -416,7 +400,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
                 return true;
             }
 
-            errorMessage = $"脚本文件不存在: {scriptFile}";
+            errorMessage = string.Format(Properties.Resources.CommandLineScript_FileNotFound, scriptFile);
             return false;
         }
 
@@ -708,10 +692,10 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
             string detail = FirstNonEmptyLine(resultData.StandardError) ?? FirstNonEmptyLine(resultData.StandardOutput) ?? string.Empty;
             if (string.IsNullOrWhiteSpace(detail))
             {
-                return $"命令行脚本执行失败，退出码: {exitCode}";
+                return string.Format(Properties.Resources.CommandLineScript_ExecutionFailed, exitCode);
             }
 
-            return $"命令行脚本执行失败，退出码: {exitCode}，{TrimMessage(detail, 240)}";
+            return string.Format(Properties.Resources.CommandLineScript_ExecutionFailedWithDetail, exitCode, TrimMessage(detail, 240));
         }
 
         private static string? FirstNonEmptyLine(string? text)

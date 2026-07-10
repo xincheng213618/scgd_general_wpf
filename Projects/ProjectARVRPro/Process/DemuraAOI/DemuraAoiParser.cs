@@ -81,8 +81,15 @@ namespace ProjectARVRPro.Process.DemuraAOI
         {
             string keyword = string.IsNullOrWhiteSpace(config.W255Keyword) ? "W255" : config.W255Keyword.Trim();
             List<int> masterIds = masters.Select(master => master.Id).ToList();
-            List<AlgResultPoiCieFileModel> files = db.Queryable<AlgResultPoiCieFileModel>()
+            List<DemuraAoiFileRecord> files = db.Queryable<AlgResultPoiCieFileModel>()
                 .Where(file => masterIds.Contains(file.Pid))
+                .Select(file => new DemuraAoiFileRecord
+                {
+                    Id = file.Id,
+                    Pid = file.Pid,
+                    FileName = file.FileName,
+                    FileUrl = file.FileUrl
+                })
                 .ToList();
 
             Dictionary<int, AlgResultMasterModel> masterMap = masters.ToDictionary(master => master.Id);
@@ -303,7 +310,7 @@ namespace ProjectARVRPro.Process.DemuraAOI
             return value < 0 ? value & byte.MaxValue : value;
         }
 
-        private static bool IsW255Image(AlgResultPoiCieFileModel file, string keyword)
+        private static bool IsW255Image(DemuraAoiFileRecord file, string keyword)
         {
             if (string.IsNullOrWhiteSpace(file.FileUrl)) return false;
             string fileName = Path.GetFileName(file.FileUrl);
@@ -371,6 +378,14 @@ namespace ProjectARVRPro.Process.DemuraAOI
             public double? BrightCount { get; set; }
             public string? GradeLevel { get; set; }
             public string? TimeStamp { get; set; }
+        }
+
+        private sealed class DemuraAoiFileRecord
+        {
+            public int Id { get; set; }
+            public int Pid { get; set; }
+            public string? FileName { get; set; }
+            public string? FileUrl { get; set; }
         }
     }
 

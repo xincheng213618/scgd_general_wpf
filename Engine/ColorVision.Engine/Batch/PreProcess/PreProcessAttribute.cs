@@ -27,6 +27,11 @@ namespace ColorVision.Engine.Batch
         public string Category { get; set; }
 
         /// <summary>
+        /// Gets or sets the resource type used to resolve display text keys.
+        /// </summary>
+        public Type? ResourceType { get; set; }
+
+        /// <summary>
         /// Gets or sets the display order for sorting pre-processors.
         /// Lower values appear first.
         /// </summary>

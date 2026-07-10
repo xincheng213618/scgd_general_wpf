@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
 
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
                 return false;
             }
 

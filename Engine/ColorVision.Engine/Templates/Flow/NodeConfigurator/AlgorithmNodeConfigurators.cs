@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                         context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "ROI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.屏幕缺陷检测:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "屏幕缺陷检测", new TemplateDetectScreenDefects());
+                    context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.ScreenDefectDetection, new TemplateDetectScreenDefects());
                         break;
                     default:
                         break;

@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                     Distortion2View blackMuraView = new Distortion2View(item);
                     result.ViewResults.Add(blackMuraView);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDistortion2), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDistortion2), ImageFilePath = result.FilePath })) });
             }
         }
 

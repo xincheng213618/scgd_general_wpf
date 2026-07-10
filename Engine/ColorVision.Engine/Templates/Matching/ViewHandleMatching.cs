@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.Matching
            if (result.ViewResults != null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>(AlgResultAoiDao.Instance.GetAllByPid(result.Id));
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMatching), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMatching), ImageFilePath = result.FilePath })) });
             }
         }
 
@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.Matching
 
             }
 
-            List<string> header =  new() { "分数", "角度", "中心点x" , "中心点y", "左上点x" , "左上点y" , "右上点x" , "右上点y" , "右下点x", "右下点y", "左下点x", "左下点x" };
+            List<string> header = new() { Properties.Resources.Score, Properties.Resources.Angle, Properties.Resources.CenterPointX, Properties.Resources.CenterPointY, Properties.Resources.TopLeftPointX, Properties.Resources.TopLeftPointY, Properties.Resources.TopRightPointX, Properties.Resources.TopRightPointY, Properties.Resources.BottomRightPointX, Properties.Resources.BottomRightPointY, Properties.Resources.BottomLeftPointX, Properties.Resources.BottomLeftPointY };
             List<string> bdHeader = new() { "Score", "Angle", "CenterX", "CenterY", "LeftTopX", "LeftTopY" , "RightTopX", "RightTopY", "RightBottomX", "RightBottomY" , "LeftBottomX", "LeftBottomY" };
 
             if (ctx.ListView.View is GridView gridView)

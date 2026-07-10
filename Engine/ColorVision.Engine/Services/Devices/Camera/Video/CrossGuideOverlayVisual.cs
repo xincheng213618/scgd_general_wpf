@@ -263,7 +263,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             {
                 RealtimeCameraMetrics metrics = _metrics.Value;
                 metricsText = metrics.Articulation.HasValue
-                    ? string.Format(CultureInfo.InvariantCulture, "fps:{0:F1}  清晰度:{1:F5}", metrics.Fps, metrics.Articulation.Value)
+                    ? string.Format(CultureInfo.InvariantCulture, Properties.Resources.VideoCrossGuide_MetricsWithClarity, metrics.Fps, metrics.Articulation.Value)
                     : string.Format(CultureInfo.InvariantCulture, "fps:{0:F1}", metrics.Fps);
             }
 

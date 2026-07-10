@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.Compliance
             }
             List<string> header;
             List<string> bdHeader;
-            header = new() { "名称", "值", "Validate" };
+            header = new() { Properties.Resources.Name, Properties.Resources.Value, "Validate" };
             bdHeader = new() { "Name", "DataValue", "ValidateResult" };
 
             if (ctx.ListView.View is GridView gridView)

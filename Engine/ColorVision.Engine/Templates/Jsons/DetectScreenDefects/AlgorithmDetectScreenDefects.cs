@@ -10,7 +10,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 {
-    [DisplayAlgorithm(58, "屏幕缺陷检测", "ARVR")]
+    [DisplayAlgorithm(58, nameof(Properties.Resources.ScreenDefectDetection), "ARVR")]
     public class AlgorithmDetectScreenDefects : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }

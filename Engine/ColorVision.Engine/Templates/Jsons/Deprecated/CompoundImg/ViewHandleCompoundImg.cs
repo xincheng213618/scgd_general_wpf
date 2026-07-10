@@ -37,10 +37,10 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
                 {
                     AlgResultImageModel algResultImageModel = values[0];
                     if (File.Exists(algResultImageModel.FileName))
-                        result.ContextMenu.Items.Add(new MenuItem() { Header = "打开输出文件位置", Command = new RelayCommand(a => { PlatformHelper.OpenFolderAndSelectFile(algResultImageModel.FileName); }) });
+                        result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.OpenOutputFileLocation, Command = new RelayCommand(a => { PlatformHelper.OpenFolderAndSelectFile(algResultImageModel.FileName); }) });
                 }
 
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmCompoundImg), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmCompoundImg), ImageFilePath = result.FilePath })) });
             }
         }
 

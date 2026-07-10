@@ -1117,7 +1117,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         uploadMeta.FilePath = FilePath;
                         if (string.IsNullOrWhiteSpace(FilePath) || !File.Exists(FilePath))
                         {
-                            string missingSourceMessage = $"校正包中找不到文件：{item.Title}{Environment.NewLine}{FilePath}";
+                            string missingSourceMessage = string.Format(Properties.Resources.Calibration_PackageFileNotFound, item.Title, FilePath);
                             uploadMeta.FileSize = "0 B";
                             uploadMeta.UploadStatus = UploadStatus.Failed;
                             Msg = missingSourceMessage;

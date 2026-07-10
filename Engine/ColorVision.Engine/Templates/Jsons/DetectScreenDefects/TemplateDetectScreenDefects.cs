@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 {
     public class MenuDetectScreenDefects : MenuITemplateAlgorithmBase
     {
-        public override string Header => "屏幕缺陷检测";
+        public override string Header => Properties.Resources.ScreenDefectDetection;
         public override int Order => 1058;
         public override ITemplate Template => new TemplateDetectScreenDefects();
     }
@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 
         public TemplateDetectScreenDefects()
         {
-            Title = "屏幕缺陷检测模板管理";
+            Title = Properties.Resources.ScreenDefect_TemplateManagement;
             Code = "ARVR.DetectScreenDefects";
             Name = "DetectScreenDefects";
             TemplateDicId = 58;

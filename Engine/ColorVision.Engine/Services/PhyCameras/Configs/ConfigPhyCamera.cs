@@ -63,11 +63,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                 return false;
             }
 
-            warning =
-                $"HK相机ROI宽高需要按{PhyCameraCfg.HkRoiAlignment}像素步进设置，不能只保证为整数。{Environment.NewLine}{Environment.NewLine}" +
-                $"当前ROI：Width={CameraCfg.Width}, Height={CameraCfg.Height}{Environment.NewLine}" +
-                $"不符合项：{string.Join("、", invalidFields)}{Environment.NewLine}{Environment.NewLine}" +
-                $"请将上述值调整为{PhyCameraCfg.HkRoiAlignment}的倍数后再保存。";
+            warning = string.Format(
+                Properties.Resources.Camera_HkRoiAlignmentWarning,
+                PhyCameraCfg.HkRoiAlignment,
+                CameraCfg.Width,
+                CameraCfg.Height,
+                string.Join(", ", invalidFields));
             return true;
         }
 

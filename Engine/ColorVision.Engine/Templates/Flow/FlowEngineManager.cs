@@ -131,7 +131,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
             AskCopilotFlowCommand = new RelayCommand(a => AskCopilotAboutFlow());
-            ContextMenu.Items.Add(new MenuItem() { Header = "问 AI 分析当前流程", Command = AskCopilotFlowCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Flow_AskAiAnalyzeCurrentFlow, Command = AskCopilotFlowCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Property, Command = Config.EditCommand });
 
             FlowEngineControl = new FlowEngineControl(false);
@@ -170,7 +170,7 @@ namespace ColorVision.Engine.Templates.Flow
             var result = CopilotPromptRequestHelper.Dispatch(new CopilotPromptRequestOptions
             {
                 Mode = CopilotPromptMode.Diagnose,
-                Prompt = "请基于已附加的流程上下文，解释当前流程结构、关键节点参数、最近运行/失败信息，并给出优先排查建议。不要假设流程已经重新运行，只能使用快照中已有的信息。",
+                Prompt = Properties.Resources.Flow_AiAnalyzeCurrentFlowPrompt,
                 StartNewConversation = true,
                 SendNow = true,
                 AttachContextSnapshot = true,

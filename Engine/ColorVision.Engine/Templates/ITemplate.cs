@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Templates
 
         public virtual bool SetJsonAsDefault(int selectedIndex, out string message)
         {
-            message = "当前模板不支持设置默认参数";
+            message = Properties.Resources.TemplateEditor_DefaultParametersNotSupported;
             return false;
         }
 

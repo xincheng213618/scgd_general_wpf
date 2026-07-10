@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(BuildRestartServicesButtonText(), stats);
                 options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(BuildRestartServicesButtonText(), stats);
-                options.RunningText = "重启服务";
+                options.RunningText = Properties.Resources.RestartService;
             });
             return operations;
         }
@@ -148,7 +148,7 @@ namespace ColorVision.Engine.Templates.Flow
         private static string BuildRestartServicesButtonText()
         {
             string version = ServiceConfig.Instance.RegistrationCenterServiceInfo.FileVersion;
-            return string.IsNullOrWhiteSpace(version) ? "重启服务" : $"重启{version}";
+            return string.IsNullOrWhiteSpace(version) ? Properties.Resources.RestartService : string.Format(Properties.Resources.Flow_RestartServiceVersionFormat, version);
         }
 
         private double GetExpectedRestartDurationMs()
@@ -161,10 +161,10 @@ namespace ColorVision.Engine.Templates.Flow
 
         private async void Button_RestartServices_Click(object sender, RoutedEventArgs e)
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否重启 ColorVision 服务？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_ConfirmRestartColorVisionServices, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
-            TimedButtonOperationScope? operationScope = EnsureTimedButtonOperations().Begin(RestartServicesButton, GetExpectedRestartDurationMs(), "重启服务");
+            TimedButtonOperationScope? operationScope = EnsureTimedButtonOperations().Begin(RestartServicesButton, GetExpectedRestartDurationMs(), Properties.Resources.RestartService);
             bool success = false;
             try
             {
@@ -204,7 +204,7 @@ namespace ColorVision.Engine.Templates.Flow
                 : await ColorVisionServiceHostClient.Default.StopServiceAsync(serviceName, timeoutSeconds: 45, timeout: TimeSpan.FromSeconds(60));
 
             if (!response.Success)
-                throw new InvalidOperationException($"{(start ? "启动" : "停止")} {serviceName} 失败: {response.Message}");
+                throw new InvalidOperationException(string.Format(start ? Properties.Resources.Flow_StartServiceFailed : Properties.Resources.Flow_StopServiceFailed, serviceName, response.Message));
         }
 
         private static async Task RefreshServiceConnectionAsync()

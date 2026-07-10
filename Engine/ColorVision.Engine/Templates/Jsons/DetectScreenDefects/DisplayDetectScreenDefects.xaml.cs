@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择屏幕缺陷检测模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, Properties.Resources.ScreenDefect_SelectTemplateFirst)) return;
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 
             if (TryGetImageInput(out string imgFileName, out FileExtType fileExtType))
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
                 return false;
             }
 

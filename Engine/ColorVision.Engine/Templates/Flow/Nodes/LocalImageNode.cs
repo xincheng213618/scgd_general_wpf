@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
 
         [Display(Name = "Engine_PG_FilePath", GroupName = "Engine_PG_LocalImage", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-        [STNodeProperty("文件路径", "本地图片文件路径", true)]
+        [STNodeProperty("Engine_PG_FilePath", "LocalImage_FilePathDesc", true)]
         public string ImageFileUrl
         {
             get => _ImageFileUrl;
@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         }
 
         public TestMessageBoxNode()
-            : base("本地图片", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
+            : base(Properties.Resources.Engine_PG_LocalImage, "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
         {
             operatorCode = "GetData";
             _MaxTime = 60000;
@@ -99,13 +99,13 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
             string fileUrl = ResolveFileUrl();
             if (string.IsNullOrWhiteSpace(fileUrl))
             {
-                FailLocalNode(trans, "本地图片路径为空");
+                FailLocalNode(trans, Properties.Resources.LocalImage_PathEmpty);
                 return;
             }
 
             if (!File.Exists(fileUrl))
             {
-                FailLocalNode(trans, $"本地图片不存在: {fileUrl}");
+                FailLocalNode(trans, string.Format(Properties.Resources.LocalImage_FileNotFound, fileUrl));
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
             MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(batchName);
             if (batch == null || batch.Id <= 0)
             {
-                FailLocalNode(trans, $"未找到批次: {batchName}");
+                FailLocalNode(trans, string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
                 return;
             }
 
@@ -121,7 +121,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
             int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
             if (masterId <= 0)
             {
-                FailLocalNode(trans, $"写入图片结果失败: {fileUrl}");
+                FailLocalNode(trans, string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
                 return;
             }
 
@@ -301,7 +301,7 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         }
     }
 
-    [STNode("/99 自定义节点", "本地图片节点")]
+    [STNode("Flow_CustomNodes", "Engine_PG_LocalImage")]
     public class LocalImageNode : TestMessageBoxNode
     {
     }

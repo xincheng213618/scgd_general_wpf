@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
             var button = new Button
             {
-                Content = "设置",
+                Content = Properties.Resources.Settings,
                 MinWidth = 64,
                 Height = 26,
                 Padding = new Thickness(10, 1, 10, 1),
