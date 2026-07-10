@@ -8,8 +8,10 @@
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.EditFilterWheelConfig}"
         Background="{DynamicResource GlobalBackground}"
-        Height="520" Width="640" MinHeight="420" MinWidth="520"
+        Height="500" Width="620" MinHeight="420" MinWidth="560"
         WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        UseLayoutRounding="True"
         Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -22,6 +24,12 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="8"/>
         </Style>
+        <Style x:Key="CellEditorStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}">
+            <Setter Property="Margin" Value="8,5"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="14">
@@ -31,39 +39,78 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Style="{StaticResource PanelBorderStyle}" Padding="14,12" Margin="0,0,0,12">
+        <Border Style="{StaticResource PanelBorderStyle}" Padding="16,13" Margin="0,0,0,12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="{x:Static properties:Resources.FilterWheel}" FontSize="20"
+                    <TextBlock Text="{x:Static properties:Resources.FilterWheel}" FontSize="18"
                                FontWeight="SemiBold"/>
                     <TextBlock Text="{x:Static properties:Resources.FilterWheelHoleMapping}" FontSize="12" Opacity="0.6" Margin="0,4,0,0"/>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="{x:Static properties:Resources.Add}" Click="Button_Add_Click"
-                            Margin="0,0,6,0" MinWidth="80"/>
-                    <Button Content="{x:Static properties:Resources.Delete}" Click="Button_Delete_Click"
-                            MinWidth="80"/>
-                </StackPanel>
+                <Button Grid.Column="1"
+                        Content="{x:Static properties:Resources.Add}"
+                        Click="Button_Add_Click"
+                        VerticalAlignment="Center"
+                        MinWidth="84"
+                        Height="34"/>
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Style="{StaticResource PanelBorderStyle}" Padding="8">
+        <Border Grid.Row="1" Style="{StaticResource PanelBorderStyle}" Padding="8,8,8,4">
             <DataGrid x:Name="DataGridHoleMapping"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
+                      CanUserReorderColumns="False"
+                      CanUserResizeRows="False"
+                      CanUserSortColumns="False"
                       SelectionMode="Single"
+                      SelectionUnit="FullRow"
                       HeadersVisibility="Column"
                       GridLinesVisibility="Horizontal"
                       Background="Transparent"
-                      BorderThickness="0">
+                      BorderThickness="0"
+                      RowHeaderWidth="0"
+                      RowHeight="44"
+                      ColumnHeaderHeight="38"
+                      HorizontalGridLinesBrush="{DynamicResource GlobalBorderBrush1}"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="{x:Static properties:Resources.FilterWheelHoleIndex}" Binding="{Binding HoleIndex}" Width="160" IsReadOnly="False"/>
-                    <DataGridTextColumn Header="{x:Static properties:Resources.FilterWheelHoleName}" Binding="{Binding HoleName}" Width="*" IsReadOnly="False"/>
+                    <DataGridTemplateColumn Header="{x:Static properties:Resources.FilterWheelHoleIndex}" Width="140">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding HoleIndex, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource CellEditorStyle}"
+                                         HorizontalContentAlignment="Center"
+                                         ToolTip="{x:Static properties:Resources.FilterWheelHoleIndex}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="{x:Static properties:Resources.FilterWheelHoleName}" Width="*" MinWidth="240">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding HoleName, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource CellEditorStyle}"
+                                         ToolTip="{x:Static properties:Resources.FilterWheelHoleName}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="{x:Static properties:Resources.Delete}" Width="92" IsReadOnly="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="{x:Static properties:Resources.Delete}"
+                                        Click="Button_DeleteRow_Click"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        MinWidth="68"
+                                        Height="30"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
@@ -73,13 +120,14 @@
                     Foreground="White"
                     Background="{StaticResource PrimaryBrush}"
                     Click="Button_Save_Click"
-                    Width="100"
-                    Height="32"
+                    Width="96"
+                    Height="36"
                     Margin="0,0,8,0"/>
             <Button Content="{x:Static properties:Resources.Cancel}"
                     Click="Button_Cancel_Click"
-                    Width="100"
-                    Height="32"/>
+                    IsCancel="True"
+                    Width="96"
+                    Height="36"/>
         </StackPanel>
     </Grid>
 </Window>

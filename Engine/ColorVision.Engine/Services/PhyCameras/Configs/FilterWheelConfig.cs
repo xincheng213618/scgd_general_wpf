@@ -8,19 +8,16 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     public class FilterWheelConfig : ViewModelBase
     {
 
-        public FilterWheelConfig() 
+        public FilterWheelConfig()
         {
-            if (HoleMapping == null)
+            HoleMapping ??= new ObservableCollection<HoleMap>
             {
-                HoleMapping = new ObservableCollection<HoleMap>()
-        {
-            new HoleMap { HoleIndex = 0, HoleName = "ND0" },
-            new HoleMap { HoleIndex = 1, HoleName = "ND10" },
-            new HoleMap { HoleIndex = 2, HoleName = "ND100" },
-            new HoleMap { HoleIndex = 3, HoleName = "ND1000" },
-            new HoleMap { HoleIndex = 4, HoleName = "EMPTY" },
-        };   
-            }
+                new HoleMap { HoleIndex = 1, HoleName = "ND8" },
+                new HoleMap { HoleIndex = 2, HoleName = "ND64" },
+                new HoleMap { HoleIndex = 3, HoleName = "ND1000" },
+                new HoleMap { HoleIndex = 4, HoleName = "EMPTY" },
+                new HoleMap { HoleIndex = 5, HoleName = "Spectrum" },
+            };
         }
 
         public int HoleNum { get => _HoleNum; set { _HoleNum = value; OnPropertyChanged(); } }
@@ -29,8 +26,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public ObservableCollection<HoleMap> HoleMapping
         {
-            get => _HoleMapping ;
-            set{ _HoleMapping = value; OnPropertyChanged(); } 
+            get => _HoleMapping;
+            set { _HoleMapping = value; OnPropertyChanged(); }
         }
         private ObservableCollection<HoleMap> _HoleMapping = null;
     }
