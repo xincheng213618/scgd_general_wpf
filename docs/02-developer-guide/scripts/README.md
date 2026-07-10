@@ -29,7 +29,7 @@ Scripts\release.bat
 | 场景 | 命令 |
 | --- | --- |
 | 仓库内插件 | `Scripts\package_plugin.bat Spectrum` |
-| 仓库内项目包 | `Scripts\package_project.bat ProjectARVR` |
+| 仓库内项目包 | `Scripts\package_project.bat ProjectLUX` |
 | 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
 插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。打包会读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，再生成 `.cvxp`。

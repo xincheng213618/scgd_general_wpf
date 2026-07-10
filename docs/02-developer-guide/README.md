@@ -39,7 +39,7 @@ npm run docs:validate
 
 ```powershell
 Scripts\package_plugin.bat Spectrum
-Scripts\package_project.bat ProjectARVR
+Scripts\package_project.bat ProjectLUX
 ```
 
 正式发布：
