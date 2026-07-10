@@ -465,22 +465,22 @@
   <data name="HotKey_LoadHotkey" xml:space="preserve"><value>Load Hotkey</value></data>
   <data name="Log_ReverseOrder" xml:space="preserve"><value>Reverse</value></data>
   <data name="Log_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
-  <data name="TimedOp_ViewStats" xml:space="preserve"><value>View Timing Stats</value></data>
-  <data name="TimedOp_NoHistory" xml:space="preserve"><value>No timing history.</value></data>
-  <data name="TimedOp_Warmup" xml:space="preserve"><value>Warmup:</value></data>
-  <data name="TimedOp_NoStableSamples" xml:space="preserve"><value>No stable samples recorded yet.</value></data>
-  <data name="TimedOp_WarmupNote" xml:space="preserve"><value>First-run samples after startup are treated as warmup and excluded from averaging.</value></data>
-  <data name="TimedOp_Last" xml:space="preserve"><value>Last:</value></data>
-  <data name="TimedOp_Average" xml:space="preserve"><value>Average:</value></data>
-  <data name="TimedOp_Fastest" xml:space="preserve"><value>Fastest:</value></data>
-  <data name="TimedOp_Slowest" xml:space="preserve"><value>Slowest:</value></data>
-  <data name="TimedOp_StableSamples" xml:space="preserve"><value>Stable samples:</value></data>
-  <data name="TimedOp_RightClickHint" xml:space="preserve"><value>Right-click the button to open stats window.</value></data>
-  <data name="TimedOp_FewSamples" xml:space="preserve"><value>Stable samples still few; continuing will improve accuracy.</value></data>
-  <data name="TimedOp_StatsRecorded" xml:space="preserve"><value>Timing stats recorded.</value></data>
-  <data name="TimedOp_CloseToAverage" xml:space="preserve"><value>Close to historical average.</value></data>
-  <data name="TimedOp_FasterThanAverage" xml:space="preserve"><value>{0} faster than historical average.</value></data>
-  <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>{0} slower than historical average.</value></data>
+  <data name="TimedOp_ViewStats" xml:space="preserve"><value>실행 시간 통계 보기</value></data>
+  <data name="TimedOp_NoHistory" xml:space="preserve"><value>실행 시간 기록이 없습니다.</value></data>
+  <data name="TimedOp_Warmup" xml:space="preserve"><value>워밍업:</value></data>
+  <data name="TimedOp_NoStableSamples" xml:space="preserve"><value>안정 샘플이 아직 없습니다.</value></data>
+  <data name="TimedOp_WarmupNote" xml:space="preserve"><value>시작 후 첫 실행은 워밍업으로 처리되며 평균에서 제외됩니다.</value></data>
+  <data name="TimedOp_Last" xml:space="preserve"><value>최근:</value></data>
+  <data name="TimedOp_Average" xml:space="preserve"><value>평균:</value></data>
+  <data name="TimedOp_Fastest" xml:space="preserve"><value>최단:</value></data>
+  <data name="TimedOp_Slowest" xml:space="preserve"><value>최장:</value></data>
+  <data name="TimedOp_StableSamples" xml:space="preserve"><value>안정 샘플:</value></data>
+  <data name="TimedOp_RightClickHint" xml:space="preserve"><value>버튼을 마우스 오른쪽 버튼으로 클릭하면 통계 창을 열 수 있습니다.</value></data>
+  <data name="TimedOp_FewSamples" xml:space="preserve"><value>안정 샘플이 아직 적습니다. 계속 실행하면 정확도가 향상됩니다.</value></data>
+  <data name="TimedOp_StatsRecorded" xml:space="preserve"><value>실행 시간 통계가 기록되었습니다.</value></data>
+  <data name="TimedOp_CloseToAverage" xml:space="preserve"><value>최근 실행 시간은 과거 평균과 비슷합니다.</value></data>
+  <data name="TimedOp_FasterThanAverage" xml:space="preserve"><value>과거 평균보다 {0} 빠릅니다.</value></data>
+  <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>과거 평균보다 {0} 느립니다.</value></data>
   <data name="UpdateRecovery_Restored" xml:space="preserve"><value>Previous update was incomplete. System has been restored to the pre-update version.</value></data>
   <data name="UpdateRecovery_Failed" xml:space="preserve"><value>Previous update was incomplete and automatic recovery failed. Please reinstall manually or check the backup directory.</value></data>
   <data name="SearchEngine" xml:space="preserve">
