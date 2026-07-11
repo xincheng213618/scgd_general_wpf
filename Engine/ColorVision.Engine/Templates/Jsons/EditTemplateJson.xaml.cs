@@ -541,7 +541,7 @@ namespace ColorVision.Engine.Templates.Jsons
             if (liveContext == null)
                 return;
 
-            CopilotLiveContextRegistry.Publish(liveContext);
+            CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromLiveContext(liveContext));
         }
 
         public static async Task<CopilotTemplateJsonPatchApplyResult> TryApplyCopilotJsonPatchAsync(

@@ -23,7 +23,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services
 {
-    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem, IIcon
+    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem, IIcon, ICopilotBusinessContextSource
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
@@ -42,6 +42,8 @@ namespace ColorVision.Engine.Services
         public ContextMenu ContextMenu { get; set; }
         [CommandDisplayAttribute("Property", Order = -6), BrowsableAttribute(false)]
         public RelayCommand PropertyCommand { get; set; }
+        [CommandDisplayAttribute("Ask Copilot", Order = -5), BrowsableAttribute(false)]
+        public RelayCommand AskCopilotCommand { get; set; }
         [CommandDisplayAttribute("Export", Order = -7), BrowsableAttribute(false)]
         public RelayCommand ExportCommand { get; set; }
         [CommandDisplayAttribute("Import", Order = -8), BrowsableAttribute(false)]
@@ -84,6 +86,8 @@ namespace ColorVision.Engine.Services
         {
             return null;
         }
+
+        public abstract CopilotBusinessContextBundle CaptureCopilotContext();
 
 
         public event EventHandler<MsgRecord> MsgRecordChanged;
@@ -176,10 +180,12 @@ namespace ColorVision.Engine.Services
                 window.ApplyCaption();
                 window.ShowDialog();
             });
+            AskCopilotCommand = new RelayCommand(_ => AskCopilotAboutDevice());
             RefreshCommand = new RelayCommand(a => Save());
 
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.RestartService, Command = RefreshCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = PropertyCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Copilot_Ask, Command = AskCopilotCommand });
 
 
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<T>(SysResourceModel.Value);
@@ -187,6 +193,32 @@ namespace ColorVision.Engine.Services
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;
             UpdateFilecfgCommand = new RelayCommand(a => UpdateFilecfg(), a=> Config is IFileServerCfg);
+        }
+
+        public override CopilotBusinessContextBundle CaptureCopilotContext()
+        {
+            return CopilotDeviceContextFactory.Capture(this);
+        }
+
+        private void AskCopilotAboutDevice()
+        {
+            var bundle = CaptureCopilotContext();
+            var snapshot = new CopilotDeviceContextSnapshot
+            {
+                SourceId = bundle.SourceId,
+                Title = bundle.Title,
+                ServiceName = Name ?? string.Empty,
+                ServiceCode = Code ?? string.Empty,
+                ServiceType = ServiceTypes.ToString(),
+                DeviceStatus = IsAlive ? "Online" : "Offline",
+                IsAlive = IsAlive ? "yes" : "no",
+            };
+            var result = CopilotBusinessContextCoordinator.DispatchDiagnosis(bundle, CopilotBusinessContextCoordinator.BuildDeviceDiagnosisPrompt(snapshot));
+            if (!result.WasSent)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), result.StatusMessage, "ColorVision", MessageBoxButton.OK,
+                    result.IsAvailable ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            }
         }
 
         public void UpdateFilecfg()

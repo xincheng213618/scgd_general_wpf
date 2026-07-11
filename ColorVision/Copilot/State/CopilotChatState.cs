@@ -6,6 +6,10 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
+        public const int CurrentSchemaVersion = 1;
+
+        public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+
         public ObservableCollection<CopilotConversationRecord> Conversations { get; set; } = new();
 
         public string ActiveConversationId { get; set; } = string.Empty;

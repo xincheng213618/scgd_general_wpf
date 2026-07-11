@@ -34,12 +34,12 @@ namespace ColorVision.Copilot
         private readonly CopilotAgentService _agentService;
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotConfig _config;
-        private readonly CopilotChatStateStore _stateStore;
+        private readonly ICopilotChatStateStore _stateStore;
+        private readonly CopilotRequestSession _requestSession = new();
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly DispatcherTimer _pendingActionExpiryTimer;
-        private CancellationTokenSource? _currentRequestCts;
         private CancellationTokenSource? _pendingActionFeedbackCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
@@ -57,13 +57,18 @@ namespace ColorVision.Copilot
         }
 
         public CopilotChatViewModel(CopilotChatService chatService)
+            : this(chatService, CopilotChatStateStore.Instance)
         {
-            _chatService = chatService;
+        }
+
+        public CopilotChatViewModel(CopilotChatService chatService, ICopilotChatStateStore stateStore)
+        {
+            _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _agentContextBuilder = new CopilotAgentContextBuilder();
             _agentService = new CopilotAgentService(chatService, CopilotToolRegistry.CreateDefault(), _agentContextBuilder);
             _contextRegistry = CopilotContextRegistry.CreateDefault();
             _config = CopilotConfig.Instance;
-            _stateStore = CopilotChatStateStore.Instance;
+            _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
             _currentLiveContext = CopilotLiveContextRegistry.Current;
 
             WorkspaceManager.ContentIdSelected -= WorkspaceManager_ContentIdSelected;
@@ -77,7 +82,9 @@ namespace ColorVision.Copilot
                 PersistConfig();
 
             _state = _stateStore.Load();
-            if (_state.EnsureInitialized(_config))
+            var stateChanged = _state.EnsureInitialized(_config);
+            _stateStore.CleanupOrphanedAttachments(_state);
+            if (stateChanged)
                 PersistState();
 
             Conversations.CollectionChanged += Conversations_CollectionChanged;
@@ -569,17 +576,13 @@ namespace ColorVision.Copilot
         private void BeginRequest()
         {
             IsBusy = true;
-
-            _currentRequestCts?.Cancel();
-            _currentRequestCts?.Dispose();
-            _currentRequestCts = new CancellationTokenSource();
+            _requestSession.Begin();
         }
 
         private void EndRequest()
         {
             IsBusy = false;
-            _currentRequestCts?.Dispose();
-            _currentRequestCts = null;
+            _requestSession.Complete();
         }
 
         private async Task<CopilotTokenUsage> RunConversationTurnAsync(
@@ -589,15 +592,14 @@ namespace ColorVision.Copilot
             CopilotChatMessage assistantMessage,
             bool refreshExternalContext)
         {
-            if (_currentRequestCts == null)
-                throw new InvalidOperationException("Request context has not been initialized.");
+            var cancellationToken = _requestSession.GetRequiredToken();
 
             if (userMessage.RequestMode == CopilotAgentMode.Chat)
             {
-                return await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
+                return await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, refreshExternalContext, cancellationToken);
             }
 
-            return await RunAgentTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
+            return await RunAgentTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext, cancellationToken);
         }
 
         private async Task<CopilotTokenUsage> RunChatTurnAsync(
@@ -1246,7 +1248,7 @@ namespace ColorVision.Copilot
             if (!IsBusy)
                 return;
 
-            _currentRequestCts?.Cancel();
+            _requestSession.Cancel();
         }
 
         private void OpenSettings()

@@ -46,6 +46,7 @@ namespace ColorVision.Copilot.Mcp
         };
 
         private readonly CopilotMcpToolEnvironment _environment;
+        private readonly CopilotMcpToolRouter _router;
 
         private readonly record struct CopilotPanelTarget(string Alias, string TargetId);
 
@@ -69,6 +70,8 @@ namespace ColorVision.Copilot.Mcp
         public CopilotMcpToolDispatcher(CopilotMcpToolEnvironment? environment = null)
         {
             _environment = environment ?? new CopilotMcpToolEnvironment();
+            _router = CreateRouter();
+            ValidateRouterMatchesDescriptors();
         }
 
         public IReadOnlyList<CopilotMcpToolDescriptor> ListTools()
@@ -227,37 +230,7 @@ namespace ColorVision.Copilot.Mcp
 
             try
             {
-                var result = normalizedToolName switch
-                {
-                    "get_server_status" => GetServerStatus(callerSource),
-                    "get_enabled_tools" => GetEnabledTools(),
-                    "get_audit_log" => GetAuditLog(arguments),
-                    "get_audit_summary" => GetAuditSummary(arguments),
-                    "get_last_tool_error" => GetLastToolError(),
-                    "get_runtime_environment_summary" => await GetRuntimeEnvironmentSummaryAsync(cancellationToken),
-                    "get_diagnostic_bundle" => await GetDiagnosticBundleAsync(arguments, callerSource, cancellationToken),
-                    "get_live_context" => GetLiveContext(),
-                    "get_workspace_context" => GetWorkspaceContext(),
-                    "get_recent_log" => GetRecentLog(arguments),
-                    "search_docs" => await SearchDocsAsync(arguments, cancellationToken),
-                    "search_files" => SearchFiles(arguments, cancellationToken),
-                    "grep_text" => GrepText(arguments, cancellationToken),
-                    "read_allowed_file" => await ReadAllowedFileAsync(arguments, cancellationToken),
-                    "list_allowed_directory" => ListAllowedDirectory(arguments, cancellationToken),
-                    "get_active_template_context" => GetActiveTemplateContext(),
-                    "get_flow_summary" => await GetFlowSummaryAsync(cancellationToken),
-                    "diagnose_flow_failure" => await DiagnoseFlowFailureAsync(arguments, cancellationToken),
-                    "open_panel" => await OpenPanelAsync(arguments, cancellationToken),
-                    "execute_menu" => await ExecuteMenuAsync(arguments, cancellationToken),
-                    "confirm_action" => await ConfirmActionAsync(arguments, cancellationToken),
-                    "preview_template_patch" => PreviewTemplatePatch(arguments),
-                    "suggest_template_patch" => await SuggestTemplatePatchAsync(arguments, cancellationToken),
-                    "apply_template_patch" => await ApplyTemplatePatchAsync(arguments, cancellationToken),
-                    "preview_flow_action" => await PreviewFlowActionAsync(arguments, cancellationToken),
-                    "set_theme" => await SetThemeAsync(arguments, cancellationToken),
-                    "set_language" => await SetLanguageAsync(arguments, cancellationToken),
-                    _ => CopilotMcpToolCallResult.Fail("tool_not_found", $"Unknown MCP tool: {toolName}"),
-                };
+                var result = await _router.DispatchAsync(normalizedToolName, arguments, callerSource, cancellationToken);
 
                 CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, result.Success, stopwatch.Elapsed, result.Success ? "OK" : result.Text);
                 return result;
@@ -272,6 +245,51 @@ namespace ColorVision.Copilot.Mcp
                 CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, false, stopwatch.Elapsed, ex.Message);
                 return CopilotMcpToolCallResult.Fail("internal_error", $"The MCP tool call failed: {ex.Message}");
             }
+        }
+
+        private CopilotMcpToolRouter CreateRouter()
+        {
+            return new CopilotMcpToolRouter()
+                .Register("get_server_status", (_, caller, _) => Task.FromResult(GetServerStatus(caller)))
+                .Register("get_enabled_tools", (_, _, _) => Task.FromResult(GetEnabledTools()))
+                .Register("get_audit_log", (arguments, _, _) => Task.FromResult(GetAuditLog(arguments)))
+                .Register("get_audit_summary", (arguments, _, _) => Task.FromResult(GetAuditSummary(arguments)))
+                .Register("get_last_tool_error", (_, _, _) => Task.FromResult(GetLastToolError()))
+                .Register("get_runtime_environment_summary", (_, _, token) => GetRuntimeEnvironmentSummaryAsync(token))
+                .Register("get_diagnostic_bundle", (arguments, caller, token) => GetDiagnosticBundleAsync(arguments, caller, token))
+                .Register("get_live_context", (_, _, _) => Task.FromResult(GetLiveContext()))
+                .Register("get_workspace_context", (_, _, _) => Task.FromResult(GetWorkspaceContext()))
+                .Register("get_recent_log", (arguments, _, _) => Task.FromResult(GetRecentLog(arguments)))
+                .Register("search_docs", (arguments, _, token) => SearchDocsAsync(arguments, token))
+                .Register("search_files", (arguments, _, token) => Task.FromResult(SearchFiles(arguments, token)))
+                .Register("grep_text", (arguments, _, token) => Task.FromResult(GrepText(arguments, token)))
+                .Register("read_allowed_file", (arguments, _, token) => ReadAllowedFileAsync(arguments, token))
+                .Register("list_allowed_directory", (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token)))
+                .Register("get_active_template_context", (_, _, _) => Task.FromResult(GetActiveTemplateContext()))
+                .Register("get_flow_summary", (_, _, token) => GetFlowSummaryAsync(token))
+                .Register("diagnose_flow_failure", (arguments, _, token) => DiagnoseFlowFailureAsync(arguments, token))
+                .Register("open_panel", (arguments, _, token) => OpenPanelAsync(arguments, token))
+                .Register("execute_menu", (arguments, _, token) => ExecuteMenuAsync(arguments, token))
+                .Register("confirm_action", (arguments, _, token) => ConfirmActionAsync(arguments, token))
+                .Register("preview_template_patch", (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)))
+                .Register("suggest_template_patch", (arguments, _, token) => SuggestTemplatePatchAsync(arguments, token))
+                .Register("apply_template_patch", (arguments, _, token) => ApplyTemplatePatchAsync(arguments, token))
+                .Register("preview_flow_action", (arguments, _, token) => PreviewFlowActionAsync(arguments, token))
+                .Register("set_theme", (arguments, _, token) => SetThemeAsync(arguments, token))
+                .Register("set_language", (arguments, _, token) => SetLanguageAsync(arguments, token));
+        }
+
+        private void ValidateRouterMatchesDescriptors()
+        {
+            var descriptorNames = ListTools().Select(tool => NormalizeToolName(tool.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var routeNames = _router.ToolNames.Select(NormalizeToolName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (descriptorNames.SetEquals(routeNames))
+                return;
+
+            var missingRoutes = descriptorNames.Except(routeNames, StringComparer.OrdinalIgnoreCase);
+            var missingDescriptors = routeNames.Except(descriptorNames, StringComparer.OrdinalIgnoreCase);
+            throw new InvalidOperationException(
+                $"MCP tool descriptors and handlers are out of sync. Missing routes: {string.Join(", ", missingRoutes)}. Missing descriptors: {string.Join(", ", missingDescriptors)}.");
         }
 
         private CopilotMcpToolCallResult GetServerStatus(string callerSource)

@@ -63,6 +63,12 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 
 工具列表由 `CopilotMcpToolDispatcher.ListTools()` 生成。新增或删除工具时，先改源码和测试，再同步本页。
 
+## 业务上下文扩展
+
+流程、设备、图像和模板通过 `CopilotBusinessContextCoordinator` 发布同一种 `CopilotBusinessContextBundle`。新增界面上下文时优先实现 `ICopilotBusinessContextSource`，只提供结构化快照，使用 `CopilotBusinessContextBuilder` 脱敏，并让发布和发送复用同一个 bundle。
+
+诊断入口默认使用 `CopilotPromptMode.Diagnose`。模板写入保持 `suggest_template_patch -> preview_template_patch -> apply_template_patch -> 用户批准 -> confirm_action`；MCP 描述与处理器在构造时会做集合一致性检查。
+
 ## 安全要求
 
 明确不支持设备控制、流程启动/停止/重跑、任意 shell/cmd/PowerShell/batch/Python 或进程执行、文件删除、任意路径读取、配置静默修改、二进制图片通过上下文快照上传。

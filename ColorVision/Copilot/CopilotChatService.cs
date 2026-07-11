@@ -14,10 +14,21 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatService
     {
-        private static readonly HttpClient HttpClient = new()
+        private static readonly HttpClient SharedHttpClient = new()
         {
             Timeout = TimeSpan.FromMinutes(5),
         };
+        private readonly HttpClient _httpClient;
+
+        public CopilotChatService()
+            : this(SharedHttpClient)
+        {
+        }
+
+        public CopilotChatService(HttpClient httpClient)
+        {
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        }
 
         public async Task<CopilotChatReply> CompleteReplyAsync(
             CopilotProfileConfig config,
@@ -56,7 +67,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(onDelta);
 
             using var request = CreateRequest(config, messages);
-            using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
