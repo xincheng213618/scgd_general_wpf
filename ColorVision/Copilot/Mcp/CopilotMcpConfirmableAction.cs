@@ -37,6 +37,8 @@ namespace ColorVision.Copilot.Mcp
 
         public string ArgumentsSummary { get; init; } = string.Empty;
 
+        public bool ExecuteOnApproval { get; init; }
+
         public DateTimeOffset CreatedAt { get; init; }
 
         public DateTimeOffset ExpiresAt { get; init; }
@@ -138,7 +140,8 @@ namespace ColorVision.Copilot.Mcp
             string riskLevel,
             string toolName,
             string argumentsSummary,
-            Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor)
+            Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor,
+            bool executeOnApproval = false)
         {
             ArgumentNullException.ThrowIfNull(executor);
 
@@ -151,6 +154,7 @@ namespace ColorVision.Copilot.Mcp
                 RiskLevel = Sanitize(riskLevel),
                 ToolName = Sanitize(toolName),
                 ArgumentsSummary = Sanitize(argumentsSummary),
+                ExecuteOnApproval = executeOnApproval,
                 CreatedAt = now,
                 ExpiresAt = now.Add(ActionLifetime),
                 Executor = executor,
@@ -274,7 +278,25 @@ namespace ColorVision.Copilot.Mcp
             }
 
             RaiseActionsChanged();
-            var result = await executor(cancellationToken);
+            CopilotMcpToolCallResult result;
+            try
+            {
+                result = await executor(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                lock (_syncRoot)
+                {
+                    action.Status = ConfirmableActionStatus.Approved;
+                }
+
+                RaiseActionsChanged();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                result = CopilotMcpToolCallResult.Fail("action_execution_failed", $"The approved action failed: {CopilotMcpAuditLogger.RedactText(ex.Message)}");
+            }
 
             lock (_syncRoot)
             {
@@ -284,6 +306,21 @@ namespace ColorVision.Copilot.Mcp
             CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : result.Text);
             RaiseActionsChanged();
             return result;
+        }
+
+        public async Task<CopilotMcpToolCallResult> ApproveAndExecuteAsync(string actionId, CancellationToken cancellationToken)
+        {
+            var action = Find(actionId);
+            if (action == null)
+                return CopilotMcpToolCallResult.Fail("action_not_found", $"No confirmable action exists for action_id={actionId}.");
+
+            if (!action.ExecuteOnApproval)
+                return CopilotMcpToolCallResult.Fail("action_requires_client_confirmation", "This action requires the MCP client to call confirm_action after user approval.");
+
+            if (!Approve(actionId, out var approvalMessage))
+                return CopilotMcpToolCallResult.Fail("action_approval_failed", approvalMessage);
+
+            return await ExecuteApprovedAsync(action.ActionId, action.ToolName, action.ArgumentsSummary, cancellationToken);
         }
 
         public void ExpireStaleActions()

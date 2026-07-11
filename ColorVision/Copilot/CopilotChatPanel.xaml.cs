@@ -14,7 +14,7 @@ namespace ColorVision.Copilot
     {
         private const double CompactSidebarThreshold = 960;
         private const double CompactComposerThreshold = 560;
-        private const double ExpandedSidebarWidth = 220;
+        private const double ExpandedSidebarWidth = 232;
         private const double CollapsedSidebarWidth = 48;
         private const byte VirtualKeyLeftWindows = 0x5B;
         private const byte VirtualKeyH = 0x48;
@@ -259,12 +259,12 @@ namespace ColorVision.Copilot
 
             var isCompactComposer = ActualWidth > 0 && ActualWidth < CompactComposerThreshold;
             ComposerFooterSecondRowDefinition.Height = isCompactComposer ? GridLength.Auto : new GridLength(0);
-            ComposerShellBorder.Margin = isCompactComposer ? new Thickness(14, 0, 14, 14) : new Thickness(64, 0, 64, 18);
+            ComposerShellBorder.Margin = isCompactComposer ? new Thickness(10, 0, 10, 10) : new Thickness(24, 0, 24, 14);
 
             Grid.SetRow(ComposerSelectorGrid, 0);
             Grid.SetColumn(ComposerSelectorGrid, isCompactComposer ? 0 : 3);
             Grid.SetColumnSpan(ComposerSelectorGrid, isCompactComposer ? 5 : 1);
-            ComposerSelectorGrid.Margin = isCompactComposer ? new Thickness(0, 0, 0, 8) : new Thickness(10, 0, 10, 0);
+            ComposerSelectorGrid.Margin = isCompactComposer ? new Thickness(0, 0, 0, 6) : new Thickness(8, 0, 8, 0);
 
             Grid.SetRow(AttachMenuButton, isCompactComposer ? 1 : 0);
             Grid.SetColumn(AttachMenuButton, 0);
@@ -278,8 +278,8 @@ namespace ColorVision.Copilot
             ProfileComboBox.MaxWidth = isCompactComposer ? double.PositiveInfinity : 180;
 
             CurrentLiveContextSummaryText.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
-            CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(10, 7, 10, 7) : new Thickness(12, 9, 12, 9);
-            CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(10, 4, 10, 4) : new Thickness(12, 5, 12, 5);
+            CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(8, 6, 8, 6) : new Thickness(10, 7, 10, 7);
+            CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(8, 3, 8, 3) : new Thickness(10, 4, 10, 4);
 
             UpdateEmptyStateVisibility();
         }

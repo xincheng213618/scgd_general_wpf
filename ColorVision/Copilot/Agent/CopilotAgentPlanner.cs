@@ -249,6 +249,7 @@ namespace ColorVision.Copilot
                 },
                 CopilotAgentMode.Diagnose => new[]
                 {
+                    "TemplatePatch",
                     "GetRecentLog",
                     "ReadLocalFile",
                     "ReadAttachedFile",
@@ -260,6 +261,7 @@ namespace ColorVision.Copilot
                 },
                 _ => new[]
                 {
+                    "TemplatePatch",
                     "SearchDocs",
                     "ReadLocalFile",
                     "ReadAttachedFile",
@@ -292,7 +294,8 @@ namespace ColorVision.Copilot
         {
             if (string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "TemplatePatch", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotAgentToolInput
                 {
@@ -458,7 +461,8 @@ namespace ColorVision.Copilot
                 || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "TemplatePatch", StringComparison.OrdinalIgnoreCase);
         }
 
     }

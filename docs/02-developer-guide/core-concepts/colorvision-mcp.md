@@ -67,7 +67,7 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 
 流程、设备、图像和模板通过 `CopilotBusinessContextCoordinator` 发布同一种 `CopilotBusinessContextBundle`。新增界面上下文时优先实现 `ICopilotBusinessContextSource`，只提供结构化快照，使用 `CopilotBusinessContextBuilder` 脱敏，并让发布和发送复用同一个 bundle。
 
-诊断入口默认使用 `CopilotPromptMode.Diagnose`。模板写入保持 `suggest_template_patch -> preview_template_patch -> apply_template_patch -> 用户批准 -> confirm_action`；MCP 描述与处理器在构造时会做集合一致性检查。
+诊断入口默认使用 `CopilotPromptMode.Diagnose`。外部 MCP 模板写入保持 `suggest_template_patch -> preview_template_patch -> apply_template_patch -> 用户批准 -> confirm_action`；内置 Agent 的 `TemplatePatch` 工具复用相同预览和冲突校验，但其待确认动作在 ColorVision 用户批准后直接应用到未保存的编辑器。MCP 描述与处理器在构造时会做集合一致性检查。
 
 ## 安全要求
 

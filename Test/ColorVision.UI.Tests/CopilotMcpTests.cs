@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.UI.Tests;
 
+[Collection(CopilotSharedStateTestGroup.Name)]
 public sealed class CopilotMcpTests : IDisposable
 {
     private const string Token = "test-token";

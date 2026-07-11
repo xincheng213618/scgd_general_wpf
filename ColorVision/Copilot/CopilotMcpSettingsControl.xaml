@@ -8,14 +8,13 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
     <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CopilotStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         <SolidColorBrush x:Key="McpValidationErrorBrush" Color="#DB3340"/>
 
-        <Style x:Key="McpSurfaceBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="8"/>
-        </Style>
+        <Style x:Key="McpSurfaceBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotCardBorderStyle}" />
 
         <Style x:Key="McpPanelTitleStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="14"/>
@@ -64,10 +63,11 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <StackPanel>
-        <Border Padding="24,20" Style="{StaticResource McpSurfaceBorderStyle}">
+        <Border Padding="16,14" Style="{StaticResource McpSurfaceBorderStyle}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -107,7 +107,7 @@
             </Grid>
         </Border>
 
-        <Border Margin="0,24,0,0" Padding="24,20" Style="{StaticResource McpSurfaceBorderStyle}">
+        <Border Margin="0,12,0,0" Padding="16,14" Style="{StaticResource McpSurfaceBorderStyle}">
             <StackPanel>
                 <CheckBox Margin="0,0,0,18"
                           Content="Enable local MCP server"
@@ -179,7 +179,7 @@
             </StackPanel>
         </Border>
 
-        <Border Margin="0,24,0,0" Padding="24,20" Style="{StaticResource McpSurfaceBorderStyle}">
+        <Border Margin="0,12,0,0" Padding="16,14" Style="{StaticResource McpSurfaceBorderStyle}">
             <Expander Header="{Binding McpDiagnosticsHeaderText}"
                       IsExpanded="False"
                       Foreground="{DynamicResource GlobalTextBrush}">
@@ -212,7 +212,7 @@
             </Expander>
         </Border>
 
-        <Border Margin="0,24,0,0" Padding="16,14" Style="{StaticResource McpSurfaceBorderStyle}">
+        <Border Margin="0,12,0,0" Padding="12,10" Style="{StaticResource McpSurfaceBorderStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -233,7 +233,8 @@
                         Padding="14,6"
                         Click="SaveButton_Click"
                         Content="{x:Static properties:Resources.Save}"
-                        IsEnabled="{Binding CanSaveSettings}"/>
+                        IsEnabled="{Binding CanSaveSettings}"
+                        Style="{StaticResource CopilotPrimaryButtonStyle}"/>
             </Grid>
         </Border>
     </StackPanel>

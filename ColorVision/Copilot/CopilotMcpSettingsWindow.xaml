@@ -6,42 +6,30 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         Title="MCP Settings"
-        Width="780"
-        Height="600"
-        MinWidth="700"
-        MinHeight="540"
+        Width="760"
+        Height="560"
+        MinWidth="680"
+        MinHeight="500"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
     <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CopilotStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <SolidColorBrush x:Key="McpValidationErrorBrush" Color="#DB3340" />
 
-        <Style x:Key="McpSurfaceBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-        </Style>
+        <Style x:Key="McpSurfaceBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotCardBorderStyle}" />
 
-        <Style x:Key="McpTitleTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="18" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-        </Style>
+        <Style x:Key="McpTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotPageTitleTextStyle}" />
 
-        <Style x:Key="McpPanelTitleStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-        </Style>
+        <Style x:Key="McpPanelTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotSectionTitleTextStyle}" />
 
-        <Style x:Key="McpHintTextStyle" TargetType="TextBlock">
+        <Style x:Key="McpHintTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotMutedTextStyle}">
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="Opacity" Value="0.66" />
-            <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
 
         <Style x:Key="McpSummaryLabelStyle" TargetType="TextBlock">
@@ -58,12 +46,7 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
-        <Style x:Key="McpFieldLabelStyle" TargetType="TextBlock">
-            <Setter Property="Margin" Value="0,8,12,0" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="Opacity" Value="0.82" />
-        </Style>
+        <Style x:Key="McpFieldLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotFieldLabelTextStyle}" />
 
         <Style x:Key="McpFooterStatusTextStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
@@ -78,31 +61,32 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="16">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Padding="16,12" Style="{StaticResource McpSurfaceBorderStyle}">
+        <Border Grid.Row="0"
+                Padding="2,2,2,10"
+                Background="Transparent"
+                BorderThickness="0">
             <StackPanel>
                 <TextBlock Style="{StaticResource McpTitleTextStyle}" Text="MCP Settings" />
                 <TextBlock Margin="0,4,0,0" Style="{StaticResource McpHintTextStyle}" Text="{Binding McpStatusText}" />
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="1" Margin="0,12,0,12" Style="{StaticResource McpSurfaceBorderStyle}">
+        <Border Grid.Row="1" Margin="0,0,0,10" Style="{StaticResource McpSurfaceBorderStyle}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="16">
-                    <Border Margin="0,0,0,14"
+                <StackPanel Margin="14">
+                    <Border Margin="0,0,0,12"
                             Padding="10,8"
-                            Background="{DynamicResource GlobalBackground}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6">
+                            Style="{StaticResource CopilotSubtleSurfaceBorderStyle}">
                         <UniformGrid Columns="4">
                             <StackPanel Margin="0,0,12,0">
                                 <TextBlock Style="{StaticResource McpSummaryLabelStyle}" Text="Service" />
@@ -127,7 +111,7 @@
                     </Border>
 
                     <TextBlock Style="{StaticResource McpPanelTitleStyle}" Text="Local server" />
-                    <CheckBox Margin="0,10,0,12"
+                    <CheckBox Margin="0,8,0,10"
                               Content="Enable local MCP server"
                               Foreground="{DynamicResource GlobalTextBrush}"
                               IsChecked="{Binding McpEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -142,7 +126,7 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="118" />
+                            <ColumnDefinition Width="108" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
@@ -244,7 +228,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <TextBlock VerticalAlignment="Center" Style="{StaticResource McpFooterStatusTextStyle}" Text="{Binding SettingsStatusText}" />
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource McpFooterStatusTextStyle}" Text="{Binding McpStatusText}" />
             <Button Grid.Column="1"
                     Margin="0,0,8,0"
                     Padding="14,6"
@@ -261,7 +245,8 @@
                     Padding="14,6"
                     Click="SaveButton_Click"
                     Content="{x:Static properties:Resources.Save}"
-                    IsEnabled="{Binding CanSaveSettings}" />
+                    IsEnabled="{Binding CanSaveSettings}"
+                    Style="{StaticResource CopilotPrimaryButtonStyle}" />
         </Grid>
     </Grid>
 </Window>

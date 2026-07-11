@@ -31,6 +31,7 @@ namespace ColorVision.Copilot
                 new CopilotExecuteMenuTool(),
                 new CopilotSetThemeTool(),
                 new CopilotSetLanguageTool(),
+                new CopilotTemplatePatchTool(),
                 new CopilotSearchDocsTool(),
                 new CopilotFetchUrlTool(),
                 new CopilotSearchFilesTool(),

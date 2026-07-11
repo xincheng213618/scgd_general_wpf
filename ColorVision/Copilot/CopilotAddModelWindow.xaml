@@ -7,10 +7,10 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:data="clr-namespace:System.Windows.Data;assembly=PresentationFramework"
         Title="{x:Static properties:Resources.CopilotAddModel}"
-        Width="720"
-        Height="560"
-        MinWidth="640"
-        MinHeight="480"
+        Width="640"
+        Height="520"
+        MinWidth="580"
+        MinHeight="460"
         AllowsTransparency="True"
         Background="Transparent"
         ResizeMode="NoResize"
@@ -20,6 +20,10 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
     <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CopilotStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
         <CollectionViewSource x:Key="VisibleProviderOptionsView"
@@ -51,10 +55,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="#F2F2F2" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="#E8E8E8" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -63,7 +67,7 @@
         </Style>
 
         <Style x:Key="ProviderRowButtonStyle" TargetType="Button" BasedOn="{StaticResource CardButtonStyle}">
-            <Setter Property="Height" Value="42" />
+            <Setter Property="Height" Value="40" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="12,0" />
         </Style>
@@ -73,20 +77,21 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="#888888" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
             <Setter Property="TextAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="ProviderLabelTextStyle" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="Foreground" Value="#1E1E1E" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
         <Style x:Key="MutedTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#8B8B8B" />
-            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+            <Setter Property="FontSize" Value="13" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
@@ -94,8 +99,8 @@
             <Setter Property="Margin" Value="14,0,0,0" />
             <Setter Property="Padding" Value="7,1" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Background" Value="#F5F5F5" />
-            <Setter Property="BorderBrush" Value="#D9D9D9" />
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="3" />
         </Style>
@@ -136,8 +141,8 @@
             <Setter Property="MinWidth" Value="58" />
             <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="16,0" />
-            <Setter Property="Background" Value="#111111" />
-            <Setter Property="BorderBrush" Value="#111111" />
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontSize" Value="15" />
@@ -156,15 +161,15 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="#242424" />
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.9" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="#000000" />
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.78" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="Chrome" Property="Background" Value="#CFCFCF" />
-                                <Setter TargetName="Chrome" Property="BorderBrush" Value="#CFCFCF" />
-                                <Setter Property="Foreground" Value="#777777" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource ButtonBackground}" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
                                 <Setter Property="Cursor" Value="Arrow" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -172,21 +177,22 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        </ResourceDictionary>
     </Window.Resources>
 
-    <Border Margin="14"
-            Background="White"
-            BorderBrush="#D8D8D8"
+    <Border Margin="10"
+            Background="{DynamicResource GlobalBackground}"
+            BorderBrush="{DynamicResource ButtonBorderBrush}"
             BorderThickness="1"
-            CornerRadius="12">
+            CornerRadius="8">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="24"
-                              Opacity="0.18"
-                              ShadowDepth="6"
+            <DropShadowEffect BlurRadius="16"
+                              Opacity="0.14"
+                              ShadowDepth="2"
                               Color="#000000" />
         </Border.Effect>
 
-        <Grid Margin="22">
+        <Grid Margin="18">
             <Grid Style="{StaticResource PickerPageGridStyle}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -194,10 +200,11 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Margin="0,4,0,22" MouseLeftButtonDown="WindowChrome_MouseLeftButtonDown">
+                <Grid Grid.Row="0" Margin="0,0,0,16" MouseLeftButtonDown="WindowChrome_MouseLeftButtonDown">
                     <TextBlock VerticalAlignment="Center"
-                               FontSize="19"
-                               Foreground="#1E1E1E"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource GlobalTextBrush}"
                                Text="连接提供商" />
                     <Button HorizontalAlignment="Right"
                             VerticalAlignment="Center"
@@ -206,21 +213,23 @@
                             Click="CloseButton_Click"
                             Content="×"
                             FontSize="24"
-                            Foreground="#8A8A8A"
+                            Foreground="{DynamicResource SecondaryTextBrush}"
                             IsCancel="True"
                             Style="{StaticResource CardButtonStyle}" />
                 </Grid>
 
                 <Border Grid.Row="1"
                         Height="40"
-                        Background="#F6F6F6"
-                        CornerRadius="8">
+                        Background="{DynamicResource ButtonBackground}"
+                        BorderBrush="{DynamicResource ButtonBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
                     <Grid>
                         <TextBlock Margin="16,0,0,0"
                                    VerticalAlignment="Center"
                                    FontFamily="Segoe MDL2 Assets"
                                    FontSize="18"
-                                   Foreground="#909090"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
                                    Text="&#xE721;" />
                         <TextBlock Style="{StaticResource SearchPlaceholderStyle}" Text="搜索提供商" />
                         <TextBox x:Name="SearchTextBox"
@@ -228,8 +237,8 @@
                                  VerticalContentAlignment="Center"
                                  Background="Transparent"
                                  BorderThickness="0"
-                                 FontSize="16"
-                                 Foreground="#1E1E1E"
+                                 FontSize="14"
+                                 Foreground="{DynamicResource GlobalTextBrush}"
                                  Text="{Binding ConnectProviderSearchText, UpdateSourceTrigger=PropertyChanged}" />
                         <Button HorizontalAlignment="Right"
                                 Width="34"
@@ -237,7 +246,7 @@
                                 Command="{Binding ClearConnectProviderSearchCommand}"
                                 Content="×"
                                 FontSize="16"
-                                Foreground="#9A9A9A"
+                                Foreground="{DynamicResource SecondaryTextBrush}"
                                 Style="{StaticResource CardButtonStyle}"
                                 Visibility="{Binding HasConnectProviderSearchText, Converter={StaticResource BoolToVisibility}}" />
                     </Grid>
@@ -270,9 +279,10 @@
                             <GroupStyle>
                                 <GroupStyle.HeaderTemplate>
                                     <DataTemplate>
-                                        <TextBlock Margin="12,14,0,8"
-                                                   FontSize="15"
-                                                   Foreground="#8B8B8B"
+                                        <TextBlock Margin="12,12,0,6"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}"
                                                    Text="{Binding Name}" />
                                     </DataTemplate>
                                 </GroupStyle.HeaderTemplate>
@@ -307,15 +317,16 @@
                                         <Border Grid.Column="3"
                                                 Style="{StaticResource ProviderBadgeBorderStyle}"
                                                 Visibility="{Binding HasBadge, Converter={StaticResource BoolToVisibility}}">
-                                            <TextBlock FontSize="13"
-                                                       Foreground="#777777"
+                                            <TextBlock FontSize="11"
+                                                       Foreground="{DynamicResource SecondaryTextBrush}"
                                                        Text="{Binding BadgeText}" />
                                         </Border>
                                         <TextBlock Grid.Column="5"
                                                    VerticalAlignment="Center"
-                                                   FontSize="21"
-                                                   Foreground="#2E2E2E"
-                                                   Text="+" />
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                                   Text="&#xE710;" />
                                     </Grid>
                                 </Button>
                             </DataTemplate>
@@ -324,8 +335,8 @@
 
                     <TextBlock HorizontalAlignment="Center"
                                VerticalAlignment="Center"
-                               FontSize="16"
-                               Foreground="#8B8B8B"
+                               FontSize="13"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
                                Text="没有匹配的提供商">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -357,7 +368,7 @@
                             Command="{Binding BackToConnectProviderPickerCommand}"
                             Content="‹"
                             FontSize="28"
-                            Foreground="#8A8A8A"
+                            Foreground="{DynamicResource SecondaryTextBrush}"
                             Style="{StaticResource CardButtonStyle}" />
                     <Button HorizontalAlignment="Right"
                             VerticalAlignment="Center"
@@ -366,43 +377,45 @@
                             Click="CloseButton_Click"
                             Content="×"
                             FontSize="24"
-                            Foreground="#8A8A8A"
+                            Foreground="{DynamicResource SecondaryTextBrush}"
                             IsCancel="True"
                             Style="{StaticResource CardButtonStyle}" />
                 </Grid>
 
-                <StackPanel Grid.Row="1" Margin="10,42,10,0">
+                <StackPanel Grid.Row="1" Margin="10,28,10,0">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Width="34"
                                    VerticalAlignment="Center"
                                    FontSize="18"
                                    FontWeight="SemiBold"
-                                   Foreground="#1E1E1E"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
                                    Text="{Binding ConnectProviderIconText}" />
                         <TextBlock VerticalAlignment="Center"
-                                   FontSize="20"
-                                   Foreground="#1E1E1E"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
                                    Text="{Binding ConnectProviderTitle}" />
                     </StackPanel>
 
-                    <TextBlock Margin="0,46,0,0"
-                               FontSize="16"
-                               Foreground="#707070"
+                    <TextBlock Margin="0,30,0,0"
+                               FontSize="13"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
                                Text="{Binding ConnectProviderDescription}"
                                TextWrapping="Wrap" />
 
-                    <TextBlock Margin="0,38,0,10"
-                               FontSize="15"
-                               Foreground="#7A7A7A"
+                    <TextBlock Margin="0,26,0,8"
+                               FontSize="12"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
                                Text="{Binding ConnectProviderApiKeyLabel}" />
 
                     <PasswordBox x:Name="ApiKeyPasswordBox"
                                  Height="38"
                                  Padding="12,0"
                                  VerticalContentAlignment="Center"
-                                 BorderBrush="#D2D2D2"
+                                 Background="{DynamicResource ButtonBackground}"
+                                 BorderBrush="{DynamicResource ButtonBorderBrush}"
                                  BorderThickness="1"
-                                 FontSize="16"
+                                 FontSize="14"
                                  local:PasswordBoxBinding.BindPassword="True"
                                  local:PasswordBoxBinding.BoundPassword="{Binding NewProfileApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 

@@ -6,35 +6,28 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         Title="{x:Static properties:Resources.CopilotLanguageModel}"
-        Width="980"
-        Height="680"
-        MinWidth="860"
-        MinHeight="600"
+        Width="920"
+        Height="640"
+        MinWidth="780"
+        MinHeight="540"
         Background="{DynamicResource GlobalBackground}"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
     <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CopilotStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
-        <Style x:Key="SettingsSurfaceBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
+        <Style x:Key="SettingsSurfaceBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotCardBorderStyle}">
+            <Setter Property="CornerRadius" Value="6" />
         </Style>
 
-        <Style x:Key="SettingsPanelTitleStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
+        <Style x:Key="SettingsPanelTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotSectionTitleTextStyle}" />
 
-        <Style x:Key="SettingsHintTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        <Style x:Key="SettingsHintTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotMutedTextStyle}">
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="Opacity" Value="0.66" />
-            <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="TextTrimming" Value="None" />
         </Style>
 
@@ -54,35 +47,23 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
-        <Style x:Key="SettingsFieldLabelStyle" TargetType="TextBlock">
-            <Setter Property="Margin" Value="0,8,12,0" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="Opacity" Value="0.82" />
-        </Style>
+        <Style x:Key="SettingsFieldLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotFieldLabelTextStyle}" />
 
         <Style x:Key="SettingsDividerStyle" TargetType="Border">
             <Setter Property="Height" Value="1" />
             <Setter Property="Margin" Value="0,14,0,14" />
-            <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource ButtonBorderBrush}" />
             <Setter Property="Opacity" Value="0.72" />
         </Style>
 
-        <Style x:Key="SettingsQuickAddPreviewBorderStyle" TargetType="Border">
+        <Style x:Key="SettingsQuickAddPreviewBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotSubtleSurfaceBorderStyle}">
             <Setter Property="Padding" Value="10,8" />
-            <Setter Property="Background" Value="{DynamicResource GlobalBackground}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="6" />
         </Style>
 
-        <Style x:Key="SettingsUsageBandBorderStyle" TargetType="Border">
-            <Setter Property="Margin" Value="0,0,0,14" />
+        <Style x:Key="SettingsUsageBandBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotSubtleSurfaceBorderStyle}">
+            <Setter Property="Margin" Value="0,0,0,12" />
             <Setter Property="Padding" Value="10,7" />
-            <Setter Property="Background" Value="{DynamicResource GlobalBackground}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
         </Style>
 
         <Style x:Key="SettingsFooterStatusTextStyle" TargetType="TextBlock">
@@ -100,13 +81,7 @@
             </Style.Triggers>
         </Style>
 
-        <Style x:Key="PrimaryActionButtonStyle" TargetType="Button">
-            <Setter Property="Padding" Value="12,6" />
-            <Setter Property="MinHeight" Value="30" />
-            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
-            <Setter Property="Foreground" Value="White" />
-        </Style>
+        <Style x:Key="PrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource CopilotPrimaryButtonStyle}" />
 
         <Style x:Key="ProfileStatusPillBorderStyle" TargetType="Border">
             <Setter Property="Padding" Value="0" />
@@ -128,6 +103,7 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        </ResourceDictionary>
     </Window.Resources>
 
     <Grid>
@@ -136,10 +112,10 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="16,16,16,12">
+        <Grid Grid.Row="0" Margin="12,12,12,10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="320" />
-                <ColumnDefinition Width="14" />
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -150,7 +126,7 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Margin="14,14,14,12">
+                    <Grid Grid.Row="0" Margin="12,10,10,8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -158,15 +134,15 @@
 
                         <TextBlock VerticalAlignment="Center"
                                    Style="{StaticResource SettingsPanelTitleStyle}"
-                                   Text="Models" />
+                                   Text="{x:Static properties:Resources.CopilotLanguageModel}" />
                         <Button Grid.Column="1"
                                 Padding="12,5"
                                 Click="OpenAddModelButton_Click"
-                                Content="+ Add Model"
+                                Content="{x:Static properties:Resources.CopilotAddModel}"
                                 Style="{StaticResource PrimaryActionButtonStyle}" />
                     </Grid>
 
-                    <DockPanel Grid.Row="1" Margin="12,0,12,12">
+                    <DockPanel Grid.Row="1" Margin="8,0,8,8">
                         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                 <Button Margin="0,0,8,0" Padding="10,4" Command="{Binding DuplicateProfileCommand}" Content="{x:Static properties:Resources.Copy}" IsEnabled="{Binding CanEditSelectedProfile}" />
@@ -177,7 +153,7 @@
                         <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="{x:Type local:CopilotProfileConfig}">
-                                    <Border Padding="10,8">
+                                    <Border Padding="9,7">
                                         <StackPanel>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -211,7 +187,7 @@
 
             <Border Grid.Column="2" Style="{StaticResource SettingsSurfaceBorderStyle}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="16">
+                    <StackPanel Margin="14">
                         <StackPanel IsEnabled="{Binding CanEditSelectedProfile}">
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -249,7 +225,7 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="104" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
@@ -323,7 +299,7 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="104" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
 
@@ -341,10 +317,10 @@
 
                                         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,0,0,10">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="104" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="14" />
-                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="104" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
 
@@ -379,7 +355,12 @@
             </Border>
         </Grid>
 
-        <Border Grid.Row="1" Margin="16,0,16,16" Padding="12,10" Style="{StaticResource SettingsSurfaceBorderStyle}">
+        <Border Grid.Row="1"
+                Margin="12,0,12,12"
+                Padding="0,10,0,0"
+                Background="Transparent"
+                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -402,7 +383,8 @@
                         Padding="14,6"
                         Click="SaveButton_Click"
                         Content="{x:Static properties:Resources.Save}"
-                        IsEnabled="{Binding CanSaveSettings}" />
+                        IsEnabled="{Binding CanSaveSettings}"
+                        Style="{StaticResource CopilotPrimaryButtonStyle}" />
             </Grid>
         </Border>
     </Grid>

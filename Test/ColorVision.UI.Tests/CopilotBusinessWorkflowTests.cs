@@ -2,6 +2,7 @@ using ColorVision.UI;
 
 namespace ColorVision.UI.Tests;
 
+[Collection(CopilotSharedStateTestGroup.Name)]
 public sealed class CopilotBusinessWorkflowTests : IDisposable
 {
     [Fact]

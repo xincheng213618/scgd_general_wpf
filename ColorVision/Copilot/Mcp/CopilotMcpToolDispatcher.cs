@@ -27,6 +27,7 @@ namespace ColorVision.Copilot.Mcp
         private const int MaxAuditEntries = 80;
         private const int DefaultDiagnosticBundleChars = 12000;
         private const int MaxDiagnosticBundleChars = 60000;
+        public const string InAppAgentCallerSource = "in-app-agent";
         private const string LiveContextResourceUri = "colorvision://live-context/current";
         private const string WorkspaceResourceUri = "colorvision://workspace/current";
         private const string LogsResourceUri = "colorvision://logs/recent";
@@ -273,7 +274,7 @@ namespace ColorVision.Copilot.Mcp
                 .Register("confirm_action", (arguments, _, token) => ConfirmActionAsync(arguments, token))
                 .Register("preview_template_patch", (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)))
                 .Register("suggest_template_patch", (arguments, _, token) => SuggestTemplatePatchAsync(arguments, token))
-                .Register("apply_template_patch", (arguments, _, token) => ApplyTemplatePatchAsync(arguments, token))
+                .Register("apply_template_patch", (arguments, caller, token) => ApplyTemplatePatchAsync(arguments, caller, token))
                 .Register("preview_flow_action", (arguments, _, token) => PreviewFlowActionAsync(arguments, token))
                 .Register("set_theme", (arguments, _, token) => SetThemeAsync(arguments, token))
                 .Register("set_language", (arguments, _, token) => SetLanguageAsync(arguments, token));
@@ -1048,7 +1049,7 @@ namespace ColorVision.Copilot.Mcp
             }
         }
 
-        private async Task<CopilotMcpToolCallResult> ApplyTemplatePatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        private async Task<CopilotMcpToolCallResult> ApplyTemplatePatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource, CancellationToken cancellationToken)
         {
             var previewId = GetString(arguments, "preview_id");
             if (!CopilotMcpTemplatePatchPreviewStore.Instance.TryGet(previewId, out var preview, out var previewMessage))
@@ -1064,7 +1065,8 @@ namespace ColorVision.Copilot.Mcp
                 "apply_template_patch",
                 arguments,
                 BuildTemplatePatchConfirmationPreview(preview),
-                token => ExecuteTemplatePatchPreviewAsync(preview.PreviewId, token));
+                token => ExecuteTemplatePatchPreviewAsync(preview.PreviewId, token),
+                executeOnApproval: string.Equals(callerSource, InAppAgentCallerSource, StringComparison.OrdinalIgnoreCase));
         }
 
         private async Task<CopilotMcpToolCallResult> ExecuteTemplatePatchPreviewAsync(string previewId, CancellationToken cancellationToken)
@@ -1221,7 +1223,8 @@ namespace ColorVision.Copilot.Mcp
             string toolName,
             IReadOnlyDictionary<string, JsonElement>? arguments,
             string previewText,
-            Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor)
+            Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor,
+            bool executeOnApproval = false)
         {
             if (ContainsSensitiveArgumentValues(arguments))
                 return CopilotMcpToolCallResult.Fail("sensitive_arguments_not_allowed", "ColorVision MCP refuses to create confirmable actions that contain token, api key, password, authorization, or bearer secret values.");
@@ -1233,7 +1236,8 @@ namespace ColorVision.Copilot.Mcp
                 "confirmation-required",
                 NormalizeToolName(toolName),
                 argumentsSummary,
-                executor);
+                executor,
+                executeOnApproval);
 
             var builder = new StringBuilder();
             builder.AppendLine("confirmation_required");
@@ -1246,7 +1250,9 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"arguments_summary: {action.ArgumentsSummary}");
             builder.AppendLine($"created_at: {action.CreatedAt:O}");
             builder.AppendLine($"expires_at: {action.ExpiresAt:O}");
-            builder.AppendLine("User must approve this action in the ColorVision Copilot Pending Actions area before confirm_action can execute it.");
+            builder.AppendLine(executeOnApproval
+                ? "User must approve this action in the ColorVision Copilot Pending Actions area; the in-app action executes immediately after approval."
+                : "User must approve this action in the ColorVision Copilot Pending Actions area before confirm_action can execute it.");
             if (!string.IsNullOrWhiteSpace(previewText))
             {
                 builder.AppendLine();

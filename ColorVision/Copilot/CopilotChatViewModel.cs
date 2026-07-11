@@ -121,7 +121,7 @@ namespace ColorVision.Copilot
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
             CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
             CopyPendingActionPayloadCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionPayload, action => action != null);
-            ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(ApprovePendingAction, action => action?.IsPending == true);
+            ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(action => _ = ApprovePendingActionAsync(action), action => action?.IsPending == true);
             RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
 
             _pendingActionExpiryTimer = new DispatcherTimer
@@ -151,7 +151,7 @@ namespace ColorVision.Copilot
             get
             {
                 var count = CountHistoryConversations();
-                return count > CompactHistoryLimit ? $"查看全部（{count} 个）" : string.Empty;
+                return count > CompactHistoryLimit ? count.ToString(System.Globalization.CultureInfo.CurrentCulture) : string.Empty;
             }
         }
 
@@ -175,11 +175,11 @@ namespace ColorVision.Copilot
             {
                 var count = _pendingActions.Count;
                 if (count == 0)
-                    return "MCP action review";
+                    return "Action review";
 
                 return count == 1
-                    ? "Review 1 MCP action"
-                    : $"Review {count} MCP actions";
+                    ? "Review 1 protected action"
+                    : $"Review {count} protected actions";
             }
         }
 
@@ -188,15 +188,16 @@ namespace ColorVision.Copilot
             get
             {
                 if (_pendingActions.Count == 0)
-                    return "No MCP actions are waiting for approval.";
+                    return "No protected actions are waiting for approval.";
 
                 var nextDeadline = _pendingActions
                     .OrderBy(action => action.ExpiresAt)
                     .FirstOrDefault()?.ReviewDeadlineLabel ?? string.Empty;
 
-                return string.IsNullOrWhiteSpace(nextDeadline)
-                    ? "Approve or reject in ColorVision before MCP can execute."
-                    : $"Approve or reject in ColorVision before MCP can execute. Next {nextDeadline}.";
+                var actionBehavior = _pendingActions.Any(action => action.ExecuteOnApproval)
+                    ? "In-app template actions apply to the editor immediately after approval; you still decide when to save."
+                    : "External MCP actions still require confirm_action after approval.";
+                return string.IsNullOrWhiteSpace(nextDeadline) ? actionBehavior : $"{actionBehavior} Next {nextDeadline}.";
             }
         }
 
@@ -807,7 +808,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void ApprovePendingAction(ConfirmableAction? action)
+        private async Task ApprovePendingActionAsync(ConfirmableAction? action)
         {
             if (action == null)
                 return;
@@ -825,8 +826,18 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
-            SetPendingActionFeedback($"{action.ActionId}: {message}");
+            if (action.ExecuteOnApproval)
+            {
+                var executionResult = await CopilotMcpConfirmationStore.Instance.ApproveAndExecuteAsync(action.ActionId, CancellationToken.None);
+                SetPendingActionFeedback(executionResult.Success
+                    ? $"{action.ActionId}: approved and applied."
+                    : $"{action.ActionId}: {executionResult.Text}");
+            }
+            else
+            {
+                CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
+                SetPendingActionFeedback($"{action.ActionId}: {message}");
+            }
             RefreshPendingActions();
         }
 
@@ -844,7 +855,10 @@ namespace ColorVision.Copilot
                 builder.AppendLine($"Params: {action.ArgumentsSummary}");
 
             builder.AppendLine();
-            builder.Append("Only approve if the requested operation matches your intent.");
+            builder.AppendLine("Only approve if the requested operation matches your intent.");
+            builder.Append(action.ExecuteOnApproval
+                ? "This in-app action will execute immediately after approval; template changes still remain unsaved in the editor until you save them."
+                : "The requesting MCP client must still call confirm_action after approval.");
             return builder.ToString();
         }
 
@@ -1130,7 +1144,7 @@ namespace ColorVision.Copilot
             CancelCurrentReply();
             ClearPendingRequestModeOverride();
 
-            if (IsReusableEmptyConversation(SelectedConversation))
+            if (CopilotConversationService.IsReusableEmpty(SelectedConversation))
                 return;
 
             var conversation = ResolveNewConversationTarget();
@@ -1141,18 +1155,10 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool IsReusableEmptyConversation(CopilotConversationRecord? conversation)
-        {
-            return conversation != null && conversation.Messages.Count == 0;
-        }
-
         private CopilotConversationRecord ResolveNewConversationTarget()
         {
-            if (IsReusableEmptyConversation(SelectedConversation))
-                return SelectedConversation!;
-
-            var reusableConversation = Conversations.FirstOrDefault(IsReusableEmptyConversation);
-            return reusableConversation ?? CreateConversation();
+            var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
+            return CopilotConversationService.ResolveNewTarget(Conversations, SelectedConversation, profile);
         }
 
         private void ExecutePrimaryAction()
@@ -1366,7 +1372,7 @@ namespace ColorVision.Copilot
         private void RefreshCompactHistoryConversations()
         {
             var history = Conversations
-                .Where(IsHistoryConversation)
+                .Where(CopilotConversationService.IsHistory)
                 .Take(CompactHistoryLimit)
                 .ToArray();
 
@@ -1384,12 +1390,7 @@ namespace ColorVision.Copilot
 
         private int CountHistoryConversations()
         {
-            return Conversations.Count(IsHistoryConversation);
-        }
-
-        private static bool IsHistoryConversation(CopilotConversationRecord? conversation)
-        {
-            return conversation?.Messages.Any(message => !string.IsNullOrWhiteSpace(message.Content)) == true;
+            return Conversations.Count(CopilotConversationService.IsHistory);
         }
 
         private void Attachments_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -1502,9 +1503,7 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord CreateConversation()
         {
             var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
-            var conversation = CopilotConversationRecord.CreateEmpty(profile?.Id ?? string.Empty, profile?.DisplayLabel ?? string.Empty);
-            Conversations.Insert(GetUnpinnedInsertIndex(), conversation);
-            return conversation;
+            return CopilotConversationService.Create(Conversations, profile);
         }
 
         private void UpdateConversationMetadata(CopilotConversationRecord conversation, bool touch)
@@ -1587,7 +1586,7 @@ namespace ColorVision.Copilot
 
         private void BringConversationToFront(CopilotConversationRecord conversation)
         {
-            MoveConversationToPreferredIndex(conversation);
+            CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
             _state.ActiveConversationId = conversation.Id;
         }
 
@@ -1649,7 +1648,7 @@ namespace ColorVision.Copilot
                 return;
 
             conversation.IsPinned = !conversation.IsPinned;
-            MoveConversationToPreferredIndex(conversation);
+            CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
             PersistState();
         }
 
@@ -2367,36 +2366,6 @@ namespace ColorVision.Copilot
             }
 
             UpdateAttachmentsState(conversation);
-        }
-
-        private void MoveConversationToPreferredIndex(CopilotConversationRecord conversation)
-        {
-            var currentIndex = Conversations.IndexOf(conversation);
-            if (currentIndex < 0)
-                return;
-
-            var targetIndex = conversation.IsPinned ? 0 : GetUnpinnedInsertIndex(conversation);
-            if (currentIndex == targetIndex)
-                return;
-
-            Conversations.Move(currentIndex, targetIndex);
-        }
-
-        private int GetUnpinnedInsertIndex(CopilotConversationRecord? exclude = null)
-        {
-            var count = 0;
-            foreach (var conversation in Conversations)
-            {
-                if (ReferenceEquals(conversation, exclude))
-                    continue;
-
-                if (!conversation.IsPinned)
-                    break;
-
-                count++;
-            }
-
-            return count;
         }
 
         private string BuildAttachmentContextBlock()
