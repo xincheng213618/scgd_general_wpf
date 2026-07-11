@@ -17,7 +17,9 @@ namespace WindowsServicePlugin.ServiceManager
             string executablePath,
             Action<string> logCallback,
             string? displayName = null,
-            bool startAfterInstall = false)
+            bool startAfterInstall = false,
+            string startType = "delayed-auto",
+            string? description = null)
         {
             if (string.IsNullOrWhiteSpace(serviceName))
             {
@@ -36,7 +38,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 logCallback($"正在通过 ColorVisionServiceHost 后台安装 {name} ({serviceName})...");
                 ServiceHostResponse response = await ColorVisionServiceHostClient.Default
-                    .InstallServiceAsync(serviceName, executablePath, name, $"ColorVision service: {name}", startAfterInstall: startAfterInstall)
+                    .InstallServiceAsync(serviceName, executablePath, name, description ?? $"ColorVision service: {name}", startType, startAfterInstall)
                     .ConfigureAwait(true);
 
                 if (response.Success)
