@@ -1,4 +1,4 @@
-#pragma warning disable CA1001,CA1822,CA1861,CA1870,CS4014
+#pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using ColorVision.Solution;
 using ColorVision.Solution.Workspace;
 using ColorVision.Copilot.Mcp;
@@ -31,7 +31,7 @@ namespace ColorVision.Copilot
 
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentContextBuilder _agentContextBuilder;
-        private readonly CopilotAgentService _agentService;
+        private readonly ICopilotAgentRuntime _agentRuntime;
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
@@ -65,7 +65,10 @@ namespace ColorVision.Copilot
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _agentContextBuilder = new CopilotAgentContextBuilder();
-            _agentService = new CopilotAgentService(chatService, CopilotToolRegistry.CreateDefault(), _agentContextBuilder);
+            var toolRegistry = CopilotToolRegistry.CreateDefault();
+            var builtInAgentRuntime = new CopilotAgentService(chatService, toolRegistry, _agentContextBuilder);
+            var agentFrameworkRuntime = new CopilotMicrosoftAgentFrameworkRuntime(toolRegistry, _agentContextBuilder);
+            _agentRuntime = new CopilotAgentRuntimeRouter(builtInAgentRuntime, agentFrameworkRuntime);
             _contextRegistry = CopilotContextRegistry.CreateDefault();
             _config = CopilotConfig.Instance;
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
@@ -684,7 +687,7 @@ namespace ColorVision.Copilot
                 Mode = userMessage.RequestMode,
             };
 
-            var result = await _agentService.RunAsync(
+            var result = await _agentRuntime.RunAsync(
                 agentRequest,
                 agentEvent => ApplyAgentEvent(assistantMessage, agentEvent),
                 cancellationToken);

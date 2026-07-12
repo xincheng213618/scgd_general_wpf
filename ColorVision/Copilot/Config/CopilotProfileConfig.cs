@@ -168,6 +168,15 @@ namespace ColorVision.Copilot
         }
         private int _maxToolRounds = DefaultMaxToolRounds;
 
+        [DisplayName("Agent Framework (experimental)")]
+        [Description("Use Microsoft Agent Framework Harness for supported OpenAI-compatible profiles. Falls back to the built-in runtime when unavailable.")]
+        public bool UseAgentFramework
+        {
+            get => _useAgentFramework;
+            set => SetProperty(ref _useAgentFramework, value);
+        }
+        private bool _useAgentFramework;
+
         [JsonIgnore]
         public bool IsConfigured =>
             !string.IsNullOrWhiteSpace(ApiKey) &&
@@ -275,6 +284,7 @@ namespace ColorVision.Copilot
                 MaxTokens = MaxTokens,
                 MaxToolRounds = MaxToolRounds,
                 Temperature = Temperature,
+                UseAgentFramework = UseAgentFramework,
             };
 
             if (!string.IsNullOrWhiteSpace(_systemPromptOverride))

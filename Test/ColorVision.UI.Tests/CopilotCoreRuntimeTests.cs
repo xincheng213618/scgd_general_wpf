@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using Microsoft.Extensions.AI;
 
 namespace ColorVision.UI.Tests;
 
@@ -174,6 +175,57 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(CopilotAgentEventType.Completed, events[^1].Type);
     }
 
+    [Fact]
+    public async Task AgentRuntimeRouter_UsesExperimentalRuntimeOnlyForExplicitSupportedProfile()
+    {
+        var builtIn = new RecordingAgentRuntime("built-in");
+        var experimental = new RecordingAgentRuntime("experimental");
+        var router = new CopilotAgentRuntimeRouter(builtIn, experimental);
+        var profile = CreateProfile();
+        var events = new List<CopilotAgentEvent>();
+
+        await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
+        Assert.Equal(1, builtIn.RunCount);
+        Assert.Equal(0, experimental.RunCount);
+
+        profile.UseAgentFramework = true;
+        await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
+        Assert.Equal(1, builtIn.RunCount);
+        Assert.Equal(1, experimental.RunCount);
+
+        profile.ProviderType = CopilotProviderType.AnthropicCompatible;
+        await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
+        Assert.Equal(2, builtIn.RunCount);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.Status && item.Text.Contains("using the built-in Agent runtime", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ExecutesGuardedFunctionAndStreamsAnswer()
+    {
+        var tool = new TestAgentTool("SearchDocs");
+        using var fakeChatClient = new FunctionCallingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var profile = CreateProfile();
+        profile.UseAgentFramework = true;
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Search the ColorVision documentation.",
+            Profile = profile,
+            Mode = CopilotAgentMode.Diagnose,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Single(result.StepRecords);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.ToolResult);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text == "harness answer");
+        Assert.Equal(CopilotAgentEventType.Completed, events[^1].Type);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempRoot))
@@ -229,7 +281,12 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
     private sealed class TestAgentTool : ICopilotTool
     {
-        public string Name => "TestTool";
+        public TestAgentTool(string name = "TestTool")
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
 
         public string Description => "Collect deterministic test evidence.";
 
@@ -247,6 +304,58 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 Summary = "Evidence collected.",
                 Content = "deterministic evidence",
             });
+        }
+    }
+
+    private sealed class RecordingAgentRuntime(string runtimeName) : ICopilotAgentRuntime
+    {
+        public int RunCount { get; private set; }
+
+        public Task<CopilotAgentRunResult> RunAsync(CopilotAgentRequest request, Action<CopilotAgentEvent> onEvent, CancellationToken cancellationToken)
+        {
+            RunCount++;
+            onEvent(CopilotAgentEvent.Status(runtimeName));
+            return Task.FromResult(new CopilotAgentRunResult());
+        }
+    }
+
+    private sealed class FunctionCallingChatClient : IChatClient
+    {
+        private int _streamCallCount;
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, "harness answer")));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
+
+            if (Interlocked.Increment(ref _streamCallCount) == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, new List<AIContent>
+                {
+                    new FunctionCallContent("call-1", "search_colorvision_docs", new Dictionary<string, object?>
+                    {
+                        ["query"] = "plugin development",
+                    }),
+                });
+                yield break;
+            }
+
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "harness answer");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
         }
     }
 }

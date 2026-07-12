@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotAgentService
+    public sealed class CopilotAgentService : ICopilotAgentRuntime
     {
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentPlanner _planner;

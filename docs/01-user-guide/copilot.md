@@ -11,6 +11,14 @@ ColorVision Copilot 用来解释当前界面信息、辅助排查流程和设备
 
 API Key 和 MCP token 保存在本机加密配置中。发送问题前，应确认当前附加的上下文不包含不希望交给模型的数据。
 
+## 实验性 Agent Framework
+
+模型设置的高级选项中可以按 Profile 开启 **Microsoft Agent Framework（实验）**。该选项默认关闭，目前仅用于验证支持原生 Function Calling 的 OpenAI-compatible 模型。
+
+实验运行时只开放文档搜索、工作区文件名搜索和最近日志读取三个受控只读工具。内置文件访问、Web 搜索、Shell、文件记忆、Skills、后台 Agent 和自动审批均保持关闭。Anthropic-compatible 或配置不完整的 Profile 会自动继续使用原有 Agent 运行时。
+
+这是兼容性实验入口，不代表所有 OpenAI-compatible 服务商都支持相同的工具调用协议；如果服务端不支持 Function Calling，请关闭该选项恢复原有 Planner 运行时。
+
 ## 常用入口
 
 | 场景 | 操作入口 | Copilot 收到的内容 |
