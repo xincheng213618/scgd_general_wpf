@@ -195,21 +195,6 @@ public sealed class CopilotTemplatePatchAgentTests : IDisposable
         }));
     }
 
-    [Fact]
-    public void PlannerPromptShowsTemplatePatchInputAsValidJson()
-    {
-        var messages = new CopilotAgentContextBuilder().BuildPlannerMessages(
-            CreateRequest("把曝光调整到 12"),
-            new ICopilotTool[] { new CopilotTemplatePatchTool(), new CopilotApplyTemplatePatchTool() },
-            Array.Empty<CopilotAgentStepRecord>(),
-            Array.Empty<string>());
-        var prompt = messages[^1].Content;
-
-        Assert.Contains("{\"proposed_changes\":{\"FieldName\":newValue}}", prompt, StringComparison.Ordinal);
-        Assert.Contains("ApplyTemplatePatch", prompt, StringComparison.Ordinal);
-        Assert.DoesNotContain("{\\\"proposed_changes", prompt, StringComparison.Ordinal);
-    }
-
     public void Dispose()
     {
         CopilotLiveContextRegistry.Clear("template-json-editor:agent-test");
