@@ -608,13 +608,25 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock MaxWidth="560"
-                               VerticalAlignment="Center"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource GlobalTextBrush}"
-                               Text="{Binding SelectedConversation.Title, FallbackValue={x:Static properties:Resources.CopilotNewConversation}, TargetNullValue={x:Static properties:Resources.CopilotNewConversation}}"
-                               TextTrimming="CharacterEllipsis" />
+                    <StackPanel MaxWidth="560" VerticalAlignment="Center">
+                        <TextBlock FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Text="{Binding SelectedConversation.Title, FallbackValue={x:Static properties:Resources.CopilotNewConversation}, TargetNullValue={x:Static properties:Resources.CopilotNewConversation}}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <Button Margin="0,3,0,0"
+                                Padding="0"
+                                HorizontalAlignment="Left"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                Command="{Binding OpenAgentRunNoticeCommand}"
+                                Foreground="{DynamicResource GlobalTextBrush}"
+                                FontSize="10"
+                                Opacity="0.62"
+                                Content="{Binding AgentRunNoticeText}"
+                                ToolTip="打开 Agent 任务"
+                                Visibility="{Binding HasAgentRunNotice, Converter={StaticResource bool2VisibilityConverter}}" />
+                    </StackPanel>
 
                     <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"

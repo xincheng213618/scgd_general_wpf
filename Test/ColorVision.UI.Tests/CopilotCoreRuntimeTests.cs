@@ -16,29 +16,6 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     private readonly string _tempRoot = Path.Combine(Path.GetTempPath(), "ColorVision-Copilot-" + Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void RequestSession_ReplacesCancelsAndCompletesTokens()
-    {
-        using var session = new CopilotRequestSession();
-
-        var first = session.Begin();
-        Assert.True(session.IsActive);
-
-        var second = session.Begin();
-        Assert.True(first.IsCancellationRequested);
-        Assert.False(second.IsCancellationRequested);
-
-        session.Cancel();
-        Assert.True(second.IsCancellationRequested);
-        Assert.False(session.IsActive);
-        Assert.Throws<InvalidOperationException>(() => session.GetRequiredToken());
-
-        var third = session.Begin();
-        session.Complete();
-        Assert.False(third.IsCancellationRequested);
-        Assert.False(session.IsActive);
-    }
-
-    [Fact]
     public void StateStore_UsesBackupWhenPrimaryStateIsCorrupt()
     {
         var store = new CopilotChatStateStore(_tempRoot);
