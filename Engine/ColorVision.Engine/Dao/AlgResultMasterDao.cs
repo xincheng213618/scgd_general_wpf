@@ -18,7 +18,7 @@ namespace ColorVision.Engine
         [SugarColumn(ColumnName ="img_file", IsNullable = true)]
         public string ImgFile { get; set; }
 
-        [SugarColumn(ColumnName ="img_file_type",ColumnDataType = "tinyint",Length =4)]
+        [SugarColumn(ColumnName = "img_file_type", ColumnDataType = "int", Length = 11)]
         public ViewResultAlgType ImgFileType { get; set; }
 
         [SugarColumn(ColumnName ="version", IsNullable = true)]
