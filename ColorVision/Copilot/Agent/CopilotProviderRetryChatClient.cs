@@ -152,6 +152,19 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        internal static bool IsProviderInterruption(Exception exception, CancellationToken cancellationToken)
+        {
+            if (exception == null || cancellationToken.IsCancellationRequested)
+                return false;
+
+            return EnumerateExceptionChain(exception).Any(candidate => candidate is ClientResultException
+                or HttpRequestException
+                or TimeoutException
+                or IOException
+                or SocketException
+                or OperationCanceledException);
+        }
+
         private CopilotProviderRetryInfo CreateRetry(Exception exception, int failedAttempt)
         {
             _ = TryClassifyTransientFailure(exception, CancellationToken.None, out var failureKind, out var statusCode);

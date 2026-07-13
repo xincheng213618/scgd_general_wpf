@@ -383,6 +383,7 @@ namespace ColorVision.Copilot
 
             var controlIntent = CopilotAgentControlIntent.None;
             var timeBudgetExhausted = false;
+            var providerInterrupted = false;
             try
             {
                 while (true)
@@ -470,11 +471,28 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; finalizing the current task checkpoint."));
                 }
             }
+            catch (Exception ex) when (CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
+            {
+                if (bridge.StepRecords.Count == 0 && answerText.Length == 0)
+                    throw;
+
+                providerInterrupted = true;
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                if (answerText.Length == 0)
+                {
+                    emit(CopilotAgentEvent.AnswerDelta(
+                        "模型连接在 Agent 已取得进展后中断。当前任务状态和工具结果正在保存，可安全恢复，不会自动重放工具。"));
+                }
+            }
 
             if (controlIntent == CopilotAgentControlIntent.None)
                 timeBudgetExhausted |= timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
-            var hasModelFinalAnswer = !string.IsNullOrWhiteSpace(answerText.ToString());
-            if (controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted && !hasModelFinalAnswer)
+            var hasModelFinalAnswer = !providerInterrupted && !string.IsNullOrWhiteSpace(answerText.ToString());
+            if (controlIntent == CopilotAgentControlIntent.None
+                && !timeBudgetExhausted
+                && !providerInterrupted
+                && !hasModelFinalAnswer)
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework returned no displayable final answer; starting one bounded finalization call with business tools disabled."));
                 var repairLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
@@ -554,9 +572,12 @@ namespace ColorVision.Copilot
                 CopilotAgentControlIntent.Pause => CopilotAgentStopReason.Paused,
                 CopilotAgentControlIntent.Cancel => CopilotAgentStopReason.Cancelled,
                 _ when timeBudgetExhausted => CopilotAgentStopReason.BudgetExhausted,
+                _ when providerInterrupted => CopilotAgentStopReason.ProviderFailure,
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer),
             };
             var blockers = CopilotAgentBlockerDetector.Detect(taskLedger, bridge.StepRecords, stopReason);
+            if (providerInterrupted)
+                blockers = blockers.Prepend(CreateProviderInterruptionBlocker()).ToArray();
             if (stopReason == CopilotAgentStopReason.BudgetExhausted
                 && !hasModelFinalAnswer
                 && !blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ProviderOutput))
@@ -793,6 +814,17 @@ namespace ColorVision.Copilot
                     : requestBudgetExhausted
                         ? "The Agent request budget was exhausted before a final answer was produced."
                         : "The model returned no final answer after the bounded finalization attempt.",
+                RequiresUserInput = true,
+            };
+        }
+
+        private static CopilotAgentBlockerSnapshot CreateProviderInterruptionBlocker()
+        {
+            return new CopilotAgentBlockerSnapshot
+            {
+                Kind = CopilotAgentBlockerKind.ProviderOutput,
+                Code = "provider_interrupted",
+                Summary = "The provider stream ended after material Agent progress; the current session was checkpointed before any tool replay.",
                 RequiresUserInput = true,
             };
         }

@@ -2605,7 +2605,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_DoesNotReplayProviderCallAfterStreamingStarts()
+    public async Task AgentFrameworkRuntime_CheckpointsProviderFailureAfterStreamingStarts()
     {
         using var fakeChatClient = new PartialStreamFailureChatClient();
         var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
@@ -2614,18 +2614,142 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             _ => fakeChatClient);
         var events = new List<CopilotAgentEvent>();
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => runtime.RunAsync(new CopilotAgentRequest
+        var result = await runtime.RunAsync(new CopilotAgentRequest
         {
             UserText = "do not replay partial provider output",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Diagnose,
-        }, events.Add, CancellationToken.None));
+        }, events.Add, CancellationToken.None);
 
         Assert.Equal(1, fakeChatClient.StreamCallCount);
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        Assert.NotNull(result.SessionCheckpoint);
+        var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+        Assert.Equal("provider_interrupted", blocker.Code);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta
             && item.Text.Contains("partial answer", StringComparison.Ordinal));
         Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("provider request retry", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(
+            PartialStreamFailureChatClient.SensitiveFailureMessage,
+            JsonSerializer.Serialize(new { result.Blockers, result.TaskEventJournal, Events = events }),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_RetriesOnlyFinalAnswerAfterProviderFailureWithoutReplayingTool()
+    {
+        var profile = CreateProfile();
+        var tool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.Query("URL.", required: true));
+        using var interruptedClient = new ToolThenPartialStreamFailureChatClient();
+        var interruptedRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => interruptedClient);
+
+        var interrupted = await interruptedRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "https://example.test/ inspect this page",
+            Profile = profile,
+            Mode = CopilotAgentMode.Web,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, interrupted.StopReason);
+        Assert.NotNull(interrupted.SessionCheckpoint);
+        Assert.Single(interrupted.StepRecords);
+        Assert.Equal(2, interruptedClient.StreamCallCount);
+
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "模型连接中断")
+        {
+            AgentStopReason = interrupted.StopReason,
+            AgentTaskLedger = interrupted.TaskLedger,
+            AgentBlockers = interrupted.Blockers,
+        };
+        var recovery = CopilotAgentRecoveryPolicy.Evaluate(
+            message,
+            interrupted.SessionCheckpoint,
+            profile,
+            CopilotCapabilityCatalog.Shared.GetSnapshot());
+        Assert.True(recovery.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Finalize, recovery.Request!.Mode);
+
+        using var finalClient = new CapturingFinalChatClient();
+        var recoveryRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => finalClient);
+        var recovered = await recoveryRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = recovery.UserMessage,
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = interrupted.SessionCheckpoint,
+            Recovery = recovery.Request,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, recovered.StopReason);
+        Assert.Null(recovered.SessionCheckpoint);
+        Assert.Empty(recovered.StepRecords);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.NotNull(finalClient.LastOptions);
+        Assert.Empty(finalClient.LastOptions!.Tools ?? Array.Empty<AITool>());
+        Assert.Contains(finalClient.LastMessages!, item => item.Text.Contains("Evidence collected", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ResumesOpenTodoAfterProviderFailure()
+    {
+        var profile = CreateProfile();
+        using var interruptedClient = new TodoThenPartialStreamFailureChatClient();
+        var interruptedRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => interruptedClient);
+
+        var interrupted = await interruptedRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "prepare and finish the durable task",
+            Profile = profile,
+            Mode = CopilotAgentMode.Diagnose,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, interrupted.StopReason);
+        Assert.Equal(1, interrupted.TaskLedger.RemainingCount);
+        Assert.NotNull(interrupted.SessionCheckpoint);
+
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "partial planning output")
+        {
+            AgentStopReason = interrupted.StopReason,
+            AgentTaskLedger = interrupted.TaskLedger,
+            AgentBlockers = interrupted.Blockers,
+        };
+        var recovery = CopilotAgentRecoveryPolicy.Evaluate(
+            message,
+            interrupted.SessionCheckpoint,
+            profile,
+            CopilotCapabilityCatalog.Shared.GetSnapshot());
+        Assert.True(recovery.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Resume, recovery.Request!.Mode);
+
+        using var resumedClient = new ScriptedHarnessChatClient(options => CreateTodoCompleteCall(options, 1, "Recovered after provider interruption."));
+        var resumedRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => resumedClient);
+        var resumed = await resumedRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = recovery.UserMessage,
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = interrupted.SessionCheckpoint,
+            Recovery = recovery.Request,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, resumed.StopReason);
+        Assert.True(resumed.TaskLedger.ResumedFromCheckpoint);
+        Assert.Equal(0, resumed.TaskLedger.RemainingCount);
+        Assert.Equal(2, resumedClient.StreamCallCount);
     }
 
     [Fact]
@@ -4150,6 +4274,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
     private sealed class PartialStreamFailureChatClient : IChatClient
     {
+        public const string SensitiveFailureMessage = "stream interrupted: provider-secret-value";
+
         private int _streamCallCount;
 
         public int StreamCallCount => Volatile.Read(ref _streamCallCount);
@@ -4172,7 +4298,95 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Interlocked.Increment(ref _streamCallCount);
             yield return new ChatResponseUpdate(ChatRole.Assistant, "partial answer");
             await Task.Yield();
-            throw new HttpRequestException("stream interrupted after output", null, HttpStatusCode.ServiceUnavailable);
+            throw new HttpRequestException(SensitiveFailureMessage, null, HttpStatusCode.ServiceUnavailable);
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class ToolThenPartialStreamFailureChatClient : IChatClient
+    {
+        private int _streamCallCount;
+
+        public int StreamCallCount => Volatile.Read(ref _streamCallCount);
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new HttpRequestException("unexpected non-stream provider call", null, HttpStatusCode.ServiceUnavailable);
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var callNumber = Interlocked.Increment(ref _streamCallCount);
+            await Task.Yield();
+            if (callNumber == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [
+                    new FunctionCallContent("provider-failure-tool-call", "colorvision_fetch_url", new Dictionary<string, object?>
+                    {
+                        ["query"] = "https://example.test/",
+                    }),
+                ]);
+                yield break;
+            }
+
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "partial synthesis");
+            throw new HttpRequestException("stream interrupted after tool execution", null, HttpStatusCode.ServiceUnavailable);
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class TodoThenPartialStreamFailureChatClient : IChatClient
+    {
+        private int _streamCallCount;
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new HttpRequestException("unexpected non-stream provider call", null, HttpStatusCode.ServiceUnavailable);
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Assert.NotNull(options);
+            var callNumber = Interlocked.Increment(ref _streamCallCount);
+            await Task.Yield();
+            if (callNumber == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [
+                    CreateTodoAddCall(options!, "Durable task", "Complete after restoring the Harness session."),
+                ]);
+                yield break;
+            }
+
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "partial planning output");
+            throw new HttpRequestException("stream interrupted after todo creation", null, HttpStatusCode.ServiceUnavailable);
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

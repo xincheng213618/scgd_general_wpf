@@ -81,6 +81,42 @@ public sealed class CopilotAgentTaskIndexTests
     }
 
     [Fact]
+    public void Build_IndexesCheckpointedProviderFailure()
+    {
+        var interrupted = CreateConversation("provider interrupted", CopilotAgentStopReason.ProviderFailure, DateTime.Now, withCheckpoint: true);
+        var message = interrupted.Messages[0];
+        message.AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot { Mode = "execute" };
+        message.AgentBlockers =
+        [
+            new CopilotAgentBlockerSnapshot
+            {
+                Kind = CopilotAgentBlockerKind.ProviderOutput,
+                Code = "provider_interrupted",
+                Summary = "The provider stream ended after material Agent progress.",
+                RequiresUserInput = true,
+            },
+        ];
+
+        var task = Assert.Single(CopilotAgentTaskIndex.Build([interrupted]));
+
+        Assert.Equal(CopilotAgentTaskAttentionKind.ProviderFailure, task.AttentionKind);
+        Assert.Equal("模型连接中断", task.StatusLabel);
+        Assert.Equal("已保存当前进度，可安全恢复", task.DetailLabel);
+        Assert.True(task.CanResume);
+        Assert.Equal("重试最终回答", message.AgentRecoveryActionLabel);
+
+        interrupted.AgentSessionCheckpoint = null;
+        message.AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot
+        {
+            Mode = "execute",
+            Items = [new CopilotAgentTaskItem { Id = 1, Title = "Retry manually" }],
+        };
+        var withoutCheckpoint = Assert.Single(CopilotAgentTaskIndex.Build([interrupted]));
+        Assert.False(withoutCheckpoint.CanResume);
+        Assert.Equal("恢复点未能保存，请重新发送请求", withoutCheckpoint.DetailLabel);
+    }
+
+    [Fact]
     public void StateRoundTrip_RebuildsPausedTaskIndex()
     {
         var root = Path.Combine(Path.GetTempPath(), "ColorVision", "CopilotAgentTaskIndexTests", Guid.NewGuid().ToString("N"));

@@ -13,6 +13,7 @@ namespace ColorVision.Copilot
         BudgetExhausted,
         TaskPassLimit,
         IncompleteOutput,
+        ProviderFailure,
     }
 
     public sealed class CopilotAgentTaskSummary
@@ -52,6 +53,7 @@ namespace ColorVision.Copilot
             CopilotAgentTaskAttentionKind.BudgetExhausted => "预算耗尽",
             CopilotAgentTaskAttentionKind.TaskPassLimit => "达到轮次上限",
             CopilotAgentTaskAttentionKind.IncompleteOutput => "等待最终回答",
+            CopilotAgentTaskAttentionKind.ProviderFailure => "模型连接中断",
             _ => string.Empty,
         };
 
@@ -61,7 +63,9 @@ namespace ColorVision.Copilot
             {
                 var blocker = Message.AgentBlockers.FirstOrDefault(item => item != null && item.IsStructurallyValid());
                 if (blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput)
-                    return "模型未返回最终回答";
+                    return blocker.Code == "provider_interrupted"
+                        ? Conversation.AgentSessionCheckpoint == null ? "恢复点未能保存，请重新发送请求" : "已保存当前进度，可安全恢复"
+                        : "模型未返回最终回答";
                 if (blocker != null && !string.IsNullOrWhiteSpace(blocker.Summary))
                     return blocker.Summary;
 
@@ -112,6 +116,7 @@ namespace ColorVision.Copilot
                 CopilotAgentStopReason.BudgetExhausted => CopilotAgentTaskAttentionKind.BudgetExhausted,
                 CopilotAgentStopReason.TaskPassLimit => CopilotAgentTaskAttentionKind.TaskPassLimit,
                 CopilotAgentStopReason.IncompleteOutput => CopilotAgentTaskAttentionKind.IncompleteOutput,
+                CopilotAgentStopReason.ProviderFailure => CopilotAgentTaskAttentionKind.ProviderFailure,
                 _ => (CopilotAgentTaskAttentionKind?)null,
             };
 

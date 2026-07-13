@@ -391,6 +391,7 @@ namespace ColorVision.Copilot
         Paused,
         Cancelled,
         IncompleteOutput,
+        ProviderFailure,
     }
 
     public sealed class CopilotAgentTaskLedgerSnapshot

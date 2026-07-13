@@ -27,11 +27,16 @@ namespace ColorVision.Copilot
                 return false;
 
             if (Mode == CopilotAgentRecoveryMode.Finalize)
-                return PreviousStopReason is CopilotAgentStopReason.IncompleteOutput or CopilotAgentStopReason.BudgetExhausted
+                return PreviousStopReason is (CopilotAgentStopReason.IncompleteOutput
+                    or CopilotAgentStopReason.BudgetExhausted
+                    or CopilotAgentStopReason.ProviderFailure)
                     && string.IsNullOrWhiteSpace(ToolName)
                     && string.IsNullOrWhiteSpace(SourceCallKey);
 
-            if (PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused))
+            if (PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted
+                or CopilotAgentStopReason.TaskPassLimit
+                or CopilotAgentStopReason.Paused
+                or CopilotAgentStopReason.ProviderFailure))
                 return false;
 
             return Mode != CopilotAgentRecoveryMode.RetryRead
@@ -72,7 +77,10 @@ namespace ColorVision.Copilot
 
             var isFinalAnswerRecovery = message.HasRecoverableFinalAnswer;
             var isTaskRecovery = message.HasIncompleteAgentTasks
-                && message.AgentStopReason is CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused;
+                && message.AgentStopReason is (CopilotAgentStopReason.BudgetExhausted
+                    or CopilotAgentStopReason.TaskPassLimit
+                    or CopilotAgentStopReason.Paused
+                    or CopilotAgentStopReason.ProviderFailure);
             if (!isFinalAnswerRecovery && !isTaskRecovery)
                 return CopilotAgentRecoveryDecision.Unavailable;
 

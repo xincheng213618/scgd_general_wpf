@@ -111,14 +111,18 @@ namespace ColorVision.Copilot
         {
             try
             {
-                var remaining = action.ExpiresAt - DateTimeOffset.UtcNow;
-                if (remaining <= TimeSpan.Zero)
+                while (!decision.IsCompleted)
                 {
+                    var remaining = action.ExpiresAt - DateTimeOffset.UtcNow;
+                    if (remaining > TimeSpan.Zero
+                        && await Task.WhenAny(decision, Task.Delay(remaining, CancellationToken.None)) == decision)
+                    {
+                        break;
+                    }
+
                     _confirmationStore.ExpireStaleActions();
-                }
-                else if (await Task.WhenAny(decision, Task.Delay(remaining, CancellationToken.None)) != decision)
-                {
-                    _confirmationStore.ExpireStaleActions();
+                    if (!decision.IsCompleted)
+                        await Task.Delay(TimeSpan.FromMilliseconds(1), cancellationToken);
                 }
                 return await decision.WaitAsync(cancellationToken);
             }

@@ -255,7 +255,9 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public bool HasRecoverableFinalAnswer => !HasIncompleteAgentTasks
-            && AgentStopReason is CopilotAgentStopReason.IncompleteOutput or CopilotAgentStopReason.BudgetExhausted
+            && AgentStopReason is (CopilotAgentStopReason.IncompleteOutput
+                or CopilotAgentStopReason.BudgetExhausted
+                or CopilotAgentStopReason.ProviderFailure)
             && AgentBlockers.Any(blocker => blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput);
 
         [JsonIgnore]
@@ -294,6 +296,7 @@ namespace ColorVision.Copilot
                 {
                     CopilotAgentBlockerKind.UserDecision => "需要您的决定",
                     CopilotAgentBlockerKind.Approval => "操作未获批准",
+                    CopilotAgentBlockerKind.ProviderOutput when blocker.Code == "provider_interrupted" => "模型连接中断",
                     CopilotAgentBlockerKind.ProviderOutput => "模型未返回最终回答",
                     _ when !string.IsNullOrWhiteSpace(blocker.ToolName) => $"{blocker.ToolName} 无法继续",
                     _ => "任务暂时受阻",
@@ -319,6 +322,7 @@ namespace ColorVision.Copilot
             CopilotAgentStopReason.Paused => "任务已暂停",
             CopilotAgentStopReason.Cancelled => "任务已取消",
             CopilotAgentStopReason.IncompleteOutput => "未收到最终回答",
+            CopilotAgentStopReason.ProviderFailure => "模型连接中断",
             _ => "Agent 已停止",
         };
 
