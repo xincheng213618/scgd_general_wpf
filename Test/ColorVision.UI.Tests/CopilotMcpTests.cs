@@ -173,7 +173,10 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.Equal("builtIn", createFlow.GetProperty("sourceKind").GetString());
         Assert.Equal("always", createFlow.GetProperty("approvalMode").GetString());
         Assert.Equal("exclusive", createFlow.GetProperty("concurrencyMode").GetString());
+        Assert.Equal("none", createFlow.GetProperty("evidenceMode").GetString());
         Assert.False(string.IsNullOrWhiteSpace(createFlow.GetProperty("inputSchemaFingerprint").GetString()));
+        var fetchUrl = Assert.Single(capabilities, capability => capability.GetProperty("id").GetString() == "builtin:fetchurl");
+        Assert.Equal("redactedExcerpt", fetchUrl.GetProperty("evidenceMode").GetString());
         Assert.DoesNotContain("http://", text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("https://", text, StringComparison.OrdinalIgnoreCase);
     }

@@ -51,6 +51,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolAuditArgumentMode AuditArgumentMode { get; init; }
 
+        public CopilotToolEvidenceMode EvidenceMode { get; init; }
+
         public string InputSchemaFingerprint { get; init; } = string.Empty;
     }
 
@@ -251,6 +253,7 @@ namespace ColorVision.Copilot
                 ConcurrencyMode = candidate.Capability.EffectiveConcurrencyMode,
                 ExecutionTimeoutMs = Math.Max(1, (long)candidate.Capability.EffectiveExecutionTimeout.TotalMilliseconds),
                 AuditArgumentMode = candidate.Capability.AuditArgumentMode,
+                EvidenceMode = candidate.Capability.EvidenceMode,
                 InputSchemaFingerprint = candidate.SchemaFingerprint,
             };
             _knownCapabilities[candidate.Id] = new KnownCapability(candidate.Signature, revision);
@@ -289,6 +292,7 @@ namespace ColorVision.Copilot
                 ((int)capability.EffectiveConcurrencyMode).ToString(),
                 capability.EffectiveExecutionTimeout.Ticks.ToString(),
                 ((int)capability.AuditArgumentMode).ToString(),
+                ((int)capability.EvidenceMode).ToString(),
                 schema,
             });
             return new Candidate(

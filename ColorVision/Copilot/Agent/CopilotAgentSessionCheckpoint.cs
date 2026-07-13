@@ -56,6 +56,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotAgentCheckpointCapability> Capabilities { get; init; } = Array.Empty<CopilotAgentCheckpointCapability>();
 
+        public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
+
         public DateTimeOffset UpdatedAtUtc { get; init; }
 
         public bool IsUsableFor(CopilotProfileConfig profile)
@@ -114,7 +116,8 @@ namespace ColorVision.Copilot
                     || string.IsNullOrWhiteSpace(capability.Fingerprint)
                     || capability.Fingerprint.Length != 64
                     || capability.Fingerprint.Any(character => !Uri.IsHexDigit(character))) ?? false)
-                || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count))
+                || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count)
+                || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts)
             {
                 return false;
             }
@@ -133,7 +136,8 @@ namespace ColorVision.Copilot
         public static CopilotAgentSessionCheckpoint? Create(
             CopilotProfileConfig profile,
             string serializedSessionJson,
-            CopilotCapabilityCatalogSnapshot? capabilitySnapshot = null)
+            CopilotCapabilityCatalogSnapshot? capabilitySnapshot = null,
+            IReadOnlyList<CopilotAgentEvidenceArtifact>? evidenceArtifacts = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -142,6 +146,12 @@ namespace ColorVision.Copilot
             capabilitySnapshot ??= CopilotCapabilityCatalog.Shared.GetSnapshot();
             if (capabilitySnapshot.Capabilities.Count == 0 || capabilitySnapshot.Capabilities.Count > MaxCheckpointCapabilities)
                 return null;
+            var persistedEvidence = (evidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray();
+            if (persistedEvidence.Length > CopilotAgentEvidenceArtifact.MaxArtifacts
+                || persistedEvidence.Any(artifact => artifact?.IsStructurallyValid() != true))
+            {
+                return null;
+            }
 
             var checkpoint = new CopilotAgentSessionCheckpoint
             {
@@ -156,6 +166,7 @@ namespace ColorVision.Copilot
                         Fingerprint = capability.Fingerprint,
                     })
                     .ToArray(),
+                EvidenceArtifacts = persistedEvidence,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
             return checkpoint.IsStructurallyValid() ? checkpoint : null;

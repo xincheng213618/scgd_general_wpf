@@ -99,6 +99,20 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                     Fingerprint = new string('a', 64),
                 },
             ],
+            EvidenceArtifacts =
+            [
+                new CopilotAgentEvidenceArtifact
+                {
+                    Id = "evidence:" + new string('b', 32),
+                    CapabilityId = "builtin:searchdocs",
+                    CapabilityFingerprint = new string('a', 64),
+                    ToolName = "SearchDocs",
+                    ResourceKey = "resource:0123456789abcdef",
+                    Summary = "Documentation evidence collected.",
+                    ContentFingerprint = new string('c', 64),
+                    CapturedAtUtc = DateTimeOffset.UtcNow,
+                },
+            ],
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         };
         state.Conversations.Add(conversation);
@@ -115,6 +129,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal("builtin:searchdocs", capability.Id);
         Assert.Equal(2, capability.Revision);
         Assert.Equal(new string('a', 64), capability.Fingerprint);
+        var evidence = Assert.Single(checkpoint.EvidenceArtifacts);
+        Assert.Equal("builtin:searchdocs", evidence.CapabilityId);
+        Assert.Equal("Documentation evidence collected.", evidence.Summary);
     }
 
     [Fact]
@@ -986,14 +1003,18 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     {
         var profile = CreateProfile();
         var catalog = new CopilotCapabilityCatalog();
+        var firstTool = new TestAgentTool(
+            "CatalogProbe",
+            inputSchema: CopilotToolInputSchema.OptionalQuery,
+            evidenceMode: CopilotToolEvidenceMode.RedactedExcerpt);
         catalog.PublishSource(
             CopilotCapabilitySourceKind.Plugin,
             "plugin:runtime-test",
             "Runtime test",
-            [new TestAgentTool("CatalogProbe", inputSchema: CopilotToolInputSchema.OptionalQuery)]);
-        using var firstClient = new CapturingFinalChatClient();
+            [firstTool]);
+        using var firstClient = new FunctionCallingChatClient("colorvision_catalog_probe");
         var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
-            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotToolRegistry([firstTool]),
             new CopilotAgentContextBuilder(),
             new CopilotToolExecutor(),
             _ => firstClient,
@@ -1006,15 +1027,22 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Mode = CopilotAgentMode.Auto,
         }, _ => { }, CancellationToken.None);
         Assert.NotNull(firstResult.SessionCheckpoint);
+        var persistedEvidence = Assert.Single(firstResult.SessionCheckpoint!.EvidenceArtifacts);
+        Assert.Equal("CatalogProbe", persistedEvidence.ToolName);
+        Assert.Contains("deterministic evidence", persistedEvidence.ContentExcerpt, StringComparison.Ordinal);
 
+        var changedTool = new TestAgentTool(
+            "CatalogProbe",
+            inputSchema: CopilotToolInputSchema.Query("Changed required input.", required: true),
+            evidenceMode: CopilotToolEvidenceMode.RedactedExcerpt);
         catalog.PublishSource(
             CopilotCapabilitySourceKind.Plugin,
             "plugin:runtime-test",
             "Runtime test",
-            [new TestAgentTool("CatalogProbe", inputSchema: CopilotToolInputSchema.Query("Changed required input.", required: true))]);
+            [changedTool]);
         using var secondClient = new CapturingFinalChatClient();
         var secondRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
-            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotToolRegistry([changedTool]),
             new CopilotAgentContextBuilder(),
             new CopilotToolExecutor(),
             _ => secondClient,
@@ -1034,6 +1062,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.False(secondResult.TaskLedger.ResumedFromCheckpoint);
         Assert.NotNull(secondClient.LastMessages);
         Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("CAPABILITY-DRIFT-HISTORY-SENTINEL", StringComparison.Ordinal));
+        Assert.Contains(secondClient.LastMessages!, message => message.Role == ChatRole.User
+            && message.Text.Contains("Persisted evidence artifacts", StringComparison.Ordinal)
+            && message.Text.Contains("deterministic evidence", StringComparison.Ordinal));
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("capability drift", StringComparison.OrdinalIgnoreCase)
             && item.Text.Contains("re-plan", StringComparison.OrdinalIgnoreCase));
@@ -1775,16 +1806,23 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     {
         private readonly bool _success;
 
-        public TestAgentTool(string name = "TestTool", bool success = true, CopilotToolInputSchema? inputSchema = null)
+        public TestAgentTool(
+            string name = "TestTool",
+            bool success = true,
+            CopilotToolInputSchema? inputSchema = null,
+            CopilotToolEvidenceMode evidenceMode = CopilotToolEvidenceMode.Summary)
         {
             Name = name;
             _success = success;
             InputSchema = inputSchema ?? CopilotToolInputSchema.OptionalQuery;
+            EvidenceMode = evidenceMode;
         }
 
         public string Name { get; }
 
         public string Description => "Collect deterministic test evidence.";
+
+        public CopilotToolEvidenceMode EvidenceMode { get; }
 
         public CopilotToolInputSchema InputSchema { get; }
 

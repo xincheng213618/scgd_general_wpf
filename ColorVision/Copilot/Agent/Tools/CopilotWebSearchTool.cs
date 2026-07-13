@@ -10,6 +10,8 @@ namespace ColorVision.Copilot
 
         public string Description => "Search the public web and return result titles, snippets, and URLs. Useful when local ColorVision context or documentation is missing and the question can be answered from public information.";
 
+        public CopilotToolEvidenceMode EvidenceMode => CopilotToolEvidenceMode.RedactedExcerpt;
+
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Focused public web search query.", required: true);
 
         public bool CanHandle(CopilotAgentRequest request)

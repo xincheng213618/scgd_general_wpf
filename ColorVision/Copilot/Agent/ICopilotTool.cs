@@ -51,6 +51,7 @@ namespace ColorVision.Copilot
             Idempotency = Idempotency,
             ConcurrencyMode = ConcurrencyMode,
             ExecutionTimeout = ExecutionTimeout,
+            EvidenceMode = EvidenceMode,
         };
 
         CopilotToolAccess Access => CopilotToolAccess.ReadOnly;
@@ -64,6 +65,10 @@ namespace ColorVision.Copilot
         CopilotToolConcurrencyMode ConcurrencyMode => Access == CopilotToolAccess.ReadOnly && Idempotency == CopilotToolIdempotency.Idempotent
             ? CopilotToolConcurrencyMode.SharedRead
             : CopilotToolConcurrencyMode.Exclusive;
+
+        CopilotToolEvidenceMode EvidenceMode => Access == CopilotToolAccess.ReadOnly
+            ? CopilotToolEvidenceMode.Summary
+            : CopilotToolEvidenceMode.None;
 
         string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput)
         {

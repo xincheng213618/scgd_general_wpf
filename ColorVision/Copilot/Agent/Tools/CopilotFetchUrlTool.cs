@@ -15,6 +15,8 @@ namespace ColorVision.Copilot
 
         public string Description => "Fetch the title, description, and readable body text for web pages mentioned by the user.";
 
+        public CopilotToolEvidenceMode EvidenceMode => CopilotToolEvidenceMode.RedactedExcerpt;
+
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("One or more complete http/https URLs to fetch, separated by spaces.", required: true);
 
         public bool CanHandle(CopilotAgentRequest request)
