@@ -17,6 +17,7 @@ public sealed class CopilotToolIntentPolicyTests
 
         Assert.False(new CopilotSearchFilesTool().CanHandle(request));
         Assert.False(new CopilotGrepTextTool().CanHandle(request));
+        Assert.False(new CopilotSearchDocsTool().CanHandle(request));
         Assert.False(new CopilotWebSearchTool().CanHandle(request));
         Assert.False(new CopilotFetchUrlTool().CanHandle(request));
     }

@@ -22,6 +22,24 @@ namespace ColorVision.Copilot
             "latest news", "current price", "public information",
         };
 
+        private static readonly string[] ExternalLocalSearchMarkers =
+        {
+            "search_files", "searchfiles", "find_files", "findfiles", "grep_text", "greptext",
+            "search_code", "codesearch", "search the workspace", "search local files", "search source code",
+        };
+
+        private static readonly string[] ExternalWebSearchMarkers =
+        {
+            "web_search", "websearch", "search_web", "internet_search", "search_online",
+            "search the web", "search public web", "search the public web",
+        };
+
+        private static readonly string[] ExternalUrlFetchMarkers =
+        {
+            "fetch_url", "fetchurl", "read_url", "readurl", "get_url", "geturl",
+            "fetch a url", "fetch web page", "read web page",
+        };
+
         public static bool NeedsLocalEvidence(CopilotAgentRequest? request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat)
@@ -52,6 +70,22 @@ namespace ColorVision.Copilot
 
             return request.Mode == CopilotAgentMode.Web
                 || CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0;
+        }
+
+        public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)
+        {
+            if (request == null || request.Mode == CopilotAgentMode.Chat)
+                return false;
+
+            var identity = $"{toolName} {description}";
+            if (ContainsAny(identity, ExternalWebSearchMarkers))
+                return NeedsPublicWebSearch(request);
+            if (ContainsAny(identity, ExternalUrlFetchMarkers))
+                return NeedsUrlFetch(request);
+            if (ContainsAny(identity, ExternalLocalSearchMarkers))
+                return NeedsLocalEvidence(request);
+
+            return true;
         }
 
         private static bool ContainsAny(string? text, string[] markers)

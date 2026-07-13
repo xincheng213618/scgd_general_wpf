@@ -311,7 +311,9 @@ namespace ColorVision.Copilot
         public bool HasExecutionTrace => !string.IsNullOrWhiteSpace(ExecutionContent);
 
         [JsonIgnore]
-        public bool HasExecutionFailures => AgentTraceEntries.Any(entry => entry != null && IsFailedTraceState(entry.State))
+        public bool HasExecutionFailures => AgentTraceEntries.Any(entry => entry != null
+                && entry.IsVisibleInActivity
+                && IsFailedTraceState(entry.State))
             || AnalyzeExecutionTrace(FilterDisplayableExecutionContent(ExecutionContent)).FailedCount > 0;
 
         public bool IsExecutionExpanded
@@ -344,9 +346,16 @@ namespace ColorVision.Copilot
         public string ExecutionHeader => IsExecutionInProgress ? CopilotUiText.ExecutionInProgressHeader : CopilotUiText.ExecutionHeader;
 
         [JsonIgnore]
-        public string ExecutionSummary => AgentTraceEntries.Count > 0
-            ? BuildAgentTraceSummary(AgentTraceEntries, IsExecutionInProgress)
-            : BuildExecutionSummary(ExecutionContent, IsExecutionInProgress);
+        public string ExecutionSummary
+        {
+            get
+            {
+                var visibleEntries = VisibleAgentTraceEntries;
+                return visibleEntries.Count > 0
+                    ? BuildAgentTraceSummary(visibleEntries, IsExecutionInProgress)
+                    : BuildExecutionSummary(FilterDisplayableExecutionContent(ExecutionContent), IsExecutionInProgress);
+            }
+        }
 
         [JsonIgnore]
         public string ExecutionSummaryToolTip
@@ -704,7 +713,7 @@ namespace ColorVision.Copilot
             return entry.DiagnosticDetails;
         }
 
-        private static string BuildAgentTraceSummary(ObservableCollection<CopilotAgentTraceEntry> entries, bool isInProgress)
+        private static string BuildAgentTraceSummary(IReadOnlyList<CopilotAgentTraceEntry> entries, bool isInProgress)
         {
             var failedCount = entries.Count(entry => entry != null && IsFailedTraceState(entry.State));
             var latestTool = entries.LastOrDefault(entry => entry != null)?.ToolName ?? string.Empty;

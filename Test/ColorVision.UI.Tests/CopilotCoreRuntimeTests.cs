@@ -750,6 +750,33 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_DoesNotExposeRequestRejectedExternalTool()
+    {
+        var tool = new TestAgentTool("Mcp_Test_Search", canHandle: false);
+        using var fakeChatClient = new ScriptedHarnessChatClient(options =>
+        {
+            Assert.DoesNotContain(options.Tools!, candidate => candidate.Name == "colorvision_mcp_test_search");
+            return null;
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => fakeChatClient,
+            new StaticExternalToolProvider(tool));
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Explain lens distortion correction.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Empty(result.StepRecords);
+        Assert.Equal(0, tool.ExecutionCount);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_ExternalProtectedToolStillRequiresExactCallApproval()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
@@ -2151,15 +2178,18 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     private sealed class TestAgentTool : ICopilotTool
     {
         private readonly bool _success;
+        private readonly bool _canHandle;
 
         public TestAgentTool(
             string name = "TestTool",
             bool success = true,
             CopilotToolInputSchema? inputSchema = null,
-            CopilotToolEvidenceMode evidenceMode = CopilotToolEvidenceMode.Summary)
+            CopilotToolEvidenceMode evidenceMode = CopilotToolEvidenceMode.Summary,
+            bool canHandle = true)
         {
             Name = name;
             _success = success;
+            _canHandle = canHandle;
             InputSchema = inputSchema ?? CopilotToolInputSchema.OptionalQuery;
             EvidenceMode = evidenceMode;
         }
@@ -2176,7 +2206,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         public CopilotAgentToolInput? LastInput { get; private set; }
 
-        public bool CanHandle(CopilotAgentRequest request) => true;
+        public bool CanHandle(CopilotAgentRequest request) => _canHandle;
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {

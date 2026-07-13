@@ -293,7 +293,11 @@ namespace ColorVision.Copilot
         {
             return request != null
                 && request.Mode != CopilotAgentMode.Chat
-                && !string.IsNullOrWhiteSpace(request.UserText);
+                && !string.IsNullOrWhiteSpace(request.UserText)
+                && CopilotToolIntentPolicy.CanExposeExternalTool(
+                    request,
+                    _remoteTool.ProtocolTool.Name,
+                    _remoteTool.Description);
         }
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => $"mcp:{_server.Name}:{_remoteTool.ProtocolTool.Name}";

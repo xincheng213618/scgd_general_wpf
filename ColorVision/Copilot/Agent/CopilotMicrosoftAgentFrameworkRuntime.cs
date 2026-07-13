@@ -137,7 +137,7 @@ namespace ColorVision.Copilot
             await using var externalToolLease = await _externalToolProvider.DiscoverAsync(request, cancellationToken);
             foreach (var diagnostic in externalToolLease.Diagnostics)
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
-            var availableTools = MergeAvailableTools(_toolRegistry.FindTools(request), externalToolLease.Tools, emit);
+            var availableTools = MergeAvailableTools(request, _toolRegistry.FindTools(request), externalToolLease.Tools, emit);
             var capabilitySnapshot = _capabilityCatalog.GetSnapshot();
             var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind is CopilotAgentCheckpointCompatibilityKind.ProfileChanged
@@ -738,6 +738,7 @@ namespace ColorVision.Copilot
         }
 
         private static ICopilotTool[] MergeAvailableTools(
+            CopilotAgentRequest request,
             IReadOnlyList<ICopilotTool> builtInTools,
             IReadOnlyList<ICopilotTool> externalTools,
             Action<CopilotAgentEvent> emit)
@@ -747,6 +748,8 @@ namespace ColorVision.Copilot
             foreach (var tool in builtInTools.Concat(externalTools))
             {
                 if (tool == null || string.IsNullOrWhiteSpace(tool.Name))
+                    continue;
+                if (!tool.CanHandle(request))
                     continue;
                 if (!names.Add(tool.Name))
                 {

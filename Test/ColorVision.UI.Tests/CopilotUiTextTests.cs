@@ -129,6 +129,8 @@ public sealed class CopilotUiTextTests
         Assert.Equal("1.9s", trace.ActivityDurationLabel);
         Assert.False(trace.IsVisibleInActivity);
         Assert.False(message.HasAgentTraceEntries);
+        Assert.False(message.HasExecutionFailures);
+        Assert.Equal(string.Empty, message.ExecutionSummary);
         Assert.DoesNotContain(trace.ActivityLabel, message.ThinkingContent, StringComparison.Ordinal);
         Assert.Contains("Runtime: agent-framework", trace.DiagnosticDetails, StringComparison.Ordinal);
         Assert.Contains("Arguments: query=codexradar.com site information", trace.DiagnosticDetails, StringComparison.Ordinal);
