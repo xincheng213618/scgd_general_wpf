@@ -656,6 +656,13 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Assert.Equal(health.DiscoveredToolCount - 1, health.FilteredToolCount);
             Assert.False(health.UsedCachedDiscovery);
             Assert.Equal(1, health.CapabilityRevision);
+            var externalSourceId = CopilotCapabilityCatalog.BuildExternalMcpSourceId(externalServer);
+            var catalogEntry = Assert.Single(
+                CopilotCapabilityCatalog.Shared.GetSnapshot().Capabilities,
+                capability => capability.Id == externalSourceId + ":get_server_status");
+            Assert.Equal(CopilotCapabilitySourceKind.ExternalMcp, catalogEntry.SourceKind);
+            Assert.Equal(CopilotToolApprovalMode.Never, catalogEntry.ApprovalMode);
+            Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, catalogEntry.AuditArgumentMode);
 
             var cachedResult = await runtime.RunAsync(request, events.Add, CancellationToken.None);
 
@@ -700,6 +707,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             server.Stop();
             Environment.SetEnvironmentVariable(tokenVariable, null);
+            CopilotCapabilityCatalog.Shared.RetainExternalMcpServers(Array.Empty<CopilotMcpClientServerConfig>());
         }
     }
 

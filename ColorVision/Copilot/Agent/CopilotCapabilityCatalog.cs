@@ -214,7 +214,8 @@ namespace ColorVision.Copilot
             var endpoint = server.Endpoint?.Trim() ?? string.Empty;
             if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
                 endpoint = uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped).TrimEnd('/');
-            var fingerprint = SHA256.HashData(Encoding.UTF8.GetBytes(endpoint.ToUpperInvariant()));
+            var connectionIdentity = endpoint.ToUpperInvariant() + "\n" + (server.BearerTokenEnvironmentVariable?.Trim().ToUpperInvariant() ?? string.Empty);
+            var fingerprint = SHA256.HashData(Encoding.UTF8.GetBytes(connectionIdentity));
             return "mcp:" + Convert.ToHexString(fingerprint.AsSpan(0, 6)).ToLowerInvariant();
         }
 

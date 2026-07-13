@@ -144,6 +144,41 @@ public sealed class CopilotMcpTests : IDisposable
     }
 
     [Fact]
+    public async Task ResourcesExposeVersionedCopilotCapabilityCatalog()
+    {
+        var handler = CreateHandler();
+
+        var listResponse = await handler.HandleAsync(CreateJsonRpcRequest("resources/list", authorized: true), CancellationToken.None);
+        var readResponse = await ReadResourceAsync(handler, "colorvision://copilot/capabilities");
+        var text = ReadResourceText(readResponse);
+
+        Assert.Contains("colorvision://copilot/capabilities", listResponse.Body, StringComparison.Ordinal);
+        using (var responseDocument = JsonDocument.Parse(readResponse.Body))
+        {
+            var mimeType = responseDocument.RootElement
+                .GetProperty("result")
+                .GetProperty("contents")[0]
+                .GetProperty("mimeType")
+                .GetString();
+            Assert.Equal("application/json", mimeType);
+        }
+
+        using var catalogDocument = JsonDocument.Parse(text);
+        var root = catalogDocument.RootElement;
+        Assert.True(root.GetProperty("revision").GetInt64() >= 1);
+        Assert.True(root.GetProperty("sourceCount").GetInt32() >= 1);
+        var capabilities = root.GetProperty("capabilities").EnumerateArray().ToArray();
+        Assert.True(capabilities.Length >= 10);
+        var createFlow = Assert.Single(capabilities, capability => capability.GetProperty("id").GetString() == "builtin:createflow");
+        Assert.Equal("builtIn", createFlow.GetProperty("sourceKind").GetString());
+        Assert.Equal("always", createFlow.GetProperty("approvalMode").GetString());
+        Assert.Equal("exclusive", createFlow.GetProperty("concurrencyMode").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(createFlow.GetProperty("inputSchemaFingerprint").GetString()));
+        Assert.DoesNotContain("http://", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("https://", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task GetServerStatus_ReturnsAuthenticatedRuntimeState()
     {
         var handler = CreateHandler();
