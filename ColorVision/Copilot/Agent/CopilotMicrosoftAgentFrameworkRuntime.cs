@@ -450,6 +450,55 @@ namespace ColorVision.Copilot
 
             if (controlIntent == CopilotAgentControlIntent.None)
                 timeBudgetExhausted |= timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
+            var hasModelFinalAnswer = !string.IsNullOrWhiteSpace(answerText.ToString());
+            if (controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted && !hasModelFinalAnswer)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework returned no displayable final answer; starting one bounded finalization call with business tools disabled."));
+                var repairLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
+                var repairPrompt = _contextBuilder.BuildAnswerMessages(request, bridge.StepRecords);
+                var repairMessages = repairPrompt.Messages
+                    .Select(ToFrameworkMessage)
+                    .Append(new Microsoft.Extensions.AI.ChatMessage(
+                        ChatRole.User,
+                        "# Final answer recovery\n"
+                        + "The Agent loop ended without displayable final text. Provide the final answer now using only the supplied request, context, and tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n"
+                        + FormatTaskLedgerDiagnostic("Current task ledger", repairLedger)))
+                    .ToArray();
+                try
+                {
+                    var repairResponse = await retryChatClient.GetResponseAsync(
+                        repairMessages,
+                        BuildFinalAnswerOptions(request.Profile),
+                        cancellationToken);
+                    foreach (var usageContent in repairResponse.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
+                        usage = usage.Add(ToCopilotUsage(usageContent.Details));
+                    var repairedText = ExtractFinalAnswerText(repairResponse);
+                    if (!string.IsNullOrWhiteSpace(repairedText))
+                    {
+                        emit(CopilotAgentEvent.AnswerDelta(repairedText));
+                        hasModelFinalAnswer = true;
+                        emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call produced the final answer."));
+                    }
+                    else
+                    {
+                        emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call also returned no displayable text."));
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic($"The bounded no-tools finalization call failed ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
+                }
+
+                if (!hasModelFinalAnswer)
+                {
+                    emit(CopilotAgentEvent.AnswerDelta(
+                        "模型没有返回可显示的最终回答。本轮任务状态和工具执行记录已经保留，请重新发送问题以生成总结。"));
+                }
+            }
             if (controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted)
             {
                 var sourceAppendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
@@ -482,7 +531,7 @@ namespace ColorVision.Copilot
                 CopilotAgentControlIntent.Pause => CopilotAgentStopReason.Paused,
                 CopilotAgentControlIntent.Cancel => CopilotAgentStopReason.Cancelled,
                 _ when timeBudgetExhausted => CopilotAgentStopReason.BudgetExhausted,
-                _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords),
+                _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer),
             };
             var blockers = CopilotAgentBlockerDetector.Detect(taskLedger, bridge.StepRecords, stopReason);
             if (stopReason == CopilotAgentStopReason.TaskPassLimit && blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ToolFailure))
@@ -581,12 +630,13 @@ namespace ColorVision.Copilot
         private static CopilotAgentStopReason DetermineStopReason(
             CopilotAgentTaskLedgerSnapshot taskLedger,
             CopilotAgentBudgetSnapshot budget,
-            IReadOnlyList<CopilotAgentStepRecord> steps)
+            IReadOnlyList<CopilotAgentStepRecord> steps,
+            bool hasModelFinalAnswer)
         {
             if (budget.BudgetExhausted)
                 return CopilotAgentStopReason.BudgetExhausted;
             if (taskLedger.RemainingCount == 0)
-                return CopilotAgentStopReason.Completed;
+                return hasModelFinalAnswer ? CopilotAgentStopReason.Completed : CopilotAgentStopReason.IncompleteOutput;
             if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
                 return CopilotAgentStopReason.ApprovalDenied;
             if (string.Equals(taskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase))
@@ -707,6 +757,27 @@ namespace ColorVision.Copilot
                 Reasoning = BuildReasoningOptions(profile),
                 Tools = tools,
             };
+        }
+
+        private static ChatOptions BuildFinalAnswerOptions(CopilotProfileConfig profile)
+        {
+            return new ChatOptions
+            {
+                Instructions = profile.EffectiveSystemPrompt
+                    + "\n\nYou are the final-answer stage of ColorVision Agent. Business and framework tools are unavailable in this stage. Return only a supported user-facing answer based on the supplied evidence, and explicitly identify incomplete work instead of claiming success.",
+                MaxOutputTokens = profile.MaxTokens,
+                Temperature = CopilotReasoningRequestMapper.ShouldIncludeTemperature(profile) ? (float)profile.Temperature : null,
+                Reasoning = BuildReasoningOptions(profile),
+                Tools = Array.Empty<AITool>(),
+            };
+        }
+
+        private static string ExtractFinalAnswerText(ChatResponse response)
+        {
+            return string.Concat((response?.Messages ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>())
+                .SelectMany(message => message.Contents)
+                .OfType<TextContent>()
+                .Select(content => content.Text));
         }
 
         private static ReasoningOptions? BuildReasoningOptions(CopilotProfileConfig profile)

@@ -9,6 +9,7 @@ namespace ColorVision.Copilot
         UserDecision,
         Approval,
         ToolFailure,
+        ProviderOutput,
     }
 
     public sealed class CopilotAgentBlockerSnapshot
@@ -55,6 +56,16 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(taskLedger);
             steps ??= Array.Empty<CopilotAgentStepRecord>();
+            if (stopReason == CopilotAgentStopReason.IncompleteOutput)
+            {
+                return [new CopilotAgentBlockerSnapshot
+                {
+                    Kind = CopilotAgentBlockerKind.ProviderOutput,
+                    Code = "provider_empty_output",
+                    Summary = "The model returned no final answer after the bounded finalization attempt.",
+                    RequiresUserInput = true,
+                }];
+            }
             if (taskLedger.RemainingCount == 0)
                 return Array.Empty<CopilotAgentBlockerSnapshot>();
             if (stopReason is CopilotAgentStopReason.Paused or CopilotAgentStopReason.Cancelled)

@@ -361,6 +361,29 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public void ChatMessage_LabelsIncompleteProviderOutputWithoutClaimingCompletion()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "模型没有返回可显示的最终回答。")
+        {
+            AgentStopReason = CopilotAgentStopReason.IncompleteOutput,
+            AgentBlockers =
+            [
+                new CopilotAgentBlockerSnapshot
+                {
+                    Kind = CopilotAgentBlockerKind.ProviderOutput,
+                    Code = "provider_empty_output",
+                    Summary = "The model returned no final answer after the bounded finalization attempt.",
+                    RequiresUserInput = true,
+                },
+            ],
+        };
+
+        Assert.Equal("未收到最终回答", message.AgentStopReasonLabel);
+        Assert.Equal("模型未返回最终回答", message.AgentBlockerLabel);
+        Assert.DoesNotContain("任务完成", message.AgentStopReasonLabel, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AgentSessionCheckpoint_RejectsCorruptJsonAndChangedProfile()
     {
         var profile = CreateProfile();
@@ -1338,6 +1361,70 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text == "harness answer");
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("tool limit reached", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_RepairsEmptyFinalAnswerWithoutReplayingTools()
+    {
+        var tool = new TestAgentTool("CatalogProbe");
+        using var client = new EmptyFinalAnswerChatClient("colorvision_catalog_probe", "repaired final answer");
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "inspect one catalog entry and provide a final answer",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Single(result.StepRecords);
+        Assert.Equal(2, client.StreamCallCount);
+        Assert.Equal(1, client.FinalizationCallCount);
+        Assert.NotNull(client.FinalizationOptions);
+        Assert.Empty(client.FinalizationOptions!.Tools ?? Array.Empty<AITool>());
+        Assert.NotNull(client.FinalizationMessages);
+        Assert.Contains(client.FinalizationMessages!, message => message.Text.Contains("Evidence collected", StringComparison.Ordinal));
+        Assert.Equal(3, result.Budget.ProviderCalls);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta
+            && item.Text == "repaired final answer");
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("no-tools finalization", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_DoesNotMarkEmptyFinalizationAsCompleted()
+    {
+        using var client = new EmptyFinalAnswerChatClient(string.Empty, string.Empty);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "answer even when the provider first returns no text",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, client.StreamCallCount);
+        Assert.Equal(1, client.FinalizationCallCount);
+        Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.Equal(CopilotAgentStopReason.IncompleteOutput, result.StopReason);
+        var blocker = Assert.Single(result.Blockers);
+        Assert.Equal(CopilotAgentBlockerKind.ProviderOutput, blocker.Kind);
+        Assert.Equal("provider_empty_output", blocker.Code);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta
+            && item.Text.Contains("没有返回可显示的最终回答", StringComparison.Ordinal));
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.AnswerDelta
+            && item.Text.Contains("任务完成", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -3466,6 +3553,67 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             }
 
             yield return new ChatResponseUpdate(ChatRole.Assistant, "harness answer");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class EmptyFinalAnswerChatClient : IChatClient
+    {
+        private readonly string _functionName;
+        private readonly string _finalizationText;
+        private int _streamCallCount;
+        private int _finalizationCallCount;
+
+        public EmptyFinalAnswerChatClient(string functionName, string finalizationText)
+        {
+            _functionName = functionName;
+            _finalizationText = finalizationText;
+        }
+
+        public int StreamCallCount => Volatile.Read(ref _streamCallCount);
+
+        public int FinalizationCallCount => Volatile.Read(ref _finalizationCallCount);
+
+        public ChatOptions? FinalizationOptions { get; private set; }
+
+        public Microsoft.Extensions.AI.ChatMessage[]? FinalizationMessages { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _finalizationCallCount);
+            FinalizationOptions = options;
+            FinalizationMessages = messages.ToArray();
+            return Task.FromResult(new ChatResponse(
+                new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, _finalizationText)));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
+            var callNumber = Interlocked.Increment(ref _streamCallCount);
+            if (callNumber == 1 && !string.IsNullOrWhiteSpace(_functionName))
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [
+                    new FunctionCallContent("empty-final-call", _functionName, new Dictionary<string, object?>
+                    {
+                        ["query"] = "one entry",
+                    }),
+                ]);
+            }
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
