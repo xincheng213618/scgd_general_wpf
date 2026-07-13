@@ -720,6 +720,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal("hello MCP", tool.LastInput?.Arguments["message"]);
         var step = Assert.Single(result.StepRecords);
         Assert.Equal("Mcp_Test_Echo", step.ToolCall.ToolName);
+        Assert.Equal("external-call", step.Execution.CallId);
         Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("MCP client test connected", StringComparison.Ordinal));
@@ -1053,6 +1054,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(2, probe.MaximumActive);
         Assert.Equal(2, result.StepRecords.Count);
         Assert.All(result.StepRecords, step => Assert.Equal(CopilotToolConcurrencyMode.SharedRead, step.Execution.ConcurrencyMode));
+        Assert.Equal(
+            ["batch-call-1", "batch-call-2"],
+            result.StepRecords.Select(step => step.Execution.CallId).OrderBy(callId => callId, StringComparer.Ordinal).ToArray());
     }
 
     [Fact]
@@ -2012,6 +2016,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         Assert.Equal(0, tool.ExecutionCount);
         var rejected = Assert.Single(result.StepRecords);
+        Assert.Equal("call-1", rejected.Execution.CallId);
         Assert.Equal(CopilotToolExecutionState.Failed, rejected.Execution.State);
         Assert.Equal(CopilotToolFailureKind.Validation, rejected.Execution.FailureKind);
         Assert.False(rejected.Execution.RetryEligible);
@@ -2020,9 +2025,10 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(1, result.Budget.ToolCalls);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.ToolResult
             && item.ToolExecution?.FailureKind == CopilotToolFailureKind.Validation);
-        Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted
+        var taskEvent = Assert.Single(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted
             && item.ToolName == "FetchUrl"
             && item.State == CopilotToolExecutionState.Failed.ToString());
+        Assert.Equal(CopilotAgentTaskEventIds.ForCall("call-1"), taskEvent.SubjectId);
         Assert.NotNull(fakeChatClient.LastMessages);
         var functionResult = Assert.Single(fakeChatClient.LastMessages!
             .SelectMany(message => message.Contents)
@@ -2034,6 +2040,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Assert.False(document.RootElement.GetProperty("retry_allowed").GetBoolean());
         }
         var audit = Assert.Single(CopilotToolExecutionAuditLogger.GetRecentEntries(), entry => entry.ToolName == "FetchUrl");
+        Assert.Equal("call-1", audit.CallId);
         Assert.Equal(CopilotToolExecutionState.Failed, audit.State);
         Assert.Equal(CopilotToolFailureKind.Validation, audit.FailureKind);
         Assert.Equal("fields=path,query", audit.ArgumentSummary);

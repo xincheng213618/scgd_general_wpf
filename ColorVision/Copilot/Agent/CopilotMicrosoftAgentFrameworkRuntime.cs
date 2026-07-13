@@ -1142,7 +1142,11 @@ namespace ColorVision.Copilot
                 return CopilotFrameworkToolResultFormatter.Format(outcome);
             }
 
-            private async Task<string> ExecuteAsync(ICopilotTool tool, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+            private async Task<string> ExecuteAsync(
+                ICopilotTool tool,
+                CopilotAgentToolInput toolInput,
+                string? providerCallId,
+                CancellationToken cancellationToken)
             {
                 int round;
                 int attempt;
@@ -1168,6 +1172,7 @@ namespace ColorVision.Copilot
                 var invocation = approvalReservation == null
                     ? new CopilotToolInvocation
                     {
+                        CallId = string.IsNullOrWhiteSpace(providerCallId) ? Guid.NewGuid().ToString("N") : providerCallId.Trim(),
                         Round = round,
                         Attempt = attempt,
                         MaxAttempts = maxAttempts,
@@ -1411,10 +1416,11 @@ namespace ColorVision.Copilot
 
                 protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
                 {
+                    var providerCallId = FunctionInvokingChatClient.CurrentContext?.CallContent?.CallId;
                     if (!_tool.InputSchema.TryBind(arguments, out var toolInput, out var error))
-                        return _owner.RecordRejectedToolCall(_tool, arguments, error);
+                        return _owner.RecordRejectedToolCall(_tool, arguments, error, providerCallId);
 
-                    return await _owner.ExecuteAsync(_tool, toolInput, cancellationToken);
+                    return await _owner.ExecuteAsync(_tool, toolInput, providerCallId, cancellationToken);
                 }
             }
 
