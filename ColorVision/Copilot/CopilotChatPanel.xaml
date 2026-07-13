@@ -624,7 +624,7 @@
                                 FontSize="10"
                                 Opacity="0.62"
                                 Content="{Binding AgentRunNoticeText}"
-                                ToolTip="打开 Agent 任务"
+                                ToolTip="打开或查看 Agent 任务状态"
                                 Visibility="{Binding HasAgentRunNotice, Converter={StaticResource bool2VisibilityConverter}}" />
                     </StackPanel>
 

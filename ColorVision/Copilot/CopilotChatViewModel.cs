@@ -154,6 +154,7 @@ namespace ColorVision.Copilot
             RefreshCompactHistoryConversations();
             RefreshAgentTasks();
             IsBusy = _taskHost.IsActive;
+            RefreshAgentRunNotice();
         }
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
@@ -380,14 +381,22 @@ namespace ColorVision.Copilot
             ? Properties.Resources.CopilotSelectHistoryOrNew
             : Properties.Resources.CopilotConfigureModelFirst;
 
-        public string PrimaryActionGlyph => IsBusy ? (CanPauseAgentRun ? "Ⅱ" : "■") : "↑";
+        public string PrimaryActionGlyph => IsViewingQueuedRun ? "×" : IsViewingActiveRun ? (CanPauseAgentRun ? "Ⅱ" : "■") : "↑";
 
         public string PrimaryActionToolTip
         {
             get
             {
-                if (IsBusy)
+                if (IsViewingQueuedRun)
+                    return "取消这个排队任务";
+                if (IsViewingActiveRun)
                     return CanPauseAgentRun ? "暂停并保存当前 Agent 任务" : Properties.Resources.CopilotStopGeneration;
+                if (IsBusy)
+                {
+                    return CanScheduleComposerRequest(ResolveComposerRequestMode())
+                        ? $"加入 Agent 队列（当前等待 {_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）"
+                        : $"Agent 队列已满（{_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）";
+                }
 
                 var action = Properties.Resources.CopilotSend;
                 var preview = BuildComposerRequestPreview();
@@ -488,15 +497,21 @@ namespace ColorVision.Copilot
 
         private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun;
 
+        private CopilotHostedAgentRun? SelectedHostedRun => _taskHost.FindRunByConversationId(SelectedConversation?.Id);
+
         private bool IsAgentRequestActive => ActiveHostedRun?.IsAgent == true;
 
         private bool IsViewingActiveRun => string.Equals(ActiveHostedRun?.ConversationId, SelectedConversation?.Id, StringComparison.Ordinal);
 
+        private bool IsViewingQueuedRun => SelectedHostedRun?.State == CopilotHostedRunState.Queued;
+
         public bool CanSteerCurrentRun => IsBusy && IsAgentRequestActive && IsViewingActiveRun && !IsInputEmpty;
 
-        public bool CanCancelAgentRun => IsBusy && IsAgentRequestActive;
+        public bool CanCancelAgentRun => IsViewingActiveRun
+            && IsAgentRequestActive
+            && (SelectedHostedRun?.State is CopilotHostedRunState.Running or CopilotHostedRunState.PauseRequested);
 
-        public bool CanPauseAgentRun => IsBusy && IsAgentRequestActive && ActiveHostedRun?.IsCheckpointReady == true;
+        public bool CanPauseAgentRun => IsViewingActiveRun && IsAgentRequestActive && ActiveHostedRun?.IsCheckpointReady == true;
 
         public bool IsBusy
         {
@@ -587,11 +602,12 @@ namespace ColorVision.Copilot
 
         private async Task SendAsync()
         {
-            if (IsBusy)
-                return;
-
             var prompt = (InputText ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
+                return;
+
+            var requestMode = ResolveComposerRequestMode();
+            if (!CanScheduleComposerRequest(requestMode))
                 return;
 
             if (SelectedProfile == null || !SelectedProfile.IsConfigured)
@@ -604,11 +620,14 @@ namespace ColorVision.Copilot
             var conversation = EnsureConversation();
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
+            var turnSnapshot = CaptureHostedTurnSnapshot(conversation);
+            var recoveryRequest = ConsumePendingAgentRecoveryRequest();
+            requestMode = ConsumeRequestModeOverride();
 
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
             {
-                RequestMode = ConsumeRequestModeOverride(),
-                RecoveryRequest = ConsumePendingAgentRecoveryRequest(),
+                RequestMode = requestMode,
+                RecoveryRequest = recoveryRequest,
             };
             var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
             {
@@ -620,13 +639,42 @@ namespace ColorVision.Copilot
             Messages.Add(assistantMessage);
             UpdateConversationMetadata(conversation, touch: true);
             PersistState();
-            InputText = string.Empty;
 
-            var hostedRun = _taskHost.Start(
+            if (!_taskHost.TrySchedule(
                 conversation.Id,
                 userMessage.RequestMode,
-                run => ExecuteHostedTurnAsync(run, conversation, requestProfile, userMessage, assistantMessage));
+                run => ExecuteHostedTurnAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot),
+                out var hostedRun)
+                || hostedRun == null)
+            {
+                conversation.Messages.Remove(assistantMessage);
+                conversation.Messages.Remove(userMessage);
+                _pendingAgentRecoveryRequest = recoveryRequest;
+                _pendingRequestModeOverride = requestMode == CopilotAgentMode.Auto ? null : requestMode;
+                UpdateConversationMetadata(conversation, touch: true);
+                PersistState();
+                OnComposerRequestModeChanged();
+                return;
+            }
+
+            InputText = string.Empty;
             await hostedRun.Completion;
+            if (!hostedRun.HasStarted)
+                FinalizeCancelledQueuedRun(conversation, assistantMessage);
+        }
+
+        private void FinalizeCancelledQueuedRun(CopilotConversationRecord conversation, CopilotChatMessage assistantMessage)
+        {
+            assistantMessage.IsExecutionInProgress = false;
+            assistantMessage.IsReasoningInProgress = false;
+            assistantMessage.AgentStopReason = CopilotAgentStopReason.Cancelled;
+            assistantMessage.MarkThinkingCompleted();
+            if (string.IsNullOrWhiteSpace(assistantMessage.Content))
+                assistantMessage.Content = "排队的 Agent 任务已取消，未调用模型或工具。";
+
+            UpdateConversationMetadata(conversation, touch: true);
+            PersistState();
+            RefreshAgentTasks();
         }
 
         private async Task ExecuteHostedTurnAsync(
@@ -634,11 +682,12 @@ namespace ColorVision.Copilot
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
             CopilotChatMessage userMessage,
-            CopilotChatMessage assistantMessage)
+            CopilotChatMessage assistantMessage,
+            CopilotHostedTurnSnapshot turnSnapshot)
         {
             try
             {
-                var usage = await RunConversationTurnAsync(hostedRun, conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext: true);
+                var usage = await RunConversationTurnAsync(hostedRun, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext: true);
                 FinalizeAssistantMessage(assistantMessage);
                 UpdateConversationUsage(conversation, usage);
 
@@ -701,6 +750,7 @@ namespace ColorVision.Copilot
             CopilotProfileConfig requestProfile,
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
+            CopilotHostedTurnSnapshot turnSnapshot,
             bool refreshExternalContext)
         {
             var cancellationToken = hostedRun.CancellationToken;
@@ -712,7 +762,7 @@ namespace ColorVision.Copilot
                 return await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, refreshExternalContext, cancellationToken);
             }
 
-            return await RunAgentTurnAsync(hostedRun, conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext, cancellationToken);
+            return await RunAgentTurnAsync(hostedRun, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext, cancellationToken);
         }
 
         private async Task<CopilotTokenUsage> RunChatTurnAsync(
@@ -740,6 +790,7 @@ namespace ColorVision.Copilot
             CopilotProfileConfig requestProfile,
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
+            CopilotHostedTurnSnapshot turnSnapshot,
             bool refreshExternalContext,
             CancellationToken cancellationToken)
         {
@@ -768,14 +819,14 @@ namespace ColorVision.Copilot
                 .Where(path => !IsExistingDirectoryPath(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
-            var searchRootPaths = BuildSearchRootPaths(conversation, explicitLocalPaths);
+            var searchRootPaths = BuildSearchRootPaths(turnSnapshot, explicitLocalPaths);
             IReadOnlyList<CopilotContextItem> contextItems = await _contextRegistry.CaptureAsync(
                 new CopilotContextRequest
                 {
                     Scope = MapContextScope(userMessage.RequestMode),
                     UserText = (userMessage.Content ?? string.Empty).Trim(),
-                    SolutionDirectoryPath = SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty,
-                    ActiveDocumentPath = _activeDocumentPath,
+                    SolutionDirectoryPath = turnSnapshot.SolutionDirectoryPath,
+                    ActiveDocumentPath = turnSnapshot.ActiveDocumentPath,
                     SearchRootPaths = searchRootPaths,
                 },
                 cancellationToken);
@@ -790,10 +841,10 @@ namespace ColorVision.Copilot
                 UserText = (userMessage.Content ?? string.Empty).Trim(),
                 Profile = requestProfile,
                 History = BuildVisibleConversationHistory(conversation, userMessage, 8),
-                Attachments = conversation.Attachments.ToArray(),
+                Attachments = turnSnapshot.Attachments,
                 ContextItems = contextItems,
                 SearchRootPaths = searchRootPaths,
-                ActiveDocumentPath = _activeDocumentPath,
+                ActiveDocumentPath = turnSnapshot.ActiveDocumentPath,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
@@ -865,39 +916,57 @@ namespace ColorVision.Copilot
             }
 
             IsBusy = _taskHost.IsActive;
+            if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
+                RefreshAgentTasks();
+            NotifyHostedRunStateChanged();
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void NotifyHostedRunStateChanged()
+        {
             OnPropertyChanged(nameof(CanSwitchConversation));
             OnPropertyChanged(nameof(CanSteerCurrentRun));
             OnPropertyChanged(nameof(CanCancelAgentRun));
             OnPropertyChanged(nameof(CanPauseAgentRun));
             OnPropertyChanged(nameof(PrimaryActionGlyph));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
-            if (e.Kind == CopilotAgentTaskHostChangeKind.Started)
-                ClearAgentRunNotice();
-            if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
-                RefreshAgentTasks();
-            PublishAgentRunNotice(e.Run, e.Kind == CopilotAgentTaskHostChangeKind.Completed);
-            CommandManager.InvalidateRequerySuggested();
+            RefreshAgentRunNotice();
         }
 
-        private void PublishAgentRunNotice(CopilotHostedAgentRun run, bool completed)
+        private void RefreshAgentRunNotice()
         {
-            if (!run.IsAgent || string.Equals(run.ConversationId, SelectedConversation?.Id, StringComparison.Ordinal))
+            var selectedRun = SelectedHostedRun;
+            if (selectedRun?.State == CopilotHostedRunState.Queued)
+            {
+                var position = _taskHost.GetQueuePosition(selectedRun.Id);
+                _agentRunNoticeConversationId = selectedRun.ConversationId;
+                AgentRunNoticeText = position > 0
+                    ? $"Agent 已排队 · 前面 {position} 个任务"
+                    : "Agent 已排队";
                 return;
+            }
+
+            var run = ActiveHostedRun;
+            if (run?.IsAgent != true || string.Equals(run.ConversationId, SelectedConversation?.Id, StringComparison.Ordinal))
+            {
+                ClearAgentRunNotice();
+                return;
+            }
 
             var conversation = Conversations.FirstOrDefault(item => string.Equals(item.Id, run.ConversationId, StringComparison.Ordinal));
             if (conversation == null)
+            {
+                ClearAgentRunNotice();
                 return;
+            }
 
-            var assistant = conversation.Messages.LastOrDefault(message => !message.IsUser);
             _agentRunNoticeConversationId = conversation.Id;
-            var status = completed
-                ? assistant?.AgentStopReasonLabel ?? "Agent 已结束"
-                : run.State switch
-                {
-                    CopilotHostedRunState.PauseRequested => "正在暂停",
-                    CopilotHostedRunState.CancelRequested => "正在取消",
-                    _ => "正在运行",
-                };
+            var status = run.State switch
+            {
+                CopilotHostedRunState.PauseRequested => "正在暂停",
+                CopilotHostedRunState.CancelRequested => "正在取消",
+                _ => "正在运行",
+            };
             AgentRunNoticeText = $"{conversation.Title} · {status}";
         }
 
@@ -907,7 +976,7 @@ namespace ColorVision.Copilot
             if (conversation != null && CanSwitchConversation)
                 SelectConversation(conversation, persist: true, preferredProfileId: conversation.ProfileId);
 
-            ClearAgentRunNotice();
+            RefreshAgentRunNotice();
         }
 
         private void ClearAgentRunNotice()
@@ -1248,21 +1317,45 @@ namespace ColorVision.Copilot
             };
         }
 
-        private IReadOnlyList<string> BuildSearchRootPaths(
-            CopilotConversationRecord conversation,
+        private CopilotHostedTurnSnapshot CaptureHostedTurnSnapshot(CopilotConversationRecord conversation)
+        {
+            var attachments = conversation.Attachments
+                .Select(CloneAttachment)
+                .ToArray();
+            return new CopilotHostedTurnSnapshot(
+                _activeDocumentPath,
+                SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty,
+                attachments);
+        }
+
+        private static CopilotAttachmentItem CloneAttachment(CopilotAttachmentItem source)
+        {
+            return new CopilotAttachmentItem
+            {
+                Id = source.Id,
+                Type = source.Type,
+                Title = source.Title,
+                Value = source.Value,
+                Source = source.Source,
+                CreatedAt = source.CreatedAt,
+            };
+        }
+
+        private static IReadOnlyList<string> BuildSearchRootPaths(
+            CopilotHostedTurnSnapshot turnSnapshot,
             IReadOnlyList<string> explicitLocalFilePaths)
         {
             var roots = new List<string>();
 
-            AddSearchCandidate(roots, SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName);
-            AddSearchCandidate(roots, _activeDocumentPath);
+            AddSearchCandidate(roots, turnSnapshot.SolutionDirectoryPath);
+            AddSearchCandidate(roots, turnSnapshot.ActiveDocumentPath);
 
             foreach (var path in explicitLocalFilePaths)
             {
                 AddSearchCandidate(roots, path);
             }
 
-            foreach (var attachment in conversation.Attachments.Where(item => item.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value)))
+            foreach (var attachment in turnSnapshot.Attachments.Where(item => item.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value)))
             {
                 AddSearchCandidate(roots, attachment.Value);
             }
@@ -1513,7 +1606,7 @@ namespace ColorVision.Copilot
 
         private void ExecutePrimaryAction()
         {
-            if (IsBusy)
+            if (IsViewingQueuedRun || IsViewingActiveRun)
             {
                 CancelCurrentReply(discardAgentCheckpoint: !CanPauseAgentRun);
                 return;
@@ -1524,11 +1617,13 @@ namespace ColorVision.Copilot
 
         private void ExecuteSendOrSteer()
         {
-            if (IsBusy)
+            if (IsViewingActiveRun)
             {
                 TrySteerCurrentRun();
                 return;
             }
+            if (IsViewingQueuedRun)
+                return;
 
             _ = SendAsync();
         }
@@ -1554,7 +1649,7 @@ namespace ColorVision.Copilot
 
         private bool CanContinueAgentTasks(CopilotChatMessage? message)
         {
-            if (IsBusy || message == null || message.IsUser || !message.HasRecoverableAgentTasks)
+            if (!CanScheduleComposerRequest(CopilotAgentMode.Auto) || message == null || message.IsUser || !message.HasRecoverableAgentTasks)
                 return false;
             if (SelectedConversation?.AgentSessionCheckpoint == null || SelectedProfile?.IsConfigured != true)
                 return false;
@@ -1599,7 +1694,9 @@ namespace ColorVision.Copilot
 
         private bool CanResumeAgentTask(CopilotAgentTaskSummary? task)
         {
-            if (IsBusy || task?.CanResume != true || !Conversations.Contains(task.Conversation))
+            if (task?.CanResume != true
+                || !Conversations.Contains(task.Conversation)
+                || !CanScheduleConversationRequest(task.Conversation.Id, CopilotAgentMode.Auto))
                 return false;
 
             var profile = ResolveProfile(task.Conversation.ProfileId);
@@ -1652,6 +1749,26 @@ namespace ColorVision.Copilot
         private CopilotAgentMode ResolveComposerRequestMode()
         {
             return _pendingRequestModeOverride ?? CopilotAgentMode.Auto;
+        }
+
+        private bool CanScheduleComposerRequest(CopilotAgentMode mode)
+        {
+            return CanScheduleConversationRequest(SelectedConversation?.Id, mode);
+        }
+
+        private bool CanScheduleConversationRequest(string? conversationId, CopilotAgentMode mode)
+        {
+            if (string.IsNullOrWhiteSpace(conversationId))
+                return false;
+            if (!IsBusy)
+                return true;
+
+            var activeRun = ActiveHostedRun;
+            return activeRun?.IsAgent == true
+                && !string.Equals(activeRun.ConversationId, conversationId, StringComparison.Ordinal)
+                && _taskHost.FindRunByConversationId(conversationId) == null
+                && mode != CopilotAgentMode.Chat
+                && _taskHost.CanSchedule;
         }
 
         private CopilotAgentMode ConsumeRequestModeOverride()
@@ -1719,7 +1836,7 @@ namespace ColorVision.Copilot
             SetPendingRequestModeOverride(mode);
             InputText = normalizedPrompt;
 
-            if (!sendNow || IsBusy)
+            if (!sendNow || !CanScheduleComposerRequest(mode))
                 return new CopilotPromptQueueResult(true, false);
 
             _ = SendAsync();
@@ -1733,8 +1850,15 @@ namespace ColorVision.Copilot
 
         private void CancelCurrentReply(bool discardAgentCheckpoint)
         {
+            var selectedRun = SelectedHostedRun;
+            if (selectedRun?.State == CopilotHostedRunState.Queued)
+            {
+                _taskHost.RequestCancel(selectedRun.Id);
+                return;
+            }
+
             var activeRun = ActiveHostedRun;
-            if (!IsBusy || activeRun == null)
+            if (!IsViewingActiveRun || activeRun == null)
                 return;
 
             if (!discardAgentCheckpoint && activeRun.IsAgent && _taskHost.RequestPause(activeRun.Id))
@@ -1919,11 +2043,6 @@ namespace ColorVision.Copilot
                 _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
 
             _selectedConversation = conversation;
-            if (string.Equals(_selectedConversation?.Id, _agentRunNoticeConversationId, StringComparison.Ordinal))
-                ClearAgentRunNotice();
-            var activeRun = ActiveHostedRun;
-            if (activeRun?.IsAgent == true && !string.Equals(_selectedConversation?.Id, activeRun.ConversationId, StringComparison.Ordinal))
-                PublishAgentRunNotice(activeRun, completed: false);
             if (_selectedConversation != null)
                 _selectedConversation.Attachments.CollectionChanged += Attachments_CollectionChanged;
 
@@ -1936,7 +2055,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
             OnPropertyChanged(nameof(InputPlaceholder));
-            OnPropertyChanged(nameof(CanSteerCurrentRun));
+            NotifyHostedRunStateChanged();
             PublishSelectedTaskEventJournal();
 
             _state.ActiveConversationId = conversation?.Id ?? string.Empty;
@@ -2401,12 +2520,13 @@ namespace ColorVision.Copilot
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             conversation.AgentSessionCheckpoint = null;
+            var turnSnapshot = CaptureHostedTurnSnapshot(conversation);
             PersistState();
 
             var hostedRun = _taskHost.Start(
                 conversation.Id,
                 userMessage.RequestMode,
-                run => ExecuteHostedRetryAsync(run, conversation, requestProfile, userMessage, assistantMessage, refreshWebContext));
+                run => ExecuteHostedRetryAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshWebContext));
             await hostedRun.Completion;
         }
 
@@ -2416,6 +2536,7 @@ namespace ColorVision.Copilot
             CopilotProfileConfig requestProfile,
             CopilotChatMessage userMessage,
             CopilotChatMessage? assistantMessage,
+            CopilotHostedTurnSnapshot turnSnapshot,
             bool refreshWebContext)
         {
             CopilotChatMessage? replacementAssistantMessage = null;
@@ -2431,7 +2552,7 @@ namespace ColorVision.Copilot
                 replacementAssistantMessage.MarkThinkingStarted();
                 conversation.Messages.Add(replacementAssistantMessage);
 
-                var usage = await RunConversationTurnAsync(hostedRun, conversation, requestProfile, userMessage, replacementAssistantMessage, refreshWebContext);
+                var usage = await RunConversationTurnAsync(hostedRun, conversation, requestProfile, userMessage, replacementAssistantMessage, turnSnapshot, refreshWebContext);
                 FinalizeAssistantMessage(replacementAssistantMessage);
                 UpdateConversationUsage(conversation, usage);
 
@@ -3216,5 +3337,10 @@ namespace ColorVision.Copilot
 
         private static Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(string url, CancellationToken cancellationToken) =>
             CopilotWebPageToolSupport.LoadWebPageContentAsync(url, cancellationToken);
+
+        private sealed record CopilotHostedTurnSnapshot(
+            string ActiveDocumentPath,
+            string SolutionDirectoryPath,
+            IReadOnlyList<CopilotAttachmentItem> Attachments);
     }
 }
