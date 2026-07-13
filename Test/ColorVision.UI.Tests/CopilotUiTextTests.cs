@@ -81,6 +81,26 @@ public sealed class CopilotUiTextTests
     }
 
     [Fact]
+    public void ThinkingContent_HidesPersistedFailedSearchDiagnosticsButKeepsOtherFailures()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            ExecutionContent = string.Join(Environment.NewLine + Environment.NewLine, new[]
+            {
+                "[Round 1 · SearchFiles] Failed · 14ms" + Environment.NewLine
+                    + "Runtime: agent-framework · Access: ReadOnly" + Environment.NewLine
+                    + "Error: No searchable files were found.",
+                "[Round 2 · ApplyTemplatePatch] Failed · 20ms" + Environment.NewLine
+                    + "Error: The template revision changed.",
+            }),
+        };
+
+        Assert.DoesNotContain("SearchFiles", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ApplyTemplatePatch", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("template revision changed", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void AgentActivity_HidesFailedSearchButKeepsDiagnostics()
     {
         var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);

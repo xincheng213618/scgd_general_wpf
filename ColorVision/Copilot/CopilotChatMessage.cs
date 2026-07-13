@@ -756,10 +756,26 @@ namespace ColorVision.Copilot
 
         private static bool IsHiddenExecutionBlock(string[] lines)
         {
-            if (lines.Any(line => line.StartsWith("Status: Failed", StringComparison.OrdinalIgnoreCase)))
+            if (IsFailedSearchExecutionBlock(lines))
                 return true;
 
             return lines.All(IsHiddenExecutionLine);
+        }
+
+        private static bool IsFailedSearchExecutionBlock(string[] lines)
+        {
+            var mentionsSearchTool = lines.Any(line =>
+                line.Contains("SearchFiles", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("GrepText", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("SearchDocs", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("WebSearch", StringComparison.OrdinalIgnoreCase));
+            if (!mentionsSearchTool)
+                return false;
+
+            return lines.Any(line =>
+                line.StartsWith("Status: Failed", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("] Failed", StringComparison.OrdinalIgnoreCase)
+                || line.Contains("] Timed out", StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool IsHiddenExecutionLine(string line)
@@ -770,7 +786,8 @@ namespace ColorVision.Copilot
                 || line.StartsWith("Tool phase converged", StringComparison.OrdinalIgnoreCase)
                 || line.StartsWith("No extra tools are needed", StringComparison.OrdinalIgnoreCase)
                 || line.StartsWith("Reused the context", StringComparison.OrdinalIgnoreCase)
-                || line.StartsWith("Agent Skills enabled", StringComparison.OrdinalIgnoreCase);
+                || line.StartsWith("Agent Skills enabled", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("MCP client", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string BuildExecutionSummary(string? content, bool isInProgress)
