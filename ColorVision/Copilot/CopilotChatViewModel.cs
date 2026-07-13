@@ -820,6 +820,9 @@ namespace ColorVision.Copilot
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
             var searchRootPaths = BuildSearchRootPaths(turnSnapshot, explicitLocalPaths);
+            var projectInstructions = userMessage.RequestMode == CopilotAgentMode.Chat
+                ? Array.Empty<CopilotProjectInstructionDocument>()
+                : CopilotAgentProjectInstructions.Discover(searchRootPaths, turnSnapshot.ActiveDocumentPath);
             IReadOnlyList<CopilotContextItem> contextItems = await _contextRegistry.CaptureAsync(
                 new CopilotContextRequest
                 {
@@ -845,6 +848,7 @@ namespace ColorVision.Copilot
                 ContextItems = contextItems,
                 SearchRootPaths = searchRootPaths,
                 ActiveDocumentPath = turnSnapshot.ActiveDocumentPath,
+                ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,

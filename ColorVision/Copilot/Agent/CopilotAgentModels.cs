@@ -58,6 +58,8 @@ namespace ColorVision.Copilot
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
+        public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
+
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<string> ReadableLocalDirectoryPaths { get; init; } = Array.Empty<string>();

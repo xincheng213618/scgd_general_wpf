@@ -92,6 +92,9 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken)
         {
             onEvent(CopilotAgentEvent.Status("Analyzing task..."));
+            var projectInstructionCount = request.ProjectInstructions.Count(document => document?.IsStructurallyValid() == true);
+            if (projectInstructionCount > 0)
+                onEvent(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped AGENTS.md document(s)."));
 
             var toolResults = new List<CopilotToolResult>();
             var executedStepSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -374,6 +377,7 @@ namespace ColorVision.Copilot
                 ContextItems = request.ContextItems,
                 SearchRootPaths = request.SearchRootPaths,
                 ActiveDocumentPath = request.ActiveDocumentPath,
+                ProjectInstructions = request.ProjectInstructions,
                 ReadableLocalFilePaths = readableLocalFilePaths.ToArray(),
                 ReadableLocalDirectoryPaths = request.ReadableLocalDirectoryPaths,
                 PreferBatchReadLocalFiles = request.PreferBatchReadLocalFiles,
