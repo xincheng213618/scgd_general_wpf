@@ -36,6 +36,46 @@ public class CopilotBusinessContextTests
     }
 
     [Fact]
+    public void AgentConversationMemoryMergesOverlappingWindowsAndKeepsInitialGoal()
+    {
+        var previous = Enumerable.Range(0, 14)
+            .Select(index => new CopilotRequestMessage(
+                index % 2 == 0 ? "user" : "assistant",
+                index == 0 ? "PERSISTED-ORIGINAL-GOAL" : $"persisted-{index}"))
+            .ToArray();
+        var visible = previous.TakeLast(6)
+            .Concat([new CopilotRequestMessage("user", "visible-follow-up")])
+            .ToArray();
+
+        var memory = CopilotAgentConversationMemory.Merge(previous, visible, "current-question", "current-answer");
+
+        Assert.True(memory.Count <= CopilotAgentSessionCheckpoint.MaxConversationMemoryMessages);
+        Assert.Equal("PERSISTED-ORIGINAL-GOAL", memory[0].Content);
+        Assert.Equal(1, memory.Count(message => message.Content == "persisted-13"));
+        Assert.Equal("current-question", memory[^2].Content);
+        Assert.Equal("current-answer", memory[^1].Content);
+    }
+
+    [Fact]
+    public void AgentConversationMemoryBoundsLongTurnsWithoutLosingGoalOrRecentAnswer()
+    {
+        var history = Enumerable.Range(0, 30)
+            .Select(index => new CopilotRequestMessage(
+                index % 2 == 0 ? "user" : "assistant",
+                index == 0 ? "LONG-CONVERSATION-GOAL" : $"turn-{index}-" + new string('x', 9_000)))
+            .ToArray();
+
+        var memory = CopilotAgentConversationMemory.Merge(history, null, "latest-question", "latest-answer");
+
+        Assert.True(memory.Count <= CopilotAgentSessionCheckpoint.MaxConversationMemoryMessages);
+        Assert.True(memory.Sum(message => message.Content.Length) <= CopilotAgentSessionCheckpoint.MaxConversationMemoryCharacters);
+        Assert.Equal("LONG-CONVERSATION-GOAL", memory[0].Content);
+        Assert.Equal("latest-question", memory[^2].Content);
+        Assert.Equal("latest-answer", memory[^1].Content);
+        Assert.All(memory, message => Assert.True(message.Content.Length <= CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength));
+    }
+
+    [Fact]
     public void AgentContextBuilder_IncludesBusinessContextAndToolObservations()
     {
         var builder = new CopilotAgentContextBuilder();

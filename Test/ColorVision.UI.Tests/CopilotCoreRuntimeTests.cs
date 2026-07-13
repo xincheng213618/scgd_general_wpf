@@ -95,6 +95,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                     CapturedAtUtc = DateTimeOffset.UtcNow,
                 },
             ],
+            ConversationMemory =
+            [
+                new CopilotRequestMessage("user", "Original persisted question"),
+                new CopilotRequestMessage("assistant", "Original persisted answer"),
+            ],
             TaskEventJournal = taskEventJournal.Snapshot(),
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         };
@@ -117,6 +122,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var evidence = Assert.Single(checkpoint.EvidenceArtifacts);
         Assert.Equal("builtin:searchdocs", evidence.CapabilityId);
         Assert.Equal("Documentation evidence collected.", evidence.Summary);
+        Assert.Equal(2, checkpoint.ConversationMemory.Count);
+        Assert.Equal("Original persisted question", checkpoint.ConversationMemory[0].Content);
+        Assert.Equal("Original persisted answer", checkpoint.ConversationMemory[1].Content);
         Assert.Equal(2, checkpoint.TaskEventJournal.Events.Count);
         Assert.Equal(CopilotAgentTaskEventType.RunStopped, checkpoint.TaskEventJournal.Events[^1].Type);
     }
@@ -374,6 +382,23 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Capabilities = [new CopilotAgentCheckpointCapability { Id = "builtin:test", Revision = 1, Fingerprint = null! }],
         };
         Assert.False(corruptCapability.IsStructurallyValid());
+
+        var invalidMemory = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            conversationMemory: [new CopilotRequestMessage("system", "Persisted system instructions are forbidden.")]);
+        Assert.Null(invalidMemory);
+
+        var oversizedMemory = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            conversationMemory:
+            [
+                new CopilotRequestMessage(
+                    "user",
+                    new string('x', CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength + 1)),
+            ]);
+        Assert.Null(oversizedMemory);
     }
 
     [Fact]
@@ -1402,6 +1427,50 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_PreservesConversationMemoryWhenProfileChanges()
+    {
+        var firstProfile = CreateProfile();
+        using var firstClient = new CapturingFinalChatClient();
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => firstClient);
+        var firstResult = await firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "PROFILE-CHANGE-ORIGINAL-GOAL",
+            Profile = firstProfile,
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+        Assert.NotNull(firstResult.SessionCheckpoint);
+
+        var changedProfile = firstProfile.Clone();
+        changedProfile.Model = "replacement-model";
+        using var secondClient = new CapturingFinalChatClient();
+        var secondRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => secondClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var secondResult = await secondRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "continue after switching models",
+            Profile = changedProfile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = firstResult.SessionCheckpoint,
+        }, events.Add, CancellationToken.None);
+
+        Assert.False(secondResult.TaskLedger.ResumedFromCheckpoint);
+        Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("PROFILE-CHANGE-ORIGINAL-GOAL", StringComparison.Ordinal));
+        Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("continue after switching models", StringComparison.Ordinal));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("different model profile", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("conversation memory", StringComparison.OrdinalIgnoreCase));
+        Assert.True(secondResult.SessionCheckpoint!.IsUsableFor(changedProfile));
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_RetainsWebToolForShortFollowUpInSameSession()
     {
         var profile = CreateProfile();
@@ -1528,7 +1597,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_ReplansFromVisibleHistoryWhenRequestToolIsRemoved()
+    public async Task AgentFrameworkRuntime_ReplansWithConversationMemoryWhenRequestToolIsRemoved()
     {
         var profile = CreateProfile();
         var firstTool = new TestAgentTool("TransientProbe");
@@ -1557,11 +1626,6 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var secondResult = await secondRuntime.RunAsync(new CopilotAgentRequest
         {
             UserText = "continue with that result",
-            History =
-            [
-                new CopilotRequestMessage("user", "inspect the transient resource"),
-                new CopilotRequestMessage("assistant", "The transient resource was inspected."),
-            ],
             Profile = profile,
             Mode = CopilotAgentMode.Auto,
             SessionCheckpoint = firstResult.SessionCheckpoint,
@@ -1574,6 +1638,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("continue with that result", StringComparison.Ordinal));
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("request tool surface changed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("conversation memory", StringComparison.OrdinalIgnoreCase)
+            && item.Text.Contains("restored", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(secondResult.SessionCheckpoint!.ConversationMemory, message => message.Content == "inspect the transient resource");
+        Assert.Contains(secondResult.SessionCheckpoint.ConversationMemory, message => message.Content == "continue with that result");
         Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ReplanRequired
             && item.State == CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift.ToString());
     }

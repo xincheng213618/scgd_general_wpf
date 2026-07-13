@@ -167,8 +167,16 @@ namespace ColorVision.Copilot
 
             var requestedCheckpoint = request.SessionCheckpoint;
             var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(requestedCheckpoint?.TaskEventJournal);
+            var answerText = new StringBuilder();
             var emit = CreateEventEmitter(agentEvent =>
             {
+                if (agentEvent.Type == CopilotAgentEventType.AnswerDelta
+                    && !string.IsNullOrEmpty(agentEvent.Text)
+                    && answerText.Length < CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength)
+                {
+                    var remaining = CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength - answerText.Length;
+                    answerText.Append(agentEvent.Text.AsSpan(0, Math.Min(agentEvent.Text.Length, remaining)));
+                }
                 taskEventJournalBuilder.Observe(agentEvent);
                 onEvent(agentEvent);
             });
@@ -322,9 +330,20 @@ namespace ColorVision.Copilot
                     + " Persisted tasks are planning state, not authorization; protected tools require a fresh exact-call approval."));
             }
 
-            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = (sessionResumed
-                    ? preparedPrompt.Messages.TakeLast(1)
-                    : preparedPrompt.Messages)
+            var promptMessages = sessionResumed
+                ? preparedPrompt.Messages.TakeLast(1).ToArray()
+                : preparedPrompt.Messages;
+            if (!sessionResumed
+                && (requiresCheckpointReplan || sessionResumeFailed)
+                && requestedCheckpoint?.ConversationMemory.Count > 0)
+            {
+                promptMessages = CopilotAgentConversationMemory.MergeIntoPreparedPrompt(
+                    requestedCheckpoint.ConversationMemory,
+                    preparedPrompt.Messages);
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent task session was reset, but {requestedCheckpoint.ConversationMemory.Count} bounded conversation memory message(s) were restored for continuity."));
+            }
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = promptMessages
                 .Select(ToFrameworkMessage)
                 .ToArray();
             var recoveryEvidencePrompt = !sessionResumed && (requiresCheckpointReplan || sessionResumeFailed)
@@ -487,13 +506,19 @@ namespace ColorVision.Copilot
                 if (controlIntent != CopilotAgentControlIntent.Cancel)
                 {
                     var serializedSession = await agent.SerializeSessionAsync(session, null, finalizationToken);
+                    var conversationMemory = CopilotAgentConversationMemory.Merge(
+                        requestedCheckpoint?.ConversationMemory,
+                        request.History,
+                        request.UserText,
+                        answerText.ToString());
                     sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(
                         request.Profile,
                         serializedSession.GetRawText(),
                         capabilitySnapshot,
                         evidenceArtifacts,
                         taskEventJournal,
-                        availableToolNames);
+                        availableToolNames,
+                        conversationMemory);
                     if (sessionCheckpoint == null)
                         emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
                 }

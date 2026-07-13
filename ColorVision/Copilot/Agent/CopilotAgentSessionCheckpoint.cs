@@ -55,6 +55,9 @@ namespace ColorVision.Copilot
         public const int MaxCheckpointCapabilities = 2_048;
         public const int MaxAvailableToolNames = 2_048;
         public const int MaxAvailableToolNameLength = 256;
+        public const int MaxConversationMemoryMessages = 16;
+        public const int MaxConversationMemoryContentLength = 8_000;
+        public const int MaxConversationMemoryCharacters = 64_000;
         public const int CurrentToolSurfaceVersion = 1;
 
         public string ProfileKey { get; init; } = string.Empty;
@@ -70,6 +73,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<string> AvailableToolNames { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
+
+        public IReadOnlyList<CopilotRequestMessage> ConversationMemory { get; init; } = Array.Empty<CopilotRequestMessage>();
 
         public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
 
@@ -161,6 +166,14 @@ namespace ColorVision.Copilot
                     || capability.Fingerprint.Any(character => !Uri.IsHexDigit(character))) ?? false)
                 || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count)
                 || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts
+                || ConversationMemory == null
+                || ConversationMemory.Count > MaxConversationMemoryMessages
+                || ConversationMemory.Sum(message => message.Content?.Length ?? 0) > MaxConversationMemoryCharacters
+                || ConversationMemory.Any(message => message.Role is not ("user" or "assistant")
+                    || string.IsNullOrWhiteSpace(message.Content)
+                    || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
+                    || message.Content.Length > MaxConversationMemoryContentLength
+                    || message.Content.Contains('\0'))
                 || TaskEventJournal?.Events?.Count > CopilotAgentTaskEventJournal.MaxEvents)
             {
                 return false;
@@ -183,7 +196,8 @@ namespace ColorVision.Copilot
             CopilotCapabilityCatalogSnapshot? capabilitySnapshot = null,
             IReadOnlyList<CopilotAgentEvidenceArtifact>? evidenceArtifacts = null,
             CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null,
-            IReadOnlyCollection<string>? availableToolNames = null)
+            IReadOnlyCollection<string>? availableToolNames = null,
+            IReadOnlyList<CopilotRequestMessage>? conversationMemory = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -212,6 +226,7 @@ namespace ColorVision.Copilot
             {
                 return null;
             }
+            var persistedConversationMemory = (conversationMemory ?? Array.Empty<CopilotRequestMessage>()).ToArray();
 
             var checkpoint = new CopilotAgentSessionCheckpoint
             {
@@ -229,6 +244,7 @@ namespace ColorVision.Copilot
                 ToolSurfaceVersion = availableToolNames == null ? 0 : CurrentToolSurfaceVersion,
                 AvailableToolNames = persistedToolNames,
                 EvidenceArtifacts = persistedEvidence,
+                ConversationMemory = persistedConversationMemory,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
