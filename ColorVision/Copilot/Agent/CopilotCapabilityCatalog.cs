@@ -35,6 +35,8 @@ namespace ColorVision.Copilot
 
         public long Revision { get; init; }
 
+        public string Fingerprint { get; init; } = string.Empty;
+
         public CopilotToolAccess Access { get; init; }
 
         public CopilotToolRiskLevel RiskLevel { get; init; }
@@ -241,6 +243,7 @@ namespace ColorVision.Copilot
                 SourceId = candidate.SourceId,
                 SourceName = candidate.SourceName,
                 Revision = revision,
+                Fingerprint = candidate.Signature.ToLowerInvariant(),
                 Access = candidate.Capability.Access,
                 RiskLevel = candidate.Capability.RiskLevel,
                 ApprovalMode = candidate.Capability.ApprovalMode,

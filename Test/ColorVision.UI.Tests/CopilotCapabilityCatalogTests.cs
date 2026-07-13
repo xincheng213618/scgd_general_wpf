@@ -77,6 +77,79 @@ public sealed class CopilotCapabilityCatalogTests
         Assert.DoesNotContain("token", firstId, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void AgentCheckpoint_AllowsAdditionsButRejectsRemovedOrChangedCapabilities()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var original = new CatalogTool("Inspect", "Inspect current state.", "inspect");
+        var initialSnapshot = catalog.PublishSource(CopilotCapabilitySourceKind.Plugin, "plugin:test-suite", "Test suite", [original]);
+        var profile = new CopilotProfileConfig
+        {
+            ProviderType = CopilotProviderType.OpenAICompatible,
+            ApiKey = "test-key",
+            BaseUrl = "https://example.test/v1",
+            Model = "test-model",
+        };
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(profile, "{\"state\":{}}", initialSnapshot);
+
+        Assert.NotNull(checkpoint);
+        Assert.True(checkpoint!.IsUsableFor(profile, initialSnapshot));
+        Assert.Equal(initialSnapshot.Revision, checkpoint.CapabilityCatalogRevision);
+        Assert.Equal(64, Assert.Single(checkpoint.Capabilities).Fingerprint.Length);
+
+        var addedSnapshot = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:test-suite",
+            "Test suite",
+            [original, new CatalogTool("Summarize", "Summarize current state.", "summarize")]);
+        var addition = checkpoint.EvaluateFor(profile, addedSnapshot);
+        Assert.True(addition.CanResume);
+
+        var changedSnapshot = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:test-suite",
+            "Test suite",
+            [new CatalogTool("Inspect", "Changed tool semantics.", "inspect")]);
+        var changed = checkpoint.EvaluateFor(profile, changedSnapshot);
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.CapabilityDrift, changed.Kind);
+        Assert.Equal(["plugin:test-suite:inspect"], changed.ChangedCapabilityIds);
+        Assert.Empty(changed.RemovedCapabilityIds);
+
+        var removedSnapshot = catalog.RetainSources(CopilotCapabilitySourceKind.Plugin, Array.Empty<string>());
+        var removed = checkpoint.EvaluateFor(profile, removedSnapshot);
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.CapabilityDrift, removed.Kind);
+        Assert.Equal(["plugin:test-suite:inspect"], removed.RemovedCapabilityIds);
+    }
+
+    [Fact]
+    public void AgentCheckpoint_TreatsLegacyCapabilityStateAsReplanRequired()
+    {
+        var profile = new CopilotProfileConfig
+        {
+            ProviderType = CopilotProviderType.OpenAICompatible,
+            ApiKey = "test-key",
+            BaseUrl = "https://example.test/v1",
+            Model = "test-model",
+        };
+        var legacyCheckpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = CopilotAgentSessionCheckpoint.CreateProfileKey(profile),
+            SerializedSessionJson = "{\"state\":{}}",
+        };
+        var catalog = new CopilotCapabilityCatalog();
+        var snapshot = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:test-suite",
+            "Test suite",
+            [new CatalogTool("Inspect", "Inspect current state.", "inspect")]);
+
+        var compatibility = legacyCheckpoint.EvaluateFor(profile, snapshot);
+
+        Assert.False(compatibility.CanResume);
+        Assert.True(compatibility.RequiresReplan);
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing, compatibility.Kind);
+    }
+
     private sealed class CatalogTool(string name, string description, string catalogKey) : ICopilotTool, ICopilotCapabilityCatalogIdentity
     {
         public string Name { get; } = name;

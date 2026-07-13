@@ -29,6 +29,7 @@ namespace ColorVision.Copilot
         private readonly CopilotToolExecutor _toolExecutor;
         private readonly Func<CopilotProfileConfig, IChatClient> _chatClientFactory;
         private readonly ICopilotExternalToolProvider _externalToolProvider;
+        private readonly CopilotCapabilityCatalog _capabilityCatalog;
         private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
@@ -68,13 +69,15 @@ namespace ColorVision.Copilot
             CopilotAgentContextBuilder contextBuilder,
             CopilotToolExecutor toolExecutor,
             Func<CopilotProfileConfig, IChatClient> chatClientFactory,
-            ICopilotExternalToolProvider externalToolProvider)
+            ICopilotExternalToolProvider externalToolProvider,
+            CopilotCapabilityCatalog? capabilityCatalog = null)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
             _toolExecutor = toolExecutor ?? throw new ArgumentNullException(nameof(toolExecutor));
             _chatClientFactory = chatClientFactory ?? throw new ArgumentNullException(nameof(chatClientFactory));
             _externalToolProvider = externalToolProvider ?? throw new ArgumentNullException(nameof(externalToolProvider));
+            _capabilityCatalog = capabilityCatalog ?? CopilotCapabilityCatalog.Shared;
             _approvalCoordinator = new CopilotFrameworkApprovalCoordinator();
         }
 
@@ -127,6 +130,10 @@ namespace ColorVision.Copilot
             foreach (var diagnostic in externalToolLease.Diagnostics)
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
             var availableTools = MergeAvailableTools(_toolRegistry.FindTools(request), externalToolLease.Tools, emit);
+            var capabilitySnapshot = _capabilityCatalog.GetSnapshot();
+            var requestedCheckpoint = request.SessionCheckpoint;
+            var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot);
+            var requiresCapabilityReplan = checkpointCompatibility?.RequiresReplan == true;
             var bridge = new HarnessToolBridge(request, availableTools, request.Profile.MaxToolRounds, _toolExecutor, emit);
             var frameworkTools = bridge.CreateFunctions();
             var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
@@ -148,7 +155,10 @@ namespace ColorVision.Copilot
             var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
             {
                 Name = "ColorVisionCopilot",
-                HarnessInstructions = BuildHarnessInstructions(availableTools),
+                HarnessInstructions = BuildHarnessInstructions(availableTools)
+                    + (requiresCapabilityReplan
+                        ? "\n\nThe persisted task plan was discarded because the available capability catalog changed or predates capability tracking. Re-plan from the current conversation and current tools before taking action; do not assume prior todo items remain valid."
+                        : string.Empty),
                 MaxContextWindowTokens = tokenBudget.ContextWindowTokens,
                 MaxOutputTokens = request.Profile.MaxTokens,
                 MaximumIterationsPerRequest = Math.Max(1, request.Profile.MaxToolRounds),
@@ -203,11 +213,11 @@ namespace ColorVision.Copilot
             var usage = CopilotTokenUsage.Empty;
             var sessionResumed = false;
             AgentSession session;
-            if (request.SessionCheckpoint?.IsUsableFor(request.Profile) == true)
+            if (checkpointCompatibility?.CanResume == true && requestedCheckpoint != null)
             {
                 try
                 {
-                    using var checkpointDocument = JsonDocument.Parse(request.SessionCheckpoint.SerializedSessionJson);
+                    using var checkpointDocument = JsonDocument.Parse(requestedCheckpoint.SerializedSessionJson);
                     session = await agent.DeserializeSessionAsync(checkpointDocument.RootElement.Clone(), null, cancellationToken);
                     sessionResumed = true;
                     emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework session resumed from the persisted conversation checkpoint."));
@@ -224,6 +234,8 @@ namespace ColorVision.Copilot
             }
             else
             {
+                if (requiresCapabilityReplan)
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(FormatCapabilityReplanDiagnostic(checkpointCompatibility!)));
                 session = await agent.CreateSessionAsync(cancellationToken);
             }
             using var steeringRegistration = RegisterSteeringContext(messageInjector, session);
@@ -318,9 +330,9 @@ namespace ColorVision.Copilot
             try
             {
                 var serializedSession = await agent.SerializeSessionAsync(session, null, cancellationToken);
-                sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(request.Profile, serializedSession.GetRawText());
+                sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(request.Profile, serializedSession.GetRawText(), capabilitySnapshot);
                 if (sessionCheckpoint == null)
-                    emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded the persistence limit and was not saved."));
+                    emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
             }
             catch (OperationCanceledException)
             {
@@ -403,6 +415,17 @@ namespace ColorVision.Copilot
             var summary = $"{prefix} · {ledger.CompletedCount}/{ledger.TotalCount} complete · mode {ledger.Mode}";
             var remaining = ledger.Items.Where(item => !item.IsComplete).Take(3).Select(item => $"[{item.Id}] {SanitizeTaskTitle(item.Title)}").ToArray();
             return remaining.Length == 0 ? summary + "." : summary + " · open: " + string.Join("; ", remaining) + ".";
+        }
+
+        private static string FormatCapabilityReplanDiagnostic(CopilotAgentCheckpointCompatibility compatibility)
+        {
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing)
+                return "Persisted Agent session predates capability tracking; its task plan was discarded and Agent Framework will re-plan against current tools.";
+
+            var removed = compatibility.RemovedCapabilityIds.Count;
+            var changed = compatibility.ChangedCapabilityIds.Count;
+            return $"Agent capability drift detected · catalog revision {compatibility.PreviousCatalogRevision} -> {compatibility.CurrentCatalogRevision}"
+                + $" · {removed} removed · {changed} changed. Persisted task plan was discarded and Agent Framework will re-plan against current tools.";
         }
 
         private static string SanitizeTaskTitle(string title)

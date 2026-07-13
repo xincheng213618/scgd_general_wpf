@@ -89,6 +89,16 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             ProfileKey = "profile-key",
             SerializedSessionJson = "{\"state\":{}}",
+            CapabilityCatalogRevision = 3,
+            Capabilities =
+            [
+                new CopilotAgentCheckpointCapability
+                {
+                    Id = "builtin:searchdocs",
+                    Revision = 2,
+                    Fingerprint = new string('a', 64),
+                },
+            ],
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         };
         state.Conversations.Add(conversation);
@@ -100,6 +110,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.NotNull(checkpoint);
         Assert.Equal("profile-key", checkpoint!.ProfileKey);
         Assert.Equal("{\"state\":{}}", checkpoint.SerializedSessionJson);
+        Assert.Equal(3, checkpoint.CapabilityCatalogRevision);
+        var capability = Assert.Single(checkpoint.Capabilities);
+        Assert.Equal("builtin:searchdocs", capability.Id);
+        Assert.Equal(2, capability.Revision);
+        Assert.Equal(new string('a', 64), capability.Fingerprint);
     }
 
     [Fact]
@@ -149,6 +164,15 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var changedProfile = profile.Clone();
         changedProfile.Model = "different-model";
         Assert.False(checkpoint.IsUsableFor(changedProfile));
+
+        var corruptCapability = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = CopilotAgentSessionCheckpoint.CreateProfileKey(profile),
+            SerializedSessionJson = "{\"state\":{}}",
+            CapabilityCatalogRevision = 1,
+            Capabilities = [new CopilotAgentCheckpointCapability { Id = "builtin:test", Revision = 1, Fingerprint = null! }],
+        };
+        Assert.False(corruptCapability.IsStructurallyValid());
     }
 
     [Fact]
@@ -955,6 +979,65 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.DoesNotContain(secondClient.LastMessages!, message => message.Text.Contains("DUPLICATE-SENTINEL", StringComparison.Ordinal));
         Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("first persisted agent turn", StringComparison.Ordinal));
         Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("second persisted agent turn", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_DiscardsPersistedPlanAndReplansAfterCapabilityDrift()
+    {
+        var profile = CreateProfile();
+        var catalog = new CopilotCapabilityCatalog();
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:runtime-test",
+            "Runtime test",
+            [new TestAgentTool("CatalogProbe", inputSchema: CopilotToolInputSchema.OptionalQuery)]);
+        using var firstClient = new CapturingFinalChatClient();
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => firstClient,
+            new StaticExternalToolProvider(),
+            catalog);
+        var firstResult = await firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "create a checkpoint before the capability changes",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+        Assert.NotNull(firstResult.SessionCheckpoint);
+
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:runtime-test",
+            "Runtime test",
+            [new TestAgentTool("CatalogProbe", inputSchema: CopilotToolInputSchema.Query("Changed required input.", required: true))]);
+        using var secondClient = new CapturingFinalChatClient();
+        var secondRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => secondClient,
+            new StaticExternalToolProvider(),
+            catalog);
+        var events = new List<CopilotAgentEvent>();
+
+        var secondResult = await secondRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "continue after the capability changes",
+            History = new[] { new CopilotRequestMessage("user", "CAPABILITY-DRIFT-HISTORY-SENTINEL") },
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = firstResult.SessionCheckpoint,
+        }, events.Add, CancellationToken.None);
+
+        Assert.False(secondResult.TaskLedger.ResumedFromCheckpoint);
+        Assert.NotNull(secondClient.LastMessages);
+        Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("CAPABILITY-DRIFT-HISTORY-SENTINEL", StringComparison.Ordinal));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("capability drift", StringComparison.OrdinalIgnoreCase)
+            && item.Text.Contains("re-plan", StringComparison.OrdinalIgnoreCase));
+        Assert.True(secondResult.SessionCheckpoint!.IsUsableFor(profile, catalog.GetSnapshot()));
     }
 
     [Fact]
