@@ -8,5 +8,6 @@ public enum AlgorithmARVRType
 	畸变,
 	双目融合,
 	SFR_FindROI,
-	十字计算
+	十字计算,
+	屏幕缺陷检测
 }

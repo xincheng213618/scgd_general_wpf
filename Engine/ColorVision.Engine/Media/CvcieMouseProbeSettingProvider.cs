@@ -17,8 +17,8 @@ namespace ColorVision.Engine.Media
 
                 return
                 [
-                    new ImageViewSettingsEntry("CVCIE 探针", "当前视图", CvcieMouseProbeOptions.GetOrCreate(imageView)),
-                    new ImageViewSettingsEntry("CVCIE 探针", "默认值", CvcieMouseProbeOptions.CurrentDefaults, CvcieMouseProbeOptions.SaveDefaults),
+                    new ImageViewSettingsEntry(Properties.Resources.CvcieProbe, Properties.Resources.CurrentView, CvcieMouseProbeOptions.GetOrCreate(imageView)),
+                    new ImageViewSettingsEntry(Properties.Resources.CvcieProbe, Properties.Resources.DefaultValue, CvcieMouseProbeOptions.CurrentDefaults, CvcieMouseProbeOptions.SaveDefaults),
                 ];
             });
         }

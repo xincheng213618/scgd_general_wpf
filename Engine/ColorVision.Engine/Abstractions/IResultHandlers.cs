@@ -1,5 +1,4 @@
 #pragma warning disable CA1822
-using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -7,8 +6,6 @@ using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
@@ -17,33 +14,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine
 {
-    /// <summary>
-    /// 结果渲染配置 - 控制图像叠加层的文字格式与外观
-    /// </summary>
-    public class ResultRenderConfig : ViewModelBase
-    {
-        [Display(Name = "Engine_PG_DecimalPlaces", GroupName = "Engine_PG_Rendering", ResourceType = typeof(Properties.Resources))]
-        public int DecimalPlaces { get => _DecimalPlaces; set { _DecimalPlaces = value; OnPropertyChanged(); } }
-        private int _DecimalPlaces = 3;
-
-        [Display(Name = "Engine_PG_FontSize", GroupName = "Engine_PG_Rendering", ResourceType = typeof(Properties.Resources))]
-        public double FontSize { get => _FontSize; set { _FontSize = value; OnPropertyChanged(); } }
-        private double _FontSize = 10;
-
-        [Display(Name = "Engine_PG_PenThickness", GroupName = "Engine_PG_Rendering", ResourceType = typeof(Properties.Resources))]
-        public double PenThickness { get => _PenThickness; set { _PenThickness = value; OnPropertyChanged(); } }
-        private double _PenThickness = 1;
-
-        /// <summary>
-        /// 格式化数值，使用当前配置的小数位数
-        /// </summary>
-        public string FormatNumber(double? value)
-        {
-            if (value == null) return string.Empty;
-            return value.Value.ToString($"F{DecimalPlaces}", CultureInfo.InvariantCulture);
-        }
-    }
-
     /// <summary>
     /// 视图图像接口 - 定义图像查看器的基本功能
     /// </summary>
@@ -86,10 +56,10 @@ namespace ColorVision.Engine
         /// </summary>
         public virtual string Name => GetType().Name;
 
-        /// <summary>
-        /// 渲染配置
-        /// </summary>
-        public ResultRenderConfig RenderConfig { get; set; } = new ResultRenderConfig();
+        protected const double OverlayFontSize = 10;
+        protected const double OverlayPenThickness = 1;
+
+        protected static string FormatNumber(double? value) => value?.ToString("F3", CultureInfo.InvariantCulture) ?? string.Empty;
 
         /// <summary>
         /// 可以处理的算法类型列表

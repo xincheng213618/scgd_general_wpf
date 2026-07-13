@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Templates
 
         public virtual bool SetJsonAsDefault(int selectedIndex, out string message)
         {
-            message = "当前模板不支持设置默认参数";
+            message = Properties.Resources.TemplateEditor_DefaultParametersNotSupported;
             return false;
         }
 
@@ -181,6 +181,25 @@ namespace ColorVision.Engine.Templates
         public virtual void Create(string templateName)
         {
 
+        }
+
+        public virtual bool TryCreateTemplate(string templateName, out string message)
+        {
+            int countBeforeCreate = Count;
+            try
+            {
+                Create(templateName);
+                bool created = Count > countBeforeCreate
+                    || GetTemplateNames().Any(name => name.Equals(templateName, StringComparison.OrdinalIgnoreCase))
+                    || ExitsTemplateName(templateName);
+                message = created ? string.Empty : $"创建模板 {templateName} 失败，请检查模板配置或数据库连接。";
+                return created;
+            }
+            catch (Exception ex)
+            {
+                message = $"创建模板 {templateName} 失败：{ex.Message}";
+                return false;
+            }
         }
 
         public virtual void OpenCreate()

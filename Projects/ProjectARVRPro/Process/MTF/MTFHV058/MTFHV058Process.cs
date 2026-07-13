@@ -13,9 +13,9 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTFHV058
 {
-    public class MTFHV058Process : ProcessBase<MTFHV058ProcessConfig>
+    public class MTFHV058Process : ProcessBase<MTFHV058ProcessConfig, MTFHV058RecipeConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
@@ -251,7 +251,12 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
 
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.MTFHV058TestResults.Add(JsonConvert.DeserializeObject<MTFHV058TestResult>(ctx.Result.ViewResultJson) ?? new MTFHV058TestResult());
+                MTFHV058TestResult objectiveResult = JsonConvert.DeserializeObject<MTFHV058TestResult>(ctx.Result.ViewResultJson) ?? new MTFHV058TestResult();
+                string outputName = GetOutputName();
+                if (string.IsNullOrWhiteSpace(outputName))
+                    ctx.ObjectiveTestResult.MTFHV058TestResults.Add(objectiveResult);
+                else
+                    ctx.ObjectiveTestResult.DynamicMTFHV058TestResults[outputName] = objectiveResult;
                 return true;
             }
             catch (Exception ex)
@@ -286,17 +291,17 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
             }
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             var result = ctx.Result;
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("MTFHV058 画面结果");
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return sb.ToString();
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
             // 反序列化为 MTFHV058TestResult，这是包含所有 ObjectiveTestItem 属性的基类
             MTFHV058TestResult testResult = JsonConvert.DeserializeObject<MTFHV058TestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return sb.ToString();
+            if (testResult == null) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
             sb.AppendLine("Name,Value,Unit,LowLimit,UpLimit,Result");
 
@@ -313,12 +318,13 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
                 }
             }
 
-            return sb.ToString();
+            AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
+
+        private string GetOutputName()
         {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHV058RecipeConfig>();
+            return Config.Name?.Trim() ?? string.Empty;
         }
     }
 }

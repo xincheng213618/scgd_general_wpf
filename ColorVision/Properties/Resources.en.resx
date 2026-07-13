@@ -477,7 +477,7 @@
     <value>Tool Rounds</value>
   </data>
   <data name="CopilotSystemPrompt" xml:space="preserve">
-    <value>System Prompt</value>
+    <value>Custom Prompt</value>
   </data>
 
   <data name="Cancel" xml:space="preserve">

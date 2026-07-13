@@ -1,7 +1,11 @@
+using FlowEngineLib.Algorithm;
+
 namespace FlowEngineLib.Node.Camera;
 
 public class CommCameraData
 {
+	public CVImageFlipMode FlipMode { get; set; }
+
 	public CVTemplateParam AutoExpTimeTemplate { get; set; }
 
 	public bool IsAutoExpWithND { get; set; }
@@ -16,8 +20,9 @@ public class CommCameraData
 
 	public CVTemplateParam Calibration { get; set; }
 
-	public CommCameraData(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, string poiTempName, string poiFilterTempName, string poiReviseTempName, string globalVariableName, bool isHDR = false)
+	public CommCameraData(string camTempName, bool isWithND, bool isAutoExpTime, string autoExpTempName, string caliTempName, string poiTempName, string poiFilterTempName, string poiReviseTempName, string globalVariableName, bool isHDR = false, CVImageFlipMode flipMode = CVImageFlipMode.None)
 	{
+		FlipMode = flipMode;
 		IsAutoExpWithND = isWithND;
 		IsAutoExpTime = isAutoExpTime;
 		IsHDR = isHDR;

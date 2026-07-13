@@ -7,6 +7,9 @@ namespace ColorVision.Copilot
         public const string ExecutionHeader = "Execution";
         public const string ReasoningInProgressHeader = "Reasoning";
         public const string ReasoningHeader = "Reasoning Details";
+        public const string ProcessingHeader = "正在思考";
+        public const string ProcessedHeader = "已处理";
+        public const string ThinkingDetailsHeader = "推理";
         public const string NewConversationTitle = "New Chat";
         public const string EmptyConversationPreview = "Click + to start a new chat, or type a question";
         public const string PinnedLabel = "Pinned";

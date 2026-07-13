@@ -1,8 +1,7 @@
-﻿using ColorVision.Engine.Services;
+using ColorVision.Engine.Services;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -24,15 +23,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         {
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplateKB.Params;
-            ComboxTemplate.SelectedIndex = 0;
-            void UpdateCB_SourceImageFiles()
-            {
-                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
-                CB_SourceImageFiles.SelectedIndex = 0;
-            }
-            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
-            UpdateCB_SourceImageFiles();
-        }
+            ComboxTemplate.SelectedIndex = 0;        }
 
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
@@ -41,11 +32,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             if (!TryGetImageInput(out string imgFileName, out FileExtType fileExtType)) return;
             string type = string.Empty;
             string code = string.Empty;
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-            {
-                type = deviceService.ServiceTypes.ToString();
-                code = deviceService.Code;
-            }
+            
             IAlgorithm.SendCommand(code,type,imgFileName, fileExtType);
 
         }
@@ -53,11 +40,11 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         private bool TryGetImageInput(out string imgFileName, out FileExtType fileExtType)
         {
             fileExtType = FileExtType.Tif;
-            imgFileName = AlgRawSelect.IsSelected == true ? CB_RawImageFiles.Text : ImageFile.Text;
+            imgFileName = ImageFile.Text;
 
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
                 return false;
             }
 
@@ -70,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.tiff|All files (*.*)|*.*";
+            openFileDialog.Filter = ServicesHelper.ImageFileDialogFilter;
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -79,34 +66,5 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
         }
 
-        private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
-            IAlgorithm.DService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
-        }
-
-        private void Button_Click_Open(object sender, RoutedEventArgs e)
-        {
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
-        }
-
-        private void Open_Raw_File(object sender, RoutedEventArgs e)
-        {
-            if (File.Exists(ImageFile.Text))
-            {
-                IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
-            }
-        }
-
-        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
-        {
-            if (!File.Exists(ImageFile.Text))
-            {
-                MessageBox.Show("找不到图像文件");
-                return;
-            }
-            IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
-        }
     }
 }

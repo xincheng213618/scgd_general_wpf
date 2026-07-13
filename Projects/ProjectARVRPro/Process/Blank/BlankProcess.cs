@@ -1,15 +1,16 @@
 using ColorVision.Database;
 using ColorVision.Engine;
+using System.Threading.Tasks;
 
 namespace ProjectARVRPro.Process.Blank
 {
     public class BlankProcess : IProcess
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null)
             {
-                return false;
+                return Task.FromResult(false);
             }
 
             var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
@@ -20,16 +21,15 @@ namespace ProjectARVRPro.Process.Blank
 
             ctx.Result.Result = true;
             ctx.Result.ViewResultJson = string.Empty;
-            return true;
+            return Task.FromResult(true);
         }
 
         public void Render(IProcessExecutionContext ctx)
         {
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
-            return string.Empty;
         }
     }
 }

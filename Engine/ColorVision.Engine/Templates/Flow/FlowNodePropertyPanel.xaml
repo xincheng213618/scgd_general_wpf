@@ -4,7 +4,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             xmlns:st="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
              mc:Ignorable="d" d:DesignHeight="400" d:DesignWidth="300"
              Background="{DynamicResource GlobalBackground}">
     <Grid>
@@ -18,17 +17,13 @@
                       DockPanel.Dock="Right"
                       Margin="8,0,6,0"
                       VerticalAlignment="Center"
-                      Content="调试"
-                      ToolTip="显示节点ID、Token、设备代码等调试属性"
+                      Content="{x:Static properties:Resources.Debug}"
+                      ToolTip="{x:Static properties:Resources.Flow_ShowDebugPropertiesTooltip}"
                       Checked="ShowDebugPropertiesToggle_Changed"
                       Unchecked="ShowDebugPropertiesToggle_Changed" />
-            <Button x:Name="TogglePropertyEditorMode" HorizontalAlignment="Stretch" Click="TogglePropertyEditorMode_Click" Content="{x:Static properties:Resources.Switch}" />
         </DockPanel>
 
         <Grid Grid.Row="1">
-            <WindowsFormsHost x:Name="PropertyGridHost" Visibility="Collapsed">
-                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-            </WindowsFormsHost>
             <ScrollViewer x:Name="SignStackScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Visibility="Visible">
                 <StackPanel x:Name="SignStackPanelContainer" Orientation="Vertical" Margin="5"/>
             </ScrollViewer>

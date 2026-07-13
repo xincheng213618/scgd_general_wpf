@@ -5,10 +5,10 @@ using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
@@ -289,7 +289,7 @@ namespace ColorVision.Engine.Templates.POI
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif,*.tiff,*.cvraw,*.cvcie) | *.jpg; *.jpeg; *.png;*.tif;*.tiff;*.cvraw;*.cvcie";
+            openFileDialog.Filter = ServicesHelper.ImageFileDialogFilter;
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -1238,11 +1238,11 @@ namespace ColorVision.Engine.Templates.POI
                     if (TryOpenMeasureImage(item, allowCieFile: true))
                         return;
                 }
-                MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                        MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
             }
         }
 
@@ -1309,11 +1309,11 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         return;
                     }
-                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                        MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                    MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
                 }
             }
             else
@@ -1649,12 +1649,12 @@ namespace ColorVision.Engine.Templates.POI
                                 }
                                 else
                                 {
-                                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                                    MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
                                 }
                             }
                             catch (Exception ex)
                             {
-                                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                                MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
                             }
                         }
                     }
@@ -2089,9 +2089,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (selectedItems[i] is DVRectangleText rect)
                     {
-                        var newRect = new Rect(rect.Attribute.Rect.X, rect.Attribute.Rect.Y,
-                            firstRect.Attribute.Rect.Width, firstRect.Attribute.Rect.Height);
-                        rect.Attribute.Rect = newRect;
+                        rect.Attribute.Rect = ResizeRectKeepingCenter(rect.Attribute.Rect, firstRect.Attribute.Rect.Width, firstRect.Attribute.Rect.Height);
                         rect.Render();
                     }
                 }
@@ -2207,16 +2205,23 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (item is DVRectangleText rect)
                     {
-                        rect.Attribute.Rect = new Rect(rect.Attribute.Rect.X, rect.Attribute.Rect.Y, width, height);
+                        rect.Attribute.Rect = ResizeRectKeepingCenter(rect.Attribute.Rect, width, height);
                         rect.Render();
                     }
                     else if (item is DVRectangle r)
                     {
-                        r.Attribute.Rect = new Rect(r.Attribute.Rect.X, r.Attribute.Rect.Y, width, height);
+                        r.Attribute.Rect = ResizeRectKeepingCenter(r.Attribute.Rect, width, height);
                         r.Render();
                     }
                 }
             }
+        }
+
+        private static Rect ResizeRectKeepingCenter(Rect rect, double width, double height)
+        {
+            double centerX = rect.X + rect.Width / 2;
+            double centerY = rect.Y + rect.Height / 2;
+            return new Rect(centerX - width / 2, centerY - height / 2, width, height);
         }
 
         #endregion

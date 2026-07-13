@@ -19,6 +19,8 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; set; } = new();
 
+        public ObservableCollection<CopilotMcpClientServerConfig> ExternalMcpServers { get; set; } = new();
+
         public const int DefaultMcpPort = 38473;
 
         [Browsable(false)]
@@ -65,6 +67,7 @@ namespace ColorVision.Copilot
             var changed = false;
 
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
+            ExternalMcpServers ??= new ObservableCollection<CopilotMcpClientServerConfig>();
 
             if (McpPort <= 0 || McpPort > 65535)
             {
@@ -89,6 +92,19 @@ namespace ColorVision.Copilot
             foreach (var profile in Profiles)
             {
                 changed |= profile.EnsureValid();
+            }
+
+            for (var index = ExternalMcpServers.Count - 1; index >= 0; index--)
+            {
+                var server = ExternalMcpServers[index];
+                if (server == null)
+                {
+                    ExternalMcpServers.RemoveAt(index);
+                    changed = true;
+                    continue;
+                }
+
+                server.ToolRules ??= new ObservableCollection<CopilotMcpClientToolRule>();
             }
 
             OnPropertyChanged(nameof(IsConfigured));

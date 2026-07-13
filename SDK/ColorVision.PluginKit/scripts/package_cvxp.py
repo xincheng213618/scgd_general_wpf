@@ -644,7 +644,7 @@ def main() -> None:
             create_interactive_config(default_config_path)
             return
 
-    parser = argparse.ArgumentParser(description="Package a plugin into .cvxp using shared_files.json and optionally upload it.")
+    parser = argparse.ArgumentParser(description="Package a plugin into .cvxp using shared_files.json, upload it, then delete the local package unless configured otherwise.")
     parser.add_argument("--config", help="Path to a pluginkit config JSON file")
     parser.add_argument("--init-config", help="Generate a config JSON from a plugin .csproj path or a project folder")
     parser.add_argument("--src-dir", help="Compiled plugin output directory")
@@ -662,7 +662,6 @@ def main() -> None:
     parser.add_argument("--upload-url", help="Upload server base URL")
     parser.add_argument("--username", help="Upload username")
     parser.add_argument("--password", help="Upload password")
-    parser.add_argument("--no-upload", action="store_true", help="Only package locally and skip upload")
     parser.add_argument("--keep-package", action="store_true", help="Keep the local .cvxp file after successful upload")
     args = parser.parse_args(raw_args)
 
@@ -753,7 +752,7 @@ def main() -> None:
     print(f"Skipped runtime file count: {skipped_runtime_count}")
     print(f"Packaged: {output_file}")
 
-    should_upload = not args.no_upload and (not auto_mode or config_upload_enabled)
+    should_upload = not auto_mode or config_upload_enabled
     if not should_upload:
         return
 

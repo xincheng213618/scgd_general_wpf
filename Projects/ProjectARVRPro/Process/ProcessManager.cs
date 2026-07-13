@@ -40,6 +40,8 @@ namespace ProjectARVRPro.Process
         /// </summary>
         public ObservableCollection<ProcessGroup> ProcessGroups { get; } = new ObservableCollection<ProcessGroup>();
 
+        public RecipeConfig RecipeConfig { get; private set; } = new();
+
         /// <summary>
         /// 当前激活的组索引
         /// </summary>
@@ -237,10 +239,9 @@ namespace ProjectARVRPro.Process
 
                 var exportRoot = new ProcessManagerConfigPersist
                 {
-                    Version = 1,
+                    Version = 2,
                     ExportedAt = DateTime.Now,
-                    ProcessGroups = CreateProcessGroupsRoot(),
-                    RecipeConfig = RecipeManager.GetInstance().RecipeConfig
+                    ProcessGroups = CreateProcessGroupsRoot()
                 };
 
                 string json = JsonConvert.SerializeObject(exportRoot, ExportJsonSerializerSettings);
@@ -278,13 +279,10 @@ namespace ProjectARVRPro.Process
 
             try
             {
-                ApplyImportedGroups(importedGroups);
-
                 if (importedRecipe != null)
-                {
-                    RecipeManager.GetInstance().RecipeConfig = importedRecipe;
-                    RecipeManager.GetInstance().Save();
-                }
+                    RecipeConfig = importedRecipe;
+
+                ApplyImportedGroups(importedGroups);
 
                 string message = $"流程配置已导入，共 {ProcessGroups.Count} 个组。";
                 if (!string.IsNullOrWhiteSpace(warningMessage))
@@ -517,34 +515,38 @@ namespace ProjectARVRPro.Process
                 {
                     MigrateFromOldFormat();
                 }
-                // Ensure we have at least one group
-                if (ProcessGroups.Count == 0)
-                {
-                    ProcessGroups.Add(new ProcessGroup { Name = "Default" });
-                    _ActiveGroupIndex = 0;
-                }
-
-                OnPropertyChanged(nameof(ActiveGroupIndex));
-                OnPropertyChanged(nameof(ActiveGroup));
-                OnPropertyChanged(nameof(ProcessMetas));
-                HookProcessMetasEvents();
             }
             catch (Exception ex)
             {
                 log.Error("加载ProcessGroups失败", ex);
+                ProcessGroups.Clear();
+                RecipeConfig = new RecipeConfig();
             }
+
+            if (ProcessGroups.Count == 0)
+            {
+                ProcessGroups.Add(new ProcessGroup { Name = "Default" });
+                _ActiveGroupIndex = 0;
+            }
+
+            OnPropertyChanged(nameof(ActiveGroupIndex));
+            OnPropertyChanged(nameof(ActiveGroup));
+            OnPropertyChanged(nameof(ProcessMetas));
+            HookProcessMetasEvents();
         }
 
         private void LoadFromGroupsFile()
         {
             string json = File.ReadAllText(GroupPersistFilePath);
-            var root = JsonConvert.DeserializeObject<ProcessGroupsRoot>(json);
+            var root = JsonConvert.DeserializeObject<ProcessGroupsRoot>(json, ExportJsonSerializerSettings);
             if (root == null || root.Groups == null || root.Groups.Count == 0)
             {
                 ProcessGroups.Add(new ProcessGroup { Name = "Default" });
                 _ActiveGroupIndex = 0;
                 return;
             }
+
+            RecipeConfig = root.RecipeConfig ?? new RecipeConfig();
 
             foreach (var gp in root.Groups)
             {
@@ -624,7 +626,7 @@ namespace ProjectARVRPro.Process
 
                 var root = CreateProcessGroupsRoot();
 
-                string json = JsonConvert.SerializeObject(root, Formatting.Indented);
+                string json = JsonConvert.SerializeObject(root, ExportJsonSerializerSettings);
                 File.WriteAllText(GroupPersistFilePath, json);
             }
             catch (Exception ex)
@@ -642,8 +644,9 @@ namespace ProjectARVRPro.Process
         {
             return new ProcessGroupsRoot
             {
-                Version = 1,
+                Version = 2,
                 ActiveGroupIndex = _ActiveGroupIndex,
+                RecipeConfig = RecipeConfig,
                 Groups = ProcessGroups.Select(g => new ProcessGroupPersist
                 {
                     Name = g.Name,
@@ -687,26 +690,15 @@ namespace ProjectARVRPro.Process
                 if (token is JObject packageObject && packageObject[nameof(ProcessManagerConfigPersist.ProcessGroups)] != null)
                 {
                     groupsRoot = packageObject[nameof(ProcessManagerConfigPersist.ProcessGroups)]?.ToObject<ProcessGroupsRoot>(JsonSerializer.Create(ExportJsonSerializerSettings)) ?? new ProcessGroupsRoot();
-
-                    if (packageObject[nameof(ProcessManagerConfigPersist.RecipeConfig)] != null && packageObject[nameof(ProcessManagerConfigPersist.RecipeConfig)]?.Type != JTokenType.Null)
-                    {
-                        try
-                        {
-                            recipeConfig = packageObject[nameof(ProcessManagerConfigPersist.RecipeConfig)]?.ToObject<RecipeConfig>(JsonSerializer.Create(ExportJsonSerializerSettings));
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Warn($"导入Recipe配置失败，仅导入流程组配置: {ex.Message}");
-                            warningMessage = "Recipe配置导入失败，已保留当前Recipe配置。";
-                        }
-                    }
+                    recipeConfig = groupsRoot.RecipeConfig;
 
                     return ValidateImportedGroups(groupsRoot, out errorMessage);
                 }
 
                 if (token is JObject groupsObject && groupsObject[nameof(ProcessGroupsRoot.Groups)] != null)
                 {
-                    groupsRoot = groupsObject.ToObject<ProcessGroupsRoot>() ?? new ProcessGroupsRoot();
+                    groupsRoot = groupsObject.ToObject<ProcessGroupsRoot>(JsonSerializer.Create(ExportJsonSerializerSettings)) ?? new ProcessGroupsRoot();
+                    recipeConfig = groupsRoot.RecipeConfig;
                     return ValidateImportedGroups(groupsRoot, out errorMessage);
                 }
 
@@ -715,7 +707,7 @@ namespace ProjectARVRPro.Process
                     var metas = legacyMetas.ToObject<List<ProcessMetaPersist>>() ?? new List<ProcessMetaPersist>();
                     groupsRoot = new ProcessGroupsRoot
                     {
-                        Version = 1,
+                        Version = 2,
                         ActiveGroupIndex = 0,
                         Groups = new List<ProcessGroupPersist>
                         {

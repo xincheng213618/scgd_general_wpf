@@ -43,6 +43,7 @@ public class SMUFromCSVNode : SMUBaseNode
 	}
 
 	[STNodeProperty("CsvFileName", "CsvFileName", false, true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string CsvFileName
 	{
 		get

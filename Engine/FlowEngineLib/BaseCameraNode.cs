@@ -76,6 +76,7 @@ public class BaseCameraNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("校正模板", "校正模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowNodePropertyEditorSelector))]
 	public string CaliTempName
 	{
 		get
@@ -103,6 +104,7 @@ public class BaseCameraNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("POI模板", "POI算法模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowNodePropertyEditorSelector))]
 	public string POITempName
 	{
 		get
@@ -117,6 +119,7 @@ public class BaseCameraNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("POI过滤", "POI过滤模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowNodePropertyEditorSelector))]
 	public string POIFilterTempName
 	{
 		get
@@ -131,6 +134,7 @@ public class BaseCameraNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("POI修正", "POI修正模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowNodePropertyEditorSelector))]
 	public string POIReviseTempName
 	{
 		get

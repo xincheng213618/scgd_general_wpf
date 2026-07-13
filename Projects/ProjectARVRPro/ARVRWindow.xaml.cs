@@ -1,13 +1,13 @@
-﻿#pragma warning disable CA1822,CS0168,CS0219,CS4014,CS8601
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Scheduler;
+using ColorVision.ImageEditor;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -18,11 +18,9 @@ using log4net;
 using Newtonsoft.Json;
 using ProjectARVRPro.Exports;
 using ProjectARVRPro.LegacyARVR;
-using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
 using ProjectARVRPro.SocketRelay;
-using Quartz;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -31,7 +29,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -40,37 +37,6 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro
 {
-    public class ProjectARVRLitetestJob : IJob
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectARVRLitetestJob));
-
-        public Task Execute(IJobExecutionContext context)
-        {
-            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
-            schedulerInfo.RunCount++;
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                schedulerInfo.Status = SchedulerStatus.Running;
-            });
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ProjectWindowInstance.WindowInstance.SwitchPGCompleted();
-
-                ProjectWindowInstance.WindowInstance.RunTemplate();
-
-                schedulerInfo.Status = SchedulerStatus.Ready;
-            });
-            return Task.CompletedTask;
-        }
-    }
-
-
-    public class SwitchPG
-    {
-        public int ARVRTestType { get; set; }
-    }
-
-
     public class ARVRWindowConfig : WindowConfig
     {
         public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
@@ -79,7 +45,6 @@ namespace ProjectARVRPro
     public partial class ARVRWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
-        public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
 
         public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
 
@@ -90,8 +55,7 @@ namespace ProjectARVRPro
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public ObservableCollection<ProcessMeta> ProcessMetas => ProcessManager.ProcessMetas;
 
-        // 雷鸟切图控制器
-        private ThunderbirdSerialController _thunderbirdController = ThunderbirdSerialController.GetInstance();
+        private readonly PictureSwitchService _pictureSwitchService;
 
         private static readonly HashSet<string> ResultOverlayConfigNames =
         [
@@ -103,75 +67,39 @@ namespace ProjectARVRPro
 
         public ARVRWindow()
         {
+            _pictureSwitchService = new PictureSwitchService(ThunderbirdSerialController.GetInstance());
             InitializeComponent();
             this.ApplyCaption(false);
-            Config.SetWindow(this);
+            ARVRWindowConfig.Instance.SetWindow(this);
             this.Title += Assembly.GetAssembly(typeof(ARVRWindow))?.GetName().Version?.ToString() ?? "";
         }
 
         private int CurrentTestType = -1;
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
-        private string _flowFailureMessage = string.Empty;
+        private int ObjectiveTestResultRecordId;
+        private (int Code, string Message)? _firstFlowFailure;
         private string _lastFlowFailureMessage = string.Empty;
-        private int _flowFailureCode;
-        private static readonly Regex FindDotsArrayFailureRegex = new(@"findDotsArray\s+return\s+fail(?:e)?d\s*[\(（]\s*(?<code>-?\d+)\s*[\)）]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Dictionary<int, (string Name, string Message)> CVOledErrors = new Dictionary<int, (string Name, string Message)>
-        {
-            [0] = ("CVLED_SUCCESS", "成功"),
-            [1] = ("CVLED_PARAM_E", "参数错误"),
-            [2] = ("CVLED_INPUT_E", "输入错误"),
-            [3] = ("CVLED_SCRREN_NOT_SUPPORT", "屏幕类型不支持(预留)"),
-            [4] = ("CVLED_INIT_E", "初始化错误"),
-            [5] = ("SAVE_E", "保存文件错误"),
-            [6] = ("OUT_OF_BOUNDRY", "越界"),
-            [7] = ("ALGORITHM_E", "算法错误"),
-            [8] = ("MORIE_E", "摩尔纹"),
-            [9] = ("PARTICLE_E", "灰尘检测错误"),
-            [10] = ("EXT_LIGHT_E", "侧光点亮异常"),
-            [11] = ("FOCUS_E", "清晰度异常/聚焦异常"),
-            [12] = ("AAROT_E", "AA区平转"),
-            [13] = ("PERPENDICULAR_E", "垂直不佳"),
-            [14] = ("PATTERN_E", "显示画面错误"),
-            [15] = ("DONGLE_E", "加密狗缺失"),
-            [16] = ("BLACKSCREEN_E", "黑屏错误(屏幕未点亮)"),
-            [17] = ("VH_LINE_E", "横竖线缺陷"),
-            [18] = ("CONSISTANT_STAIN_E", "固定位置缺陷"),
-            [19] = ("MURA_E", "Mura缺陷"),
-            [20] = ("PARTICLE_WARN", "灰尘检测警告(非致命)"),
-            [21] = ("POSITION_QUALITY_E", "定位质量差"),
-            [22] = ("CVLED_BUILD_E", "提取/重建错误"),
-            [23] = ("FILE_NOT_FOUND_E", "文件不存在(预留)"),
-            [24] = ("FILE_FORMAT_E", "文件格式错误(预留)"),
-            [25] = ("JSON_PARSE_E", "JSON解析错误(预留)"),
-            [26] = ("IMAGE_FORMAT_E", "图片格式不支持(预留)")
-        };
+        private IProcess? _currentFlowProcess;
+
         Random Random = new Random();
         public void InitTest(string SN)
         {
             ProjectConfig.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
-            _flowFailureMessage = string.Empty;
+            ObjectiveTestResultRecordId = 0;
+            _firstFlowFailure = null;
             _lastFlowFailureMessage = string.Empty;
-            _flowFailureCode = 0;
+            _currentFlowProcess = null;
             CurrentTestType = -1;
-            if (string.IsNullOrWhiteSpace(SN))
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectARVRProConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
-                });
-            }
-            else
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectARVRProConfig.Instance.SN = SN;
-                });
-            }
+                ProjectARVRProConfig.Instance.SN  = string.IsNullOrWhiteSpace(SN) ? "SN" + Random.NextInt64(10000, 90000).ToString() : SN.Trim(); 
+            });
         }
 
         bool IsSwitchRun;
+        private bool _isFlowLifecycleActive;
         public void SwitchPGCompleted()
         {
             if (IsSwitchRun)
@@ -181,48 +109,61 @@ namespace ProjectARVRPro
             }
             IsSwitchRun = true;
 
-            if (flowControl.IsFlowRun)
+            try
             {
-                log.Info("PG切换错误，正在执行流程");
-                return;
-            }
-
-            // Find next enabled ProcessMeta
-            int nextTestType = -1;
-            for (int i = CurrentTestType + 1; i < ProcessMetas.Count; i++)
-            {
-                if (ProcessMetas[i].IsEnabled)
+                if (flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
                 {
-                    nextTestType = i;
-                    break;
+                    log.Info("PG切换错误，正在执行流程或处理流程结果");
+                    return;
+                }
+
+                // Find next enabled ProcessMeta
+                int nextTestType = -1;
+                for (int i = CurrentTestType + 1; i < ProcessMetas.Count; i++)
+                {
+                    if (ProcessMetas[i].IsEnabled)
+                    {
+                        nextTestType = i;
+                        break;
+                    }
+                }
+
+                if (nextTestType >= 0 && nextTestType < ProcessMetas.Count)
+                {
+                    ProcessMeta processMeta = ProcessMetas[nextTestType];
+                    TemplateModel<FlowParam> template = SelectFlowTemplate(processMeta);
+                    CurrentTestType = nextTestType;
+                    ProjectConfig.StepIndex = nextTestType;
+                    RunTemplate(template.Key, processMeta);
                 }
             }
-
-            if (nextTestType >= 0 && nextTestType < ProcessMetas.Count)
+            finally
             {
-                ProcessMeta processMeta = ProcessMetas[nextTestType];
-                ProjectConfig.StepIndex = nextTestType;
-                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
-                CurrentTestType = nextTestType;
-                RunTemplate();
+                IsSwitchRun = false;
             }
+        }
 
-            IsSwitchRun = false;
+        private TemplateModel<FlowParam> SelectFlowTemplate(ProcessMeta processMeta)
+        {
+            var template = TemplateFlow.Params.First(a => string.Equals(a.Key, processMeta.FlowTemplate, StringComparison.OrdinalIgnoreCase));
+            FlowTemplate.SelectedItem = template;
+            return template;
         }
  
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
         private Timer timer;
+
         Stopwatch stopwatch = new Stopwatch();
 
-
-
-
         private LogOutput? logOutput;
+        private bool _isDisposed;
+        private EventHandler? _activeGroupChangedHandler;
         private void Window_Initialized(object sender, EventArgs e)
         {
             ProcessManager.GenStepBar(stepBar);
-            ProcessManager.ActiveGroupChanged += (s, ev) => ProcessManager.GenStepBar(stepBar);
+            _activeGroupChangedHandler = ProcessManager_ActiveGroupChanged;
+            ProcessManager.ActiveGroupChanged += _activeGroupChangedHandler;
             this.DataContext = ProjectARVRProConfig.Instance;
             ProjectConfig.PropertyChanged += ProjectConfig_PropertyChanged;
             ApplyResultOverlayConfig();
@@ -238,15 +179,8 @@ namespace ProjectARVRPro
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
 
-            if (ProjectARVRProConfig.Instance.LogControlVisibility)
-            {
-                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
-                LogGrid.Children.Add(logOutput);
-            }
-            else
-            {
-                LogGrid.Visibility = Visibility.Collapsed;
-            }
+            logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            LogGrid.Children.Add(logOutput);
 
 
             this.Closed += (s, e) =>
@@ -265,10 +199,12 @@ namespace ProjectARVRPro
             // 构建 ListView 统一的右键菜单（替代原先每个实体各自创建 ContextMenu 的方案）
             BuildListViewContextMenu();
 
-            _thunderbirdController.ConnectionStateChanged += ThunderbirdController_ConnectionStateChanged;
-            UpdateThunderbirdStatusIndicator();
-            _ = TryAutoConnectThunderbirdAsync();
+        }
 
+        private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
+        {
+            if (!_isDisposed)
+                ProcessManager.GenStepBar(stepBar);
         }
 
         private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
@@ -276,61 +212,12 @@ namespace ProjectARVRPro
             DatabaseCleanupWindow.OpenWindow();
         }
 
-        private void ThunderbirdController_ConnectionStateChanged(object? sender, EventArgs e)
+        private void ViewOptions_Click(object sender, RoutedEventArgs e)
         {
-            UpdateThunderbirdStatusIndicator();
-        }
-
-        private async Task TryAutoConnectThunderbirdAsync()
-        {
-            if (_thunderbirdController.IsConnected)
+            if (sender is Button button && button.ContextMenu != null)
             {
-                UpdateThunderbirdStatusIndicator();
-                return;
-            }
-
-            if (!ProjectConfig.ThunderbirdAutoConnect)
-                return;
-
-            if (string.IsNullOrWhiteSpace(ProjectConfig.ThunderbirdPortName))
-            {
-                log.Warn("雷鸟自动连接已启用，但未配置串口号");
-                return;
-            }
-
-            try
-            {
-                int timeoutMs = ProjectConfig.ThunderbirdTimeoutMs > 0 ? ProjectConfig.ThunderbirdTimeoutMs : 1000;
-                _thunderbirdController.Open(ProjectConfig.ThunderbirdPortName, ProjectConfig.ThunderbirdBaudRate, timeoutMs);
-                log.Info($"雷鸟自动连接成功: {ProjectConfig.ThunderbirdPortName}");
-                UpdateThunderbirdStatusIndicator();
-                await _thunderbirdController.QueryBrightnessAsync(timeoutMs);
-            }
-            catch (Exception ex)
-            {
-                log.Warn("雷鸟自动连接失败", ex);
-                UpdateThunderbirdStatusIndicator();
-            }
-        }
-
-        private void UpdateThunderbirdStatusIndicator()
-        {
-            if (!Dispatcher.CheckAccess())
-            {
-                Dispatcher.BeginInvoke(() => UpdateThunderbirdStatusIndicator());
-                return;
-            }
-
-            if (_thunderbirdController.IsConnected)
-            {
-                string port = string.IsNullOrWhiteSpace(_thunderbirdController.CurrentPortName) ? "未知串口" : _thunderbirdController.CurrentPortName;
-                ThunderbirdConnectionStatusText.Content = $"切图: 已连接 {port}";
-                ThunderbirdConnectionStatusText.Foreground = Brushes.LimeGreen;
-            }
-            else
-            {
-                ThunderbirdConnectionStatusText.Content = "切图: 未连接";
-                ThunderbirdConnectionStatusText.Foreground = Brushes.Gray;
+                button.ContextMenu.PlacementTarget = button;
+                button.ContextMenu.IsOpen = true;
             }
         }
 
@@ -435,44 +322,20 @@ namespace ProjectARVRPro
 
         #endregion
 
-        private void ServicesChanged(object? sender, EventArgs e)
+        public Task Refresh()
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                log.Info("Service触发拍照，执行流程");
-                RunTemplate();
-            });
-        }
+            if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
 
-
-        public async Task Refresh()
-        {
-            if (FlowTemplate.SelectedIndex < 0) return;
             MqttRCService.GetInstance().QueryServices();
             string Refreshdata = TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64;
+            flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
 
-            try
+            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent -= UpdateMsg;
-
-                flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
-
-                for (int i = 0; i < 200; i++)
-                {
-                    if (flowEngine.IsReady)
-                        break;
-                    await Task.Delay(10);
-                }
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent += UpdateMsg;
-
+                item.nodeRunEvent -= UpdateMsg;
+                item.nodeRunEvent += UpdateMsg;
             }
-            catch (Exception ex)
-            {
-                flowEngine.LoadFromBase64(string.Empty);
-            }
-            log.Info($"IsReady{flowEngine.IsReady}");
+            return Task.CompletedTask;
         }
 
 
@@ -536,31 +399,37 @@ namespace ProjectARVRPro
         ProjectARVRReuslt CurrentFlowResult { get; set; }
         int TryCount;
 
-        public async Task RunTemplate()
+        public Task RunTemplate()
         {
-            if (flowControl.IsFlowRun)
+            if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
+                return Task.CompletedTask;
+
+            ProcessMeta? processMeta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, template.Key, StringComparison.OrdinalIgnoreCase));
+            return RunTemplate(template.Key, processMeta);
+        }
+
+        private async Task RunTemplate(string flowTemplateKey, ProcessMeta? runProcessMeta)
+        {
+            if (flowControl.IsFlowRun || _isFlowLifecycleActive)
             {
-                log.Info("当前flowControl存在流程执行");
+                log.Info("当前flowControl存在流程执行或正在处理流程结果");
                 return;
             }
 
             TryCount++;
-            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+            _currentFlowProcess = runProcessMeta?.Process;
+            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowTemplateKey, out long time) ? time : 0;
 
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
-            CurrentFlowResult.Model = FlowTemplate.Text;
-
-            ProcessMeta? runProcessMeta = null;
+            CurrentFlowResult.Model = flowTemplateKey;
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
+                if (runProcessMeta != null)
                 {
-                    runProcessMeta = processMeta;
-                    CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
+                    CurrentFlowResult.TestType = ProcessMetas.IndexOf(runProcessMeta);
                     ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
-
                 }
                 else
                 {
@@ -570,7 +439,7 @@ namespace ProjectARVRPro
             });
 
 
-            FlowName = FlowTemplate.Text;
+            FlowName = flowTemplateKey;
 
             string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
             CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
@@ -579,21 +448,14 @@ namespace ProjectARVRPro
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
 
-            if (!flowEngine.IsReady)
-            {
-                string base64 = string.Empty;
-                flowEngine.LoadFromBase64(base64);
-                await Refresh();
-                log.Info($"IsReady{flowEngine.IsReady}");
-            }
-
-            if (!await ExecutePictureSwitchAsync(runProcessMeta))
+            if (!await _pictureSwitchService.ExecuteAsync(runProcessMeta))
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PictureSwitchFailed";
+                await ExecuteProcessFailureAsync(runProcessMeta?.Process);
                 RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
-                SendProjectResultResponse(GetProjectResultCode(-1), GetProjectResultMessage("ARVR Test Fail"), CreateProjectResponseData());
+                SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
                 TryCount = 0;
                 return;
             }
@@ -602,15 +464,17 @@ namespace ProjectARVRPro
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                 CurrentFlowResult.Msg = "PreProcessFailed";
+                await ExecuteProcessFailureAsync(runProcessMeta?.Process);
                 RecordFlowFailure(CurrentFlowResult.Msg);
                 logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
-                SendProjectResultResponse(GetProjectResultCode(-1), GetProjectResultMessage("ARVR Test Fail"), CreateProjectResponseData());
+                SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
                 TryCount = 0;
                 return;
             }
 
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
+            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
@@ -620,6 +484,7 @@ namespace ProjectARVRPro
             int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
 
+            _isFlowLifecycleActive = true;
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
@@ -634,75 +499,81 @@ namespace ProjectARVRPro
 
         private FlowControl flowControl;
 
-        private bool HasFlowFailure => !string.IsNullOrWhiteSpace(_flowFailureMessage);
+        private async Task ExecuteProcessFailureAsync(IProcess? process)
+        {
+            if (process == null || CurrentFlowResult == null)
+                return;
+
+            try
+            {
+                MeasureBatchModel? batch = null;
+                if (CurrentFlowResult.BatchId > 0)
+                    batch = BatchResultMasterDao.Instance.GetById(CurrentFlowResult.BatchId);
+
+                batch ??= new MeasureBatchModel
+                {
+                    Id = CurrentFlowResult.BatchId,
+                    Name = CurrentFlowResult.SN,
+                    Code = CurrentFlowResult.Code
+                };
+
+                var ctx = new IProcessExecutionContext
+                {
+                    Batch = batch,
+                    Result = CurrentFlowResult,
+                    ObjectiveTestResult = ObjectiveTestResult,
+                    ImageView = ImageView
+                };
+
+                await process.ExecuteFailure(ctx);
+            }
+            catch (Exception ex)
+            {
+                log.Error("自定义 IProcess 失败处理异常", ex);
+            }
+        }
 
         private void RecordFlowFailure(string? message, int code = -1)
         {
-            (int failureCode, string normalizedMessage) = NormalizeFlowFailure(message, code);
-            _lastFlowFailureMessage = normalizedMessage;
-            if (!HasFlowFailure)
-            {
-                _flowFailureMessage = normalizedMessage;
-                _flowFailureCode = failureCode;
-            }
+            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
+            string failureMessage = normalizedMessage;
+
+            _lastFlowFailureMessage = failureMessage;
+            _firstFlowFailure ??= (code, failureMessage);
             if (CurrentFlowResult != null)
             {
                 CurrentFlowResult.Result = false;
-                CurrentFlowResult.Msg = normalizedMessage;
+                CurrentFlowResult.Msg = failureMessage;
             }
             ObjectiveTestResult.TotalResult = false;
-            ObjectiveTestResult.Msg = _flowFailureMessage;
+            ObjectiveTestResult.Msg = _firstFlowFailure?.Message ?? failureMessage;
         }
 
-        private static (int Code, string Message) NormalizeFlowFailure(string? message, int defaultCode)
+        private void TryAttachCapturedImage(ProjectARVRReuslt result)
         {
-            string normalizedMessage = string.IsNullOrWhiteSpace(message) ? "ARVR Test Fail" : message.Trim();
-            Match match = FindDotsArrayFailureRegex.Match(normalizedMessage);
-            if (!match.Success || !int.TryParse(match.Groups["code"].Value, out int oledErrorCode))
-                return (defaultCode, normalizedMessage);
+            if (result == null) return;
 
-            if (!CVOledErrors.TryGetValue(oledErrorCode, out var oledError))
-                oledError = ("UNKNOWN_CVOLED_ERROR", "未知CVOLED错误码");
+            if (string.IsNullOrWhiteSpace(result.Model))
+                result.Model = FlowName;
 
-            string detail = $"检测失败: {normalizedMessage}; 错误码: {oledErrorCode}, 枚举: {oledError.Name}, 错误信息: {oledError.Message}";
-            return (oledErrorCode, detail);
-        }
+            try
+            {
+                int batchId = result.BatchId;
+                if (batchId <= 0) return;
 
-        private string GetProjectResultMessage(string defaultMessage)
-        {
-            return HasFlowFailure ? _flowFailureMessage : defaultMessage;
-        }
+                var image = MeasureImgResultDao.Instance.GetAllByBatchId(batchId)
+                    .Where(x => !string.IsNullOrWhiteSpace(x.FileUrl))
+                    .OrderBy(x => x.ZIndex ?? int.MaxValue)
+                    .ThenBy(x => x.Id)
+                    .FirstOrDefault(x => File.Exists(x.FileUrl));
 
-        private string GetSwitchPGMessage()
-        {
-            return string.IsNullOrWhiteSpace(_lastFlowFailureMessage) ? "Switch PG" : $"上一流程失败: {_lastFlowFailureMessage}";
-        }
-
-        private int GetProjectResultCode(int defaultCode = 0)
-        {
-            return HasFlowFailure ? _flowFailureCode : defaultCode;
-        }
-
-        private string GetFlowControlMessage(FlowControlData flowControlData)
-        {
-            if (!string.IsNullOrWhiteSpace(flowControlData.Params))
-                return flowControlData.Params.Trim();
-
-            if (!string.IsNullOrWhiteSpace(flowControlData.Message))
-                return flowControlData.Message.Trim();
-
-            string eventName = string.IsNullOrWhiteSpace(flowControlData.EventName) ? "Failed" : flowControlData.EventName.Trim();
-            if (!string.IsNullOrWhiteSpace(flowControlData.ErrorNodeName))
-                return $"{flowControlData.ErrorNodeName}:{eventName}";
-
-            return string.IsNullOrWhiteSpace(FlowName) ? eventName : $"{FlowName}:{eventName}";
-        }
-
-        private object CreateProjectResponseData()
-        {
-            return ViewResultManager.Config.UseLegacyARVROutput
-                ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult)
-                : ObjectiveTestResult;
+                if (!string.IsNullOrWhiteSpace(image?.FileUrl))
+                    result.FileName = image.FileUrl;
+            }
+            catch (Exception ex)
+            {
+                log.Warn("失败结果回填拍照图像失败", ex);
+            }
         }
 
         private void SendProjectResultResponse(int code, string message, object responseData)
@@ -748,12 +619,12 @@ namespace ProjectARVRPro
             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
         }
 
-        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
+        private async void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+            FlowEngineConfig.Instance.FlowRunTime[FlowName] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             CurrentFlowResult.RunTime  = stopwatch.ElapsedMilliseconds;
@@ -764,19 +635,20 @@ namespace ProjectARVRPro
                 CurrentFlowResult.Msg = "Completed";
                 try
                 {
-                    //如果没有执行完，先切换PG，并且提前设置流程
+                    await Processing(FlowControlData.SerialNumber);
                     if (!IsTestTypeCompleted())
                     {
+                        _isFlowLifecycleActive = false;
                         SwitchPG();
                     }
-
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    else
                     {
-                        Processing(FlowControlData.SerialNumber);
-                    });
+                        _isFlowLifecycleActive = false;
+                    }
                 }
                 catch (Exception ex)
                 {
+                    _isFlowLifecycleActive = false;
                     MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                 }
                 TryCount = 0;
@@ -785,14 +657,17 @@ namespace ProjectARVRPro
             {
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
-                CurrentFlowResult.Msg = GetFlowControlMessage(FlowControlData);
+                CurrentFlowResult.Msg = FlowControlData.Params;
+                TryAttachCapturedImage(CurrentFlowResult);
                 ViewResultManager.Save(CurrentFlowResult);
+                SaveObjectiveTestResultRecord(CurrentFlowResult);
 
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
 
                 if (TryCount < ProjectARVRProConfig.Instance.TryCountMax)
                 {
+                    _isFlowLifecycleActive = false;
                     Task.Delay(200).ContinueWith(t =>
                     {
                         log.Info("重新尝试运行流程");
@@ -805,15 +680,19 @@ namespace ProjectARVRPro
                 }
                 else
                 {
+                    await ExecuteProcessFailureAsync(_currentFlowProcess);
                     RecordFlowFailure(CurrentFlowResult.Msg, -2);
+                    ViewResultManager.Save(CurrentFlowResult);
+                    SaveObjectiveTestResultRecord(CurrentFlowResult);
+                    _isFlowLifecycleActive = false;
                     var response = new SocketResponse
                     {
                         Version = "1.0",
                         MsgID = "",
                         EventName = "ProjectARVRResult",
                         Code = -2,
-                        Msg = GetProjectResultMessage(CurrentFlowResult.Msg),
-                        Data = CreateProjectResponseData()
+                        Msg = _firstFlowFailure?.Message ?? CurrentFlowResult.Msg,
+                        Data = ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult
                     };
                     string respString = JsonConvert.SerializeObject(response);
                     log.Info(respString);
@@ -825,25 +704,13 @@ namespace ProjectARVRPro
             {
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                CurrentFlowResult.Msg = GetFlowControlMessage(FlowControlData);
-                RecordFlowFailure(CurrentFlowResult.Msg);
-
-                //算法失败但是图像是有的，可以帮助用户即使发现原因
-                if (CurrentFlowResult.Msg.Contains("SDK return failed") || CurrentFlowResult.Msg.Contains("BinocularFusion calculation failed") || CurrentFlowResult.Msg.Contains("Not get cie file"))
-                {
-                    MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-                    if (Batch != null)
-                    {
-                        var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-                        if (values.Count > 0)
-                        {
-                            CurrentFlowResult.FileName = values[0].FileUrl;
-                        }
-                    }
-                }
-
+                CurrentFlowResult.Msg = FlowControlData.Params;
+                await ExecuteProcessFailureAsync(_currentFlowProcess);
+                RecordFlowFailure(CurrentFlowResult.Msg, _firstFlowFailure?.Code ?? -1);
+                TryAttachCapturedImage(CurrentFlowResult);
 
                 ViewResultManager.Save(CurrentFlowResult);
+                SaveObjectiveTestResultRecord(CurrentFlowResult);
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + CurrentFlowResult.Msg;
 
                 TryCount = 0;
@@ -853,15 +720,18 @@ namespace ProjectARVRPro
                     //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
                     if (!IsTestTypeCompleted())
                     {
+                        _isFlowLifecycleActive = false;
                         SwitchPG();
                     }
                     else
                     {
+                        _isFlowLifecycleActive = false;
                         TestCompleted();
                     }
                 }
                 else
                 {
+                    _isFlowLifecycleActive = false;
                     if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
                     {
                         var response = new SocketResponse
@@ -869,9 +739,9 @@ namespace ProjectARVRPro
                             Version = "1.0",
                             MsgID = "",
                             EventName = "ProjectARVRResult",
-                            Code = GetProjectResultCode(-1),
-                            Msg = GetProjectResultMessage("ARVR Test Fail"),
-                            Data = CreateProjectResponseData()
+                            Code = _firstFlowFailure?.Code ?? -1,
+                            Msg = _firstFlowFailure?.Message ?? "ARVR Test Fail",
+                            Data = ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult
                         };
                         string respString = JsonConvert.SerializeObject(response);
                         log.Info(respString);
@@ -881,7 +751,7 @@ namespace ProjectARVRPro
             }
         }
 
-        private void Processing(string SerialNumber)
+        private async Task Processing(string SerialNumber)
         {
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
@@ -918,7 +788,7 @@ namespace ProjectARVRPro
                             ObjectiveTestResult = ObjectiveTestResult,
                             ImageView =ImageView,
                         };
-                        executed = meta.Process.Execute(ctx);
+                        executed = await meta.Process.Execute(ctx);
                     }
                     catch (Exception ex)
                     {
@@ -928,6 +798,7 @@ namespace ProjectARVRPro
                     {
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+                        SaveObjectiveTestResultRecord(result);
 
                         if (ViewResultManager.Config.IsSaveLink)
                         {
@@ -988,9 +859,23 @@ namespace ProjectARVRPro
             }
             catch (Exception ex)
             {
-                log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
+                log.Error("匹配/执行自定义 IProcess 出错", ex);
             }
             ViewResultManager.Save(result);
+            SaveObjectiveTestResultRecord(result);
+        }
+
+        private void SaveObjectiveTestResultRecord(ProjectARVRReuslt result)
+        {
+            try
+            {
+                ObjectiveTestResultRecordId = ViewResultManager.SaveObjectiveTestResult(ObjectiveTestResultRecordId, result, ObjectiveTestResult);
+                log.Info($"保存 ObjectiveTestResult 记录：{ObjectiveTestResultRecordId}");
+            }
+            catch (Exception ex)
+            {
+                log.Error("保存 ObjectiveTestResult 记录失败", ex);
+            }
         }
 
         public bool IsSaveImageReuslt { get;set; }
@@ -1036,7 +921,7 @@ namespace ProjectARVRPro
                 nextTestType = nextTestType + 1;
             }
 
-            string switchPGMessage = GetSwitchPGMessage();
+            string switchPGMessage = string.IsNullOrWhiteSpace(_lastFlowFailureMessage) ? "Switch PG" : $"上一流程失败: {_lastFlowFailureMessage}";
             var response = new SocketResponse
             {
                 Version = "1.0",
@@ -1151,9 +1036,9 @@ namespace ProjectARVRPro
                 Version = "1.0",
                 MsgID = string.Empty,
                 EventName = "ProjectARVRResult",
-                Code = GetProjectResultCode(),
+                Code = _firstFlowFailure?.Code ?? 0,
                 SerialNumber = SNtextBox.Text,
-                Msg = GetProjectResultMessage(ObjectiveTestResult.TotalResult ? "ARVR Test Completed" : "ARVR Test Fail"),
+                Msg = _firstFlowFailure?.Message ?? (ObjectiveTestResult.TotalResult ? "ARVR Test Completed" : "ARVR Test Fail"),
                 Data = responseData
             };
             string respString = JsonConvert.SerializeObject(response);
@@ -1188,11 +1073,14 @@ namespace ProjectARVRPro
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
-            outputText.Background = Brushes.White;
+            outputText.Background = Brushes.Transparent;
         }
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            if (_isDisposed)
+                return;
+
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
                 var result = ViewResluts[listView.SelectedIndex];
@@ -1204,7 +1092,7 @@ namespace ProjectARVRPro
                     }
                     else
                     {
-                        outputText.Background = Brushes.White;
+                        outputText.Background = Brushes.Transparent;
                         outputText.Document.Blocks.Clear(); // 清除之前的内容
                     }
 
@@ -1213,102 +1101,117 @@ namespace ProjectARVRPro
                 {
                     log.Error(ex);
                 }
-                Task.Run((Func<Task?>)(async () =>
+
+                Task.Run(() =>
                 {
-                    if (File.Exists(result.FileName))
+                    try
                     {
+                        string filePath = result.FileName;
                         _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            ImageView.OpenImage(result.FileName);
-                            ImageView.ImageShow.Clear();
-                            ApplyResultOverlayConfig();
-
-                            if (result.FlowStatus != FlowStatus.Completed)
-                                return;
-
-                            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
-                            if (meta?.Process != null)
+                            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
                             {
-                                bool executed = false;
-                                try
-                                {
-                                    var ctx = new IProcessExecutionContext
-                                    {
-                                        Result = result,
-                                        ObjectiveTestResult = ObjectiveTestResult,
-                                        ImageView = ImageView,
-                                    };
-                                    meta.Process.Render(ctx);
-                                }
-                                catch (Exception ex)
-                                {
-                                    log.Error("自定义 IProcess 执行异常", ex);
-                                }
+                                ImageView.OpenImage(filePath);
+                                RenderResultImage(result);
+                                SaveImageResultIfNeeded(result);
                             }
-
-                            if (IsSaveImageReuslt)
+                            else
                             {
-                                log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
-                                IsSaveImageReuslt = false;
-                                _ = Task.Run(async () =>
-                                {
-                                    try
-                                    {
-                                        await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
-                                        string linkPath = ViewResultManager.Config.CsvSavePath;
-                                        string sn = result.SN;
-
-                                        if (ViewResultManager.Config.SaveByDate)
-                                        {
-                                            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                                            linkPath = Path.Combine(linkPath, dateFolder);
-                                        }
-
-                                        // 处理 SN 不为空的情况
-                                        if (!string.IsNullOrWhiteSpace(sn))
-                                        {
-                                            // 移除 SN 中的非法文件名字符
-                                            foreach (char c in Path.GetInvalidFileNameChars())
-                                            {
-                                                sn = sn.Replace(c.ToString(), "");
-                                            }
-
-                                            // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
-                                            if (!string.IsNullOrWhiteSpace(sn))
-                                            {
-                                                linkPath = Path.Combine(linkPath, sn);
-                                            }
-                                        }
-
-                                        // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
-
-                                        // 注意：原始代码中是 if (Directory.Exists) Create... 
-                                        // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
-                                        if (!Directory.Exists(linkPath))
-                                            Directory.CreateDirectory(linkPath);
-
-                                        string FileName = Path.GetFileNameWithoutExtension(result.FileName);
-
-                                        string FilePath = Path.Combine(linkPath, $"{FileName}_{result.Model}result.png");
-                                        log.Info(FilePath);
-                                        Application.Current?.Dispatcher.Invoke(() =>
-                                        {
-                                            ImageView.Save(FilePath);
-                                        });
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        log.Error("保存结果截图失败", ex);
-                                    }
-                                });
+                                ImageView.Clear();
                             }
-
-
                         });
                     }
-                }));
+                    catch (Exception ex)
+                    {
+                        log.Error("加载结果图片失败", ex);
+                    }
+                });
 
             }
+        }
+
+        private void RenderResultImage(ProjectARVRReuslt result)
+        {
+            ImageView.ImageShow.Clear();
+            ApplyResultOverlayConfig();
+
+            if (result.FlowStatus != FlowStatus.Completed)
+                return;
+
+            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+            if (meta?.Process == null) return;
+
+            try
+            {
+                var ctx = new IProcessExecutionContext
+                {
+                    Result = result,
+                    ObjectiveTestResult = ObjectiveTestResult,
+                    ImageView = ImageView,
+                };
+                meta.Process.Render(ctx);
+            }
+            catch (Exception ex)
+            {
+                log.Error("自定义 IProcess 执行异常", ex);
+            }
+        }
+
+        private void SaveImageResultIfNeeded(ProjectARVRReuslt result)
+        {
+            if (!IsSaveImageReuslt || _isDisposed) return;
+
+            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
+            IsSaveImageReuslt = false;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                    if (_isDisposed)
+                        return;
+
+                    string linkPath = ViewResultManager.Config.CsvSavePath;
+                    string sn = result.SN;
+
+                    if (ViewResultManager.Config.SaveByDate)
+                    {
+                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                        linkPath = Path.Combine(linkPath, dateFolder);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(sn))
+                    {
+                        foreach (char c in Path.GetInvalidFileNameChars())
+                        {
+                            sn = sn.Replace(c.ToString(), "");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(sn))
+                        {
+                            linkPath = Path.Combine(linkPath, sn);
+                        }
+                    }
+
+                    if (!Directory.Exists(linkPath))
+                        Directory.CreateDirectory(linkPath);
+
+                    string fileName = Path.GetFileNameWithoutExtension(result.FileName);
+                    string filePath = Path.Combine(linkPath, $"{fileName}_{result.Model}result.png");
+                    log.Info(filePath);
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        if (_isDisposed)
+                            return;
+
+                        ImageView.Save(filePath);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    log.Error("保存结果截图失败", ex);
+                }
+            });
         }
 
         private void ApplyResultOverlayConfig()
@@ -1335,22 +1238,21 @@ namespace ProjectARVRPro
             outputText.Background = result.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
-            string outtext = string.Empty;
-            outtext += $"Model:{result.Model}  SN:{result.SN}  {DateTime.Now:yyyy/MM//dd HH:mm:ss}";
+            string outtext = $"Model:{result.Model}  SN:{result.SN}  {DateTime.Now:yyyy/MM//dd HH:mm:ss}";
+            double outputFontSize = outputText.FontSize > 0 ? outputText.FontSize + 1 : 13;
             Run run = new Run(outtext);
             run.Foreground = result.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
+            run.FontSize = outputFontSize;
 
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
             outputText.Document.Blocks.Add(paragraph);
-            outtext = string.Empty;
-
 
             var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+            Brush foreground = result.Result ? Brushes.Black : Brushes.White;
+            paragraph = new Paragraph();
             if (meta?.Process != null)
             {
-                bool executed = false;
                 try
                 {
                     var ctx = new IProcessExecutionContext
@@ -1359,7 +1261,7 @@ namespace ProjectARVRPro
                         ObjectiveTestResult = ObjectiveTestResult,
                         ImageView = ImageView,
                     };
-                    outtext += meta.Process.GenText(ctx);
+                    meta.Process.GenText(ctx, paragraph, foreground, outputFontSize);
                 }
                 catch (Exception ex)
                 {
@@ -1367,21 +1269,29 @@ namespace ProjectARVRPro
                 }
             }
 
-            outtext += Environment.NewLine + $"Pass/Fail Criteria:" + Environment.NewLine;
-            outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;
-
-
-
-            run = new Run(outtext);
-            run.Foreground = result.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-            paragraph = new Paragraph(run);
-            outtext = string.Empty;
+            AppendOutputLine(paragraph, string.Empty, foreground, outputFontSize);
+            AppendOutputLine(paragraph, "Pass/Fail Criteria:", foreground, outputFontSize);
+            AppendOutputLine(paragraph, result.Result ? "Pass" : "Fail", foreground, outputFontSize);
             outputText.Document.Blocks.Add(paragraph);
             SNtextBox.Focus();
         }
 
+        private static void AppendOutputLine(Paragraph paragraph, string text, Brush foreground, double fontSize)
+        {
+            if (paragraph.Inlines.Count > 0)
+                paragraph.Inlines.Add(new LineBreak());
 
+            paragraph.Inlines.Add(CreateOutputRun(text, foreground, fontSize));
+        }
+
+        private static Run CreateOutputRun(string text, Brush foreground, double fontSize)
+        {
+            return new Run(text)
+            {
+                Foreground = foreground,
+                FontSize = fontSize
+            };
+        }
 
         private void listView1_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
@@ -1397,12 +1307,6 @@ namespace ProjectARVRPro
         {
 
         }
-
-        private void SNtextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-
-        }
-
         private void SNtextBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -1414,6 +1318,16 @@ namespace ProjectARVRPro
         private void GroupSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             ProcessManager.GenStepBar(stepBar);
+        }
+
+        private void ObjectiveTestResultRecord_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new ObjectiveTestResultRecordWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.ShowDialog();
         }
 
         private bool _isRunAllRunning;
@@ -1455,13 +1369,7 @@ namespace ProjectARVRPro
 
                     log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
 
-                    var templateParam = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(meta.FlowTemplate));
-                    if (templateParam == null)
-                    {
-                        log.Error($"找不到流程模板: {meta.FlowTemplate}");
-                        continue;
-                    }
-                    FlowTemplate.SelectedValue = templateParam.Value;
+                    TemplateModel<FlowParam> templateParam = SelectFlowTemplate(meta);
 
                     // 执行流程并等待完成
                     var tcs = new TaskCompletionSource<FlowControlData>();
@@ -1475,11 +1383,11 @@ namespace ProjectARVRPro
                     TryCount = 0;
                     CurrentFlowResult = new ProjectARVRReuslt();
                     CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
-                    CurrentFlowResult.Model = FlowTemplate.Text;
+                    CurrentFlowResult.Model = templateParam.Key;
                     CurrentFlowResult.TestType = CurrentTestType;
                     ProjectARVRProConfig.Instance.StepIndex = CurrentTestType;
 
-                    FlowName = FlowTemplate.Text;
+                    FlowName = CurrentFlowResult.Model;
                     string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
                     CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
 
@@ -1491,16 +1399,11 @@ namespace ProjectARVRPro
                         continue;
                     }
 
-                    if (!flowEngine.IsReady)
-                    {
-                        flowEngine.LoadFromBase64(string.Empty);
-                        await Refresh();
-                    }
-
-                    if (!await ExecutePictureSwitchAsync(meta))
+                    if (!await _pictureSwitchService.ExecuteAsync(meta))
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PictureSwitchFailed";
+                        await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
 
@@ -1517,9 +1420,11 @@ namespace ProjectARVRPro
                     {
                         CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                         CurrentFlowResult.Msg = "PreProcessFailed";
+                        await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg);
                         logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                         ViewResultManager.Save(CurrentFlowResult);
+                        SaveObjectiveTestResultRecord(CurrentFlowResult);
 
                         if (!ProjectARVRProConfig.Instance.AllowTestFailures)
                         {
@@ -1532,7 +1437,7 @@ namespace ProjectARVRPro
 
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
-                    LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+                    LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowName, out long time) ? time : 0;
 
                     MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
                     using (var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true }))
@@ -1569,7 +1474,7 @@ namespace ProjectARVRPro
 
                     stopwatch.Stop();
                     timer.Change(Timeout.Infinite, 500);
-                    FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+                    FlowEngineConfig.Instance.FlowRunTime[FlowName] = stopwatch.ElapsedMilliseconds;
                     log.Info($"流程 {meta.Name} 完成: {flowResult.EventName}, 耗时 {stopwatch.ElapsedMilliseconds}ms");
 
                     CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
@@ -1578,15 +1483,18 @@ namespace ProjectARVRPro
                     if (flowResult.EventName == "Completed")
                     {
                         CurrentFlowResult.Msg = "Completed";
-                        Processing(flowResult.SerialNumber);
+                        await Processing(flowResult.SerialNumber);
                     }
                     else
                     {
                         CurrentFlowResult.FlowStatus = flowResult.EventName == "OverTime" ? FlowStatus.OverTime : FlowStatus.Failed;
-                        CurrentFlowResult.Msg = GetFlowControlMessage(flowResult);
+                        CurrentFlowResult.Msg = flowResult.Params;
+                        await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg, flowResult.EventName == "OverTime" ? -2 : -1);
+                        TryAttachCapturedImage(CurrentFlowResult);
                         logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName + Environment.NewLine + CurrentFlowResult.Msg;
                         ViewResultManager.Save(CurrentFlowResult);
+                        SaveObjectiveTestResultRecord(CurrentFlowResult);
 
                         if (!ProjectARVRProConfig.Instance.AllowTestFailures)
                         {
@@ -1636,88 +1544,37 @@ namespace ProjectARVRPro
             return builder.Length == 0 ? "ProjectARVRPro" : builder.ToString();
         }
 
-        private async Task<bool> ExecutePictureSwitchAsync(ProcessMeta? meta)
-        {
-            PictureSwitchConfig? config = meta?.PictureSwitchConfig;
-            if (config == null || !config.IsEnabled)
-                return true;
-
-            if (config.Mode != PictureSwitchMode.Thunderbird)
-            {
-                log.Error($"不支持的切图模式: {config.Mode}");
-                return false;
-            }
-
-            if (!_thunderbirdController.IsConnected)
-            {
-                log.Error($"流程 {meta?.Name} 已启用雷鸟切图，但雷鸟串口未连接");
-                return false;
-            }
-
-            try
-            {
-                int timeoutMs = config.TimeoutMs > 0 ? config.TimeoutMs : 1000;
-                ThunderbirdSerialController.CommandResult result = await _thunderbirdController.SendConfiguredCommandAsync(
-                    config.SendCommand,
-                    config.ExpectedResponse,
-                    timeoutMs);
-
-                if (!result.Success)
-                {
-                    log.Error($"流程 {meta?.Name} 雷鸟切图失败: Command={result.Command}, Expected={config.ExpectedResponse}, Response={result.Response ?? "<null>"}");
-                    return false;
-                }
-
-                if (config.SuccessDelayMs > 0)
-                {
-                    log.Info($"流程 {meta?.Name} 雷鸟切图成功，等待图像稳定 {config.SuccessDelayMs}ms");
-                    await Task.Delay(config.SuccessDelayMs);
-                }
-
-                log.Info($"流程 {meta?.Name} 雷鸟切图完成，执行流程");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"流程 {meta?.Name} 雷鸟切图异常", ex);
-                return false;
-            }
-        }
-
-
         public void Dispose()
         {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
             ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
+            if (_activeGroupChangedHandler != null)
+            {
+                ProcessManager.ActiveGroupChanged -= _activeGroupChangedHandler;
+                _activeGroupChangedHandler = null;
+            }
+            if (ReferenceEquals(ViewResultManager.ListView, listView1))
+                ViewResultManager.ListView = null;
+
+            listView1.SelectionChanged -= listView1_SelectionChanged;
+            listView1.ItemsSource = null;
+            listView1.ContextMenu = null;
+            listView1.CommandBindings.Clear();
+
+            ImageView.Dispose();
             flowControl.Stop();
             STNodeEditorMain.Dispose();
-            timer.Change(Timeout.Infinite, 500); // 停止定时器
+            timer?.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();
             logOutput?.Dispose();
-            _thunderbirdController.ConnectionStateChanged -= ThunderbirdController_ConnectionStateChanged;
-            _thunderbirdController?.Close();
+            logOutput = null;
+            _pictureSwitchService.Dispose();
+            DataContext = null;
             GC.SuppressFinalize(this);
         }
 
-
-        private void OpenSocketRelay_Click(object sender, RoutedEventArgs e)
-        {
-            SocketRelayWindow.OpenWindow();
-        }
-
-        private ThunderbirdSerialDebugWindow? _thunderbirdDebugWindow;
-
-        private void OpenThunderbirdSerialDebug_Click(object sender, RoutedEventArgs e)
-        {
-            if (_thunderbirdDebugWindow == null)
-            {
-                _thunderbirdDebugWindow = new ThunderbirdSerialDebugWindow();
-                _thunderbirdDebugWindow.Closed += (s, args) => _thunderbirdDebugWindow = null;
-                _thunderbirdDebugWindow.Show();
-            }
-            else
-            {
-                _thunderbirdDebugWindow.Activate();
-            }
-        }
     }
 }

@@ -74,6 +74,45 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public void GrepText_WithChineseQuestion_FindsRelevantChineseTerms()
+    {
+        var filePath = Path.Combine(_tempRoot, "Calibration.md");
+        File.WriteAllText(filePath, "畸变校正（Distortion）：镜头径向/切向畸变矫正。");
+
+        var result = CopilotGrepTextCapability.Search(
+            new[] { _tempRoot },
+            "畸变校正是怎么实现的？",
+            fallbackText: null,
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Contains("畸变校正", result.Patterns, StringComparer.Ordinal);
+        Assert.Contains(result.Matches, match => string.Equals(match.FullPath, filePath, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void WebSearch_ExtractsDuckDuckGoResultUrls()
+    {
+        const string html = """
+            <html>
+              <body>
+                <div class="result">
+                  <a class="result__a" href="/l/?kh=-1&amp;uddg=https%3A%2F%2Fexample.com%2Fopencv-camera-calibration">OpenCV camera calibration</a>
+                  <a class="result__snippet">Use intrinsic parameters and distortion coefficients.</a>
+                </div>
+              </body>
+            </html>
+            """;
+
+        var hits = CopilotWebSearchCapability.ExtractDuckDuckGoHits(html);
+
+        var hit = Assert.Single(hits);
+        Assert.Equal("OpenCV camera calibration", hit.Title);
+        Assert.Equal("https://example.com/opencv-camera-calibration", hit.Url);
+        Assert.Contains("distortion coefficients", hit.Snippet, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ReadLocalFile_ReadsSelectedLineRange()
     {
         var filePath = Path.Combine(_tempRoot, "settings.json");

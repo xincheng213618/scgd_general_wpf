@@ -427,25 +427,19 @@ namespace ProjectKB
             }
         }
 
-        private async Task RefreshCoreAsync()
+        private Task RefreshCoreAsync()
         {
-            if (FlowTemplate.SelectedIndex < 0 || !EnsureFlowEngineAvailable()) return;
-
-            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                item.nodeRunEvent -= UpdateMsg;
+            if (FlowTemplate.SelectedIndex < 0 || !EnsureFlowEngineAvailable()) return Task.CompletedTask;
 
             flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
-            for (int i = 0; i < 200; i++)
-            {
-                if (_isDisposed || !IsFlowEngineAvailable()) return;
-                if (flowEngine.IsReady) break;
-                await Task.Delay(10);
-            }
-
-            if (!EnsureFlowEngineAvailable()) return;
+            if (!EnsureFlowEngineAvailable()) return Task.CompletedTask;
             foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+            {
+                item.nodeRunEvent -= UpdateMsg;
                 item.nodeRunEvent += UpdateMsg;
+            }
+            return Task.CompletedTask;
         }
 
         private bool EnsureFlowEngineAvailable()
@@ -609,14 +603,6 @@ namespace ProjectKB
                 log.Info("找不到完整流程，运行失败");
                 TryCount = 0;
                 return;
-            }
-
-            log.Info($"IsReady{flowEngine.IsReady}");
-            if (!flowEngine.IsReady)
-            {
-                ClearFlowSafely();
-                await Refresh();
-                log.Info($"IsReady{flowEngine.IsReady}");
             }
 
             if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))

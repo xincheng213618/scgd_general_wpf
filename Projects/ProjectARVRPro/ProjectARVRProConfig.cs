@@ -6,6 +6,7 @@ using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
+using ProjectARVRPro.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
@@ -19,13 +20,19 @@ namespace ProjectARVRPro
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
+        public static ThunderbirdSerialManager ThunderbirdSerialManager => ThunderbirdSerialManager.GetInstance();
+        public static SocketRelayManager SocketRelayManager => ProjectARVRPro.Services.SocketRelayManager.GetInstance();
 
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand InitTestCommand { get; set; }
 
@@ -48,8 +55,21 @@ namespace ProjectARVRPro
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
         private int _StepIndex = 0;
 
+        [DisplayName("显示日志栏"), Category("界面")]
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
+
+        [DisplayName("显示结果栏"), Category("界面")]
+        public bool ResultControlVisibility { get => _ResultControlVisibility; set { _ResultControlVisibility = value; OnPropertyChanged(); } }
+        private bool _ResultControlVisibility = true;
+
+        [DisplayName("显示状态栏"), Category("界面")]
+        public bool StatusControlVisibility { get => _StatusControlVisibility; set { _StatusControlVisibility = value; OnPropertyChanged(); } }
+        private bool _StatusControlVisibility = true;
+
+        [DisplayName("显示进度栏"), Category("界面")]
+        public bool ProgressControlVisibility { get => _ProgressControlVisibility; set { _ProgressControlVisibility = value; OnPropertyChanged(); } }
+        private bool _ProgressControlVisibility = true;
 
 
         [DisplayName("重试次数")]
@@ -104,6 +124,7 @@ namespace ProjectARVRPro
         public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 
+        [Browsable(false)]
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()

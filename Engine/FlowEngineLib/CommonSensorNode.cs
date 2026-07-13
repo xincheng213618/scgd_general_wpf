@@ -20,6 +20,7 @@ public class CommonSensorNode : CVBaseServerNode
 	private STNodeEditText<CommCmdType> m_ctrl_cmd_type;
 
 	[STNodeProperty("参数模板", "参数模板名称", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowSensorTemplateEditor))]
 	public string TempName
 	{
 		get
@@ -83,9 +84,8 @@ public class CommonSensorNode : CVBaseServerNode
 		_CmdType = CommCmdType.None;
 		_CmdSend = "";
 		_CmdReceive = "";
-		base.Width = 220;
 		base.Height += 75;
-		m_custom_item = new Rectangle(5, 30, 210, 18);
+		m_custom_item = new Rectangle(StandardNodeContentPadding, 30, StandardNodeContentWidth, 18);
 	}
 
 	protected override void OnCreate()

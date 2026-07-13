@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
+using ColorVision.Engine.Services;
 using FlowEngineLib.Algorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
@@ -78,7 +79,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public void OpenPoiFile()
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.tiff|All files (*.*)|*.*";
+            openFileDialog.Filter = ServicesHelper.ImageFileDialogFilter;
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -111,8 +112,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, PoiParam poiParam, PoiFilterParam filter, PoiReviseParam revise, PoiOutputParam output)
         {
 
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
             FileExtType fileExtType = FileExtType.CIE;
             if (Path.GetExtension(fileName).Contains("cvraw"))
             {

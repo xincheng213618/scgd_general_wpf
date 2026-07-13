@@ -1,14 +1,8 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Database;
-using ColorVision.Engine.Cache;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using MQTTMessageLib.FileServer;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
@@ -54,113 +48,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
 
                     break;
-            }
-        }
-
-        public ObservableCollection<string> ImageFiles { get => _ImageFiles; set { _ImageFiles = value; OnPropertyChanged(); } }
-        private ObservableCollection<string> _ImageFiles = new ObservableCollection<string>();
-
-        public List<string> RawImageFiles { get => _RawImageFiles; set { _RawImageFiles = value; OnPropertyChanged(); } } 
-        private List<string> _RawImageFiles = new List<string>();
-        public List<string> CIEImageFiles { get => _CIEImageFiles; set { _CIEImageFiles = value; OnPropertyChanged(); } }
-        private List<string> _CIEImageFiles = new List<string>();
-
-        public Dictionary<string, string> HistoryFilePath { get; set; } = new Dictionary<string, string>() { };
-
-        public void GetRawFiles(string deviceCode, string deviceType)
-        {
-            GetHistoryPath(deviceCode);
-        }
-        public bool GetHistoryPath(string deviceCode)
-        {
-            var deviceServices = ServiceManager.GetInstance().DeviceServices;
-            var targetService = deviceServices.FirstOrDefault(service =>
-                service.GetConfig() is IFileServerCfg fileServerCfg && service.Code == deviceCode);
-
-            string path = string.Empty;
-            if (targetService != null && targetService.GetConfig() is IFileServerCfg fileServerCfg)
-            {
-                path = fileServerCfg.FileServerCfg.DataBasePath;
-            }
-            if (Directory.Exists(Config.FileServerCfg.DataBasePath))
-            {
-                var rawfiles = new List<string>();
-                var ciefiles = new List<string>();
-
-                foreach (var item in GetDirectoriesCreatedInLastDays(Path.Combine(Config.FileServerCfg.DataBasePath, deviceCode, "data"), ViewAlgorithmConfig.Instance.HistoyDay))
-                {
-                    foreach (var item1 in item.GetFiles())
-                    {
-                        HistoryFilePath.TryAdd(item1.Name, item1.FullName);
-                        if (item1.Extension.Contains("cvraw"))
-                        {
-                            rawfiles.Add(item1.Name);
-                        }
-                        if (item1.Extension.Contains("cvcie"))
-                        {
-                            ciefiles.Add(item1.Name);
-                        }
-                    }
-                }
-                rawfiles.Reverse();
-                ciefiles.Reverse();
-                RawImageFiles = rawfiles;
-                CIEImageFiles = ciefiles;
-                return true;
-            }
-
-            return false;
-        }
-
-        static List<DirectoryInfo> GetDirectoriesCreatedInLastDays(string directoryPath, int daysRange)
-        {
-            if (daysRange < 1) daysRange = 1;
-            if (daysRange > 365) daysRange = 365;
-
-            List<DirectoryInfo> directories = new List<DirectoryInfo>();
-            DateTime currentDate = DateTime.Now;
-            DateTime dateLimit = currentDate.AddDays(-daysRange);
-
-            DirectoryInfo dirInfo = new DirectoryInfo(directoryPath);
-            if (dirInfo.Exists)
-            {
-                // 获取所有文件夹
-                FileSystemInfo[] fsInfos = dirInfo.GetFileSystemInfos();
-                foreach (FileSystemInfo fsInfo in fsInfos)
-                {
-                    if (fsInfo is DirectoryInfo subDir)
-                    {
-                        // 检查文件夹是否在指定日期范围内创建
-                        if (subDir.CreationTime > dateLimit)
-                        {
-                            directories.Add(subDir);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine("The specified directory does not exist.");
-            }
-
-            return directories;
-        }
-
-
-
-        public void GetCIEFiles(string deviceCode, string deviceType)
-        {
-            GetHistoryPath(deviceCode);
-        }
-
-
-
-        internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)
-        {
-
-            if (HistoryFilePath.TryGetValue(fileName,out string fullpath) && File.Exists(fullpath))
-            {
-                Device.View.ImageView.OpenImage(fullpath);
             }
         }
 

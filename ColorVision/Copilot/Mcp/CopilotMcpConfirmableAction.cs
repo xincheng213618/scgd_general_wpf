@@ -37,6 +37,18 @@ namespace ColorVision.Copilot.Mcp
 
         public string ArgumentsSummary { get; init; } = string.Empty;
 
+        public bool ExecuteOnApproval { get; init; }
+
+        public bool ResumesAgentOnApproval { get; init; }
+
+        public string AgentCallId { get; internal set; } = string.Empty;
+
+        public bool? ExecutionSucceeded { get; internal set; }
+
+        public string ExecutionResultText { get; internal set; } = string.Empty;
+
+        public DateTimeOffset? CompletedAt { get; internal set; }
+
         public DateTimeOffset CreatedAt { get; init; }
 
         public DateTimeOffset ExpiresAt { get; init; }
@@ -113,6 +125,16 @@ namespace ColorVision.Copilot.Mcp
         }
     }
 
+    public sealed class ConfirmableActionChangedEventArgs : EventArgs
+    {
+        public ConfirmableActionChangedEventArgs(ConfirmableAction action)
+        {
+            Action = action ?? throw new ArgumentNullException(nameof(action));
+        }
+
+        public ConfirmableAction Action { get; }
+    }
+
     public sealed class CopilotMcpConfirmationStore
     {
         private static readonly Lazy<CopilotMcpConfirmationStore> LazyInstance = new(() => new CopilotMcpConfirmationStore());
@@ -128,6 +150,8 @@ namespace ColorVision.Copilot.Mcp
 
         public event EventHandler? ActionsChanged;
 
+        public event EventHandler<ConfirmableActionChangedEventArgs>? ActionStatusChanged;
+
         public TimeSpan ActionLifetime { get; set; } = DefaultLifetime;
 
         public int PendingCount => GetPendingActions().Count;
@@ -138,7 +162,55 @@ namespace ColorVision.Copilot.Mcp
             string riskLevel,
             string toolName,
             string argumentsSummary,
-            Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor)
+            Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor,
+            bool executeOnApproval = false,
+            bool resumesAgentOnApproval = false)
+        {
+            return CreateCore(
+                title,
+                description,
+                riskLevel,
+                toolName,
+                argumentsSummary,
+                executor,
+                executeOnApproval,
+                resumesAgentOnApproval,
+                string.Empty,
+                null);
+        }
+
+        internal ConfirmableAction CreateAgentFrameworkApproval(
+            string title,
+            string description,
+            string toolName,
+            string argumentsSummary,
+            string agentCallId,
+            Action<ConfirmableAction> beforePublish)
+        {
+            return CreateCore(
+                title,
+                description,
+                "confirmation-required",
+                toolName,
+                argumentsSummary,
+                _ => Task.FromResult(CopilotMcpToolCallResult.Fail("framework_approval_only", "This action resumes Microsoft Agent Framework and is not executed directly by the confirmation store.")),
+                executeOnApproval: false,
+                resumesAgentOnApproval: true,
+                agentCallId,
+                beforePublish);
+        }
+
+        private ConfirmableAction CreateCore(
+            string title,
+            string description,
+            string riskLevel,
+            string toolName,
+            string argumentsSummary,
+            Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor,
+            bool executeOnApproval,
+            bool resumesAgentOnApproval,
+            string agentCallId,
+            Action<ConfirmableAction>? beforePublish)
         {
             ArgumentNullException.ThrowIfNull(executor);
 
@@ -151,10 +223,15 @@ namespace ColorVision.Copilot.Mcp
                 RiskLevel = Sanitize(riskLevel),
                 ToolName = Sanitize(toolName),
                 ArgumentsSummary = Sanitize(argumentsSummary),
+                ExecuteOnApproval = executeOnApproval,
+                ResumesAgentOnApproval = resumesAgentOnApproval,
+                AgentCallId = Sanitize(agentCallId),
                 CreatedAt = now,
                 ExpiresAt = now.Add(ActionLifetime),
                 Executor = executor,
             };
+
+            beforePublish?.Invoke(action);
 
             lock (_syncRoot)
             {
@@ -162,8 +239,33 @@ namespace ColorVision.Copilot.Mcp
             }
 
             CopilotMcpAuditLogger.ActionCreated(action);
+            RaiseActionStatusChanged(action);
             RaiseActionsChanged();
             return action;
+        }
+
+        public bool LinkAgentCall(string actionId, string callId)
+        {
+            if (string.IsNullOrWhiteSpace(callId))
+                return false;
+
+            var action = Find(actionId);
+            if (action == null)
+                return false;
+
+            lock (_syncRoot)
+            {
+                if (!string.IsNullOrWhiteSpace(action.AgentCallId)
+                    && !string.Equals(action.AgentCallId, callId.Trim(), StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                action.AgentCallId = callId.Trim();
+            }
+
+            RaiseActionStatusChanged(action);
+            return true;
         }
 
         public IReadOnlyList<ConfirmableAction> GetPendingActions()
@@ -205,6 +307,7 @@ namespace ColorVision.Copilot.Mcp
             }
 
             CopilotMcpAuditLogger.ActionApproved(action);
+            RaiseActionStatusChanged(action);
             RaiseActionsChanged();
             message = "The action was approved.";
             return true;
@@ -231,6 +334,7 @@ namespace ColorVision.Copilot.Mcp
             }
 
             CopilotMcpAuditLogger.ActionRejected(action);
+            RaiseActionStatusChanged(action);
             RaiseActionsChanged();
             message = "The action was rejected.";
             return true;
@@ -273,17 +377,56 @@ namespace ColorVision.Copilot.Mcp
                 executor = action.Executor;
             }
 
+            RaiseActionStatusChanged(action);
             RaiseActionsChanged();
-            var result = await executor(cancellationToken);
+            CopilotMcpToolCallResult result;
+            try
+            {
+                result = await executor(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                lock (_syncRoot)
+                {
+                    action.Status = ConfirmableActionStatus.Approved;
+                }
+
+                RaiseActionStatusChanged(action);
+                RaiseActionsChanged();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                result = CopilotMcpToolCallResult.Fail("action_execution_failed", $"The approved action failed: {CopilotMcpAuditLogger.RedactText(ex.Message)}");
+            }
 
             lock (_syncRoot)
             {
+                action.ExecutionSucceeded = result.Success;
+                action.ExecutionResultText = Sanitize(result.Text);
+                action.CompletedAt = DateTimeOffset.UtcNow;
                 action.Status = ConfirmableActionStatus.Executed;
             }
 
             CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : result.Text);
+            RaiseActionStatusChanged(action);
             RaiseActionsChanged();
             return result;
+        }
+
+        public async Task<CopilotMcpToolCallResult> ApproveAndExecuteAsync(string actionId, CancellationToken cancellationToken)
+        {
+            var action = Find(actionId);
+            if (action == null)
+                return CopilotMcpToolCallResult.Fail("action_not_found", $"No confirmable action exists for action_id={actionId}.");
+
+            if (!action.ExecuteOnApproval)
+                return CopilotMcpToolCallResult.Fail("action_requires_client_confirmation", "This action requires the MCP client to call confirm_action after user approval.");
+
+            if (!Approve(actionId, out var approvalMessage))
+                return CopilotMcpToolCallResult.Fail("action_approval_failed", approvalMessage);
+
+            return await ExecuteApprovedAsync(action.ActionId, action.ToolName, action.ArgumentsSummary, cancellationToken);
         }
 
         public void ExpireStaleActions()
@@ -301,7 +444,10 @@ namespace ColorVision.Copilot.Mcp
             }
 
             foreach (var action in expired)
+            {
                 CopilotMcpAuditLogger.ActionExpired(action);
+                RaiseActionStatusChanged(action);
+            }
 
             if (expired.Count > 0)
                 RaiseActionsChanged();
@@ -348,6 +494,7 @@ namespace ColorVision.Copilot.Mcp
                 return action.Status == ConfirmableActionStatus.Expired;
 
             CopilotMcpAuditLogger.ActionExpired(action);
+            RaiseActionStatusChanged(action);
             RaiseActionsChanged();
             return true;
         }
@@ -368,6 +515,11 @@ namespace ColorVision.Copilot.Mcp
         private void RaiseActionsChanged()
         {
             ActionsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void RaiseActionStatusChanged(ConfirmableAction action)
+        {
+            ActionStatusChanged?.Invoke(this, new ConfirmableActionChangedEventArgs(action));
         }
     }
 }

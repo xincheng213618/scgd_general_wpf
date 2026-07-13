@@ -33,6 +33,7 @@ namespace ColorVision.Database
             new("t_scgd_measure_result_img", CleanupTableKind.MeasureDetail),
             new("t_scgd_measure_result_smu", CleanupTableKind.MeasureDetail),
             new("t_scgd_measure_result_smu_scan", CleanupTableKind.MeasureDetail),
+            new("t_scgd_measure_result_sensor", CleanupTableKind.MeasureDetail),
             new("t_scgd_measure_result_spectrometer", CleanupTableKind.MeasureDetail),
             new("t_scgd_measure_result_third_party_algorithm", CleanupTableKind.MeasureDetail),
         };

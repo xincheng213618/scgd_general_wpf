@@ -1,0 +1,383 @@
+using ColorVision.Copilot.Mcp;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace ColorVision.Copilot
+{
+    public interface ICopilotExternalToolProvider
+    {
+        Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken);
+    }
+
+    public sealed class CopilotExternalToolLease : IAsyncDisposable
+    {
+        private readonly IReadOnlyList<IAsyncDisposable> _resources;
+
+        public CopilotExternalToolLease(
+            IReadOnlyList<ICopilotTool>? tools = null,
+            IReadOnlyList<string>? diagnostics = null,
+            IReadOnlyList<IAsyncDisposable>? resources = null)
+        {
+            Tools = tools ?? Array.Empty<ICopilotTool>();
+            Diagnostics = diagnostics ?? Array.Empty<string>();
+            _resources = resources ?? Array.Empty<IAsyncDisposable>();
+        }
+
+        public IReadOnlyList<ICopilotTool> Tools { get; }
+
+        public IReadOnlyList<string> Diagnostics { get; }
+
+        public async ValueTask DisposeAsync()
+        {
+            foreach (var resource in _resources.Reverse())
+            {
+                try
+                {
+                    await resource.DisposeAsync();
+                }
+                catch
+                {
+                }
+            }
+        }
+    }
+
+    internal sealed class CopilotMcpToolProvider : ICopilotExternalToolProvider
+    {
+        private const int MaximumToolsPerServer = 32;
+        private const int MaximumToolsPerRequest = 64;
+        private const int MaximumCachedToolDefinitionsPerServer = 512;
+        private readonly CopilotMcpToolDiscoveryCache _discoveryCache;
+
+        public CopilotMcpToolProvider()
+            : this(CopilotMcpToolDiscoveryCache.Shared)
+        {
+        }
+
+        internal CopilotMcpToolProvider(CopilotMcpToolDiscoveryCache discoveryCache)
+        {
+            _discoveryCache = discoveryCache ?? throw new ArgumentNullException(nameof(discoveryCache));
+        }
+
+        public async Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            var tools = new List<ICopilotTool>();
+            var diagnostics = new List<string>();
+            var clients = new List<IAsyncDisposable>();
+            var enabledServers = request.ExternalMcpServers.Where(server => server?.Enabled == true).Take(8).ToArray();
+            CopilotCapabilityCatalog.Shared.RetainExternalMcpServers(enabledServers);
+            foreach (var server in enabledServers)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (tools.Count >= MaximumToolsPerRequest)
+                    break;
+                McpClient? client = null;
+                IAsyncDisposable? toolListChangedRegistration = null;
+                var toolListChangeNotificationPending = 0;
+                var discoveryReady = 0;
+                var toolListChangeNotificationsEnabled = false;
+                try
+                {
+                    var token = ResolveBearerToken(server);
+                    var headers = string.IsNullOrWhiteSpace(token)
+                        ? null
+                        : new Dictionary<string, string> { ["Authorization"] = "Bearer " + token };
+                    var transport = new HttpClientTransport(new HttpClientTransportOptions
+                    {
+                        Name = server.Name,
+                        Endpoint = new Uri(server.Endpoint),
+                        TransportMode = HttpTransportMode.StreamableHttp,
+                        ConnectionTimeout = TimeSpan.FromSeconds(server.ConnectionTimeoutSeconds),
+                        AdditionalHeaders = headers,
+                    });
+
+                    using var connectionTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    connectionTimeout.CancelAfter(TimeSpan.FromSeconds(server.ConnectionTimeoutSeconds));
+                    client = await McpClient.CreateAsync(transport, cancellationToken: connectionTimeout.Token);
+                    if (client.ServerCapabilities.Tools?.ListChanged == true)
+                    {
+                        try
+                        {
+                            var serverSnapshot = server.Clone();
+                            toolListChangedRegistration = client.RegisterNotificationHandler(
+                                NotificationMethods.ToolListChangedNotification,
+                                (_, _) =>
+                                {
+                                    Interlocked.Exchange(ref toolListChangeNotificationPending, 1);
+                                    if (Volatile.Read(ref discoveryReady) == 1
+                                        && Interlocked.Exchange(ref toolListChangeNotificationPending, 0) == 1)
+                                    {
+                                        CopilotMcpClientDiscoveryRegistry.NotifyToolListChanged(serverSnapshot, _discoveryCache);
+                                    }
+                                    return ValueTask.CompletedTask;
+                                });
+                            toolListChangeNotificationsEnabled = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            diagnostics.Add($"MCP client {server.Name} could not watch tool-list changes · {CopilotMcpAuditLogger.RedactText(ex.Message)}");
+                        }
+                    }
+                    CopilotMcpToolDiscoverySnapshot cachedDiscovery = null!;
+                    var usedCachedDiscovery = !request.ForceExternalMcpToolRefresh
+                        && _discoveryCache.TryGet(server, token, out cachedDiscovery);
+                    McpClientTool[] remoteTools;
+                    int discoveredToolCount;
+                    CopilotMcpDiscoveryCacheUpdateKind? cacheUpdate = null;
+                    long capabilityRevision;
+                    if (usedCachedDiscovery)
+                    {
+                        remoteTools = cachedDiscovery.Tools.Select(tool => new McpClientTool(client, tool)).ToArray();
+                        discoveredToolCount = cachedDiscovery.DiscoveredToolCount;
+                        capabilityRevision = cachedDiscovery.Revision;
+                    }
+                    else
+                    {
+                        var discoveredTools = await client.ListToolsAsync(cancellationToken: connectionTimeout.Token);
+                        discoveredToolCount = discoveredTools.Count;
+                        remoteTools = discoveredTools.Take(MaximumCachedToolDefinitionsPerServer).ToArray();
+                        cacheUpdate = _discoveryCache.Store(
+                            server,
+                            token,
+                            remoteTools.Select(tool => tool.ProtocolTool).ToArray(),
+                            discoveredToolCount,
+                            out var refreshedDiscovery);
+                        capabilityRevision = refreshedDiscovery.Revision;
+                    }
+                    var remaining = MaximumToolsPerRequest - tools.Count;
+                    var allowedTools = remoteTools
+                        .Select(tool => server.TryResolveToolAccessPolicy(tool.Name, out var accessPolicy)
+                            ? new AllowedMcpTool(tool, accessPolicy)
+                            : null)
+                        .OfType<AllowedMcpTool>()
+                        .Take(Math.Min(MaximumToolsPerServer, remaining))
+                        .ToArray();
+                    var adapters = allowedTools
+                        .Select(allowedTool => new CopilotMcpToolAdapter(server, allowedTool.Tool, allowedTool.AccessPolicy))
+                        .ToArray();
+                    tools.AddRange(adapters);
+                    CopilotCapabilityCatalog.Shared.PublishExternalMcp(server, adapters);
+                    CopilotMcpClientHealthRegistry.RecordConnected(
+                        server,
+                        discoveredToolCount,
+                        allowedTools.Length,
+                        usedCachedDiscovery,
+                        capabilityRevision,
+                        cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed,
+                        toolListChangeNotificationsEnabled);
+                    Volatile.Write(ref discoveryReady, 1);
+                    if (Interlocked.Exchange(ref toolListChangeNotificationPending, 0) == 1)
+                        CopilotMcpClientDiscoveryRegistry.NotifyToolListChanged(server, _discoveryCache);
+                    if (allowedTools.Length > 0)
+                    {
+                        clients.Add(client);
+                        client = null;
+                        if (toolListChangedRegistration != null)
+                        {
+                            clients.Add(toolListChangedRegistration);
+                            toolListChangedRegistration = null;
+                        }
+                    }
+                    var discoverySource = usedCachedDiscovery ? "cached discovery" : "live discovery";
+                    diagnostics.Add(allowedTools.Length == discoveredToolCount
+                        ? $"MCP client connected to {server.Name} · {allowedTools.Length} tool(s) exposed from {discoverySource}."
+                        : $"MCP client connected to {server.Name} · {allowedTools.Length}/{discoveredToolCount} tool(s) exposed from {discoverySource} by policy and request limits.");
+                    if (discoveredToolCount > remoteTools.Length)
+                        diagnostics.Add($"MCP client {server.Name} cached the first {remoteTools.Length}/{discoveredToolCount} tool definition(s) within the safety limit.");
+                    if (cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed)
+                        diagnostics.Add($"MCP client {server.Name} capability set changed · revision {capabilityRevision}.");
+                    if (tools.Count >= MaximumToolsPerRequest)
+                    {
+                        diagnostics.Add($"MCP client discovery reached the {MaximumToolsPerRequest}-tool request limit.");
+                        break;
+                    }
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    CopilotMcpClientHealthRegistry.RecordUnavailable(server, "Connection timed out.");
+                    diagnostics.Add($"MCP client {server.Name} was unavailable · connection timed out.");
+                }
+                catch (Exception ex)
+                {
+                    var error = CopilotMcpAuditLogger.RedactText(ex.Message);
+                    CopilotMcpClientHealthRegistry.RecordUnavailable(server, error);
+                    diagnostics.Add($"MCP client {server.Name} was unavailable · {error}");
+                }
+                finally
+                {
+                    if (toolListChangedRegistration != null)
+                    {
+                        try
+                        {
+                            await toolListChangedRegistration.DisposeAsync();
+                        }
+                        catch
+                        {
+                        }
+                    }
+                    if (client != null)
+                        await client.DisposeAsync();
+                }
+            }
+
+            return new CopilotExternalToolLease(tools, diagnostics, clients);
+        }
+
+        private sealed record AllowedMcpTool(McpClientTool Tool, CopilotMcpClientAccessPolicy AccessPolicy);
+
+        private static string ResolveBearerToken(CopilotMcpClientServerConfig server)
+        {
+            if (string.IsNullOrWhiteSpace(server.BearerTokenEnvironmentVariable))
+                return string.Empty;
+
+            var value = Environment.GetEnvironmentVariable(server.BearerTokenEnvironmentVariable);
+            if (string.IsNullOrWhiteSpace(value))
+                throw new InvalidOperationException($"token environment variable '{server.BearerTokenEnvironmentVariable}' is not set");
+            return value.Trim();
+        }
+    }
+
+    internal sealed class CopilotMcpToolAdapter : ICopilotFrameworkApprovedTool, ICopilotCapabilityCatalogIdentity
+    {
+        private const int MaximumResultLength = 65_536;
+        private static readonly Regex InvalidNameCharacters = new("[^A-Za-z0-9_]", RegexOptions.Compiled);
+        private readonly CopilotMcpClientServerConfig _server;
+        private readonly McpClientTool _remoteTool;
+
+        public CopilotMcpToolAdapter(
+            CopilotMcpClientServerConfig server,
+            McpClientTool remoteTool,
+            CopilotMcpClientAccessPolicy accessPolicy)
+        {
+            _server = server?.Clone() ?? throw new ArgumentNullException(nameof(server));
+            _remoteTool = remoteTool ?? throw new ArgumentNullException(nameof(remoteTool));
+            Name = BuildToolName(_server.Name, remoteTool.Name);
+            Description = BuildDescription(_server.Name, remoteTool.Description);
+            InputSchema = CopilotToolInputSchema.FromJsonSchema(remoteTool.JsonSchema);
+            Capability = CopilotMcpClientCapabilityPolicy.Create(accessPolicy, TimeSpan.FromSeconds(_server.ToolTimeoutSeconds));
+        }
+
+        public string Name { get; }
+
+        public string Description { get; }
+
+        public string CatalogCapabilityKey => _remoteTool.ProtocolTool.Name;
+
+        public CopilotToolCapabilityDescriptor Capability { get; }
+
+        public CopilotToolAccess Access => Capability.Access;
+
+        public CopilotToolRiskLevel RiskLevel => Capability.RiskLevel;
+
+        public CopilotToolApprovalMode ApprovalMode => Capability.ApprovalMode;
+
+        public CopilotToolIdempotency Idempotency => Capability.Idempotency;
+
+        public CopilotToolConcurrencyMode ConcurrencyMode => Capability.ConcurrencyMode;
+
+        public CopilotToolInputSchema InputSchema { get; }
+
+        public TimeSpan ExecutionTimeout => Capability.ExecutionTimeout;
+
+        public bool CanHandle(CopilotAgentRequest request)
+        {
+            return request != null
+                && request.Mode != CopilotAgentMode.Chat
+                && !string.IsNullOrWhiteSpace(request.UserText);
+        }
+
+        public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => $"mcp:{_server.Name}:{_remoteTool.ProtocolTool.Name}";
+
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            if (Access == CopilotToolAccess.ReadOnly)
+                return InvokeRemoteAsync(toolInput, cancellationToken);
+
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = false,
+                Summary = $"{Name} requires explicit approval.",
+                ErrorMessage = "External MCP tools configured with the approval policy can run only after the exact call is approved.",
+                FailureKind = CopilotToolFailureKind.Authorization,
+            });
+        }
+
+        public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+            => InvokeRemoteAsync(toolInput, cancellationToken);
+
+        private async Task<CopilotToolResult> InvokeRemoteAsync(CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            var result = await _remoteTool.CallAsync(toolInput.Arguments, cancellationToken: cancellationToken);
+            var content = BuildResultContent(result);
+            var isError = result.IsError == true;
+            return new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = !isError,
+                Summary = isError
+                    ? $"External MCP tool {_server.Name}/{_remoteTool.ProtocolTool.Name} returned an error."
+                    : $"External MCP tool {_server.Name}/{_remoteTool.ProtocolTool.Name} completed.",
+                Content = isError ? string.Empty : content,
+                ErrorMessage = isError ? content : string.Empty,
+                FailureKind = isError ? CopilotToolFailureKind.Unspecified : CopilotToolFailureKind.None,
+            };
+        }
+
+        private static string BuildResultContent(CallToolResult result)
+        {
+            var parts = result.Content
+                .OfType<TextContentBlock>()
+                .Select(block => block.Text?.Trim())
+                .Where(text => !string.IsNullOrWhiteSpace(text))
+                .Cast<string>()
+                .ToList();
+            if (result.StructuredContent.HasValue)
+                parts.Add(result.StructuredContent.Value.GetRawText());
+            if (parts.Count == 0 && result.Content.Count > 0)
+                parts.Add($"MCP returned {result.Content.Count} non-text content block(s).");
+
+            var content = string.Join(Environment.NewLine + Environment.NewLine, parts).Trim();
+            if (content.Length > MaximumResultLength)
+                content = content[..MaximumResultLength] + "...";
+            return content;
+        }
+
+        private static string BuildToolName(string serverName, string toolName)
+        {
+            var combined = "Mcp_" + InvalidNameCharacters.Replace(serverName, "_") + "_" + InvalidNameCharacters.Replace(toolName, "_");
+            return combined.Length <= 96 ? combined : combined[..96];
+        }
+
+        private static string BuildDescription(string serverName, string? description)
+        {
+            var normalized = (description ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
+            if (normalized.Length > 800)
+                normalized = normalized[..800] + "...";
+            return $"External MCP tool from configured server '{serverName}'. {normalized}".TrimEnd();
+        }
+    }
+
+    public static class CopilotMcpClientCapabilityPolicy
+    {
+        public static CopilotToolCapabilityDescriptor Create(CopilotMcpClientAccessPolicy accessPolicy, TimeSpan executionTimeout)
+        {
+            return accessPolicy == CopilotMcpClientAccessPolicy.ReadOnly
+                ? CopilotToolCapabilityDescriptor.ReadOnly(executionTimeout, CopilotToolAuditArgumentMode.NamesOnly)
+                : CopilotToolCapabilityDescriptor.ProtectedWrite(
+                    CopilotToolIdempotency.NonIdempotent,
+                    executionTimeout,
+                    CopilotToolAuditArgumentMode.NamesOnly);
+        }
+    }
+}

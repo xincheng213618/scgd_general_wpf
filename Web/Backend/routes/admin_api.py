@@ -689,6 +689,8 @@ ALLOWED_SCOPES = {
     "plugin:publish",
     "release:publish",
     "file:transfer",
+    "ops:relay",
+    "ops:operator",
 }
 
 

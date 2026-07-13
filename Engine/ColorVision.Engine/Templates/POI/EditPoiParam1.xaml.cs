@@ -5,11 +5,11 @@ using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.Jsons.KB;
+using ColorVision.Engine.Services;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -386,7 +386,7 @@ namespace ColorVision.Engine.Templates.POI
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif,*.tiff,*.cvraw,*.cvcie) | *.jpg; *.jpeg; *.png;*.tif;*.tiff;*.cvraw;*.cvcie";
+            openFileDialog.Filter = ServicesHelper.ImageFileDialogFilter;
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -1107,11 +1107,11 @@ namespace ColorVision.Engine.Templates.POI
                         return;
                     }
                 }
-                MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                    MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
             }
 
 
@@ -1146,12 +1146,12 @@ namespace ColorVision.Engine.Templates.POI
                     }
                     else
                     {
-                        MessageBox.Show("打开最近服务拍摄的图像失败");
+                        MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                    MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
                 }
             }
            
@@ -1822,12 +1822,12 @@ namespace ColorVision.Engine.Templates.POI
                                 }
                                 else
                                 {
-                                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                                    MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
                                 }
                             }
                             catch (Exception ex)
                             {
-                                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                                MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
                             }
                         }
                     }

@@ -57,8 +57,6 @@ namespace ColorVision.Engine.Templates.MTF
 
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, int poiId, string poiTempName)
         {
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });

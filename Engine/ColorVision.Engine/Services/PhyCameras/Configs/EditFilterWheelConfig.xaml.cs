@@ -2,6 +2,7 @@
 using ColorVision.Themes;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
@@ -17,17 +18,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public EditFilterWheelConfig(FilterWheelConfig filterWheelConfig)
         {
             FilterWheelConfig = filterWheelConfig;
-            // Create a working copy of the collection
             WorkingCopy = new ObservableCollection<HoleMap>();
             foreach (var item in filterWheelConfig.HoleMapping)
             {
-                WorkingCopy.Add(new HoleMap 
-                { 
-                    HoleIndex = item.HoleIndex, 
-                    HoleName = item.HoleName 
-                });
+                WorkingCopy.Add(item.Clone());
             }
-            
+
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -39,47 +35,34 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         private void Button_Add_Click(object sender, RoutedEventArgs e)
         {
-            // Find the next available hole index
-            int maxIndex = -1;
-            foreach (var item in WorkingCopy)
-            {
-                if (item.HoleIndex > maxIndex)
-                    maxIndex = item.HoleIndex;
-            }
+            int nextIndex = WorkingCopy.Count == 0 ? 1 : WorkingCopy.Max(item => item.HoleIndex) + 1;
 
-            var newHoleMap = new HoleMap 
-            { 
-                HoleIndex = maxIndex + 1, 
-                HoleName = string.Format(Properties.Resources.FilterWheelHoleDefaultNameFormat, maxIndex + 1)
+            var newHoleMap = new HoleMap
+            {
+                HoleIndex = nextIndex,
+                HoleName = string.Format(Properties.Resources.FilterWheelHoleDefaultNameFormat, nextIndex)
             };
             WorkingCopy.Add(newHoleMap);
+            DataGridHoleMapping.SelectedItem = newHoleMap;
+            DataGridHoleMapping.ScrollIntoView(newHoleMap);
         }
 
-        private void Button_Delete_Click(object sender, RoutedEventArgs e)
+        private void Button_DeleteRow_Click(object sender, RoutedEventArgs e)
         {
-            if (DataGridHoleMapping.SelectedItem is HoleMap selectedItem)
+            if (sender is FrameworkElement { DataContext: HoleMap holeMap })
             {
-                WorkingCopy.Remove(selectedItem);
-            }
-            else
-            {
-                MessageBox.Show(Properties.Resources.SelectItemsToDelete, Properties.Resources.EditFilterWheelConfig, MessageBoxButton.OK, MessageBoxImage.Information);
+                WorkingCopy.Remove(holeMap);
             }
         }
 
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
-            // Update the original collection
             FilterWheelConfig.HoleMapping.Clear();
             foreach (var item in WorkingCopy)
             {
-                FilterWheelConfig.HoleMapping.Add(new HoleMap 
-                { 
-                    HoleIndex = item.HoleIndex, 
-                    HoleName = item.HoleName 
-                });
+                FilterWheelConfig.HoleMapping.Add(item.Clone());
             }
-            
+
             DialogResult = true;
             Close();
         }

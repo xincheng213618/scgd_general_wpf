@@ -29,6 +29,15 @@ namespace ProjectLUX
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
+        [DisplayName("按日期保存")]
+        public bool SaveByDate { get => _SaveByDate; set { _SaveByDate = value; OnPropertyChanged(); } }
+        private bool _SaveByDate;
+
+        public bool IsSaveImageReuslt { get => _IsSaveImageReuslt; set { _IsSaveImageReuslt = value; OnPropertyChanged(); } }
+        private bool _IsSaveImageReuslt;
+
+        public int SaveImageReusltDelay { get => _SaveImageReusltDelay; set { if (value >= 0) _SaveImageReusltDelay = value; OnPropertyChanged(); } }
+        private int _SaveImageReusltDelay = 1000;
 
         [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
@@ -76,7 +85,7 @@ namespace ProjectLUX
                 IsAutoCloseConnection = true
             });
             // 确保表存在
-            _db.CodeFirst.InitTables<ProjectLUXReuslt>();
+            _db.CodeFirst.InitTables<ProjectLUXReuslt, ObjectiveTestResultRecord>();
             LoadAll(Config.Count);
                 DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
                     "sqlite.projectlux",
@@ -183,6 +192,39 @@ namespace ProjectLUX
                 }
             }
 
+        }
+
+        public int SaveObjectiveTestResult(int currentRecordId, ProjectLUXReuslt result, ObjectiveTestResult objectiveTestResult)
+        {
+            if (result == null || objectiveTestResult == null) return currentRecordId;
+
+            var record = ObjectiveTestResultRecord.Create(result, objectiveTestResult);
+            if (currentRecordId > 0)
+            {
+                var oldRecord = _db.Queryable<ObjectiveTestResultRecord>().Where(x => x.Id == currentRecordId).First();
+                if (oldRecord != null)
+                {
+                    record.Id = currentRecordId;
+                    record.CreateTime = oldRecord.CreateTime;
+                    _db.Updateable(record).Where(x => x.Id == record.Id).ExecuteCommand();
+                    return record.Id;
+                }
+            }
+
+            record.Id = _db.Insertable(record).ExecuteReturnIdentity();
+            return record.Id;
+        }
+
+        public List<ObjectiveTestResultRecord> QueryObjectiveTestResultRecords(string sn = null, int count = 100)
+        {
+            var query = _db.Queryable<ObjectiveTestResultRecord>();
+            if (!string.IsNullOrWhiteSpace(sn))
+            {
+                query = query.Where(x => x.SN.Contains(sn));
+            }
+
+            query = query.OrderBy(x => x.Id, OrderByType.Desc);
+            return count > 0 ? query.Take(count).ToList() : query.ToList();
         }
 
         public void GenericQuery()

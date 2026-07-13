@@ -54,9 +54,6 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
 
         public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
-
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             if (TemplatePoiSelectedIndex > -1)

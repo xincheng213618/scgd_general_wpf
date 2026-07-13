@@ -22,11 +22,11 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBlock Text="局域网控制"
+                            <TextBlock Text="现场运维伴侣"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <TextBlock Text="启用后，手机扫描二维码即可连接这台电脑上的 ColorVision。"
+                            <TextBlock Text="启用后，通过短时二维码与设备密钥安全配对；高风险操作仍需桌面确认。"
                                        Margin="0,6,0,0"
                                        FontSize="13"
                                        Opacity="0.68"
@@ -122,6 +122,20 @@
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="260"/>
                         </Grid.ColumnDefinitions>
+                        <TextBlock Text="安全 HTTPS 端口"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBlock x:Name="SecurePortTextBlock"
+                                   Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource GlobalTextBrush}"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="260"/>
+                        </Grid.ColumnDefinitions>
                         <TextBlock Text="二维码地址"
                                    VerticalAlignment="Center"
                                    Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -138,10 +152,10 @@
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource GlobalTextBrush}"/>
 
-                    <TextBlock Text="连接地址"
+                    <TextBlock Text="安全运维地址"
                                Margin="0,0,0,6"
                                Foreground="{DynamicResource GlobalTextBrush}"/>
-                    <TextBlock Text="2. 安装完成后，用移动版扫描右侧二维码连接这台电脑。"
+                    <TextBlock Text="2. 用移动版扫描右侧短时配对码，再在下方批准这台设备。配对码两分钟失效且只能提交一次。"
                                Margin="0,0,0,6"
                                FontSize="12"
                                Opacity="0.68"
@@ -155,15 +169,15 @@
 
                     <WrapPanel Margin="0,14,0,0">
                         <Button Padding="14,6"
-                                Content="复制地址"
+                                Content="复制安全地址"
                                 Click="CopyUrlButton_Click"/>
                         <Button Margin="8,0,0,0"
                                 Padding="14,6"
-                                Content="刷新"
+                                Content="刷新状态"
                                 Click="RefreshButton_Click"/>
                         <Button Margin="8,0,0,0"
                                 Padding="14,6"
-                                Content="重置二维码"
+                                Content="刷新配对码"
                                 Click="ResetTokenButton_Click"/>
                     </WrapPanel>
 
@@ -200,5 +214,114 @@
                 </StackPanel>
             </Grid>
         </Border>
+
+        <Grid Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" CornerRadius="8" BorderThickness="1" Padding="16"
+                    BorderBrush="{DynamicResource ButtonBorderBrush}" Background="{DynamicResource GlobalBackground}">
+                <StackPanel>
+                    <TextBlock Text="待批准设备" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <TextBlock Text="核对手机显示的设备名称后再批准。未批准设备不能读取任何运维数据。"
+                               Margin="0,5,0,10" FontSize="12" Opacity="0.68" TextWrapping="Wrap"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <ListBox x:Name="PendingDevicesListBox" MinHeight="64">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="4">
+                                    <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding DeviceId}" FontSize="11" Opacity="0.65"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <WrapPanel Margin="0,10,0,0">
+                        <Button Padding="12,5" Content="批准只读运维权限" Click="ApproveDeviceButton_Click"/>
+                        <Button Margin="8,0,0,0" Padding="12,5" Content="拒绝" Click="RejectDeviceButton_Click"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" CornerRadius="8" BorderThickness="1" Padding="16"
+                    BorderBrush="{DynamicResource ButtonBorderBrush}" Background="{DynamicResource GlobalBackground}">
+                <StackPanel>
+                    <TextBlock Text="已配对设备" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <TextBlock Text="撤销后，该设备的所有签名请求会立即失效。"
+                               Margin="0,5,0,10" FontSize="12" Opacity="0.68"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <ListBox x:Name="PairedDevicesListBox" MinHeight="64">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="4">
+                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding DeviceId}" FontSize="11" Opacity="0.65"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Button Margin="0,10,0,0" HorizontalAlignment="Left" Padding="12,5"
+                            Content="撤销所选设备" Click="RevokeDeviceButton_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+        <Grid Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" CornerRadius="8" BorderThickness="1" Padding="16"
+                    BorderBrush="{DynamicResource ButtonBorderBrush}" Background="{DynamicResource GlobalBackground}">
+                <StackPanel>
+                    <TextBlock Text="等待本机共签的作业" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <TextBlock Text="移动端批准只记录意图；必须在本机再次确认。特权作业还需通过 ServiceHost 票据闸门。"
+                               Margin="0,5,0,10" FontSize="12" Opacity="0.68" TextWrapping="Wrap"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <ListBox x:Name="LocalCoSignJobsListBox" MinHeight="72">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="4">
+                                    <TextBlock Text="{Binding CapabilityId}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Reason}" FontSize="11" Opacity="0.65" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <WrapPanel Margin="0,10,0,0">
+                        <Button Padding="12,5" Content="本机确认" Click="LocalCoSignJobButton_Click"/>
+                        <Button Margin="8,0,0,0" Padding="12,5" Content="本机拒绝" Click="LocalRejectJobButton_Click"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" CornerRadius="8" BorderThickness="1" Padding="16"
+                    BorderBrush="{DynamicResource ButtonBorderBrush}" Background="{DynamicResource GlobalBackground}">
+                <StackPanel>
+                    <TextBlock Text="远程支持请求" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <TextBlock Text="仅允许诊断或引导模式，最长 30 分钟；不开放任意远程桌面或命令。"
+                               Margin="0,5,0,10" FontSize="12" Opacity="0.68" TextWrapping="Wrap"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <ListBox x:Name="SupportRequestsListBox" MinHeight="72">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="4">
+                                    <TextBlock Text="{Binding Mode}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Reason}" FontSize="11" Opacity="0.65" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <WrapPanel Margin="0,10,0,0">
+                        <Button Padding="12,5" Content="允许限时支持" Click="ConsentSupportButton_Click"/>
+                        <Button Margin="8,0,0,0" Padding="12,5" Content="拒绝" Click="RejectSupportButton_Click"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </StackPanel>
 </UserControl>

@@ -3,7 +3,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
@@ -19,7 +20,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
-using ColorVision.Engine.Services;
 using ColorVision.Solution.Editor.AvalonEditor;
 
 namespace ColorVision.Engine.Templates.Jsons.FindCross
@@ -178,10 +178,10 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                         avalonEditWindow.ShowDialog();
                     }, a => File.Exists(mtfresult.ResultFileName));
 
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "选中1.0结果集", Command = SelectrelayCommand });
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "打开1.0结果集", Command = OpenrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = string.Format(Properties.Resources.SelectResultSetFormat, "1.0"), Command = SelectrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = string.Format(Properties.Resources.OpenResultSetFormat, "1.0"), Command = OpenrelayCommand });
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFindCross), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFindCross), ImageFilePath = result.FilePath })) });
 
             }
         }
@@ -215,11 +215,11 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                                 cricle.Attribute.Center = new Point(item.center.x,item.center.y);
                                 cricle.Attribute.Radius = 10;
                                 cricle.Attribute.Brush = Brushes.Red;
-                                cricle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                                cricle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                                 cricle.Attribute.Id = id;
                                 cricle.Attribute.Text = id.ToString();
-                                cricle.Attribute.FontSize = RenderConfig.FontSize;
-                                cricle.Attribute.Msg =  $"({RenderConfig.FormatNumber(item.center.x)},{RenderConfig.FormatNumber(item.center.y)}){Environment.NewLine}xtilt:{RenderConfig.FormatNumber(item.tilt.tilt_x)}{Environment.NewLine}ytilt:{RenderConfig.FormatNumber(item.tilt.tilt_y)}{Environment.NewLine}rotation:{RenderConfig.FormatNumber(item.rotationAngle)}"  ;
+                                cricle.Attribute.FontSize = OverlayFontSize;
+                                cricle.Attribute.Msg =  $"({FormatNumber(item.center.x)},{FormatNumber(item.center.y)}){Environment.NewLine}xtilt:{FormatNumber(item.tilt.tilt_x)}{Environment.NewLine}ytilt:{FormatNumber(item.tilt.tilt_y)}{Environment.NewLine}rotation:{FormatNumber(item.rotationAngle)}"  ;
                                 cricle.Render();
                                 view.ImageView.AddVisual(cricle);
                             }

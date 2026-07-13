@@ -1,9 +1,9 @@
 #pragma warning disable CA1725,CS8602,CS8604
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Services;
 using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
 using Newtonsoft.Json;
@@ -139,8 +139,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
                         avalonEditWindow.ShowDialog();
                     }, a => File.Exists(sfrresult.ResultFileName));
 
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = string.Format(Properties.Resources.SelectResultSetFormat, "2.0"), Command = SelectrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = string.Format(Properties.Resources.OpenResultSetFormat, "2.0"), Command = OpenrelayCommand });
 
                     RelayCommand sfrwindowCommand = new RelayCommand(a =>
                     {
@@ -149,13 +149,13 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
                         win.Show();
                     }, a => sfrresult.HasResult);
 
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "SFR窗口预览", Command = sfrwindowCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.SfrWindowPreview, Command = sfrwindowCommand });
 
 
                     // 仅新版，无位置信息，不提供 POI 导出菜单
                 }
 
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFR2), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFR2), ImageFilePath = result.FilePath })) });
             }
         }
 

@@ -23,18 +23,16 @@ namespace ProjectLUX
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public static LUXWindowConfig WindowConfig => LUXWindowConfig.Instance;
 
-
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenTemplateLargeCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenEditLargeCommand { get; set; }
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
-
+        [Browsable(false)]
         [JsonIgnore]
         public RelayCommand InitTestCommand { get; set; }
 
@@ -72,11 +70,12 @@ namespace ProjectLUX
             ConfigService.Instance.SaveConfigs();
         }
 
-
+        [Browsable(false)]
         [JsonIgnore]
         public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 
+        [Browsable(false)]
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
@@ -105,9 +104,6 @@ namespace ProjectLUX
 
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
-
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
 
     }
 }

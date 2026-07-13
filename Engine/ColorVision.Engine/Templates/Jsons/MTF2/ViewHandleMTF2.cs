@@ -3,8 +3,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Solution.Editor.AvalonEditor;
@@ -180,8 +180,8 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                     }, a => File.Exists(mtfresult.ResultFileName));
 
 
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = string.Format(Properties.Resources.SelectResultSetFormat, "2.0"), Command = SelectrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = string.Format(Properties.Resources.OpenResultSetFormat, "2.0"), Command = OpenrelayCommand });
 
 
 
@@ -217,10 +217,10 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                         }
                     }
                     RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
                 }
 
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF2), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF2), ImageFilePath = result.FilePath })) });
             }
         }
 
@@ -242,11 +242,11 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.x,item.y,item.w,item.h);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                             Rectangle.Attribute.Id = id;
                             Rectangle.Attribute.Text = item.name;
-                            Rectangle.Attribute.FontSize = RenderConfig.FontSize;
-                            Rectangle.Attribute.Msg = RenderConfig.FormatNumber(item.mtfValue);
+                            Rectangle.Attribute.FontSize = OverlayFontSize;
+                            Rectangle.Attribute.Msg = FormatNumber(item.mtfValue);
                             Rectangle.Render();
                             ctx.ImageView.AddVisual(Rectangle);
                         }

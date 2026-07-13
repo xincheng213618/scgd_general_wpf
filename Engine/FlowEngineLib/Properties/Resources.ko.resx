@@ -84,9 +84,6 @@
     <value>03_3 보정</value>
   </data>
 
-  <data name="03_3 第三方算法" xml:space="preserve">
-    <value>033 제3자 알고리즘</value>
-  </data>
 
   <data name="03_4 KB" xml:space="preserve">
     <value>034KB</value>
@@ -180,9 +177,6 @@
     <value>그레이255</value>
   </data>
 
-  <data name="状态触发" xml:space="preserve">
-    <value>상태 트리거</value>
-  </data>
 
   <data name="物理设备控制" xml:space="preserve">
     <value>물리적 장비 제어</value>
@@ -276,9 +270,6 @@
     <value>이미지 이름</value>
   </data>
 
-  <data name="图像水平翻转" xml:space="preserve">
-    <value>이미지 수평 뒤집기</value>
-  </data>
 
   <data name="ImageCompound" xml:space="preserve">
     <value>이미지 스티칭</value>
@@ -976,9 +967,6 @@
     <value>매개변수 템플릿</value>
   </data>
 
-  <data name="参数模板ID" xml:space="preserve">
-    <value>매개변수 템플릿 ID</value>
-  </data>
 
   <data name="过滤模板" xml:space="preserve">
     <value>필터 템플릿</value>
@@ -1184,9 +1172,6 @@
     <value>수동 확인</value>
   </data>
 
-  <data name="最小超时" xml:space="preserve">
-    <value>최소 시간 초과</value>
-  </data>
 
   <data name="最大超时" xml:space="preserve">
     <value>최대 시간 초과</value>
@@ -1231,4 +1216,13 @@
   <data name="Port" xml:space="preserve">
     <value>포트</value>
   </data>
+  <data name="允许失败继续" xml:space="preserve"><value>실패 시 계속</value></data>
+  <data name="服务返回Fail时按正常流程继续" xml:space="preserve"><value>서비스가 Fail을 반환해도 정상 흐름을 계속합니다</value></data>
+  <data name="参数" xml:space="preserve"><value>매개 변수</value></data>
+  <data name="上电" xml:space="preserve"><value>전원 켜기</value></data>
+  <data name="下电" xml:space="preserve"><value>전원 끄기</value></data>
+  <data name="切图" xml:space="preserve"><value>이미지 전환</value></data>
+  <data name="电压电流" xml:space="preserve"><value>전압/전류</value></data>
+  <data name="屏幕缺陷检测" xml:space="preserve"><value>화면 결함 검사</value></data>
+  <data name="亮点检测V2" xml:space="preserve"><value>밝은 점 검사 V2</value></data>
 </root>

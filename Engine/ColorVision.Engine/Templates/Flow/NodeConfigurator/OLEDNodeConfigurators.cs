@@ -1,79 +1,19 @@
-﻿#pragma warning disable CA1707
+#pragma warning disable CA1707
 using ColorVision.Engine.Properties;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Templates.Jsons.LedCheck2;
-using ColorVision.Engine.Templates.Jsons.CompoundImg;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2;
 using ColorVision.Engine.Templates.ImageCropping;
-using ColorVision.Engine.Templates.POI.POIOutput;
-using System.Linq;
 
 namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 {
-    [NodeConfigurator(typeof(FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode))]
-    public class OLEDRebuildPixelsNodeConfigurator : NodeConfiguratorBase
-    {
-        public override void Configure(NodeConfiguratorContext context)
-        {
-            var node = (FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.SubPixelLedCheck, new TemplateLedCheck2());
-            context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, "PoiOutPut", new TemplatePoiOutputParam());
-        }
-    }
-
-
-    
-
-
-
-    [NodeConfigurator(typeof(FlowEngineLib.Node.OLED.OLEDImageCroppingNode))]
-    public class OLEDImageCroppingNodeConfigurator : NodeConfiguratorBase
-    {
-        public override void Configure(NodeConfiguratorContext context)
-        {
-            var node = (FlowEngineLib.Node.OLED.OLEDImageCroppingNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ParamTemplate, new TemplateImageCropping());
-        }
-    }
-
-    [NodeConfigurator(typeof(FlowEngineLib.Node.OLED.AlgorithmCompoundImgNode))]
-    public class AlgorithmCompoundImgNodeConfigurator : NodeConfiguratorBase
-    {
-        public override void Configure(NodeConfiguratorContext context)
-        {
-            var node = (FlowEngineLib.Node.OLED.AlgorithmCompoundImgNode)context.Node;
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.ParamTemplate, new TemplateCompoundImg());
-        }
-    }
-
-    [NodeConfigurator(typeof(FlowEngineLib.Node.Algorithm.AlgorithmOLEDNode))]
-    public class AlgorithmOLEDNodeConfigurator : NodeConfiguratorBase
-    {
-        public override void Configure(NodeConfiguratorContext context)
-        {
-            var node = (FlowEngineLib.Node.Algorithm.AlgorithmOLEDNode)context.Node;
-            context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.SubPixel, new TemplateLedCheck2());
-        }
-    }
-
     [NodeConfigurator(typeof(FlowEngineLib.Node.Algorithm.AlgorithmOLED_AOINode))]
     public class AlgorithmOLED_AOINodeConfigurator : NodeConfiguratorBase
     {
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmOLED_AOINode)context.Node;
-            context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
-            context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "AOI", new TemplateOLEDAOI());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.DefectCheckV2, new TemplateFPForRePicGradingV2());
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.BrightSpotCheck, new TemplateFPForQuardImg());
@@ -91,7 +31,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             void Refresh()
             {
                 context.SignStackPanel.Children.Clear();
-                context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 switch (node.Algorithm)
                 {

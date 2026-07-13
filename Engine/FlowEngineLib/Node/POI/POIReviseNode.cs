@@ -22,6 +22,7 @@ public class POIReviseNode : CVBaseServerNodeHub
 	private STNodeEditText<string> m_ctrl_poi;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiGenCaliTemplateEditor))]
 	public string TemplateName
 	{
 		get

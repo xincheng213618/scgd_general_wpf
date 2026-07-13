@@ -1,5 +1,7 @@
 #pragma warning disable CA1707
 using ColorVision.Copilot;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 
@@ -8,28 +10,74 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotProfileConfigTests
 {
     [Fact]
-    public void EnsureValid_ReplacesLegacyChineseDefaultSystemPrompt()
+    public void Deserialize_IgnoresSystemPromptField()
     {
-        var profile = new CopilotProfileConfig
-        {
-            SystemPrompt = "\u4f60\u662f ColorVision Copilot\uff0c\u662f ColorVision \u8f6f\u4ef6\u5185\u7f6e\u7684\u5de5\u7a0b\u52a9\u624b\u3002\u4e0d\u8981\u58f0\u79f0\u81ea\u5df1\u5df2\u7ecf\u6267\u884c\u4e86\u672a\u7531\u5e94\u7528\u4e0a\u4e0b\u6587\u660e\u786e\u63d0\u4f9b\u7684\u64cd\u4f5c\u3002",
-        };
+        var profile = JsonConvert.DeserializeObject<CopilotProfileConfig>(
+            JsonConvert.SerializeObject(new { VendorType = CopilotVendorType.DeepSeek, SystemPrompt = "legacy prompt" }))!;
 
-        Assert.True(profile.EnsureValid());
+        Assert.False(profile.EnsureValid());
         Assert.Equal(CopilotProfileConfig.DefaultSystemPrompt, profile.SystemPrompt);
     }
 
     [Fact]
-    public void EnsureValid_KeepsCustomSystemPrompt()
+    public void DefaultSystemPrompt_HidesMissingContextAndForbidsProjectGuessing()
+    {
+        Assert.Contains("do not guess or invent project-specific implementation details", CopilotProfileConfig.DefaultSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("do not create a visible section about missing context", CopilotProfileConfig.DefaultSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("do not ask the user to provide files", CopilotProfileConfig.DefaultSystemPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Serialize_DoesNotPersistInternalModelPolicy()
     {
         var profile = new CopilotProfileConfig
         {
-            VendorType = CopilotVendorType.DeepSeek,
-            SystemPrompt = "\u8bf7\u7528\u4e2d\u6587\u56de\u7b54\uff0c\u4f46\u4fdd\u6301\u5b89\u5168\u8fb9\u754c\u3002",
+            MaxTokens = 256,
+            MaxToolRounds = 3,
+            Temperature = 0.8,
         };
 
-        Assert.False(profile.EnsureValid());
-        Assert.Equal("\u8bf7\u7528\u4e2d\u6587\u56de\u7b54\uff0c\u4f46\u4fdd\u6301\u5b89\u5168\u8fb9\u754c\u3002", profile.SystemPrompt);
+        var json = JsonConvert.SerializeObject(profile);
+        var root = JObject.Parse(json);
+
+        Assert.Null(root.Property("SystemPrompt"));
+        Assert.Null(root.Property("CustomSystemPrompt"));
+        Assert.Null(root.Property("MaxTokens"));
+        Assert.Null(root.Property("MaxToolRounds"));
+        Assert.Null(root.Property("Temperature"));
+        Assert.Null(root.Property("UseAgentFramework"));
+    }
+
+    [Fact]
+    public void UseSystemPromptOverride_IsRuntimeOnly()
+    {
+        var profile = new CopilotProfileConfig();
+
+        profile.UseSystemPromptOverride("Return only a short title.");
+
+        Assert.Equal("Return only a short title.", profile.EffectiveSystemPrompt);
+        Assert.Null(JObject.Parse(JsonConvert.SerializeObject(profile)).Property("SystemPrompt"));
+    }
+
+    [Fact]
+    public void Deserialize_IgnoresRemovedAdvancedProfileFields()
+    {
+        const string json = """
+            {
+              "CustomSystemPrompt": "legacy custom prompt",
+              "MaxTokens": 128,
+              "MaxToolRounds": 2,
+              "Temperature": 1.5,
+              "UseAgentFramework": false
+            }
+            """;
+
+        var profile = JsonConvert.DeserializeObject<CopilotProfileConfig>(json)!;
+
+        Assert.Equal(CopilotProfileConfig.DefaultSystemPrompt, profile.EffectiveSystemPrompt);
+        Assert.Equal(CopilotProfileConfig.DefaultMaxTokens, profile.MaxTokens);
+        Assert.Equal(CopilotProfileConfig.DefaultMaxToolRounds, profile.MaxToolRounds);
+        Assert.Equal(CopilotProfileConfig.DefaultTemperature, profile.Temperature);
     }
 
     [Fact]

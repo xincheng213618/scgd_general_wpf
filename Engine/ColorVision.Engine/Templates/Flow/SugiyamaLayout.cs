@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Templates.Flow
         // All reachable nodes
         private HashSet<STNode> _reachable;
         private STNode _rootNode;
+        private int _layoutSlotHeight;
 
         // Port-level edge information for port-aware crossing reduction
         private struct PortEdge
@@ -89,6 +90,8 @@ namespace ColorVision.Engine.Templates.Flow
             _rootNode = rootNode;
             BuildGraph(rootNode);
             if (_reachable.Count == 0) return;
+            NormalizeReachableNodeDisplay();
+            _layoutSlotHeight = Math.Max(90, _reachable.Max(node => node.Height));
 
             AssignLayers(rootNode);
             ReduceCrossings();
@@ -486,8 +489,8 @@ namespace ColorVision.Engine.Templates.Flow
                 foreach (var node in layer)
                 {
                     node.Left = x;
-                    node.Top = y;
-                    y += node.Height + _verticalSpacing;
+                    node.Top = GetSlotTop(node, y);
+                    y += GetLayoutHeight(node) + _verticalSpacing;
                 }
             }
         }
@@ -505,8 +508,8 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 var neighbors = GetNeighborNodes(node, useParents);
                 targetCenters[node] = neighbors.Count > 0
-                    ? neighbors.Average(neighbor => neighbor.Top + neighbor.Height / 2.0)
-                    : node.Top + node.Height / 2.0;
+                    ? neighbors.Average(GetCenterY)
+                    : GetCenterY(node);
             }
 
             layer.Sort((a, b) =>
@@ -516,15 +519,15 @@ namespace ColorVision.Engine.Templates.Flow
             });
 
             int x = _startX + layerIndex * _horizontalSpacing;
-            double totalHeight = layer.Sum(node => node.Height) + Math.Max(0, layer.Count - 1) * _verticalSpacing;
+            double totalHeight = layer.Sum(GetLayoutHeight) + Math.Max(0, layer.Count - 1) * _verticalSpacing;
             double layerCenter = targetCenters.Values.Average();
             int y = (int)Math.Round(layerCenter - totalHeight / 2.0);
 
             foreach (var node in layer)
             {
                 node.Left = x;
-                node.Top = y;
-                y += node.Height + _verticalSpacing;
+                node.Top = GetSlotTop(node, y);
+                y += GetLayoutHeight(node) + _verticalSpacing;
             }
         }
 
@@ -804,7 +807,7 @@ namespace ColorVision.Engine.Templates.Flow
             int rowHeight = layoutRows
                 .SelectMany(row => row)
                 .DefaultIfEmpty()
-                .Max(node => node?.Height ?? 90);
+                .Max(node => node == null ? _layoutSlotHeight : GetLayoutHeight(node));
             int[] columnWidths = BuildColumnWidths(layoutRows, maxColumns);
             var mainRowNodes = new HashSet<STNode>(layoutRows.SelectMany(row => row));
             var sharedFanOuts = FindSharedFanOutPlacements(layoutRows, mainRowNodes, mergeNode);
@@ -819,7 +822,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     var node = row[column];
                     node.Left = columnXs[column];
-                    node.Top = rowY + Math.Max(0, (rowHeight - node.Height) / 2);
+                    node.Top = GetSlotTop(node, rowY + Math.Max(0, (rowHeight - GetLayoutHeight(node)) / 2));
                     placed.Add(node);
                 }
 
@@ -840,12 +843,12 @@ namespace ColorVision.Engine.Templates.Flow
             if (placeRootSeparately)
             {
                 _rootNode.Left = _startX;
-                _rootNode.Top = rowCenters[0] - _rootNode.Height / 2;
+                _rootNode.Top = GetTopForCenter(_rootNode, rowCenters[0]);
                 placed.Add(_rootNode);
             }
 
             mergeNode.Left = mergeX;
-            mergeNode.Top = foldedCenterY - mergeNode.Height / 2;
+            mergeNode.Top = GetTopForCenter(mergeNode, foldedCenterY);
             placed.Add(mergeNode);
 
             PlacePrimaryDownstreamChain(mergeNode, foldedCenterY, placed);
@@ -881,7 +884,7 @@ namespace ColorVision.Engine.Templates.Flow
                     .Select(group => new
                     {
                         Input = group.Key,
-                        SourceCenterY = group.Average(conn => conn.Output.Owner.Top + conn.Output.Owner.Height / 2.0),
+                        SourceCenterY = group.Average(conn => GetCenterY(conn.Output.Owner)),
                         SourceLeft = group.Min(conn => conn.Output.Owner.Left)
                     })
                     .OrderBy(item => item.SourceCenterY)
@@ -909,6 +912,41 @@ namespace ColorVision.Engine.Templates.Flow
         private int GetVerticalLaneGap()
         {
             return Math.Max(25, Math.Min(45, _verticalSpacing / 2));
+        }
+
+        private void NormalizeReachableNodeDisplay()
+        {
+            foreach (var node in _reachable)
+            {
+                if (node is CVCommonNode commonNode)
+                {
+                    commonNode.ApplyCompactNodeDisplay();
+                }
+                else
+                {
+                    node.SetAutoSize(true);
+                }
+            }
+        }
+
+        private int GetLayoutHeight(STNode node)
+        {
+            return Math.Max(node.Height, _layoutSlotHeight);
+        }
+
+        private int GetSlotTop(STNode node, int slotTop)
+        {
+            return slotTop + Math.Max(0, (GetLayoutHeight(node) - node.Height) / 2);
+        }
+
+        private static double GetCenterY(STNode node)
+        {
+            return node.Top + node.Height / 2.0;
+        }
+
+        private static int GetTopForCenter(STNode node, double centerY)
+        {
+            return (int)Math.Round(centerY - node.Height / 2.0);
         }
 
         private static int[] BuildColumnWidths(List<List<STNode>> rows, int maxColumns)
@@ -1055,7 +1093,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
 
                 int x = columnXs[placement.TargetColumn] - placement.Node.Width - columnGap;
-                int y = AverageCenterY(targets) - placement.Node.Height / 2;
+                int y = GetTopForCenter(placement.Node, AverageCenterY(targets));
                 PlaceNodeAvoiding(placement.Node, x, y, placed);
             }
         }
@@ -1105,7 +1143,7 @@ namespace ColorVision.Engine.Templates.Flow
                     break;
 
                 next.Left = nextX;
-                next.Top = centerY - next.Height / 2;
+                next.Top = GetTopForCenter(next, centerY);
                 placed.Add(next);
                 visited.Add(next);
                 nextX += next.Width + columnGap;
@@ -1143,20 +1181,20 @@ namespace ColorVision.Engine.Templates.Flow
                         int columnGap = GetHorizontalNodeGap();
                         var parent = placedPrimaryParents[0];
                         x = parent.Left + parent.Width + columnGap;
-                        y = parent.Top + (parent.Height - node.Height) / 2;
+                        y = GetTopForCenter(node, GetCenterY(parent));
                     }
                     else if (isDirectMergeParent)
                     {
                         var parents = placedPrimaryParents.Count > 0 ? placedPrimaryParents : placedParents;
                         int columnGap = GetHorizontalNodeGap();
                         x = Math.Min(mergeX - node.Width - columnGap, parents.Max(parent => parent.Left + parent.Width) + columnGap);
-                        y = AverageCenterY(parents) - node.Height / 2;
+                        y = GetTopForCenter(node, AverageCenterY(parents));
                     }
                     else if (isDataMerge)
                     {
                         int columnGap = GetHorizontalNodeGap();
                         x = Math.Min(mergeX - node.Width - columnGap, placedParents.Max(parent => parent.Left + parent.Width) + columnGap);
-                        y = AverageCenterY(placedParents) - node.Height / 2;
+                        y = GetTopForCenter(node, AverageCenterY(placedParents));
                     }
                     else
                     {
@@ -1164,8 +1202,8 @@ namespace ColorVision.Engine.Templates.Flow
                         var parent = placedPrimaryParents.FirstOrDefault() ?? placedParents.First();
                         x = parent.Left;
                         y = HasMultipleDataChildren(node)
-                            ? parent.Top - node.Height - GetVerticalLaneGap()
-                            : parent.Top + parent.Height + Math.Max(25, _verticalSpacing / 2);
+                            ? parent.Top - GetLayoutHeight(node) - GetVerticalLaneGap()
+                            : parent.Top + GetLayoutHeight(parent) + Math.Max(25, _verticalSpacing / 2);
                     }
 
                     PlaceNodeAvoiding(node, x, y, placed);
@@ -1198,8 +1236,8 @@ namespace ColorVision.Engine.Templates.Flow
                 var shifted = new HashSet<STNode>();
                 foreach (var child in children.Where(placed.Contains).Where(child => !anchorSet.Contains(child)))
                 {
-                    int sourceCenterY = placement.Node.Top + placement.Node.Height / 2;
-                    int childCenterY = child.Top + child.Height / 2;
+                    int sourceCenterY = (int)Math.Round(GetCenterY(placement.Node));
+                    int childCenterY = (int)Math.Round(GetCenterY(child));
                     bool sameColumn = Math.Abs(child.Left - placement.Node.Left) <= columnGap / 2;
                     bool farApart = Math.Abs(childCenterY - sourceCenterY) > placement.Node.Height + GetVerticalLaneGap();
                     if (!sameColumn || !farApart)
@@ -1254,7 +1292,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private static int AverageCenterY(List<STNode> nodes)
         {
-            return (int)Math.Round(nodes.Average(node => node.Top + node.Height / 2.0));
+            return (int)Math.Round(nodes.Average(GetCenterY));
         }
 
         private void PlaceNodeAvoiding(STNode node, int x, int y, HashSet<STNode> placed)
@@ -1265,7 +1303,7 @@ namespace ColorVision.Engine.Templates.Flow
             int guard = 0;
             while (placed.Any(other => IntersectsWithMargin(node, other)) && guard < _reachable.Count)
             {
-                node.Top += node.Height + Math.Max(25, _verticalSpacing / 2);
+                node.Top += GetLayoutHeight(node) + Math.Max(25, _verticalSpacing / 2);
                 guard++;
             }
 
@@ -1370,7 +1408,7 @@ namespace ColorVision.Engine.Templates.Flow
                         .Take(segment.End - segment.Start)
                         .SelectMany(layer => layer)
                         .DefaultIfEmpty()
-                        .Max(node => node?.Height ?? 80);
+                        .Max(node => node == null ? _layoutSlotHeight : GetLayoutHeight(node));
 
                 for (int layerIndex = segment.Start; layerIndex < segment.End; layerIndex++)
                 {
@@ -1400,7 +1438,7 @@ namespace ColorVision.Engine.Templates.Flow
             PlaceDataMergeSatellites(mergeLayer, mergeNode, mergeX);
 
             // Keep the main merge node visually centered even if another node shares the layer.
-            mergeNode.Top = foldedCenterY - mergeNode.Height / 2;
+            mergeNode.Top = GetTopForCenter(mergeNode, foldedCenterY);
         }
 
         private void PlaceDataMergeSatellites(int mergeLayer, STNode mergeNode, int mergeX)
@@ -1415,10 +1453,10 @@ namespace ColorVision.Engine.Templates.Flow
                 if (parents.Count == 0)
                     continue;
 
-                int parentCenter = (int)Math.Round(parents.Average(parent => parent.Top + parent.Height / 2.0));
+                int parentCenter = (int)Math.Round(parents.Average(GetCenterY));
                 int maxParentRight = parents.Max(parent => parent.Left + parent.Width);
                 node.Left = Math.Min(mergeX - _horizontalSpacing * 2, maxParentRight + _horizontalSpacing);
-                node.Top = parentCenter - node.Height / 2;
+                node.Top = GetTopForCenter(node, parentCenter);
                 moved.Add(node);
 
                 PlaceSatellitePrimaryChain(node, mergeNode, moved);
@@ -1442,7 +1480,7 @@ namespace ColorVision.Engine.Templates.Flow
                 return;
 
             int childX = node.Left + _horizontalSpacing;
-            int centerY = node.Top + node.Height / 2;
+            int centerY = (int)Math.Round(GetCenterY(node));
             foreach (var child in children)
             {
                 if (child == stopNode || moved.Contains(child))
@@ -1452,7 +1490,7 @@ namespace ColorVision.Engine.Templates.Flow
                     continue;
 
                 child.Left = childX;
-                child.Top = centerY - child.Height / 2;
+                child.Top = GetTopForCenter(child, centerY);
                 moved.Add(child);
                 PlaceSatellitePrimaryChain(child, stopNode, moved);
             }
@@ -1473,7 +1511,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (layer.Count == 0)
                 return 0;
 
-            return layer.Sum(node => node.Height) + Math.Max(0, layer.Count - 1) * _verticalSpacing;
+            return layer.Sum(GetLayoutHeight) + Math.Max(0, layer.Count - 1) * _verticalSpacing;
         }
 
         private void PlaceLayerStack(int layerIndex, int x, int rowY, int rowHeight)
@@ -1485,8 +1523,8 @@ namespace ColorVision.Engine.Templates.Flow
             foreach (var node in layer)
             {
                 node.Left = x;
-                node.Top = y;
-                y += node.Height + _verticalSpacing;
+                node.Top = GetSlotTop(node, y);
+                y += GetLayoutHeight(node) + _verticalSpacing;
             }
         }
 
@@ -1499,8 +1537,8 @@ namespace ColorVision.Engine.Templates.Flow
             foreach (var node in layer)
             {
                 node.Left = x;
-                node.Top = y;
-                y += node.Height + _verticalSpacing;
+                node.Top = GetSlotTop(node, y);
+                y += GetLayoutHeight(node) + _verticalSpacing;
             }
         }
 

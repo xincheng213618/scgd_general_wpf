@@ -83,7 +83,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         }
 
         public string Summary => IsFullFrame
-            ? $"全幅 / {SensorWidth} x {SensorHeight}"
+            ? string.Format(Properties.Resources.RoiEditor_FullFrameSummary, SensorWidth, SensorHeight)
             : $"X={PointX}, Y={PointY}, W={RoiWidth}, H={RoiHeight} / {SensorWidth} x {SensorHeight}";
 
         private bool IsFullFrame => _roiWidth == 0 && _roiHeight == 0;

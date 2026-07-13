@@ -55,7 +55,7 @@
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Click="Button_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
-                        <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                     </Button>
                     <Button  Click="Button2_Click" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                         <Button.Triggers>
@@ -148,10 +148,10 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn x:Name="EqeColumn" Header="EQE">
+                            <GridViewColumn x:Name="EqeColumn" Header="EQE(%)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
-                                        <TextBlock Text="{Binding Eqe, StringFormat={}{0:F4}}"/>
+                                        <TextBlock Text="{Binding EqePercent, StringFormat={}{0:F4}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

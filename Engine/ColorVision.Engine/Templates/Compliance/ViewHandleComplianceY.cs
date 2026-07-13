@@ -1,10 +1,10 @@
 ﻿#pragma warning disable CA1725
-using ColorVision.Database;
+using ColorVision.Database;
+using ColorVision.Engine.Services;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Compliance
 {
@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.Compliance
             }
             List<string> header;
             List<string> bdHeader;
-            header = new() { "名称", "值", "Validate" };
+            header = new() { Properties.Resources.Name, Properties.Resources.Value, "Validate" };
             bdHeader = new() { "Name", "DataValue", "ValidateResult" };
 
             if (ctx.ListView.View is GridView gridView)

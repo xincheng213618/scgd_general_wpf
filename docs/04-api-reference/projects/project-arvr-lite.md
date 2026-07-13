@@ -70,7 +70,7 @@ TestResults_{SN}_{yyyyMMdd_HHmmss}_.csv
 
 ```powershell
 dotnet build Projects/ProjectARVRLite/ProjectARVRLite.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectARVRLite --no-upload
+Scripts\package_project.bat ProjectARVRLite
 ```
 
 ## 交付验收

@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CA1725
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Services;
 using CVCommCore.CVAlgorithm;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,6 @@ using System.IO;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.JND
 {
@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.JND
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Id", "名称", "位置", "大小", "形状", "h_jnd", "v_jnd" };
+            List<string> properties = new() { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "h_jnd", "v_jnd" };
             // 写入列头
             csvBuilder.AppendLine(string.Join(",", properties));
             // 写入数据行
@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Templates.JND
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
                     result.ViewResults.Add(new ViewRsultJND(item));
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmJND), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmJND), ImageFilePath = result.FilePath })) });
             }
         }
 
@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Templates.JND
                 ctx.ImageView.OpenImage(result.FilePath);
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
-            List<string> header = new() { "Name", "位置", "大小", "形状", "h_jnd", "v_jnd" };
+            List<string> header = new() { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "h_jnd", "v_jnd" };
             List<string> bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "JND.h_jnd", "JND.v_jnd" };
 
 

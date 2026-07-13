@@ -17,7 +17,7 @@ namespace ColorVision.Copilot
 
     public static class CopilotWebPageToolSupport
     {
-        public const int MaxWebPageDownloadBytes = 256 * 1024;
+        public const int MaxWebPageDownloadBytes = 2 * 1024 * 1024;
         public const int MaxWebPageContentChars = 12000;
 
         private static readonly Regex HttpUrlRegex = new("https?://[^\\s\\\"'<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -100,7 +100,7 @@ namespace ColorVision.Copilot
             {
                 $"[Web Page Fetch Failed] {url}",
                 $"Failure reason: {failureMessage}",
-                "The application could not fetch real web page content. The answer must state that it cannot continue from actual page content and must not assume unavailable page information.",
+                "The application could not fetch real web page content. Do not assume unavailable page-specific facts, but answer from other available context or general knowledge when the question still allows it.",
             });
         }
 

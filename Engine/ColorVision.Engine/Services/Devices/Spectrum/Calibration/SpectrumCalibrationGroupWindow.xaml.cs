@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -49,9 +50,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
                 .Select(a => new CfwServiceOption(a.Code, string.IsNullOrWhiteSpace(a.Name) ? a.Code : $"{a.Name} ({a.Code})"))
                 .ToList();
 
-            options.Insert(0, new CfwServiceOption(string.Empty, "未选择"));
+            options.Insert(0, new CfwServiceOption(string.Empty, Properties.Resources.SpectrumCalibrationGroups_NotSelected));
             if (!string.IsNullOrWhiteSpace(currentCode) && options.All(a => a.Code != currentCode))
-                options.Add(new CfwServiceOption(currentCode, $"{currentCode} (未加载)"));
+                options.Add(new CfwServiceOption(currentCode, string.Format(Properties.Resources.SpectrumCalibrationGroups_NotLoadedFormat, currentCode)));
 
             ComboBoxCfwService.ItemsSource = options;
             ComboBoxCfwService.SelectedValue = currentCode;
@@ -60,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
 
         private void RefreshNDHoleOptions()
         {
-            var options = new List<NDHoleOption> { new NDHoleOption(-1, "无关联") };
+            var options = new List<NDHoleOption> { new NDHoleOption(-1, Properties.Resources.SpectrumCalibrationGroups_NoAssociation) };
             options.AddRange(_device.GetNDHoleMappings().OrderBy(a => a.HoleIndex).Select(a => new NDHoleOption(a.HoleIndex, $"{a.HoleIndex}: {a.HoleName}")));
             ComboBoxNDHole.ItemsSource = options;
         }
@@ -106,7 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
         {
             if (_device.Config.CalibrationGroups.Count <= 1)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "至少保留一个分组", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SpectrumCalibrationGroups_KeepAtLeastOneGroup, "ColorVision");
                 return;
             }
 
@@ -119,12 +120,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
 
         private void BtnSelectWavelength_Click(object sender, RoutedEventArgs e)
         {
-            SelectFile(file => SelectedGroup!.WavelengthFile = file);
+            SelectFile(SelectedGroup?.WavelengthFile, file => SelectedGroup!.WavelengthFile = file);
         }
 
         private void BtnSelectMaguide_Click(object sender, RoutedEventArgs e)
         {
-            SelectFile(file => SelectedGroup!.MaguideFile = file);
+            SelectFile(SelectedGroup?.MaguideFile, file => SelectedGroup!.MaguideFile = file);
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -149,16 +150,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
             Close();
         }
 
-        private void SelectFile(Action<string> apply)
+        private void SelectFile(string? currentPath, Action<string> apply)
         {
             if (SelectedGroup == null)
                 return;
 
             using var dialog = new System.Windows.Forms.OpenFileDialog
             {
-                Filter = "DAT files (*.dat)|*.dat|All Files|*.*",
+                Filter = Properties.Resources.SpectrumCalibrationGroups_DatFileFilter,
                 RestoreDirectory = true,
             };
+
+            var initialDirectory = PathSelectionHelper.GetExistingDirectory(currentPath);
+            if (!string.IsNullOrWhiteSpace(initialDirectory))
+                dialog.InitialDirectory = initialDirectory;
+
+            var fileName = System.IO.Directory.Exists(currentPath) ? null : PathSelectionHelper.GetFileName(currentPath);
+            if (!string.IsNullOrWhiteSpace(fileName))
+                dialog.FileName = fileName;
 
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 apply(dialog.FileName);

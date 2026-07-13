@@ -110,6 +110,11 @@ public class CVStartCFC : CVBaseCFC
 		StartNode = startNode;
 	}
 
+	public bool IsSameFlow(CVStartCFC other)
+	{
+		return other != null && string.Equals(SerialNumber, other.SerialNumber, StringComparison.Ordinal);
+	}
+
 	public string BuildStatusMsg(string serverCode, string deviceCode, int zIdx)
 	{
 		Dictionary<string, object> dictionary = new Dictionary<string, object>();

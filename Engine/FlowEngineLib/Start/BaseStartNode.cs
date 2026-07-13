@@ -14,6 +14,8 @@ public abstract class BaseStartNode : CVCommonNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(BaseStartNode));
 
+	private int _FlowTimeout = 300;
+
 	public STNodeOption m_op_start;
 
 	protected STNodeOption[] m_op_loop;
@@ -30,6 +32,19 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public bool Running { get; set; }
 
+	[STNodeProperty("FlowALL.Timeout", "FlowALL.Timeout")]
+	public int FlowTimeout
+	{
+		get
+		{
+			return _FlowTimeout;
+		}
+		set
+		{
+			setTimeout(value);
+		}
+	}
+
 	public event FlowStartEventHandler Finished;
 
 	protected BaseStartNode(string title, int loopNum = 2)
@@ -39,7 +54,9 @@ public abstract class BaseStartNode : CVCommonNode
 		topicServer = new Dictionary<string, List<CVBaseServerNode>>();
 		topicServerProxy = new Dictionary<string, List<CVServiceProxy>>();
 		startActions = new Dictionary<string, CVStartCFC>();
-		base.Width = 170;
+		base.AutoSize = false;
+		base.Width = StandardNodeWidth;
+		base.Height = Math.Max(90, base.TitleHeight + (LoopNum + 1) * OptionItemHeight + 10);
 		Ready = false;
 		Running = false;
 	}
@@ -59,6 +76,22 @@ public abstract class BaseStartNode : CVCommonNode
 		}
 		m_op_start.Connected += m_op_start_Connected;
 		m_op_start.DisConnected += m_op_start_DisConnected;
+	}
+
+	private void setTimeout(int value)
+	{
+		if (value <= 0)
+		{
+			_FlowTimeout = 5;
+		}
+		else if (value > 1800)
+		{
+			_FlowTimeout = 1800;
+		}
+		else
+		{
+			_FlowTimeout = value;
+		}
 	}
 
 	public void DoLoopNextAction(CVLoopCFC next)

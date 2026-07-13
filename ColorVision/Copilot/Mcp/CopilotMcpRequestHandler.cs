@@ -184,7 +184,7 @@ namespace ColorVision.Copilot.Mcp
                     new
                     {
                         uri,
-                        mimeType = "text/plain",
+                        mimeType = _toolDispatcher.GetResourceMimeType(uri),
                         text = result.Text,
                     },
                 },

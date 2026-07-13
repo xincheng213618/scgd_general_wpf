@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CA1725,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Templates.ARVR.SFR;
+using ColorVision.Engine.Templates.ARVR.SFR;
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System;
@@ -13,7 +14,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.SFR
 {
@@ -124,9 +124,9 @@ namespace ColorVision.Engine.Templates.SFR
 
                 RelayCommand relayCommand = new RelayCommand(a => new WindowSFR(AlgResultSFRModels).Show());
 
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "分析", Command = relayCommand });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Analyze, Command = relayCommand });
 
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFR), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFR), ImageFilePath = result.FilePath })) });
 
             }
         }
@@ -142,9 +142,9 @@ namespace ColorVision.Engine.Templates.SFR
                 DVRectangleText Rectangle = new();
                 Rectangle.Attribute.Rect = new Rect((double)item.RoiX, (double)item.RoiY, (double)item.RoiWidth, (double)item.RoiHeight);
                 Rectangle.Attribute.Brush = Brushes.Transparent;
-                Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                Rectangle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                 Rectangle.Attribute.Id = item.Id;
-                Rectangle.Attribute.FontSize = RenderConfig.FontSize;
+                Rectangle.Attribute.FontSize = OverlayFontSize;
                 Rectangle.Render();
                 ctx.ImageView.AddVisual(Rectangle);
             }

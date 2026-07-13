@@ -7,6 +7,9 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Camera;
 
 [STNode("/02 相机")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CamTempName", typeof(FlowEngineLib.PropertyEditor.FlowCameraRunTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CalibTempName", typeof(FlowEngineLib.PropertyEditor.FlowCalibrationTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("AlgTempName", typeof(FlowEngineLib.PropertyEditor.FlowOledAoiJsonTemplateEditor))]
 public class CVAOI2CameraNode : CVBaseServerNodeHub
 {
 	private string _CamTempName;
@@ -180,8 +183,6 @@ public class CVAOI2CameraNode : CVBaseServerNodeHub
 		_IsWithND = false;
 		_IsAutoExp = false;
 		_ImgSaveMode = ImgSaveBppMode.Bit16;
-		base.Width = 180;
-		m_custom_item.Width += 30;
 		base.Height += 100;
 	}
 
@@ -240,6 +241,6 @@ public class CVAOI2CameraNode : CVBaseServerNodeHub
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		getPreStepParam(1, algorithmPreStepParam);
 		string algParamType = "OLED_RebuildPixelsMem";
-		return new CVAOI2CameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, algorithmPreStepParam.MasterId, (int)_ImgSaveMode);
+		return new CVAOI2CameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, algorithmPreStepParam.MasterId, (int)_ImgSaveMode, _FlipMode);
 	}
 }

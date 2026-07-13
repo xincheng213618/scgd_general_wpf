@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using cvColorVision.Properties;
 
 namespace cvColorVision
 {
@@ -83,16 +84,16 @@ namespace cvColorVision
     }
     public class ProjectSysCfg
     {
-        [CategoryAttribute("expTimeCfg配置"), TypeConverter(typeof(ExpandableObjectConverter)), DisplayNameAttribute("曝光参数")]
+        [LocalizedCategory(nameof(Resources.ExpTimeConfigCategory)), TypeConverter(typeof(ExpandableObjectConverter)), LocalizedDisplayName(nameof(Resources.ExposureParameters))]
         public ExpTimeCfg expTimeCfg { set; get; }
 
-        [CategoryAttribute("cameraCfg配置"), TypeConverter(typeof(ExpandableObjectConverter)), DisplayNameAttribute("相机参数")]
+        [LocalizedCategory(nameof(Resources.CameraConfigCategory)), TypeConverter(typeof(ExpandableObjectConverter)), LocalizedDisplayName(nameof(Resources.CameraParameters))]
         public CameraCfg cameraCfg { set; get; }
 
-        [CategoryAttribute("calibrationLibCfg配置"), DisplayNameAttribute("校正参数")]
+        [LocalizedCategory(nameof(Resources.CalibrationLibraryConfigCategory)), LocalizedDisplayName(nameof(Resources.CalibrationParameters))]
         public List<CalibrationItem> calibrationLibCfg { set; get; }
 
-        [CategoryAttribute("channelCfg配置"), DisplayNameAttribute("通道参数")]
+        [LocalizedCategory(nameof(Resources.ChannelConfigCategory)), LocalizedDisplayName(nameof(Resources.ChannelParameters))]
         public List<ChannelCfg> channelCfg { set; get; }
 
         public ProjectSysCfg()

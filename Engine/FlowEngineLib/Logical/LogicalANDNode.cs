@@ -61,6 +61,11 @@ public class LogicalANDNode : STNodeInHub
 						if (sTNodeOption.DataType == typeof(CVStartCFC) && sTNodeOption.Data != null)
 						{
 							CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
+							if (!cVStartCFC.IsSameFlow(cVStartCFC2))
+							{
+								sTNodeOption.Data = null;
+								continue;
+							}
 							cVStartCFC2.NormalizeStopStatus();
 							if (!cVStartCFC2.IsRunning)
 							{

@@ -55,6 +55,8 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName
 	{
 		get
@@ -174,6 +176,9 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 			break;
 		case AlgorithmOLED_AOIType.亮点检测:
 			operatorCode = "OLED.FindPixelDefectsForQuardImg";
+			break;
+		case AlgorithmOLED_AOIType.亮点检测V2:
+			operatorCode = "OLED.FindPixelDefectsForQuardImgCheck";
 			break;
 		case AlgorithmOLED_AOIType.黑画面检测:
 			operatorCode = "OLED.DetectBrightPixelsForBlackScreen";

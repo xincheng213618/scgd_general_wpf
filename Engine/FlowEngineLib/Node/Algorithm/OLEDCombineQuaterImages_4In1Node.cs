@@ -23,6 +23,8 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 	private string _OutputFileName;
 
 	[STNodeProperty("图像文件1", "图像文件1", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName1
 	{
 		get
@@ -36,6 +38,8 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 	}
 
 	[STNodeProperty("图像文件2", "图像文件2", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName2
 	{
 		get
@@ -49,6 +53,8 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 	}
 
 	[STNodeProperty("图像文件3", "图像文件3", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName3
 	{
 		get
@@ -62,6 +68,8 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 	}
 
 	[STNodeProperty("图像文件4", "图像文件4", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName4
 	{
 		get

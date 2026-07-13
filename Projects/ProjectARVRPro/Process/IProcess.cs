@@ -1,16 +1,24 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
+using System.Windows.Documents;
+using System.Windows.Media;
 
 namespace ProjectARVRPro.Process
 {
     public interface IProcess
     {
-        public bool Execute(IProcessExecutionContext ctx);
+        public Task<bool> Execute(IProcessExecutionContext ctx);
+
+        public Task<bool> ExecuteFailure(IProcessExecutionContext ctx)
+        {
+            return Task.FromResult(false);
+        }
 
         public void Render(IProcessExecutionContext ctx);
 
-        public string GenText(IProcessExecutionContext ctx);
+        public void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize);
 
         /// <summary>
         /// Gets the recipe configuration for this process.
@@ -99,10 +107,39 @@ namespace ProjectARVRPro.Process
             }
         }
 
-        public abstract bool Execute(IProcessExecutionContext ctx);
+        public abstract Task<bool> Execute(IProcessExecutionContext ctx);
+
+        public virtual Task<bool> ExecuteFailure(IProcessExecutionContext ctx) => Task.FromResult(false);
+
         public abstract void Render(IProcessExecutionContext ctx);
-        public abstract string GenText(IProcessExecutionContext ctx);
+        public abstract void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize);
+
+        protected static void AppendPlainText(Paragraph paragraph, string text, Brush foreground, double fontSize)
+        {
+            string[] lines = (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (i > 0)
+                    paragraph.Inlines.Add(new LineBreak());
+
+                paragraph.Inlines.Add(new Run(lines[i])
+                {
+                    Foreground = foreground,
+                    FontSize = fontSize
+                });
+            }
+        }
 
         public virtual IRecipeConfig GetRecipeConfig() => null;
+    }
+
+    /// <summary>
+    /// Base class for processes that use a shared recipe configuration managed by <see cref="ProcessManager"/>.
+    /// </summary>
+    public abstract class ProcessBase<TConfig, TRecipeConfig> : ProcessBase<TConfig>
+        where TConfig : ViewModelBase, new()
+        where TRecipeConfig : IRecipeConfig
+    {
+        public sealed override IRecipeConfig GetRecipeConfig() => ProcessManager.GetInstance().RecipeConfig.GetRequiredService<TRecipeConfig>();
     }
 }

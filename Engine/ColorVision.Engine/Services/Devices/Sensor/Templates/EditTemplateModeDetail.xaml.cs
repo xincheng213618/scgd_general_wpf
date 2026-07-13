@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -6,16 +7,23 @@ using MQTTMessageLib.Sensor;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
 
-    public class EditTemplateSensorConfig : IConfig
+    public class EditTemplateSensorConfig : ViewModelBase, IConfig
     {
         public static EditTemplateSensorConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateSensorConfig>();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        public bool IsCommandPreviewVisible { get => _IsCommandPreviewVisible; set => SetProperty(ref _IsCommandPreviewVisible, value); }
+        private bool _IsCommandPreviewVisible = true;
+
+        public bool UseControlNamesInBracketText { get => _UseControlNamesInBracketText; set => SetProperty(ref _UseControlNamesInBracketText, value); }
+        private bool _UseControlNamesInBracketText;
     }
 
     /// <summary>
@@ -26,17 +34,41 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public EditTemplateSensor()
         {
             InitializeComponent();
+            Loaded += EditTemplateSensor_Loaded;
+            Unloaded += EditTemplateSensor_Unloaded;
         }
 
         public static EditTemplateSensorConfig Config => EditTemplateSensorConfig.Instance;
 
+        private void EditTemplateSensor_Loaded(object sender, RoutedEventArgs e)
+        {
+            Config.PropertyChanged -= Config_PropertyChanged;
+            Config.PropertyChanged += Config_PropertyChanged;
+        }
+
+        private void EditTemplateSensor_Unloaded(object sender, RoutedEventArgs e)
+        {
+            Config.PropertyChanged -= Config_PropertyChanged;
+        }
+
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
-        private void UserControl_Initialized(object sender, System.EventArgs e)
+        private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            string sql = "INSERT IGNORE INTO `t_scgd_sys_dictionary_mod_item` \r\n(`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) \r\nVALUES (506009, 'defaultcommand', 506009, 'defaultcommand', 0, NULL, '\\n,,Ascii,1000/0,0', 50, '2026-01-31 21:17:11', 1, 0, NULL);";
-            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            db.Ado.ExecuteCommand(sql);
+            if (e.PropertyName != nameof(EditTemplateSensorConfig.UseControlNamesInBracketText))
+            {
+                return;
+            }
+
+            if (Param is not SensorParam sensorParam)
+            {
+                return;
+            }
+
+            foreach (var command in sensorParam.SensorCommands)
+            {
+                command.RefreshPreviewProperties();
+            }
         }
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
@@ -48,6 +80,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public void SetParam(ParamModBase param)
         {
             Param = param;
+            if (param is SensorParam sensorParam)
+            {
+                TemplateSensor.EnsureDefaultCommandDefinition(sensorParam.ModMaster.Pid);
+            }
             this.DataContext = Param;
         }
 

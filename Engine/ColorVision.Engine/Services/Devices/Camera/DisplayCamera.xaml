@@ -24,7 +24,7 @@
         </Style>
     </UserControl.Resources>
     <StackPanel>
-        <DockPanel>
+        <DockPanel Margin="0,0,5,0">
             <Grid DockPanel.Dock="Right">
                 <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" Command="{Binding PropertyCommand}" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                 <Image Height="18" Source="{DynamicResource DrawingImageProperty}" />
@@ -196,7 +196,7 @@
                                         </Button.Triggers>
                                     </Button>
                                 </Grid>
-                                <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate" DisplayMemberPath="Key" SelectedIndex="{Binding ExpTimeParamTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
+                                <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate" DisplayMemberPath="DisplayName" SelectedIndex="{Binding ExpTimeParamTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
                             </DockPanel>
                         </StackPanel>
 
@@ -230,7 +230,7 @@
                                                 </Button.Triggers>
                                             </Button>
                                         </Grid>
-                                        <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate1" DisplayMemberPath="Key" SelectedIndex="{Binding ExpTimeParamTemplate1Index}" SelectedValuePath="Value" SelectionChanged="ComboxAutoExpTimeParamTemplate1_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
+                                        <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate1" DisplayMemberPath="DisplayName" SelectedIndex="{Binding ExpTimeParamTemplate1Index}" SelectedValuePath="Value" SelectionChanged="ComboxAutoExpTimeParamTemplate1_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
                                     </DockPanel>
                                     <DockPanel Margin="0,0">
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
@@ -338,49 +338,66 @@
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Flip}" />
                             <ComboBox x:Name="CBFilp2" DisplayMemberPath="Value" SelectedValue="{Binding DisplayConfig.LocalVideoTransform}" SelectedValuePath="Key" SelectionChanged="CBFilp2_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
                         </DockPanel>
+                        <StackPanel>
+                            <Grid Margin="0,0,0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" MinWidth="76" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" MinWidth="76" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" MinWidth="18" Margin="0,0,4,3" VerticalAlignment="Center" Text="X" />
+                                <TextBox Grid.Row="0" Grid.Column="1" MinWidth="76" Margin="0,0,8,3" Text="{Binding DisplayConfig.LocalVideoRoiX}" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" MinWidth="18" Margin="0,0,4,3" VerticalAlignment="Center" Text="Y" />
+                                <TextBox Grid.Row="0" Grid.Column="3" MinWidth="76" Margin="0,0,0,3" Text="{Binding DisplayConfig.LocalVideoRoiY}" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" MinWidth="18" Margin="0,0,4,0" VerticalAlignment="Center" Text="W" />
+                                <TextBox Grid.Row="1" Grid.Column="1" MinWidth="76" Margin="0,0,8,0" Text="{Binding DisplayConfig.LocalVideoRoiWidth}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" MinWidth="18" Margin="0,0,4,0" VerticalAlignment="Center" Text="H" />
+                                <TextBox Grid.Row="1" Grid.Column="3" MinWidth="76" Text="{Binding DisplayConfig.LocalVideoRoiHeight}" />
+                            </Grid>
+                            <UniformGrid Margin="0,0,0,3" Columns="2">
+                                <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="{x:Static properties:Resources.Camera_DefaultRegion}" />
+                                <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="{x:Static properties:Resources.FullFrame}" />
+                            </UniformGrid>
+                        </StackPanel>
                         <StackPanel Margin="0,0,0,3">
-                            <CheckBox Margin="0,0,0,3" Content="十字导引" IsChecked="{Binding DisplayConfig.IsCrossGuideEnabled}" />
+                            <CheckBox Margin="0,0,0,3" Content="{x:Static properties:Resources.Camera_CrossGuide}" IsChecked="{Binding DisplayConfig.IsCrossGuideEnabled}" />
                             <StackPanel Visibility="{Binding DisplayConfig.IsCrossGuideEnabled, Converter={StaticResource bool2VisibilityConverter}}">
                                 <UniformGrid Margin="0,0,0,3" Columns="2">
                                     <DockPanel Margin="0,0,3,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="中心X" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.CenterlX}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterX}" />
                                     </DockPanel>
                                     <DockPanel Margin="3,0,0,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="中心Y" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.CentralY}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterY}" />
                                     </DockPanel>
                                 </UniformGrid>
                                 <UniformGrid Margin="0,0,0,3" Columns="2">
                                     <DockPanel Margin="0,0,3,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="阈值" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Threshold}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideTolerancePx}" />
                                     </DockPanel>
                                     <DockPanel Margin="3,0,0,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="间隔" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Interval}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideIntervalMs}" />
                                     </DockPanel>
                                 </UniformGrid>
                                 <UniformGrid Margin="0,0,0,3" Columns="2">
                                     <DockPanel Margin="0,0,3,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="亮度" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Brightness}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideThresholdRatio}" />
                                     </DockPanel>
                                     <DockPanel Margin="3,0,0,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="覆盖" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Coverage}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideMinCoverageRatio}" />
                                     </DockPanel>
                                 </UniformGrid>
-                                <StackPanel x:Name="LocalVideoCrossGuideRoiEditorHost" Margin="0,0,0,3" />
-                                <TextBlock Text="{Binding DisplayConfig.CrossGuideStatus}" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap" />
                             </StackPanel>
-                        </StackPanel>
-                        <StackPanel Visibility="{Binding CameraVideoControl.Config.IsCalArtculation, Converter={StaticResource bool2VisibilityConverter}}">
-                            <StackPanel x:Name="LocalVideoRoiEditorHost" Margin="0,0,0,3" />
-                            <UniformGrid Margin="0,0,0,3" Columns="2">
-                                <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="默认区域" />
-                                <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="全幅" />
-                            </UniformGrid>
                         </StackPanel>
                         <DockPanel Margin="0,0,0,3">
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Gain}" />

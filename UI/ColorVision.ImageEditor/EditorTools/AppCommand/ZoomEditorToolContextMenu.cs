@@ -11,7 +11,7 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 {
 
 
-    public record class ZoomEditorToolContextMenu(ImageViewConfig config, DrawEditorContext drawContext) : IIEditorToolContextMenu
+    public record class ZoomEditorToolContextMenu(ImageViewConfig config, DrawEditorContext drawContext) : IIEditorToolContextMenu, ICopilotBusinessContextSource
     {
         public List<MenuItemMetadata> GetContextMenuItems()
         {
@@ -32,20 +32,10 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
 
         private void AskCopilotAboutImage()
         {
-            PublishCopilotContext();
-
-            var contextItem = CopilotBusinessContextBuilder.BuildImageContextItem(BuildImageSnapshot());
-            var result = CopilotPromptRequestHelper.Dispatch(new CopilotPromptRequestOptions
-            {
-                Mode = CopilotPromptMode.Diagnose,
-                Prompt = "请基于已附加的图像元数据、选区/ROI 和标注摘要，分析当前图像可能需要关注的质量问题、测量风险和下一步检查建议。注意：当前上下文不包含图像像素，只能基于结构化信息判断。",
-                StartNewConversation = true,
-                SendNow = true,
-                AttachContextSnapshot = true,
-                ContextAttachmentTitle = contextItem.Title,
-                ContextAttachmentSourceId = $"image-editor:{drawContext.Id:N}",
-                ContextItems = new[] { contextItem },
-            });
+            var bundle = CaptureCopilotContext();
+            var result = CopilotBusinessContextCoordinator.DispatchDiagnosis(
+                bundle,
+                "请基于已附加的图像元数据、选区/ROI 和标注摘要，分析当前图像可能需要关注的质量问题、测量风险和下一步检查建议。注意：当前上下文不包含图像像素，只能基于结构化信息判断。");
 
             if (!result.WasSent)
             {
@@ -58,19 +48,18 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
         {
             try
             {
-                var contextItem = CopilotBusinessContextBuilder.BuildImageContextItem(BuildImageSnapshot());
-                CopilotLiveContextRegistry.Publish(new CopilotLiveContext
-                {
-                    SourceId = $"image-editor:{drawContext.Id:N}",
-                    Title = contextItem.Title,
-                    Summary = contextItem.Summary,
-                    AttachmentTitle = contextItem.Title,
-                    SnapshotItems = new[] { contextItem },
-                });
+                CopilotBusinessContextCoordinator.Publish(CaptureCopilotContext());
             }
             catch
             {
             }
+        }
+
+        public CopilotBusinessContextBundle CaptureCopilotContext()
+        {
+            var snapshot = BuildImageSnapshot();
+            var contextItem = CopilotBusinessContextBuilder.BuildImageContextItem(snapshot);
+            return CopilotBusinessContextBundle.FromItem(snapshot.SourceId, contextItem);
         }
 
         private CopilotImageContextSnapshot BuildImageSnapshot()

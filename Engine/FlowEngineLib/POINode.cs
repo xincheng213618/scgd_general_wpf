@@ -22,6 +22,7 @@ public class POINode : CVBaseServerNode
 	private STNodeEditText<string> m_ctrl_outtemp;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiTemplateEditor))]
 	public string TempName
 	{
 		get
@@ -35,6 +36,7 @@ public class POINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("过滤模板", "过滤模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiFilterTemplateEditor))]
 	public string FilterTemplateName
 	{
 		get
@@ -49,6 +51,7 @@ public class POINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("修正模板", "修正模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiReviseTemplateEditor))]
 	public string ReviseTemplateName
 	{
 		get
@@ -63,6 +66,7 @@ public class POINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("文件输出模板", "文件输出模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiOutputTemplateEditor))]
 	public string OutputTemplateName
 	{
 		get
@@ -77,6 +81,8 @@ public class POINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName
 	{
 		get

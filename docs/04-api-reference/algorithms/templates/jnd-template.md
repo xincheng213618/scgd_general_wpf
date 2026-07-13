@@ -52,12 +52,6 @@
 | `v_jnd` | 纵向 JND 结果，来自算法服务回写的 `POIResultDataJND`。 |
 | POI 点位 | JND 不是自己定义点位，而是消费 `TemplatePoi`。点位变更会直接影响 JND 输出。 |
 
-## 项目维护边界
-
-`ProjectShiyuan` 当前会使用 JND/POI 结果导出和 JND 验证。维护时不要把“JND CSV 已生成”等同于“产品 PASS”：项目侧还可能继续读取 `Compliance_Math_JND`、检查 `Validate` 字段、复制图像或生成伪彩图。
-
-相关项目页：[ProjectShiyuan](../../projects/project-shiyuan.md)。
-
 ## 结果展示与导出
 
 展示列包括：
@@ -78,7 +72,7 @@
 | 执行时报 POI 问题 | `TemplatePoi.Params` 是否加载，`TemplatePoiSelectedIndex` 是否有效。 |
 | JND 结果为空 | 主结果类型是否是 `Compliance_Math_JND` 或 `JND_CalVas`，`PoiPointResultDao` 是否能按 `Pid` 查到点位。 |
 | 表格有点但 JND 值为空 | `PoiPointResultModel.Value` 是否能反序列化为 `POIResultDataJND`。 |
-| 项目结果 OK/NG 不一致 | 回看项目包对 JND 的二次验证，不要只看算法页结果。 |
+| 业务结果 OK/NG 不一致 | 回看调用方对 JND 的二次验证，不要只看算法页结果。 |
 | 导出路径异常 | 检查 `SideSave(...)` 的 `selectedPath` 语义。 |
 
 ## 检查清单

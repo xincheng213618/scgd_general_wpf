@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8602,CS8603
+#pragma warning disable CS8625
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
@@ -32,7 +33,21 @@ namespace ProjectLUX.Services
 
         public string Handle(NetworkStream stream, string request)
         {
+            log.Info(request);
             SocketControl.Current.Stream = stream;
+            if (ProjectWindowInstance.WindowInstance == null)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectWindowInstance.WindowInstance = new LUXWindow
+                    {
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner
+                    };
+                    ProjectWindowInstance.WindowInstance.Closed += (s, e) => ProjectWindowInstance.WindowInstance = null;
+                    ProjectWindowInstance.WindowInstance.Show();
+                });
+            }
+
             string payload = request?.Trim().TrimEnd(';') ?? string.Empty;
             int commaIndex = payload.IndexOf(',');
             string code = commaIndex >= 0 ? payload[..commaIndex] : payload;
@@ -184,28 +199,32 @@ namespace ProjectLUX.Services
                         };
                         return null;
                     }
-                    
-                    
+                    log.Info(lastTwo);
+
                     if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR")
                     {
                         if (ProjectWindowInstance.WindowInstance == null) return string.Join(",", strings) + ";";
 
                         ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings) + ";";
-                        if (lastTwo == "")
+                        if (lastTwo == "00")
                         {
                             log.Info("拍图窗口握手");
-                            ProjectWindowInstance.WindowInstance.InitTest(sn);
+                            // 多工位循环时，A站握手可能发生在上一组仍在测；这里只回ACK，不重置结果。
+                            //ProjectWindowInstance.WindowInstance.InitTest(sn);
+                            return string.Join(",", strings) + ";";
                         }
                         else if (lastTwo == "02")
                         {
                             log.Info("oc测试 ");
                             strings.RemoveAt(2);
                             ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings);
+                            ProjectWindowInstance.WindowInstance.Stream = stream;
                             ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
                         else
                         {
+                            ProjectWindowInstance.WindowInstance.Stream = stream;
                             ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
@@ -219,10 +238,12 @@ namespace ProjectLUX.Services
                         {
 
                             log.Info("拍图窗口握手");
-                            ProjectWindowInstance.WindowInstance.InitTest(sn);
+                            // 多工位循环时，A站握手可能发生在上一组仍在测；这里只回ACK，不重置结果。
+                            //ProjectWindowInstance.WindowInstance.InitTest(sn);
                         }
                         else
                         {
+                            ProjectWindowInstance.WindowInstance.Stream = stream;
                             ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }

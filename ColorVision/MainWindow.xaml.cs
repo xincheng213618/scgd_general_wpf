@@ -36,6 +36,8 @@ namespace ColorVision
         /// 
     public partial class MainWindow : Window
     {
+        private const double RightMenuGlyphFontSize = 15;
+
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public DockViewManager DockViewManager => DockViewManager.GetInstance();
         public static MainWindowConfig Config => MainWindowConfig.Instance;
@@ -312,10 +314,35 @@ namespace ColorVision
                     Padding = new Thickness(0),
                     Margin = new Thickness(0, 0, 5, 0)
                 };
-                button.Content = item.Icon;
+                button.Content = NormalizeRightMenuIcon(item.Icon);
                 button.Command = item.Command;
                 RightMenuItemPanel.Children.Add(button);
             }
+        }
+
+        private static object? NormalizeRightMenuIcon(object? icon)
+        {
+            switch (icon)
+            {
+                case TextBlock textBlock:
+                    textBlock.FontSize = RightMenuGlyphFontSize;
+                    textBlock.HorizontalAlignment = HorizontalAlignment.Center;
+                    textBlock.VerticalAlignment = VerticalAlignment.Center;
+                    textBlock.TextAlignment = TextAlignment.Center;
+                    textBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                    break;
+                case Image image:
+                    image.Width = RightMenuGlyphFontSize;
+                    image.Height = RightMenuGlyphFontSize;
+                    image.Stretch = Stretch.Uniform;
+                    break;
+                case Viewbox viewbox:
+                    viewbox.Width = RightMenuGlyphFontSize;
+                    viewbox.Height = RightMenuGlyphFontSize;
+                    break;
+            }
+
+            return icon;
         }
 
 

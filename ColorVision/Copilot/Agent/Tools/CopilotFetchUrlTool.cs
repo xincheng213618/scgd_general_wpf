@@ -15,12 +15,11 @@ namespace ColorVision.Copilot
 
         public string Description => "Fetch the title, description, and readable body text for web pages mentioned by the user.";
 
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("One or more complete http/https URLs to fetch, separated by spaces.", required: true);
+
         public bool CanHandle(CopilotAgentRequest request)
         {
-            if (request == null || request.Mode == CopilotAgentMode.Chat)
-                return false;
-
-            return CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0;
+            return CopilotToolIntentPolicy.NeedsUrlFetch(request);
         }
 
         public async Task<CopilotToolResult> ExecuteAsync(
@@ -42,12 +41,14 @@ namespace ColorVision.Copilot
                     Success = false,
                     Summary = "No fetchable web page URL was detected.",
                     ErrorMessage = "The current request has no processable web page URL; the planner can provide a complete URL in input.query.",
+                    FailureKind = CopilotToolFailureKind.Validation,
                 };
             }
 
             var builder = new StringBuilder();
             var successCount = 0;
             var errors = new List<string>();
+            var failureKinds = new List<CopilotToolFailureKind>();
 
             foreach (var url in urls)
             {
@@ -69,6 +70,7 @@ namespace ColorVision.Copilot
                     builder.AppendLine(CopilotWebPageToolSupport.BuildFailedWebPageContextBlock(url, ex.Message));
                     builder.AppendLine();
                     errors.Add($"{url}: {ex.Message}");
+                    failureKinds.Add(CopilotToolFailureClassifier.Classify(ex));
                 }
             }
 
@@ -81,6 +83,9 @@ namespace ColorVision.Copilot
                     : $"Failed to fetch any web pages from {urls.Length} URLs.",
                 Content = builder.ToString().TrimEnd(),
                 ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
+                FailureKind = successCount == 0 && failureKinds.Count > 0 && failureKinds.All(kind => kind == CopilotToolFailureKind.Transient)
+                    ? CopilotToolFailureKind.Transient
+                    : successCount == 0 ? CopilotToolFailureKind.Unspecified : CopilotToolFailureKind.None,
             };
         }
 

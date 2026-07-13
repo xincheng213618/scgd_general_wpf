@@ -3,24 +3,16 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 
 namespace ColorVision.Copilot
 {
     public sealed class CopilotProfileConfig : ViewModelBase
     {
-        public const int DefaultMaxTokens = 2048;
-        public const int DefaultMaxToolRounds = 6;
+        public const int DefaultMaxTokens = 8192;
+        public const int DefaultMaxToolRounds = 12;
         public const double DefaultTemperature = 0.2;
 
-        public const string DefaultSystemPrompt = "You are ColorVision Copilot, the general-purpose assistant built into ColorVision. You can help with general knowledge, writing, programming, analysis, translation, and ColorVision usage. For ColorVision software, project code, devices, flows, algorithms, plugins, WPF/C# engineering, or app-provided context, prioritize the provided ColorVision context. Rules: 1. Treat local files, web pages, logs, devices, or execution results as known facts only when the app explicitly provides them. 2. If required context is missing, clearly say what is needed. 3. For device control, file deletion, configuration mutation, or flow execution, explain the risk and impact first. 4. Answer general questions normally, and use ColorVision context for ColorVision-related questions. 5. Do not claim that you performed an operation unless the app context explicitly shows that it happened.";
-
-        private static readonly string[] LegacyDefaultSystemPromptMarkers =
-        {
-            "\u4f60\u662f ColorVision Copilot",
-            "ColorVision \u8f6f\u4ef6\u5185\u7f6e",
-            "\u4e0d\u8981\u58f0\u79f0\u81ea\u5df1\u5df2\u7ecf\u6267\u884c",
-        };
+        public const string DefaultSystemPrompt = "You are ColorVision Copilot, the general-purpose assistant built into ColorVision. You can help with general knowledge, writing, programming, analysis, translation, and ColorVision usage. For ColorVision software, project code, devices, flows, algorithms, plugins, WPF/C# engineering, or app-provided context, prioritize the ColorVision context that the app provides. Rules: 1. Treat local files, web pages, logs, devices, or execution results as known facts only when the app explicitly provides them. 2. Use all available context and tool observations first; if ColorVision-specific context is incomplete, answer only the parts that are supported. Do not guess or invent project-specific implementation details, and do not create a visible section about missing context or say that context was not found. 3. Do not ask the user to provide files, source code, configuration, or documentation unless they explicitly ask what to attach next. 4. Answer general questions normally even when no local context is available, while keeping project-specific claims separate from general principles. 5. For device control, file deletion, configuration mutation, or flow execution, explain the risk and impact first. 6. Do not claim that you performed an operation unless the app context explicitly shows that it happened.";
 
         public string Id
         {
@@ -37,8 +29,10 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _vendorType, value))
                 {
+                    ReasoningMode = CopilotReasoningCapabilities.Normalize(value, ReasoningMode);
                     OnPropertyChanged(nameof(VendorLabel));
                     OnPropertyChanged(nameof(SecondaryLabel));
+                    OnPropertyChanged(nameof(ReasoningLabel));
                 }
             }
         }
@@ -125,26 +119,27 @@ namespace ColorVision.Copilot
         }
         private string _model = "deepseek-v4-pro";
 
-        [DisplayName("System prompt")]
-        [Description("Defines the assistant's default behavior")]
-        public string SystemPrompt
-        {
-            get => _systemPrompt;
-            set => SetProperty(ref _systemPrompt, value?.Trim() ?? string.Empty);
-        }
-        private string _systemPrompt = DefaultSystemPrompt;
+        [JsonIgnore]
+        [Browsable(false)]
+        public string SystemPrompt => EffectiveSystemPrompt;
 
-        [DisplayName("Max output tokens")]
-        [Description("Maximum tokens generated in one response")]
+        [JsonIgnore]
+        [Browsable(false)]
+        public string EffectiveSystemPrompt => string.IsNullOrWhiteSpace(_systemPromptOverride) ? DefaultSystemPrompt : _systemPromptOverride;
+
+        private string _systemPromptOverride = string.Empty;
+
+        [JsonIgnore]
+        [Browsable(false)]
         public int MaxTokens
         {
             get => _maxTokens;
-            set => SetProperty(ref _maxTokens, Math.Clamp(value, 128, 8192));
+            set => SetProperty(ref _maxTokens, Math.Clamp(value, 32, DefaultMaxTokens));
         }
         private int _maxTokens = DefaultMaxTokens;
 
-        [DisplayName("Temperature")]
-        [Description("Lower values are more stable; higher values are more creative")]
+        [JsonIgnore]
+        [Browsable(false)]
         public double Temperature
         {
             get => _temperature;
@@ -152,8 +147,22 @@ namespace ColorVision.Copilot
         }
         private double _temperature = DefaultTemperature;
 
-        [DisplayName("Max tool rounds")]
-        [Description("Maximum tool-call rounds allowed for one Agent request")]
+        [DisplayName("Reasoning")]
+        [Description("Provider-aware thinking mode or reasoning effort")]
+        public CopilotReasoningMode ReasoningMode
+        {
+            get => _reasoningMode;
+            set
+            {
+                var normalized = CopilotReasoningCapabilities.Normalize(VendorType, value);
+                if (SetProperty(ref _reasoningMode, normalized))
+                    OnPropertyChanged(nameof(ReasoningLabel));
+            }
+        }
+        private CopilotReasoningMode _reasoningMode = CopilotReasoningMode.Default;
+
+        [JsonIgnore]
+        [Browsable(false)]
         public int MaxToolRounds
         {
             get => _maxToolRounds;
@@ -187,6 +196,9 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string ProviderLabel => ProviderType == CopilotProviderType.AnthropicCompatible ? "Anthropic Compatible" : "OpenAI Compatible";
+
+        [JsonIgnore]
+        public string ReasoningLabel => CopilotReasoningCapabilities.GetLabel(CopilotReasoningCapabilities.GetEffectiveMode(this));
 
         [JsonIgnore]
         public string DisplayLabel
@@ -234,9 +246,10 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
-            if (string.IsNullOrWhiteSpace(SystemPrompt) || IsLegacyDefaultSystemPrompt(SystemPrompt))
+            var normalizedReasoningMode = CopilotReasoningCapabilities.Normalize(VendorType, ReasoningMode);
+            if (ReasoningMode != normalizedReasoningMode)
             {
-                SystemPrompt = DefaultSystemPrompt;
+                ReasoningMode = normalizedReasoningMode;
                 changed = true;
             }
 
@@ -261,7 +274,7 @@ namespace ColorVision.Copilot
 
         public CopilotProfileConfig Clone()
         {
-            return new CopilotProfileConfig
+            var clone = new CopilotProfileConfig
             {
                 Id = Id,
                 VendorType = VendorType,
@@ -270,11 +283,16 @@ namespace ColorVision.Copilot
                 ApiKey = ApiKey,
                 BaseUrl = BaseUrl,
                 Model = Model,
-                SystemPrompt = SystemPrompt,
                 MaxTokens = MaxTokens,
                 MaxToolRounds = MaxToolRounds,
                 Temperature = Temperature,
+                ReasoningMode = ReasoningMode,
             };
+
+            if (!string.IsNullOrWhiteSpace(_systemPromptOverride))
+                clone.UseSystemPromptOverride(_systemPromptOverride);
+
+            return clone;
         }
 
         public static CopilotProfileConfig CreateDefault()
@@ -286,21 +304,25 @@ namespace ColorVision.Copilot
                 ProviderType = CopilotProviderType.AnthropicCompatible,
                 BaseUrl = "https://api.deepseek.com/anthropic",
                 Model = "deepseek-v4-pro",
-                SystemPrompt = DefaultSystemPrompt,
-                MaxTokens = DefaultMaxTokens,
-                MaxToolRounds = DefaultMaxToolRounds,
-                Temperature = DefaultTemperature,
             };
+        }
+
+        public void UseSystemPromptOverride(string systemPrompt)
+        {
+            var normalized = NormalizeText(systemPrompt);
+            if (string.Equals(_systemPromptOverride, normalized, StringComparison.Ordinal))
+                return;
+
+            _systemPromptOverride = normalized;
+            OnEffectiveSystemPromptChanged();
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
 
-        private static bool IsLegacyDefaultSystemPrompt(string? value)
+        private void OnEffectiveSystemPromptChanged()
         {
-            if (string.IsNullOrWhiteSpace(value))
-                return false;
-
-            return LegacyDefaultSystemPromptMarkers.All(marker => value.Contains(marker, StringComparison.Ordinal));
+            OnPropertyChanged(nameof(EffectiveSystemPrompt));
+            OnPropertyChanged(nameof(SystemPrompt));
         }
 
         private void OnConfigurationStateChanged()

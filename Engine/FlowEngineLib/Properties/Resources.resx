@@ -84,9 +84,6 @@
     <value>03_3 校正</value>
   </data>
 
-  <data name="03_3 第三方算法" xml:space="preserve">
-    <value>03_3 第三方算法</value>
-  </data>
 
   <data name="03_4 KB" xml:space="preserve">
     <value>03_4 KB</value>
@@ -140,6 +137,10 @@
     <value>循环下一节点</value>
   </data>
 
+  <data name="切图" xml:space="preserve">
+    <value>切图</value>
+  </data>
+
   <data name="EndNode" xml:space="preserve">
     <value>EndNode</value>
   </data>
@@ -180,9 +181,6 @@
     <value>灰度255</value>
   </data>
 
-  <data name="状态触发" xml:space="preserve">
-    <value>状态触发</value>
-  </data>
 
   <data name="物理设备控制" xml:space="preserve">
     <value>物理设备控制</value>
@@ -276,9 +274,6 @@
     <value>图像名称</value>
   </data>
 
-  <data name="图像水平翻转" xml:space="preserve">
-    <value>图像水平翻转</value>
-  </data>
 
   <data name="ImageCompound" xml:space="preserve">
     <value>图像拼接</value>
@@ -976,9 +971,6 @@
     <value>参数模板</value>
   </data>
 
-  <data name="参数模板ID" xml:space="preserve">
-    <value>参数模板ID</value>
-  </data>
 
   <data name="过滤模板" xml:space="preserve">
     <value>过滤模板</value>
@@ -1184,9 +1176,6 @@
     <value>手动确认</value>
   </data>
 
-  <data name="最小超时" xml:space="preserve">
-    <value>最小超时</value>
-  </data>
 
   <data name="最大超时" xml:space="preserve">
     <value>最大超时</value>
@@ -1231,4 +1220,12 @@
   <data name="Port" xml:space="preserve">
     <value>端口</value>
   </data>
+  <data name="允许失败继续" xml:space="preserve"><value>允许失败继续</value></data>
+  <data name="服务返回Fail时按正常流程继续" xml:space="preserve"><value>服务返回 Fail 时按正常流程继续</value></data>
+  <data name="参数" xml:space="preserve"><value>参数</value></data>
+  <data name="上电" xml:space="preserve"><value>上电</value></data>
+  <data name="下电" xml:space="preserve"><value>下电</value></data>
+  <data name="电压电流" xml:space="preserve"><value>电压电流</value></data>
+  <data name="屏幕缺陷检测" xml:space="preserve"><value>屏幕缺陷检测</value></data>
+  <data name="亮点检测V2" xml:space="preserve"><value>亮点检测 V2</value></data>
 </root>

@@ -9,6 +9,11 @@ namespace FlowEngineLib.Base;
 
 public class CVCommonNode : STNode
 {
+	public const int StandardNodeWidth = 160;
+	public const int StandardNodeMinHeight = 80;
+	protected const int StandardNodeContentPadding = 5;
+	protected const int StandardNodeContentWidth = StandardNodeWidth - StandardNodeContentPadding * 2;
+
 	protected string m_nodeName;
 
 	protected string m_nodeType;
@@ -47,7 +52,7 @@ public class CVCommonNode : STNode
 		}
 	}
 
-	[STNodeProperty("设备代码", "设备代码", false, false)]
+	[STNodeProperty("设备代码", "设备代码", false, true)]
 	public string DeviceCode
 	{
 		get
@@ -111,6 +116,30 @@ public class CVCommonNode : STNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
+	}
+
+	protected override void OnCreated()
+	{
+		base.OnCreated();
+		ApplyCompactNodeDisplay();
+	}
+
+	protected override void OnEditorLoadCompleted()
+	{
+		base.OnEditorLoadCompleted();
+		ApplyCompactNodeDisplay();
+	}
+
+	public virtual void ApplyCompactNodeDisplay()
+	{
+		ShowControls = false;
+		SetAutoSize(true);
+	}
+
+	protected override Size GetDefaultNodeSize(Graphics g)
+	{
+		Size size = base.GetDefaultNodeSize(g);
+		return new Size(StandardNodeWidth, Math.Max(StandardNodeMinHeight, size.Height));
 	}
 
 	protected STNodeEditText<T> CreateControl<T>(Type clsType, Rectangle rect, string text, T value)
@@ -178,6 +207,6 @@ public class CVCommonNode : STNode
 
 	public string ToShortString()
 	{
-		return $"{base.Title}/{DeviceCode}/{NodeID}/{ZIndex}";
+		return base.Title;
 	}
 }

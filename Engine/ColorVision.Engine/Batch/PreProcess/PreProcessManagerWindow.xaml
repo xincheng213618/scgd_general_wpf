@@ -4,122 +4,218 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Batch"
-        mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:PreProcessManager}"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        Title="{x:Static properties:Resources.Flow_PreProcess_Title}" Height="720" Width="1120" MinHeight="520" MinWidth="900" Background="{DynamicResource GlobalBackground}">
+        Title="{x:Static properties:Resources.Flow_PreProcess_Title}"
+        Width="1120"
+        Height="680"
+        MinWidth="940"
+        MinHeight="540"
+        Background="{DynamicResource GlobalBackground}"
+        d:DataContext="{d:DesignInstance local:PreProcessManager}"
+        mc:Ignorable="d">
     <Window.Resources>
         <local:PreTypeNameConverter x:Key="TypeNameConverter"/>
         <local:PreProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
+
+        <Style x:Key="PreProcessTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TextBox}">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{DynamicResource ControlCornerRadius}"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
-    <Grid Margin="10">
+
+    <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12,10">
-            <DockPanel LastChildFill="True">
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding LastSaveStatus}" VerticalAlignment="Center" Foreground="Gray" ToolTip="{Binding PersistPath}"/>
-                    <Button Content="{x:Static properties:Resources.Flow_PreProcess_SaveNow}" Padding="12,4" Margin="12,0,0,0" Command="{Binding SaveCommand}"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_Title}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding ProcessCount, StringFormat={x:Static properties:Resources.Flow_PreProcess_ProcessorCountFormat}}" Margin="16,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding EnabledCount, StringFormat={x:Static properties:Resources.Flow_PreProcess_EnabledCountFormat}}" Margin="12,0,0,0" Foreground="Gray" VerticalAlignment="Center"/>
-                </StackPanel>
-            </DockPanel>
-        </Border>
-
-        <Grid Grid.Row="1" Margin="0,10,0,10">
+        <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="360"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="460" MinWidth="320"/>
+                <ColumnDefinition Width="410" MinWidth="340"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*" MinWidth="420"/>
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+            <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-            <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
-                <Button Content="{x:Static properties:Resources.MoveUp}" Padding="12,4" Command="{Binding MoveUpCommand}"/>
-                <Button Content="{x:Static properties:Resources.MoveDown}" Padding="12,4" Margin="8,0,0,0" Command="{Binding MoveDownCommand}"/>
-            </StackPanel>
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_Actions}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                        <Button x:Name="AddProcessButton"
+                                Content="{x:Static properties:Resources.Add}"
+                                DockPanel.Dock="Right"
+                                MinWidth="76"
+                                Padding="14,5"
+                                Background="{DynamicResource PrimaryBrush}"
+                                BorderBrush="{DynamicResource PrimaryBrush}"
+                                Foreground="White"
+                                Click="AddProcessButton_Click">
+                            <Button.ContextMenu>
+                                <ContextMenu ItemsSource="{Binding PlacementTarget.DataContext.AvailableProcessTypes, RelativeSource={RelativeSource Self}}">
+                                    <ContextMenu.ItemContainerStyle>
+                                        <Style TargetType="{x:Type MenuItem}">
+                                            <Setter Property="Header" Value="{Binding DisplayName}"/>
+                                            <Setter Property="ToolTip" Value="{Binding Description}"/>
+                                            <Setter Property="Command" Value="{Binding PlacementTarget.DataContext.AddProcessCommand, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                                            <Setter Property="CommandParameter" Value="{Binding}"/>
+                                        </Style>
+                                    </ContextMenu.ItemContainerStyle>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </DockPanel>
 
-            <ListView Grid.Row="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" x:Name="lvProcesses" SelectionChanged="ListView_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Header="{x:Static properties:Resources.SerialNumber1}" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Converter={StaticResource TypeNameConverter}, ConverterParameter=Index}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.Status}" Width="64">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Enabled}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.Flow_PreProcess_Processor}" Width="150">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 
-                                              ToolTip="{Binding Converter={StaticResource ProcessTooltipConverter}}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.Flow_PreProcess_AppliedTemplates}" Width="130">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Templates}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Templates}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.Description}" Width="260">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Description}" TextTrimming="CharacterEllipsis"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-            </Grid>
-
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
-
-            <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="12,8">
-                    <TextBlock Text="{x:Static properties:Resources.Property}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
-                </Border>
-
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
-                    <StackPanel x:Name="PropertyPanel">
-                        <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_SelectProcessorToViewConfig}" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"
-                                   x:Name="PlaceholderText"/>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,12">
+                        <Button Content="{x:Static properties:Resources.MoveUp}" MinWidth="70" Padding="12,5" Command="{Binding MoveUpCommand}"/>
+                        <Button Content="{x:Static properties:Resources.MoveDown}" MinWidth="70" Padding="12,5" Margin="8,0,0,0" Command="{Binding MoveDownCommand}"/>
+                        <Button Content="{x:Static properties:Resources.Delete}" MinWidth="70" Padding="12,5" Margin="8,0,0,0" Command="{Binding RemoveProcessCommand}"/>
                     </StackPanel>
-                </ScrollViewer>
-            </Grid>
+
+                    <ListBox Grid.Row="2"
+                             x:Name="lvProcesses"
+                             ItemsSource="{Binding Processes}"
+                             SelectedItem="{Binding SelectedProcess}"
+                             AlternationCount="10000"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             SelectionChanged="ListView_SelectionChanged"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListBoxItem}">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,0,0,8"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                            <ContentPresenter/>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="12" ToolTip="{Binding Converter={StaticResource ProcessTooltipConverter}}">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="32"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={StaticResource TypeNameConverter}, ConverterParameter=Index}"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.58"
+                                                   FontWeight="SemiBold"
+                                                   VerticalAlignment="Top"/>
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Description}"
+                                                       Margin="0,5,0,0"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Opacity="0.62"
+                                                       TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxHeight="36"/>
+                                            <TextBlock Text="{Binding TemplateSummary}"
+                                                       Margin="0,7,0,0"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Opacity="0.58"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+
+                                        <CheckBox Grid.Column="2"
+                                                  Content="{x:Static properties:Resources.Flow_PreProcess_EnabledStatus}"
+                                                  IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  VerticalAlignment="Top"
+                                                  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+            <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="14,10">
+                        <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_ActionConfig}" FontWeight="SemiBold" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12">
+                        <StackPanel x:Name="PropertyPanel">
+                            <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_SelectAction}" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.58" HorizontalAlignment="Center" Margin="0,32,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
             </Border>
         </Grid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="{x:Static properties:Resources.Close}" Padding="18,5" Click="CloseButton_Click"/>
-        </StackPanel>
+        <Grid Grid.Row="1" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="{Binding LastSaveStatus}" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.58" ToolTip="{Binding PersistPath}"/>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{x:Static properties:Resources.Flow_PreProcess_SaveNow}" MinWidth="86" Padding="14,5" Command="{Binding SaveCommand}"/>
+                <Button Content="{x:Static properties:Resources.Close}" MinWidth="90" Padding="18,5" Margin="8,0,0,0" Click="CloseButton_Click"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

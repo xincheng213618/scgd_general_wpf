@@ -1,6 +1,7 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor.Realtime;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +32,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         double ColumnCoverage,
         double Threshold,
         double TolerancePx,
+        double RotationZDeg,
+        double XRotationDeg,
+        double YRotationDeg,
+        bool XAxisFound,
+        Point XAxisStart,
+        Point XAxisEnd,
+        bool YAxisFound,
+        Point YAxisStart,
+        Point YAxisEnd,
         string Message)
     {
         public bool IsPass => Found && Math.Abs(OffsetX) <= TolerancePx && Math.Abs(OffsetY) <= TolerancePx;
@@ -220,18 +230,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
     internal static class VideoCrossGuideDetector
     {
+        private const int MaxAngleSamples = 30000;
+
+        private readonly record struct BrightPixel(double X, double Y, double Weight);
+
+        private readonly record struct AngleEstimate(bool Found, double AngleDeg, double Score, double StartProjection, double EndProjection);
+
+        private readonly record struct AxisSegment(bool Found, Point Start, Point End);
+
         public static VideoCrossGuideResult ProcessFrame(HImage frame, VideoCrossGuideRequest request, int frameWidth, int frameHeight, RoiRect sourceRoi)
         {
             Rect displayRoi = TransformRoiToDisplay(sourceRoi, frameWidth, frameHeight, request.Transform);
 
             if (frame.pData == IntPtr.Zero || frameWidth <= 0 || frameHeight <= 0 || frame.cols <= 0 || frame.rows <= 0 || frame.channels <= 0 || frame.depth <= 0)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, "无有效视频帧");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_NoValidFrame);
 
             if (sourceRoi.Width <= 2 || sourceRoi.Height <= 2)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, "ROI 无效");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_InvalidRoi);
 
             if (frame.depth != 8 && frame.depth != 16)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, $"暂不支持 {frame.depth}bit 视频帧");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, string.Format(Properties.Resources.VideoCrossGuide_UnsupportedBitDepth, frame.depth));
 
             double thresholdRatio = Clamp(request.ThresholdRatio, 0.05, 0.95);
             double minCoverageRatio = Clamp(request.MinCoverageRatio, 0.01, 0.95);
@@ -239,28 +257,40 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             RoiRect localRoi = new(0, 0, frame.cols, frame.rows);
             double maxGray = FindMaxGray(frame, localRoi);
             if (maxGray < 8)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, "亮度过低，未找到十字");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_CrossNotFoundLowBrightness);
 
             double threshold = Math.Max(4, maxGray * thresholdRatio);
             double[] rowSum = new double[localRoi.Height];
             double[] columnSum = new double[localRoi.Width];
             int[] rowHits = new int[localRoi.Height];
             int[] columnHits = new int[localRoi.Width];
+            List<BrightPixel> brightPixels = new(Math.Min(MaxAngleSamples, Math.Max(0, localRoi.Width * localRoi.Height / 64)));
 
-            Accumulate(frame, localRoi, threshold, rowSum, columnSum, rowHits, columnHits);
+            Accumulate(frame, localRoi, threshold, rowSum, columnSum, rowHits, columnHits, brightPixels);
 
             int rowPeak = IndexOfMax(rowSum);
             int columnPeak = IndexOfMax(columnSum);
             if (rowPeak < 0 || columnPeak < 0 || rowSum[rowPeak] <= 0 || columnSum[columnPeak] <= 0)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, "未找到足够亮的十字线");
+                return NotFound(frameWidth, frameHeight, request, displayRoi, Properties.Resources.VideoCrossGuide_BrightCrossLinesNotFound);
 
             double rowCoverage = (double)rowHits[rowPeak] / localRoi.Width;
             double columnCoverage = (double)columnHits[columnPeak] / localRoi.Height;
-            if (rowCoverage < minCoverageRatio || columnCoverage < minCoverageRatio)
-                return NotFound(frameWidth, frameHeight, request, displayRoi, $"亮线覆盖不足 行:{rowCoverage:P0} 列:{columnCoverage:P0}");
 
             double centerY = sourceRoi.Y + WeightedPeakCenter(rowSum, rowPeak);
             double centerX = sourceRoi.X + WeightedPeakCenter(columnSum, columnPeak);
+            double localCenterX = centerX - sourceRoi.X;
+            double localCenterY = centerY - sourceRoi.Y;
+            AngleEstimate horizontalAngle = EstimateLineAngle(brightPixels, localCenterX, localCenterY, 0);
+            AngleEstimate verticalAngle = EstimateLineAngle(brightPixels, localCenterX, localCenterY, 90);
+            if (!horizontalAngle.Found && !verticalAngle.Found && rowCoverage < minCoverageRatio && columnCoverage < minCoverageRatio)
+                return NotFound(frameWidth, frameHeight, request, displayRoi, string.Format(Properties.Resources.VideoCrossGuide_InsufficientCoverage, rowCoverage, columnCoverage));
+
+            double rotationZDeg = ResolveRotationZ(horizontalAngle, verticalAngle);
+            double displayRotationZDeg = TransformAngleToDisplay(rotationZDeg, request.Transform);
+            double displayXRotationDeg = TransformAngleToDisplay(horizontalAngle.Found ? NormalizeLineAngle(horizontalAngle.AngleDeg) : 0, request.Transform);
+            double displayYRotationDeg = TransformAngleToDisplay(verticalAngle.Found ? NormalizeLineAngle(verticalAngle.AngleDeg - 90) : 0, request.Transform);
+            AxisSegment xAxisSegment = CreateDisplayAxisSegment(horizontalAngle, localCenterX, localCenterY, sourceRoi, frameWidth, frameHeight, request.Transform);
+            AxisSegment yAxisSegment = CreateDisplayAxisSegment(verticalAngle, localCenterX, localCenterY, sourceRoi, frameWidth, frameHeight, request.Transform);
             Point displayCenter = TransformPointToDisplay(new Point(centerX, centerY), frameWidth, frameHeight, request.Transform);
             Point standardCenter = ResolveStandardCenter(request.StandardCenter, frameWidth, frameHeight);
 
@@ -282,6 +312,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 columnCoverage,
                 threshold,
                 request.TolerancePx,
+                displayRotationZDeg,
+                displayXRotationDeg,
+                displayYRotationDeg,
+                xAxisSegment.Found,
+                xAxisSegment.Start,
+                xAxisSegment.End,
+                yAxisSegment.Found,
+                yAxisSegment.Start,
+                yAxisSegment.End,
                 string.Empty);
         }
 
@@ -302,6 +341,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 0,
                 0,
                 request.TolerancePx,
+                0,
+                0,
+                0,
+                false,
+                new Point(),
+                new Point(),
+                false,
+                new Point(),
+                new Point(),
                 message);
         }
 
@@ -383,7 +431,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             return max;
         }
 
-        private static unsafe void Accumulate(HImage frame, RoiRect roi, double threshold, double[] rowSum, double[] columnSum, int[] rowHits, int[] columnHits)
+        private static unsafe void Accumulate(HImage frame, RoiRect roi, double threshold, double[] rowSum, double[] columnSum, int[] rowHits, int[] columnHits, List<BrightPixel> brightPixels)
         {
             for (int y = roi.Y; y < roi.Y + roi.Height; y++)
             {
@@ -399,6 +447,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     columnSum[columnIndex] += gray;
                     rowHits[rowIndex]++;
                     columnHits[columnIndex]++;
+                    if (brightPixels.Count < MaxAngleSamples)
+                        brightPixels.Add(new BrightPixel(columnIndex, rowIndex, gray));
                 }
             }
         }
@@ -461,6 +511,124 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
 
             return sum <= 0 ? peakIndex : weighted / sum;
+        }
+
+        private static AngleEstimate EstimateLineAngle(IReadOnlyList<BrightPixel> pixels, double centerX, double centerY, double targetAngleDeg)
+        {
+            if (pixels.Count < 4) return new AngleEstimate(false, 0, 0, 0, 0);
+
+            double bestAngle = targetAngleDeg;
+            double bestScore = double.MinValue;
+            const double searchHalfRangeDeg = 15;
+            const double stepDeg = 0.25;
+            const double sigma = 4.0;
+            const double maxDistance = sigma * 3;
+
+            for (double angleDeg = targetAngleDeg - searchHalfRangeDeg; angleDeg <= targetAngleDeg + searchHalfRangeDeg + 0.0001; angleDeg += stepDeg)
+            {
+                double angleRad = angleDeg * Math.PI / 180.0;
+                double sin = Math.Sin(angleRad);
+                double cos = Math.Cos(angleRad);
+                double score = 0;
+
+                foreach (BrightPixel pixel in pixels)
+                {
+                    double dx = pixel.X - centerX;
+                    double dy = pixel.Y - centerY;
+                    double distance = Math.Abs((-sin * dx) + (cos * dy));
+                    if (distance > maxDistance) continue;
+
+                    double normalized = distance / sigma;
+                    score += pixel.Weight * Math.Exp(-0.5 * normalized * normalized);
+                }
+
+                if (score <= bestScore) continue;
+
+                bestScore = score;
+                bestAngle = angleDeg;
+            }
+
+            if (bestScore <= 0) return new AngleEstimate(false, 0, 0, 0, 0);
+
+            return BuildAngleEstimate(pixels, centerX, centerY, bestAngle, bestScore, sigma);
+        }
+
+        private static AngleEstimate BuildAngleEstimate(IReadOnlyList<BrightPixel> pixels, double centerX, double centerY, double angleDeg, double score, double sigma)
+        {
+            double angleRad = angleDeg * Math.PI / 180.0;
+            double sin = Math.Sin(angleRad);
+            double cos = Math.Cos(angleRad);
+            double maxDistance = sigma * 3;
+            double startProjection = double.MaxValue;
+            double endProjection = double.MinValue;
+            int supportCount = 0;
+
+            foreach (BrightPixel pixel in pixels)
+            {
+                double dx = pixel.X - centerX;
+                double dy = pixel.Y - centerY;
+                double distance = Math.Abs((-sin * dx) + (cos * dy));
+                if (distance > maxDistance) continue;
+
+                double projection = (cos * dx) + (sin * dy);
+                startProjection = Math.Min(startProjection, projection);
+                endProjection = Math.Max(endProjection, projection);
+                supportCount++;
+            }
+
+            if (supportCount < 4 || endProjection - startProjection < 2)
+                return new AngleEstimate(false, 0, 0, 0, 0);
+
+            return new AngleEstimate(true, angleDeg, score, startProjection, endProjection);
+        }
+
+        private static double ResolveRotationZ(AngleEstimate horizontalAngle, AngleEstimate verticalAngle)
+        {
+            double weightedAngle = 0;
+            double totalWeight = 0;
+
+            if (horizontalAngle.Found)
+            {
+                weightedAngle += NormalizeLineAngle(horizontalAngle.AngleDeg) * horizontalAngle.Score;
+                totalWeight += horizontalAngle.Score;
+            }
+
+            if (verticalAngle.Found)
+            {
+                weightedAngle += NormalizeLineAngle(verticalAngle.AngleDeg - 90) * verticalAngle.Score;
+                totalWeight += verticalAngle.Score;
+            }
+
+            return totalWeight <= 0 ? 0 : weightedAngle / totalWeight;
+        }
+
+        private static AxisSegment CreateDisplayAxisSegment(AngleEstimate estimate, double localCenterX, double localCenterY, RoiRect sourceRoi, int frameWidth, int frameHeight, int transform)
+        {
+            if (!estimate.Found) return new AxisSegment(false, new Point(), new Point());
+
+            double angleRad = estimate.AngleDeg * Math.PI / 180.0;
+            double cos = Math.Cos(angleRad);
+            double sin = Math.Sin(angleRad);
+            Point sourceStart = new(sourceRoi.X + localCenterX + cos * estimate.StartProjection, sourceRoi.Y + localCenterY + sin * estimate.StartProjection);
+            Point sourceEnd = new(sourceRoi.X + localCenterX + cos * estimate.EndProjection, sourceRoi.Y + localCenterY + sin * estimate.EndProjection);
+            return new AxisSegment(
+                true,
+                TransformPointToDisplay(sourceStart, frameWidth, frameHeight, transform),
+                TransformPointToDisplay(sourceEnd, frameWidth, frameHeight, transform));
+        }
+
+        private static double TransformAngleToDisplay(double angleDeg, int transform)
+        {
+            bool flipVertical = (transform & RealtimeFramePresenter.TransformFlipX) != 0;
+            bool flipHorizontal = (transform & RealtimeFramePresenter.TransformFlipY) != 0;
+            return flipVertical ^ flipHorizontal ? -angleDeg : angleDeg;
+        }
+
+        private static double NormalizeLineAngle(double angleDeg)
+        {
+            while (angleDeg > 90) angleDeg -= 180;
+            while (angleDeg <= -90) angleDeg += 180;
+            return angleDeg;
         }
 
         private static double Clamp(double value, double min, double max)

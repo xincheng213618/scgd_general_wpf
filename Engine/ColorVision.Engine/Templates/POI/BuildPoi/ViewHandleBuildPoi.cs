@@ -1,14 +1,14 @@
 ﻿#pragma warning disable CA1725
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Services;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                     ViewResultBuildPoi mTFResultData = new(item);
                     result.ViewResults.Add(mTFResultData);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBuildPoi), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBuildPoi), ImageFilePath = result.FilePath })) });
             }
 
         }
@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
             List<string> header;
             List<string> bdHeader;
-            header = new() { "Name", "位置", "大小", "形状" };
+            header = new() { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape };
             bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes" };
 
             if (ctx.ListView.View is GridView gridView)

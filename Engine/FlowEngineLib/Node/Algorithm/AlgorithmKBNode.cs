@@ -4,6 +4,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Algorithm;
 
 [STNode("/03_4 KB")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("TempName", typeof(FlowEngineLib.PropertyEditor.FlowKbJsonTemplateEditor))]
 public class AlgorithmKBNode : CVBaseServerNode
 {
 	private string _CaliTemplate;
@@ -22,6 +23,8 @@ public class AlgorithmKBNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName
 	{
 		get

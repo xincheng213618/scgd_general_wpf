@@ -318,7 +318,7 @@ public class STNodePropertyGrid : Control
 					sTNodePropertyDescriptor.Node = node;
 					string name = Lang.Get(sTNodePropertyAttribute.Name);
 					sTNodePropertyDescriptor.Name = name;
-					sTNodePropertyDescriptor.Description = sTNodePropertyAttribute.Description;
+					sTNodePropertyDescriptor.Description = Lang.GetOrDefault(sTNodePropertyAttribute.Description, sTNodePropertyAttribute.Description);
 					sTNodePropertyDescriptor.PropertyInfo = propertyInfo;
 					sTNodePropertyDescriptor.IsEditEnable = IsEditEnable || sTNodePropertyAttribute.IsEditEnable;
 					sTNodePropertyDescriptor.IsReadOnly = sTNodePropertyAttribute.IsReadOnly;
@@ -768,13 +768,13 @@ public class STNodePropertyGrid : Control
 			rectangle.X = 5;
 			rectangle.Y += m_item_height;
 			rectangle.Width = base.Width - 10;
-			if (!string.IsNullOrEmpty(m_node_attribute.Description))
+			if (!string.IsNullOrEmpty(m_node_attribute.DisplayDescription))
 			{
-				float num = graphics.MeasureString(m_node_attribute.Description, Font, rectangle.Width).Height;
+				float num = graphics.MeasureString(m_node_attribute.DisplayDescription, Font, rectangle.Width).Height;
 				rectangle.Height = (int)Math.Ceiling(num / (float)m_item_height) * m_item_height;
 				m_brush.Color = color;
 				m_sf.FormatFlags = (StringFormatFlags)0;
-				graphics.DrawString(m_node_attribute.Description, Font, m_brush, rectangle, m_sf);
+				graphics.DrawString(m_node_attribute.DisplayDescription, Font, m_brush, rectangle, m_sf);
 			}
 			m_nInfoVHeight = rectangle.Bottom;
 			bool flag = STNodeAttribute.GetHelpMethod(m_type) != null;

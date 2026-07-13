@@ -6,15 +6,13 @@
 
 | 项目 | 业务定位 | 文档 |
 | --- | --- | --- |
-| ProjectARVR | AR/VR 综合光学测试，固定 PG 切图、Socket 事件和结果汇总 | [ProjectARVR](../04-api-reference/projects/project-arvr.md) |
 | ProjectARVRLite | AR/VR 轻量测试，可配置测试类型、预处理、Socket 切图和 CSV | [ProjectARVRLite](../04-api-reference/projects/project-arvr-lite.md) |
 | ProjectARVRPro | AR/VR 专业流程组、Recipe 和 Socket 对接 | [ProjectARVRPro](../04-api-reference/projects/project-arvr-pro.md) |
 | ProjectARVRPro.IntegrationDemo | 面向客户或上位机的 TCP/JSON 对接示例 | [Integration Demo](../04-api-reference/projects/project-arvr-pro-integration-demo.md) |
-| ProjectBlackMura | 显示面板 Black Mura 检测，PG 串口切图、五色流程和 Excel 报告 | [ProjectBlackMura](../04-api-reference/projects/project-black-mura.md) |
-| ProjectHeyuan | 河源精电定制测试，STX/ETX 串口、WBRO 四点测试和 CSV 上传 | [ProjectHeyuan](../04-api-reference/projects/project-heyuan.md) |
 | ProjectKB | 键盘背光测试，Modbus 自动触发、MES DLL、自动修正和 CSV/summary | [ProjectKB](../04-api-reference/projects/project-kb.md) |
 | ProjectLUX | LUX 亮度、色彩、MTF、畸变自动化测试 | [ProjectLUX](../04-api-reference/projects/project-lux.md) |
-| ProjectShiyuan | 视源定制测试，JND/POI 结果导出和固定图像后处理 | [ProjectShiyuan](../04-api-reference/projects/project-shiyuan.md) |
+
+已停用项目的源码快照和恢复方式记录在仓库的 `Projects/ARCHIVED.md`。
 
 ## 项目页应该说明什么
 
@@ -29,7 +27,7 @@
 
 ```powershell
 dotnet build Projects/ProjectLUX/ProjectLUX.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectLUX --no-upload
+Scripts\package_project.bat ProjectLUX
 ```
 
 ## 维护原则

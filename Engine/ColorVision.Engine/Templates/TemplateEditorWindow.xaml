@@ -12,7 +12,7 @@
         xmlns:commands="clr-namespace:ColorVision.UI;assembly=ColorVision.Common"
         ShowInTaskbar="False"
         d:DataContext="{d:DesignInstance local:TemplateSetting}"
-        Height="600" Width="700"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+        Height="600" Width="700" MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}"/>
@@ -37,24 +37,24 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1"  hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
-                <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
-                    <Rectangle Width="16 " Height="16" >
+                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"/>
+                <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
+                    <Rectangle Width="16" Height="16">
                         <Rectangle.Resources>
-                            <SolidColorBrush x:Key="canvas" Opacity="0" />
-                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1" />
-                            <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
+                            <SolidColorBrush x:Key="canvas" Opacity="0"/>
+                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1"/>
+                            <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1"/>
                         </Rectangle.Resources>
                         <Rectangle.Fill>
                             <DrawingBrush Stretch="None">
                                 <DrawingBrush.Drawing>
                                     <DrawingGroup>
                                         <DrawingGroup x:Name="canvas">
-                                            <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
+                                            <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z"/>
                                         </DrawingGroup>
                                         <DrawingGroup x:Name="level_1">
-                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
-                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
+                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z"/>
+                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z"/>
                                         </DrawingGroup>
                                     </DrawingGroup>
                                 </DrawingBrush.Drawing>
@@ -62,15 +62,12 @@
                         </Rectangle.Fill>
                     </Rectangle>
                 </Viewbox>
-
-                <Button Grid.Column="1" Margin="5,0,0,0" HorizontalAlignment="Left" Click="Setting_Click" Padding="2" Height="20" Width="20" >
-                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                    </TextBlock>
+                <Button Grid.Column="1" Margin="5,0,0,0" Click="Setting_Click" Padding="2" Height="20" Width="20">
+                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}"/>
                 </Button>
-
             </Grid>
 
-            <ListView Grid.Row="1" x:Name="ListView1" Style="{StaticResource ListView.Small}"  FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
+            <ListView Grid.Row="1" x:Name="ListView1" Style="{StaticResource ListView.Small}" FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" PreviewMouseLeftButtonDown="ListView1_PreviewMouseLeftButtonDown" PreviewMouseMove="ListView1_PreviewMouseMove" SelectionChanged="ListView1_SelectionChanged" AllowDrop="True" DragOver="ListView1_DragOver" Drop="ListView1_Drop">
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     <ContextMenu x:Key="ContextMenuItem" Opened="ContextMenuItem_Opened">
@@ -78,7 +75,7 @@
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}"  />
                         <MenuItem Header="{x:Static properties:Resources.CreateCopy}"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
                         <MenuItem Header="{x:Static properties:Resources.CreateSample}"   Click="CreateTemplate_Click" Tag="{Binding .}"  />
-                        <MenuItem Header="设置为默认参数" Click="MenuItem_SetJsonAsDefault_Click" Tag="SetJsonAsDefault" Visibility="Collapsed" />
+                        <MenuItem Header="{x:Static properties:Resources.TemplateEditor_SetAsDefaultParameters}" Click="MenuItem_SetJsonAsDefault_Click" Tag="SetJsonAsDefault" Visibility="Collapsed" />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
@@ -120,6 +117,20 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn x:Name="MoveActionsColumn" Width="58">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type local:TemplateBase}">
+                                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}, Converter={StaticResource bool2VisibilityConverter}}">
+                                        <Button Click="Button_MoveUp_Click" Width="24" Height="20" Padding="2" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" ToolTip="{x:Static properties:Resources.MoveUp}">
+                                            <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                                        </Button>
+                                        <Button Click="Button_MoveDown_Click" Width="24" Height="20" Padding="2" Background="Transparent" BorderThickness="0" ToolTip="{x:Static properties:Resources.MoveDown}">
+                                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                     </GridView>
                 </ListView.View>
             </ListView>
@@ -128,7 +139,7 @@
 
         <GridSplitter HorizontalAlignment="Right" Background="#22FFFFFF"  Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="1" Cursor="SizeWE"/>
 
-        <Grid Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2"  x:Name="GridProperty" >
+        <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" x:Name="GridProperty">
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
             <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
             <WindowsFormsHost>
@@ -140,8 +151,8 @@
         </ScrollViewer>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
-            <UniformGrid x:Name="FunctionGrid"    Columns="5">
-                <Button Command="ApplicationCommands.New" Margin="0,0,5,0" >
+            <UniformGrid x:Name="FunctionGrid" Columns="5">
+                <Button Command="ApplicationCommands.New" Margin="0,0,5,0">
                     <TextBlock Text="{x:Static properties:Resources.New}"/>
                 </Button>
                 <Button  Click="Button_Del_Click"  Margin="0,0,5,0" >
@@ -157,15 +168,6 @@
                     <TextBlock Text="{x:Static properties:Resources.Import}"/>
                 </Button>
             </UniformGrid>
-            <StackPanel  Margin="0,5,0,0" Orientation="Horizontal">
-                <Button Click="Button_MoveUp_Click" Margin="0,0,5,0">
-                    <TextBlock Text="{x:Static properties:Resources.MoveUp}"/>
-                </Button>
-                <Button Click="Button_MoveDown_Click" Margin="0,0,5,0">
-                    <TextBlock Text="{x:Static properties:Resources.MoveDown}"/>
-                </Button>
-                <Grid Grid.Column="2" Grid.ColumnSpan="3"/>
-            </StackPanel>
         </StackPanel>
 
 

@@ -9,9 +9,12 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -161,12 +164,21 @@ namespace ColorVision.Database
         [
             "t_scgd_algorithm_poi_template_detail",
             "t_scgd_algorithm_poi_template_master",
+            "t_scgd_buz_product_detail",
+            "t_scgd_buz_product_master",
             "t_scgd_camera_license",
             "t_scgd_mod_param_detail",
             "t_scgd_mod_param_master",
             "t_scgd_sys_resource",
             "t_scgd_sys_resource_group"
         ];
+
+        private const string DictionaryMasterTableName = "t_scgd_sys_dictionary_mod_master";
+        private const string DictionaryItemTableName = "t_scgd_sys_dictionary_mod_item";
+        private const string ModParamMasterTableName = "t_scgd_mod_param_master";
+        private const string ModParamDetailTableName = "t_scgd_mod_param_detail";
+        private const string SensorDefaultCommandSymbol = "defaultcommand";
+        private const string SensorDefaultCommandValue = "\n,,Ascii,1000/0,0";
 
 
         public static MySqlLocalConfig Config => MySqlLocalConfig.Instance;
@@ -914,6 +926,7 @@ namespace ColorVision.Database
             string BackUpSql = Path.Combine(BackupPath, $"Res_{DateTime.Now:yyyyMMddHHmmss}.sql");
             string backCommnad = $"{Config.MysqldumpPath} --replace -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} > \"{BackUpSql}\"";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
+            AppendMigrationDictionaryDependencySql(BackUpSql);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 Backups.Add(new MysqlBack(BackUpSql));
@@ -931,6 +944,160 @@ namespace ColorVision.Database
         public List<string> GetFilteredResourceTableNames()
         {
             return MigrationBackupTableNames.ToList();
+        }
+
+        private void AppendMigrationDictionaryDependencySql(string backupFile)
+        {
+            try
+            {
+                if (!File.Exists(backupFile))
+                {
+                    return;
+                }
+
+                string dependencySql = BuildMigrationDictionaryDependencySql(MySqlControl.GetConnectionString());
+                if (string.IsNullOrWhiteSpace(dependencySql))
+                {
+                    return;
+                }
+
+                File.AppendAllText(backupFile, Environment.NewLine + dependencySql, new UTF8Encoding(false));
+            }
+            catch (Exception ex)
+            {
+                log.Error("追加模板字典依赖备份失败", ex);
+            }
+        }
+
+        public static string BuildMigrationDictionaryDependencySql(string connectionString, Action<string>? logCallback = null)
+        {
+            try
+            {
+                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = connectionString, DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                StringBuilder sql = new();
+                AppendReferencedRowsSql(
+                    db,
+                    sql,
+                    DictionaryMasterTableName,
+                    $@"EXISTS (
+                           SELECT 1
+                           FROM {QuoteIdentifier(ModParamMasterTableName)} m
+                           WHERE m.{QuoteIdentifier("mm_id")} = {QuoteIdentifier(DictionaryMasterTableName)}.{QuoteIdentifier("id")})");
+                AppendReferencedRowsSql(
+                    db,
+                    sql,
+                    DictionaryItemTableName,
+                    $@"EXISTS (
+                           SELECT 1
+                           FROM {QuoteIdentifier(ModParamDetailTableName)} d
+                           WHERE d.{QuoteIdentifier("cc_pid")} = {QuoteIdentifier(DictionaryItemTableName)}.{QuoteIdentifier("id")})");
+                AppendMissingSensorCommandDefinitionSql(db, sql);
+
+                if (sql.Length == 0)
+                {
+                    return string.Empty;
+                }
+
+                logCallback?.Invoke(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAdded);
+                return $"-- Referenced template dictionary dependencies{Environment.NewLine}{sql}";
+            }
+            catch (Exception ex)
+            {
+                logCallback?.Invoke(string.Format(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAddFailed, ex.Message));
+                return string.Empty;
+            }
+        }
+
+        private static void AppendMissingSensorCommandDefinitionSql(SqlSugarClient db, StringBuilder sql)
+        {
+            var missingDefinitions = db.Ado.SqlQuery<MissingSensorCommandDefinitionRow>(
+                $@"SELECT DISTINCT d.{QuoteIdentifier("cc_pid")} AS Id,
+                                   m.{QuoteIdentifier("mm_id")} AS Pid
+                   FROM {QuoteIdentifier(ModParamDetailTableName)} d
+                   INNER JOIN {QuoteIdentifier(ModParamMasterTableName)} m ON d.{QuoteIdentifier("pid")} = m.{QuoteIdentifier("id")}
+                   INNER JOIN {QuoteIdentifier(DictionaryMasterTableName)} dm ON dm.{QuoteIdentifier("id")} = m.{QuoteIdentifier("mm_id")}
+                   LEFT JOIN {QuoteIdentifier(DictionaryItemTableName)} i ON i.{QuoteIdentifier("id")} = d.{QuoteIdentifier("cc_pid")}
+                   WHERE dm.{QuoteIdentifier("mod_type")} = 5
+                     AND d.{QuoteIdentifier("cc_pid")} > 0
+                     AND i.{QuoteIdentifier("id")} IS NULL");
+
+            if (missingDefinitions.Count == 0)
+            {
+                return;
+            }
+
+            sql.AppendLine($"-- {DictionaryItemTableName}: {missingDefinitions.Count} missing sensor command definition(s)");
+            foreach (var definition in missingDefinitions)
+            {
+                sql.AppendLine($@"INSERT IGNORE INTO {QuoteIdentifier(DictionaryItemTableName)}
+({QuoteIdentifier("id")}, {QuoteIdentifier("pid")}, {QuoteIdentifier("address_code")}, {QuoteIdentifier("symbol")}, {QuoteIdentifier("name")}, {QuoteIdentifier("default_val")}, {QuoteIdentifier("val_type")}, {QuoteIdentifier("create_date")}, {QuoteIdentifier("is_enable")}, {QuoteIdentifier("is_delete")})
+VALUES ({definition.Id}, {definition.Pid}, {definition.Id}, {FormatSqlValue(SensorDefaultCommandSymbol)}, {FormatSqlValue(SensorDefaultCommandSymbol)}, {FormatSqlValue(SensorDefaultCommandValue)}, 3, NOW(), 1, 0);");
+            }
+        }
+
+        private static void AppendReferencedRowsSql(SqlSugarClient db, StringBuilder sql, string tableName, string whereClause)
+        {
+            List<string> columns = GetTableColumns(db, tableName);
+            if (columns.Count == 0)
+            {
+                return;
+            }
+
+            string columnSql = string.Join(", ", columns.Select(QuoteIdentifier));
+            DataTable rows = db.Ado.GetDataTable($"SELECT {columnSql} FROM {QuoteIdentifier(tableName)} WHERE {whereClause}");
+            if (rows.Rows.Count == 0)
+            {
+                return;
+            }
+
+            sql.AppendLine($"-- {tableName}: {rows.Rows.Count} referenced row(s)");
+            foreach (DataRow row in rows.Rows)
+            {
+                string values = string.Join(", ", columns.Select(column => FormatSqlValue(row[column])));
+                sql.AppendLine($"INSERT IGNORE INTO {QuoteIdentifier(tableName)} ({columnSql}) VALUES ({values});");
+            }
+        }
+
+        private static List<string> GetTableColumns(SqlSugarClient db, string tableName)
+        {
+            return db.Ado.SqlQuery<string>(
+                @"SELECT COLUMN_NAME
+                  FROM INFORMATION_SCHEMA.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = @tableName
+                  ORDER BY ORDINAL_POSITION",
+                new { tableName });
+        }
+
+        private static string FormatSqlValue(object? value)
+        {
+            if (value == null || value == DBNull.Value)
+            {
+                return "NULL";
+            }
+
+            return value switch
+            {
+                bool boolValue => boolValue ? "1" : "0",
+                byte[] bytes => "0x" + Convert.ToHexString(bytes),
+                DateTime dateTime => $"'{dateTime:yyyy-MM-dd HH:mm:ss.ffffff}'",
+                DateTimeOffset dateTimeOffset => $"'{dateTimeOffset.LocalDateTime:yyyy-MM-dd HH:mm:ss.ffffff}'",
+                byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal => Convert.ToString(value, CultureInfo.InvariantCulture) ?? "NULL",
+                _ => $"'{EscapeSqlValue(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty)}'"
+            };
+        }
+
+        private static string EscapeSqlValue(string value)
+        {
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("'", "\\'")
+                .Replace("\0", "\\0")
+                .Replace("\b", "\\b")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t")
+                .Replace("\u001A", "\\Z");
         }
 
 
@@ -963,6 +1130,12 @@ namespace ColorVision.Database
         private sealed class TableColumnNameRow
         {
             public string ColumnName { get; set; } = string.Empty;
+        }
+
+        private sealed class MissingSensorCommandDefinitionRow
+        {
+            public int Id { get; set; }
+            public int Pid { get; set; }
         }
 
         private sealed class TimeRangeRow

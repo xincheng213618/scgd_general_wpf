@@ -1,8 +1,8 @@
 #pragma warning disable CA1725,CS8602
 
-using ColorVision.Common.MVVM;
-using ColorVision.Database;
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
+using ColorVision.Database;
 using log4net;
 using SqlSugar;
 using System.Collections.Generic;
@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
                 {
                     result.ViewResults.Add(detailImage);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmCaliAngleShift), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmCaliAngleShift), ImageFilePath = result.FilePath })) });
             }
         }
 

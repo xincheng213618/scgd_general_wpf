@@ -12,6 +12,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using SqlSugar;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -123,7 +124,6 @@ namespace ColorVision.Engine.Templates.Flow
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s, e) =>
             {
-                View.FlowEngineControl.LoadFromBase64(string.Empty);
                 _=Refresh();
             };
             
@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(BuildRestartServicesButtonText(), stats);
                 options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(BuildRestartServicesButtonText(), stats);
-                options.RunningText = "重启服务";
+                options.RunningText = Properties.Resources.RestartService;
             });
             return operations;
         }
@@ -148,7 +148,7 @@ namespace ColorVision.Engine.Templates.Flow
         private static string BuildRestartServicesButtonText()
         {
             string version = ServiceConfig.Instance.RegistrationCenterServiceInfo.FileVersion;
-            return string.IsNullOrWhiteSpace(version) ? "重启服务" : $"重启{version}";
+            return string.IsNullOrWhiteSpace(version) ? Properties.Resources.RestartService : string.Format(Properties.Resources.Flow_RestartServiceVersionFormat, version);
         }
 
         private double GetExpectedRestartDurationMs()
@@ -161,10 +161,10 @@ namespace ColorVision.Engine.Templates.Flow
 
         private async void Button_RestartServices_Click(object sender, RoutedEventArgs e)
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否重启 ColorVision 服务？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_ConfirmRestartColorVisionServices, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
-            TimedButtonOperationScope? operationScope = EnsureTimedButtonOperations().Begin(RestartServicesButton, GetExpectedRestartDurationMs(), "重启服务");
+            TimedButtonOperationScope? operationScope = EnsureTimedButtonOperations().Begin(RestartServicesButton, GetExpectedRestartDurationMs(), Properties.Resources.RestartService);
             bool success = false;
             try
             {
@@ -204,7 +204,7 @@ namespace ColorVision.Engine.Templates.Flow
                 : await ColorVisionServiceHostClient.Default.StopServiceAsync(serviceName, timeoutSeconds: 45, timeout: TimeSpan.FromSeconds(60));
 
             if (!response.Success)
-                throw new InvalidOperationException($"{(start ? "启动" : "停止")} {serviceName} 失败: {response.Message}");
+                throw new InvalidOperationException(string.Format(start ? Properties.Resources.Flow_StartServiceFailed : Properties.Resources.Flow_StopServiceFailed, serviceName, response.Message));
         }
 
         private static async Task RefreshServiceConnectionAsync()
@@ -266,7 +266,7 @@ namespace ColorVision.Engine.Templates.Flow
             _refreshCts = null;
         }
 
-        private async Task SelectFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate, bool waitReady)
+        private async Task SelectFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate)
         {
             CancelPendingRefresh();
 
@@ -283,16 +283,17 @@ namespace ColorVision.Engine.Templates.Flow
                 _suppressSelectionRefresh = false;
             }
 
-            await Refresh(waitReady);
+            await Refresh();
         }
 
         bool IsRefresh;
-        public async Task Refresh(bool waitReady = false)
+        public async Task Refresh()
         {
             if (IsRefresh) return;
             IsRefresh = true;
             try
             {
+                await CloseRunningFlowBeforeRefreshAsync();
                 MqttRCService.GetInstance().QueryServices();
 
                 if (View == null)
@@ -322,7 +323,7 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeEndEvent -= nodeEndEvent;
                 }
                 View.FlowEngineControl.FlowClear();
-                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens, waitReady);
+                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
                 FlowEngineManager.SlectFlowParam = flowParam;
 
@@ -347,6 +348,16 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 IsRefresh = false;
             }
+        }
+
+        private async Task CloseRunningFlowBeforeRefreshAsync()
+        {
+            if (FlowControl?.IsFlowRun != true)
+                return;
+
+            log.Info("流程运行中触发刷新，先关闭当前流程。");
+            StopFlow();
+            await Task.Delay(100);
         }
 
         private TemplateModel<FlowParam> GetSelectedFlowTemplate()
@@ -411,7 +422,7 @@ namespace ColorVision.Engine.Templates.Flow
                 return null;
             }
 
-            await SelectFlowTemplateAsync(flowTemplate, waitReady: true);
+            await SelectFlowTemplateAsync(flowTemplate);
             return await RunFlowAndWaitAsync();
         }
 
@@ -696,6 +707,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 item.TitleColor = System.Drawing.Color.Blue;
             }
+            ClearFlowRuntimeData();
 
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
             FlowEngineManager.BatchProgress = 0;
@@ -740,6 +752,17 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             FlowControl.Start(sn);
+        }
+
+        private void ClearFlowRuntimeData()
+        {
+            foreach (STNode node in View.STNodeEditorMain.Nodes)
+            {
+                foreach (STNodeOption option in node.GetAllInputOptions())
+                    option.Data = null;
+                foreach (STNodeOption option in node.GetAllOutputOptions())
+                    option.Data = null;
+            }
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)

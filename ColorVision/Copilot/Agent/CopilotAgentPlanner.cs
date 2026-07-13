@@ -79,7 +79,7 @@ namespace ColorVision.Copilot
             }
 
             var plannerProfile = request.Profile.Clone();
-            plannerProfile.SystemPrompt = PlannerSystemPrompt;
+            plannerProfile.UseSystemPromptOverride(PlannerSystemPrompt);
             plannerProfile.Temperature = 0;
             plannerProfile.MaxTokens = Math.Min(256, Math.Max(128, request.Profile.MaxTokens));
 
@@ -207,6 +207,13 @@ namespace ColorVision.Copilot
             if (availableTools.Count == 0)
                 return null;
 
+            if (CopilotFlowCreationSupport.HasCreateIntent(request.UserText))
+            {
+                var createFlowTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "CreateFlow", StringComparison.OrdinalIgnoreCase));
+                if (createFlowTool != null)
+                    return createFlowTool;
+            }
+
             if (CopilotApplicationCapability.HasMenuIntent(request.UserText))
             {
                 var menuTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "ExecuteMenu", StringComparison.OrdinalIgnoreCase));
@@ -235,55 +242,16 @@ namespace ColorVision.Copilot
                     return docsTool;
             }
 
-            var preferredToolNames = request.Mode switch
-            {
-                CopilotAgentMode.Web => new[]
-                {
-                    "SearchDocs",
-                    "FetchUrl",
-                    "ReadAttachedFile",
-                    "ReadLocalFile",
-                    "SearchFiles",
-                    "GrepText",
-                },
-                CopilotAgentMode.Diagnose => new[]
-                {
-                    "GetRecentLog",
-                    "ReadLocalFile",
-                    "ReadAttachedFile",
-                    "ListDirectory",
-                    "SearchFiles",
-                    "GrepText",
-                    "FetchUrl",
-                },
-                _ => new[]
-                {
-                    "SearchDocs",
-                    "ReadLocalFile",
-                    "ReadAttachedFile",
-                    "ListDirectory",
-                    "SearchFiles",
-                    "GrepText",
-                    "GetRecentLog",
-                    "FetchUrl",
-                },
-            };
-
-            foreach (var toolName in preferredToolNames)
-            {
-                var match = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, toolName, StringComparison.OrdinalIgnoreCase));
-                if (match != null)
-                    return match;
-            }
-
-            return availableTools.Count == 1 ? availableTools[0] : null;
+            return null;
         }
 
         private static CopilotAgentToolInput BuildFallbackToolInput(CopilotAgentRequest request, string toolName)
         {
-            if (string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(toolName, "CreateFlow", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "TemplatePatch", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotAgentToolInput
                 {
@@ -320,6 +288,14 @@ namespace ColorVision.Copilot
             }
 
             if (string.Equals(toolName, "SearchDocs", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CopilotAgentToolInput
+                {
+                    Query = request.UserText ?? string.Empty,
+                };
+            }
+
+            if (string.Equals(toolName, "WebSearch", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotAgentToolInput
                 {
@@ -437,10 +413,12 @@ namespace ColorVision.Copilot
                 || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SearchDocs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "WebSearch", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "TemplatePatch", StringComparison.OrdinalIgnoreCase);
         }
 
     }

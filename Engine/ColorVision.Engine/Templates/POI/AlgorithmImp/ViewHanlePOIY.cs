@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1725
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using CVCommCore.CVAlgorithm;
 using log4net;
@@ -8,7 +9,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                     PoiResultCIEYData poiResultCIExyuvData = new(item);
                     result.ViewResults.Add(poiResultCIExyuvData);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
             }
         }
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
 
-            List<string> header = new() { "名称", "位置", "大小", "形状", "Y" };
+            List<string> header = new() { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "Y" };
             List<string> bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
 
             if (result.ViewResults.Count <= 4000)

@@ -1,9 +1,0 @@
-{
-  "manifest_version": 1,
-  "Id": "ProjectBlackMura",
-  "name": "ProjectBlackMura",
-  "version": "1.0",
-  "description": "",
-  "dllpath": "ProjectBlackMura.dll",
-  "requires": "1.3.15.10"
-}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ExpTimeConfigCategory" xml:space="preserve"><value>Configuration de l’exposition</value></data>
+  <data name="CameraConfigCategory" xml:space="preserve"><value>Configuration de la caméra</value></data>
+  <data name="CalibrationLibraryConfigCategory" xml:space="preserve"><value>Configuration de la bibliothèque d’étalonnage</value></data>
+  <data name="ChannelConfigCategory" xml:space="preserve"><value>Configuration des canaux</value></data>
+  <data name="ExposureParameters" xml:space="preserve"><value>Paramètres d’exposition</value></data>
+  <data name="CameraParameters" xml:space="preserve"><value>Paramètres de la caméra</value></data>
+  <data name="CalibrationParameters" xml:space="preserve"><value>Paramètres d’étalonnage</value></data>
+  <data name="ChannelParameters" xml:space="preserve"><value>Paramètres des canaux</value></data>
+</root>

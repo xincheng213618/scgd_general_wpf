@@ -12,6 +12,7 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 	private string _SavePOITempName;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowBlackMuraJsonTemplateEditor))]
 	public string TempName
 	{
 		get
@@ -25,6 +26,8 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName
 	{
 		get
@@ -51,6 +54,7 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("POI保存模板", "POI保存模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiTemplateEditor))]
 	public string SavePOITempName
 	{
 		get

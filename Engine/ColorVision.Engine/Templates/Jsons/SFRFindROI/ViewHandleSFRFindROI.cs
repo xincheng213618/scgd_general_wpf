@@ -2,7 +2,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
@@ -15,7 +16,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
@@ -84,7 +84,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewSFRFindROI>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Id", "Name", "位置", "大小", "形状","Angle","Center"};
+            List<string> properties = new() { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, Properties.Resources.Angle, Properties.Resources.Center };
             csvBuilder.AppendLine(string.Join(",", properties));
 
             foreach (var item in ViewResults)
@@ -146,8 +146,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                     }
                 }
                 RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = ExportToPoiCommand });
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFRFindROI), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFRFindROI), ImageFilePath = result.FilePath })) });
             }
 
         }
@@ -168,11 +168,11 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             Circle.Attribute.Center = new Point((double)poiResultData.PoiX, (double)poiResultData.PoiY);
                             Circle.Attribute.Radius = (double)poiResultData.PoiHeight / 2;
                             Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                             Circle.Attribute.Id = poiResultData.Id;
                             Circle.Attribute.Text = poiResultData.PoiName;
-                            Circle.Attribute.FontSize = RenderConfig.FontSize;
-                            Circle.Attribute.Msg = $"Angle:{RenderConfig.FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}";
+                            Circle.Attribute.FontSize = OverlayFontSize;
+                            Circle.Attribute.Msg = $"Angle:{FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}";
                             Circle.Render();
                             ctx.ImageView.AddVisual(Circle);
                             break;
@@ -180,11 +180,11 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect((double)poiResultData.PoiX - (double)poiResultData.PoiWidth / 2, (double)poiResultData.PoiY - (double)poiResultData.PoiHeight / 2, (double)poiResultData.PoiWidth, (double)poiResultData.PoiHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                             Rectangle.Attribute.Id = poiResultData.Id;
                             Rectangle.Attribute.Text = poiResultData.PoiName;
-                            Rectangle.Attribute.FontSize = RenderConfig.FontSize;
-                            Rectangle.Attribute.Msg = $"Angle:{RenderConfig.FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}";
+                            Rectangle.Attribute.FontSize = OverlayFontSize;
+                            Rectangle.Attribute.Msg = $"Angle:{FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}";
                             Rectangle.Render();
                             ctx.ImageView.AddVisual(Rectangle);
                             break;
@@ -197,7 +197,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
             List<string> header;
             List<string> bdHeader;
-            header = new() { "Name", "PoiX", "PoiY", "PoiWidth", "PoiHeight", "形状" ,"angle","Center"};
+            header = new() { "Name", "PoiX", "PoiY", "PoiWidth", "PoiHeight", Properties.Resources.Shape, "angle", "Center" };
             bdHeader = new() { "PoiName", "PoiX", "PoiY", "PoiWidth", "PoiHeight", "PoiType", "Value.Angle", "Value.Center" };
 
             if (ctx.ListView.View is GridView gridView)

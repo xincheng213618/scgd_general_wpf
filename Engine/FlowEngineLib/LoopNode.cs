@@ -73,7 +73,7 @@ public class LoopNode : CVCommonNode
 		m_step_val = 1f;
 		m_end_val = 5f;
 		base.AutoSize = false;
-		base.Width = 150;
+		base.Width = StandardNodeWidth;
 		base.Height = 100;
 		base.TitleHeight += 10;
 	}

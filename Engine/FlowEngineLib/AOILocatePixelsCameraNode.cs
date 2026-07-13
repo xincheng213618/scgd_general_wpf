@@ -7,6 +7,8 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/02 相机")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CaliTempName", typeof(FlowEngineLib.PropertyEditor.FlowCalibrationTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("AlgTempName", typeof(FlowEngineLib.PropertyEditor.FlowLedCheck2JsonTemplateEditor))]
 public class AOILocatePixelsCameraNode : CVBaseServerNode
 {
 	private ImgSaveBppMode _ImgSaveMode;

@@ -14,7 +14,8 @@
 | 修改 UI 类库、菜单、设置或图像编辑器 | [UI 组件](../04-api-reference/ui-components/README.md) |
 | 新增 Flow 节点或扩展点 | [扩展点](../04-api-reference/extensions/README.md)、[Flow 节点扩展](../04-api-reference/extensions/flow-node.md) |
 | 维护插件市场后端 | [插件市场后端](./backend/README.md) |
-| 维护 Copilot 或本地 MCP 集成 | [ColorVision MCP](./core-concepts/colorvision-mcp.md) |
+| 维护 Copilot Agent 或工具执行链 | [Copilot Agent Runtime](./core-concepts/copilot-agent-runtime.md) |
+| 维护本地 MCP 集成 | [ColorVision MCP](./core-concepts/colorvision-mcp.md) |
 
 ## 开发前确认
 
@@ -38,8 +39,8 @@ npm run docs:validate
 插件和项目包打包：
 
 ```powershell
-Scripts\package_plugin.bat Spectrum --no-upload
-Scripts\package_project.bat ProjectARVR --no-upload
+Scripts\package_plugin.bat Spectrum
+Scripts\package_project.bat ProjectLUX
 ```
 
 正式发布：

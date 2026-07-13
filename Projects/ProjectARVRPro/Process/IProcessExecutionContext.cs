@@ -8,12 +8,12 @@ namespace ProjectARVRPro.Process
     {
         public ILog Log { get; } = LogManager.GetLogger(typeof(IProcessExecutionContext));
 
-        public MeasureBatchModel Batch { get; set; }
-        public ProjectARVRReuslt Result { get; set; }
-        public ObjectiveTestResult ObjectiveTestResult { get; set; }
+        public MeasureBatchModel Batch { get; set; } = null!;
+        public ProjectARVRReuslt Result { get; set; } = null!;
+        public ObjectiveTestResult ObjectiveTestResult { get; set; } = null!;
 
-        public RecipeConfig RecipeConfig { get;  } = RecipeManager.GetInstance().RecipeConfig;
+        public RecipeConfig RecipeConfig { get; } = ProcessManager.GetInstance().RecipeConfig;
 
-        public ImageView ImageView { get; set; }
+        public ImageView ImageView { get; set; } = null!;
     }
 }

@@ -10,6 +10,7 @@ public class OLEDImageCroppingNode : CVBaseServerNodeHub
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDImageCroppingNode));
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowImageCroppingTemplateEditor))]
 	public string TempName
 	{
 		get
@@ -23,6 +24,8 @@ public class OLEDImageCroppingNode : CVBaseServerNodeHub
 	}
 
 	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName
 	{
 		get

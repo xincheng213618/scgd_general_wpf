@@ -5,6 +5,7 @@ using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Drawing;
@@ -20,6 +21,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected string _Token;
 	protected int _MaxTime;
+	protected bool _ContinueOnFail;
 
 	protected STNodeOption m_op_svr_out_act;
 
@@ -51,6 +53,21 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected CVServerResponse svrRecvResp;
 
+	[System.ComponentModel.DataAnnotations.Display(Order = -200)]
+    [System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowDeviceNameEditor))]
+    [STNodeProperty("设备代码", "设备代码", false, false)]
+	public new string DeviceCode
+	{
+		get
+		{
+			return base.DeviceCode;
+		}
+		set
+		{
+			base.DeviceCode = value;
+		}
+	}
+
 	[STNodeProperty("Token", "Token", true)]
 	public string Token
 	{
@@ -64,6 +81,19 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
+
+	[STNodeProperty("允许失败继续", "服务返回Fail时按正常流程继续", true)]
+	public bool ContinueOnFail
+	{
+		get
+		{
+			return _ContinueOnFail;
+		}
+		set
+		{
+			_ContinueOnFail = value;
+		}
+	}
 
 	[STNodeProperty("最大超时", "最大超时", false, false)]
 	public int MaxTime
@@ -105,13 +135,15 @@ public class CVBaseServerNode : CVCommonNode
 		operatorCode = "Finish";
 		m_has_svr_item = false;
 		m_is_out_release = true;
+		_ContinueOnFail = false;
 		_TempId = -1;
 		_MaxTime = 5000;
 		_TempName = "";
+		_ImgFileName = string.Empty;
 		base.AutoSize = false;
-		base.Width = 150;
+		base.Width = StandardNodeWidth;
 		base.Height = 85;
-		m_custom_item = new Rectangle(5, 30, 140, 18);
+		m_custom_item = new Rectangle(StandardNodeContentPadding, 30, StandardNodeContentWidth, 18);
 	}
 
 
@@ -223,7 +255,7 @@ public class CVBaseServerNode : CVCommonNode
 		int maxDelay = GetMaxDelay();
 
         // 使用异步等待，避免线程池阻塞
-        logger.InfoFormat("[{0}]WaitForMessageAsync", ToShortString());
+        logger.InfoFormat("[{0}] WaitForMessageAsync", ToShortString());
         bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
 		if (logger.IsInfoEnabled)
 		{
@@ -637,9 +669,48 @@ public class CVBaseServerNode : CVCommonNode
 		m_op_end.TransferData(action);
 	}
 
+	private bool ShouldContinueOnFailedResponse(CVServerResponse resp)
+	{
+		return ContinueOnFail && resp.Status == ActionStatusEnum.Failed;
+	}
+
+	private void DoIgnoredFailedResponse(CVTransAction trans, CVServerResponse resp)
+	{
+		string nodeName = GetFullNodeName();
+		trans.trans_action.SetStatusType(StatusTypeEnum.Runing);
+		AddIgnoredFailedNode(trans.trans_action, resp, nodeName);
+		if (resp.Data != null)
+		{
+			trans.NodeFinished(base.NodeType, resp.Data);
+		}
+		logger.WarnFormat("[{0}]CVTransAction Failed ignored by ContinueOnFail => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
+	}
+
+	private static void AddIgnoredFailedNode(CVStartCFC action, CVServerResponse resp, string nodeName)
+	{
+		const string key = "IgnoredFailedNodes";
+		Dictionary<string, object> item = new Dictionary<string, object>
+		{
+			["NodeName"] = nodeName,
+			["Message"] = resp.Message ?? string.Empty,
+			["EventName"] = resp.EventName ?? string.Empty,
+			["MsgID"] = resp.Id ?? string.Empty,
+			["Time"] = DateTime.Now.ToString("O")
+		};
+		if (action.Data.TryGetValue(key, out object value) && value is List<Dictionary<string, object>> list)
+		{
+			list.Add(item);
+		}
+		else
+		{
+			action.Data[key] = new List<Dictionary<string, object>> { item };
+		}
+	}
+
 	private void DoTransNodeEndOut(CVTransAction trans, CVBaseEventCmd cmd)
 	{
 		CVServerResponse resp = cmd.resp;
+		bool isIgnoredFailed = ShouldContinueOnFailedResponse(resp);
 		if (resp.Status == ActionStatusEnum.Finish)
 		{
 			dynamic data = resp.Data;
@@ -648,13 +719,17 @@ public class CVBaseServerNode : CVCommonNode
 				trans.NodeFinished(base.NodeType, data);
 			}
 		}
+		else if (isIgnoredFailed)
+		{
+			DoIgnoredFailedResponse(trans, resp);
+		}
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
 			trans.NodeFailed(cmd.resp.Message, GetFullNodeName());
 			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
 		}
 
-        trans.AddTTL();
+		trans.AddTTL();
         TimeSpan timeSpan = DateTime.Now - trans.startTime;
 		if (logger.IsInfoEnabled)
 		{
@@ -666,8 +741,8 @@ public class CVBaseServerNode : CVCommonNode
 			RecvTopic = GetRecvTopic(),
 			RecvMsgId = cmd.cmd?.MsgID,
 			RecvEventName = cmd.resp?.EventName,
-			RecvStatusCode = cmd.resp?.Status == ActionStatusEnum.Finish ? 0 : (cmd.resp?.Status == ActionStatusEnum.Failed ? -1 : null),
-			RecvStatusMessage = cmd.resp?.Message,
+			RecvStatusCode = cmd.resp?.Status == ActionStatusEnum.Finish || isIgnoredFailed ? 0 : (cmd.resp?.Status == ActionStatusEnum.Failed ? -1 : null),
+			RecvStatusMessage = isIgnoredFailed ? $"Ignored Failed: {cmd.resp?.Message}" : cmd.resp?.Message,
 			RecvPayload = cmd.resp?.Data != null ? JsonConvert.SerializeObject(cmd.resp.Data) : null
 		});
 	}

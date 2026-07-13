@@ -16,6 +16,8 @@ namespace ColorVision.Engine.Services
 
     internal static partial class ServicesHelper
     {
+        public const string ImageFileDialogFilter = "Image files (*.jpg, *.jpeg, *.png, *.tif, *.tiff, *.bmp, *.gif, *.webp, *.cvraw, *.cvcie)|*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif;*.webp;*.cvraw;*.cvcie|All files (*.*)|*.*";
+
         public static bool IsTemplateSelected(ComboBox comboBox, string errorMessage)
         {
             if (comboBox.SelectedIndex == -1)

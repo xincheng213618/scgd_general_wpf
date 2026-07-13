@@ -13,6 +13,8 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Jsons.AutoExpTime;
+using ColorVision.Engine.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Filters;
@@ -29,6 +31,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -56,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public double CloseTime { get; set; } = 10;
         public double LocalVideoOpenTime { get; set; } = 3000;
 
-        [DisplayName("清晰度区域")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_RoiRegion))]
         public Rect LocalVideoRoi
         {
             get => _LocalVideoRoi;
@@ -66,15 +70,32 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (_LocalVideoRoi == normalized) return;
                 _LocalVideoRoi = normalized;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(LocalVideoRoiX));
+                OnPropertyChanged(nameof(LocalVideoRoiY));
+                OnPropertyChanged(nameof(LocalVideoRoiWidth));
+                OnPropertyChanged(nameof(LocalVideoRoiHeight));
             }
         }
-        private Rect _LocalVideoRoi = new(50, 50, 100, 100);
+        private Rect _LocalVideoRoi = new(0, 0, 0, 0);
 
-        [DisplayName("启用十字导引")]
+        [Browsable(false), JsonIgnore]
+        public double LocalVideoRoiX { get => LocalVideoRoi.X; set => LocalVideoRoi = new Rect(value, LocalVideoRoi.Y, LocalVideoRoi.Width, LocalVideoRoi.Height); }
+
+        [Browsable(false), JsonIgnore]
+        public double LocalVideoRoiY { get => LocalVideoRoi.Y; set => LocalVideoRoi = new Rect(LocalVideoRoi.X, value, LocalVideoRoi.Width, LocalVideoRoi.Height); }
+
+        [Browsable(false), JsonIgnore]
+        public double LocalVideoRoiWidth { get => LocalVideoRoi.Width; set => LocalVideoRoi = new Rect(LocalVideoRoi.X, LocalVideoRoi.Y, value, LocalVideoRoi.Height); }
+
+        [Browsable(false), JsonIgnore]
+        public double LocalVideoRoiHeight { get => LocalVideoRoi.Height; set => LocalVideoRoi = new Rect(LocalVideoRoi.X, LocalVideoRoi.Y, LocalVideoRoi.Width, value); }
+
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_EnableCrossGuide))]
         public bool IsCrossGuideEnabled { get => _IsCrossGuideEnabled; set { _IsCrossGuideEnabled = value; OnPropertyChanged(); } }
         private bool _IsCrossGuideEnabled;
 
-        [DisplayName("十字导引区域")]
+        [Browsable(false)]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_CrossGuideRegion))]
         public Rect CrossGuideRoi
         {
             get => _CrossGuideRoi;
@@ -88,29 +109,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         private Rect _CrossGuideRoi = Rect.Empty;
 
-        [DisplayName("标准中心X")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_StandardCenterX))]
         public double CrossGuideStandardCenterX { get => _CrossGuideStandardCenterX; set { _CrossGuideStandardCenterX = value; OnPropertyChanged(); } }
         private double _CrossGuideStandardCenterX;
 
-        [DisplayName("标准中心Y")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_StandardCenterY))]
         public double CrossGuideStandardCenterY { get => _CrossGuideStandardCenterY; set { _CrossGuideStandardCenterY = value; OnPropertyChanged(); } }
         private double _CrossGuideStandardCenterY;
 
-        [DisplayName("合格阈值(px)")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_TolerancePx))]
         public double CrossGuideTolerancePx { get => _CrossGuideTolerancePx; set { _CrossGuideTolerancePx = Math.Max(0, value); OnPropertyChanged(); } }
         private double _CrossGuideTolerancePx = 3;
 
-        [DisplayName("刷新间隔(ms)")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_RefreshIntervalMs))]
         public int CrossGuideIntervalMs { get => _CrossGuideIntervalMs; set { _CrossGuideIntervalMs = Math.Max(50, value); OnPropertyChanged(); } }
         private int _CrossGuideIntervalMs = 300;
 
-        [DisplayName("亮度阈值比例")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_BrightnessThresholdRatio))]
         public double CrossGuideThresholdRatio { get => _CrossGuideThresholdRatio; set { _CrossGuideThresholdRatio = Math.Clamp(value, 0.05, 0.95); OnPropertyChanged(); } }
         private double _CrossGuideThresholdRatio = 0.45;
 
-        [DisplayName("最小覆盖比例")]
+        [LocalizedDisplayName(nameof(Properties.Resources.Camera_MinCoverageRatio))]
         public double CrossGuideMinCoverageRatio { get => _CrossGuideMinCoverageRatio; set { _CrossGuideMinCoverageRatio = Math.Clamp(value, 0.01, 0.95); OnPropertyChanged(); } }
-        private double _CrossGuideMinCoverageRatio = 0.08;
+        private double _CrossGuideMinCoverageRatio = 0.02;
 
         [JsonIgnore]
         public string CrossGuideStatus { get => _CrossGuideStatus; set { if (_CrossGuideStatus == value) return; _CrossGuideStatus = value; OnPropertyChanged(); } }
@@ -196,6 +217,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
 
+        private readonly ObservableCollection<AutoExpTimeTemplateOption> _autoExpTimeTemplateOptions = new();
+        private readonly ObservableCollection<AutoExpTimeTemplateOption> _autoExpTimeTemplateOptionsWithEmpty = new();
+
         // Video display related fields
         private readonly CameraRealtimeFramePipeline _localRealtimePipeline;
         private readonly VideoCrossGuideProcessor _crossGuideProcessor;
@@ -207,6 +231,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _localVideoImageEditModeSnapshot;
         private bool _isLocalVideoRoiVisualRemoveSubscribed;
         private bool _crossGuideOverlayAdded;
+
+        private enum AutoExpTimeTemplateKind
+        {
+            Empty,
+            V1Detail,
+            V2Json
+        }
+
+        private sealed class AutoExpTimeTemplateOption
+        {
+            public string DisplayName { get; init; } = string.Empty;
+            public ParamBase Value { get; init; } = new();
+            public AutoExpTimeTemplateKind Kind { get; init; }
+        }
 
         public DisplayCamera(DeviceCamera device)
         {
@@ -238,11 +276,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             ComboxCalibrationTemplate.DataContext = Device.DisplayConfig;
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
-            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTime.Params;
+            BindAutoExpTimeTemplateSources();
+
+            ComboxAutoExpTimeParamTemplate.ItemsSource = _autoExpTimeTemplateOptions;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
             ComboxAutoExpTimeParamTemplate.DataContext = Device.DisplayConfig;
 
-            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTime.Params.CreateEmpty();
+            ComboxAutoExpTimeParamTemplate1.ItemsSource = _autoExpTimeTemplateOptionsWithEmpty;
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
             ComboxAutoExpTimeParamTemplate1.DataContext = Device.DisplayConfig;
 
@@ -254,8 +294,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboBoxHDRTemplate.SelectedIndex = 0;
             ComboBoxHDRTemplate.DataContext = Device.DisplayConfig;
 
-            InitializeLocalVideoRoiEditor();
-            InitializeCrossGuideRoiEditor();
             DisplayCameraConfig.PropertyChanged += DisplayCameraConfig_PropertyChanged;
             Device.CameraVideoControl.Config.PropertyChanged += RealtimeCameraConfig_PropertyChanged;
             ApplyLocalVideoRoiToRealtimeConfig();
@@ -289,16 +327,82 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         }
 
-        private void InitializeLocalVideoRoiEditor()
+        private void BindAutoExpTimeTemplateSources()
         {
-            LocalVideoRoiEditorHost.Children.Clear();
-            LocalVideoRoiEditorHost.Children.Add(PropertyEditorHelper.GenProperties(DisplayCameraConfig, nameof(DisplayCameraConfig.LocalVideoRoi)));
+            TemplateAutoExpTime.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
+            TemplateAutoExpTime.Params.CollectionChanged += AutoExpTimeTemplateParams_CollectionChanged;
+            TemplateAutoExpTimeV2.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
+            TemplateAutoExpTimeV2.Params.CollectionChanged += AutoExpTimeTemplateParams_CollectionChanged;
+            RefreshAutoExpTimeTemplateOptions();
         }
 
-        private void InitializeCrossGuideRoiEditor()
+        private void AutoExpTimeTemplateParams_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            LocalVideoCrossGuideRoiEditorHost.Children.Clear();
-            LocalVideoCrossGuideRoiEditorHost.Children.Add(PropertyEditorHelper.GenProperties(DisplayCameraConfig, nameof(DisplayCameraConfig.CrossGuideRoi)));
+            RefreshAutoExpTimeTemplateOptions();
+        }
+
+        private void RefreshAutoExpTimeTemplateOptions()
+        {
+            var selectedOption = ComboxAutoExpTimeParamTemplate?.SelectedItem as AutoExpTimeTemplateOption;
+            var selectedOptionWithEmpty = ComboxAutoExpTimeParamTemplate1?.SelectedItem as AutoExpTimeTemplateOption;
+
+            _autoExpTimeTemplateOptions.Clear();
+            foreach (var option in EnumerateAutoExpTimeTemplateOptions())
+                _autoExpTimeTemplateOptions.Add(option);
+
+            _autoExpTimeTemplateOptionsWithEmpty.Clear();
+            _autoExpTimeTemplateOptionsWithEmpty.Add(new AutoExpTimeTemplateOption
+            {
+                DisplayName = "Empty",
+                Value = new ParamBase { Id = -1, Name = "Empty" },
+                Kind = AutoExpTimeTemplateKind.Empty
+            });
+            foreach (var option in EnumerateAutoExpTimeTemplateOptions())
+                _autoExpTimeTemplateOptionsWithEmpty.Add(option);
+
+            RestoreAutoExpTimeSelection(ComboxAutoExpTimeParamTemplate, _autoExpTimeTemplateOptions, selectedOption, 0);
+            RestoreAutoExpTimeSelection(ComboxAutoExpTimeParamTemplate1, _autoExpTimeTemplateOptionsWithEmpty, selectedOptionWithEmpty, 0);
+        }
+
+        private static IEnumerable<AutoExpTimeTemplateOption> EnumerateAutoExpTimeTemplateOptions()
+        {
+            foreach (var template in TemplateAutoExpTime.Params)
+            {
+                yield return new AutoExpTimeTemplateOption
+                {
+                    DisplayName = $"[V1] {template.Key}",
+                    Value = template.Value,
+                    Kind = AutoExpTimeTemplateKind.V1Detail
+                };
+            }
+
+            foreach (var template in TemplateAutoExpTimeV2.Params)
+            {
+                yield return new AutoExpTimeTemplateOption
+                {
+                    DisplayName = $"[V2] {template.Key}",
+                    Value = template.Value,
+                    Kind = AutoExpTimeTemplateKind.V2Json
+                };
+            }
+        }
+
+        private static void RestoreAutoExpTimeSelection(ComboBox? comboBox, ObservableCollection<AutoExpTimeTemplateOption> options, AutoExpTimeTemplateOption? previousSelection, int defaultIndex)
+        {
+            if (comboBox == null || comboBox.ItemsSource == null || options.Count == 0)
+                return;
+
+            if (previousSelection != null)
+            {
+                var matched = options.FirstOrDefault(option => option.Kind == previousSelection.Kind && option.Value.Id == previousSelection.Value.Id);
+                if (matched != null)
+                {
+                    comboBox.SelectedItem = matched;
+                    return;
+                }
+            }
+
+            comboBox.SelectedIndex = defaultIndex >= 0 && defaultIndex < options.Count ? defaultIndex : -1;
         }
 
         private void DisplayCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -309,11 +413,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 ApplyLocalVideoRoiToRealtimeConfig();
                 RefreshLocalVideoRoiVisual(selectNewVisual: true);
+                RefreshCrossGuideOverlay();
                 SaveDisplayConfig();
             }
 
             if (IsCrossGuideConfigProperty(e.PropertyName))
             {
+                if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DisplayCameraConfig.IsCrossGuideEnabled))
+                    RefreshLocalVideoRoiVisual(selectNewVisual: true);
+
                 RefreshCrossGuideOverlay();
                 if (e.PropertyName != nameof(DisplayCameraConfig.CrossGuideStatus))
                     SaveDisplayConfig();
@@ -335,7 +443,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             RectangleTextProperties rectangle = Device.CameraVideoControl.Config.RectangleTextProperties;
             rectangle.Rect = DisplayCameraConfig.LocalVideoRoi;
             rectangle.Brush = Brushes.Transparent;
-            rectangle.Pen = new Pen(Brushes.LimeGreen, 1);
+            rectangle.Pen = new Pen(Brushes.LimeGreen, 4);
             rectangle.Foreground = Brushes.DarkOrange;
             rectangle.Position = RectangleTextPosition.Top;
             rectangle.IsShowText = true;
@@ -343,6 +451,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
         private bool IsRealtimeArticulationEnabled => Device.CameraVideoControl.Config.IsCalArtculation;
+
+        private bool IsLocalVideoRoiVisualNeeded => IsRealtimeArticulationEnabled || DisplayCameraConfig.IsCrossGuideEnabled;
 
         private static bool IsVisibleLocalVideoRoi(Rect rect) => rect.Width > 0 && rect.Height > 0;
 
@@ -352,7 +462,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 Rect = rect,
                 Brush = Brushes.Transparent,
-                Pen = new Pen(Brushes.LimeGreen, 1),
+                Pen = new Pen(Brushes.LimeGreen, 4),
                 Foreground = Brushes.LimeGreen,
                 Text = string.Empty,
                 Position = RectangleTextPosition.Top,
@@ -362,7 +472,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RefreshLocalVideoRoiVisual(bool selectNewVisual = false)
         {
-            if (!Device.DisplayConfig.IsLocalVideoOpen || !IsRealtimeArticulationEnabled)
+            if (!Device.DisplayConfig.IsLocalVideoOpen || !IsLocalVideoRoiVisualNeeded)
             {
                 RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
                 return;
@@ -380,7 +490,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EnsureLocalVideoRoiVisual(bool select = true)
         {
-            if (!IsRealtimeArticulationEnabled)
+            if (!IsLocalVideoRoiVisualNeeded)
             {
                 RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
                 return;
@@ -566,8 +676,38 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void LocalVideoRoiDefault_Click(object sender, RoutedEventArgs e)
         {
-            DisplayCameraConfig.LocalVideoRoi = new Rect(50, 50, 100, 100);
+            DisplayCameraConfig.LocalVideoRoi = CreateCenteredLocalVideoRoi();
             RefreshLocalVideoRoiVisual(selectNewVisual: true);
+        }
+
+        private Rect CreateCenteredLocalVideoRoi()
+        {
+            if (!TryGetLocalVideoFrameSize(out int width, out int height))
+                return new Rect(0, 0, 0, 0);
+
+            double roiWidth = Math.Clamp(Math.Round(width * 0.35), 1, width);
+            double roiHeight = Math.Clamp(Math.Round(height * 0.35), 1, height);
+            double x = Math.Round((width - roiWidth) / 2);
+            double y = Math.Round((height - roiHeight) / 2);
+            return new Rect(x, y, roiWidth, roiHeight);
+        }
+
+        private bool TryGetLocalVideoFrameSize(out int width, out int height)
+        {
+            width = Device.View.ImageView.Config.GetProperties<int>(ImageViewPropertyKeys.Cols);
+            height = Device.View.ImageView.Config.GetProperties<int>(ImageViewPropertyKeys.Rows);
+            if (width > 0 && height > 0) return true;
+
+            if (Device.View.ImageView.ImageShow.Source is System.Windows.Media.Imaging.BitmapSource bitmapSource)
+            {
+                width = bitmapSource.PixelWidth;
+                height = bitmapSource.PixelHeight;
+                return width > 0 && height > 0;
+            }
+
+            width = 0;
+            height = 0;
+            return false;
         }
 
         private void LocalVideoRoiFull_Click(object sender, RoutedEventArgs e)
@@ -578,6 +718,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RefreshCrossGuideOverlay()
         {
+            _localRealtimePipeline.IsMetricsVisible = !Device.DisplayConfig.IsCrossGuideEnabled;
+
             if (!Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
             {
                 RemoveCrossGuideOverlay();
@@ -634,7 +776,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (width <= 0 || height <= 0) return false;
 
             int transform = Device.DisplayConfig.LocalVideoTransform;
-            RoiRect sourceRoi = VideoCrossGuideDetector.TransformDisplayRoiToSource(Device.DisplayConfig.CrossGuideRoi, width, height, transform);
+            RoiRect sourceRoi = VideoCrossGuideDetector.TransformDisplayRoiToSource(Device.DisplayConfig.LocalVideoRoi, width, height, transform);
             Point standardCenter = new(Device.DisplayConfig.CrossGuideStandardCenterX, Device.DisplayConfig.CrossGuideStandardCenterY);
             request = new VideoCrossGuideRequest(
                 sourceRoi,
@@ -655,7 +797,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     return;
 
                 EnsureCrossGuideOverlay();
-                _crossGuideOverlayVisual.Update(result);
+                _crossGuideOverlayVisual.Update(result, _localRealtimePipeline.CurrentMetrics);
                 Device.DisplayConfig.CrossGuideStatus = BuildCrossGuideStatus(result);
             }));
         }
@@ -665,7 +807,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (!result.Found) return result.Message;
 
             string state = result.IsPass ? "PASS" : "NG";
-            return $"dx:{result.OffsetX:F2}px  dy:{result.OffsetY:F2}px  d:{result.Distance:F2}px  {state}";
+            return $"dx(center):{result.OffsetX:F2}px  dy(center):{result.OffsetY:F2}px  d:{result.Distance:F2}px  Rotation:{result.RotationZDeg:+0.00;-0.00;0.00}deg  XRotation:{result.XRotationDeg:+0.00;-0.00;0.00}deg  YRotation:{result.YRotationDeg:+0.00;-0.00;0.00}deg  {state}";
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
@@ -775,7 +917,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void GetData_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return;
 
             if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param)
             {
@@ -981,8 +1123,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private static string BuildMeasureResultErrorMessage(MeasureResultImgModel result)
         {
-            string message = string.IsNullOrWhiteSpace(result.Result) ? "未知错误" : result.Result;
-            return $"数据库失败记录 Id:{result.Id}, ResultCode:{result.ResultCode}, Message:{message}";
+            string message = string.IsNullOrWhiteSpace(result.Result) ? Properties.Resources.Camera_UnknownError : result.Result;
+            return string.Format(Properties.Resources.Camera_DatabaseFailureRecord, result.Id, result.ResultCode, message);
         }
 
         private async void HandleCaptureFail(string? message, bool refreshResults = true)
@@ -992,8 +1134,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 View.SearchAll();
             }
 
-            string errorMessage = string.IsNullOrWhiteSpace(message) ? "取图失败" : message;
-            string prompt = errorMessage + Environment.NewLine + Properties.Resources.TryRestartService + Environment.NewLine + "是否重启服务？";
+            string errorMessage = string.IsNullOrWhiteSpace(message) ? Properties.Resources.Camera_CaptureFailed : message;
+            string prompt = errorMessage + Environment.NewLine + Properties.Resources.TryRestartService + Environment.NewLine + Properties.Resources.Camera_ConfirmRestartService;
             if (MessageBox.Show(Application.Current.GetActiveWindow(), prompt, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 try
@@ -1010,7 +1152,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord? TakePhoto(double exp = 0)
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return null;
 
             if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
             {
@@ -1049,7 +1191,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord? GetData()
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return null;
             if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return null;
 
             double[] expTime = null;
@@ -1066,7 +1208,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (sender is Button button)
             {
-                if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
+                if (ComboxAutoExpTimeParamTemplate.SelectedValue is ParamBase param && param.Id != -1)
                 {
                     var msgRecord = DService.GetAutoExpTime(param);
                     msgRecord.MsgRecordStateChanged += (s, e) =>
@@ -1194,8 +1336,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EditAutoExpTime(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
-            windowTemplate.ShowDialog();
+            EditSelectedAutoExpTimeTemplate(ComboxAutoExpTimeParamTemplate);
         }
 
         private void EditAutoFocus(object sender, RoutedEventArgs e)
@@ -1206,8 +1347,39 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EditAutoExpTime1(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime(), ComboxAutoExpTimeParamTemplate1.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            EditSelectedAutoExpTimeTemplate(ComboxAutoExpTimeParamTemplate1);
+        }
+
+        private void EditSelectedAutoExpTimeTemplate(ComboBox comboBox)
+        {
+            ITemplate template;
+            int defaultIndex;
+
+            if (comboBox.SelectedItem is AutoExpTimeTemplateOption { Kind: AutoExpTimeTemplateKind.V1Detail } v1Option)
+            {
+                template = new TemplateAutoExpTime();
+                defaultIndex = FindTemplateIndex(TemplateAutoExpTime.Params, v1Option.Value);
+            }
+            else if (comboBox.SelectedItem is AutoExpTimeTemplateOption { Kind: AutoExpTimeTemplateKind.V2Json } v2Option)
+            {
+                template = new TemplateAutoExpTimeV2();
+                defaultIndex = FindTemplateIndex(TemplateAutoExpTimeV2.Params, v2Option.Value);
+            }
+            else
+            {
+                template = new TemplateAutoExpTimeV2();
+                defaultIndex = 0;
+            }
+
+            var windowTemplate = new TemplateEditorWindow(template, defaultIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
+            RefreshAutoExpTimeTemplateOptions();
+        }
+
+        private static int FindTemplateIndex<T>(ObservableCollection<TemplateModel<T>> templates, ParamBase selectedValue) where T : ParamBase
+        {
+            int index = templates.ToList().FindIndex(item => item.Value.Id == selectedValue.Id);
+            return index < 0 ? 0 : index;
         }
 
 
@@ -1296,7 +1468,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void ComboxAutoExpTimeParamTemplate1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return;
 
             Device.Config.IsAutoExpose = autoExpTimeParam.Id != -1;
         }
@@ -1340,6 +1512,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            TemplateAutoExpTime.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
+            TemplateAutoExpTimeV2.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
             DisplayCameraConfig.PropertyChanged -= DisplayCameraConfig_PropertyChanged;
             Device.CameraVideoControl.Config.PropertyChanged -= RealtimeCameraConfig_PropertyChanged;
             RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
@@ -1449,6 +1623,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
+        private static void SaveLocalPreferences()
+        {
+            ConfigHandler.GetInstance().SaveConfigs();
+        }
+
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
             if (!Device.DisplayConfig.IsLocalVideoOpen)
@@ -1530,7 +1709,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 button.Content = "Close Video";
                 ApplyLocalVideoRoiToRealtimeConfig();
-                _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false);
+                _localRealtimePipeline.Start(Device.View.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false, showOverlayMetrics: !Device.DisplayConfig.IsCrossGuideEnabled);
                 SetLocalVideoPoiTemplateSupported(true);
                 Device.DisplayConfig.IsLocalVideoOpen = true;
                 RefreshLocalVideoRoiVisual(selectNewVisual: true);
@@ -1561,6 +1740,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
             }
+            else
+            {
+                cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
+            }
 
             string cameraId = ResolveLocalCameraId();
             if (string.IsNullOrWhiteSpace(cameraId))
@@ -1568,37 +1751,85 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return (false, "CameraID is empty, please check CameraCode configuration");
             }
 
-            Device.Config.CameraID = cameraId;
-            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
-            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
-            cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
+            ApplyLocalVideoCameraSettings(cameraId);
 
             int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
             logger.Info("CM_Open");
-            if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+            if (!TryOpenLocalVideoCamera(out nErr, out string errorMessage))
             {
-                string szMsg = string.Empty;
-                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                return (false, szMsg);
-            }
-
-            if (Device.PhyCamera?.Config?.CameraCfg?.IsRoiConfigured == true)
-            {
-                cvCameraCSLib.CM_Close(m_hCamHandle);
-                if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+                string retryCameraId = ResolveLocalCameraId(ignoreConfiguredId: true);
+                if (IsCameraIdMismatchError(errorMessage) && !string.IsNullOrWhiteSpace(retryCameraId) && !retryCameraId.Equals(cameraId, StringComparison.OrdinalIgnoreCase))
                 {
-                    string szMsg = string.Empty;
-                    cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                    return (false, szMsg);
+                    logger.Warn($"CM_Open failed because camera ID did not match, retry with refreshed CameraID. old={cameraId}, new={retryCameraId}");
+                    ApplyLocalVideoCameraSettings(retryCameraId);
+                    cameraId = retryCameraId;
+                    if (!TryOpenLocalVideoCamera(out nErr, out errorMessage))
+                    {
+                        return (false, errorMessage);
+                    }
+                }
+                else
+                {
+                    return (false, errorMessage);
                 }
             }
 
+            if (!Device.Config.CameraID.Equals(cameraId, StringComparison.OrdinalIgnoreCase))
+            {
+                Device.Config.CameraID = cameraId;
+            }
+            SaveLocalPreferences();
             cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
             cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
             callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
             cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
 
             return (true, string.Empty);
+        }
+
+        private void ApplyLocalVideoCameraSettings(string cameraId)
+        {
+            Device.Config.CameraID = cameraId;
+            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
+            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
+            cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
+        }
+
+        private bool TryOpenLocalVideoCamera(out int errorCode, out string errorMessage)
+        {
+            errorCode = cvCameraCSLib.CM_Open(m_hCamHandle);
+            if (errorCode != cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                errorMessage = GetCameraErrorMessage(errorCode);
+                return false;
+            }
+
+            if (Device.PhyCamera?.Config?.CameraCfg?.IsRoiConfigured == true)
+            {
+                cvCameraCSLib.CM_Close(m_hCamHandle);
+                errorCode = cvCameraCSLib.CM_Open(m_hCamHandle);
+                if (errorCode != cvErrorDefine.CV_ERR_SUCCESS)
+                {
+                    errorMessage = GetCameraErrorMessage(errorCode);
+                    return false;
+                }
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        private static string GetCameraErrorMessage(int errorCode)
+        {
+            string message = string.Empty;
+            cvCameraCSLib.CM_GetErrorMessage(errorCode, ref message);
+            return string.IsNullOrWhiteSpace(message) ? $"CM_Open failed: {errorCode}" : message;
+        }
+
+        private static bool IsCameraIdMismatchError(string errorMessage)
+        {
+            return errorMessage.Contains("camera ID", StringComparison.OrdinalIgnoreCase)
+                && errorMessage.Contains("match", StringComparison.OrdinalIgnoreCase);
         }
 
         private void SetLocalVideoPoiTemplateSupported(bool isSupported)
@@ -1611,7 +1842,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     PoiImageViewComponent.IsTemplateSupportedRuntimeKey,
                     isSupported,
                     nameof(DisplayCamera),
-                    "本地视频模式是否允许选择 POI 模板");
+                    Properties.Resources.Camera_LocalVideoPoiTemplateSupport);
                 imageView.ImageShow.RaiseImageInitialized();
             }
 
@@ -1625,43 +1856,57 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private string ResolveLocalCameraId()
+        private string ResolveLocalCameraId(bool ignoreConfiguredId = false)
         {
-            if (!string.IsNullOrWhiteSpace(Device.Config.CameraID))
+            if (!TryGetLocalCameraIds(out IReadOnlyList<string> cameraIds))
+            {
+                return ignoreConfiguredId ? string.Empty : Device.Config.CameraID ?? string.Empty;
+            }
+
+            if (!ignoreConfiguredId
+                && !string.IsNullOrWhiteSpace(Device.Config.CameraID)
+                && cameraIds.Contains(Device.Config.CameraID, StringComparer.OrdinalIgnoreCase))
             {
                 return Device.Config.CameraID;
             }
 
-            string szText = string.Empty;
-            if (!cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
-            {
-                return string.Empty;
-            }
-
-            JObject jObject = JsonConvert.DeserializeObject<JObject>(szText);
-            JToken[] data = jObject?["ID"]?.ToArray();
-            if (data == null)
-            {
-                return string.Empty;
-            }
-
             string cameraCode = Device.Config.CameraCode ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(cameraCode))
+            if (!string.IsNullOrWhiteSpace(cameraCode))
             {
-                return string.Empty;
-            }
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                string cameraId = data[i].ToString();
-                string md5 = ColorVision.Common.Utilities.Tool.GetMD5(cameraId);
-                if (md5.Contains(cameraCode, StringComparison.OrdinalIgnoreCase))
+                foreach (string cameraId in cameraIds)
                 {
-                    return cameraId;
+                    string md5 = ColorVision.Common.Utilities.Tool.GetMD5(cameraId);
+                    if (md5.Contains(cameraCode, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return cameraId;
+                    }
                 }
             }
 
-            return string.Empty;
+            return cameraIds.Count > 0 ? cameraIds[0] : string.Empty;
+        }
+
+        private bool TryGetLocalCameraIds(out IReadOnlyList<string> cameraIds)
+        {
+            cameraIds = Array.Empty<string>();
+
+            string szText = string.Empty;
+            if (!cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
+            {
+                logger.Warn($"GetAllCameraIDV1 failed for {Device.Config.CameraModel}");
+                return false;
+            }
+
+            JObject jObject = JsonConvert.DeserializeObject<JObject>(szText);
+            cameraIds = jObject?["ID"]?
+                .ToArray()
+                .Select(token => token.ToString().Trim())
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray()
+                ?? Array.Empty<string>();
+
+            return cameraIds.Count > 0;
         }
 
         private void PreviewSliderLocalExp_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

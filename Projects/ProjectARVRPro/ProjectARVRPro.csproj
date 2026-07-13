@@ -6,7 +6,9 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.7.14</VersionPrefix>
+		<VersionPrefix>1.1.7.44</VersionPrefix>
+		<ProjectRootDir Condition="'$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)</ProjectRootDir>
+		<ProjectRootDir Condition="'$(ProjectRootDir)' == ''">$(MSBuildProjectDirectory)\..\..\</ProjectRootDir>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -17,14 +19,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<PackageReference Include="NPOI" Version="2.8.0" />
-		<Reference Include="FlowEngineLib" Condition="!Exists('..\..\Engine\FlowEngineLib\FlowEngineLib.csproj')">
-			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
-		<Reference Include="ST.Library.UI" Condition="!Exists('..\..\Engine\ST.Library.UI\ST.Library.UI.csproj')">
-			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -58,10 +52,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Remove="Tools\DemuraTool\**" />
+		<Content Include="Tools\DemuraTool\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
 		<Folder Include="Assets\" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Condition="'$(SolutionDir)' != '' And '$(SolutionDir)' != '*Undefined*'" Command=":: 定义变量&#xD;&#xA;set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net10.0-windows\Plugins\$(TargetName)&#xD;&#xA;set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net10.0-windows\Plugins\$(TargetName)&#xD;&#xA;&#xD;&#xA;:: 创建目录（如果不存在）&#xD;&#xA;if not exist &quot;%25DebugPluginsDir%25&quot; (mkdir &quot;%25DebugPluginsDir%25&quot;)&#xD;&#xA;if not exist &quot;%25ReleasePluginsDir%25&quot; (mkdir &quot;%25ReleasePluginsDir%25&quot;)&#xD;&#xA;&#xD;&#xA;:: 复制主DLL到目标目录&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;&#xD;&#xA;:: 从项目目录复制静态元数据，避免共享OutDir中的同名文件互相覆盖&#xD;&#xA;if exist &quot;$(ProjectDir)manifest.json&quot; (&#xD;&#xA;    copy &quot;$(ProjectDir)manifest.json&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(ProjectDir)manifest.json&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(ProjectDir)ReadMe.md&quot; (&#xD;&#xA;    copy &quot;$(ProjectDir)ReadMe.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(ProjectDir)ReadMe.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(ProjectDir)Changelog.md&quot; (&#xD;&#xA;    copy &quot;$(ProjectDir)Changelog.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(ProjectDir)Changelog.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)" />
+		<Exec Condition="'$(ProjectRootDir)' != ''" Command=":: 定义变量&#xD;&#xA;set DebugPluginsDir=$(ProjectRootDir)ColorVision\bin\x64\Debug\net10.0-windows\Plugins\$(TargetName)&#xD;&#xA;set ReleasePluginsDir=$(ProjectRootDir)ColorVision\bin\x64\Release\net10.0-windows\Plugins\$(TargetName)&#xD;&#xA;&#xD;&#xA;:: 创建目录（如果不存在）&#xD;&#xA;if not exist &quot;%25DebugPluginsDir%25&quot; (mkdir &quot;%25DebugPluginsDir%25&quot;)&#xD;&#xA;if not exist &quot;%25ReleasePluginsDir%25&quot; (mkdir &quot;%25ReleasePluginsDir%25&quot;)&#xD;&#xA;&#xD;&#xA;:: 复制主DLL到目标目录&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;&#xD;&#xA;:: 从项目目录复制静态元数据，避免共享OutDir中的同名文件互相覆盖&#xD;&#xA;if exist &quot;$(ProjectDir)manifest.json&quot; (&#xD;&#xA;    copy &quot;$(ProjectDir)manifest.json&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(ProjectDir)manifest.json&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(ProjectDir)ReadMe.md&quot; (&#xD;&#xA;    copy &quot;$(ProjectDir)ReadMe.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(ProjectDir)ReadMe.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(ProjectDir)Changelog.md&quot; (&#xD;&#xA;    copy &quot;$(ProjectDir)Changelog.md&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;    copy &quot;$(ProjectDir)Changelog.md&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;$(OutDir)Tools\DemuraTool&quot; (&#xD;&#xA;    xcopy &quot;$(OutDir)Tools\DemuraTool&quot; &quot;%25DebugPluginsDir%25\Tools\DemuraTool\&quot; /E /I /Y&#xD;&#xA;    xcopy &quot;$(OutDir)Tools\DemuraTool&quot; &quot;%25ReleasePluginsDir%25\Tools\DemuraTool\&quot; /E /I /Y&#xD;&#xA;)" />
 	</Target>
 </Project>

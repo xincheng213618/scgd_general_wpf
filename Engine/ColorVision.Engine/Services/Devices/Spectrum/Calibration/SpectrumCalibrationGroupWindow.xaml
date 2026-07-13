@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="标定文件分组"
+        Title="{x:Static properties:Resources.SpectrumCalibrationGroups_Title}"
         Width="680"
         Height="460"
         Background="{DynamicResource GlobalBackground}">
@@ -25,13 +26,13 @@
         </Grid.RowDefinitions>
 
         <DockPanel Margin="0,0,0,10">
-            <Button x:Name="BtnRemoveGroup" DockPanel.Dock="Right" Margin="6,0,0,0" Padding="12,4" Click="BtnRemoveGroup_Click" Content="移除分组" />
-            <Button x:Name="BtnAddGroup" DockPanel.Dock="Right" Margin="6,0,0,0" Padding="12,4" Click="BtnAddGroup_Click" Content="添加分组" />
-            <TextBlock Width="76" Text="当前分组:" />
+            <Button x:Name="BtnRemoveGroup" DockPanel.Dock="Right" Margin="6,0,0,0" Padding="12,4" Click="BtnRemoveGroup_Click" Content="{x:Static properties:Resources.SpectrumCalibrationGroups_RemoveGroup}" />
+            <Button x:Name="BtnAddGroup" DockPanel.Dock="Right" Margin="6,0,0,0" Padding="12,4" Click="BtnAddGroup_Click" Content="{x:Static properties:Resources.SpectrumCalibrationGroups_AddGroup}" />
+            <TextBlock Width="76" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_CurrentGroup}" />
             <ComboBox x:Name="ComboBoxGroups" DisplayMemberPath="GroupName" SelectionChanged="ComboBoxGroups_SelectionChanged" />
         </DockPanel>
 
-        <GroupBox Grid.Row="1" Header="分组详情">
+        <GroupBox Grid.Row="1" Header="{x:Static properties:Resources.SpectrumCalibrationGroups_GroupDetails}">
             <Grid x:Name="DetailGrid" Margin="8">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -43,24 +44,24 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel Margin="0,0,0,8">
-                    <TextBlock Width="90" Text="分组名称" />
+                    <TextBlock Width="90" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_GroupName}" />
                     <TextBox Text="{Binding GroupName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 </DockPanel>
 
                 <DockPanel Grid.Row="1" Margin="0,0,0,8">
-                    <Button DockPanel.Dock="Right" Margin="6,0,0,0" Padding="10,3" Click="BtnSelectWavelength_Click" Content="选择..." />
-                    <TextBlock Width="90" Text="波长标定" />
+                    <Button DockPanel.Dock="Right" Margin="6,0,0,0" Padding="10,3" Click="BtnSelectWavelength_Click" Content="{x:Static properties:Resources.SelectWithEllipsis}" />
+                    <TextBlock Width="90" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_WavelengthCalibration}" />
                     <TextBox IsReadOnly="True" Text="{Binding WavelengthFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
                 </DockPanel>
 
                 <DockPanel Grid.Row="2" Margin="0,0,0,8">
-                    <Button DockPanel.Dock="Right" Margin="6,0,0,0" Padding="10,3" Click="BtnSelectMaguide_Click" Content="选择..." />
-                    <TextBlock Width="90" Text="幅值标定" />
+                    <Button DockPanel.Dock="Right" Margin="6,0,0,0" Padding="10,3" Click="BtnSelectMaguide_Click" Content="{x:Static properties:Resources.SelectWithEllipsis}" />
+                    <TextBlock Width="90" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_AmplitudeCalibration}" />
                     <TextBox IsReadOnly="True" Text="{Binding MaguideFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
                 </DockPanel>
 
                 <DockPanel Grid.Row="3" Margin="0,0,0,8">
-                    <TextBlock Width="90" Text="滤色轮服务" />
+                    <TextBlock Width="90" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_FilterWheelService}" />
                     <ComboBox x:Name="ComboBoxCfwService"
                               Width="260"
                               HorizontalAlignment="Left"
@@ -70,24 +71,24 @@
                 </DockPanel>
 
                 <DockPanel Grid.Row="4" Margin="0,0,0,8">
-                    <TextBlock Width="90" Text="滤色轮位置" />
+                    <TextBlock Width="90" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_FilterWheelPosition}" />
                     <ComboBox x:Name="ComboBoxNDHole"
                               Width="180"
                               HorizontalAlignment="Left"
                               DisplayMemberPath="DisplayName"
                               SelectedValuePath="HoleIndex"
                               SelectedValue="{Binding NDHoleIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Margin="8,0,0,0" FontSize="11" Foreground="Gray" Text="切换到该 ND 时自动应用" />
+                    <TextBlock Margin="8,0,0,0" FontSize="11" Foreground="Gray" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_AutoApplyNdHint}" />
                 </DockPanel>
 
                 <Border Grid.Row="5" Padding="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,4">
-                            <TextBlock Width="90" Text="当前波长" />
+                            <TextBlock Width="90" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_CurrentWavelength}" />
                             <TextBlock Text="{Binding DataContext.Config.WavelengthFile, RelativeSource={RelativeSource AncestorType=Window}}" />
                         </DockPanel>
                         <DockPanel>
-                            <TextBlock Width="90" Text="当前幅值" />
+                            <TextBlock Width="90" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_CurrentAmplitude}" />
                             <TextBlock Text="{Binding DataContext.Config.MaguideFile, RelativeSource={RelativeSource AncestorType=Window}}" />
                         </DockPanel>
                     </StackPanel>
@@ -96,10 +97,10 @@
         </GroupBox>
 
         <DockPanel Grid.Row="2" Margin="0,10,0,0">
-            <TextBlock Foreground="Gray" FontSize="11" Text="保存会写入当前分组的标定文件；如标定文件发生变化，将重启光谱服务。" />
+            <TextBlock Foreground="Gray" FontSize="11" Text="{x:Static properties:Resources.SpectrumCalibrationGroups_SaveHint}" />
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button MinWidth="80" Margin="0,0,8,0" Padding="16,5" Click="BtnSave_Click" Content="保存" />
-                <Button MinWidth="80" Padding="16,5" Click="BtnClose_Click" Content="关闭" />
+                <Button MinWidth="80" Margin="0,0,8,0" Padding="16,5" Click="BtnSave_Click" Content="{x:Static properties:Resources.Save}" />
+                <Button MinWidth="80" Padding="16,5" Click="BtnClose_Click" Content="{x:Static properties:Resources.Close}" />
             </StackPanel>
         </DockPanel>
     </Grid>

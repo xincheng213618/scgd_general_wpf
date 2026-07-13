@@ -18,6 +18,8 @@ public class CVEndV5Node : CVCommonNode
 	public CVEndV5Node()
 		: base("EndV5Node", "EndNode", "EN1", "DEV01")
 	{
+		base.AutoSize = false;
+		base.Width = StandardNodeWidth;
 		base.Height = 160;
 	}
 

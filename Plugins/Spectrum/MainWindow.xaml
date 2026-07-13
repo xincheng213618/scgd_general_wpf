@@ -491,7 +491,7 @@
                                                         <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Stretch="Uniform" />
                                                     </Button>
                                                     <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Export_Click" Command="{Binding ViewResultManager.SaveCommand}">
-                                                        <Rectangle Width="16" Height="16" Fill="{StaticResource DISave}" />
+                                                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                                                     </Button>
                                                     <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Cleartable_Click" Command="{Binding ViewResultManager.ViewReslutsClearCommand}">
                                                         <Button.Triggers>

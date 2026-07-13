@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1725
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,7 +9,6 @@ using System.IO;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 {
@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
         {
             var ViewResults = result.ViewResults.ToSpecificViewResults<BinocularFusionModel>();
             var csvBuilder = new StringBuilder();
-            List<string> header = new() { "id", "中心点x", "中心点y", "x轴", "y轴", "z轴" };
+            List<string> header = new() { "id", Properties.Resources.CenterPointX, Properties.Resources.CenterPointY, Properties.Resources.AxisX, Properties.Resources.AxisY, Properties.Resources.AxisZ };
 
             csvBuilder.AppendLine(string.Join(",", header));
 
@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
                 {
                     result.ViewResults.Add(item);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBinocularFusion), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBinocularFusion), ImageFilePath = result.FilePath })) });
             }
 
         }
@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
             if (File.Exists(result.FilePath))
                 ctx.ImageView.OpenImage(result.FilePath);
 
-            List<string> header = new() { "中心点x", "中心点y", "x Tilte(°)", "Y tilte(°)", "Rotation" };
+            List<string> header = new() { Properties.Resources.CenterPointX, Properties.Resources.CenterPointY, "X Tilt (°)", "Y Tilt (°)", "Rotation" };
             List<string> bdHeader = new() { "CrossMarkCenterX", "CrossMarkCenterY", "XDegree" , "YDegree", "ZDegree" };
 
             if (ctx.ListView.View is GridView gridView)

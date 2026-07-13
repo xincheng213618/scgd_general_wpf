@@ -339,7 +339,7 @@ def package_plugin(src_dir: Path, plugin_root: Path, shared_files: set[str], out
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Package a plugin into .cvxp using shared_files.json and optionally upload it.")
+    parser = argparse.ArgumentParser(description="Package a plugin into .cvxp using shared_files.json, upload it, then delete the local package.")
     parser.add_argument("--src-dir", help="Compiled plugin output directory")
     parser.add_argument("--project-file", help="Plugin .csproj path used to infer plugin root and output directory")
     parser.add_argument("--plugin-root", help="Plugin project root used to copy README/CHANGELOG/manifest/icon")
@@ -353,7 +353,6 @@ def main() -> None:
     parser.add_argument("--upload-url", default=os.environ.get("COLORVISION_UPLOAD_URL", DEFAULT_UPLOAD_URL), help="Upload server base URL")
     parser.add_argument("--username", default=os.environ.get("COLORVISION_UPLOAD_USERNAME", DEFAULT_UPLOAD_USERNAME), help="Upload username")
     parser.add_argument("--password", default=os.environ.get("COLORVISION_UPLOAD_PASSWORD", DEFAULT_UPLOAD_PASSWORD), help="Upload password")
-    parser.add_argument("--no-upload", action="store_true", help="Only package locally and skip upload")
     args = parser.parse_args()
 
     project_file = Path(args.project_file).expanduser().resolve() if args.project_file else None
@@ -400,19 +399,17 @@ def main() -> None:
     print(f"Skipped runtime file count: {skipped_runtime_count}")
     print(f"Packaged: {output_file}")
 
-    if args.no_upload:
-        return
-
     plugin_folder = f"Plugins/{project_name}"
-    if not upload_file(output_file, plugin_folder, args.upload_url, args.username, args.password):
-        raise RuntimeError("Package upload failed.")
+    try:
+        if not upload_file(output_file, plugin_folder, args.upload_url, args.username, args.password):
+            raise RuntimeError("Package upload failed.")
 
-    if not upload_latest_release(version, plugin_folder, args.upload_url, args.username, args.password):
-        raise RuntimeError("LATEST_RELEASE upload failed.")
-
-    if output_file.exists():
-        output_file.unlink()
-        print(f"Deleted local package: {output_file}")
+        if not upload_latest_release(version, plugin_folder, args.upload_url, args.username, args.password):
+            raise RuntimeError("LATEST_RELEASE upload failed.")
+    finally:
+        if output_file.exists():
+            output_file.unlink()
+            print(f"Deleted local package: {output_file}")
 
 
 if __name__ == "__main__":

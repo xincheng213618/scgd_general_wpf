@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1725
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,6 @@ using System.IO;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>(AlgResultImageDao.Instance.GetAllByPid(result.Id));
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmImageCropping), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmImageCropping), ImageFilePath = result.FilePath })) });
             }
         }
 

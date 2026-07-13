@@ -38,6 +38,7 @@
     <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\..\Engine\ST.Library.UI\ST.Library.UI.csproj" />
+    <ProjectReference Include="..\..\src\ColorVisionServiceHost\ColorVisionServiceHost.csproj" />
   </ItemGroup>
 
 </Project>

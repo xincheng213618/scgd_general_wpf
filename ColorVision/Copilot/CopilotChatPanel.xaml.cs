@@ -1,5 +1,8 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -11,8 +14,14 @@ namespace ColorVision.Copilot
     {
         private const double CompactSidebarThreshold = 960;
         private const double CompactComposerThreshold = 560;
-        private const double ExpandedSidebarWidth = 220;
+        private const double ExpandedSidebarWidth = 232;
         private const double CollapsedSidebarWidth = 48;
+        private const double ProfileSelectorPopupMainWidth = 230;
+        private const double ProfileSelectorPopupSubmenuWidth = 284;
+        private const double ProfileSelectorPopupShadowInset = 14;
+        private const byte VirtualKeyLeftWindows = 0x5B;
+        private const byte VirtualKeyH = 0x48;
+        private const uint KeyEventKeyUp = 0x0002;
 
         private CopilotChatViewModel? _attachedViewModel;
         private INotifyCollectionChanged? _attachedMessages;
@@ -48,6 +57,7 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            CloseProfileSelectorPopup();
             DetachViewModel(DataContext as CopilotChatViewModel);
         }
 
@@ -59,6 +69,7 @@ namespace ColorVision.Copilot
             _attachedViewModel = viewModel;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
             ResetMessageSubscriptions(viewModel.Messages);
+            UpdateEmptyStateVisibility();
         }
 
         private void DetachViewModel(CopilotChatViewModel? viewModel)
@@ -80,6 +91,14 @@ namespace ColorVision.Copilot
             {
                 ResetMessageSubscriptions(_attachedViewModel.Messages);
                 ScrollToBottom();
+            }
+
+            if (e.PropertyName == nameof(CopilotChatViewModel.Messages)
+                || e.PropertyName == nameof(CopilotChatViewModel.SelectedConversation)
+                || e.PropertyName == nameof(CopilotChatViewModel.IsConversationEmpty)
+                || e.PropertyName == nameof(CopilotChatViewModel.CanShowCompactHistory))
+            {
+                UpdateEmptyStateVisibility();
             }
         }
 
@@ -130,6 +149,7 @@ namespace ColorVision.Copilot
             }
 
             ScrollToBottom();
+            UpdateEmptyStateVisibility();
         }
 
         private void Message_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -152,14 +172,85 @@ namespace ColorVision.Copilot
             element.ContextMenu.IsOpen = true;
         }
 
-        private void SettingsMenuButton_Click(object sender, RoutedEventArgs e)
+        private void ProfileSelectorPopup_Opened(object sender, EventArgs e)
         {
-            if (sender is not FrameworkElement element || element.ContextMenu == null)
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: false);
+        }
+
+        private void ProfileSelectorPopup_Closed(object sender, EventArgs e)
+        {
+            ProfileSelectorButton.IsChecked = false;
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: false);
+        }
+
+        private void ModelSelectorRowButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetProfileSelectorSubmenu(modelVisible: ModelSelectorRowButton.IsChecked == true, reasoningVisible: false, advancedSettingsVisible: false);
+        }
+
+        private void ReasoningSelectorRowButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: ReasoningSelectorRowButton.IsChecked == true, advancedSettingsVisible: false);
+        }
+
+        private void AdvancedSettingsSelectorRowButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: AdvancedSettingsSelectorRowButton.IsChecked == true);
+        }
+
+        private void ProfileListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is not DependencyObject source
+                || ItemsControl.ContainerFromElement(ProfileListBox, source) is not ListBoxItem)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(CloseProfileSelectorPopup), System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        private void ReasoningOptionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: CopilotReasoningMode mode }
+                && DataContext is CopilotChatViewModel viewModel)
+            {
+                viewModel.SetSelectedProfileReasoningMode(mode);
+            }
+
+            CloseProfileSelectorPopup();
+        }
+
+        private void CloseSelectorPopupButton_Click(object sender, RoutedEventArgs e)
+        {
+            CloseProfileSelectorPopup();
+        }
+
+        private void SetProfileSelectorSubmenu(bool modelVisible, bool reasoningVisible, bool advancedSettingsVisible)
+        {
+            ModelSelectorRowButton.IsChecked = modelVisible;
+            ReasoningSelectorRowButton.IsChecked = reasoningVisible;
+            AdvancedSettingsSelectorRowButton.IsChecked = advancedSettingsVisible;
+            ModelSubmenuBorder.Visibility = modelVisible ? Visibility.Visible : Visibility.Collapsed;
+            ReasoningSubmenuBorder.Visibility = reasoningVisible ? Visibility.Visible : Visibility.Collapsed;
+            AdvancedSettingsSubmenuBorder.Visibility = advancedSettingsVisible ? Visibility.Visible : Visibility.Collapsed;
+            var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible || advancedSettingsVisible ? ProfileSelectorPopupSubmenuWidth : 0);
+            ProfileSelectorPopup.HorizontalOffset = ProfileSelectorButton.ActualWidth - popupWidth - ProfileSelectorPopupShadowInset;
+        }
+
+        private void CloseProfileSelectorPopup()
+        {
+            if (ProfileSelectorPopup == null)
                 return;
 
-            element.ContextMenu.PlacementTarget = element;
-            element.ContextMenu.Placement = PlacementMode.Bottom;
-            element.ContextMenu.IsOpen = true;
+            ProfileSelectorPopup.IsOpen = false;
+        }
+
+        private async void VoiceInputButton_Click(object sender, RoutedEventArgs e)
+        {
+            PromptTextBox.Focus();
+            Keyboard.Focus(PromptTextBox);
+            await Task.Delay(80);
+            SendWindowsVoiceTypingShortcut();
         }
 
         private void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -234,25 +325,41 @@ namespace ColorVision.Copilot
             CompactSidebarToggleButton.Visibility = _isCompactSidebar && !showCollapsedStrip ? Visibility.Visible : Visibility.Collapsed;
 
             var isCompactComposer = ActualWidth > 0 && ActualWidth < CompactComposerThreshold;
-            ComposerFooterSecondRowDefinition.Height = isCompactComposer ? GridLength.Auto : new GridLength(0);
-
-            Grid.SetRow(ComposerSelectorGrid, 0);
-            Grid.SetColumn(ComposerSelectorGrid, isCompactComposer ? 0 : 1);
-            Grid.SetColumnSpan(ComposerSelectorGrid, isCompactComposer ? 3 : 1);
-            ComposerSelectorGrid.Margin = isCompactComposer ? new Thickness(0, 0, 0, 8) : new Thickness(8, 0, 8, 0);
-
-            Grid.SetRow(AttachMenuButton, isCompactComposer ? 1 : 0);
-            Grid.SetColumn(AttachMenuButton, 0);
-
-            Grid.SetRow(ComposerActionStack, isCompactComposer ? 1 : 0);
-            Grid.SetColumn(ComposerActionStack, 2);
-
-            AgentModeComboBox.Width = isCompactComposer ? 76 : 84;
-            ProfileComboBox.MaxWidth = isCompactComposer ? double.PositiveInfinity : 132;
+            ComposerShellBorder.Margin = isCompactComposer ? new Thickness(10, 0, 10, 10) : new Thickness(24, 0, 24, 14);
+            ComposerSelectorGrid.MaxWidth = isCompactComposer ? 132 : 180;
+            ProfileSelectorButton.MaxWidth = isCompactComposer ? 132 : 180;
+            ProfileSelectorButton.Padding = isCompactComposer ? new Thickness(2, 0, 0, 0) : new Thickness(4, 0, 2, 0);
 
             CurrentLiveContextSummaryText.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
-            CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(10, 7, 10, 7) : new Thickness(12, 9, 12, 9);
-            CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(10, 4, 10, 4) : new Thickness(12, 5, 12, 5);
+            CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(8, 6, 8, 6) : new Thickness(10, 7, 10, 7);
+            CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(8, 3, 8, 3) : new Thickness(10, 4, 10, 4);
+
+            UpdateEmptyStateVisibility();
         }
+
+        private void UpdateEmptyStateVisibility()
+        {
+            if (DataContext is not CopilotChatViewModel viewModel)
+            {
+                CompactHistoryPanel.Visibility = Visibility.Collapsed;
+                EmptyStateTextBlock.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var showCompactHistory = _isCompactSidebar && viewModel.IsConversationEmpty && viewModel.CanShowCompactHistory;
+            CompactHistoryPanel.Visibility = showCompactHistory ? Visibility.Visible : Visibility.Collapsed;
+            EmptyStateTextBlock.Visibility = viewModel.IsConversationEmpty && !showCompactHistory ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private static void SendWindowsVoiceTypingShortcut()
+        {
+            keybd_event(VirtualKeyLeftWindows, 0, 0, UIntPtr.Zero);
+            keybd_event(VirtualKeyH, 0, 0, UIntPtr.Zero);
+            keybd_event(VirtualKeyH, 0, KeyEventKeyUp, UIntPtr.Zero);
+            keybd_event(VirtualKeyLeftWindows, 0, KeyEventKeyUp, UIntPtr.Zero);
+        }
+
+        [DllImport("user32.dll")]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
     }
 }

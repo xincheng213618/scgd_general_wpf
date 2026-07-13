@@ -1286,9 +1286,13 @@ public class STNodeEditor : Control
 			}
 		}
 		m_p_line_hover.Color = _HighLineColor;
-		if (m_gp_hover != null)
+		if (m_gp_hover != null && m_dic_gp_info.ContainsKey(m_gp_hover))
 		{
 			graphics.DrawPath(m_p_line_hover, m_gp_hover);
+		}
+		else
+		{
+			m_gp_hover = null;
 		}
 		m_is_buildpath = false;
 	}
@@ -1525,6 +1529,7 @@ public class STNodeEditor : Control
 
 	internal void BuildLinePath()
 	{
+		m_gp_hover = null;
 		foreach (KeyValuePair<GraphicsPath, ConnectionInfo> item in m_dic_gp_info)
 		{
 			item.Key.Dispose();
@@ -1676,17 +1681,20 @@ public class STNodeEditor : Control
 
 	private ConnectionStatus DisConnectionHover()
 	{
-		if (!m_dic_gp_info.ContainsKey(m_gp_hover))
+		GraphicsPath gpHover = m_gp_hover;
+		if (gpHover == null || !m_dic_gp_info.TryGetValue(gpHover, out ConnectionInfo connectionInfo))
 		{
 			return ConnectionStatus.DisConnected;
 		}
-		ConnectionInfo connectionInfo = m_dic_gp_info[m_gp_hover];
 		ConnectionStatus connectionStatus = connectionInfo.Output.DisConnectOption(connectionInfo.Input);
 		if (connectionStatus == ConnectionStatus.DisConnected)
 		{
-			m_dic_gp_info.Remove(m_gp_hover);
-			m_gp_hover.Dispose();
-			m_gp_hover = null;
+			m_dic_gp_info.Remove(gpHover);
+			gpHover.Dispose();
+			if (ReferenceEquals(m_gp_hover, gpHover))
+			{
+				m_gp_hover = null;
+			}
 			Invalidate();
 		}
 		return connectionStatus;

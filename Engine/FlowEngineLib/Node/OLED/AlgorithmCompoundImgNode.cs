@@ -17,6 +17,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 	private int _BufferLen;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowCompoundImgJsonTemplateEditor))]
 	public string TempName
 	{
 		get

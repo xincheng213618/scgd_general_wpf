@@ -8,21 +8,32 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotAgentService
+    public sealed class CopilotAgentService : ICopilotAgentRuntime
     {
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentPlanner _planner;
         private readonly CopilotToolRegistry _toolRegistry;
         private readonly CopilotAgentContextBuilder _contextBuilder;
+        private readonly CopilotToolExecutor _toolExecutor;
 
         public CopilotAgentService(
             CopilotChatService chatService,
             CopilotToolRegistry toolRegistry,
             CopilotAgentContextBuilder contextBuilder)
+            : this(chatService, toolRegistry, contextBuilder, new CopilotToolExecutor())
+        {
+        }
+
+        public CopilotAgentService(
+            CopilotChatService chatService,
+            CopilotToolRegistry toolRegistry,
+            CopilotAgentContextBuilder contextBuilder,
+            CopilotToolExecutor toolExecutor)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
+            _toolExecutor = toolExecutor ?? throw new ArgumentNullException(nameof(toolExecutor));
             _planner = new CopilotAgentPlanner(_chatService, _contextBuilder);
         }
 
@@ -65,15 +76,24 @@ namespace ColorVision.Copilot
                     break;
                 }
 
-                onEvent(CopilotAgentEvent.Status($"Round {round}: planning next step."));
-                var planResult = await _planner.PlanNextAsync(
-                    roundRequest,
-                    tools,
-                    stepRecords,
-                    readableLocalFilePaths,
-                    cancellationToken);
-                totalUsage = totalUsage.Add(planResult.Usage);
-                var plan = planResult.Plan;
+                CopilotAgentPlan plan;
+                if (TryCreateRequiredWebPlan(roundRequest, tools, stepRecords, out var requiredWebPlan))
+                {
+                    plan = requiredWebPlan;
+                    onEvent(CopilotAgentEvent.Status($"Round {round}: applying required web evidence policy."));
+                }
+                else
+                {
+                    onEvent(CopilotAgentEvent.Status($"Round {round}: planning next step."));
+                    var planResult = await _planner.PlanNextAsync(
+                        roundRequest,
+                        tools,
+                        stepRecords,
+                        readableLocalFilePaths,
+                        cancellationToken);
+                    totalUsage = totalUsage.Add(planResult.Usage);
+                    plan = planResult.Plan;
+                }
 
                 if (plan.Action == CopilotAgentPlanAction.Finish)
                 {
@@ -99,29 +119,18 @@ namespace ColorVision.Copilot
                     ? $"Round {round}: planner fallback selected {selectedTool.Name}. {plan.Reason}{BuildPlanDetail(plan)}"
                     : $"Round {round}: planner selected {selectedTool.Name}. {plan.Reason}{BuildPlanDetail(plan)}"));
 
-                CopilotToolResult result;
-                try
+                var outcome = await _toolExecutor.ExecuteAsync(new CopilotToolInvocation
                 {
-                    result = await selectedTool.ExecuteAsync(executionRequest, executionInput, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    result = new CopilotToolResult
-                    {
-                        ToolName = selectedTool.Name,
-                        Success = false,
-                        Summary = $"{selectedTool.Name} execution failed.",
-                        ErrorMessage = ex.Message,
-                    };
-                }
-
+                    Round = round,
+                    RuntimeName = "built-in",
+                    Tool = selectedTool,
+                    AgentRequest = executionRequest,
+                    ToolInput = executionInput,
+                    ToolCall = CopilotToolCall.FromPlan(plan, selectedTool.Name),
+                }, onEvent, cancellationToken);
+                var result = outcome.Result;
                 toolResults.Add(result);
-                stepRecords.Add(CreateStepRecord(round, selectedTool.Name, plan, result));
-                onEvent(CopilotAgentEvent.FromToolResult(result));
+                stepRecords.Add(outcome.StepRecord);
 
                 var discoveredNewReadableFiles = TryMergeReadableLocalFilePaths(readableLocalFilePaths, result.SuggestedReadableLocalFilePaths);
                 if (discoveredNewReadableFiles)
@@ -155,6 +164,67 @@ namespace ColorVision.Copilot
             };
         }
 
+        private static bool TryCreateRequiredWebPlan(
+            CopilotAgentRequest request,
+            IReadOnlyList<ICopilotTool> availableTools,
+            IReadOnlyList<CopilotAgentStepRecord> stepRecords,
+            out CopilotAgentPlan plan)
+        {
+            plan = new CopilotAgentPlan();
+            var urls = CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText);
+            if (urls.Count == 0 || HasWebAccessOptOut(request.UserText))
+                return false;
+
+            var fetchStep = stepRecords.FirstOrDefault(step => string.Equals(step.ToolCall.ToolName, "FetchUrl", StringComparison.OrdinalIgnoreCase));
+            if (fetchStep == null)
+            {
+                var fetchTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "FetchUrl", StringComparison.OrdinalIgnoreCase));
+                if (fetchTool != null)
+                {
+                    plan = new CopilotAgentPlan
+                    {
+                        Action = CopilotAgentPlanAction.Tool,
+                        ToolName = fetchTool.Name,
+                        ToolInput = new CopilotAgentToolInput { Query = string.Join(" ", urls.Take(3)) },
+                        Reason = "The user provided a web page URL, so direct page evidence is required before answering.",
+                        IsFallback = true,
+                    };
+                    return true;
+                }
+            }
+
+            var fetchFailed = fetchStep != null && !fetchStep.Observation.Success;
+            if (fetchFailed && !stepRecords.Any(step => string.Equals(step.ToolCall.ToolName, "WebSearch", StringComparison.OrdinalIgnoreCase)))
+            {
+                var webSearchTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "WebSearch", StringComparison.OrdinalIgnoreCase));
+                if (webSearchTool != null)
+                {
+                    plan = new CopilotAgentPlan
+                    {
+                        Action = CopilotAgentPlanAction.Tool,
+                        ToolName = webSearchTool.Name,
+                        ToolInput = new CopilotAgentToolInput { Query = request.UserText },
+                        Reason = "Direct page retrieval failed, so public web search is the next read-only fallback.",
+                        IsFallback = true,
+                    };
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasWebAccessOptOut(string text)
+        {
+            var value = text ?? string.Empty;
+            string[] markers =
+            {
+                "不要访问", "别访问", "不要打开", "无需访问", "不要联网",
+                "do not access", "don't access", "do not open", "don't open", "without opening",
+            };
+            return markers.Any(marker => value.Contains(marker, StringComparison.OrdinalIgnoreCase));
+        }
+
         private static CopilotAgentRequest CreateRoundRequest(
             CopilotAgentRequest request,
             HashSet<string> readableLocalFilePaths)
@@ -172,6 +242,8 @@ namespace ColorVision.Copilot
                 ReadableLocalDirectoryPaths = request.ReadableLocalDirectoryPaths,
                 PreferBatchReadLocalFiles = request.PreferBatchReadLocalFiles,
                 Mode = request.Mode,
+                SessionCheckpoint = request.SessionCheckpoint,
+                ExternalMcpServers = request.ExternalMcpServers,
             };
         }
 
@@ -224,20 +296,6 @@ namespace ColorVision.Copilot
             return added;
         }
 
-        private static CopilotAgentStepRecord CreateStepRecord(
-            int round,
-            string toolName,
-            CopilotAgentPlan plan,
-            CopilotToolResult result)
-        {
-            return new CopilotAgentStepRecord
-            {
-                Round = round,
-                ToolCall = CopilotToolCall.FromPlan(plan, toolName),
-                Observation = CopilotToolObservation.FromResult(result),
-            };
-        }
-
         private static string BuildPlanDetail(CopilotAgentPlan plan)
         {
             if (string.Equals(plan.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
@@ -268,6 +326,7 @@ namespace ColorVision.Copilot
 
             if ((string.Equals(plan.ToolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "GrepText", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(plan.ToolName, "WebSearch", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "GetRecentLog", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(plan.ToolName, "FetchUrl", StringComparison.OrdinalIgnoreCase))
                 && !string.IsNullOrWhiteSpace(plan.ToolQuery))
@@ -298,7 +357,8 @@ namespace ColorVision.Copilot
             }
 
             if (string.Equals(toolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(toolName, "GrepText", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "WebSearch", StringComparison.OrdinalIgnoreCase))
             {
                 return string.Join("|", new[]
                 {

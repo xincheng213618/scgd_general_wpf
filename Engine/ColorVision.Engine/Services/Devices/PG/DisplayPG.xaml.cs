@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1816
+using ColorVision.Engine.Messages;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System;
@@ -10,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.PG
     /// <summary>
     /// DisplayPG.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayPG : UserControl, IDisPlayControl,IDisposable
+    public partial class DisplayPG : UserControl, IDisPlayControl, IDisposable
     {
         private MQTTPG PGService { get => Device.DService; }
         private DevicePG Device { get; set; }
@@ -25,18 +26,9 @@ namespace ColorVision.Engine.Services.Devices.PG
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            PGService_DeviceStatusChanged(sender,PGService.DeviceStatus);
+            EnsureTimedButtonOperations();
+            PGService_DeviceStatusChanged(sender, PGService.DeviceStatus);
             PGService.DeviceStatusChanged += PGService_DeviceStatusChanged;
-            if (PGService.Config.IsNet)
-            {
-                TextBlockPGIP.Text = Properties.Resources.IPAddress;
-                TextBlockPGPort.Text = Properties.Resources.Port;
-            }
-            else
-            {
-                TextBlockPGIP.Text = Properties.Resources.Serial;
-                TextBlockPGPort.Text = Properties.Resources.BaudRate;
-            }
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
@@ -47,6 +39,9 @@ namespace ColorVision.Engine.Services.Devices.PG
             void HideAllButtons()
             {
                 SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(ButtonOpen, Visibility.Collapsed);
+                SetVisibility(ButtonClose, Visibility.Collapsed);
+                SetVisibility(PGOperationPanel, Visibility.Collapsed);
                 SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                 SetVisibility(StackPanelContent, Visibility.Collapsed);
                 SetVisibility(TextBlockOffLine, Visibility.Collapsed);
@@ -67,17 +62,32 @@ namespace ColorVision.Engine.Services.Devices.PG
                     break;
                 case DeviceStatusType.UnInit:
                     SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    SetVisibility(PGOperationPanel, Visibility.Visible);
                     break;
+                case DeviceStatusType.Closing:
                 case DeviceStatusType.Closed:
                     SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    SetVisibility(PGOperationPanel, Visibility.Visible);
                     break;
+                case DeviceStatusType.LiveOpened:
+                case DeviceStatusType.Opening:
                 case DeviceStatusType.Opened:
                     SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+                    SetVisibility(PGOperationPanel, Visibility.Visible);
                     break;
                 default:
                     SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    SetVisibility(PGOperationPanel, Visibility.Visible);
                     break;
             }
+
+            TimedButtonOperationRegistry? operations = this.TryGetTimedButtonOperations();
+            operations?.RefreshIdleState(OpenButton);
+            operations?.RefreshIdleState(CloseButton);
         }
 
         public event RoutedEventHandler Selected;
@@ -87,31 +97,123 @@ namespace ColorVision.Engine.Services.Devices.PG
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
 
-        private void DoOpen(Button button)
-        {
-            string btnTitle = button.Content.ToString();
-            if (btnTitle != null && btnTitle.Equals(Properties.Resources.Open, StringComparison.Ordinal))
-            {
-                button.Content = Properties.Resources.Opening;
-                int port;
-                if (!int.TryParse(TextBoxPGPort.Text, out port))
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.PortConfigError);
-                    return;
-                }
-                if (PGService.Config.IsNet) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);
-                else PGService.Open(CommunicateType.Serial, TextBoxPGIP.Text, port);
-            }
-            else
-            {
-                button.Content = Properties.Resources.Closing;
-                PGService.Close();
-            }
-        }
-
         private void PGOpen(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button) DoOpen(button);
+            if (sender is not Button button) return;
+
+            EnsureTimedButtonOperations();
+            MsgRecord msgRecord = OpenPGFromConfig();
+            SendTimedPGCommand(button, msgRecord, Properties.Resources.Open, state =>
+            {
+                if (state == MsgRecordState.Success)
+                    ShowOpenedState();
+            });
+        }
+
+        private void PGClose(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button) return;
+
+            EnsureTimedButtonOperations();
+            MsgRecord msgRecord = PGService.Close();
+            SendTimedPGCommand(button, msgRecord, Properties.Resources.Close, state =>
+            {
+                if (state == MsgRecordState.Success)
+                    ShowClosedState();
+            });
+        }
+
+        private MsgRecord OpenPGFromConfig()
+        {
+            CommunicateType communicateType = PGService.Config.IsNet ? CommunicateType.Tcp : CommunicateType.Serial;
+            return PGService.Open(communicateType, PGService.Config.Addr, PGService.Config.Port);
+        }
+
+        private void SendTimedPGCommand(Button button, MsgRecord msgRecord, string operationName, Action<MsgRecordState>? onTerminalStateChanged = null)
+        {
+            TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
+            TimedButtonOperationScope? operationScope = operations.Begin(button, runningText: operationName);
+
+            void OnMsgRecordStateChanged(object? s, MsgRecordState state)
+            {
+                if (!IsTerminalMsgRecordState(state))
+                {
+                    return;
+                }
+
+                msgRecord.MsgRecordStateChanged -= OnMsgRecordStateChanged;
+                operationScope?.Complete(state == MsgRecordState.Success);
+                operationScope = null;
+                operations.RefreshIdleState(button);
+                onTerminalStateChanged?.Invoke(state);
+
+                if (state != MsgRecordState.Success)
+                {
+                    MessageBox1.Show(
+                        Application.Current.GetActiveWindow(),
+                        BuildOperationFailureMessage(msgRecord, state, operationName),
+                        "ColorVision");
+                }
+            }
+
+            msgRecord.MsgRecordStateChanged += OnMsgRecordStateChanged;
+            OnMsgRecordStateChanged(msgRecord, msgRecord.MsgRecordState);
+        }
+
+        private TimedButtonOperationRegistry EnsureTimedButtonOperations()
+        {
+            TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
+            operations.Register(OpenButton, "open", options =>
+            {
+                options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(Properties.Resources.Open, stats);
+                options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.Open, stats);
+            });
+            operations.Register(CloseButton, "close", options =>
+            {
+                options.ContentFactory = stats => TimedButtonOperationTextFormatter.BuildCompactContent(Properties.Resources.Close, stats);
+                options.ToolTipFactory = stats => TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.Close, stats);
+            });
+
+            return operations;
+        }
+
+        private string BuildButtonOperationKey(string actionKey)
+        {
+            return $"pg:{Device.Config.Code}:{actionKey}";
+        }
+
+        private void ShowOpenedState()
+        {
+            ButtonOpen.Visibility = Visibility.Collapsed;
+            ButtonClose.Visibility = Visibility.Visible;
+            PGOperationPanel.Visibility = Visibility.Visible;
+            TimedButtonOperationRegistry? operations = this.TryGetTimedButtonOperations();
+            operations?.RefreshIdleState(OpenButton);
+            operations?.RefreshIdleState(CloseButton);
+        }
+
+        private void ShowClosedState()
+        {
+            ButtonOpen.Visibility = Visibility.Visible;
+            ButtonClose.Visibility = Visibility.Collapsed;
+            PGOperationPanel.Visibility = Visibility.Visible;
+            TimedButtonOperationRegistry? operations = this.TryGetTimedButtonOperations();
+            operations?.RefreshIdleState(OpenButton);
+            operations?.RefreshIdleState(CloseButton);
+        }
+
+        private static bool IsTerminalMsgRecordState(MsgRecordState state)
+        {
+            return state == MsgRecordState.Success || state == MsgRecordState.Fail || state == MsgRecordState.Timeout;
+        }
+
+        private static string BuildOperationFailureMessage(MsgRecord msgRecord, MsgRecordState state, string operationName)
+        {
+            string status = state == MsgRecordState.Timeout ? Properties.Resources.Timeout : Properties.Resources.Failure;
+            string message = msgRecord.MsgReturn?.Message;
+            string operationFailure = $"{operationName} {status}";
+
+            return string.IsNullOrWhiteSpace(message) ? operationFailure : $"{operationFailure}: {message}";
         }
 
         private void PGStartPG(object sender, RoutedEventArgs e) => PGService.PGStartPG();
@@ -122,7 +224,16 @@ namespace ColorVision.Engine.Services.Devices.PG
         private void PGSwitchUpPG(object sender, RoutedEventArgs e) => PGService.PGSwitchUpPG();
         private void PGSwitchDownPG(object sender, RoutedEventArgs e) => PGService.PGSwitchDownPG();
 
-        private void PGSwitchFramePG(object sender, RoutedEventArgs e) => PGService.PGSwitchFramePG(int.Parse(PGFrameText.Text));
+        private void PGSwitchFramePG(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(PGFrameText.Text, out int frameIndex))
+            {
+                PGService.PGSwitchFramePG(frameIndex);
+                return;
+            }
+
+            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.SetCorrectParameters, "ColorVision");
+        }
 
         private void PGSendCmd(object sender, RoutedEventArgs e)
         {
@@ -132,6 +243,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         public void Dispose()
         {
             PGService.DeviceStatusChanged -= PGService_DeviceStatusChanged;
+            this.DisposeTimedButtonOperations();
         }
     }
 }

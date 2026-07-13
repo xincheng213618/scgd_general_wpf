@@ -5,8 +5,9 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:imageEditor="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="ROI 设置"
+        Title="{x:Static properties:Resources.RoiEditor_Title}"
         Height="640"
         Width="880"
         MinHeight="560"
@@ -82,7 +83,7 @@
                        Opacity="0.74"
                        VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis"/>
-            <TextBlock Text="ROI 设置"
+            <TextBlock Text="{x:Static properties:Resources.RoiEditor_Title}"
                        Foreground="{DynamicResource GlobalTextBrush}"
                        FontSize="16"
                        FontWeight="SemiBold"/>
@@ -104,7 +105,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0">
-                <TextBlock Text="相机 Width" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBlock Text="{x:Static properties:Resources.RoiEditor_SensorWidth}" Style="{StaticResource FieldLabelStyle}"/>
                 <hc:NumericUpDown Height="30"
                                   Minimum="1"
                                   Maximum="2147483647"
@@ -112,7 +113,7 @@
             </StackPanel>
 
             <StackPanel Grid.Column="2">
-                <TextBlock Text="相机 Height" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBlock Text="{x:Static properties:Resources.RoiEditor_SensorHeight}" Style="{StaticResource FieldLabelStyle}"/>
                 <hc:NumericUpDown Height="30"
                                   Minimum="1"
                                   Maximum="2147483647"
@@ -153,11 +154,11 @@
         </Grid>
 
         <WrapPanel Grid.Row="2" Margin="0,14,0,12">
-            <Button Content="居中 1/2" Style="{StaticResource RoiButtonStyle}" Click="HalfButton_Click"/>
-            <Button Content="居中 1/4" Style="{StaticResource RoiButtonStyle}" Click="QuarterButton_Click"/>
-            <Button Content="居中 2/3" Style="{StaticResource RoiButtonStyle}" Click="TwoThirdButton_Click"/>
-            <Button Content="居中当前" Style="{StaticResource RoiButtonStyle}" Click="CenterButton_Click"/>
-            <Button Content="全幅" Style="{StaticResource RoiButtonStyle}" Click="FullButton_Click"/>
+            <Button Content="{x:Static properties:Resources.RoiEditor_CenterHalf}" Style="{StaticResource RoiButtonStyle}" Click="HalfButton_Click"/>
+            <Button Content="{x:Static properties:Resources.RoiEditor_CenterQuarter}" Style="{StaticResource RoiButtonStyle}" Click="QuarterButton_Click"/>
+            <Button Content="{x:Static properties:Resources.RoiEditor_CenterTwoThirds}" Style="{StaticResource RoiButtonStyle}" Click="TwoThirdButton_Click"/>
+            <Button Content="{x:Static properties:Resources.RoiEditor_CenterCurrent}" Style="{StaticResource RoiButtonStyle}" Click="CenterButton_Click"/>
+            <Button Content="{x:Static properties:Resources.FullFrame}" Style="{StaticResource RoiButtonStyle}" Click="FullButton_Click"/>
         </WrapPanel>
 
         <Border Grid.Row="3"
@@ -203,13 +204,13 @@
         <Grid Grid.Row="4" Margin="0,14,0,0">
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right">
-                <Button Content="确定"
+                <Button Content="{x:Static properties:Resources.OK}"
                         IsDefault="True"
                         MinWidth="108"
                         Height="34"
                         Margin="0,0,8,0"
                         Click="OkButton_Click"/>
-                <Button Content="取消"
+                <Button Content="{x:Static properties:Resources.Cancel}"
                         IsCancel="True"
                         MinWidth="108"
                         Height="34"

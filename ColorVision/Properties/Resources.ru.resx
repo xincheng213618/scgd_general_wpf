@@ -477,7 +477,7 @@
     <value>Раунды инструментов</value>
   </data>
   <data name="CopilotSystemPrompt" xml:space="preserve">
-    <value>Системный промпт</value>
+    <value>Пользовательский промпт</value>
   </data>
 
   <data name="Cancel" xml:space="preserve">

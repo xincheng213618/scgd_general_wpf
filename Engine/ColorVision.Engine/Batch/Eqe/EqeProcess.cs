@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Batch.Eqe
             properties.Add("Current/mA");
             properties.Add("Lv(cd/m2)");
             properties.Add("IP");
-            properties.Add("EQE");
+            properties.Add("EQE(%)");
             properties.Add("LuminousFlux(lm)");
             properties.Add("RadiantFlux(W)");
             properties.Add("LuminousEfficacy(lm/W)");
@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Batch.Eqe
                 csvBuilder.Append(result.I + ",");
                 csvBuilder.Append(result.Lv + ",");
                 csvBuilder.Append(result.IP + ",");
-                csvBuilder.Append(result.Eqe + ",");
+                csvBuilder.Append(result.EqePercent + ",");
                 csvBuilder.Append(result.LuminousFlux + ",");
                 csvBuilder.Append(result.RadiantFlux + ",");
                 csvBuilder.Append(result.LuminousEfficacy + ",");

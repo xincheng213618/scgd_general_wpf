@@ -1,4 +1,5 @@
 using log4net;
+using ColorVision.UI.Desktop.Operations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,9 +30,12 @@ namespace ColorVision.UI.Desktop.LanRemote
         private TcpListener? _listener;
         private Task? _acceptLoopTask;
         private int _runningPort;
+        private readonly OperationsSecureHostService _operationsHost;
 
         private LanRemoteControlService()
         {
+            _operationsHost = new OperationsSecureHostService();
+            _operationsHost.StateChanged += (_, _) => PublishStateChanged();
         }
 
         public static LanRemoteControlService Instance => LazyInstance.Value;
@@ -43,6 +47,8 @@ namespace ColorVision.UI.Desktop.LanRemote
         public string LastStatusMessage { get; private set; } = "局域网控制已关闭。";
 
         public DateTime? StartedAt { get; private set; }
+
+        public OperationsSecureHostService OperationsHost => _operationsHost;
 
         public void ApplyConfig()
         {
@@ -58,7 +64,7 @@ namespace ColorVision.UI.Desktop.LanRemote
                     return;
                 }
 
-                if (IsRunning && _runningPort == config.Port)
+                if (IsRunning && _runningPort == config.Port && _operationsHost.RunningPort == config.SecurePort)
                 {
                     LastStatusMessage = $"局域网控制运行中：{GetBaseUrl()}";
                     PublishStateChanged();
@@ -90,6 +96,18 @@ namespace ColorVision.UI.Desktop.LanRemote
             return $"http://{GetPreferredLanAddress()}:{config.Port}";
         }
 
+        public string GetSecureBaseUrl()
+        {
+            var config = LanRemoteControlConfig.Instance;
+            return $"https://{GetPreferredLanAddress()}:{config.SecurePort}";
+        }
+
+        public string CreateSecurePairingPayload()
+        {
+            OperationsPairingChallenge challenge = _operationsHost.CreatePairingChallenge(GetSecureBaseUrl());
+            return _operationsHost.Pairing.BuildQrPayload(challenge);
+        }
+
         public static IReadOnlyList<string> GetLocalIpAddresses()
         {
             return GetLanAddressCandidates()
@@ -115,6 +133,7 @@ namespace ColorVision.UI.Desktop.LanRemote
                 LastStatusMessage = $"局域网控制运行中：{GetBaseUrl()}";
                 Log.Info(LastStatusMessage);
                 _acceptLoopTask = Task.Run(() => AcceptLoopAsync(_cts.Token));
+                _operationsHost.Start(LanRemoteControlConfig.Instance.SecurePort, BuildStatusPayload);
             }
             catch (SocketException ex)
             {
@@ -138,6 +157,7 @@ namespace ColorVision.UI.Desktop.LanRemote
             {
                 _cts?.Cancel();
                 _listener?.Stop();
+                _operationsHost.Stop();
             }
             catch
             {
@@ -459,6 +479,16 @@ refreshStatus();
                 port = _runningPort > 0 ? _runningPort : LanRemoteControlConfig.Instance.Port,
                 isRunning = IsRunning,
                 statusMessage = LastStatusMessage,
+                secureOperations = new
+                {
+                    isRunning = _operationsHost.IsRunning,
+                    endpoint = GetSecureBaseUrl(),
+                    pairedDeviceCount = _operationsHost.Registry.GetAll().Count(item => item.IsActive),
+                    relayConfigured = _operationsHost.Relay.IsConfigured,
+                    relayRunning = _operationsHost.Relay.IsRunning,
+                    relayLastHeartbeatAt = _operationsHost.Relay.LastHeartbeatAt,
+                    relayStatus = _operationsHost.Relay.LastStatusMessage,
+                },
                 startedAt = StartedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty,
                 uptimeSeconds = StartedAt.HasValue ? Math.Max(0, (int)(now - StartedAt.Value).TotalSeconds) : 0,
                 serverTime = now.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -777,9 +807,6 @@ refreshStatus();
             builder.Append("Content-Type: ").Append(response.ContentType).Append("\r\n");
             builder.Append("Content-Length: ").Append(bodyBytes.Length).Append("\r\n");
             builder.Append("Connection: close\r\n");
-            builder.Append("Access-Control-Allow-Origin: *\r\n");
-            builder.Append("Access-Control-Allow-Headers: Authorization, Content-Type, X-ColorVision-Token\r\n");
-            builder.Append("Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n");
             foreach (var header in response.Headers)
                 builder.Append(header.Key).Append(": ").Append(header.Value).Append("\r\n");
             builder.Append("\r\n");

@@ -2,8 +2,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Templates.LedCheck
                     ViewResultLedCheck ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
                     result.ViewResults.Add(ledResultData);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmLedCheck), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmLedCheck), ImageFilePath = result.FilePath })) });
             }
 
         }
@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Templates.LedCheck
             if (File.Exists(result.FilePath))
                 ctx.ImageView.OpenImage(result.FilePath);
 
-            var header = new List<string> { "坐标", "半径" };
+            var header = new List<string> { Properties.Resources.Coordinates, Properties.Resources.Radius };
             var bdHeader = new List<string> { "Point", "Radius" };
 
             List<Point> points = new();

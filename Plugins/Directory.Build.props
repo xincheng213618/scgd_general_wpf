@@ -8,6 +8,7 @@
 	<TargetFrameworks>net10.0-windows</TargetFrameworks>
 	<NoWarn>CS8002</NoWarn>
 	<EnableWindowsTargeting>true</EnableWindowsTargeting>  
+    <SupportsHotReload>false</SupportsHotReload>
   </PropertyGroup>
 
   <PropertyGroup>   

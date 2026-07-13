@@ -54,11 +54,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         // ==========================================
 
         /// <summary>
-        /// External Quantum Efficiency (%)
+        /// External Quantum Efficiency as a raw ratio.
         /// Requires Current (I) to calculate.
         /// </summary>
-        [DisplayName("EQE (%)")]
+        [Browsable(false)]
         public double? Eqe { get; set; }
+
+        [DisplayName("EQE(%)")]
+        public double EqePercent => (Eqe ?? 0) * 100;
 
         /// <summary>
         /// Luminous Flux (lm) - Often mapped from fPh
@@ -238,6 +241,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
 
             OnPropertyChanged(nameof(Eqe));
+            OnPropertyChanged(nameof(EqePercent));
         }
 
         public float? IntTime { get; set; }

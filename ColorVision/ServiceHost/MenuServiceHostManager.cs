@@ -7,7 +7,7 @@ namespace ColorVision.ServiceHost
 {
     public sealed class MenuServiceHostManager : MenuItemBase
     {
-        public override string OwnerGuid => nameof(MenuUpdate);
+        public override string OwnerGuid => MenuItemConstants.Help;
 
         public override string Header => "ColorVision Service Host";
 

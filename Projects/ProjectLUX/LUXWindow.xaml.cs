@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1805,CA1822,CS0168,CS0219,CS4014,CS8601
+using Azure;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -6,6 +7,7 @@ using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
@@ -20,6 +22,7 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,6 +63,22 @@ namespace ProjectLUX
         }
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
+        private int ObjectiveTestResultRecordId;
+        private NetworkStream? stream;
+        public NetworkStream? Stream
+        {
+            get => stream;
+            set
+            {
+                // 多工位并行时，后续握手/消息不能覆盖当前流程的回包连接。
+                if (value != null && flowControl != null && flowControl.IsFlowRun)
+                {
+                    log.Info("流程运行中，保持当前执行Stream");
+                    return;
+                }
+                stream = value;
+            }
+        }
 
 
         Random Random = new Random();
@@ -67,6 +86,7 @@ namespace ProjectLUX
         {
             ProjectLUXConfig.Instance.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
+            ObjectiveTestResultRecordId = 0;
 
             if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
             {
@@ -80,20 +100,10 @@ namespace ProjectLUX
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(SN))
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectLUXConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
-                });
-            }
-            else
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectLUXConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
-                });
-            }
+                ProjectLUXConfig.Instance.SN = string.IsNullOrWhiteSpace(SN) ? "SN" + Random.NextInt64(1000, 9000).ToString() : SN.Trim();
+            });
         }
 
         /// <summary>
@@ -103,12 +113,18 @@ namespace ProjectLUX
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                if (flowControl != null && flowControl.IsFlowRun)
+                {
+                    log.Info($"流程运行中，忽略 SocketCode={socketCode}");
+                    return;
+                }
+
                 var activeGroup = ProcessManager.ActiveGroup;
                 if (activeGroup == null)
                 {
                     log.Error($"未设置活动流程组，无法执行 SocketCode={socketCode}");
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (Stream != null)
+                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     return;
                 }
 
@@ -116,8 +132,8 @@ namespace ProjectLUX
                 if (processMeta == null)
                 {
                     log.Error($"未在组 {activeGroup.Name} 中找到 SocketCode={socketCode} 对应的流程");
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (Stream != null)
+                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     return;
                 }
 
@@ -132,8 +148,8 @@ namespace ProjectLUX
                 else
                 {
                     log.Error($"未找到 FlowTemplate={processMeta.FlowTemplate} 对应的模板");
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (Stream != null)
+                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
             });
         }
@@ -235,30 +251,18 @@ namespace ProjectLUX
         }
 
 
-        public async Task Refresh()
+        public Task Refresh()
         {
-            if (FlowTemplate.SelectedIndex < 0) return;
+            if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
 
-            try
+            flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+
+            foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent -= UpdateMsg;
-
-                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
-
-                for (int i = 0; i < 200; i++)
-                {
-                    if (flowEngine.IsReady)
-                        break;
-                    await Task.Delay(10);
-                }
-                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    item.nodeRunEvent += UpdateMsg;
+                item.nodeRunEvent -= UpdateMsg;
+                item.nodeRunEvent += UpdateMsg;
             }
-            catch (Exception ex)
-            {
-                flowEngine.LoadFromBase64(string.Empty);
-            }
+            return Task.CompletedTask;
         }
 
 
@@ -322,6 +326,7 @@ namespace ProjectLUX
 
         ProjectLUXReuslt CurrentFlowResult { get; set; }
         int TryCount = 0;
+        public bool IsSaveImageReuslt { get; set; }
 
         public async Task RunTemplate()
         {
@@ -368,14 +373,6 @@ namespace ProjectLUX
             await Refresh();
 
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
-
-            if (!flowEngine.IsReady)
-            {
-                string base64 = string.Empty;
-                flowEngine.LoadFromBase64(base64);
-                await Refresh();
-                log.Info($"IsReady{flowEngine.IsReady}");
-            }
 
             if (!await PreProcessing(FlowName, CurrentFlowResult.Code))
             {
@@ -465,8 +462,14 @@ namespace ProjectLUX
                     if (!string.IsNullOrWhiteSpace(ReturnCode))
                     {
                         ReturnCode += $"FlowFailed:{FlowControlData.EventName},{FlowControlData.Params};";
-                        if (SocketControl.Current.Stream != null)
-                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                        SocketMessageManager.GetInstance().AddMessage(new SocketMessage
+                        {
+                            Direction = SocketMessageDirection.Sent,
+                            Content = ReturnCode,
+                            MessageTime = DateTime.Now,
+                        });
+                        if (Stream != null)
+                            Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     }
                 }
                 TryCount = 0;
@@ -476,8 +479,14 @@ namespace ProjectLUX
                 if (!string.IsNullOrWhiteSpace(ReturnCode))
                 {
                     ReturnCode += $"FlowFailed:{FlowControlData.EventName},{FlowControlData.Params};";
-                    if (SocketControl.Current.Stream != null)
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    SocketMessageManager.GetInstance().AddMessage(new SocketMessage
+                    {
+                        Direction = SocketMessageDirection.Sent,
+                        Content = ReturnCode,
+                        MessageTime = DateTime.Now,
+                    });
+                    if (Stream != null)
+                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
 
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
@@ -550,9 +559,10 @@ namespace ProjectLUX
                     if (executed)
                     {
                         //每次结束都保存
-                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{ProjectLUXConfig.Instance.SN}.csv");
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{result.SN}.csv");
                         if (Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
                         {
+                            log.Info("savepath" + path);
                             ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
                         }
                         else
@@ -562,6 +572,8 @@ namespace ProjectLUX
 
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+                        SaveObjectiveTestResultRecord(result);
+                        IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
 
                         if (!string.IsNullOrWhiteSpace(ReturnCode))
                         {
@@ -580,8 +592,8 @@ namespace ProjectLUX
 
                             try
                             {
-                                if (SocketControl.Current.Stream != null)
-                                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                                if (Stream != null)
+                                    Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                                 else
                                 {
                                     log.Info("找不到通信连接");
@@ -610,6 +622,20 @@ namespace ProjectLUX
             }
             ViewResultManager.Save(result);
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+            SaveObjectiveTestResultRecord(result);
+        }
+
+        private void SaveObjectiveTestResultRecord(ProjectLUXReuslt result)
+        {
+            try
+            {
+                ObjectiveTestResultRecordId = ViewResultManager.SaveObjectiveTestResult(ObjectiveTestResultRecordId, result, ObjectiveTestResult);
+                log.Info($"保存 ObjectiveTestResult 记录：{ObjectiveTestResultRecordId}");
+            }
+            catch (Exception ex)
+            {
+                log.Error("保存 ObjectiveTestResult 记录失败", ex);
+            }
         }
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
@@ -684,11 +710,63 @@ namespace ProjectLUX
                                 }
                             }
 
+                            SaveImageResultIfNeeded(result);
                         });
                     }
                 });
 
             }
+        }
+
+        private void SaveImageResultIfNeeded(ProjectLUXReuslt result)
+        {
+            if (!IsSaveImageReuslt) return;
+
+            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
+            IsSaveImageReuslt = false;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+
+                    string linkPath = ViewResultManager.Config.CsvSavePath;
+                    string sn = result.SN;
+
+                    if (ViewResultManager.Config.SaveByDate)
+                    {
+                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                        linkPath = Path.Combine(linkPath, dateFolder);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(sn))
+                    {
+                        foreach (char c in Path.GetInvalidFileNameChars())
+                        {
+                            sn = sn.Replace(c.ToString(), "");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(sn))
+                        {
+                            linkPath = Path.Combine(linkPath, sn);
+                        }
+                    }
+
+                    if (!Directory.Exists(linkPath))
+                        Directory.CreateDirectory(linkPath);
+
+                    string filePath = Path.Combine(linkPath, $"{result.Model}.png");
+                    log.Info(filePath);
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        ImageView.Save(filePath);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    log.Error("保存结果截图失败", ex);
+                }
+            });
         }
 
         public void GenoutputText(ProjectLUXReuslt result)
@@ -793,6 +871,43 @@ namespace ProjectLUX
                 TestResult.VRMTFHTestResult.ObjectiveTestItems.Add(objectiveTestItem);
             }
             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
+        }
+
+        private void ExportObjectiveTestResult_Click(object sender, RoutedEventArgs e)
+        {
+            string sn = ProjectLUXConfig.Instance.SN;
+
+            string defaultPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "导出 ObjectiveTestResult",
+                InitialDirectory = defaultPath
+            };
+
+            if (dialog.ShowDialog(this) != true) return;
+
+            try
+            {
+                string path = Path.Combine(dialog.FolderName, $"C_{sn}.csv");
+                ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
+                log.Info("手动导出 ObjectiveTestResult：" + path);
+                MessageBox.Show(this, "导出完成：" + path, "ColorVision");
+            }
+            catch (Exception ex)
+            {
+                log.Error("手动导出 ObjectiveTestResult 失败", ex);
+                MessageBox.Show(this, "导出失败：" + ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ObjectiveTestResultRecord_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new ObjectiveTestResultRecordWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.ShowDialog();
         }
     }
 }

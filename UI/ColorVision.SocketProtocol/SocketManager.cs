@@ -4,157 +4,17 @@ using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Windows;
 
 namespace ColorVision.SocketProtocol
 {
-    /// <summary>
-    /// Socket消息基类
-    /// </summary>
-    public class SocketMessageBase
-    {
-        public string Version { get; set; }
-        public string MsgID { get; set; }
-        public string EventName { get; set; }
-        public string SerialNumber { get; set; }
-
-        public override string ToString() => JsonConvert.SerializeObject(this);
-    }
-
-    /// <summary>
-    /// Socket请求消息
-    /// </summary>
-    public class SocketRequest : SocketMessageBase
-    {
-        public string Params { get; set; }
-    }
-
-    /// <summary>
-    /// Socket响应消息
-    /// </summary>
-    public class SocketResponse : SocketMessageBase
-    {
-        public int Code { get; set; }
-        public string Msg { get; set; }
-        public dynamic? Data { get; set; }
-    }
-
-
-    /// <summary>
-    /// JSON消息分发器
-    /// 自动扫描并注册所有实现ISocketJsonHandler接口的处理器
-    /// </summary>
-    public class SocketJsonDispatcher
-    {
-        private readonly Dictionary<string, ISocketJsonHandler> _handlers = new();
-
-        public SocketJsonDispatcher()
-        {
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketJsonHandler).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is ISocketJsonHandler handler)
-                    {
-                        if (!_handlers.ContainsKey(handler.EventName))
-                            _handlers[handler.EventName] = handler;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 分发Socket请求到对应的处理器
-        /// </summary>
-        /// <param name="stream">网络流</param>
-        /// <param name="request">请求消息</param>
-        /// <returns>响应消息</returns>
-        public SocketResponse Dispatch(NetworkStream stream, SocketRequest request)
-        {
-            if (request == null || string.IsNullOrEmpty(request.EventName))
-                return new SocketResponse { Code = 400, Msg = "Invalid request" };
-
-            if (_handlers.TryGetValue(request.EventName, out var handler))
-                return handler.Handle(stream, request);
-
-            return new SocketResponse { Code = 404, Msg = "Handler not found for event: " + request.EventName };
-        }
-    }
-
-    /// <summary>
-    /// 文本消息分发器接口
-    /// </summary>
-    public interface ISocketTextDispatcher
-    {
-        string? Handle(NetworkStream stream, string request);
-    }
-
-    /// <summary>
-    /// 文本消息分发器
-    /// 自动扫描并注册所有实现ISocketTextDispatcher接口的处理器
-    /// </summary>
-    public class SocketTextDispatcher
-    {
-        private readonly List<ISocketTextDispatcher> _handlers = new List<ISocketTextDispatcher>();
-
-        public SocketTextDispatcher()
-        {
-            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketTextDispatcher).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    {
-                        var displayNameAttr = type.GetCustomAttribute<DisplayNameAttribute>();
-                        var eventName = displayNameAttr?.DisplayName ?? type.Name;
-                        if (Activator.CreateInstance(type) is ISocketTextDispatcher handler)
-                        {
-                            _handlers.Add(handler);
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 分发文本请求到对应的处理器
-        /// </summary>
-        /// <param name="stream">网络流</param>
-        /// <param name="request">请求文本</param>
-        /// <returns>响应文本</returns>
-        public string? Dispatch(NetworkStream stream, string request)
-        {
-            if(_handlers.Count > 0)
-            {
-                foreach (var handle in _handlers)
-                {
-                    string respose = handle.Handle(stream, request);
-                    if (!string.IsNullOrWhiteSpace(respose))
-                        return respose;
-                    else
-                        return null;
-                }
-            }
-            return "No Dispatcher Hanle";
-        }
-    }
-
-    public enum SocketServerState
-    {
-        Disabled,
-        Stopped,
-        Starting,
-        Running,
-        Stopping,
-        Error
-    }
-
 
     /// <summary>
     /// Socket连接管理器
@@ -174,6 +34,7 @@ namespace ColorVision.SocketProtocol
 
         private static TcpListener? tcpListener;
         private volatile bool _isStopRequested;
+        private int _firewallRefreshVersion;
 
         /// <summary>
         /// Socket配置信息
@@ -184,6 +45,11 @@ namespace ColorVision.SocketProtocol
         /// 编辑配置命令
         /// </summary>
         public RelayCommand EditCommand { get; set; }
+
+        /// <summary>
+        /// 添加当前程序防火墙允许规则命令
+        /// </summary>
+        public RelayCommand AllowFirewallRuleCommand { get; set; }
 
         /// <summary>
         /// JSON消息分发器
@@ -206,9 +72,14 @@ namespace ColorVision.SocketProtocol
             TextDispatcher = new SocketTextDispatcher();
             MessageManager = SocketMessageManager.GetInstance();
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            Config.PropertyChanged += (_, _) => NotifyServerStatusChanged();
+            AllowFirewallRuleCommand = new RelayCommand(a => _ = AllowFirewallRuleAsync(a?.ToString()));
+            Config.PropertyChanged += (_, _) =>
+            {
+                NotifyServerStatusChanged();
+            };
             TcpClients.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ClientCountText));
             ServerState = Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled;
+            RefreshNetworkAccessStatus();
         }
 
         /// <summary>
@@ -287,6 +158,98 @@ namespace ColorVision.SocketProtocol
 
         public string ListenAddress => $"{Config.IPAddress}:{Config.ServerPort}";
 
+        public string PrivateFirewallStatusText
+        {
+            get => _PrivateFirewallStatusText;
+            private set
+            {
+                if (_PrivateFirewallStatusText == value)
+                    return;
+
+                _PrivateFirewallStatusText = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PrivateFirewallTooltip));
+            }
+        }
+        private string _PrivateFirewallStatusText = string.Empty;
+
+        public string PrivateFirewallStatusDetail
+        {
+            get => _PrivateFirewallStatusDetail;
+            private set
+            {
+                if (_PrivateFirewallStatusDetail == value)
+                    return;
+
+                _PrivateFirewallStatusDetail = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PrivateFirewallTooltip));
+            }
+        }
+        private string _PrivateFirewallStatusDetail = string.Empty;
+
+        public bool CanAllowPrivateFirewall
+        {
+            get => _CanAllowPrivateFirewall;
+            private set
+            {
+                if (_CanAllowPrivateFirewall == value)
+                    return;
+
+                _CanAllowPrivateFirewall = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _CanAllowPrivateFirewall;
+
+        public string PrivateFirewallTooltip => PrivateFirewallStatusDetail;
+
+        public string PublicFirewallStatusText
+        {
+            get => _PublicFirewallStatusText;
+            private set
+            {
+                if (_PublicFirewallStatusText == value)
+                    return;
+
+                _PublicFirewallStatusText = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PublicFirewallTooltip));
+            }
+        }
+        private string _PublicFirewallStatusText = string.Empty;
+
+        public string PublicFirewallStatusDetail
+        {
+            get => _PublicFirewallStatusDetail;
+            private set
+            {
+                if (_PublicFirewallStatusDetail == value)
+                    return;
+
+                _PublicFirewallStatusDetail = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PublicFirewallTooltip));
+            }
+        }
+        private string _PublicFirewallStatusDetail = string.Empty;
+
+        public bool CanAllowPublicFirewall
+        {
+            get => _CanAllowPublicFirewall;
+            private set
+            {
+                if (_CanAllowPublicFirewall == value)
+                    return;
+
+                _CanAllowPublicFirewall = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _CanAllowPublicFirewall;
+
+        public string PublicFirewallTooltip => PublicFirewallStatusDetail;
+
         public string ClientCountText => FormatResource(Properties.Resources.ClientCountFormat, TcpClients.Count);
 
         public string LastErrorMessage
@@ -342,6 +305,14 @@ namespace ColorVision.SocketProtocol
             OnPropertyChanged(nameof(EnabledStatusText));
             OnPropertyChanged(nameof(OpenStatusText));
             OnPropertyChanged(nameof(ListenAddress));
+            OnPropertyChanged(nameof(PrivateFirewallStatusText));
+            OnPropertyChanged(nameof(PrivateFirewallStatusDetail));
+            OnPropertyChanged(nameof(CanAllowPrivateFirewall));
+            OnPropertyChanged(nameof(PrivateFirewallTooltip));
+            OnPropertyChanged(nameof(PublicFirewallStatusText));
+            OnPropertyChanged(nameof(PublicFirewallStatusDetail));
+            OnPropertyChanged(nameof(CanAllowPublicFirewall));
+            OnPropertyChanged(nameof(PublicFirewallTooltip));
             OnPropertyChanged(nameof(ClientCountText));
             OnPropertyChanged(nameof(LastStatusChangedText));
             OnPropertyChanged(nameof(HasLastError));
@@ -386,6 +357,89 @@ namespace ColorVision.SocketProtocol
             });
         }
 
+        private void RefreshNetworkAccessStatus()
+        {
+            _ = RefreshNetworkAccessStatusAsync();
+        }
+
+        private async Task RefreshNetworkAccessStatusAsync()
+        {
+            int refreshVersion = Interlocked.Increment(ref _firewallRefreshVersion);
+            string? executablePath = GetCurrentExecutablePath();
+
+            RunOnUiThread(() =>
+            {
+                PrivateFirewallStatusText = "检测中...";
+                PrivateFirewallStatusDetail = "正在后台读取 Windows 防火墙规则。";
+                CanAllowPrivateFirewall = false;
+                PublicFirewallStatusText = "检测中...";
+                PublicFirewallStatusDetail = "正在后台读取 Windows 防火墙规则。";
+                CanAllowPublicFirewall = false;
+            });
+
+            try
+            {
+                FirewallProfileStatuses statuses = await Task.Run(() => SocketFirewallService.GetStatuses(executablePath)).ConfigureAwait(false);
+
+                if (refreshVersion != Volatile.Read(ref _firewallRefreshVersion))
+                    return;
+
+                RunOnUiThread(() =>
+                {
+                    PrivateFirewallStatusText = statuses.PrivateStatus.Summary;
+                    PrivateFirewallStatusDetail = statuses.PrivateStatus.Detail;
+                    CanAllowPrivateFirewall = statuses.PrivateStatus.CanAllow;
+                    PublicFirewallStatusText = statuses.PublicStatus.Summary;
+                    PublicFirewallStatusDetail = statuses.PublicStatus.Detail;
+                    CanAllowPublicFirewall = statuses.PublicStatus.CanAllow;
+                });
+            }
+            catch (Exception ex)
+            {
+                if (refreshVersion != Volatile.Read(ref _firewallRefreshVersion))
+                    return;
+
+                RunOnUiThread(() =>
+                {
+                    PrivateFirewallStatusText = "无法读取";
+                    PrivateFirewallStatusDetail = ex.Message;
+                    CanAllowPrivateFirewall = false;
+                    PublicFirewallStatusText = "无法读取";
+                    PublicFirewallStatusDetail = ex.Message;
+                    CanAllowPublicFirewall = false;
+                });
+            }
+        }
+
+        private static string? GetCurrentExecutablePath()
+        {
+            try
+            {
+                return Process.GetCurrentProcess().MainModule?.FileName;
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Unable to get current executable path.", ex);
+                return null;
+            }
+        }
+
+        private async Task AllowFirewallRuleAsync(string? profile)
+        {
+            string? executablePath = GetCurrentExecutablePath();
+            if (string.IsNullOrWhiteSpace(executablePath))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "无法获取当前程序路径，不能创建防火墙规则。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            FirewallCommandResult allowResult = await SocketFirewallService.AllowApplicationAsync(executablePath, profile ?? "private").ConfigureAwait(true);
+            RefreshNetworkAccessStatus();
+
+            MessageBoxImage image = allowResult.Success ? MessageBoxImage.Information : MessageBoxImage.Error;
+            MessageBox.Show(Application.Current.GetActiveWindow(), allowResult.Message, "ColorVision", MessageBoxButton.OK, image);
+        }
+
         /// <summary>
         /// 启动Socket服务器
         /// </summary>
@@ -408,25 +462,26 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         public void StopServer()
         {
+            if (ServerState == SocketServerState.Stopping)
+                return;
+
             _isStopRequested = true;
             ClearLastError();
             SetServerState(SocketServerState.Stopping);
-            if (tcpListener != null)
+            RunOnUiThread(() => IsConnect = false);
+            Task.Run(StopServerCore);
+        }
+
+        private void StopServerCore()
+        {
+            TcpListener? listener = Interlocked.Exchange(ref tcpListener, null);
+            if (listener != null)
             {
                 try
                 {
-                    tcpListener.Stop();
-                    IsConnect = false;
+                    listener.Stop();
                     log.Info("Server stopped.");
-                    foreach (var item in TcpClients)
-                    {
-                        if (item.Connected)
-                        {
-                            item.Client.Shutdown(SocketShutdown.Both);
-                        }
-                        item?.Close();
-                        item?.Dispose();
-                    }
+                    CloseConnectedClients();
                     SetServerState(Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled);
                 }
                 catch (Exception e)
@@ -438,6 +493,26 @@ namespace ColorVision.SocketProtocol
             else
             {
                 SetServerState(Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled);
+            }
+        }
+
+        private void CloseConnectedClients()
+        {
+            List<TcpClient> clients = new();
+            RunOnUiThread(() => clients = TcpClients.ToList());
+            foreach (TcpClient item in clients)
+            {
+                try
+                {
+                    if (item.Connected)
+                        item.Client.Shutdown(SocketShutdown.Both);
+                }
+                catch (Exception ex)
+                {
+                    log.Debug("Socket client shutdown skipped.", ex);
+                }
+
+                DisposeClient(item);
             }
         }
 
@@ -481,7 +556,7 @@ namespace ColorVision.SocketProtocol
                 else
                 {
                     log.Error("Socket server error on port " + Config.ServerPort + ": " + e.Message);
-                    SetLastError(FormatResource(Properties.Resources.OpenListenAddressFailedFormat, ListenAddress, e.Message));
+                    SetLastError(BuildOpenFailureMessage(e));
                 }
             }
             catch (ObjectDisposedException)
@@ -491,7 +566,7 @@ namespace ColorVision.SocketProtocol
             catch (Exception e)
             {
                 log.Error("Socket server error: " + e.Message);
-                SetLastError(FormatResource(Properties.Resources.OpenListenAddressFailedFormat, ListenAddress, e.Message));
+                SetLastError(BuildOpenFailureMessage(e));
             }
             finally
             {
@@ -512,6 +587,21 @@ namespace ColorVision.SocketProtocol
                 // 不修改 Config.IsServerEnabled，保留用户配置
                 // 下次启动时仍会尝试开启服务器
             }
+        }
+
+        private string BuildOpenFailureMessage(Exception exception)
+        {
+            if (exception is SocketException { SocketErrorCode: SocketError.AddressAlreadyInUse })
+            {
+                return $"打开 {ListenAddress} 失败：端口 {Config.ServerPort} 已被占用，请关闭占用该端口的程序或在服务设置中更换端口。";
+            }
+
+            if (exception is SocketException { SocketErrorCode: SocketError.AccessDenied })
+            {
+                return $"打开 {ListenAddress} 失败：没有权限监听该地址，请检查监听地址或系统权限。";
+            }
+
+            return FormatResource(Properties.Resources.OpenListenAddressFailedFormat, ListenAddress, exception.Message);
         }
 
 

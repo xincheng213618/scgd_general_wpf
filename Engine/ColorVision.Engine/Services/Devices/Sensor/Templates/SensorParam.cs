@@ -22,6 +22,9 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     public class TemplateSensor : ITemplate<SensorParam>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateSensor));
+        private const string DefaultCommandSymbol = "defaultcommand";
+        private const string DefaultCommandValue = "\n,,Ascii,1000/0,0";
+
         public static Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>>();
 
         public static ObservableCollection<TemplateModel<SensorParam>> AllParams { get => new(Params.SelectMany(p => p.Value)); }
@@ -84,6 +87,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                         item.Pid = modMaster.Id;
                     }
                 }
+                if (details.Count == 0)
+                {
+                    AddDefaultCommandDetails(details, modMaster.Id, TemplateDicId);
+                }
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
                 Db.Insertable(details).ExecuteCommand();
 
@@ -114,6 +121,101 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                     }
                 }
             }
+        }
+
+        internal static void EnsureDefaultCommandDefinition(int templateDicId)
+        {
+            GetOrCreateCommandDefinitions(templateDicId);
+        }
+
+        private static void AddDefaultCommandDetails(List<ModDetailModel> details, int modMasterId, int templateDicId)
+        {
+            foreach (var item in GetOrCreateCommandDefinitions(templateDicId))
+            {
+                details.Add(new ModDetailModel() { SysPid = item.Id, Pid = modMasterId, ValueA = item.DefaultValue });
+            }
+        }
+
+        private static List<SysDictionaryModDetaiModel> GetOrCreateCommandDefinitions(int templateDicId)
+        {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            RepairMissingCommandDefinitions(Db, templateDicId);
+
+            var definitions = Db.Queryable<SysDictionaryModDetaiModel>().Where(x => x.PId == templateDicId).ToList();
+            if (definitions.Count > 0)
+            {
+                return definitions;
+            }
+
+            int id = SysDictionaryModDetailDao.Instance.GetNextAvailableId();
+            var defaultCommand = new SysDictionaryModDetaiModel()
+            {
+                Id = id,
+                AddressCode = id,
+                PId = templateDicId,
+                Symbol = DefaultCommandSymbol,
+                Name = DefaultCommandSymbol,
+                DefaultValue = DefaultCommandValue,
+                ValueType = SValueType.String,
+                CreateDate = DateTime.Now,
+                IsEnable = true,
+                IsDelete = false
+            };
+            InsertCommandDefinition(Db, defaultCommand);
+            return new List<SysDictionaryModDetaiModel>() { defaultCommand };
+        }
+
+        private static void RepairMissingCommandDefinitions(SqlSugarClient db, int templateDicId)
+        {
+            var missingIds = db.Ado.SqlQuery<int>(
+                @"SELECT DISTINCT d.cc_pid
+                  FROM t_scgd_mod_param_detail d
+                  INNER JOIN t_scgd_mod_param_master m ON d.pid = m.id
+                  LEFT JOIN t_scgd_sys_dictionary_mod_item i ON i.id = d.cc_pid
+                  WHERE m.mm_id = @templateDicId
+                    AND d.cc_pid > 0
+                    AND i.id IS NULL",
+                new { templateDicId });
+
+            foreach (int missingId in missingIds)
+            {
+                var commandDefinition = new SysDictionaryModDetaiModel()
+                {
+                    Id = missingId,
+                    AddressCode = missingId,
+                    PId = templateDicId,
+                    Symbol = DefaultCommandSymbol,
+                    Name = DefaultCommandSymbol,
+                    DefaultValue = DefaultCommandValue,
+                    ValueType = SValueType.String,
+                    CreateDate = DateTime.Now,
+                    IsEnable = true,
+                    IsDelete = false
+                };
+                InsertCommandDefinition(db, commandDefinition);
+                SymbolCache.Instance.Cache.TryAdd(commandDefinition.Id, commandDefinition);
+                log.Warn($"已自动修复传感器模板缺失字典项: templateDicId={templateDicId}, cc_pid={missingId}");
+            }
+        }
+
+        private static void InsertCommandDefinition(SqlSugarClient db, SysDictionaryModDetaiModel commandDefinition)
+        {
+            db.Ado.ExecuteCommand(
+                @"INSERT IGNORE INTO t_scgd_sys_dictionary_mod_item
+                  (id, pid, address_code, symbol, name, default_val, val_type, create_date, is_enable, is_delete)
+                  VALUES
+                  (@id, @pid, @addressCode, @symbol, @name, @defaultValue, @valueType, @createDate, @isEnable, @isDelete)",
+                new SugarParameter("@id", commandDefinition.Id),
+                new SugarParameter("@pid", commandDefinition.PId),
+                new SugarParameter("@addressCode", commandDefinition.AddressCode),
+                new SugarParameter("@symbol", commandDefinition.Symbol),
+                new SugarParameter("@name", commandDefinition.Name),
+                new SugarParameter("@defaultValue", commandDefinition.DefaultValue),
+                new SugarParameter("@valueType", (int)commandDefinition.ValueType),
+                new SugarParameter("@createDate", commandDefinition.CreateDate),
+                new SugarParameter("@isEnable", commandDefinition.IsEnable ? 1 : 0),
+                new SugarParameter("@isDelete", commandDefinition.IsDelete ? 1 : 0));
         }
 
         public override string Title { get => Code + Properties.Resources.Edit; set { } }
@@ -154,62 +256,67 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public SensorCommand(ModDetailModel modDetailModel)
         {
             Model = modDetailModel ?? new ModDetailModel();
+            BracketTextToRequestCommand = new RelayCommand(_ => ApplyBracketTextToRequest());
+            BracketTextToResponseCommand = new RelayCommand(_ => ApplyBracketTextToResponse());
+            RequestToBracketTextCommand = new RelayCommand(_ => ShowRequestAsBracketText());
+            ResponseToBracketTextCommand = new RelayCommand(_ => ShowResponseAsBracketText());
             ParseRequestString();
         }
+
+        public RelayCommand BracketTextToRequestCommand { get; }
+        public RelayCommand BracketTextToResponseCommand { get; }
+        public RelayCommand RequestToBracketTextCommand { get; }
+        public RelayCommand ResponseToBracketTextCommand { get; }
 
 
         public void ParseRequestString()
         {
             string? str = Model.ValueA;
-            if (str == null)
+            if (string.IsNullOrEmpty(str))
             {
                 GenerateRequestString();
             }
-            else
+            else if (TryParseStoredCommand(str, out string request, out string response, out SensorCmdType cmdType, out int timeout, out int delay, out int retryCount))
             {
-                var parts = str.Split(',');
-
-                if (parts.Length >= 5)
-                {
-                    Request = parts[0];
-                    Response = parts[1];
-
-                    // 解析 CmdType（SensorCmdType）
-                    if (Enum.TryParse(parts[2], out SensorCmdType cmdType))
-                    {
-                        SensorCmdType = cmdType;
-                    }
-
-                    // 解析 Timeout 和 Delay
-                    var timeParts = parts[3].Split('/');
-                    if (timeParts.Length == 2)
-                    {
-                        if (int.TryParse(timeParts[0], out int timeout))
-                            Timeout = timeout;
-
-                        if (int.TryParse(timeParts[1], out int delay))
-                            Delay = delay;
-                    }
-                    // 解析 RetryCount
-                    if (int.TryParse(parts[4], out int retryCount))
-                        RetryCount = retryCount;
-                }
-
+                _isLoading = true;
+                Request = request;
+                Response = response;
+                SensorCmdType = cmdType;
+                Timeout = timeout;
+                Delay = delay;
+                RetryCount = retryCount;
+                _isLoading = false;
+                RefreshPreviewProperties();
             }
         }
 
 
         public void GenerateRequestString()
         {
+            if (_isLoading)
+            {
+                return;
+            }
+
             _Request = _Request.Replace("\\r\\n", "\r\n")
                  .Replace("\\n", "\n")
                  .Replace("\\r", "\r")
                  .Replace("\\t", "\t");
             Model.ValueA = $"{_Request},{_Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
-            OnPropertyChanged(nameof(OriginText));
+            RefreshPreviewProperties();
         }
 
         public string? OriginText { get => Model.ValueA; set { } }
+
+        public string BracketText { get => _BracketText; set { _BracketText = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _BracketText = string.Empty;
+
+        public string ConvertStatus { get => _ConvertStatus; set { _ConvertStatus = value; OnPropertyChanged(); } }
+        private string _ConvertStatus = string.Empty;
+
+        public string RequestBracketText => SensorCmdType == SensorCmdType.Hex ? SensorCommandTextFormatter.ToBracketTextOrOriginal(Request, EditTemplateSensor.Config.UseControlNamesInBracketText) : Request;
+        public string ResponseBracketText => SensorCmdType == SensorCmdType.Hex ? SensorCommandTextFormatter.ToBracketTextOrOriginal(Response, EditTemplateSensor.Config.UseControlNamesInBracketText) : Response;
+        public string PreviewText => string.Format(Properties.Resources.Sensor_PreviewFormat, OriginText, RequestBracketText, ResponseBracketText);
 
         public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; OnPropertyChanged(); GenerateRequestString(); } }
         private SensorCmdType _SensorCmdType = SensorCmdType.Ascii;
@@ -227,6 +334,87 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         public int RetryCount { get => _RetryCount; set { _RetryCount = value; OnPropertyChanged(); GenerateRequestString(); } }
         private int _RetryCount;
+
+        private bool _isLoading;
+
+        private void ApplyBracketTextToRequest()
+        {
+            Request = SensorCommandTextFormatter.BracketTextToHex(BracketText);
+            SensorCmdType = SensorCmdType.Hex;
+            ConvertStatus = Properties.Resources.Sensor_ConvertedToRequest;
+        }
+
+        private void ApplyBracketTextToResponse()
+        {
+            Response = SensorCommandTextFormatter.BracketTextToHex(BracketText);
+            SensorCmdType = SensorCmdType.Hex;
+            ConvertStatus = Properties.Resources.Sensor_ConvertedToResponse;
+        }
+
+        private void ShowRequestAsBracketText()
+        {
+            BracketText = RequestBracketText;
+            ConvertStatus = Properties.Resources.Sensor_RequestEchoed;
+        }
+
+        private void ShowResponseAsBracketText()
+        {
+            BracketText = ResponseBracketText;
+            ConvertStatus = Properties.Resources.Sensor_ResponseEchoed;
+        }
+
+        public void RefreshPreviewProperties()
+        {
+            OnPropertyChanged(nameof(OriginText));
+            OnPropertyChanged(nameof(RequestBracketText));
+            OnPropertyChanged(nameof(ResponseBracketText));
+            OnPropertyChanged(nameof(PreviewText));
+        }
+
+        private static bool TryParseStoredCommand(string str, out string request, out string response, out SensorCmdType cmdType, out int timeout, out int delay, out int retryCount)
+        {
+            request = string.Empty;
+            response = string.Empty;
+            cmdType = SensorCmdType.Ascii;
+            timeout = 1000;
+            delay = 0;
+            retryCount = 0;
+
+            string[] parts = str.Split(',');
+            if (parts.Length < 5)
+            {
+                return false;
+            }
+
+            request = parts[0];
+            response = string.Join(",", parts.Skip(1).Take(parts.Length - 4));
+
+            if (!Enum.TryParse(parts[^3], out cmdType))
+            {
+                cmdType = SensorCmdType.Ascii;
+            }
+
+            string[] timeParts = parts[^2].Split('/');
+            if (timeParts.Length == 2)
+            {
+                if (!int.TryParse(timeParts[0], out timeout))
+                {
+                    timeout = 1000;
+                }
+
+                if (!int.TryParse(timeParts[1], out delay))
+                {
+                    delay = 0;
+                }
+            }
+
+            if (!int.TryParse(parts[^1], out retryCount))
+            {
+                retryCount = 0;
+            }
+
+            return true;
+        }
     }
 
 

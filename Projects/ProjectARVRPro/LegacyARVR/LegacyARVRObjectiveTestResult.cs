@@ -1,5 +1,6 @@
 #pragma warning disable CA1707,CA1805,CA1847,CS8603,CS8604
 using ColorVision.Common.MVVM;
+using ProjectARVRPro.Process.RGB.LuminanceChromaticity;
 using System.IO;
 using System.Text;
 
@@ -156,11 +157,25 @@ namespace ProjectARVRPro.LegacyARVR
             return null;
         }
 
+        private static LuminanceChromaticityTestResult FindLuminanceChromaticity(ObjectiveTestResult src, string key)
+        {
+            if (src.LuminanceChromaticityTestResults == null)
+                return null;
+
+            if (src.LuminanceChromaticityTestResults.TryGetValue(key, out var result))
+                return result;
+
+            return src.LuminanceChromaticityTestResults
+                .FirstOrDefault(item => string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase))
+                .Value;
+        }
+
         public static LegacyARVRObjectiveTestResult ToLegacy(ObjectiveTestResult src)
         {
             if (src == null) return new LegacyARVRObjectiveTestResult();
 
             var legacy = new LegacyARVRObjectiveTestResult();
+            var w25Result = FindLuminanceChromaticity(src, "W25");
 
             // W255 → LuminanceUniformity, ColorUniformity, CenterLuminace
             legacy.LuminanceUniformity = Convert(src.W255TestResult?.LuminanceUniformity);
@@ -169,8 +184,8 @@ namespace ProjectARVRPro.LegacyARVR
             legacy.CenterCorrelatedColorTemperature = Convert(src.W255TestResult?.CenterCorrelatedColorTemperature);
 
 
-            // W25 → White1CenterLuminace
-            legacy.White1CenterLuminace = Convert(src.W25TestResult?.CenterLunimance);
+            // 亮色度测试 Key=W25 → White1CenterLuminace
+            legacy.White1CenterLuminace = Convert(w25Result?.CenterLuminance);
 
             // W51 → FOV angles (优先W51，回退W255)
             legacy.HorizontalFieldOfViewAngle = Convert(src.W51TestResult?.HorizontalFieldOfViewAngle ?? src.W255TestResult?.HorizontalFieldOfViewAngle);
@@ -223,7 +238,7 @@ namespace ProjectARVRPro.LegacyARVR
 
             // Flow结果标志：根据子结果是否存在判断
             legacy.FlowWhiteTestReslut = src.W255TestResult != null;
-            legacy.FlowWhite1TestReslut = src.W25TestResult != null;
+            legacy.FlowWhite1TestReslut = w25Result != null;
             legacy.FlowWhite2TestReslut = src.W51TestResult != null;
             legacy.FlowBlackTestReslut = src.BlackTestResult != null;
             legacy.FlowChessboardTestReslut = src.ChessboardTestResult != null;

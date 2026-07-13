@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.Terminal
             Config.Code = Code;
             Config.Name = Name;
 
-            RefreshCommand = new RelayCommand(a => MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
+            RefreshCommand = new RelayCommand(a => Save());
             EditCommand = new RelayCommand(a =>
             {
                 PropertyEditorWindow window = new PropertyEditorWindow(Config);

@@ -22,7 +22,7 @@
 | `ProjectARVRPro` | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图、Legacy 输出、SocketRelay |
 | `ProjectLUX` | 文本命令 | 流程组 + `SocketCode` | 文本返码、客户命令映射 |
 
-客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。当前 `manifest.json` 版本是 `1.1.7.7`，`requires=1.3.15.15`，`ProjectARVRPro.csproj` `VersionPrefix=1.1.7.14`；发包前要确认是否同步。
+客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。当前 `manifest.json` 版本是 `1.1.7.23`，`requires=1.3.15.15`，`ProjectARVRPro.csproj` `VersionPrefix=1.1.7.23`；发包前要确认是否同步。
 
 ## 主链路
 
@@ -82,5 +82,5 @@ AOI 相关流程还要看 `SocketRelay/`。只连通主 Socket 端口不代表 R
 
 ```powershell
 dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectARVRPro --no-upload
+Scripts\package_project.bat ProjectARVRPro
 ```

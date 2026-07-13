@@ -700,7 +700,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 系统提示词 的本地化字符串。
+        ///   查找类似 自定义提示词 的本地化字符串。
         /// </summary>
         public static string CopilotSystemPrompt {
             get {

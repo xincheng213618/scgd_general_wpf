@@ -13,9 +13,10 @@ namespace WindowsServicePlugin.ServiceManager
 
         public static bool IsServiceExisted(string serviceName)
         {
+            ServiceController[] services = [];
             try
             {
-                ServiceController[] services = ServiceController.GetServices();
+                services = ServiceController.GetServices();
                 foreach (var svc in services)
                 {
                     if (string.Equals(svc.ServiceName, serviceName, StringComparison.OrdinalIgnoreCase))
@@ -25,6 +26,13 @@ namespace WindowsServicePlugin.ServiceManager
             catch (Exception ex)
             {
                 log.Error($"检查服务 {serviceName} 是否存在时出错", ex);
+            }
+            finally
+            {
+                foreach (var service in services)
+                {
+                    service.Dispose();
+                }
             }
             return false;
         }
@@ -50,6 +58,30 @@ namespace WindowsServicePlugin.ServiceManager
         public static bool IsServiceStopped(string serviceName)
         {
             return GetServiceStatus(serviceName) == ServiceControllerStatus.Stopped;
+        }
+
+        public static string GetServiceStartType(string serviceName)
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{serviceName}");
+                int start = Convert.ToInt32(key?.GetValue("Start", 3));
+                if (start == 2)
+                {
+                    return Convert.ToInt32(key?.GetValue("DelayedAutoStart", 0)) == 1 ? "delayed-auto" : "auto";
+                }
+
+                return start switch
+                {
+                    4 => "disabled",
+                    _ => "manual",
+                };
+            }
+            catch (Exception ex)
+            {
+                log.Error($"获取服务 {serviceName} 启动类型时出错", ex);
+                return "manual";
+            }
         }
 
         public static bool StartService(string serviceName, int timeoutSeconds = 30)

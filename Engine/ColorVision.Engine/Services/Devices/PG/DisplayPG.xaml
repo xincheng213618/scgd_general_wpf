@@ -53,36 +53,35 @@
                 <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Center" Text="{x:Static properties:Resources.offline}" />
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.Unregistered}" />
                 <StackPanel x:Name="StackPanelContent">
-                    <DockPanel Margin="0,0,0,5" IsEnabled="False">
-                        <TextBlock Text="{x:Static properties:Resources.CategoryModel}" />
-                        <TextBox BorderThickness="0,0,0,1" Text="{Binding Config.Category}" />
+                    <DockPanel x:Name="ButtonOpen" Margin="0,0,0,3">
+                        <Grid>
+                            <Button x:Name="OpenButton" Click="PGOpen" Content="{x:Static properties:Resources.Open}" />
+                        </Grid>
                     </DockPanel>
-                    <DockPanel Margin="0,0,0,5" IsEnabled="False">
-                        <RadioButton Margin="0,0,5,0" Content="TCPIP" IsChecked="{Binding Config.IsNet}" />
-                        <RadioButton Margin="0,0,5,0" Content="{x:Static properties:Resources.SerialPortCom}" IsChecked="{Binding Config.IsNet, Converter={StaticResource Boolean2BooleanReConverter}}" />
+                    <DockPanel x:Name="ButtonClose" Margin="0,0,0,3">
+                        <Grid>
+                            <Button x:Name="CloseButton" Background="Red" Click="PGClose" Content="{x:Static properties:Resources.Close}" Foreground="White" />
+                        </Grid>
                     </DockPanel>
-                    <UniformGrid Columns="2" IsEnabled="False">
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock x:Name="TextBlockPGIP" Text="IP" />
-                            <TextBox x:Name="TextBoxPGIP" BorderThickness="0,0,0,1" Text="{Binding Config.Addr}" />
-                        </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock x:Name="TextBlockPGPort" Text="Port" />
-                            <TextBox x:Name="TextBoxPGPort" BorderThickness="0,0,0,1" Text="{Binding Config.Port}" />
-                        </DockPanel>
-                    </UniformGrid>
-                    <UniformGrid Columns="2">
-                        <Button x:Name="btn_open" Margin="2" Click="PGOpen" Content="{x:Static properties:Resources.Open}" />
-                        <Button Margin="2" Click="PGReSetPG" Content="ReSet" />
-                    </UniformGrid>
-                    <UniformGrid Columns="2">
-                        <Button Margin="2" Click="PGStartPG" Content="{x:Static properties:Resources.PowerOn}" />
-                        <Button Margin="2" Click="PGStopPG" Content="{x:Static properties:Resources.PowerOff}" />
-                        <Button Margin="2" Click="PGSwitchUpPG" Content="{x:Static properties:Resources.Up}" />
-                        <Button Margin="2" Click="PGSwitchDownPG" Content="{x:Static properties:Resources.Down}" />
-                        <TextBox x:Name="PGFrameText" Margin="2" VerticalContentAlignment="Center" BorderThickness="0,0,0,1" Text="0" />
-                        <Button Margin="2" Click="PGSwitchFramePG" Content="{x:Static properties:Resources.Switch}" />
-                    </UniformGrid>
+                    <Grid x:Name="PGOperationPanel">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Button Grid.Row="0" Grid.Column="0" Margin="2" Click="PGStartPG" Content="{x:Static properties:Resources.PowerOn}" />
+                        <Button Grid.Row="0" Grid.Column="1" Margin="2" Click="PGStopPG" Content="{x:Static properties:Resources.PowerOff}" />
+                        <Button Grid.Row="1" Grid.Column="0" Margin="2" Click="PGSwitchUpPG" Content="{x:Static properties:Resources.PG_PreviousImage}" ToolTip="{x:Static properties:Resources.PG_PreviousImageTooltip}" />
+                        <Button Grid.Row="1" Grid.Column="1" Margin="2" Click="PGSwitchDownPG" Content="{x:Static properties:Resources.PG_NextImage}" ToolTip="{x:Static properties:Resources.PG_NextImageTooltip}" />
+                        <TextBox x:Name="PGFrameText" Grid.Row="2" Grid.Column="0" Margin="2" VerticalContentAlignment="Center" BorderThickness="0,0,0,1" Text="0" ToolTip="{x:Static properties:Resources.PG_ImageNumberTooltip}" />
+                        <Button Grid.Row="2" Grid.Column="1" Margin="2" Click="PGSwitchFramePG" Content="{x:Static properties:Resources.Switch}" ToolTip="{x:Static properties:Resources.PG_SwitchImageTooltip}" />
+                        <Button Grid.Row="3" Grid.ColumnSpan="2" Margin="2" Click="PGReSetPG" Content="ReSet" />
+                    </Grid>
 
                     <StackPanel>
                         <DockPanel Margin="0,0,0,5">

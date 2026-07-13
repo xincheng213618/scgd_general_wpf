@@ -7,9 +7,9 @@
 | 场景 | 使用入口 | 说明 |
 | --- | --- | --- |
 | 主程序正式发布 | `Scripts\release.bat` | 唯一正常入口，会构建安装包、上传主包、更新 `LATEST_RELEASE`、上传增量包并生成全量 zip |
-| 本地打插件包 | `Scripts\package_plugin.bat <PluginName> --no-upload` | 面向 `Plugins/<PluginName>/` |
-| 本地打项目包 | `Scripts\package_project.bat <ProjectName> --no-upload` | 面向 `Projects/<ProjectName>/` |
-| 打外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录> --no-upload` | 适合只拿到插件输出目录的场景 |
+| 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传成功后删除本地 `.cvxp` |
+| 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传成功后删除本地 `.cvxp` |
+| 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
 | 刷新共享文件表 | `py Scripts\generate_shared_files.py` | 只有宿主输出目录共享 DLL 明显变化时才需要 |
 
 `build.py` 和 `build_update.py` 是 `release.bat` 的内部步骤。正式发布不要绕过 `release.bat` 单独跑它们；`build_update.py` 没有安全的 `--help` 查询模式，直接执行会进入增量包生成和上传流程。
@@ -28,11 +28,11 @@ Scripts\release.bat
 
 | 场景 | 命令 |
 | --- | --- |
-| 仓库内插件 | `Scripts\package_plugin.bat Spectrum --no-upload` |
-| 仓库内项目包 | `Scripts\package_project.bat ProjectARVR --no-upload` |
-| 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows --no-upload` |
+| 仓库内插件 | `Scripts\package_plugin.bat Spectrum` |
+| 仓库内项目包 | `Scripts\package_project.bat ProjectLUX` |
+| 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
-需要上传时去掉 `--no-upload`，并确认上传环境变量已经配置。打包会读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，再生成 `.cvxp`。
+插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。打包会读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，再生成 `.cvxp`。
 
 ## 上传配置
 
@@ -53,7 +53,7 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | 脚本 | 是否日常入口 | 用途 |
 | --- | --- | --- |
 | `release.bat` | 是 | 主程序正式发布入口 |
-| `package_cvxp.py` | 是 | `.cvxp` 打包和可选上传 |
+| `package_cvxp.py` | 是 | `.cvxp` 打包、上传和本地包清理 |
 | `package_plugin.bat` | 是 | 仓库内插件打包快捷入口 |
 | `package_project.bat` | 是 | 仓库内项目包打包快捷入口 |
 | `clear-bin.ps1`、`clear-artifacts.ps1` | 是 | 清理本地构建产物 |

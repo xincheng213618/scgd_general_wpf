@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public Type Type { get; set; }
         public int Order { get; set; }
         public string Name { get; set; }
+        public string DisplayName { get; set; }
         public string Group { get; set; }
     }
 
@@ -83,6 +84,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                             Type = type,
                             Order = attr.Order,
                             Name = attr.Name,
+                            DisplayName = attr.DisplayName,
                             Group = attr.Group
                         };
 
@@ -130,7 +132,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     CB_AlgorithmTypes.SelectedItem = allAlgorithmsGroup;
                     var visibleAlgorithmMetas = GetVisibleAlgorithmMetas();
                     CB_Algorithms.SelectedItem = visibleAlgorithmMetas.FirstOrDefault(a=>a.Type == e.Type);
-                    algorithm.IsLocalFile = true;
                     algorithm.ImageFilePath = e.ImageFilePath ?? string.Empty;
                 }
 
@@ -162,7 +163,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 {
                     Type = a.Type,
                     Order = visibilityConfig.GetOrderOverride(a.Name, a.Order),
-                    Name = visibilityConfig.GetNameOverride(a.Name),
+                    Name = a.Name,
+                    DisplayName = visibilityConfig.GetNameOverride(a.Name, a.DisplayName),
                     Group = a.Group
                 })
                 .OrderBy(a => a.Order)
@@ -209,7 +211,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
 
                 CB_Algorithms.ItemsSource = filteredAlgorithms;
-                CB_Algorithms.DisplayMemberPath = "Name";
+                CB_Algorithms.DisplayMemberPath = nameof(DisplayAlgorithmMeta.DisplayName);
 
                 var lastSelectedAlgorithm = filteredAlgorithms
                     .FirstOrDefault(a => a.Name == Device.DisplayConfig.LastSelectTemplate);

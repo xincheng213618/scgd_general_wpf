@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1725,CS8602
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
@@ -18,7 +19,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
@@ -254,11 +254,11 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
                 var ContextMenu = result.ContextMenu;
                 RelayCommand relayCommand = new RelayCommand(a => OpenSource());
-                ContextMenu.Items.Add(new MenuItem() { Header = "切分示意图", Command = relayCommand });
+                ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.SplitDiagram, Command = relayCommand });
                 RelayCommand relayCommand1 = new RelayCommand(a => OpenAA());
-                ContextMenu.Items.Add(new MenuItem() { Header = "AA区", Command = relayCommand1 });
+                ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.AARegion, Command = relayCommand1 });
 
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBlackMura), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBlackMura), ImageFilePath = result.FilePath })) });
 
             }
         }

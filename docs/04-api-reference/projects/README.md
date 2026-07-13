@@ -8,15 +8,13 @@
 
 | 项目 | 源码目录 | 入口 |
 | --- | --- | --- |
-| ProjectARVR | `Projects/ProjectARVR/` | [ProjectARVR](./project-arvr.md) |
 | ProjectARVRLite | `Projects/ProjectARVRLite/` | [ProjectARVRLite](./project-arvr-lite.md) |
 | ProjectARVRPro | `Projects/ProjectARVRPro/` | [ProjectARVRPro](./project-arvr-pro.md) |
 | ProjectARVRPro.IntegrationDemo | `Projects/ProjectARVRPro.IntegrationDemo/` | [Integration Demo](./project-arvr-pro-integration-demo.md) |
-| ProjectBlackMura | `Projects/ProjectBlackMura/` | [ProjectBlackMura](./project-black-mura.md) |
-| ProjectHeyuan | `Projects/ProjectHeyuan/` | [ProjectHeyuan](./project-heyuan.md) |
 | ProjectKB | `Projects/ProjectKB/` | [ProjectKB](./project-kb.md) |
 | ProjectLUX | `Projects/ProjectLUX/` | [ProjectLUX](./project-lux.md) |
-| ProjectShiyuan | `Projects/ProjectShiyuan/` | [ProjectShiyuan](./project-shiyuan.md) |
+
+已停用项目的源码快照和恢复方式记录在仓库的 `Projects/ARCHIVED.md`。
 
 ## 项目包和插件的区别
 
@@ -34,7 +32,7 @@
 ## 打包
 
 ```powershell
-Scripts\package_project.bat ProjectLUX --no-upload
+Scripts\package_project.bat ProjectLUX
 ```
 
 ## 维护要求

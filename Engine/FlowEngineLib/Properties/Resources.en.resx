@@ -84,9 +84,6 @@
     <value>03_3 Calibration</value>
   </data>
 
-  <data name="03_3 第三方算法" xml:space="preserve">
-    <value>03_3 TPAlgorithm</value>
-  </data>
 
   <data name="03_4 KB" xml:space="preserve">
     <value>03_4 KB</value>
@@ -180,9 +177,6 @@
     <value>Gray255</value>
   </data>
 
-  <data name="状态触发" xml:space="preserve">
-    <value>StatusTrigger</value>
-  </data>
 
   <data name="物理设备控制" xml:space="preserve">
     <value>PhysicalDeviceControl</value>
@@ -276,9 +270,6 @@
     <value>ImageName</value>
   </data>
 
-  <data name="图像水平翻转" xml:space="preserve">
-    <value>HorizontalFlip</value>
-  </data>
 
   <data name="ImageCompound" xml:space="preserve">
     <value>Image Stitching</value>
@@ -976,9 +967,6 @@
     <value>TempName</value>
   </data>
 
-  <data name="参数模板ID" xml:space="preserve">
-    <value>TempId</value>
-  </data>
 
   <data name="过滤模板" xml:space="preserve">
     <value>FilterTemp</value>
@@ -1184,9 +1172,6 @@
     <value>ManConfirm</value>
   </data>
 
-  <data name="最小超时" xml:space="preserve">
-    <value>MinTimeout</value>
-  </data>
 
   <data name="最大超时" xml:space="preserve">
     <value>MaxTimeout</value>
@@ -1231,4 +1216,13 @@
   <data name="Port" xml:space="preserve">
     <value>Port</value>
   </data>
+  <data name="允许失败继续" xml:space="preserve"><value>Continue on Failure</value></data>
+  <data name="服务返回Fail时按正常流程继续" xml:space="preserve"><value>Continue the normal flow when the service returns Fail</value></data>
+  <data name="参数" xml:space="preserve"><value>Parameters</value></data>
+  <data name="上电" xml:space="preserve"><value>Power On</value></data>
+  <data name="下电" xml:space="preserve"><value>Power Off</value></data>
+  <data name="切图" xml:space="preserve"><value>Switch Image</value></data>
+  <data name="电压电流" xml:space="preserve"><value>Voltage/Current</value></data>
+  <data name="屏幕缺陷检测" xml:space="preserve"><value>Screen Defect Detection</value></data>
+  <data name="亮点检测V2" xml:space="preserve"><value>Bright Spot Detection V2</value></data>
 </root>

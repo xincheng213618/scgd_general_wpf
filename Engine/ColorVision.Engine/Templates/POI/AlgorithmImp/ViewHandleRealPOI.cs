@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1725,CS8602,CS8604,CS8629
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using CVCommCore.CVAlgorithm;
 using log4net;
@@ -11,7 +12,6 @@ using System.Linq;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (result.ViewResults ==null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
             }
 
         }

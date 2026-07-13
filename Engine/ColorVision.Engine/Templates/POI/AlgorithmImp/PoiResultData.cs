@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             var sb = new StringBuilder();
 
             // --------------- 数据区列头 ---------------
-            var headers = new[] { "Id", "名称", "位置", "大小", "形状", "Y" };
+            var headers = new[] { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "Y" };
             sb.AppendLine(string.Join(",", headers));
 
             if (items == null || items.Count == 0)

@@ -34,7 +34,7 @@ Native/                   # C++ OpenCV helper DLL and exported algorithms
 Plugins/                  # Runtime-discovered plugins
 ├── EventVWR/, Spectrum/, SystemMonitor/, Pattern/, etc.
 Projects/                 # Customer-specific project bundles
-├── ProjectARVR/, ProjectBlackMura/, ProjectKB/, etc.
+├── ProjectARVRLite/, ProjectARVRPro/, ProjectKB/, etc.
 Backend/                  # Python Flask backend for plugin marketplace
 └── marketplace/          # Plugin distribution server
 Scripts/                  # Python build and publish scripts
@@ -90,10 +90,10 @@ Located in `Scripts/` directory:
 Scripts\release.bat
 
 # Build plugin package
-Scripts\package_plugin.bat Pattern --no-upload
+Scripts\package_plugin.bat Pattern
 
 # Build project package
-Scripts\package_project.bat ProjectARVR --no-upload
+Scripts\package_project.bat ProjectLUX
 ```
 
 ### Backend (Flask)
@@ -175,6 +175,17 @@ Must exist at runtime:
 5. **Plugins**: Class Library `net8.0-windows`; add `<UseWPF>true</UseWPF>` if UI needed
 6. **Professional code over line count**: More lines are not a KPI. Keep code concise, direct, and maintainable.
 7. **Formatting discipline**: Prefer single-line calls for simple method invocations and short argument lists. Split calls across lines only when it materially improves readability, such as long expressions, nested lambdas, object initializers, or complex conditionals.
+
+## Windows / PowerShell Command Rules
+
+This repository is developed on Windows. The default command shell is PowerShell.
+
+- Prefer PowerShell-native commands when executing commands or giving commands to the user.
+- Do not use Bash-only syntax such as `rm -rf`, `grep`, `sed -i`, `cat <<EOF`, `touch`, `chmod`, or `/tmp/...`.
+- Use `Get-ChildItem`, `Select-String`, `Remove-Item`, `Move-Item`, `Copy-Item`, `New-Item`, `Test-Path`, and `Resolve-Path` where appropriate.
+- Use `Remove-Item -LiteralPath <path> -Recurse -Force` for recursive deletion after confirming the resolved target path.
+- Prefer separate commands or PowerShell-compatible separators instead of assuming Bash-style command chaining.
+- For complex text or file rewrites, prefer repository tools, `apply_patch`, Python, or Node instead of fragile shell one-liners.
 
 ## Plugin Development Quick Start
 

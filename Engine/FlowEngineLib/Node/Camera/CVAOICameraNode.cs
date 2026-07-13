@@ -7,6 +7,9 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Camera;
 
 [STNode("/02 相机")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CamTempName", typeof(FlowEngineLib.PropertyEditor.FlowCameraRunTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("CalibTempName", typeof(FlowEngineLib.PropertyEditor.FlowCalibrationTemplateEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute("AlgTempName", typeof(FlowEngineLib.PropertyEditor.FlowLedCheck2JsonTemplateEditor))]
 public class CVAOICameraNode : CVBaseServerNode
 {
 	private string _CamTempName;
@@ -178,8 +181,6 @@ public class CVAOICameraNode : CVBaseServerNode
 		_IsWithND = false;
 		_IsAutoExp = false;
 		_ImgSaveMode = ImgSaveBppMode.Bit16;
-		base.Width = 180;
-		m_custom_item.Width += 30;
 		base.Height += 100;
 	}
 
@@ -236,6 +237,6 @@ public class CVAOICameraNode : CVBaseServerNode
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		string algParamType = "FindLed";
-		return new CVAOICameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, (int)_ImgSaveMode);
+		return new CVAOICameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, (int)_ImgSaveMode, _FlipMode);
 	}
 }

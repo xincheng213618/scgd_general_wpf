@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.DisplayThirdPartyAlgorithms"
+<UserControl x:Class="ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.DisplayThirdPartyAlgorithms"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -55,46 +55,15 @@
                         <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.ThirdPartyAlgorithm}" />
                         <ComboBox x:Name="CB_ThirdPartyAlgorithms" DisplayMemberPath="Name" Style="{StaticResource ComboBox.Small}" />
                     </DockPanel>
-                    <TabControl Background="Transparent" BorderThickness="0">
-                        <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" IsSelected="{Binding IsLocalFile}">
-                            <StackPanel Margin="0,2" Orientation="Horizontal">
-                                <TextBlock Width="40" Margin="10,0,0,0" Text="{x:Static properties:Resources.File}" />
-                                <TextBox x:Name="ImageFile" Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" Text="{Binding ImageFilePath}" />
-                                <Button HorizontalAlignment="Right" Click="Open_File" Content="..." DockPanel.Dock="Right" />
-                                <Button Click="Button_OpenLocal_Click" Content="{x:Static properties:Resources.Open}" DockPanel.Dock="Right" />
-                            </StackPanel>
-                        </TabItem>
-                        <TabItem x:Name="AlgRawSelect" Background="Transparent" Header="{x:Static properties:Resources.Service}" IsSelected="True">
-                            <StackPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Width="40" Margin="10,0,0,0" Text="{x:Static properties:Resources.ImageSource}" />
-                                    <ComboBox x:Name="CB_SourceImageFiles" Width="150" HorizontalAlignment="Left" DisplayMemberPath="Name" SelectedValuePath="Code" Style="{StaticResource ComboBox.Small}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <Button Width="40" Margin="0,0,10,0" Background="Transparent" BorderThickness="0" Click="Button_Click_RawRefresh">
-                                        <Button.Triggers>
-                                            <EventTrigger RoutedEvent="Button.Click">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransform" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Button.Triggers>
-                                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE72C;" ToolTip="{x:Static properties:Resources.Refresh}">
-                                            <TextBlock.RenderTransform>
-                                                <RotateTransform x:Name="rotateTransform" CenterX="7.5" CenterY="7.5" />
-                                            </TextBlock.RenderTransform>
-                                        </TextBlock>
-                                    </Button>
-
-                                    <ComboBox x:Name="CB_RawImageFiles" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" />
-                                </DockPanel>
-                            </StackPanel>
-
-                        </TabItem>
-
-                    </TabControl>
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="ImageFile" Grid.Column="0" Margin="0,0,2,0" HorizontalAlignment="Stretch" Style="{StaticResource TextBox.Small}" Text="{Binding ImageFilePath}" />
+                        <Button Grid.Column="1" Click="Open_File" Content="..." />
+                    </Grid>
+                
 
 
 

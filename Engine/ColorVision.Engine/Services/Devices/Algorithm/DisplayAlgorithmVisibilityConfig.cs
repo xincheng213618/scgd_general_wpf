@@ -57,9 +57,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public string GetNameOverride(string name)
         {
+            return GetNameOverride(name, name);
+        }
+
+        public string GetNameOverride(string name, string defaultDisplayName)
+        {
             if (!string.IsNullOrEmpty(name) && NameOverrides.TryGetValue(name, out string displayName) && !string.IsNullOrEmpty(displayName))
                 return displayName;
-            return name;
+            return defaultDisplayName;
         }
 
         public void SetNameOverride(string name, string displayName)

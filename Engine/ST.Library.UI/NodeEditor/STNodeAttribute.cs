@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using ST.Library.UI;
 
 namespace ST.Library.UI.NodeEditor;
 
@@ -32,6 +33,8 @@ public class STNodeAttribute : Attribute
 	public string Link => _Link;
 
 	public string Description => _Description;
+
+	public string DisplayDescription => Lang.GetOrDefault(_Description, _Description);
 
 	public STNodeAttribute(string strPath)
 		: this(strPath, null, null, null, null)

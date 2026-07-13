@@ -9,6 +9,9 @@
 
 ### Changed
 
+- Preserved existing `CVArchService` installations during full service-package
+  updates by uninstalling the legacy service before file replacement and
+  reinstalling it afterward with its previous startup state.
 - Focused `ServiceManager` on local full-package service installation, MySQL, and
   service config synchronization.
 - Updated service manager UI labels, setup choices, install package controls, and

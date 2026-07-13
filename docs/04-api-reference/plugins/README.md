@@ -37,7 +37,7 @@ ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/<PluginName>/
 ## 打包
 
 ```powershell
-Scripts\package_plugin.bat Spectrum --no-upload
+Scripts\package_plugin.bat Spectrum
 ```
 
 ## 维护要求

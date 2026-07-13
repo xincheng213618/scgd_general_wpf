@@ -2,6 +2,7 @@
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
+using ColorVision.Engine.Services;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         public void OpenCADFile()
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.tiff|All files (*.*)|*.*";
+            openFileDialog.Filter = ServicesHelper.ImageFileDialogFilter;
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

@@ -1,4 +1,4 @@
-#pragma warning disable CA1001,CA1822,CA1861,CA1870,CS4014
+#pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using ColorVision.Solution;
 using ColorVision.Solution.Workspace;
 using ColorVision.Copilot.Mcp;
@@ -26,26 +26,27 @@ namespace ColorVision.Copilot
         private const int AgentHistoryMessageLimit = 8;
         private const int AttachmentContentLimit = 12000;
         private const int MaxWebPageInjectionChars = 8000;
+        private const int CompactHistoryLimit = 4;
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
 
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentContextBuilder _agentContextBuilder;
-        private readonly CopilotAgentService _agentService;
+        private readonly ICopilotAgentRuntime _agentRuntime;
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotConfig _config;
-        private readonly CopilotChatStateStore _stateStore;
+        private readonly ICopilotChatStateStore _stateStore;
+        private readonly CopilotRequestSession _requestSession = new();
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly DispatcherTimer _pendingActionExpiryTimer;
-        private readonly IReadOnlyList<CopilotAgentModeOption> _agentModes = CopilotAgentModeOption.CreateDefaultOptions();
-        private CancellationTokenSource? _currentRequestCts;
         private CancellationTokenSource? _pendingActionFeedbackCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
-        private CopilotAgentMode _selectedAgentMode = CopilotAgentMode.Auto;
+        private CopilotAgentMode? _pendingRequestModeOverride;
+        private bool _isAgentRequestActive;
         private string _activeDocumentPath = string.Empty;
         private string _pendingActionFeedbackText = string.Empty;
         private bool _hasPendingMcpActions;
@@ -57,13 +58,22 @@ namespace ColorVision.Copilot
         }
 
         public CopilotChatViewModel(CopilotChatService chatService)
+            : this(chatService, CopilotChatStateStore.Instance)
         {
-            _chatService = chatService;
+        }
+
+        public CopilotChatViewModel(CopilotChatService chatService, ICopilotChatStateStore stateStore)
+        {
+            _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _agentContextBuilder = new CopilotAgentContextBuilder();
-            _agentService = new CopilotAgentService(chatService, CopilotToolRegistry.CreateDefault(), _agentContextBuilder);
+            var toolRegistry = CopilotToolRegistry.CreateDefault();
+            var toolExecutor = new CopilotToolExecutor();
+            var builtInAgentRuntime = new CopilotAgentService(chatService, toolRegistry, _agentContextBuilder, toolExecutor);
+            var agentFrameworkRuntime = new CopilotMicrosoftAgentFrameworkRuntime(toolRegistry, _agentContextBuilder, toolExecutor);
+            _agentRuntime = new CopilotAgentRuntimeRouter(builtInAgentRuntime, agentFrameworkRuntime);
             _contextRegistry = CopilotContextRegistry.CreateDefault();
             _config = CopilotConfig.Instance;
-            _stateStore = CopilotChatStateStore.Instance;
+            _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
             _currentLiveContext = CopilotLiveContextRegistry.Current;
 
             WorkspaceManager.ContentIdSelected -= WorkspaceManager_ContentIdSelected;
@@ -72,13 +82,19 @@ namespace ColorVision.Copilot
             CopilotLiveContextRegistry.CurrentChanged += CopilotLiveContextRegistry_CurrentChanged;
             CopilotMcpConfirmationStore.Instance.ActionsChanged -= ConfirmationStore_ActionsChanged;
             CopilotMcpConfirmationStore.Instance.ActionsChanged += ConfirmationStore_ActionsChanged;
+            CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= ConfirmationStore_ActionStatusChanged;
+            CopilotMcpConfirmationStore.Instance.ActionStatusChanged += ConfirmationStore_ActionStatusChanged;
 
             if (_config.EnsureInitialized())
                 PersistConfig();
 
             _state = _stateStore.Load();
-            if (_state.EnsureInitialized(_config))
+            var stateChanged = _state.EnsureInitialized(_config);
+            _stateStore.CleanupOrphanedAttachments(_state);
+            if (stateChanged)
                 PersistState();
+
+            Conversations.CollectionChanged += Conversations_CollectionChanged;
 
             var initialConversation = Conversations.Count > 0
                 ? Conversations[0]
@@ -89,8 +105,11 @@ namespace ColorVision.Copilot
 
             SelectConversation(Conversations.FirstOrDefault(conversation => conversation.Id == _state.ActiveConversationId) ?? initialConversation, persist: false);
 
-            SendCommand = new RelayCommand(_ => _ = SendAsync());
+            SendCommand = new RelayCommand(_ => ExecuteSendOrSteer());
             NewChatCommand = new RelayCommand(_ => StartNewChat());
+            SelectConversationCommand = new RelayCommand<CopilotConversationRecord>(
+                conversation => SelectConversation(conversation, persist: true),
+                conversation => CanSwitchConversation && conversation != null);
             CancelCommand = new RelayCommand(_ => CancelCurrentReply());
             PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction());
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
@@ -103,13 +122,15 @@ namespace ColorVision.Copilot
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => message != null);
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => _ = RetryMessageAsync(message, refreshWebContext: false), CanRegenerateMessage);
             RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => _ = RetryMessageAsync(message, refreshWebContext: true), CanRegenerateMessage);
+            ContinueAgentTasksCommand = new RelayCommand<CopilotChatMessage>(ContinueAgentTasks, CanContinueAgentTasks);
+            SteerCommand = new RelayCommand(_ => TrySteerCurrentRun(), _ => CanSteerCurrentRun);
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
             CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
             CopyPendingActionPayloadCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionPayload, action => action != null);
-            ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(ApprovePendingAction, action => action?.IsPending == true);
+            ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(action => _ = ApprovePendingActionAsync(action), action => action?.IsPending == true);
             RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
 
             _pendingActionExpiryTimer = new DispatcherTimer
@@ -121,9 +142,27 @@ namespace ColorVision.Copilot
 
             RefreshPendingActions();
             RefreshComposerTokenEstimate();
+            RefreshCompactHistoryConversations();
         }
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
+
+        public ObservableCollection<CopilotConversationRecord> CompactHistoryConversations { get; } = new();
+
+        public bool HasCompactHistoryConversations => CompactHistoryConversations.Count > 0;
+
+        public bool CanShowCompactHistory => _config.IsConfigured && HasCompactHistoryConversations;
+
+        public bool HasCompactHistoryOverflow => CountHistoryConversations() > CompactHistoryLimit;
+
+        public string CompactHistoryFooterText
+        {
+            get
+            {
+                var count = CountHistoryConversations();
+                return count > CompactHistoryLimit ? count.ToString(System.Globalization.CultureInfo.CurrentCulture) : string.Empty;
+            }
+        }
 
         public ObservableCollection<CopilotProfileConfig> Profiles => _config.Profiles;
 
@@ -145,11 +184,11 @@ namespace ColorVision.Copilot
             {
                 var count = _pendingActions.Count;
                 if (count == 0)
-                    return "MCP action review";
+                    return "Action review";
 
                 return count == 1
-                    ? "Review 1 MCP action"
-                    : $"Review {count} MCP actions";
+                    ? "Review 1 protected action"
+                    : $"Review {count} protected actions";
             }
         }
 
@@ -158,15 +197,18 @@ namespace ColorVision.Copilot
             get
             {
                 if (_pendingActions.Count == 0)
-                    return "No MCP actions are waiting for approval.";
+                    return "No protected actions are waiting for approval.";
 
                 var nextDeadline = _pendingActions
                     .OrderBy(action => action.ExpiresAt)
                     .FirstOrDefault()?.ReviewDeadlineLabel ?? string.Empty;
 
-                return string.IsNullOrWhiteSpace(nextDeadline)
-                    ? "Approve or reject in ColorVision before MCP can execute."
-                    : $"Approve or reject in ColorVision before MCP can execute. Next {nextDeadline}.";
+                var actionBehavior = _pendingActions.Any(action => action.ResumesAgentOnApproval)
+                    ? "Protected Agent Framework calls resume in the same session after approval."
+                    : _pendingActions.Any(action => action.ExecuteOnApproval)
+                        ? "In-app template actions apply to the editor immediately after approval; you still decide when to save."
+                        : "External MCP actions still require confirm_action after approval.";
+                return string.IsNullOrWhiteSpace(nextDeadline) ? actionBehavior : $"{actionBehavior} Next {nextDeadline}.";
             }
         }
 
@@ -198,11 +240,11 @@ namespace ColorVision.Copilot
             }
         }
 
-        public IReadOnlyList<CopilotAgentModeOption> AgentModes => _agentModes;
-
         public ICommand SendCommand { get; }
 
         public ICommand NewChatCommand { get; }
+
+        public ICommand SelectConversationCommand { get; }
 
         public ICommand CancelCommand { get; }
 
@@ -231,6 +273,10 @@ namespace ColorVision.Copilot
         public ICommand RetryMessageCommand { get; }
 
         public ICommand RefreshMessageCommand { get; }
+
+        public ICommand ContinueAgentTasksCommand { get; }
+
+        public ICommand SteerCommand { get; }
 
         public ICommand RemoveAttachmentCommand { get; }
 
@@ -306,9 +352,7 @@ namespace ColorVision.Copilot
                 if (IsBusy)
                     return Properties.Resources.CopilotStopGeneration;
 
-                var action = SelectedAgentMode == CopilotAgentMode.Chat
-                    ? Properties.Resources.CopilotSend
-                    : Properties.Resources.CopilotExecuteAgent;
+                var action = Properties.Resources.CopilotSend;
                 var preview = BuildComposerRequestPreview();
                 return string.IsNullOrWhiteSpace(preview)
                     ? action
@@ -339,6 +383,7 @@ namespace ColorVision.Copilot
                 var builder = new StringBuilder();
                 builder.AppendLine(profile.DisplayLabel);
                 builder.AppendLine(profile.SecondaryLabel);
+                builder.AppendLine($"推理：{profile.ReasoningLabel}");
 
                 if (!string.IsNullOrWhiteSpace(profile.BaseUrl))
                     builder.AppendLine(profile.BaseUrl.Trim());
@@ -346,22 +391,6 @@ namespace ColorVision.Copilot
                 return builder.ToString().TrimEnd();
             }
         }
-
-        public CopilotAgentMode SelectedAgentMode
-        {
-            get => _selectedAgentMode;
-            set
-            {
-                if (SetProperty(ref _selectedAgentMode, value))
-                {
-                    OnPropertyChanged(nameof(SelectedAgentModeDescription));
-                    OnPropertyChanged(nameof(PrimaryActionToolTip));
-                    RefreshComposerTokenEstimate();
-                }
-            }
-        }
-
-        public string SelectedAgentModeDescription => AgentModes.FirstOrDefault(option => option.Mode == SelectedAgentMode)?.Description ?? string.Empty;
 
         public string ComposerTokenSummary
         {
@@ -377,41 +406,50 @@ namespace ColorVision.Copilot
         }
         private string _composerTokenDetails = "Local estimates are disabled. This panel shows only token usage returned by the API.";
 
-        public string TokenUsageBadgeText
-        {
-            get
-            {
-                if (IsTokenUsagePending)
-                    return "...";
-
-                if (HasRealTokenUsage)
-                    return CopilotTokenUsage.FormatCount(SelectedConversation?.LastUsage.EffectiveTotalTokens ?? 0);
-
-                return SelectedConversation?.Messages.Count > 0
-                    ? "NA"
-                    : "--";
-            }
-        }
-
-        public bool HasRealTokenUsage => SelectedConversation?.LastUsage.HasAny == true;
-
-        public bool IsTokenUsagePending => IsBusy && SelectedProfile != null;
-
-        public bool IsTokenUsageUnavailable => !IsTokenUsagePending
-            && !HasRealTokenUsage
-            && SelectedProfile != null
-            && SelectedConversation?.Messages.Count > 0;
-
         public string InputText
         {
             get => _inputText;
             set
             {
                 if (SetProperty(ref _inputText, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(IsInputEmpty));
+                    OnPropertyChanged(nameof(CanSteerCurrentRun));
                     RefreshComposerTokenEstimate();
+                    CommandManager.InvalidateRequerySuggested();
+                }
             }
         }
+
+        public IReadOnlyList<CopilotReasoningOption> SelectedProfileReasoningOptions => CopilotReasoningCapabilities.GetOptions(SelectedProfile);
+
+        public string SelectedProfileReasoningLabel => CopilotReasoningCapabilities.GetLabel(CopilotReasoningCapabilities.GetEffectiveMode(SelectedProfile));
+
+        public string SelectedProfileReasoningToolTip => CopilotReasoningCapabilities.GetToolTip(SelectedProfile);
+
+        public bool HasConfigurableReasoning => CopilotReasoningCapabilities.HasConfigurableReasoning(SelectedProfile);
+
+        public void SetSelectedProfileReasoningMode(CopilotReasoningMode mode)
+        {
+            var profile = SelectedProfile;
+            if (profile == null || !HasConfigurableReasoning)
+                return;
+
+            var normalized = CopilotReasoningCapabilities.Normalize(profile.VendorType, mode);
+            if (profile.ReasoningMode == normalized)
+                return;
+
+            profile.ReasoningMode = normalized;
+            PersistConfig();
+            RefreshSelectedProfileReasoningState();
+        }
         private string _inputText = string.Empty;
+
+        public string InputPlaceholder => IsConversationEmpty ? "随心输入" : "要求后续变更";
+
+        public bool IsInputEmpty => string.IsNullOrWhiteSpace(InputText);
+
+        public bool CanSteerCurrentRun => IsBusy && _isAgentRequestActive && !IsInputEmpty;
 
         public bool IsBusy
         {
@@ -425,10 +463,10 @@ namespace ColorVision.Copilot
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanSwitchConversation));
                 OnPropertyChanged(nameof(CanSelectProfile));
-                OnPropertyChanged(nameof(CanSelectAgentMode));
                 OnPropertyChanged(nameof(PrimaryActionGlyph));
-                OnPropertyChanged(nameof(PrimaryActionToolTip));
-                OnPropertyChanged(nameof(AttachmentMenuToolTip));
+                    OnPropertyChanged(nameof(PrimaryActionToolTip));
+                    OnPropertyChanged(nameof(AttachmentMenuToolTip));
+                    OnPropertyChanged(nameof(CanSteerCurrentRun));
                 RefreshComposerTokenEstimate();
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -439,17 +477,15 @@ namespace ColorVision.Copilot
 
         public bool CanSelectProfile => !IsBusy && Profiles.Count > 0;
 
-        public bool CanSelectAgentMode => !IsBusy;
-
         public bool IsMcpEnabled => _config.McpEnabled;
 
         public bool IsMcpRunning => _config.McpEnabled && CopilotMcpServer.Instance.IsRunning;
 
+        public bool IsControlModeVisible => _config.McpEnabled || HasPendingMcpActions || HasRecentMcpFailures;
+
         public bool HasPendingMcpActions => _hasPendingMcpActions;
 
         public bool HasRecentMcpFailures => _hasRecentMcpFailures;
-
-        public bool IsMcpStatusVisible => _config.McpEnabled || HasPendingMcpActions || HasRecentMcpFailures;
 
         public string McpStatusLabel
         {
@@ -457,15 +493,15 @@ namespace ColorVision.Copilot
             {
                 var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
                 if (pendingCount > 0)
-                    return $"MCP review {pendingCount}";
+                    return pendingCount == 1 ? "等待确认" : $"等待确认 {pendingCount}";
 
                 if (HasRecentMcpFailures)
-                    return "MCP failed";
+                    return "控制异常";
 
                 if (!_config.McpEnabled)
-                    return "MCP off";
+                    return string.Empty;
 
-                return CopilotMcpServer.Instance.IsRunning ? "MCP on" : "MCP stopped";
+                return CopilotMcpServer.Instance.IsRunning ? "完全访问" : "控制停止";
             }
         }
 
@@ -522,12 +558,13 @@ namespace ColorVision.Copilot
 
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
             {
-                RequestMode = SelectedAgentMode,
+                RequestMode = ConsumeRequestModeOverride(),
             };
             var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
             {
                 AssistantName = ResolveAssistantHeader(requestProfile),
             };
+            assistantMessage.MarkThinkingStarted();
 
             Messages.Add(userMessage);
             Messages.Add(assistantMessage);
@@ -535,7 +572,7 @@ namespace ColorVision.Copilot
             PersistState();
             InputText = string.Empty;
 
-            BeginRequest();
+            BeginRequest(userMessage.RequestMode);
 
             try
             {
@@ -551,6 +588,7 @@ namespace ColorVision.Copilot
             {
                 assistantMessage.IsExecutionInProgress = false;
                 assistantMessage.IsReasoningInProgress = false;
+                assistantMessage.MarkThinkingCompleted();
 
                 if (string.IsNullOrWhiteSpace(assistantMessage.Content))
                     assistantMessage.Content = "The current reply was cancelled.";
@@ -564,6 +602,7 @@ namespace ColorVision.Copilot
             {
                 assistantMessage.IsExecutionInProgress = false;
                 assistantMessage.IsReasoningInProgress = false;
+                assistantMessage.MarkThinkingCompleted();
                 assistantMessage.Content = string.IsNullOrWhiteSpace(assistantMessage.Content)
                     ? $"Request failed: {ex.Message}"
                     : assistantMessage.Content;
@@ -579,20 +618,18 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void BeginRequest()
+        private void BeginRequest(CopilotAgentMode requestMode)
         {
+            _isAgentRequestActive = requestMode != CopilotAgentMode.Chat;
             IsBusy = true;
-
-            _currentRequestCts?.Cancel();
-            _currentRequestCts?.Dispose();
-            _currentRequestCts = new CancellationTokenSource();
+            _requestSession.Begin();
         }
 
         private void EndRequest()
         {
             IsBusy = false;
-            _currentRequestCts?.Dispose();
-            _currentRequestCts = null;
+            _isAgentRequestActive = false;
+            _requestSession.Complete();
         }
 
         private async Task<CopilotTokenUsage> RunConversationTurnAsync(
@@ -602,15 +639,16 @@ namespace ColorVision.Copilot
             CopilotChatMessage assistantMessage,
             bool refreshExternalContext)
         {
-            if (_currentRequestCts == null)
-                throw new InvalidOperationException("Request context has not been initialized.");
+            var cancellationToken = _requestSession.GetRequiredToken();
 
             if (userMessage.RequestMode == CopilotAgentMode.Chat)
             {
-                return await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
+                conversation.AgentSessionCheckpoint = null;
+                PersistState();
+                return await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, refreshExternalContext, cancellationToken);
             }
 
-            return await RunAgentTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext, _currentRequestCts.Token);
+            return await RunAgentTurnAsync(conversation, requestProfile, userMessage, assistantMessage, refreshExternalContext, cancellationToken);
         }
 
         private async Task<CopilotTokenUsage> RunChatTurnAsync(
@@ -642,7 +680,7 @@ namespace ColorVision.Copilot
         {
             if (!refreshExternalContext && !string.IsNullOrWhiteSpace(userMessage.RequestContent))
             {
-                AppendAssistantExecutionTrace(assistantMessage, "Reused the context from the previous run without calling tools again.");
+                assistantMessage.MarkThinkingStarted();
                 assistantMessage.IsExecutionInProgress = true;
                 assistantMessage.IsExecutionExpanded = true;
 
@@ -678,6 +716,9 @@ namespace ColorVision.Copilot
                 cancellationToken);
 
             contextItems = MergeCurrentLiveContextSummary(contextItems);
+            var sessionCheckpoint = conversation.AgentSessionCheckpoint;
+            conversation.AgentSessionCheckpoint = null;
+            PersistState();
 
             var agentRequest = new CopilotAgentRequest
             {
@@ -692,14 +733,23 @@ namespace ColorVision.Copilot
                 ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
                 Mode = userMessage.RequestMode,
+                SessionCheckpoint = sessionCheckpoint,
+                ExternalMcpServers = CopilotConfig.Instance.ExternalMcpServers
+                    .Where(server => server?.Enabled == true)
+                    .Select(server => server.Clone())
+                    .ToArray(),
             };
 
-            var result = await _agentService.RunAsync(
+            var result = await _agentRuntime.RunAsync(
                 agentRequest,
                 agentEvent => ApplyAgentEvent(assistantMessage, agentEvent),
                 cancellationToken);
 
             userMessage.RequestContent = result.PreparedUserMessageContent;
+            assistantMessage.AgentTaskLedger = result.TaskLedger;
+            assistantMessage.AgentStopReason = result.StopReason;
+            conversation.AgentSessionCheckpoint = result.SessionCheckpoint;
+            PersistState();
             return result.Usage;
         }
 
@@ -739,9 +789,9 @@ namespace ColorVision.Copilot
 
             OnPropertyChanged(nameof(IsMcpEnabled));
             OnPropertyChanged(nameof(IsMcpRunning));
+            OnPropertyChanged(nameof(IsControlModeVisible));
             OnPropertyChanged(nameof(HasPendingMcpActions));
             OnPropertyChanged(nameof(HasRecentMcpFailures));
-            OnPropertyChanged(nameof(IsMcpStatusVisible));
             OnPropertyChanged(nameof(McpStatusLabel));
             OnPropertyChanged(nameof(McpStatusToolTip));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
@@ -818,7 +868,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void ApprovePendingAction(ConfirmableAction? action)
+        private async Task ApprovePendingActionAsync(ConfirmableAction? action)
         {
             if (action == null)
                 return;
@@ -826,7 +876,7 @@ namespace ColorVision.Copilot
             var result = MessageBox.Show(
                 Application.Current.GetActiveWindow(),
                 BuildPendingActionApprovalPrompt(action),
-                "Approve MCP action",
+                "Approve Copilot action",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
                 MessageBoxResult.No);
@@ -836,15 +886,104 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
-            SetPendingActionFeedback($"{action.ActionId}: {message}");
+            if (action.ResumesAgentOnApproval)
+            {
+                CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
+                SetPendingActionFeedback($"{action.ActionId}: {message} The agent will resume in the same session.");
+            }
+            else if (action.ExecuteOnApproval)
+            {
+                var executionResult = await CopilotMcpConfirmationStore.Instance.ApproveAndExecuteAsync(action.ActionId, CancellationToken.None);
+                SetPendingActionFeedback(executionResult.Success
+                    ? $"{action.ActionId}: approved and executed."
+                    : $"{action.ActionId}: {executionResult.Text}");
+            }
+            else
+            {
+                CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
+                SetPendingActionFeedback($"{action.ActionId}: {message}");
+            }
             RefreshPendingActions();
+        }
+
+        private void ConfirmationStore_ActionStatusChanged(object? sender, ConfirmableActionChangedEventArgs e)
+        {
+            if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+            {
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => ConfirmationStore_ActionStatusChanged(sender, e)));
+                return;
+            }
+
+            var action = e.Action;
+            if (string.IsNullOrWhiteSpace(action.AgentCallId))
+                return;
+
+            var changed = false;
+            foreach (var message in Conversations.SelectMany(conversation => conversation.Messages))
+            {
+                var trace = message.AgentTraceEntries.FirstOrDefault(entry =>
+                    string.Equals(entry.CallId, action.AgentCallId, StringComparison.Ordinal)
+                    || (!string.IsNullOrWhiteSpace(entry.ApprovalActionId)
+                        && string.Equals(entry.ApprovalActionId, action.ActionId, StringComparison.OrdinalIgnoreCase)));
+                if (trace == null)
+                    continue;
+
+                switch (action.Status)
+                {
+                    case ConfirmableActionStatus.Pending:
+                    case ConfirmableActionStatus.Approved:
+                        trace.State = CopilotToolExecutionState.AwaitingApproval;
+                        break;
+                    case ConfirmableActionStatus.Executing:
+                        trace.State = CopilotToolExecutionState.Running;
+                        message.MarkThinkingStarted();
+                        message.IsExecutionInProgress = true;
+                        break;
+                    case ConfirmableActionStatus.Rejected:
+                        trace.State = CopilotToolExecutionState.Denied;
+                        trace.CompletedAtUtc = DateTimeOffset.UtcNow;
+                        trace.ErrorMessage = "The user rejected this approval request.";
+                        message.IsExecutionInProgress = false;
+                        message.MarkThinkingCompleted();
+                        break;
+                    case ConfirmableActionStatus.Expired:
+                        trace.State = CopilotToolExecutionState.TimedOut;
+                        trace.CompletedAtUtc = DateTimeOffset.UtcNow;
+                        trace.ErrorMessage = "The approval request expired before a decision was recorded.";
+                        message.IsExecutionInProgress = false;
+                        message.MarkThinkingCompleted();
+                        break;
+                    case ConfirmableActionStatus.Executed:
+                        trace.State = action.ExecutionSucceeded == true
+                            ? CopilotToolExecutionState.Completed
+                            : CopilotToolExecutionState.Failed;
+                        trace.CompletedAtUtc = action.CompletedAt ?? DateTimeOffset.UtcNow;
+                        trace.ResultSummary = action.ExecutionSucceeded == true
+                            ? CopilotAgentTraceEntry.Sanitize(action.ExecutionResultText)
+                            : trace.ResultSummary;
+                        trace.ErrorMessage = action.ExecutionSucceeded == false
+                            ? CopilotAgentTraceEntry.Sanitize(action.ExecutionResultText)
+                            : string.Empty;
+                        message.IsExecutionInProgress = false;
+                        message.MarkThinkingCompleted();
+                        break;
+                }
+
+                trace.ApprovalActionId = action.ActionId;
+                if (trace.CompletedAtUtc != null && trace.StartedAtUtc != default)
+                    trace.DurationMs = Math.Max(trace.DurationMs, (long)Math.Max(0, (trace.CompletedAtUtc.Value - trace.StartedAtUtc).TotalMilliseconds));
+                message.RebuildExecutionContentFromAgentTrace();
+                changed = true;
+            }
+
+            if (changed)
+                PersistState();
         }
 
         private static string BuildPendingActionApprovalPrompt(ConfirmableAction action)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Approve this MCP action?");
+            builder.AppendLine("Approve this Copilot action?");
             builder.AppendLine();
             builder.AppendLine(action.Title);
             builder.AppendLine($"Tool: {action.ToolName}");
@@ -855,7 +994,10 @@ namespace ColorVision.Copilot
                 builder.AppendLine($"Params: {action.ArgumentsSummary}");
 
             builder.AppendLine();
-            builder.Append("Only approve if the requested operation matches your intent.");
+            builder.AppendLine("Only approve if the requested operation matches your intent.");
+            builder.Append(action.ExecuteOnApproval
+                ? "This in-app action will execute immediately after approval."
+                : "The requesting MCP client must still call confirm_action after approval.");
             return builder.ToString();
         }
 
@@ -1037,14 +1179,36 @@ namespace ColorVision.Copilot
             switch (agentEvent.Type)
             {
                 case CopilotAgentEventType.Status:
-                    AppendAssistantExecutionTrace(assistantMessage, agentEvent.Text);
+                    assistantMessage.MarkThinkingStarted();
                     assistantMessage.IsExecutionInProgress = true;
                     assistantMessage.IsExecutionExpanded = true;
                     break;
-                case CopilotAgentEventType.ToolResult:
-                    AppendAssistantExecutionTrace(assistantMessage, BuildToolTraceText(agentEvent.ToolResult));
+                case CopilotAgentEventType.RuntimeDiagnostic:
+                    assistantMessage.MarkThinkingStarted();
+                    AppendAssistantExecutionTrace(assistantMessage, CopilotAgentTraceEntry.Sanitize(agentEvent.Text));
                     assistantMessage.IsExecutionInProgress = true;
                     assistantMessage.IsExecutionExpanded = true;
+                    PersistState();
+                    break;
+                case CopilotAgentEventType.ToolStarted:
+                    assistantMessage.MarkThinkingStarted();
+                    if (agentEvent.ToolExecution != null)
+                        assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromStarted(agentEvent.ToolExecution));
+                    else
+                        AppendAssistantExecutionTrace(assistantMessage, BuildToolStartedTraceText(agentEvent.ToolExecution));
+                    assistantMessage.IsExecutionInProgress = true;
+                    assistantMessage.IsExecutionExpanded = true;
+                    PersistState();
+                    break;
+                case CopilotAgentEventType.ToolResult:
+                    assistantMessage.MarkThinkingStarted();
+                    if (agentEvent.ToolExecution != null)
+                        assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromResult(agentEvent.ToolExecution, agentEvent.ToolResult));
+                    else
+                        AppendAssistantExecutionTrace(assistantMessage, BuildToolTraceText(agentEvent));
+                    assistantMessage.IsExecutionInProgress = true;
+                    assistantMessage.IsExecutionExpanded = true;
+                    PersistState();
                     break;
                 case CopilotAgentEventType.ReasoningDelta:
                     ApplyAssistantDelta(assistantMessage, new CopilotStreamDelta(agentEvent.Text, string.Empty));
@@ -1053,13 +1217,17 @@ namespace ColorVision.Copilot
                     ApplyAssistantDelta(assistantMessage, new CopilotStreamDelta(string.Empty, agentEvent.Text));
                     break;
                 case CopilotAgentEventType.Error:
-                    AppendAssistantExecutionTrace(assistantMessage, agentEvent.Text);
+                    AppendAssistantExecutionTrace(assistantMessage, CopilotAgentTraceEntry.Sanitize(agentEvent.Text));
                     assistantMessage.IsExecutionInProgress = false;
                     assistantMessage.IsReasoningInProgress = false;
+                    assistantMessage.MarkThinkingCompleted();
+                    PersistState();
                     break;
                 case CopilotAgentEventType.Completed:
                     assistantMessage.IsExecutionInProgress = false;
                     assistantMessage.IsReasoningInProgress = false;
+                    assistantMessage.MarkThinkingCompleted();
+                    PersistState();
                     break;
             }
         }
@@ -1075,34 +1243,69 @@ namespace ColorVision.Copilot
             assistantMessage.ExecutionContent += text.Trim();
         }
 
-        private static string BuildToolTraceText(CopilotToolResult? result)
+        private static string BuildToolStartedTraceText(CopilotToolExecutionInfo? execution)
         {
+            if (execution == null)
+                return string.Empty;
+
+            var queue = execution.QueueDurationMs > 0 ? $" · queued {FormatToolDuration(execution.QueueDurationMs)}" : string.Empty;
+            return $"[Round {execution.Round} · {execution.ToolName}] Running · {execution.ConcurrencyMode}{queue}...";
+        }
+
+        private static string BuildToolTraceText(CopilotAgentEvent agentEvent)
+        {
+            var result = agentEvent.ToolResult;
             if (result == null)
                 return string.Empty;
 
             var builder = new StringBuilder();
-            builder.Append('[').Append(result.ToolName).Append(']').AppendLine();
-            builder.Append("Status: ").AppendLine(result.Success ? "Success" : "Failed");
+            var execution = agentEvent.ToolExecution;
+            var toolName = execution?.ToolName ?? result.ToolName;
+            var state = execution?.State switch
+            {
+                CopilotToolExecutionState.Completed => "Completed",
+                CopilotToolExecutionState.TimedOut => "Timed out",
+                CopilotToolExecutionState.Denied => "Denied",
+                CopilotToolExecutionState.Cancelled => "Cancelled",
+                CopilotToolExecutionState.AwaitingApproval => "Awaiting approval",
+                _ => result.Success ? "Completed" : "Failed",
+            };
+            builder.Append('[');
+            if (execution != null)
+                builder.Append("Round ").Append(execution.Round).Append(" · ");
+            builder.Append(toolName).Append("] ").Append(state);
+            if (execution?.CompletedAtUtc != null)
+                builder.Append(" · ").Append(FormatToolDuration(execution.DurationMs));
+            if (execution?.QueueDurationMs > 0)
+                builder.Append(" · queued ").Append(FormatToolDuration(execution.QueueDurationMs));
 
             if (!string.IsNullOrWhiteSpace(result.Summary))
-                builder.Append("Summary: ").AppendLine(result.Summary);
+                builder.AppendLine().Append(result.Summary.Trim());
 
-            if (!string.IsNullOrWhiteSpace(result.Content))
+            if (result.Success && string.IsNullOrWhiteSpace(result.Summary) && !string.IsNullOrWhiteSpace(result.Content))
             {
-                builder.AppendLine("Result:");
-                builder.AppendLine(result.Content.Trim());
+                var content = result.Content.Trim();
+                builder.AppendLine().Append(content.Length <= 500 ? content : content[..500].TrimEnd() + "...");
             }
 
-            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
-                builder.Append("Error: ").Append(result.ErrorMessage);
+            if (!result.Success && !string.IsNullOrWhiteSpace(result.ErrorMessage))
+                builder.AppendLine().Append("Error: ").Append(CopilotMcpAuditLogger.RedactText(result.ErrorMessage));
 
             return builder.ToString().TrimEnd();
+        }
+
+        private static string FormatToolDuration(long durationMs)
+        {
+            return durationMs < 1000
+                ? $"{Math.Max(0, durationMs)} ms"
+                : $"{durationMs / 1000d:0.#} s";
         }
 
         private static void FinalizeAssistantMessage(CopilotChatMessage assistantMessage)
         {
             assistantMessage.IsExecutionInProgress = false;
             assistantMessage.IsReasoningInProgress = false;
+            assistantMessage.MarkThinkingCompleted();
 
             if (!string.IsNullOrWhiteSpace(assistantMessage.Content))
                 return;
@@ -1116,6 +1319,7 @@ namespace ColorVision.Copilot
         {
             if (delta.HasReasoning)
             {
+                assistantMessage.MarkThinkingStarted();
                 assistantMessage.ReasoningContent += delta.ReasoningContent;
                 assistantMessage.IsReasoningInProgress = true;
                 assistantMessage.IsReasoningExpanded = true;
@@ -1127,15 +1331,19 @@ namespace ColorVision.Copilot
                 assistantMessage.Content += delta.Content;
                 assistantMessage.IsReasoningInProgress = false;
                 if (isFirstContentChunk && assistantMessage.HasReasoning)
+                {
                     assistantMessage.IsReasoningExpanded = false;
+                    assistantMessage.IsThinkingExpanded = false;
+                }
             }
         }
 
         private void StartNewChat()
         {
             CancelCurrentReply();
+            ClearPendingRequestModeOverride();
 
-            if (IsReusableEmptyConversation(SelectedConversation))
+            if (CopilotConversationService.IsReusableEmpty(SelectedConversation))
                 return;
 
             var conversation = ResolveNewConversationTarget();
@@ -1146,18 +1354,10 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool IsReusableEmptyConversation(CopilotConversationRecord? conversation)
-        {
-            return conversation != null && conversation.Messages.Count == 0;
-        }
-
         private CopilotConversationRecord ResolveNewConversationTarget()
         {
-            if (IsReusableEmptyConversation(SelectedConversation))
-                return SelectedConversation!;
-
-            var reusableConversation = Conversations.FirstOrDefault(IsReusableEmptyConversation);
-            return reusableConversation ?? CreateConversation();
+            var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
+            return CopilotConversationService.ResolveNewTarget(Conversations, SelectedConversation, profile);
         }
 
         private void ExecutePrimaryAction()
@@ -1169,6 +1369,88 @@ namespace ColorVision.Copilot
             }
 
             _ = SendAsync();
+        }
+
+        private void ExecuteSendOrSteer()
+        {
+            if (IsBusy)
+            {
+                TrySteerCurrentRun();
+                return;
+            }
+
+            _ = SendAsync();
+        }
+
+        private void TrySteerCurrentRun()
+        {
+            var steeringMessage = (InputText ?? string.Empty).Trim();
+            if (!IsBusy || string.IsNullOrWhiteSpace(steeringMessage))
+                return;
+            if (_agentRuntime is not ICopilotAgentSteeringRuntime steeringRuntime
+                || !steeringRuntime.TryEnqueueSteeringMessage(steeringMessage))
+                return;
+
+            var activeAssistant = Messages.LastOrDefault(message => !message.IsUser && message.IsThinkingInProgress);
+            if (activeAssistant != null)
+                AppendAssistantExecutionTrace(activeAssistant, "User steering queued · " + CopilotAgentTraceEntry.Sanitize(steeringMessage));
+
+            InputText = string.Empty;
+            PersistState();
+        }
+
+        private bool CanContinueAgentTasks(CopilotChatMessage? message)
+        {
+            if (IsBusy || message == null || message.IsUser || !message.HasIncompleteAgentTasks)
+                return false;
+            if (SelectedConversation?.AgentSessionCheckpoint == null || SelectedProfile?.IsConfigured != true)
+                return false;
+
+            var latestAssistant = SelectedConversation.Messages.LastOrDefault(candidate => !candidate.IsUser);
+            return ReferenceEquals(latestAssistant, message);
+        }
+
+        private void ContinueAgentTasks(CopilotChatMessage? message)
+        {
+            if (!CanContinueAgentTasks(message))
+                return;
+
+            SetPendingRequestModeOverride(CopilotAgentMode.Auto);
+            InputText = "继续执行当前 Agent 任务清单中的未完成任务。先重新核对当前状态；不要把历史任务或历史审批视为写操作授权。";
+            _ = SendAsync();
+        }
+
+        private CopilotAgentMode ResolveComposerRequestMode()
+        {
+            return _pendingRequestModeOverride ?? CopilotAgentMode.Auto;
+        }
+
+        private CopilotAgentMode ConsumeRequestModeOverride()
+        {
+            var mode = ResolveComposerRequestMode();
+            _pendingRequestModeOverride = null;
+            return mode;
+        }
+
+        private void SetPendingRequestModeOverride(CopilotAgentMode mode)
+        {
+            _pendingRequestModeOverride = mode == CopilotAgentMode.Auto ? null : mode;
+            OnComposerRequestModeChanged();
+        }
+
+        private void ClearPendingRequestModeOverride()
+        {
+            if (_pendingRequestModeOverride == null)
+                return;
+
+            _pendingRequestModeOverride = null;
+            OnComposerRequestModeChanged();
+        }
+
+        private void OnComposerRequestModeChanged()
+        {
+            OnPropertyChanged(nameof(PrimaryActionToolTip));
+            RefreshComposerTokenEstimate();
         }
 
         public CopilotPromptQueueResult QueueExternalPrompt(
@@ -1205,7 +1487,7 @@ namespace ColorVision.Copilot
                     contextAttachmentItems);
             }
 
-            SelectedAgentMode = mode;
+            SetPendingRequestModeOverride(mode);
             InputText = normalizedPrompt;
 
             if (!sendNow || IsBusy)
@@ -1220,7 +1502,7 @@ namespace ColorVision.Copilot
             if (!IsBusy)
                 return;
 
-            _currentRequestCts?.Cancel();
+            _requestSession.Cancel();
         }
 
         private void OpenSettings()
@@ -1322,8 +1604,41 @@ namespace ColorVision.Copilot
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             OnPropertyChanged(nameof(IsConversationEmpty));
+            OnPropertyChanged(nameof(InputPlaceholder));
+            RefreshCompactHistoryConversations();
             RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void Conversations_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            RefreshCompactHistoryConversations();
+            OnPropertyChanged(nameof(Conversations));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void RefreshCompactHistoryConversations()
+        {
+            var history = Conversations
+                .Where(CopilotConversationService.IsHistory)
+                .Take(CompactHistoryLimit)
+                .ToArray();
+
+            CompactHistoryConversations.Clear();
+            foreach (var conversation in history)
+            {
+                CompactHistoryConversations.Add(conversation);
+            }
+
+            OnPropertyChanged(nameof(HasCompactHistoryConversations));
+            OnPropertyChanged(nameof(CanShowCompactHistory));
+            OnPropertyChanged(nameof(HasCompactHistoryOverflow));
+            OnPropertyChanged(nameof(CompactHistoryFooterText));
+        }
+
+        private int CountHistoryConversations()
+        {
+            return Conversations.Count(CopilotConversationService.IsHistory);
         }
 
         private void Attachments_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -1363,6 +1678,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Attachments));
             OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
+            OnPropertyChanged(nameof(InputPlaceholder));
 
             _state.ActiveConversationId = conversation?.Id ?? string.Empty;
 
@@ -1398,9 +1714,16 @@ namespace ColorVision.Copilot
             if (ReferenceEquals(_selectedProfile, profile))
                 return;
 
+            if (_selectedProfile != null)
+                _selectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
+
             _selectedProfile = profile;
+            if (_selectedProfile != null)
+                _selectedProfile.PropertyChanged += SelectedProfile_PropertyChanged;
+
             OnPropertyChanged(nameof(SelectedProfile));
             OnPropertyChanged(nameof(SelectedProfileToolTip));
+            RefreshSelectedProfileReasoningState();
 
             _state.ActiveProfileId = profile?.Id ?? string.Empty;
 
@@ -1422,6 +1745,28 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
         }
 
+        private void SelectedProfile_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(CopilotProfileConfig.ReasoningMode)
+                or nameof(CopilotProfileConfig.ReasoningLabel)
+                or nameof(CopilotProfileConfig.VendorType)
+                or nameof(CopilotProfileConfig.Name)
+                or nameof(CopilotProfileConfig.Model)
+                or nameof(CopilotProfileConfig.ProviderType))
+            {
+                RefreshSelectedProfileReasoningState();
+                OnPropertyChanged(nameof(SelectedProfileToolTip));
+            }
+        }
+
+        private void RefreshSelectedProfileReasoningState()
+        {
+            OnPropertyChanged(nameof(SelectedProfileReasoningOptions));
+            OnPropertyChanged(nameof(SelectedProfileReasoningLabel));
+            OnPropertyChanged(nameof(SelectedProfileReasoningToolTip));
+            OnPropertyChanged(nameof(HasConfigurableReasoning));
+        }
+
         private CopilotConversationRecord EnsureConversation()
         {
             if (SelectedConversation != null)
@@ -1435,9 +1780,7 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord CreateConversation()
         {
             var profile = SelectedProfile ?? ResolveProfile(_state.ActiveProfileId) ?? _config.GetPreferredDefaultProfile();
-            var conversation = CopilotConversationRecord.CreateEmpty(profile?.Id ?? string.Empty, profile?.DisplayLabel ?? string.Empty);
-            Conversations.Insert(GetUnpinnedInsertIndex(), conversation);
-            return conversation;
+            return CopilotConversationService.Create(Conversations, profile);
         }
 
         private void UpdateConversationMetadata(CopilotConversationRecord conversation, bool touch)
@@ -1482,7 +1825,7 @@ namespace ColorVision.Copilot
 
             try
             {
-                requestProfile.SystemPrompt = "You are a conversation title generator. Generate a short, natural English title for the given conversation. Return only the title itself, with no explanation.";
+                requestProfile.UseSystemPromptOverride("You are a conversation title generator. Generate a short, natural English title for the given conversation. Return only the title itself, with no explanation.");
                 requestProfile.MaxTokens = Math.Min(requestProfile.MaxTokens, 32);
                 requestProfile.Temperature = 0.2;
 
@@ -1520,7 +1863,7 @@ namespace ColorVision.Copilot
 
         private void BringConversationToFront(CopilotConversationRecord conversation)
         {
-            MoveConversationToPreferredIndex(conversation);
+            CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
             _state.ActiveConversationId = conversation.Id;
         }
 
@@ -1582,7 +1925,7 @@ namespace ColorVision.Copilot
                 return;
 
             conversation.IsPinned = !conversation.IsPinned;
-            MoveConversationToPreferredIndex(conversation);
+            CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
             PersistState();
         }
 
@@ -1796,10 +2139,12 @@ namespace ColorVision.Copilot
             var requestProfile = SelectedProfile.Clone();
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
+            conversation.AgentSessionCheckpoint = null;
+            PersistState();
 
             CopilotChatMessage? replacementAssistantMessage = null;
 
-            BeginRequest();
+            BeginRequest(userMessage.RequestMode);
 
             try
             {
@@ -1810,6 +2155,7 @@ namespace ColorVision.Copilot
                 {
                     AssistantName = ResolveAssistantHeader(requestProfile),
                 };
+                replacementAssistantMessage.MarkThinkingStarted();
                 conversation.Messages.Add(replacementAssistantMessage);
 
                 var usage = await RunConversationTurnAsync(conversation, requestProfile, userMessage, replacementAssistantMessage, refreshWebContext);
@@ -1827,6 +2173,7 @@ namespace ColorVision.Copilot
 
                 replacementAssistantMessage.IsExecutionInProgress = false;
                 replacementAssistantMessage.IsReasoningInProgress = false;
+                replacementAssistantMessage.MarkThinkingCompleted();
 
                 if (string.IsNullOrWhiteSpace(replacementAssistantMessage.Content))
                     replacementAssistantMessage.Content = "The current reply was cancelled.";
@@ -1844,11 +2191,13 @@ namespace ColorVision.Copilot
                     {
                         AssistantName = ResolveAssistantHeader(requestProfile),
                     };
+                    replacementAssistantMessage.MarkThinkingStarted();
                     conversation.Messages.Add(replacementAssistantMessage);
                 }
 
                 replacementAssistantMessage.IsExecutionInProgress = false;
                 replacementAssistantMessage.IsReasoningInProgress = false;
+                replacementAssistantMessage.MarkThinkingCompleted();
                 replacementAssistantMessage.Content = string.IsNullOrWhiteSpace(replacementAssistantMessage.Content)
                     ? $"Request failed: {ex.Message}"
                     : replacementAssistantMessage.Content;
@@ -2048,15 +2397,6 @@ namespace ColorVision.Copilot
             ComposerTokenSummary = summary;
             ComposerTokenDetails = details;
             OnPropertyChanged(nameof(PrimaryActionToolTip));
-            NotifyTokenUsageBadgeChanged();
-        }
-
-        private void NotifyTokenUsageBadgeChanged()
-        {
-            OnPropertyChanged(nameof(TokenUsageBadgeText));
-            OnPropertyChanged(nameof(HasRealTokenUsage));
-            OnPropertyChanged(nameof(IsTokenUsagePending));
-            OnPropertyChanged(nameof(IsTokenUsageUnavailable));
         }
 
         private void InvalidateChatAttachmentTokenEstimate()
@@ -2071,18 +2411,13 @@ namespace ColorVision.Copilot
 
         private string BuildActualUsageDetails(CopilotConversationRecord conversation, CopilotTokenUsage usage)
         {
-            var mode = ResolveLastRequestMode(conversation);
             var builder = new StringBuilder();
             builder.AppendLine($"Model: {ResolveUsageModelLabel(conversation)}");
-            builder.AppendLine($"Mode: {ResolveModeLabel(mode)}");
             builder.AppendLine($"Input tokens: {CopilotTokenUsage.FormatCount(usage.InputTokens)}");
             builder.AppendLine($"Output tokens: {CopilotTokenUsage.FormatCount(usage.OutputTokens)}");
             builder.AppendLine($"Total tokens: {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}");
             builder.AppendLine();
             builder.Append("Note: this shows the most recent usage returned by the API.");
-
-            if (mode != CopilotAgentMode.Chat)
-                builder.Append(" Agent mode includes multiple model calls from planning and the final answer.");
 
             return builder.ToString().TrimEnd();
         }
@@ -2100,7 +2435,6 @@ namespace ColorVision.Copilot
         {
             var builder = new StringBuilder();
             builder.AppendLine($"Model: {ResolveUsageModelLabel(conversation)}");
-            builder.AppendLine($"Mode: {ResolveModeLabel(ResolveLastRequestMode(conversation))}");
             builder.AppendLine();
             builder.Append("Note: local estimates are disabled. The last request did not return a usage field, so input and output token counts are unavailable.");
             return builder.ToString();
@@ -2125,17 +2459,12 @@ namespace ColorVision.Copilot
         private void AppendComposerRequestPreview(StringBuilder builder)
         {
             builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel ?? "No model selected"}");
-            builder.AppendLine($"Mode: {ResolveModeLabel(SelectedAgentMode)}");
-
-            if (!string.IsNullOrWhiteSpace(SelectedAgentModeDescription))
-                builder.AppendLine($"Mode detail: {SelectedAgentModeDescription}");
-
             builder.AppendLine($"Prompt: {BuildPromptSummary()}");
             builder.AppendLine($"Attachments: {BuildAttachmentSummary()}");
             builder.AppendLine($"Window context: {BuildWindowContextSummary()}");
 
-            if (IsMcpStatusVisible)
-                builder.AppendLine($"MCP: {McpStatusLabel}");
+            if (IsControlModeVisible)
+                builder.AppendLine($"Control: {McpStatusLabel}");
         }
 
         private string BuildPromptSummary()
@@ -2192,16 +2521,6 @@ namespace ColorVision.Copilot
                 return SelectedProfile.DisplayLabel;
 
             return "Unnamed model";
-        }
-
-        private CopilotAgentMode ResolveLastRequestMode(CopilotConversationRecord conversation)
-        {
-            return conversation.Messages.LastOrDefault(message => message.IsUser)?.RequestMode ?? SelectedAgentMode;
-        }
-
-        private string ResolveModeLabel(CopilotAgentMode mode)
-        {
-            return AgentModes.FirstOrDefault(option => option.Mode == mode)?.Label ?? mode.ToString();
         }
 
         private static string BuildConversationTitlePrompt(CopilotConversationRecord conversation)
@@ -2271,6 +2590,7 @@ namespace ColorVision.Copilot
         {
             ConfigHandler.GetInstance().Save<CopilotConfig>();
             OnPropertyChanged(nameof(EmptyStateText));
+            OnPropertyChanged(nameof(CanShowCompactHistory));
             OnPropertyChanged(nameof(CanSelectProfile));
         }
 
@@ -2325,36 +2645,6 @@ namespace ColorVision.Copilot
             }
 
             UpdateAttachmentsState(conversation);
-        }
-
-        private void MoveConversationToPreferredIndex(CopilotConversationRecord conversation)
-        {
-            var currentIndex = Conversations.IndexOf(conversation);
-            if (currentIndex < 0)
-                return;
-
-            var targetIndex = conversation.IsPinned ? 0 : GetUnpinnedInsertIndex(conversation);
-            if (currentIndex == targetIndex)
-                return;
-
-            Conversations.Move(currentIndex, targetIndex);
-        }
-
-        private int GetUnpinnedInsertIndex(CopilotConversationRecord? exclude = null)
-        {
-            var count = 0;
-            foreach (var conversation in Conversations)
-            {
-                if (ReferenceEquals(conversation, exclude))
-                    continue;
-
-                if (!conversation.IsPinned)
-                    break;
-
-                count++;
-            }
-
-            return count;
         }
 
         private string BuildAttachmentContextBlock()

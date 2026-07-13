@@ -7,6 +7,7 @@ namespace FlowEngineLib.Node.POI;
 public class POIAnalysisNode : CVBaseServerNode
 {
 	[STNodeProperty("参数模板", "参数模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiAnalysisJsonTemplateEditor))]
 	public string TempName
 	{
 		get

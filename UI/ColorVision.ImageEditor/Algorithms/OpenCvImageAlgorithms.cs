@@ -117,6 +117,15 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static void ApplyBilateral(Mat mat, int diameter, double sigmaColor, double sigmaSpace)
         {
+            if (mat.Depth() != MatType.CV_8U && mat.Depth() != MatType.CV_32F)
+            {
+                using Mat converted = new();
+                mat.ConvertTo(converted, MatType.MakeType(MatType.CV_32F, mat.Channels()));
+                ApplyBilateral(converted, diameter, sigmaColor, sigmaSpace);
+                converted.ConvertTo(mat, mat.Type());
+                return;
+            }
+
             if (mat.Channels() != 4)
             {
                 using Mat source = mat.Clone();
@@ -156,6 +165,7 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static int EnsureOdd(int value)
         {
+            value = Math.Max(1, value);
             return value % 2 == 0 ? value + 1 : value;
         }
     }

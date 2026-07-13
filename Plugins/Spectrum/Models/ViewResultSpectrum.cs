@@ -226,13 +226,14 @@ namespace Spectrum.Models
         }
 
         // EQE properties
+        [Browsable(false)]
         public double? Eqe { get; set; }
 
         /// <summary>
         /// EQE value ×100 for percentage display
         /// </summary>
         [JsonIgnore]
-        [Browsable(false)]
+        [DisplayName("EQE(%)")]
         public double EqePercent => (Eqe ?? 0) * 100;
 
         [DisplayName("光通量(lm)")]

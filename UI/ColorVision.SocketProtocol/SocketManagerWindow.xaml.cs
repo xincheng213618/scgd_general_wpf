@@ -54,7 +54,7 @@ namespace ColorVision.SocketProtocol
         {
             this.DataContext = _socketManager;
             // 加载最近的消息记录
-            _socketManager.MessageManager.LoadAll();
+            _socketManager.MessageManager.LoadAll(_socketManager.MessageManager.Config.Count);
             _messagesView = CollectionViewSource.GetDefaultView(_socketManager.MessageManager.Messages);
             _messagesView.Filter = FilterMessage;
             _socketManager.MessageManager.Messages.CollectionChanged += Messages_CollectionChanged;
@@ -96,6 +96,11 @@ namespace ColorVision.SocketProtocol
             UpdateDetailContent(DetailPanel.DataContext as SocketMessage);
         }
 
+        private void MessagesListView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateContentColumnWidth();
+        }
+
         private void ServerEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             if (!_isWindowInitialized)
@@ -135,6 +140,7 @@ namespace ColorVision.SocketProtocol
         {
             _messagesView?.Refresh();
             UpdateFilteredCount();
+            UpdateContentColumnWidth();
         }
 
         private void UpdateFilteredCount()
@@ -146,6 +152,18 @@ namespace ColorVision.SocketProtocol
             var filtered = _messagesView?.Cast<object>().Count() ?? total;
             FilteredCountTextBlock.Text = $"{filtered} / {total}";
             TotalCountTextBlock.Text = FormatResource(Properties.Resources.MessageCountFormat, total);
+        }
+
+        private void UpdateContentColumnWidth()
+        {
+            if (ContentColumn == null || MessagesListView == null)
+                return;
+
+            double availableWidth = MessagesListView.ActualWidth
+                - 100
+                - 140
+                - 42; // padding, row chrome, and scrollbar breathing room
+            ContentColumn.Width = Math.Max(260, availableWidth);
         }
 
         private static string FormatResource(string format, params object?[] args)
@@ -231,50 +249,6 @@ namespace ColorVision.SocketProtocol
         private void DeleteMessage_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem && menuItem.Tag is SocketMessage message)
-            {
-                DeleteMessage(message);
-            }
-        }
-
-        /// <summary>
-        /// 复制消息内容(底部按钮)
-        /// </summary>
-        private void CopyContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailPanel.DataContext is SocketMessage message)
-            {
-                Common.Clipboard.SetText(message.Content ?? string.Empty);
-            }
-        }
-
-        /// <summary>
-        /// 复制格式化后的消息内容(底部按钮)
-        /// </summary>
-        private void CopyFormattedContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailPanel.DataContext is SocketMessage message && !string.IsNullOrEmpty(message.Content))
-            {
-                Common.Clipboard.SetText(FormatContent(message.Content, true));
-            }
-        }
-
-        /// <summary>
-        /// 重发消息(底部按钮)
-        /// </summary>
-        private void ResendContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailPanel.DataContext is SocketMessage message)
-            {
-                ResendMessageToClient(message);
-            }
-        }
-
-        /// <summary>
-        /// 删除消息(底部按钮)
-        /// </summary>
-        private void DeleteContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (DetailPanel.DataContext is SocketMessage message)
             {
                 DeleteMessage(message);
             }

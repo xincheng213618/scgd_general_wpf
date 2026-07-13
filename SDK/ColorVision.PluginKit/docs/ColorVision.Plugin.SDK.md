@@ -151,14 +151,14 @@ C:\Path\To\ColorVision\bin\x64\Debug\net10.0-windows\Plugins\DemoPlugin
 需要自定义行为时，也可以直接调用：
 
 ```powershell
-python .\scripts\package_cvxp.py --config .\pluginkit.config.json --build --no-upload
+python .\scripts\package_cvxp.py --config .\pluginkit.config.json --build
 ```
 
 包名格式为 `{PluginId}-{version}.cvxp`。压缩包内部顶层目录必须是插件 ID，例如 `DemoPlugin/manifest.json`、`DemoPlugin/DemoPlugin.dll`。
 
 ## 7. 上传插件市场
 
-需要直接调用脚本时，不带 `--no-upload` 即可：
+需要直接调用脚本时：
 
 ```powershell
 $env:COLORVISION_UPLOAD_USERNAME = "your-user"

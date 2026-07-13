@@ -18,6 +18,7 @@
 
 ### 界面与基础交互
 
+- [Copilot 使用指南](./copilot.md)
 - [主窗口导览](./interface/main-window.md)
 - [UI 组件使用手册](./interface/ui-component-handbook.md)
 - [属性编辑器](./interface/property-editor.md)

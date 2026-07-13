@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1725
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using log4net;
 using SqlSugar;
@@ -13,7 +14,6 @@ using System.Reflection;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                     DFovView view1 = new DFovView(item);
                     result.ViewResults.Add(view1);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFOV2), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFOV2), ImageFilePath = result.FilePath })) });
             }
         }
 

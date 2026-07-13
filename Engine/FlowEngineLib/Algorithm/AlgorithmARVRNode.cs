@@ -12,6 +12,8 @@ public class AlgorithmARVRNode : CVBaseServerNode
 
 	private CVOLED_COLOR _Color;
 
+	private string _OutputFileName;
+
 	private int _BufferLen;
 
 	private STNodeEditText<AlgorithmARVRType> m_ctrl_editText;
@@ -60,6 +62,8 @@ public class AlgorithmARVRNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ImgFileName
 	{
 		get
@@ -86,6 +90,19 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("输出文件", "输出文件", true)]
+	public string OutputFileName
+	{
+		get
+		{
+			return _OutputFileName;
+		}
+		set
+		{
+			_OutputFileName = value;
+		}
+	}
+
 	[STNodeProperty("缓存大小", "缓存大小", true)]
 	public int BufferLen
 	{
@@ -103,6 +120,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		: base("ARVR算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "MTF";
+		_OutputFileName = "result.json";
 		base.Height += 50;
 		_BufferLen = 1024;
 		_Color = CVOLED_COLOR.GREEN;
@@ -145,6 +163,9 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		case AlgorithmARVRType.十字计算:
 			operatorCode = "FindCross";
 			break;
+		case AlgorithmARVRType.屏幕缺陷检测:
+			operatorCode = "ARVR.DetectScreenDefects";
+			break;
 		}
 		base.nodeEvent?.Invoke(this, new FlowEngineNodeEventArgs());
 	}
@@ -157,6 +178,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 			ID = -1,
 			Name = _POITempName
 		};
+		algorithmParam_ROI.OutputFileName = _OutputFileName;
 		algorithmParam_ROI.IsInversion = false;
 		algorithmParam_ROI.BufferLen = _BufferLen;
 		getPreStepParam(start, algorithmParam_ROI);

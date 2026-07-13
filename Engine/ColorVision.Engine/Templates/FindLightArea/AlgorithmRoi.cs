@@ -44,8 +44,6 @@ namespace ColorVision.Engine.Templates.FindLightArea
 
         public MsgRecord SendCommand(RoiParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
-                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
 

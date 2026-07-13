@@ -380,6 +380,7 @@ namespace WindowsServicePlugin.ServiceManager
                 sql.AppendLine("SET NAMES utf8mb4;");
                 sql.AppendLine("SET FOREIGN_KEY_CHECKS = 0;");
                 sql.AppendLine(stdout);
+                sql.AppendLine(MySqlLocalServicesManager.BuildMigrationDictionaryDependencySql(BuildDatabaseConnectionString(userName, password, database), logCallback));
                 sql.AppendLine("SET FOREIGN_KEY_CHECKS = 1;");
                 File.WriteAllText(outputFile, sql.ToString(), new UTF8Encoding(false));
                 logCallback($"资源数据备份完成: {outputFile}");
@@ -390,6 +391,23 @@ namespace WindowsServicePlugin.ServiceManager
                 logCallback($"资源数据备份失败: {ex.Message}");
                 return false;
             }
+        }
+
+        private string BuildDatabaseConnectionString(string userName, string password, string database)
+        {
+            var builder = new MySqlConnectionStringBuilder
+            {
+                Server = "127.0.0.1",
+                Port = (uint)Port,
+                UserID = userName,
+                Password = password ?? string.Empty,
+                Database = database,
+                CharacterSet = "utf8mb4",
+                ConnectionTimeout = 5,
+                SslMode = MySqlSslMode.None,
+                Pooling = false
+            };
+            return builder.ConnectionString;
         }
 
         public bool TestConnection(string? host, int port, string userName, string password, string? database, Action<string>? logCallback = null)

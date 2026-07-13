@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CA1725,CS8601
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Services;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using System;
@@ -15,7 +16,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.MTF
 {
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Templates.MTF
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultMTF>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() {"Id", "Name", "位置", "大小", "形状", "MTF" };
+            List<string> properties = new() { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "MTF" };
             csvBuilder.AppendLine(string.Join(",", properties));
 
             foreach (var item in ViewResults)
@@ -99,8 +99,8 @@ namespace ColorVision.Engine.Templates.MTF
                 varianceValues[property] /= count;
             }
 
-            csvBuilder.AppendLine("\n统计信息");
-            csvBuilder.AppendLine("属性,最大值,最大值所在名称,最小值,最小值所在名称,平均值,方差,均匀性");
+            csvBuilder.AppendLine($"\n{Properties.Resources.Statistics}");
+            csvBuilder.AppendLine(Properties.Resources.MtfStatisticsCsvHeader);
 
             foreach (var property in properties.Skip(4))
             {
@@ -136,7 +136,7 @@ namespace ColorVision.Engine.Templates.MTF
                     ViewResultMTF mTFResultData = new(item);
                     result.ViewResults.Add(mTFResultData);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF), ImageFilePath = result.FilePath })) });
 
             }
         }
@@ -158,11 +158,11 @@ namespace ColorVision.Engine.Templates.MTF
                             Circle.Attribute.Center = new Point(poiResultData.Point.PixelX, poiResultData.Point.PixelY);
                             Circle.Attribute.Radius = poiResultData.Point.Height / 2;
                             Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                             Circle.Attribute.Id = poiResultData.Id;
                             Circle.Attribute.Text = poiResultData.Name;
-                            Circle.Attribute.FontSize = RenderConfig.FontSize;
-                            Circle.Attribute.Msg = RenderConfig.FormatNumber(poiResultData.Articulation);
+                            Circle.Attribute.FontSize = OverlayFontSize;
+                            Circle.Attribute.Msg = FormatNumber(poiResultData.Articulation);
                             Circle.Render();
                             ctx.ImageView.AddVisual(Circle);
                             break;
@@ -170,11 +170,11 @@ namespace ColorVision.Engine.Templates.MTF
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(poiResultData.Point.PixelX - poiResultData.Point.Width / 2, poiResultData.Point.PixelY - poiResultData.Point.Height / 2, poiResultData.Point.Width, poiResultData.Point.Height);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                             Rectangle.Attribute.Id = poiResultData.Id;
                             Rectangle.Attribute.Text = poiResultData.Name;
-                            Rectangle.Attribute.FontSize = RenderConfig.FontSize;
-                            Rectangle.Attribute.Msg = RenderConfig.FormatNumber(poiResultData.Articulation);
+                            Rectangle.Attribute.FontSize = OverlayFontSize;
+                            Rectangle.Attribute.Msg = FormatNumber(poiResultData.Articulation);
                             Rectangle.Render();
                             ctx.ImageView.AddVisual(Rectangle);
                             break;
@@ -187,7 +187,7 @@ namespace ColorVision.Engine.Templates.MTF
 
             List<string> header;
             List<string> bdHeader;
-            header = new() { "Name", "位置", "大小", "形状", "MTF" };
+            header = new() { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "MTF" };
             bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
 
 

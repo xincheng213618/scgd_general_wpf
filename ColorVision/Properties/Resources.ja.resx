@@ -477,7 +477,7 @@
     <value>ツールラウンド</value>
   </data>
   <data name="CopilotSystemPrompt" xml:space="preserve">
-    <value>システムプロンプト</value>
+    <value>カスタムプロンプト</value>
   </data>
 
   <data name="Cancel" xml:space="preserve">

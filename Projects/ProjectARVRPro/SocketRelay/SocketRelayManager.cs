@@ -7,6 +7,7 @@ using ColorVision.SocketProtocol;
 using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
+using ProjectARVRPro.SocketRelay;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Net;
@@ -78,6 +79,7 @@ namespace ProjectARVRPro.Services
         public static SocketRelayManager GetInstance() { lock (_locker) { return _instance ??= new SocketRelayManager(); } }
 
         public SocketRelayConfig Config => SocketRelayConfig.Instance;
+        public RelayCommand EditCommand { get; }
 
         private TcpListener _listener;
         private TcpClient _flowClient;
@@ -101,6 +103,7 @@ namespace ProjectARVRPro.Services
 
         private SocketRelayManager()
         {
+            EditCommand = new RelayCommand(_ => SocketRelayWindow.OpenWindow());
             ServiceManager.GetInstance().ServiceChanged += OnServiceChanged;
         }
 

@@ -51,7 +51,13 @@ namespace ColorVision.ImageEditor
         private PseudoColorEditorTool? PseudoColorTool => IEditorToolFactory.GetIEditorTool<PseudoColorEditorTool>();
         public bool EnableEditorImageServices { get; set; } = true;
         public ImageLayerDescriptor? SelectedLayer { get; private set; }
+        public bool AutoFollowImageGroup { get; set; } = true;
+        public IReadOnlyList<ImageViewImageItem> ImageGroupItems => _imageGroupItems;
+        public int SelectedImageIndex => _selectedImageIndex;
 
+        private readonly List<ImageViewImageItem> _imageGroupItems = new();
+        private int _selectedImageIndex = -1;
+        private bool _imageGroupUserPinned;
 
         private RealtimeFramePresenter? _realtime;
         public RealtimeFramePresenter Realtime => _realtime ??= new RealtimeFramePresenter(this);
@@ -60,6 +66,7 @@ namespace ColorVision.ImageEditor
 
         public event EventHandler ClearImageEventHandler;
         public event EventHandler StatusBarItemsChanged;
+        public event EventHandler<ImageViewImageChangedEventArgs>? SelectedImageChanged;
 
         public EditorContext EditorContext { get; private set; } = null!;
 
@@ -843,6 +850,162 @@ namespace ColorVision.ImageEditor
 
 
 
+        public void OpenImages(IEnumerable<string>? filePaths, int selectedIndex = 0)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                var paths = filePaths?.ToList();
+                Dispatcher.BeginInvoke(() => OpenImages(paths, selectedIndex));
+                return;
+            }
+
+            var items = filePaths?
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(path => new ImageViewImageItem(path))
+                .ToList() ?? new List<ImageViewImageItem>();
+
+            OpenImageGroup(items, selectedIndex);
+        }
+
+        public void OpenImageGroup(IEnumerable<ImageViewImageItem>? images, int selectedIndex = 0)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                var imageList = images?.ToList();
+                Dispatcher.BeginInvoke(() => OpenImageGroup(imageList, selectedIndex));
+                return;
+            }
+
+            var items = NormalizeImageGroup(images);
+            if (items.Count == 0)
+            {
+                Clear();
+                return;
+            }
+
+            _imageGroupItems.Clear();
+            _imageGroupItems.AddRange(items);
+            _selectedImageIndex = Math.Clamp(selectedIndex, 0, _imageGroupItems.Count - 1);
+            _imageGroupUserPinned = false;
+            OpenImageGroupItem(_selectedImageIndex, false);
+        }
+
+        public void AppendImage(string? filePath, bool open = true)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => AppendImage(filePath, open));
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(filePath)) return;
+
+            int existingIndex = FindImageGroupIndex(filePath);
+            if (existingIndex >= 0)
+            {
+                if (open) SelectImage(existingIndex);
+                return;
+            }
+
+            _imageGroupItems.Add(new ImageViewImageItem(filePath));
+            if (_selectedImageIndex < 0)
+                _selectedImageIndex = 0;
+
+            bool shouldOpen = open && AutoFollowImageGroup && !_imageGroupUserPinned;
+            if (shouldOpen)
+                OpenImageGroupItem(_imageGroupItems.Count - 1, false);
+            else
+                UpdateImageGroupNavigator();
+        }
+
+        public void ClearImageGroup()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(ClearImageGroup);
+                return;
+            }
+
+            _imageGroupItems.Clear();
+            _selectedImageIndex = -1;
+            _imageGroupUserPinned = false;
+            UpdateImageGroupNavigator();
+        }
+
+        public void SelectImage(int index)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => SelectImage(index));
+                return;
+            }
+
+            if (_imageGroupItems.Count == 0) return;
+
+            _imageGroupUserPinned = index < _imageGroupItems.Count - 1;
+            OpenImageGroupItem(index, true);
+        }
+
+        private void OpenImageGroupItem(int index, bool userInitiated)
+        {
+            if (_imageGroupItems.Count == 0) return;
+
+            _selectedImageIndex = Math.Clamp(index, 0, _imageGroupItems.Count - 1);
+            var item = _imageGroupItems[_selectedImageIndex];
+            UpdateImageGroupNavigator();
+            OpenImageCore(item.FilePath);
+            SelectedImageChanged?.Invoke(this, new ImageViewImageChangedEventArgs(item, _selectedImageIndex, _imageGroupItems.Count, userInitiated));
+        }
+
+        private static List<ImageViewImageItem> NormalizeImageGroup(IEnumerable<ImageViewImageItem>? images)
+        {
+            var items = new List<ImageViewImageItem>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (images == null) return items;
+
+            foreach (var image in images)
+            {
+                if (string.IsNullOrWhiteSpace(image.FilePath)) continue;
+                if (!seen.Add(image.FilePath)) continue;
+
+                items.Add(image);
+            }
+
+            return items;
+        }
+
+        private int FindImageGroupIndex(string filePath)
+        {
+            for (int i = 0; i < _imageGroupItems.Count; i++)
+            {
+                if (string.Equals(_imageGroupItems[i].FilePath, filePath, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private void UpdateImageGroupNavigator()
+        {
+            if (ImageGroupNavigator == null) return;
+
+            int count = _imageGroupItems.Count;
+            ImageGroupNavigator.Visibility = count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            ImageGroupStatusText.Text = count > 0 && _selectedImageIndex >= 0 ? $"{_selectedImageIndex + 1}/{count}" : "0/0";
+            ImageGroupPreviousButton.IsEnabled = count > 1 && _selectedImageIndex > 0;
+            ImageGroupNextButton.IsEnabled = count > 1 && _selectedImageIndex < count - 1;
+        }
+
+        private void ImageGroupPreviousButton_Click(object sender, RoutedEventArgs e)
+        {
+            SelectImage(_selectedImageIndex - 1);
+        }
+
+        private void ImageGroupNextButton_Click(object sender, RoutedEventArgs e)
+        {
+            SelectImage(_selectedImageIndex + 1);
+        }
+
         private void ImageView_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -860,6 +1023,7 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            ClearImageGroup();
             InvalidatePseudoColorRender();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
             EditorContext.IImageOpen = null;
@@ -944,6 +1108,16 @@ namespace ColorVision.ImageEditor
 
         public void OpenImage(string? filePath)
         {
+            if (string.IsNullOrWhiteSpace(filePath))
+                ClearImageGroup();
+            else
+                OpenSingleImageGroup(filePath);
+
+            OpenImageCore(filePath);
+        }
+
+        private void OpenImageCore(string? filePath)
+        {
             //如果文件已经打开，不会重复打开
 
             if (filePath == null || filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal))
@@ -984,6 +1158,23 @@ namespace ColorVision.ImageEditor
                 log.Error(ex);
                 WpfMessageBox.Show(ex.Message);
             }
+        }
+
+        private void OpenSingleImageGroup(string filePath)
+        {
+            if (_imageGroupItems.Count == 1 &&
+                _selectedImageIndex == 0 &&
+                string.Equals(_imageGroupItems[0].FilePath, filePath, StringComparison.OrdinalIgnoreCase))
+            {
+                UpdateImageGroupNavigator();
+                return;
+            }
+
+            _imageGroupItems.Clear();
+            _imageGroupItems.Add(new ImageViewImageItem(filePath));
+            _selectedImageIndex = 0;
+            _imageGroupUserPinned = false;
+            UpdateImageGroupNavigator();
         }
 
 
@@ -1252,37 +1443,6 @@ namespace ColorVision.ImageEditor
         }
 
 
-        public void ApplyCurrentImage()
-        {
-            InvalidatePseudoColorRender();
-            if (FunctionImage is WriteableBitmap writeableBitmap)
-            {
-                ViewBitmapSource = writeableBitmap;
-                ImageShow.Source = ViewBitmapSource; ;
-                HImageCache = writeableBitmap.ToHImage();
-                FunctionImage = null;
-                SetLayerController(BitmapImageLayerController.CreateForCurrentImage(this));
-            }
-        }
-
-        public void ReloadImage()
-        {
-            InvalidatePseudoColorRender();
-            string filepath = Config.FilePath;
-            Config.ClearProperties();
-            OpenImage(filepath);
-        }
-
-        private void Apply_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyCurrentImage();
-        }
-
-        private void Reload_Click(object sender, RoutedEventArgs e)
-        {
-            ReloadImage();
-        }
-
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (sender is WpfTextBox textBox && textBox.AcceptsReturn)
@@ -1318,6 +1478,9 @@ namespace ColorVision.ImageEditor
 
         public void Dispose()
         {
+            if (EditorContext != null)
+                DebounceTimer.Cancel("ImageLayoutUpdatedRender" + EditorContext.Id);
+            DebounceTimer.Cancel(_pixelValueOverlayRefreshDebounceKey);
             _realtime?.Dispose();
             Clear();
             _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;

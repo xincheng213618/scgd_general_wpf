@@ -86,7 +86,7 @@ Spectrum 提供 5 个 JSON Socket 入口：
 
 ```powershell
 dotnet build Plugins/Spectrum/Spectrum.csproj -c Release -p:Platform=x64
-Scripts\package_plugin.bat Spectrum --no-upload
+Scripts\package_plugin.bat Spectrum
 ```
 
 Spectrum 也有专用脚本 `Scripts\build_spectrum.py`；使用前先确认当前发布流程是否要求它。

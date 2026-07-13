@@ -18,11 +18,22 @@ namespace ColorVision.UI.Desktop.Download
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
+            var icon = new TextBlock
+            {
+                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Text = "\uE896",
+                TextAlignment = TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            icon.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+
             var menuItem = new MenuItemMetadata
             {
                 Header = Properties.Resources.DownloadManager,
                 Order = 100,
-                Icon = new TextBlock() { FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), Text = "\uE896" },
+                Icon = icon,
                 Command = new RelayCommand(a => DownloadWindow.ShowInstance())
             };
             return new[] { menuItem };

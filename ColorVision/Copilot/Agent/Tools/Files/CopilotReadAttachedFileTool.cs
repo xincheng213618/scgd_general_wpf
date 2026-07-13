@@ -16,6 +16,8 @@ namespace ColorVision.Copilot
 
         public string Description => "Read text file attachments from the current session.";
 
+        public CopilotToolInputSchema InputSchema => CopilotToolInputSchema.Empty;
+
         public bool CanHandle(CopilotAgentRequest request)
         {
             return request?.Attachments?.Any(item => item.Type == CopilotAttachmentType.File) == true

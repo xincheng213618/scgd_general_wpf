@@ -17,9 +17,9 @@ namespace ProjectARVRPro.Process.MTF.MTFH
     /// <summary>
     /// 旧版MTFH解析 - 使用 MTFResult.result + mtfValue
     /// </summary>
-    public class MTFHProcess : ProcessBase<MTFHProcessConfig>
+    public class MTFHProcess : ProcessBase<MTFHProcessConfig, MTFHRecipeConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
@@ -177,16 +177,16 @@ namespace ProjectARVRPro.Process.MTF.MTFH
             }
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             var result = ctx.Result;
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("MTFH(旧版) 画面结果");
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return sb.ToString();
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
             MTFHTestResult testResult = JsonConvert.DeserializeObject<MTFHTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return sb.ToString();
+            if (testResult == null) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
             sb.AppendLine("Name,Value,Unit,LowLimit,UpLimit,Result");
 
@@ -200,12 +200,8 @@ namespace ProjectARVRPro.Process.MTF.MTFH
                 }
             }
 
-            return sb.ToString();
+            AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHRecipeConfig>();
-        }
     }
 }

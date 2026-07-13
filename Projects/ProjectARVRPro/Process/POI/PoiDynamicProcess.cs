@@ -15,7 +15,7 @@ namespace ProjectARVRPro.Process.POI
 {
     public class PoiDynamicProcess : ProcessBase<PoiDynamicProcessConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null) return false;
 
@@ -107,21 +107,21 @@ namespace ProjectARVRPro.Process.POI
             }
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             string outtext = $"{GetOutputName()} 关注点结果" + Environment.NewLine;
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
             var testResult = JsonConvert.DeserializeObject<PoiDynamicTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return outtext;
+            if (testResult == null) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
             foreach (var item in testResult.PoixyuvDatas)
             {
                 outtext += $"{item.Name} X:{Format(item.X)} Y:{Format(item.Y)} Z:{Format(item.Z)} x:{Format(item.x)} y:{Format(item.y)} u:{Format(item.u)} v:{Format(item.v)} cct:{Format(item.CCT)} wave:{Format(item.Wave)}{Environment.NewLine}";
             }
 
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
         private bool ShouldParse(AlgResultMasterModel master)

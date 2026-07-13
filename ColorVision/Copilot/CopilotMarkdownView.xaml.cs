@@ -1,14 +1,13 @@
-using ColorVision.UI.Desktop;
-using Markdig;
-using Microsoft.Web.WebView2.Core;
 using System;
-using System.Globalization;
-using System.Text.Json;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Media;
 using System.Windows.Threading;
-using DrawingColor = System.Drawing.Color;
 
 namespace ColorVision.Copilot
 {
@@ -20,28 +19,24 @@ namespace ColorVision.Copilot
             typeof(CopilotMarkdownView),
             new PropertyMetadata(string.Empty, OnMarkdownChanged));
 
-        private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
-            .UseAdvancedExtensions()
-            .Build();
+        private static readonly Regex HeadingRegex = new(@"^(#{1,6})\s+(.+)$", RegexOptions.Compiled);
+        private static readonly Regex UnorderedListRegex = new(@"^\s*[-+*]\s+(.+)$", RegexOptions.Compiled);
+        private static readonly Regex OrderedListRegex = new(@"^\s*(\d+)[.)]\s+(.+)$", RegexOptions.Compiled);
+        private static readonly Regex InlineRegex = new(@"(\*\*[^*\r\n]+\*\*|`[^`\r\n]+`|\*[^*\r\n]+\*|\[[^\]\r\n]+\]\([^)]+\))", RegexOptions.Compiled);
 
         private readonly DispatcherTimer _renderTimer;
-        private bool _isInitialized;
         private string _pendingMarkdown = string.Empty;
 
         public CopilotMarkdownView()
         {
             InitializeComponent();
-            Browser.DefaultBackgroundColor = DrawingColor.Transparent;
-
             _renderTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(120),
+                Interval = TimeSpan.FromMilliseconds(100),
             };
             _renderTimer.Tick += RenderTimer_Tick;
-
             Loaded += CopilotMarkdownView_Loaded;
             Unloaded += CopilotMarkdownView_Unloaded;
-            SizeChanged += CopilotMarkdownView_SizeChanged;
         }
 
         public string Markdown
@@ -50,15 +45,14 @@ namespace ColorVision.Copilot
             set => SetValue(MarkdownProperty, value);
         }
 
-        private static void OnMarkdownChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void OnMarkdownChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
         {
-            if (d is CopilotMarkdownView view)
+            if (dependencyObject is CopilotMarkdownView view)
                 view.ScheduleRender();
         }
 
-        private async void CopilotMarkdownView_Loaded(object sender, RoutedEventArgs e)
+        private void CopilotMarkdownView_Loaded(object sender, RoutedEventArgs e)
         {
-            await EnsureInitializedAsync();
             ScheduleRender();
         }
 
@@ -67,34 +61,10 @@ namespace ColorVision.Copilot
             _renderTimer.Stop();
         }
 
-        private async void RenderTimer_Tick(object? sender, EventArgs e)
+        private void RenderTimer_Tick(object? sender, EventArgs e)
         {
             _renderTimer.Stop();
-            await RenderAsync();
-        }
-
-        private void CopilotMarkdownView_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (!_isInitialized || Math.Abs(e.PreviousSize.Width - e.NewSize.Width) < 1)
-                return;
-
-            _ = UpdateHeightAsync();
-        }
-
-        private async Task EnsureInitializedAsync()
-        {
-            if (_isInitialized)
-                return;
-
-            await WebViewService.EnsureWebViewInitializedAsync(Browser);
-            if (Browser.CoreWebView2 == null)
-                return;
-
-            Browser.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-            Browser.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
-            Browser.CoreWebView2.Settings.IsZoomControlEnabled = false;
-            Browser.NavigationCompleted += Browser_NavigationCompleted;
-            _isInitialized = true;
+            RenderMarkdown(_pendingMarkdown);
         }
 
         private void ScheduleRender()
@@ -107,132 +77,203 @@ namespace ColorVision.Copilot
             _renderTimer.Start();
         }
 
-        private async Task RenderAsync()
+        private void RenderMarkdown(string markdown)
         {
-            await EnsureInitializedAsync();
-            if (!_isInitialized)
+            MarkdownDocument.Blocks.Clear();
+            if (string.IsNullOrWhiteSpace(markdown))
                 return;
 
-            Browser.NavigateToString(BuildHtml(_pendingMarkdown));
-        }
+            var normalized = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+            var lines = normalized.Split('\n');
+            var paragraphLines = new List<string>();
+            var codeBuilder = new StringBuilder();
+            var inCodeBlock = false;
 
-        private async void Browser_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
-        {
-            await UpdateHeightAsync();
-        }
-
-        private async Task UpdateHeightAsync()
-        {
-            if (Browser.CoreWebView2 == null)
-                return;
-
-            try
+            void FlushParagraph()
             {
-                var result = await Browser.ExecuteScriptAsync("Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)");
-                var height = ParseScriptNumber(result);
-                Height = Math.Max(20, height + 2);
+                if (paragraphLines.Count == 0)
+                    return;
+
+                AddTextBlock(string.Join(" ", paragraphLines.Select(line => line.Trim())), margin: new Thickness(0, 0, 0, 8));
+                paragraphLines.Clear();
             }
-            catch
-            {
-            }
-        }
 
-        private static double ParseScriptNumber(string scriptResult)
-        {
-            try
+            void FlushCodeBlock()
             {
-                using var document = JsonDocument.Parse(scriptResult);
-                return document.RootElement.ValueKind switch
+                if (codeBuilder.Length == 0)
+                    return;
+
+                AddCodeBlock(codeBuilder.ToString().TrimEnd());
+                codeBuilder.Clear();
+            }
+
+            foreach (var sourceLine in lines)
+            {
+                var line = sourceLine ?? string.Empty;
+                if (line.TrimStart().StartsWith("```", StringComparison.Ordinal))
                 {
-                    JsonValueKind.Number => document.RootElement.GetDouble(),
-                    JsonValueKind.String when double.TryParse(document.RootElement.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var value) => value,
-                    _ => 20,
-                };
+                    FlushParagraph();
+                    if (inCodeBlock)
+                        FlushCodeBlock();
+
+                    inCodeBlock = !inCodeBlock;
+                    continue;
+                }
+
+                if (inCodeBlock)
+                {
+                    codeBuilder.AppendLine(line);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    FlushParagraph();
+                    continue;
+                }
+
+                var headingMatch = HeadingRegex.Match(line.Trim());
+                if (headingMatch.Success)
+                {
+                    FlushParagraph();
+                    AddHeading(headingMatch.Groups[2].Value.Trim(), headingMatch.Groups[1].Value.Length);
+                    continue;
+                }
+
+                var unorderedMatch = UnorderedListRegex.Match(line);
+                if (unorderedMatch.Success)
+                {
+                    FlushParagraph();
+                    AddListItem("•", unorderedMatch.Groups[1].Value.Trim());
+                    continue;
+                }
+
+                var orderedMatch = OrderedListRegex.Match(line);
+                if (orderedMatch.Success)
+                {
+                    FlushParagraph();
+                    AddListItem(orderedMatch.Groups[1].Value + ".", orderedMatch.Groups[2].Value.Trim());
+                    continue;
+                }
+
+                var trimmed = line.TrimStart();
+                if (trimmed.StartsWith('>'))
+                {
+                    FlushParagraph();
+                    AddQuote(trimmed[1..].TrimStart());
+                    continue;
+                }
+
+                paragraphLines.Add(line);
             }
-            catch
-            {
-                return 20;
-            }
+
+            FlushParagraph();
+            FlushCodeBlock();
         }
 
-        private static string BuildHtml(string markdown)
+        private void AddHeading(string text, int level)
         {
-            var body = string.IsNullOrWhiteSpace(markdown)
-                ? "&nbsp;"
-                : Markdig.Markdown.ToHtml(markdown, Pipeline);
+            var fontSize = level switch
+            {
+                1 => 18d,
+                2 => 16d,
+                3 => 14d,
+                _ => 13d,
+            };
+            var block = CreateParagraph(fontSize, FontWeights.SemiBold, new Thickness(0, level <= 2 ? 8 : 5, 0, 6));
+            AddInlines(block.Inlines, text);
+            MarkdownDocument.Blocks.Add(block);
+        }
 
-            return $@"
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='color-scheme' content='light dark'>
-    <style>
-        html, body {{
-            margin: 0;
-            padding: 0;
-            background: transparent;
-            overflow: hidden;
-            font-family: 'Segoe UI', sans-serif;
-            line-height: 1.6;
-        }}
+        private void AddTextBlock(string text, Thickness margin)
+        {
+            var block = CreateParagraph(13, FontWeights.Normal, margin);
+            AddInlines(block.Inlines, text);
+            MarkdownDocument.Blocks.Add(block);
+        }
 
-        body {{
-            color: #dce4ef;
-            font-size: 14px;
-        }}
+        private void AddListItem(string marker, string text)
+        {
+            var block = CreateParagraph(13, FontWeights.Normal, new Thickness(14, 0, 0, 5));
+            var markerRun = new Run(marker + " ") { FontWeight = FontWeights.SemiBold };
+            markerRun.SetResourceReference(TextElement.ForegroundProperty, "SecondaryTextBrush");
+            block.Inlines.Add(markerRun);
+            AddInlines(block.Inlines, text);
+            MarkdownDocument.Blocks.Add(block);
+        }
 
-        .markdown-body > *:first-child {{ margin-top: 0; }}
-        .markdown-body > *:last-child {{ margin-bottom: 0; }}
-        p, ul, ol, pre, table, blockquote {{ margin: 0 0 12px 0; }}
-        h1, h2, h3, h4, h5, h6 {{ margin: 0 0 10px 0; color: #f5f8fb; }}
-        a {{ color: #7bb6ff; text-decoration: none; }}
-        blockquote {{
-            margin-left: 0;
-            padding-left: 12px;
-            border-left: 3px solid #34506d;
-            opacity: 0.88;
-        }}
-        code {{
-            font-family: Consolas, 'Courier New', monospace;
-            background: rgba(43, 55, 69, 0.7);
-            border-radius: 6px;
-            padding: 2px 5px;
-        }}
-        pre {{
-            background: #0f141b;
-            border: 1px solid #253241;
-            border-radius: 10px;
-            padding: 12px 14px;
-            overflow-x: auto;
-        }}
-        pre code {{
-            background: transparent;
-            padding: 0;
-            border-radius: 0;
-        }}
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-        }}
-        th, td {{
-            border: 1px solid #2d3c4c;
-            padding: 6px 8px;
-            text-align: left;
-        }}
-        @media (prefers-color-scheme: light) {{
-            body {{ color: #1f2933; }}
-            h1, h2, h3, h4, h5, h6 {{ color: #0f1720; }}
-            code {{ background: rgba(232, 238, 244, 0.95); }}
-            pre {{ background: #f6f8fa; border-color: #d0d7de; }}
-            th, td {{ border-color: #d0d7de; }}
-            blockquote {{ border-left-color: #7d8ea1; }}
-        }}
-    </style>
-</head>
-<body>
-    <div class='markdown-body'>{body}</div>
-</body>
-</html>";
+        private void AddQuote(string text)
+        {
+            var block = CreateParagraph(13, FontWeights.Normal, new Thickness(0, 2, 0, 8));
+            block.BorderThickness = new Thickness(3, 0, 0, 0);
+            block.Padding = new Thickness(10, 2, 0, 2);
+            block.SetResourceReference(Block.BorderBrushProperty, "PrimaryBrush");
+            AddInlines(block.Inlines, text);
+            MarkdownDocument.Blocks.Add(block);
+        }
+
+        private void AddCodeBlock(string code)
+        {
+            var block = CreateParagraph(12, FontWeights.Normal, new Thickness(0, 2, 0, 10));
+            block.FontFamily = new FontFamily("Consolas");
+            block.BorderThickness = new Thickness(1);
+            block.Padding = new Thickness(10, 8, 10, 8);
+            block.SetResourceReference(Block.BackgroundProperty, "ButtonBackground");
+            block.SetResourceReference(Block.BorderBrushProperty, "ButtonBorderBrush");
+            block.Inlines.Add(new Run(code));
+            MarkdownDocument.Blocks.Add(block);
+        }
+
+        private static Paragraph CreateParagraph(double fontSize, FontWeight fontWeight, Thickness margin)
+        {
+            var block = new Paragraph
+            {
+                FontSize = fontSize,
+                FontWeight = fontWeight,
+                LineHeight = fontSize * 1.55,
+                Margin = margin,
+            };
+            block.SetResourceReference(TextElement.ForegroundProperty, "GlobalTextBrush");
+            return block;
+        }
+
+        private static void AddInlines(InlineCollection inlines, string text)
+        {
+            var currentIndex = 0;
+            foreach (Match match in InlineRegex.Matches(text))
+            {
+                if (match.Index > currentIndex)
+                    inlines.Add(new Run(text[currentIndex..match.Index]));
+
+                var token = match.Value;
+                if (token.StartsWith("**", StringComparison.Ordinal) && token.EndsWith("**", StringComparison.Ordinal))
+                {
+                    inlines.Add(new Run(token[2..^2]) { FontWeight = FontWeights.SemiBold });
+                }
+                else if (token.StartsWith('`') && token.EndsWith('`'))
+                {
+                    var codeRun = new Run(token[1..^1]) { FontFamily = new FontFamily("Consolas") };
+                    codeRun.SetResourceReference(TextElement.BackgroundProperty, "GlobalBorderBrush1");
+                    inlines.Add(codeRun);
+                }
+                else if (token.StartsWith('*') && token.EndsWith('*'))
+                {
+                    inlines.Add(new Run(token[1..^1]) { FontStyle = FontStyles.Italic });
+                }
+                else
+                {
+                    var closingBracket = token.IndexOf(']');
+                    var linkText = closingBracket > 1 ? token[1..closingBracket] : token;
+                    var linkRun = new Run(linkText) { TextDecorations = TextDecorations.Underline };
+                    linkRun.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
+                    inlines.Add(linkRun);
+                }
+
+                currentIndex = match.Index + match.Length;
+            }
+
+            if (currentIndex < text.Length)
+                inlines.Add(new Run(text[currentIndex..]));
         }
     }
 }

@@ -8,7 +8,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
 {
     internal static class ThirdPartyAppGroupNames
     {
-        public static string CommonTools => IsChineseUICulture() ? "常用工具" : "Common Tools";
+        public static string CommonTools => Properties.Resources.CommonTools;
 
         private static bool IsChineseUICulture()
         {

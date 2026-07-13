@@ -19,7 +19,7 @@ public class LoopNextNode : CVCommonNode
 		: base("LoopNextNode", "LoopNext", "LP1", "DEV01")
 	{
 		base.AutoSize = false;
-		base.Width = 140;
+		base.Width = StandardNodeWidth;
 		base.Height = 100;
 		base.TitleHeight += 10;
 	}

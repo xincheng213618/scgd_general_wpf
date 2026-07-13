@@ -14,25 +14,26 @@ namespace ColorVision.Engine.Batch
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is IPreProcess process)
+            if (value is PreProcessAction action)
             {
-                var metadata = PreProcessMetadata.FromProcess(process);
                 return parameter?.ToString() switch
                 {
-                    "Description" => metadata.Description,
-                    "Category" => metadata.Category,
-                    "Enabled" => process.GetConfig() is PreProcessConfigBase { IsEnabled: true } ? Properties.Resources.Flow_PreProcess_EnabledStatus : Properties.Resources.Flow_PreProcess_DisabledStatus,
-                    "Templates" => GetTemplateText(process),
-                    "TypeName" => metadata.TypeName,
-                    _ => metadata.DisplayName,
+                    "Description" => action.Metadata.Description,
+                    "Category" => action.Metadata.Category,
+                    "Enabled" => action.EnabledText,
+                    "IsEnabled" => action.IsEnabled,
+                    "Templates" => action.TemplateSummary,
+                    "TypeName" => action.Metadata.TypeName,
+                    "MetadataName" => action.Metadata.DisplayName,
+                    _ => action.DisplayName,
                 };
             }
-            if (value is ListViewItem item && parameter?.ToString() == "Index")
+            if (value is ListBoxItem item && parameter?.ToString() == "Index")
             {
-                var listView = FindParent<ListView>(item);
-                if (listView != null)
+                var listBox = FindParent<ListBox>(item);
+                if (listBox != null)
                 {
-                    int index = listView.Items.IndexOf(item.Content);
+                    int index = listBox.Items.IndexOf(item.Content);
                     return (index + 1).ToString();
                 }
             }
@@ -51,26 +52,25 @@ namespace ColorVision.Engine.Batch
         {
             return Binding.DoNothing;
         }
-
-        private static string GetTemplateText(IPreProcess process)
-        {
-            if (process.GetConfig() is not PreProcessConfigBase config)
-            {
-                return string.Empty;
-            }
-
-            return string.IsNullOrWhiteSpace(config.TemplateNames) ? Properties.Resources.Flow_PreProcess_AllTemplates : config.TemplateNames;
-        }
     }
 
     public class PreProcessTooltipConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is IPreProcess process)
+            if (value is PreProcessAction action)
             {
-                var metadata = PreProcessMetadata.FromProcess(process);
-                return metadata.GetTooltipText();
+                string text = action.DisplayName;
+                if (!string.Equals(text, action.Metadata.DisplayName, StringComparison.Ordinal))
+                {
+                    text += $"\n{string.Format(Properties.Resources.Flow_PreProcess_TypeFormat, action.Metadata.DisplayName)}";
+                }
+                if (!string.IsNullOrWhiteSpace(action.Metadata.Description))
+                {
+                    text += $"\n\n{action.Metadata.Description}";
+                }
+                text += $"\n\n{string.Format(Properties.Resources.Flow_PreProcess_AppliedTemplatesFormat, action.TemplateSummary)}";
+                return text;
             }
             return string.Empty;
         }
@@ -98,15 +98,18 @@ namespace ColorVision.Engine.Batch
         }
     }
 
-    /// <summary>
-    /// PreProcessManagerWindow.xaml 的交互逻辑
-    /// </summary>
     public partial class PreProcessManagerWindow : Window
     {
         public PreProcessManagerWindow()
         {
             InitializeComponent();
+            Loaded += Window_Loaded;
             Closing += Window_Closing;
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            RefreshPropertyPanel();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -124,121 +127,147 @@ namespace ColorVision.Engine.Batch
             PropertyPanel.Children.Clear();
 
             var manager = DataContext as PreProcessManager;
-            var selectedProcess = manager?.SelectedProcess;
+            var selectedAction = manager?.SelectedProcess;
 
-            if (selectedProcess == null)
+            if (selectedAction == null)
             {
-                // Show placeholder text
-                PropertyPanel.Children.Add(new TextBlock 
-                { 
-                    Text = Properties.Resources.Flow_PreProcess_SelectProcessorToViewConfig,
-                    Foreground = System.Windows.Media.Brushes.Gray,
+                var placeholder = new TextBlock
+                {
+                    Text = Properties.Resources.Flow_PreProcess_SelectAction,
                     HorizontalAlignment = HorizontalAlignment.Center,
-                    Margin = new Thickness(0, 20, 0, 0)
-                });
+                    Margin = new Thickness(0, 32, 0, 0),
+                    Opacity = 0.58
+                };
+                placeholder.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                PropertyPanel.Children.Add(placeholder);
                 return;
             }
 
-            // Add processor info section
-            AddProcessorInfoSection(selectedProcess);
+            AddActionSettingsSection(selectedAction);
 
-            // Add pre-processor config if available
-            var config = selectedProcess.GetConfig();
+            var config = selectedAction.Process.GetConfig();
             if (config != null)
             {
                 AddConfigSection(config);
             }
         }
 
-        private void AddProcessorInfoSection(IPreProcess process)
+        private void AddActionSettingsSection(PreProcessAction action)
         {
-            var metadata = PreProcessMetadata.FromProcess(process);
-            
-            var border = new Border
-            {
-                BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(10),
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
+            var border = CreateSectionBorder();
             var stack = new StackPanel();
             border.Child = stack;
 
-            // Header
-            stack.Children.Add(new TextBlock 
-            { 
-                Text = Properties.Resources.BasicInformation,
-                FontWeight = FontWeights.Bold, 
-                Margin = new Thickness(0, 0, 0, 8) 
-            });
-
-            // Process Type
-            AddLabeledText(stack, Properties.Resources.HandleClass + ":", metadata.DisplayName);
-            AddLabeledText(stack, Properties.Resources.Type + ":", metadata.TypeName);
-
-            // Category
-            if (!string.IsNullOrEmpty(metadata.Category))
-            {
-                AddLabeledText(stack, Properties.Resources.Flow_PreProcess_Category + ":", metadata.Category);
-            }
-
-            // Description
-            if (!string.IsNullOrEmpty(metadata.Description))
-            {
-                AddLabeledText(stack, Properties.Resources.Description + ":", metadata.Description);
-            }
+            AddSectionHeader(stack, Properties.Resources.Flow_PreProcess_ActionSettings);
+            AddBoundTextBox(stack, Properties.Resources.Flow_PreProcess_ActionName, action, nameof(PreProcessAction.ActionName), null);
+            AddBoundCheckBox(stack, Properties.Resources.IsEnable, action, nameof(PreProcessAction.IsEnabled));
+            AddBoundTextBox(stack, Properties.Resources.Flow_PreProcess_AppliedTemplates, action, nameof(PreProcessAction.TemplateNames), Properties.Resources.Flow_PreProcess_AllTemplatesHint);
 
             PropertyPanel.Children.Add(border);
         }
 
         private void AddConfigSection(object config)
         {
-            var border = new Border
-            {
-                BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(10),
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
+            var border = CreateSectionBorder();
             var stack = new StackPanel();
             border.Child = stack;
 
-            // Header
-            stack.Children.Add(new TextBlock 
-            { 
-                Text = Properties.Resources.Flow_PreProcess_ProcessorConfig,
-                FontWeight = FontWeights.Bold, 
-                Margin = new Thickness(0, 0, 0, 8) 
-            });
+            AddSectionHeader(stack, Properties.Resources.Parameter);
 
-            // Generate property editor controls
             var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
-
             stack.Children.Add(configPanel);
-
             PropertyPanel.Children.Add(border);
         }
 
-        private static void AddLabeledText(StackPanel parent, string label, string value)
+        private static Border CreateSectionBorder()
         {
-            var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
-            dock.Children.Add(new TextBlock 
-            { 
-                Text = label, 
-                Width = 70, 
-                VerticalAlignment = VerticalAlignment.Center 
+            var border = new Border
+            {
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(12),
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+            border.SetResourceReference(Border.CornerRadiusProperty, "ControlCornerRadius");
+            return border;
+        }
+
+        private static void AddSectionHeader(StackPanel parent, string text)
+        {
+            var header = new TextBlock
+            {
+                Text = text,
+                FontWeight = FontWeights.SemiBold,
+                FontSize = 15,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            header.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            parent.Children.Add(header);
+        }
+
+        private static void AddBoundTextBox(StackPanel parent, string label, object source, string path, string? tooltip)
+        {
+            var textBox = new TextBox
+            {
+                MinHeight = 28,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                ToolTip = tooltip
+            };
+            textBox.SetResourceReference(FrameworkElement.StyleProperty, "PreProcessTextBoxStyle");
+            textBox.SetBinding(TextBox.TextProperty, new Binding(path)
+            {
+                Source = source,
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
             });
-            dock.Children.Add(new TextBlock 
-            { 
-                Text = value ?? "", 
+
+            AddSettingRow(parent, label, textBox);
+        }
+
+        private static void AddBoundCheckBox(StackPanel parent, string label, object source, string path)
+        {
+            var checkBox = new CheckBox
+            {
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            checkBox.SetResourceReference(Control.ForegroundProperty, "GlobalTextBrush");
+            checkBox.SetBinding(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty, new Binding(path)
+            {
+                Source = source,
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+            });
+
+            AddSettingRow(parent, label, checkBox);
+        }
+
+        private static void AddSettingRow(StackPanel parent, string label, FrameworkElement editor)
+        {
+            var grid = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(92) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var labelText = new TextBlock
+            {
+                Text = label,
                 VerticalAlignment = VerticalAlignment.Center,
-                TextWrapping = TextWrapping.Wrap
-            });
-            parent.Children.Add(dock);
+                Opacity = 0.72
+            };
+            labelText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            grid.Children.Add(labelText);
+
+            Grid.SetColumn(editor, 1);
+            grid.Children.Add(editor);
+            parent.Children.Add(grid);
+        }
+
+        private void AddProcessButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.ContextMenu != null)
+            {
+                button.ContextMenu.PlacementTarget = button;
+                button.ContextMenu.IsOpen = true;
+            }
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)

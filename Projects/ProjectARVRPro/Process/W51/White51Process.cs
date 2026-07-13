@@ -12,9 +12,9 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.W51
 {
-    public class White51Process : ProcessBase<W51ProcessConfig>
+    public class White51Process : ProcessBase<W51ProcessConfig, W51RecipeConfig>
     {
-        public override bool Execute(IProcessExecutionContext ctx)
+        public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Log;
@@ -112,15 +112,15 @@ namespace ProjectARVRPro.Process.W51
             }
         }
 
-        public override string GenText(IProcessExecutionContext ctx)
+        public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
             outtext += $"W51 画面结果" + Environment.NewLine;
 
-            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
             W51ViewTestResult testResult = JsonConvert.DeserializeObject<W51ViewTestResult>(ctx.Result.ViewResultJson);
-            if (testResult == null) return outtext;
+            if (testResult == null) { AppendPlainText(paragraph, outtext, foreground, fontSize); return; }
 
 
 
@@ -128,12 +128,8 @@ namespace ProjectARVRPro.Process.W51
             outtext += $"HorizontalFieldOfViewAngle:{testResult.HorizontalFieldOfViewAngle.TestValue} LowLimit:{testResult.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{testResult.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(testResult.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"VerticalFieldOfViewAngle:{testResult.VerticalFieldOfViewAngle.TestValue} LowLimit:{testResult.VerticalFieldOfViewAngle.LowLimit} UpLimit:{testResult.VerticalFieldOfViewAngle.UpLimit},Rsult{(testResult.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"DiagonalFieldOfViewAngle:{testResult.DiagonalFieldOfViewAngle.TestValue}  LowLimit:{testResult.DiagonalFieldOfViewAngle.LowLimit} UpLimit:{testResult.DiagonalFieldOfViewAngle.UpLimit},Rsult{(testResult.DiagonalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            return outtext;
+            AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W51RecipeConfig>();
-        }
     }
 }

@@ -1,45 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Windows;
 
 namespace ColorVision.Engine.MQTT
 {
-    public class MQTTSettingProvider : IStatusBarProviderUpdatable
-    {
-        public event EventHandler StatusBarItemsChanged;
-
-        public MQTTSettingProvider()
-        {
-            MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
-                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
-        }
-        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
-        {
-            bool isConnected = MQTTControl.GetInstance().IsConnect;
-            RelayCommand relayCommand = new RelayCommand(a => new MQTTConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            return new List<StatusBarMeta>
-            {
-                new StatusBarMeta()
-                {
-                    Id = "MQTT",
-                    Name = "MQTT",
-                    Description = isConnected ? "MQTT Connected" : "MQTT Disconnected",
-                    Order = 999,
-                    Type = StatusBarType.Icon,
-                    IconResourceKey = isConnected ? "DrawingImageMQTT" : "DrawingImageMQTTRed",
-                    Source = MQTTSetting.Instance,
-                    Command = relayCommand
-                }
-            };
-        }
-
-    }
-
-
 
     public class MQTTSetting : ViewModelBase ,IConfigSecure
     {

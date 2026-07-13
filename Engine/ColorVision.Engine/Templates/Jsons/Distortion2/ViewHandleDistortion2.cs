@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1725
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services;
 using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Extension;
@@ -13,7 +14,6 @@ using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services;
 
 namespace ColorVision.Engine.Templates.Jsons.Distortion2
 {
@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                     Distortion2View blackMuraView = new Distortion2View(item);
                     result.ViewResults.Add(blackMuraView);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDistortion2), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmDistortion2), ImageFilePath = result.FilePath })) });
             }
         }
 

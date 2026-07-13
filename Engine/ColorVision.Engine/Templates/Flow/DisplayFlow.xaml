@@ -58,9 +58,6 @@
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
-                    <Button x:Name="ButtonEdit"  DockPanel.Dock="Right" Width="20" Background="Transparent" Padding="0" BorderThickness="0" Command="{Binding EditFlowCommand}">
-                        <Image Source="{DynamicResource  DrawingImageEdit}" Width="12" Margin="0" />
-                    </Button>
                     <Button DockPanel.Dock="Right"  Command="{Binding EditTemplateFlowCommand}" Background="Transparent" BorderThickness="0" Padding="2" Height="20" Width="20">
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
@@ -85,7 +82,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal">
-                        <Button x:Name="RestartServicesButton" Background="Transparent" BorderThickness="0" Content="{Binding ServiceConfig.RegistrationCenterServiceInfo.FileVersion, StringFormat=重启{0}}" Margin="0,0,5,0" VerticalAlignment="Bottom" Padding="6,2" Click="Button_RestartServices_Click"/>
+                        <Button x:Name="RestartServicesButton" Background="Transparent" BorderThickness="0" Content="{Binding ServiceConfig.RegistrationCenterServiceInfo.FileVersion, StringFormat={x:Static properties:Resources.Flow_RestartServiceVersionFormat}}" Margin="0,0,5,0" VerticalAlignment="Bottom" Padding="6,2" Click="Button_RestartServices_Click"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Height="35">
                         <Button Content="{x:Static properties:Resources.ExecutionProcess}"   Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
