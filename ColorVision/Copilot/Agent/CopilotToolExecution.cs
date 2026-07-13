@@ -98,11 +98,12 @@ namespace ColorVision.Copilot
         {
             cancellationToken.ThrowIfCancellationRequested();
             var invocation = context.Invocation;
-            if (invocation.Tool.Access == CopilotToolAccess.ReadOnly)
+            var capability = invocation.Tool.Capability;
+            if (capability.Access == CopilotToolAccess.ReadOnly)
                 return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
 
-            if (invocation.Tool.RiskLevel == CopilotToolRiskLevel.High
-                && invocation.Tool.ApprovalMode == CopilotToolApprovalMode.Never)
+            if (capability.RiskLevel == CopilotToolRiskLevel.High
+                && capability.ApprovalMode == CopilotToolApprovalMode.Never)
             {
                 return Task.FromResult(CopilotToolExecutionHookDecision.Deny("High-risk write tools must declare an approval policy."));
             }
@@ -129,8 +130,6 @@ namespace ColorVision.Copilot
     public sealed class CopilotToolExecutor
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(CopilotToolExecutor));
-        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
-        private static readonly TimeSpan MaximumTimeout = TimeSpan.FromMinutes(10);
 
         private readonly IReadOnlyList<ICopilotToolExecutionHook> _hooks;
         private readonly Func<DateTimeOffset> _utcNow;
@@ -157,7 +156,7 @@ namespace ColorVision.Copilot
             var callId = string.IsNullOrWhiteSpace(invocation.CallId) ? Guid.NewGuid().ToString("N") : invocation.CallId.Trim();
             invocation = NormalizeInvocation(invocation, callId);
             var startedAt = _utcNow();
-            var timeout = NormalizeTimeout(invocation.Tool.ExecutionTimeout);
+            var timeout = invocation.Tool.Capability.EffectiveExecutionTimeout;
             var stopwatch = Stopwatch.StartNew();
             var hookContext = new CopilotToolExecutionHookContext
             {
@@ -397,6 +396,7 @@ namespace ColorVision.Copilot
             bool retryEligible = false,
             long queueDurationMs = 0)
         {
+            var capability = invocation.Tool.Capability;
             return new CopilotToolExecutionInfo
             {
                 CallId = invocation.CallId,
@@ -405,16 +405,16 @@ namespace ColorVision.Copilot
                 MaxAttempts = invocation.MaxAttempts,
                 RuntimeName = invocation.RuntimeName,
                 ToolName = invocation.Tool.Name,
-                Access = invocation.Tool.Access,
-                RiskLevel = invocation.Tool.RiskLevel,
-                ApprovalMode = invocation.Tool.ApprovalMode,
-                Idempotency = invocation.Tool.Idempotency,
+                Access = capability.Access,
+                RiskLevel = capability.RiskLevel,
+                ApprovalMode = capability.ApprovalMode,
+                Idempotency = capability.Idempotency,
                 ConcurrencyMode = invocation.ConcurrencyMode,
                 ConcurrencyKey = invocation.ConcurrencyKey,
                 ApprovalActionId = !string.IsNullOrWhiteSpace(approvalActionId)
                     ? approvalActionId.Trim()
                     : invocation.ApprovalActionId?.Trim() ?? string.Empty,
-                ArgumentSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(invocation.ToolInput),
+                ArgumentSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(invocation.Tool, invocation.ToolInput),
                 State = state,
                 FailureKind = failureKind,
                 RetryEligible = retryEligible,
@@ -428,9 +428,7 @@ namespace ColorVision.Copilot
 
         internal static CopilotToolConcurrencyMode ResolveConcurrencyMode(ICopilotTool tool)
         {
-            return tool.Access == CopilotToolAccess.Write
-                ? CopilotToolConcurrencyMode.Exclusive
-                : tool.ConcurrencyMode;
+            return tool.Capability.EffectiveConcurrencyMode;
         }
 
         internal static string ResolveConcurrencyKey(ICopilotTool tool, CopilotAgentRequest request, CopilotAgentToolInput toolInput)
@@ -456,13 +454,6 @@ namespace ColorVision.Copilot
         private static CopilotToolFailureKind NormalizeFailureKind(CopilotToolFailureKind failureKind)
         {
             return failureKind == CopilotToolFailureKind.None ? CopilotToolFailureKind.Unspecified : failureKind;
-        }
-
-        private static TimeSpan NormalizeTimeout(TimeSpan timeout)
-        {
-            if (timeout <= TimeSpan.Zero)
-                return DefaultTimeout;
-            return timeout > MaximumTimeout ? MaximumTimeout : timeout;
         }
 
         private static string FormatTimeout(TimeSpan timeout)
@@ -497,7 +488,7 @@ namespace ColorVision.Copilot
 
         public static bool IsRetryEligible(CopilotToolInvocation invocation, CopilotToolResult result, CopilotToolExecutionState state)
         {
-            return invocation.Tool.Idempotency == CopilotToolIdempotency.Idempotent
+            return invocation.Tool.Capability.Idempotency == CopilotToolIdempotency.Idempotent
                 && invocation.Attempt < invocation.MaxAttempts
                 && result.FailureKind == CopilotToolFailureKind.Transient
                 && state is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut;

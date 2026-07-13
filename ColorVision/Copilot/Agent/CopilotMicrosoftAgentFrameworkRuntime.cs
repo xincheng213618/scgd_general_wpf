@@ -528,15 +528,18 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine("Available request-scoped functions:");
                 foreach (var tool in tools)
+                {
+                    var capability = tool.Capability;
                     builder.Append("- ")
                         .Append(tool.Name)
                         .Append(" [")
-                        .Append(tool.Access == CopilotToolAccess.ReadOnly ? "read-only" : "write-capable")
-                        .Append("; risk=").Append(tool.RiskLevel)
-                        .Append("; approval=").Append(tool.ApprovalMode)
-                        .Append("; idempotency=").Append(tool.Idempotency)
+                        .Append(capability.Access == CopilotToolAccess.ReadOnly ? "read-only" : "write-capable")
+                        .Append("; risk=").Append(capability.RiskLevel)
+                        .Append("; approval=").Append(capability.ApprovalMode)
+                        .Append("; idempotency=").Append(capability.Idempotency)
                         .Append("]: ")
                         .AppendLine(tool.Description);
+                }
             }
 
             return builder.ToString().TrimEnd();
@@ -793,6 +796,7 @@ namespace ColorVision.Copilot
                 DateTimeOffset? completedAtUtc = null,
                 CopilotToolFailureKind failureKind = CopilotToolFailureKind.None)
             {
+                var capability = reservation.Tool.Capability;
                 return new CopilotToolExecutionInfo
                 {
                     CallId = reservation.CallId,
@@ -801,14 +805,14 @@ namespace ColorVision.Copilot
                     MaxAttempts = reservation.MaxAttempts,
                     RuntimeName = "agent-framework",
                     ToolName = reservation.Tool.Name,
-                    Access = reservation.Tool.Access,
-                    RiskLevel = reservation.Tool.RiskLevel,
-                    ApprovalMode = reservation.Tool.ApprovalMode,
-                    Idempotency = reservation.Tool.Idempotency,
+                    Access = capability.Access,
+                    RiskLevel = capability.RiskLevel,
+                    ApprovalMode = capability.ApprovalMode,
+                    Idempotency = capability.Idempotency,
                     ConcurrencyMode = CopilotToolExecutor.ResolveConcurrencyMode(reservation.Tool),
                     ConcurrencyKey = CopilotToolExecutor.ResolveConcurrencyKey(reservation.Tool, _request, reservation.ToolInput),
                     ApprovalActionId = approvalActionId,
-                    ArgumentSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(reservation.ToolInput),
+                    ArgumentSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(reservation.Tool, reservation.ToolInput),
                     State = state,
                     FailureKind = failureKind,
                     RetryEligible = false,
@@ -816,13 +820,13 @@ namespace ColorVision.Copilot
                     CompletedAtUtc = completedAtUtc,
                     DurationMs = completedAtUtc.HasValue ? Math.Max(0, (long)(completedAtUtc.Value - reservation.StartedAtUtc).TotalMilliseconds) : 0,
                     QueueDurationMs = 0,
-                    TimeoutMs = Math.Max(1, (long)reservation.Tool.ExecutionTimeout.TotalMilliseconds),
+                    TimeoutMs = Math.Max(1, (long)capability.EffectiveExecutionTimeout.TotalMilliseconds),
                 };
             }
 
             private static bool RequiresNativeApproval(ICopilotTool tool)
             {
-                return tool.ApprovalMode == CopilotToolApprovalMode.Always && tool is ICopilotFrameworkApprovedTool;
+                return tool.Capability.RequiresNativeApproval && tool is ICopilotFrameworkApprovedTool;
             }
 
             private static string ToFunctionName(string toolName)
@@ -834,7 +838,7 @@ namespace ColorVision.Copilot
 
             private static string BuildFunctionDescription(ICopilotTool tool)
             {
-                var access = tool.Access == CopilotToolAccess.ReadOnly
+                var access = tool.Capability.Access == CopilotToolAccess.ReadOnly
                     ? "This function is read-only."
                     : "This function can change application state and must match the user's explicit request.";
                 return $"{tool.Description} {access}";
@@ -902,7 +906,7 @@ namespace ColorVision.Copilot
 
             private int GetMaximumAttempts(ICopilotTool tool)
             {
-                return tool.Idempotency == CopilotToolIdempotency.Idempotent
+                return tool.Capability.Idempotency == CopilotToolIdempotency.Idempotent
                     ? Math.Min(CopilotToolRetryPolicy.MaximumAttemptsPerCall, _maxToolCalls)
                     : 1;
             }

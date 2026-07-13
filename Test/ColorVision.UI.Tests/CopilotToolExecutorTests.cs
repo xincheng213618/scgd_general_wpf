@@ -45,6 +45,54 @@ public sealed class CopilotToolExecutorTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_UsesCapabilityDescriptorForPolicyAndAudit()
+    {
+        var tool = new CapabilityOnlyTool(new CopilotToolCapabilityDescriptor
+        {
+            Access = CopilotToolAccess.ReadOnly,
+            RiskLevel = CopilotToolRiskLevel.Medium,
+            ApprovalMode = CopilotToolApprovalMode.Never,
+            Idempotency = CopilotToolIdempotency.Unknown,
+            ConcurrencyMode = CopilotToolConcurrencyMode.SharedRead,
+            ExecutionTimeout = TimeSpan.FromSeconds(2),
+            AuditArgumentMode = CopilotToolAuditArgumentMode.NamesOnly,
+        });
+        var executor = new CopilotToolExecutor();
+        var input = new CopilotAgentToolInput
+        {
+            Query = "sensitive-query-value",
+            Arguments = new Dictionary<string, object?> { ["api_token"] = "secret-value" },
+        };
+
+        var outcome = await executor.ExecuteAsync(CreateInvocation(tool, input), _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotToolRiskLevel.Medium, outcome.Execution.RiskLevel);
+        Assert.Equal(CopilotToolIdempotency.Unknown, outcome.Execution.Idempotency);
+        Assert.Equal(CopilotToolConcurrencyMode.Exclusive, outcome.Execution.ConcurrencyMode);
+        Assert.Equal(2_000, outcome.Execution.TimeoutMs);
+        Assert.Equal("fields=api_token,query", outcome.Execution.ArgumentSummary);
+        Assert.DoesNotContain("secret-value", outcome.Execution.ArgumentSummary, StringComparison.Ordinal);
+        Assert.Equal(outcome.Execution.ArgumentSummary, Assert.Single(CopilotToolExecutionAuditLogger.GetRecentEntries()).ArgumentSummary);
+    }
+
+    [Fact]
+    public void ToolRegistry_RejectsUnsafeCapabilityDescriptor()
+    {
+        var tool = new CapabilityOnlyTool(new CopilotToolCapabilityDescriptor
+        {
+            Access = CopilotToolAccess.Write,
+            RiskLevel = CopilotToolRiskLevel.High,
+            ApprovalMode = CopilotToolApprovalMode.Never,
+            Idempotency = CopilotToolIdempotency.NonIdempotent,
+            ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
+        });
+
+        var error = Assert.Throws<ArgumentException>(() => new CopilotToolRegistry([tool]));
+
+        Assert.Contains("without approval", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ConvertsTimeoutToFailedObservation()
     {
         var tool = new RecordingTool("SlowTool", TimeSpan.FromMilliseconds(20), waitForCancellation: true);
@@ -375,6 +423,27 @@ public sealed class CopilotToolExecutorTests : IDisposable
                 Success = true,
                 Summary = "Completed.",
             };
+        }
+    }
+
+    private sealed class CapabilityOnlyTool(CopilotToolCapabilityDescriptor capability) : ICopilotTool
+    {
+        public string Name => "DescriptorTool";
+
+        public string Description => "Exercises the canonical capability descriptor.";
+
+        public CopilotToolCapabilityDescriptor Capability { get; } = capability;
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = "Completed.",
+            });
         }
     }
 

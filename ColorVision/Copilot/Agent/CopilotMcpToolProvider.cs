@@ -248,7 +248,6 @@ namespace ColorVision.Copilot
         private static readonly Regex InvalidNameCharacters = new("[^A-Za-z0-9_]", RegexOptions.Compiled);
         private readonly CopilotMcpClientServerConfig _server;
         private readonly McpClientTool _remoteTool;
-        private readonly CopilotMcpClientAccessPolicy _accessPolicy;
 
         public CopilotMcpToolAdapter(
             CopilotMcpClientServerConfig server,
@@ -257,39 +256,31 @@ namespace ColorVision.Copilot
         {
             _server = server?.Clone() ?? throw new ArgumentNullException(nameof(server));
             _remoteTool = remoteTool ?? throw new ArgumentNullException(nameof(remoteTool));
-            _accessPolicy = accessPolicy;
             Name = BuildToolName(_server.Name, remoteTool.Name);
             Description = BuildDescription(_server.Name, remoteTool.Description);
             InputSchema = CopilotToolInputSchema.FromJsonSchema(remoteTool.JsonSchema);
+            Capability = CopilotMcpClientCapabilityPolicy.Create(accessPolicy, TimeSpan.FromSeconds(_server.ToolTimeoutSeconds));
         }
 
         public string Name { get; }
 
         public string Description { get; }
 
-        public CopilotToolAccess Access => _accessPolicy == CopilotMcpClientAccessPolicy.ReadOnly
-            ? CopilotToolAccess.ReadOnly
-            : CopilotToolAccess.Write;
+        public CopilotToolCapabilityDescriptor Capability { get; }
 
-        public CopilotToolRiskLevel RiskLevel => Access == CopilotToolAccess.ReadOnly
-            ? CopilotToolRiskLevel.Low
-            : CopilotToolRiskLevel.High;
+        public CopilotToolAccess Access => Capability.Access;
 
-        public CopilotToolApprovalMode ApprovalMode => Access == CopilotToolAccess.ReadOnly
-            ? CopilotToolApprovalMode.Never
-            : CopilotToolApprovalMode.Always;
+        public CopilotToolRiskLevel RiskLevel => Capability.RiskLevel;
 
-        public CopilotToolIdempotency Idempotency => Access == CopilotToolAccess.ReadOnly
-            ? CopilotToolIdempotency.Idempotent
-            : CopilotToolIdempotency.NonIdempotent;
+        public CopilotToolApprovalMode ApprovalMode => Capability.ApprovalMode;
 
-        public CopilotToolConcurrencyMode ConcurrencyMode => Access == CopilotToolAccess.ReadOnly
-            ? CopilotToolConcurrencyMode.SharedRead
-            : CopilotToolConcurrencyMode.Exclusive;
+        public CopilotToolIdempotency Idempotency => Capability.Idempotency;
+
+        public CopilotToolConcurrencyMode ConcurrencyMode => Capability.ConcurrencyMode;
 
         public CopilotToolInputSchema InputSchema { get; }
 
-        public TimeSpan ExecutionTimeout => TimeSpan.FromSeconds(_server.ToolTimeoutSeconds);
+        public TimeSpan ExecutionTimeout => Capability.ExecutionTimeout;
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -367,6 +358,19 @@ namespace ColorVision.Copilot
             if (normalized.Length > 800)
                 normalized = normalized[..800] + "...";
             return $"External MCP tool from configured server '{serverName}'. {normalized}".TrimEnd();
+        }
+    }
+
+    public static class CopilotMcpClientCapabilityPolicy
+    {
+        public static CopilotToolCapabilityDescriptor Create(CopilotMcpClientAccessPolicy accessPolicy, TimeSpan executionTimeout)
+        {
+            return accessPolicy == CopilotMcpClientAccessPolicy.ReadOnly
+                ? CopilotToolCapabilityDescriptor.ReadOnly(executionTimeout, CopilotToolAuditArgumentMode.NamesOnly)
+                : CopilotToolCapabilityDescriptor.ProtectedWrite(
+                    CopilotToolIdempotency.NonIdempotent,
+                    executionTimeout,
+                    CopilotToolAuditArgumentMode.NamesOnly);
         }
     }
 }

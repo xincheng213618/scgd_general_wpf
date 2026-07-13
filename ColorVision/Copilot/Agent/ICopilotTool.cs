@@ -43,6 +43,16 @@ namespace ColorVision.Copilot
 
         string Description { get; }
 
+        CopilotToolCapabilityDescriptor Capability => new()
+        {
+            Access = Access,
+            RiskLevel = RiskLevel,
+            ApprovalMode = ApprovalMode,
+            Idempotency = Idempotency,
+            ConcurrencyMode = ConcurrencyMode,
+            ExecutionTimeout = ExecutionTimeout,
+        };
+
         CopilotToolAccess Access => CopilotToolAccess.ReadOnly;
 
         CopilotToolRiskLevel RiskLevel => Access == CopilotToolAccess.ReadOnly ? CopilotToolRiskLevel.Low : CopilotToolRiskLevel.Medium;

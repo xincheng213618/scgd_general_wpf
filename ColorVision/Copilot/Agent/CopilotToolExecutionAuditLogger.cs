@@ -65,7 +65,6 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(outcome);
             var execution = outcome.Execution;
-            var invocation = outcome.Invocation;
             var entry = new CopilotToolExecutionAuditEntry
             {
                 CallId = Sanitize(execution.CallId),
@@ -74,10 +73,10 @@ namespace ColorVision.Copilot
                 MaxAttempts = execution.MaxAttempts,
                 RuntimeName = Sanitize(execution.RuntimeName),
                 ToolName = Sanitize(execution.ToolName),
-                Access = invocation.Tool.Access,
-                RiskLevel = invocation.Tool.RiskLevel,
-                ApprovalMode = invocation.Tool.ApprovalMode,
-                Idempotency = invocation.Tool.Idempotency,
+                Access = execution.Access,
+                RiskLevel = execution.RiskLevel,
+                ApprovalMode = execution.ApprovalMode,
+                Idempotency = execution.Idempotency,
                 ConcurrencyMode = execution.ConcurrencyMode,
                 ConcurrencyKey = Sanitize(execution.ConcurrencyKey),
                 ApprovalActionId = Sanitize(execution.ApprovalActionId),
@@ -88,7 +87,7 @@ namespace ColorVision.Copilot
                 CompletedAtUtc = execution.CompletedAtUtc,
                 DurationMs = execution.DurationMs,
                 QueueDurationMs = execution.QueueDurationMs,
-                ArgumentSummary = CreateArgumentSummary(invocation.ToolInput),
+                ArgumentSummary = execution.ArgumentSummary,
                 ErrorMessage = outcome.Result.Success ? string.Empty : Sanitize(CopilotMcpAuditLogger.RedactText(outcome.Result.ErrorMessage)),
             };
 
@@ -116,6 +115,17 @@ namespace ColorVision.Copilot
         }
 
         public static string CreateArgumentSummary(CopilotAgentToolInput input)
+            => CreateRedactedArgumentSummary(input);
+
+        public static string CreateArgumentSummary(ICopilotTool tool, CopilotAgentToolInput input)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            return tool.Capability.AuditArgumentMode == CopilotToolAuditArgumentMode.NamesOnly
+                ? CreateArgumentNames(input)
+                : CreateRedactedArgumentSummary(input);
+        }
+
+        private static string CreateRedactedArgumentSummary(CopilotAgentToolInput input)
         {
             input ??= CopilotAgentToolInput.Empty;
             var parts = new List<string>();
@@ -146,6 +156,26 @@ namespace ColorVision.Copilot
 
             var summary = parts.Count == 0 ? "(none)" : string.Join("; ", parts);
             return Sanitize(CopilotMcpAuditLogger.RedactText(summary));
+        }
+
+        private static string CreateArgumentNames(CopilotAgentToolInput input)
+        {
+            input ??= CopilotAgentToolInput.Empty;
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(input.Query))
+                names.Add("query");
+            if (!string.IsNullOrWhiteSpace(input.Path))
+                names.Add("path");
+            if (input.StartLine.HasValue)
+                names.Add("startLine");
+            if (input.EndLine.HasValue)
+                names.Add("endLine");
+            foreach (var name in input.Arguments.Keys.Where(name => !string.IsNullOrWhiteSpace(name)))
+                names.Add(name.Trim());
+
+            return names.Count == 0
+                ? "(none)"
+                : Sanitize("fields=" + string.Join(",", names.OrderBy(name => name, StringComparer.OrdinalIgnoreCase)));
         }
 
         private static bool IsStandardArgumentName(string name)

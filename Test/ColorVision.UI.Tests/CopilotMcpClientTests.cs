@@ -111,4 +111,26 @@ public sealed class CopilotMcpClientTests
         Assert.False(schema.TryBind(new Dictionary<string, object?> { ["message"] = "ok", ["extra"] = 1 }, out _, out var unknownError));
         Assert.Contains("Unknown argument 'extra'", unknownError, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void CapabilityPolicy_MapsExternalMcpTrustWithoutDuplicatedFlags()
+    {
+        var readOnly = CopilotMcpClientCapabilityPolicy.Create(CopilotMcpClientAccessPolicy.ReadOnly, TimeSpan.FromSeconds(12));
+        var protectedWrite = CopilotMcpClientCapabilityPolicy.Create(CopilotMcpClientAccessPolicy.RequireApproval, TimeSpan.FromSeconds(18));
+
+        Assert.Equal(CopilotToolAccess.ReadOnly, readOnly.Access);
+        Assert.Equal(CopilotToolApprovalMode.Never, readOnly.ApprovalMode);
+        Assert.Equal(CopilotToolIdempotency.Idempotent, readOnly.Idempotency);
+        Assert.Equal(CopilotToolConcurrencyMode.SharedRead, readOnly.EffectiveConcurrencyMode);
+        Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, readOnly.AuditArgumentMode);
+        Assert.Equal(TimeSpan.FromSeconds(12), readOnly.EffectiveExecutionTimeout);
+
+        Assert.Equal(CopilotToolAccess.Write, protectedWrite.Access);
+        Assert.Equal(CopilotToolRiskLevel.High, protectedWrite.RiskLevel);
+        Assert.Equal(CopilotToolApprovalMode.Always, protectedWrite.ApprovalMode);
+        Assert.Equal(CopilotToolIdempotency.NonIdempotent, protectedWrite.Idempotency);
+        Assert.Equal(CopilotToolConcurrencyMode.Exclusive, protectedWrite.EffectiveConcurrencyMode);
+        Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, protectedWrite.AuditArgumentMode);
+        Assert.Equal(TimeSpan.FromSeconds(18), protectedWrite.EffectiveExecutionTimeout);
+    }
 }

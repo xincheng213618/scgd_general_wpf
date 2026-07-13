@@ -18,6 +18,13 @@ namespace ColorVision.Copilot
             if (invalidTool != null)
                 throw new ArgumentException("A Copilot tool registration must have a non-empty name.", nameof(tools));
 
+            foreach (var tool in registeredTools)
+            {
+                var capability = tool.Capability
+                    ?? throw new ArgumentException($"Copilot tool '{tool.Name}' has no capability descriptor.", nameof(tools));
+                capability.Validate(tool.Name.Trim());
+            }
+
             var duplicateName = registeredTools
                 .GroupBy(tool => tool.Name.Trim(), StringComparer.OrdinalIgnoreCase)
                 .FirstOrDefault(group => group.Count() > 1)?.Key;
