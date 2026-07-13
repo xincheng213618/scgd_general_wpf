@@ -15,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Update="Copilot\Skills\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Compile Remove="Plugins\**" />
     <Compile Remove="bin\**" />
     <EmbeddedResource Remove="Plugins\**" />

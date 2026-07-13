@@ -769,7 +769,8 @@ namespace ColorVision.Copilot
                 || line.StartsWith("Round ", StringComparison.OrdinalIgnoreCase)
                 || line.StartsWith("Tool phase converged", StringComparison.OrdinalIgnoreCase)
                 || line.StartsWith("No extra tools are needed", StringComparison.OrdinalIgnoreCase)
-                || line.StartsWith("Reused the context", StringComparison.OrdinalIgnoreCase);
+                || line.StartsWith("Reused the context", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("Agent Skills enabled", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string BuildExecutionSummary(string? content, bool isInProgress)

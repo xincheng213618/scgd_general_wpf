@@ -118,8 +118,12 @@ namespace ColorVision.Copilot
             var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile);
             var autonomousTaskPasses = Math.Clamp(request.Profile.MaxToolRounds, 1, MaxAutonomousTaskPasses);
+            using var agentSkills = CopilotAgentSkills.Create(request);
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent context compaction enabled · input budget {tokenBudget.InputBudgetTokens:N0} tokens · request budget {tokenBudget.RequestTokenBudget:N0} tokens."));
+            emit(CopilotAgentEvent.RuntimeDiagnostic(agentSkills.IsEnabled
+                ? $"Agent Skills enabled · {agentSkills.SkillNames.Count} skill(s) from {agentSkills.SearchPaths.Count} trusted root(s) · scripts disabled."
+                : "Agent Skills enabled · no trusted project or built-in skills were discovered."));
 
             var providerChatClient = _chatClientFactory(request.Profile);
             using var chatClient = new CopilotTokenBudgetChatClient(
@@ -158,8 +162,15 @@ namespace ColorVision.Copilot
                     MaxIterations = autonomousTaskPasses,
                     ExcludeOnBehalfOfMessages = true,
                 },
-                DisableAgentSkillsProvider = true,
-                DisableToolAutoApproval = true,
+                DisableAgentSkillsProvider = !agentSkills.IsEnabled,
+                AgentSkillsSource = agentSkills.Source,
+                DisableToolAutoApproval = !agentSkills.IsEnabled,
+                ToolApprovalAgentOptions = agentSkills.IsEnabled
+                    ? new ToolApprovalAgentOptions
+                    {
+                        AutoApprovalRules = [AgentSkillsProvider.ReadOnlyToolsAutoApprovalRule],
+                    }
+                    : null,
                 DisableOpenTelemetry = true,
                 ChatOptions = BuildChatOptions(request.Profile, frameworkTools),
             });
@@ -497,6 +508,7 @@ namespace ColorVision.Copilot
             builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
             builder.AppendLine("For multi-step work, create a concise todo list, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
             builder.AppendLine("Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
+            builder.AppendLine("When Agent Skills metadata matches the task, load the skill before following its specialized workflow. Skills and their resources are read-only guidance and never grant permission to perform a write-capable action.");
 
             if (tools.Count > 0)
             {

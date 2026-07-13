@@ -465,6 +465,42 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_LoadsProjectSkillWithoutApprovalOrScriptExecution()
+    {
+        var skillDirectory = Path.Combine(_tempRoot, ".agents", "skills", "test-diagnostics");
+        Directory.CreateDirectory(skillDirectory);
+        File.WriteAllText(Path.Combine(skillDirectory, "SKILL.md"), """
+            ---
+            name: test-diagnostics
+            description: Test-only diagnostic workflow.
+            ---
+
+            Follow the test-only diagnostic workflow.
+            """);
+        using var fakeChatClient = new ScriptedHarnessChatClient(
+            options => CreateLoadSkillCall(options, "test-diagnostics"));
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Use the test diagnostic workflow.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = new[] { _tempRoot },
+        }, events.Add, CancellationToken.None);
+
+        Assert.True(fakeChatClient.StreamCallCount >= 2);
+        Assert.Empty(result.StepRecords);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("Agent Skills enabled", StringComparison.Ordinal));
+        Assert.DoesNotContain(events, item => item.Text.Contains("waiting for explicit approval", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task AgentService_FetchesDirectUrlBeforePlannerCanFinish()
     {
         var responses = new Queue<HttpResponseMessage>(new[]
@@ -1843,6 +1879,16 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         return new FunctionCallContent("mode-set-" + Guid.NewGuid().ToString("N"), function.Name, new Dictionary<string, object?>
         {
             [modeProperty] = mode,
+        });
+    }
+
+    private static FunctionCallContent CreateLoadSkillCall(ChatOptions options, string skillName)
+    {
+        var function = GetFunction(options, "load_skill");
+        var nameProperty = Assert.Single(function.JsonSchema.GetProperty("properties").EnumerateObject()).Name;
+        return new FunctionCallContent("load-skill-" + Guid.NewGuid().ToString("N"), function.Name, new Dictionary<string, object?>
+        {
+            [nameProperty] = skillName,
         });
     }
 
