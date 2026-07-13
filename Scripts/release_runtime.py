@@ -5,6 +5,8 @@ from xml.etree import ElementTree
 
 REQUIRED_MAIN_RUNTIME_FILES = (
     "HtmlAgilityPack.dll",
+    "WpfMath.dll",
+    "XamlMath.Shared.dll",
 )
 
 

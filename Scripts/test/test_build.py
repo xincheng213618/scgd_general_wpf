@@ -93,10 +93,14 @@ class BuildScriptTests(unittest.TestCase):
         runtime_dir = self.root / "runtime"
         runtime_dir.mkdir()
         aip_path = self.root / "ColorVision.aip"
+        source_rows = "".join(
+            f'<ROW File="{file_name}" SourcePath="runtime\\{file_name}" />'
+            for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES
+        )
         aip_path.write_text(
             '<DOCUMENT><COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">'
-            '<ROW File="HtmlAgilityPack.dll" SourcePath="runtime\\HtmlAgilityPack.dll" />'
-            '</COMPONENT></DOCUMENT>',
+            + source_rows
+            + '</COMPONENT></DOCUMENT>',
             encoding="utf-8",
         )
         messages = []
@@ -104,19 +108,27 @@ class BuildScriptTests(unittest.TestCase):
         self.assertFalse(
             release_runtime.validate_release_runtime_payload(runtime_dir, aip_path, report=messages.append)
         )
-        self.assertIn("Release runtime payload is missing: HtmlAgilityPack.dll", messages)
+        self.assertIn(
+            "Release runtime payload is missing: " + ", ".join(release_runtime.REQUIRED_MAIN_RUNTIME_FILES),
+            messages,
+        )
 
-        (runtime_dir / "HtmlAgilityPack.dll").write_bytes(b"runtime")
+        for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES:
+            (runtime_dir / file_name).write_bytes(b"runtime")
         messages.clear()
         self.assertTrue(
             release_runtime.validate_release_runtime_payload(runtime_dir, aip_path, report=messages.append)
         )
-        self.assertIn("Verified required release runtime payload: HtmlAgilityPack.dll", messages)
+        self.assertIn(
+            "Verified required release runtime payload: " + ", ".join(release_runtime.REQUIRED_MAIN_RUNTIME_FILES),
+            messages,
+        )
 
     def test_release_runtime_payload_rejects_installer_without_required_source(self):
         runtime_dir = self.root / "runtime"
         runtime_dir.mkdir()
-        (runtime_dir / "HtmlAgilityPack.dll").write_bytes(b"runtime")
+        for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES:
+            (runtime_dir / file_name).write_bytes(b"runtime")
         aip_path = self.root / "ColorVision.aip"
         aip_path.write_text('<DOCUMENT><ROW SourcePath="runtime\\Other.dll" /></DOCUMENT>', encoding="utf-8")
         messages = []
@@ -124,7 +136,10 @@ class BuildScriptTests(unittest.TestCase):
         self.assertFalse(
             release_runtime.validate_release_runtime_payload(runtime_dir, aip_path, report=messages.append)
         )
-        self.assertIn("Advanced Installer payload is missing: HtmlAgilityPack.dll", messages)
+        self.assertIn(
+            "Advanced Installer payload is missing: " + ", ".join(release_runtime.REQUIRED_MAIN_RUNTIME_FILES),
+            messages,
+        )
 
     def test_upload_file_uses_basic_auth_and_streams_payload(self):
         package_file = self.root / "ColorVision-1.2.3.4.exe"

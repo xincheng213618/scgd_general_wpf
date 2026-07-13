@@ -4,10 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Threading;
+using WpfMath.Controls;
+using WpfMath.Parsers;
+using XamlMath.Exceptions;
 
 namespace ColorVision.Copilot
 {
@@ -87,7 +91,10 @@ namespace ColorVision.Copilot
             var lines = normalized.Split('\n');
             var paragraphLines = new List<string>();
             var codeBuilder = new StringBuilder();
+            var displayMathBuilder = new StringBuilder();
             var inCodeBlock = false;
+            var displayMathOpening = string.Empty;
+            var displayMathClosing = string.Empty;
 
             void FlushParagraph()
             {
@@ -110,6 +117,28 @@ namespace ColorVision.Copilot
             foreach (var sourceLine in lines)
             {
                 var line = sourceLine ?? string.Empty;
+                if (!string.IsNullOrEmpty(displayMathClosing))
+                {
+                    var closingIndex = line.IndexOf(displayMathClosing, StringComparison.Ordinal);
+                    if (closingIndex < 0)
+                    {
+                        displayMathBuilder.AppendLine(line);
+                        continue;
+                    }
+
+                    displayMathBuilder.Append(line[..closingIndex]);
+                    var latex = displayMathBuilder.ToString().Trim();
+                    AddFormulaBlock(latex, displayMathOpening + latex + displayMathClosing);
+                    displayMathBuilder.Clear();
+                    displayMathOpening = string.Empty;
+                    var consumedClosing = displayMathClosing;
+                    displayMathClosing = string.Empty;
+                    var remainder = line[(closingIndex + consumedClosing.Length)..].Trim();
+                    if (remainder.Length > 0)
+                        paragraphLines.Add(remainder);
+                    continue;
+                }
+
                 if (line.TrimStart().StartsWith("```", StringComparison.Ordinal))
                 {
                     FlushParagraph();
@@ -117,6 +146,26 @@ namespace ColorVision.Copilot
                         FlushCodeBlock();
 
                     inCodeBlock = !inCodeBlock;
+                    continue;
+                }
+
+                if (CopilotMarkdownMath.TryParseDisplayLine(line, out var formulas))
+                {
+                    FlushParagraph();
+                    foreach (var formula in formulas)
+                        AddFormulaBlock(formula.Content, formula.OriginalText);
+                    continue;
+                }
+
+                if (CopilotMarkdownMath.TryStartDisplayBlock(
+                    line,
+                    out displayMathOpening,
+                    out displayMathClosing,
+                    out var initialMathContent))
+                {
+                    FlushParagraph();
+                    if (initialMathContent.Length > 0)
+                        displayMathBuilder.AppendLine(initialMathContent);
                     continue;
                 }
 
@@ -169,6 +218,11 @@ namespace ColorVision.Copilot
 
             FlushParagraph();
             FlushCodeBlock();
+            if (!string.IsNullOrEmpty(displayMathClosing))
+            {
+                var rawFormula = displayMathOpening + displayMathBuilder.ToString().TrimEnd();
+                AddTextBlock(rawFormula, new Thickness(0, 2, 0, 8));
+            }
         }
 
         private void AddHeading(string text, int level)
@@ -224,6 +278,29 @@ namespace ColorVision.Copilot
             MarkdownDocument.Blocks.Add(block);
         }
 
+        private void AddFormulaBlock(string latex, string originalText)
+        {
+            if (!TryCreateFormulaControl(latex, isDisplay: true, out var formula))
+            {
+                AddTextBlock(originalText, new Thickness(0, 2, 0, 8));
+                return;
+            }
+
+            var viewbox = new Viewbox
+            {
+                Child = formula,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                MaxWidth = Math.Max(320, DocumentViewer.ActualWidth - 24),
+                Stretch = Stretch.Uniform,
+                StretchDirection = StretchDirection.DownOnly,
+            };
+            var block = new BlockUIContainer(viewbox)
+            {
+                Margin = new Thickness(0, 4, 0, 10),
+            };
+            MarkdownDocument.Blocks.Add(block);
+        }
+
         private static Paragraph CreateParagraph(double fontSize, FontWeight fontWeight, Thickness margin)
         {
             var block = new Paragraph
@@ -243,12 +320,14 @@ namespace ColorVision.Copilot
             foreach (Match match in InlineRegex.Matches(text))
             {
                 if (match.Index > currentIndex)
-                    inlines.Add(new Run(text[currentIndex..match.Index]));
+                    AddMathAwareText(inlines, text[currentIndex..match.Index]);
 
                 var token = match.Value;
                 if (token.StartsWith("**", StringComparison.Ordinal) && token.EndsWith("**", StringComparison.Ordinal))
                 {
-                    inlines.Add(new Run(token[2..^2]) { FontWeight = FontWeights.SemiBold });
+                    var span = new Span { FontWeight = FontWeights.SemiBold };
+                    AddMathAwareText(span.Inlines, token[2..^2]);
+                    inlines.Add(span);
                 }
                 else if (token.StartsWith('`') && token.EndsWith('`'))
                 {
@@ -258,7 +337,9 @@ namespace ColorVision.Copilot
                 }
                 else if (token.StartsWith('*') && token.EndsWith('*'))
                 {
-                    inlines.Add(new Run(token[1..^1]) { FontStyle = FontStyles.Italic });
+                    var span = new Span { FontStyle = FontStyles.Italic };
+                    AddMathAwareText(span.Inlines, token[1..^1]);
+                    inlines.Add(span);
                 }
                 else
                 {
@@ -273,7 +354,66 @@ namespace ColorVision.Copilot
             }
 
             if (currentIndex < text.Length)
-                inlines.Add(new Run(text[currentIndex..]));
+                AddMathAwareText(inlines, text[currentIndex..]);
+        }
+
+        private static void AddMathAwareText(InlineCollection inlines, string text)
+        {
+            foreach (var segment in CopilotMarkdownMath.ParseInline(text))
+            {
+                if (!segment.IsMath)
+                {
+                    inlines.Add(new Run(segment.Content));
+                    continue;
+                }
+
+                if (!TryCreateFormulaControl(segment.Content, isDisplay: false, out var formula))
+                {
+                    inlines.Add(new Run(segment.OriginalText));
+                    continue;
+                }
+
+                inlines.Add(new InlineUIContainer(formula)
+                {
+                    BaselineAlignment = BaselineAlignment.Center,
+                });
+            }
+        }
+
+        private static bool TryCreateFormulaControl(string latex, bool isDisplay, out FormulaControl formula)
+        {
+            formula = null!;
+            if (string.IsNullOrWhiteSpace(latex))
+                return false;
+
+            try
+            {
+                _ = WpfTeXFormulaParser.Instance.Parse(latex);
+                formula = new FormulaControl
+                {
+                    Formula = latex,
+                    Focusable = false,
+                    IsHitTestVisible = true,
+                    Margin = isDisplay ? new Thickness(0) : new Thickness(2, 0, 2, 0),
+                    Padding = new Thickness(0),
+                    Scale = isDisplay ? 18 : 14,
+                    SnapsToDevicePixels = true,
+                    ToolTip = latex,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                formula.SetResourceReference(Control.ForegroundProperty, "GlobalTextBrush");
+                AutomationProperties.SetName(formula, "Math formula: " + latex);
+                AutomationProperties.SetHelpText(formula, latex);
+                return true;
+            }
+            catch (TexException)
+            {
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
     }
 }

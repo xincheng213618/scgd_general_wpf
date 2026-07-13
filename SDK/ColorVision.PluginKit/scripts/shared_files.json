@@ -175,6 +175,8 @@
     "WpfHexEditor.HexBox.dll",
     "WpfHexEditor.HexEditor.dll",
     "WpfHexEditor.ProgressBar.dll",
+    "WpfMath.dll",
+    "XamlMath.Shared.dll",
     "YamlDotNet.dll",
     "ZString.dll",
     "cvColorVision.dll",

@@ -121,22 +121,24 @@ class BuildUpdateTests(unittest.TestCase):
             new_version_dir = os.path.join(temp_dir, "new")
             incremental_zip = os.path.join(temp_dir, "update.cvx")
             os.makedirs(new_version_dir)
-            required_file = build_update.REQUIRED_MAIN_RUNTIME_FILES[0]
             required_content = b"required-runtime"
             unchanged_content = b"unchanged"
             with zipfile.ZipFile(old_zip, "w", zipfile.ZIP_DEFLATED) as archive:
-                archive.writestr(required_file, required_content)
+                for required_file in build_update.REQUIRED_MAIN_RUNTIME_FILES:
+                    archive.writestr(required_file, required_content)
                 archive.writestr("Unchanged.dll", unchanged_content)
-            with open(os.path.join(new_version_dir, required_file), "wb") as file:
-                file.write(required_content)
+            for required_file in build_update.REQUIRED_MAIN_RUNTIME_FILES:
+                with open(os.path.join(new_version_dir, required_file), "wb") as file:
+                    file.write(required_content)
             with open(os.path.join(new_version_dir, "Unchanged.dll"), "wb") as file:
                 file.write(unchanged_content)
 
             build_update.make_incremental_zip(old_zip, new_version_dir, incremental_zip)
 
             with zipfile.ZipFile(incremental_zip, "r") as archive:
-                self.assertEqual(archive.namelist(), [required_file])
-                self.assertEqual(archive.read(required_file), required_content)
+                self.assertEqual(archive.namelist(), list(build_update.REQUIRED_MAIN_RUNTIME_FILES))
+                for required_file in build_update.REQUIRED_MAIN_RUNTIME_FILES:
+                    self.assertEqual(archive.read(required_file), required_content)
 
     def test_main_fails_when_incremental_upload_fails(self):
         with (

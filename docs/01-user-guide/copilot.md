@@ -11,6 +11,10 @@ ColorVision Copilot 用来解释当前界面信息、辅助排查流程和设备
 
 API Key 和 MCP token 保存在本机加密配置中。发送问题前，应确认当前附加的上下文不包含不希望交给模型的数据。
 
+## 数学公式
+
+Copilot 回复支持 LaTeX 数学公式。行内公式可使用 `$...$` 或 `\\(...\\)`，独立公式可使用 `$$...$$` 或 `\\[...\\]`；跨行独立公式也会正常排版。代码片段中的美元符号不会被当作公式，无法解析的公式会保留原始文本，避免隐藏模型回复。
+
 ## Agent 工具执行
 
 Copilot 默认使用 Microsoft Agent Framework 组织多轮推理和工具调用，不需要在模型设置中单独启用。OpenAI-compatible 与 Anthropic-compatible Profile 共用同一套工具生命周期、参数校验、超时、审计和安全策略。
