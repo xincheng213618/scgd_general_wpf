@@ -113,6 +113,45 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public void WebSearch_ExtractsDuckDuckGoLiteResultsAndSnippets()
+    {
+        const string html = """
+            <html><body><table>
+              <tr><td>1.</td><td><a class="result-link" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fquota">Quota radar</a></td></tr>
+              <tr><td></td><td class="result-snippet">Current quota and reset information.</td></tr>
+              <tr><td>2.</td><td><a class="result-link" href="https://example.com/quota">Duplicate quota radar</a></td></tr>
+            </table></body></html>
+            """;
+
+        var hits = CopilotWebSearchCapability.ExtractDuckDuckGoLiteHits(html);
+
+        var hit = Assert.Single(hits);
+        Assert.Equal("Quota radar", hit.Title);
+        Assert.Equal("https://example.com/quota", hit.Url);
+        Assert.Contains("reset information", hit.Snippet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WebSearch_ExtractsBingRssResultsAndRejectsMalformedXml()
+    {
+        const string rss = """
+            <rss><channel>
+              <item><title>Codex &amp; Radar</title><link>https://codexradar.com/</link><description><![CDATA[Model and <b>quota</b> information.]]></description></item>
+              <item><title>Duplicate</title><link>https://codexradar.com/</link><description>Duplicate result.</description></item>
+              <item><title>Unsafe</title><link>file:///C:/secret.txt</link><description>Unsafe result.</description></item>
+            </channel></rss>
+            """;
+
+        var hits = CopilotWebSearchCapability.ExtractBingRssHits(rss);
+
+        var hit = Assert.Single(hits);
+        Assert.Equal("Codex & Radar", hit.Title);
+        Assert.Equal("https://codexradar.com/", hit.Url);
+        Assert.Equal("Model and quota information.", hit.Snippet);
+        Assert.Empty(CopilotWebSearchCapability.ExtractBingRssHits("<rss>"));
+    }
+
+    [Fact]
     public void WebPage_SparseSpaDiscoversOnlySameOriginStructuredResources()
     {
         var html = $$"""
