@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ColorVision.Copilot
@@ -7,6 +8,7 @@ namespace ColorVision.Copilot
     {
         private static readonly TimeSpan FollowUpToolLeaseDuration = TimeSpan.FromHours(24);
         private const int MaximumFollowUpCharacters = 300;
+        private const int VisibleHistoryEvidenceLimit = 4;
 
         private static readonly string[] LocalEvidenceMarkers =
         {
@@ -111,20 +113,26 @@ namespace ColorVision.Copilot
                 || request.UserText.Length > MaximumFollowUpCharacters)
                 return false;
 
-            var checkpoint = request.SessionCheckpoint;
-            if (checkpoint?.IsStructurallyValid() != true
-                || DateTimeOffset.UtcNow - checkpoint.UpdatedAtUtc > FollowUpToolLeaseDuration)
-                return false;
             if (ContainsAny(request.UserText, NewTopicMarkers)
                 || ContainsAny(request.UserText, LocalEvidenceMarkers))
                 return false;
-            if (!FollowUpWebToolNames.Contains(tool.Name, StringComparer.OrdinalIgnoreCase))
+            if (!IsFollowUpWebTool(tool))
                 return false;
 
             var capability = tool.Capability;
             if (capability.Access != CopilotToolAccess.ReadOnly
                 || capability.Idempotency != CopilotToolIdempotency.Idempotent
                 || capability.ApprovalMode != CopilotToolApprovalMode.Never)
+                return false;
+
+            return HasRecentCheckpointWebEvidence(request.SessionCheckpoint)
+                || HasVisibleWebEvidence(request.History);
+        }
+
+        private static bool HasRecentCheckpointWebEvidence(CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            if (checkpoint?.IsStructurallyValid() != true
+                || DateTimeOffset.UtcNow - checkpoint.UpdatedAtUtc > FollowUpToolLeaseDuration)
                 return false;
 
             var previousStop = checkpoint.TaskEventJournal.Events
@@ -135,7 +143,31 @@ namespace ColorVision.Copilot
             return checkpoint.TaskEventJournal.Events.Any(item =>
                 string.Equals(item.RunId, previousStop.RunId, StringComparison.Ordinal)
                 && item.Type is CopilotAgentTaskEventType.ToolStarted or CopilotAgentTaskEventType.ToolCompleted
-                && FollowUpWebToolNames.Contains(item.ToolName, StringComparer.OrdinalIgnoreCase));
+                && IsFollowUpWebToolIdentity(item.ToolName, string.Empty));
+        }
+
+        private static bool HasVisibleWebEvidence(IReadOnlyList<CopilotRequestMessage> history)
+        {
+            return (history ?? Array.Empty<CopilotRequestMessage>())
+                .Where(message => !string.IsNullOrWhiteSpace(message.Content))
+                .TakeLast(VisibleHistoryEvidenceLimit)
+                .Any(message => CopilotWebPageToolSupport.ExtractHttpUrls(message.Content).Count > 0
+                    || ContainsAny(message.Content, PublicWebMarkers));
+        }
+
+        private static bool IsFollowUpWebTool(ICopilotTool tool)
+        {
+            return IsFollowUpWebToolIdentity(tool.Name, tool.Description);
+        }
+
+        private static bool IsFollowUpWebToolIdentity(string? name, string? description)
+        {
+            if (FollowUpWebToolNames.Contains(name ?? string.Empty, StringComparer.OrdinalIgnoreCase))
+                return true;
+
+            var identity = $"{name} {description}";
+            return ContainsAny(identity, ExternalWebSearchMarkers)
+                || ContainsAny(identity, ExternalUrlFetchMarkers);
         }
 
         private static bool ContainsAny(string? text, string[] markers)

@@ -1244,6 +1244,88 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RetainsWebToolFromVisibleHistoryWithoutCheckpoint()
+    {
+        var profile = CreateProfile();
+        var followUpTool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.OptionalQuery, canHandle: false);
+        using var client = new FunctionCallingChatClient(
+            "colorvision_fetch_url",
+            new Dictionary<string, object?> { ["query"] = "https://codexradar.com/current.json" });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([followUpTool]),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+        var events = new List<CopilotAgentEvent>();
+
+        await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Pro20x的额度有多少",
+            History =
+            [
+                new CopilotRequestMessage("user", "https://codexradar.com/ 寻找里面有价值的信息"),
+                new CopilotRequestMessage("assistant", "额度数据来自 https://codexradar.com/current.json"),
+            ],
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, followUpTool.ExecutionCount);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("retained recent read-only tool FetchUrl", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ToolRegistry_DoesNotRetainVisibleHistoryWebToolAcrossTopicBoundaries()
+    {
+        var tool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.OptionalQuery, canHandle: false);
+        var registry = new CopilotToolRegistry([tool]);
+
+        var tools = registry.FindTools(new CopilotAgentRequest
+        {
+            UserText = "换个话题，解释一下白平衡",
+            History = [new CopilotRequestMessage("assistant", "来源：https://codexradar.com/current.json")],
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        });
+
+        Assert.Empty(tools);
+
+        var staleTools = registry.FindTools(new CopilotAgentRequest
+        {
+            UserText = "这个数字是多少",
+            History =
+            [
+                new CopilotRequestMessage("user", "https://codexradar.com/"),
+                new CopilotRequestMessage("assistant", "已完成。"),
+                new CopilotRequestMessage("user", "解释白平衡。"),
+                new CopilotRequestMessage("assistant", "白平衡用于校正色温。"),
+                new CopilotRequestMessage("user", "再说说色域。"),
+            ],
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        });
+
+        Assert.Empty(staleTools);
+    }
+
+    [Fact]
+    public void ToolRegistry_RetainsReadOnlyExternalWebToolFromVisibleHistory()
+    {
+        var externalWebTool = new TestAgentTool("PublicMcp_web_search", inputSchema: CopilotToolInputSchema.OptionalQuery, canHandle: false);
+        var registry = new CopilotToolRegistry([externalWebTool]);
+
+        var tools = registry.FindTools(new CopilotAgentRequest
+        {
+            UserText = "Pro20x的额度有多少",
+            History = [new CopilotRequestMessage("assistant", "来源：https://codexradar.com/current.json")],
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        });
+
+        Assert.Same(externalWebTool, Assert.Single(tools));
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_ReplansFromVisibleHistoryWhenRequestToolIsRemoved()
     {
         var profile = CreateProfile();
