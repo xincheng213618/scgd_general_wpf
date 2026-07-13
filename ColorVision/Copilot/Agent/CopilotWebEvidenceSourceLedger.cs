@@ -76,15 +76,23 @@ namespace ColorVision.Copilot
 
         private static IReadOnlyList<string> ExtractEvidenceUrls(string toolName, string content)
         {
-            var matches = string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
-                ? FetchedPageUrlRegex.Matches(content)
-                : string.Equals(toolName, "WebSearch", StringComparison.OrdinalIgnoreCase)
-                    ? SearchResultUrlRegex.Matches(content)
-                    : null;
-            if (matches == null)
-                return CopilotWebPageToolSupport.ExtractHttpUrls(content);
+            if (string.Equals(toolName, "WebSearch", StringComparison.OrdinalIgnoreCase))
+            {
+                return ExtractRegexUrls(FetchedPageUrlRegex, content)
+                    .Concat(ExtractRegexUrls(SearchResultUrlRegex, content))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
 
-            return matches.Cast<Match>()
+            if (string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase))
+                return ExtractRegexUrls(FetchedPageUrlRegex, content);
+
+            return CopilotWebPageToolSupport.ExtractHttpUrls(content);
+        }
+
+        private static string[] ExtractRegexUrls(Regex regex, string content)
+        {
+            return regex.Matches(content).Cast<Match>()
                 .Select(match => match.Groups["url"].Value)
                 .Where(url => !string.IsNullOrWhiteSpace(url))
                 .ToArray();

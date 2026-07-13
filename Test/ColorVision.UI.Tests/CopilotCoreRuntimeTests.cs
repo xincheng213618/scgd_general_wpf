@@ -1206,6 +1206,27 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public void FrameworkToolResultFormatter_PreservesSearchAndDeepReadSections()
+    {
+        var content = "[Web Search Results]\nSEARCH-RESULT-HEAD\n"
+            + new string('s', 9_000)
+            + "\n\n[Web Page Fetched] https://result.example/\nDEEP-READ-HEAD\n"
+            + new string('p', 9_000)
+            + "\nDEEP-READ-TAIL";
+        var formatted = CopilotFrameworkToolResultFormatter.Format(new CopilotToolExecutionOutcome
+        {
+            Result = new CopilotToolResult { ToolName = "WebSearch", Success = true, Summary = "Searched and read.", Content = content },
+            Execution = new CopilotToolExecutionInfo { ToolName = "WebSearch", State = CopilotToolExecutionState.Completed },
+        });
+
+        using var document = JsonDocument.Parse(formatted);
+        var compactedContent = document.RootElement.GetProperty("content").GetString()!;
+        Assert.Contains("SEARCH-RESULT-HEAD", compactedContent, StringComparison.Ordinal);
+        Assert.Contains("DEEP-READ-HEAD", compactedContent, StringComparison.Ordinal);
+        Assert.Contains("DEEP-READ-TAIL", compactedContent, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_SendsBoundedJsonToolResultBackToProvider()
     {
         var tool = new LargeFrameworkResultTool();

@@ -152,6 +152,126 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public async Task WebSearch_DeepReadsResultMatchingRequestedSite()
+    {
+        var fetchedUrl = string.Empty;
+        var searchResult = new CopilotWebSearchResult
+        {
+            Success = true,
+            Query = "site:target.example useful information",
+            Provider = "test",
+            Summary = "Found two results.",
+            Content = "[Web Search Results]\n1. Other\n   URL: https://other.example/\n2. Target\n   URL: https://target.example/article",
+            Hits =
+            [
+                new CopilotWebSearchHit { Rank = 1, Title = "Other", Url = "https://other.example/" },
+                new CopilotWebSearchHit { Rank = 2, Title = "Target", Url = "https://target.example/article" },
+            ],
+        };
+        var tool = new CopilotWebSearchTool(
+            (_, _) => Task.FromResult(searchResult),
+            (_, url, _) =>
+            {
+                fetchedUrl = url;
+                return Task.FromResult(new CopilotToolResult
+                {
+                    ToolName = "FetchUrl",
+                    Success = true,
+                    Summary = "Fetched 2/2 web resources.",
+                    Content = "[Web Page Fetched] https://target.example/article\nTARGET-BODY\n\n[Web Page Fetched] https://target.example/data.json\nTARGET-DATA",
+                });
+            });
+
+        var result = await tool.ExecuteAsync(
+            new CopilotAgentRequest { UserText = "https://target.example/ 寻找有价值的信息", Mode = CopilotAgentMode.Auto },
+            new CopilotAgentToolInput { Query = "site:target.example useful information" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal("https://target.example/article", fetchedUrl);
+        Assert.Contains("[Selected Search Result Deep Read] https://target.example/article", result.Content, StringComparison.Ordinal);
+        Assert.Contains("TARGET-BODY", result.Content, StringComparison.Ordinal);
+        Assert.Contains("TARGET-DATA", result.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WebSearch_PreservesSearchLeadsWhenSelectedDeepReadFails()
+    {
+        var searchResult = new CopilotWebSearchResult
+        {
+            Success = true,
+            Query = "current information",
+            Provider = "test",
+            Summary = "Found one result.",
+            Content = "[Web Search Results]\n1. Result\n   URL: https://result.example/",
+            Hits = [new CopilotWebSearchHit { Rank = 1, Title = "Result", Url = "https://result.example/" }],
+        };
+        var tool = new CopilotWebSearchTool(
+            (_, _) => Task.FromResult(searchResult),
+            (_, _, _) => Task.FromResult(new CopilotToolResult
+            {
+                ToolName = "FetchUrl",
+                Success = false,
+                Summary = "Fetch failed.",
+                ErrorMessage = "blocked",
+                FailureKind = CopilotToolFailureKind.Transient,
+            }));
+
+        var result = await tool.ExecuteAsync(
+            new CopilotAgentRequest { UserText = "请联网搜索当前信息", Mode = CopilotAgentMode.Auto },
+            new CopilotAgentToolInput { Query = "current information" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(CopilotToolFailureKind.None, result.FailureKind);
+        Assert.Contains("https://result.example/", result.Content, StringComparison.Ordinal);
+        Assert.Contains("Deep Read Unavailable", result.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("blocked", result.Content, StringComparison.Ordinal);
+        Assert.Equal(string.Empty, result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task WebSearch_SkipsUnsafeResultBeforeDeepRead()
+    {
+        var fetchedUrl = string.Empty;
+        var searchResult = new CopilotWebSearchResult
+        {
+            Success = true,
+            Query = "useful information",
+            Provider = "test",
+            Summary = "Found two results.",
+            Content = "[Web Search Results]\n1. Unsafe\n   URL: http://127.0.0.1/private\n2. Public\n   URL: https://public.example/article",
+            Hits =
+            [
+                new CopilotWebSearchHit { Rank = 1, Title = "Unsafe", Url = "http://127.0.0.1/private" },
+                new CopilotWebSearchHit { Rank = 2, Title = "Public", Url = "https://public.example/article" },
+            ],
+        };
+        var tool = new CopilotWebSearchTool(
+            (_, _) => Task.FromResult(searchResult),
+            (_, url, _) =>
+            {
+                fetchedUrl = url;
+                return Task.FromResult(new CopilotToolResult
+                {
+                    ToolName = "FetchUrl",
+                    Success = true,
+                    Summary = "Fetched public result.",
+                    Content = "[Web Page Fetched] https://public.example/article\nPUBLIC-BODY",
+                });
+            });
+
+        var result = await tool.ExecuteAsync(
+            new CopilotAgentRequest { UserText = "请搜索有价值的信息", Mode = CopilotAgentMode.Web },
+            new CopilotAgentToolInput { Query = "useful information" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal("https://public.example/article", fetchedUrl);
+        Assert.Contains("PUBLIC-BODY", result.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WebPage_SparseSpaDiscoversOnlySameOriginStructuredResources()
     {
         var html = $$"""
@@ -414,7 +534,9 @@ public sealed class CopilotCapabilitiesTests : IDisposable
                         "Provider note: https://search-provider.example/",
                         "1. Relevant result",
                         "   URL: https://result.example/article",
-                        "   Snippet: Mentions https://unverified.example/ only as text."),
+                        "   Snippet: Mentions https://unverified.example/ only as text.",
+                        "[Selected Search Result Deep Read] https://deep.example/page",
+                        "[Web Page Fetched] https://deep.example/page"),
                 },
             },
         };
@@ -422,6 +544,8 @@ public sealed class CopilotCapabilitiesTests : IDisposable
 
         var appendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(steps, tools, "Search-based answer.");
 
+        Assert.True(appendix.IndexOf("deep.example", StringComparison.Ordinal) < appendix.IndexOf("result.example", StringComparison.Ordinal));
+        Assert.Contains("<https://deep.example/page>", appendix, StringComparison.Ordinal);
         Assert.Contains("<https://result.example/article>", appendix, StringComparison.Ordinal);
         Assert.DoesNotContain("search-provider.example", appendix, StringComparison.Ordinal);
         Assert.DoesNotContain("unverified.example", appendix, StringComparison.Ordinal);

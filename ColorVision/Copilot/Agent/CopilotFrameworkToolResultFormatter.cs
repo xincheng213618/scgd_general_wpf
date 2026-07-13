@@ -21,6 +21,9 @@ namespace ColorVision.Copilot
         private static readonly Regex WebPageSectionRegex = new(
             @"(?m)^(?=\[Web Page (?:Fetched|Fetch Failed)\])",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex WebSearchSectionRegex = new(
+            @"(?m)^(?=\[Web Search Results\]|\[Web Page (?:Fetched|Fetch Failed)\])",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly Regex FileSectionRegex = new(
             @"(?m)^(?=\[File\]\s)",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -145,6 +148,7 @@ namespace ColorVision.Copilot
             var regex = toolName switch
             {
                 "FetchUrl" => WebPageSectionRegex,
+                "WebSearch" => WebSearchSectionRegex,
                 "ReadLocalFile" or "ReadAttachedFile" => FileSectionRegex,
                 _ => null,
             };

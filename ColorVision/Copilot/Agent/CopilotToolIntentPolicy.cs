@@ -76,7 +76,9 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
 
-            return request.Mode == CopilotAgentMode.Web || ContainsAny(request.UserText, PublicWebMarkers);
+            return request.Mode == CopilotAgentMode.Web
+                || CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0
+                || ContainsAny(request.UserText, PublicWebMarkers);
         }
 
         public static bool NeedsUrlFetch(CopilotAgentRequest? request)

@@ -39,7 +39,7 @@ public sealed class CopilotToolIntentPolicyTests
 
     [Theory]
     [InlineData("请联网搜索最新版本", true, false)]
-    [InlineData("https://example.com 这里实现了什么", false, true)]
+    [InlineData("https://example.com 这里实现了什么", true, true)]
     public void AutoMode_ExplicitWebIntentExposesOnlyRelevantWebTool(string prompt, bool expectSearch, bool expectFetch)
     {
         var request = new CopilotAgentRequest
