@@ -1417,6 +1417,8 @@ namespace ColorVision.Copilot
             {
                 if (!CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health))
                     return $"{server.Name}: not checked";
+                if (health.CacheInvalidated)
+                    return $"{server.Name}: tools changed (live refresh required)";
 
                 return health.State == CopilotMcpClientHealthState.Connected
                     ? $"{server.Name}: connected ({health.ExposedToolCount}/{health.DiscoveredToolCount} tools, {(health.UsedCachedDiscovery ? "cached" : "live")}{(health.CapabilitiesChanged ? ", updated" : string.Empty)})"

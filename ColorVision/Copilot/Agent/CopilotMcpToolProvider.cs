@@ -80,6 +80,10 @@ namespace ColorVision.Copilot
                 if (tools.Count >= MaximumToolsPerRequest)
                     break;
                 McpClient? client = null;
+                IAsyncDisposable? toolListChangedRegistration = null;
+                var toolListChangeNotificationPending = 0;
+                var discoveryReady = 0;
+                var toolListChangeNotificationsEnabled = false;
                 try
                 {
                     var token = ResolveBearerToken(server);
@@ -98,6 +102,30 @@ namespace ColorVision.Copilot
                     using var connectionTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     connectionTimeout.CancelAfter(TimeSpan.FromSeconds(server.ConnectionTimeoutSeconds));
                     client = await McpClient.CreateAsync(transport, cancellationToken: connectionTimeout.Token);
+                    if (client.ServerCapabilities.Tools?.ListChanged == true)
+                    {
+                        try
+                        {
+                            var serverSnapshot = server.Clone();
+                            toolListChangedRegistration = client.RegisterNotificationHandler(
+                                NotificationMethods.ToolListChangedNotification,
+                                (_, _) =>
+                                {
+                                    Interlocked.Exchange(ref toolListChangeNotificationPending, 1);
+                                    if (Volatile.Read(ref discoveryReady) == 1
+                                        && Interlocked.Exchange(ref toolListChangeNotificationPending, 0) == 1)
+                                    {
+                                        CopilotMcpClientDiscoveryRegistry.NotifyToolListChanged(serverSnapshot, _discoveryCache);
+                                    }
+                                    return ValueTask.CompletedTask;
+                                });
+                            toolListChangeNotificationsEnabled = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            diagnostics.Add($"MCP client {server.Name} could not watch tool-list changes · {CopilotMcpAuditLogger.RedactText(ex.Message)}");
+                        }
+                    }
                     CopilotMcpToolDiscoverySnapshot cachedDiscovery = null!;
                     var usedCachedDiscovery = !request.ForceExternalMcpToolRefresh
                         && _discoveryCache.TryGet(server, token, out cachedDiscovery);
@@ -134,18 +162,27 @@ namespace ColorVision.Copilot
                         .ToArray();
                     foreach (var allowedTool in allowedTools)
                         tools.Add(new CopilotMcpToolAdapter(server, allowedTool.Tool, allowedTool.AccessPolicy));
-                    if (allowedTools.Length > 0)
-                    {
-                        clients.Add(client);
-                        client = null;
-                    }
                     CopilotMcpClientHealthRegistry.RecordConnected(
                         server,
                         discoveredToolCount,
                         allowedTools.Length,
                         usedCachedDiscovery,
                         capabilityRevision,
-                        cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed);
+                        cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed,
+                        toolListChangeNotificationsEnabled);
+                    Volatile.Write(ref discoveryReady, 1);
+                    if (Interlocked.Exchange(ref toolListChangeNotificationPending, 0) == 1)
+                        CopilotMcpClientDiscoveryRegistry.NotifyToolListChanged(server, _discoveryCache);
+                    if (allowedTools.Length > 0)
+                    {
+                        clients.Add(client);
+                        client = null;
+                        if (toolListChangedRegistration != null)
+                        {
+                            clients.Add(toolListChangedRegistration);
+                            toolListChangedRegistration = null;
+                        }
+                    }
                     var discoverySource = usedCachedDiscovery ? "cached discovery" : "live discovery";
                     diagnostics.Add(allowedTools.Length == discoveredToolCount
                         ? $"MCP client connected to {server.Name} · {allowedTools.Length} tool(s) exposed from {discoverySource}."
@@ -173,6 +210,16 @@ namespace ColorVision.Copilot
                 }
                 finally
                 {
+                    if (toolListChangedRegistration != null)
+                    {
+                        try
+                        {
+                            await toolListChangedRegistration.DisposeAsync();
+                        }
+                        catch
+                        {
+                        }
+                    }
                     if (client != null)
                         await client.DisposeAsync();
                 }

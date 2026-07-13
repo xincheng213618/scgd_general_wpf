@@ -73,9 +73,8 @@ namespace ColorVision.Copilot
                     return false;
                 }
 
-                if (entry.ExpiresAtUtc <= _utcNow())
+                if (entry.Invalidated || entry.ExpiresAtUtc <= _utcNow())
                 {
-                    _entries.Remove(key);
                     snapshot = null!;
                     return false;
                 }
@@ -104,12 +103,11 @@ namespace ColorVision.Copilot
 
             lock (_syncRoot)
             {
-                RemoveExpiredEntries(now);
                 if (_entries.TryGetValue(key, out var previous))
                 {
                     var changed = !string.Equals(previous.Signature, signature, StringComparison.Ordinal);
                     var revision = changed ? previous.Revision + 1 : previous.Revision;
-                    var entry = new CacheEntry(definitions, discovered, signature, now, now + _timeToLive, revision);
+                    var entry = new CacheEntry(definitions, discovered, signature, now, now + _timeToLive, revision, false);
                     _entries[key] = entry;
                     snapshot = entry.ToSnapshot();
                     updateKind = changed ? CopilotMcpDiscoveryCacheUpdateKind.Changed : CopilotMcpDiscoveryCacheUpdateKind.Unchanged;
@@ -127,7 +125,7 @@ namespace ColorVision.Copilot
                 }
                 else
                 {
-                    var entry = new CacheEntry(definitions, discovered, signature, now, now + _timeToLive, 1);
+                    var entry = new CacheEntry(definitions, discovered, signature, now, now + _timeToLive, 1, false);
                     _entries[key] = entry;
                     snapshot = entry.ToSnapshot();
                     updateKind = CopilotMcpDiscoveryCacheUpdateKind.Added;
@@ -152,9 +150,10 @@ namespace ColorVision.Copilot
             return updateKind;
         }
 
-        public void Invalidate(CopilotMcpClientServerConfig server)
+        public int Invalidate(CopilotMcpClientServerConfig server)
         {
             ArgumentNullException.ThrowIfNull(server);
+            var invalidatedCount = 0;
             lock (_syncRoot)
             {
                 foreach (var key in _entries.Keys
@@ -162,15 +161,14 @@ namespace ColorVision.Copilot
                         && string.Equals(key.Endpoint, server.Endpoint, StringComparison.OrdinalIgnoreCase))
                     .ToArray())
                 {
-                    _entries.Remove(key);
+                    var entry = _entries[key];
+                    if (entry.Invalidated)
+                        continue;
+                    _entries[key] = entry with { Invalidated = true };
+                    invalidatedCount++;
                 }
             }
-        }
-
-        private void RemoveExpiredEntries(DateTimeOffset now)
-        {
-            foreach (var key in _entries.Where(entry => entry.Value.ExpiresAtUtc <= now).Select(entry => entry.Key).ToArray())
-                _entries.Remove(key);
+            return invalidatedCount;
         }
 
         private void TrimToMaximumEntries()
@@ -206,9 +204,25 @@ namespace ColorVision.Copilot
             string Signature,
             DateTimeOffset DiscoveredAtUtc,
             DateTimeOffset ExpiresAtUtc,
-            long Revision)
+            long Revision,
+            bool Invalidated)
         {
             public CopilotMcpToolDiscoverySnapshot ToSnapshot() => new(Tools, DiscoveredToolCount, DiscoveredAtUtc, ExpiresAtUtc, Revision);
+        }
+    }
+
+    public static class CopilotMcpClientDiscoveryRegistry
+    {
+        public static bool NotifyToolListChanged(CopilotMcpClientServerConfig server)
+            => NotifyToolListChanged(server, CopilotMcpToolDiscoveryCache.Shared);
+
+        internal static bool NotifyToolListChanged(CopilotMcpClientServerConfig server, CopilotMcpToolDiscoveryCache discoveryCache)
+        {
+            ArgumentNullException.ThrowIfNull(server);
+            ArgumentNullException.ThrowIfNull(discoveryCache);
+            var invalidated = discoveryCache.Invalidate(server) > 0;
+            CopilotMcpClientHealthRegistry.RecordToolListChanged(server, invalidated);
+            return invalidated;
         }
     }
 }

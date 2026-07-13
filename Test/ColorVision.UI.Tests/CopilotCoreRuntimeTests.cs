@@ -605,7 +605,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                     ? null
                     : new FunctionCallContent("mcp-status-call", function.Name, new Dictionary<string, object?>());
             }
-            using var fakeChatClient = new ScriptedHarnessChatClient(CallStatus, _ => null, CallStatus, _ => null, CallStatus);
+            using var fakeChatClient = new ScriptedHarnessChatClient(
+                CallStatus, _ => null,
+                CallStatus, _ => null,
+                CallStatus, _ => null,
+                CallStatus);
             var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
                 new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
                 new CopilotAgentContextBuilder(),
@@ -659,10 +663,25 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(externalServer, out var cachedHealth));
             Assert.True(cachedHealth.UsedCachedDiscovery);
             Assert.Equal(health.CapabilityRevision, cachedHealth.CapabilityRevision);
+            Assert.False(cachedHealth.ToolListChangeNotificationsEnabled);
             Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
                 && item.Text.Contains("cached discovery", StringComparison.Ordinal));
 
-            var refreshedResult = await runtime.RunAsync(new CopilotAgentRequest
+            Assert.True(CopilotMcpClientDiscoveryRegistry.NotifyToolListChanged(externalServer));
+            Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(externalServer, out var invalidatedHealth));
+            Assert.True(invalidatedHealth.CacheInvalidated);
+            Assert.True(invalidatedHealth.CapabilitiesChanged);
+
+            var invalidatedResult = await runtime.RunAsync(request, events.Add, CancellationToken.None);
+
+            Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(invalidatedResult.StepRecords).Execution.State);
+            Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(externalServer, out var rediscoveredHealth));
+            Assert.False(rediscoveredHealth.UsedCachedDiscovery);
+            Assert.False(rediscoveredHealth.CacheInvalidated);
+            Assert.Equal(cachedHealth.CapabilityRevision, rediscoveredHealth.CapabilityRevision);
+            Assert.False(rediscoveredHealth.CapabilitiesChanged);
+
+            var forcedResult = await runtime.RunAsync(new CopilotAgentRequest
             {
                 UserText = request.UserText,
                 Profile = request.Profile,
@@ -671,11 +690,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 ForceExternalMcpToolRefresh = true,
             }, events.Add, CancellationToken.None);
 
-            Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(refreshedResult.StepRecords).Execution.State);
-            Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(externalServer, out var refreshedHealth));
-            Assert.False(refreshedHealth.UsedCachedDiscovery);
-            Assert.Equal(cachedHealth.CapabilityRevision, refreshedHealth.CapabilityRevision);
-            Assert.False(refreshedHealth.CapabilitiesChanged);
+            Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(forcedResult.StepRecords).Execution.State);
+            Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(externalServer, out var forcedHealth));
+            Assert.False(forcedHealth.UsedCachedDiscovery);
+            Assert.Equal(rediscoveredHealth.CapabilityRevision, forcedHealth.CapabilityRevision);
+            Assert.False(forcedHealth.CapabilitiesChanged);
         }
         finally
         {
