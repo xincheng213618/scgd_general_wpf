@@ -23,7 +23,7 @@ namespace ColorVision.Copilot
         public bool IsStructurallyValid()
         {
             if (!Enum.IsDefined(Mode)
-                || PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit))
+                || PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused))
             {
                 return false;
             }
@@ -59,7 +59,7 @@ namespace ColorVision.Copilot
             if (message == null
                 || message.IsUser
                 || !message.HasIncompleteAgentTasks
-                || message.AgentStopReason is not (CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit)
+                || message.AgentStopReason is not (CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused)
                 || checkpoint?.IsStructurallyValid() != true
                 || profile?.IsConfigured != true)
             {

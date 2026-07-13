@@ -1069,6 +1069,12 @@
                                                            Foreground="{DynamicResource GlobalTextBrush}"
                                                            Opacity="0.62"
                                                            Text="{Binding AgentStopReasonLabel}" />
+                                                <TextBlock Margin="0,3,0,0"
+                                                           FontSize="10"
+                                                           Foreground="#E6A23C"
+                                                           Text="{Binding AgentBlockerLabel}"
+                                                           TextWrapping="Wrap"
+                                                           Visibility="{Binding HasAgentBlockers, Converter={StaticResource bool2VisibilityConverter}}" />
                                             </StackPanel>
                                         </Border>
 
@@ -1736,6 +1742,15 @@
                                     Grid.Column="3"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
+                            <Button Width="28"
+                                    Height="28"
+                                    Margin="0,0,6,0"
+                                    Command="{Binding CancelCommand}"
+                                    Content="×"
+                                    FontSize="16"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    Visibility="{Binding CanCancelAgentRun, Converter={StaticResource bool2VisibilityConverter}}"
+                                    ToolTip="取消当前 Agent 任务并丢弃本轮新 checkpoint" />
                             <Button Width="28"
                                     Height="28"
                                     Margin="0,0,6,0"

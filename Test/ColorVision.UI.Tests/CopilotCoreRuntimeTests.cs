@@ -329,6 +329,16 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 },
             },
             AgentStopReason = CopilotAgentStopReason.AwaitingUser,
+            AgentBlockers =
+            [
+                new CopilotAgentBlockerSnapshot
+                {
+                    Kind = CopilotAgentBlockerKind.UserDecision,
+                    Code = "user_decision_required",
+                    Summary = "The Agent needs a user decision before continuing the remaining tasks.",
+                    RequiresUserInput = true,
+                },
+            ],
         });
         state.Conversations.Add(conversation);
 
@@ -341,6 +351,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(2, message.AgentTaskLedger.TotalCount);
         Assert.Equal(1, message.AgentTaskLedger.CompletedCount);
         Assert.True(message.HasIncompleteAgentTasks);
+        var blocker = Assert.Single(message.AgentBlockers);
+        Assert.Equal(CopilotAgentBlockerKind.UserDecision, blocker.Kind);
+        Assert.True(message.HasAgentBlockers);
         Assert.Equal("等待用户决定", message.AgentStopReasonLabel);
     }
 
@@ -1315,6 +1328,120 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(1, result.TaskLedger.RemainingCount);
         Assert.Equal("execute", result.TaskLedger.Mode);
         Assert.Equal(CopilotAgentStopReason.TaskPassLimit, result.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ClassifiesPermanentToolFailureAsQueryableBlocker()
+    {
+        var tool = new TestAgentTool("PermanentProbe", success: false);
+        using var client = new ScriptedHarnessChatClient(
+            options => CreateTodoAddCall(options, "Collect required evidence", "The task depends on the probe."),
+            _ => new FunctionCallContent("permanent-probe-call", "colorvision_permanent_probe", new Dictionary<string, object?>()),
+            _ => null);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "run a required probe",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Blocked, result.StopReason);
+        var blocker = Assert.Single(result.Blockers);
+        Assert.Equal(CopilotAgentBlockerKind.ToolFailure, blocker.Kind);
+        Assert.Equal("PermanentProbe", blocker.ToolName);
+        Assert.False(blocker.RetryEligible);
+        Assert.StartsWith("call:", blocker.SourceCallKey, StringComparison.Ordinal);
+        Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.BlockerDetected
+            && item.SubjectId == blocker.SourceCallKey
+            && item.ToolName == "PermanentProbe");
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_PausesWithCheckpointAndResumesOpenTodo()
+    {
+        var profile = CreateProfile();
+        var control = new CopilotAgentRunControl();
+        using var cancellation = new CancellationTokenSource();
+        using var firstClient = new TodoThenBlockingChatClient();
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => firstClient);
+        var run = firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "start a pausable task",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            RunControl = control,
+        }, _ => { }, cancellation.Token);
+
+        await firstClient.BlockingCallStarted.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(control.RequestPause());
+        cancellation.Cancel();
+        var paused = await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(CopilotAgentStopReason.Paused, paused.StopReason);
+        Assert.Equal(1, paused.TaskLedger.RemainingCount);
+        Assert.NotNull(paused.SessionCheckpoint);
+        Assert.Contains(paused.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.PauseRequested);
+        Assert.Contains(paused.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped
+            && item.State == CopilotAgentStopReason.Paused.ToString());
+
+        using var secondClient = new ScriptedHarnessChatClient(
+            options => CreateTodoCompleteCall(options, 1, "Paused task resumed and completed."),
+            _ => null);
+        var secondRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => secondClient);
+        var resumed = await secondRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "continue the paused task",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = paused.SessionCheckpoint,
+            Recovery = new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Resume,
+                PreviousStopReason = CopilotAgentStopReason.Paused,
+            },
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, resumed.StopReason);
+        Assert.True(resumed.TaskLedger.ResumedFromCheckpoint);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ExplicitCancelDiscardsNewCheckpoint()
+    {
+        var control = new CopilotAgentRunControl();
+        using var cancellation = new CancellationTokenSource();
+        using var client = new TodoThenBlockingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+        var run = runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "start a cancellable task",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            RunControl = control,
+        }, _ => { }, cancellation.Token);
+
+        await client.BlockingCallStarted.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(control.RequestCancel());
+        cancellation.Cancel();
+        var cancelled = await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(CopilotAgentStopReason.Cancelled, cancelled.StopReason);
+        Assert.Null(cancelled.SessionCheckpoint);
+        Assert.Contains(cancelled.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.CancelRequested);
     }
 
     [Fact]
@@ -2573,6 +2700,46 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Interlocked.Increment(ref _streamCallCount);
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             yield break;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class TodoThenBlockingChatClient : IChatClient
+    {
+        private readonly TaskCompletionSource<bool> _blockingCallStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _streamCallCount;
+
+        public Task BlockingCallStarted => _blockingCallStarted.Task;
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, "unused")));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Assert.NotNull(options);
+            var callNumber = Interlocked.Increment(ref _streamCallCount);
+            if (callNumber == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, new AIContent[]
+                {
+                    CreateTodoAddCall(options!, "Pause-safe task", "This todo must survive a pause boundary."),
+                });
+                yield break;
+            }
+
+            _blockingCallStarted.TrySetResult(true);
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

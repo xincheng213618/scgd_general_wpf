@@ -23,6 +23,9 @@ namespace ColorVision.Copilot
         RuntimeError,
         RunStopped,
         RecoveryRequested,
+        BlockerDetected,
+        PauseRequested,
+        CancelRequested,
     }
 
     public sealed class CopilotAgentTaskEvent
@@ -325,6 +328,33 @@ namespace ColorVision.Copilot
         public void RecordStop(CopilotAgentStopReason reason)
         {
             Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
+        }
+
+        public void RecordBlocker(CopilotAgentBlockerSnapshot blocker)
+        {
+            ArgumentNullException.ThrowIfNull(blocker);
+            if (!blocker.IsStructurallyValid())
+                throw new ArgumentException("Agent blocker is not structurally valid.", nameof(blocker));
+
+            Append(
+                CopilotAgentTaskEventType.BlockerDetected,
+                string.IsNullOrWhiteSpace(blocker.SourceCallKey) ? RunId : blocker.SourceCallKey,
+                blocker.Code,
+                blocker.Summary,
+                blocker.ToolName);
+        }
+
+        public void RecordControl(CopilotAgentControlIntent intent)
+        {
+            if (intent is not (CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel))
+                throw new ArgumentOutOfRangeException(nameof(intent));
+            Append(
+                intent == CopilotAgentControlIntent.Pause ? CopilotAgentTaskEventType.PauseRequested : CopilotAgentTaskEventType.CancelRequested,
+                RunId,
+                intent.ToString(),
+                intent == CopilotAgentControlIntent.Pause
+                    ? "The user paused the active Agent run at a cancellation boundary."
+                    : "The user cancelled the active Agent run and discarded its new checkpoint.");
         }
 
         public void Observe(CopilotAgentEvent agentEvent)

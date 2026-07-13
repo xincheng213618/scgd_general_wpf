@@ -244,6 +244,7 @@ namespace ColorVision.Copilot
                 Mode = request.Mode,
                 SessionCheckpoint = request.SessionCheckpoint,
                 Recovery = request.Recovery,
+                RunControl = request.RunControl,
                 ExternalMcpServers = request.ExternalMcpServers,
             };
         }

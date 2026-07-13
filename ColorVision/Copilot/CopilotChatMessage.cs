@@ -226,6 +226,21 @@ namespace ColorVision.Copilot
         }
         private CopilotAgentStopReason _agentStopReason;
 
+        public IReadOnlyList<CopilotAgentBlockerSnapshot> AgentBlockers
+        {
+            get => _agentBlockers;
+            set
+            {
+                var normalized = (value ?? Array.Empty<CopilotAgentBlockerSnapshot>())
+                    .Where(item => item?.IsStructurallyValid() == true)
+                    .Take(8)
+                    .ToArray();
+                if (SetProperty(ref _agentBlockers, normalized))
+                    OnAgentTaskStateChanged();
+            }
+        }
+        private IReadOnlyList<CopilotAgentBlockerSnapshot> _agentBlockers = Array.Empty<CopilotAgentBlockerSnapshot>();
+
         [JsonIgnore]
         public CopilotAgentRecoveryRequest? RecoveryRequest { get; set; }
 
@@ -237,7 +252,7 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public bool HasRecoverableAgentTasks => HasIncompleteAgentTasks
-            && AgentStopReason is CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit;
+            && AgentStopReason is CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused;
 
         [JsonIgnore]
         public string AgentRecoveryActionLabel => AgentTraceEntries?.LastOrDefault(entry => entry != null
@@ -247,6 +262,27 @@ namespace ColorVision.Copilot
             && entry.Idempotency == CopilotToolIdempotency.Idempotent) != null
                 ? "重试只读检查"
                 : "继续任务";
+
+        [JsonIgnore]
+        public bool HasAgentBlockers => !IsUser && AgentBlockers.Count > 0;
+
+        [JsonIgnore]
+        public string AgentBlockerLabel
+        {
+            get
+            {
+                if (AgentBlockers.Count == 0)
+                    return string.Empty;
+                var blocker = AgentBlockers[0];
+                return blocker.Kind switch
+                {
+                    CopilotAgentBlockerKind.UserDecision => "需要您的决定",
+                    CopilotAgentBlockerKind.Approval => "操作未获批准",
+                    _ when !string.IsNullOrWhiteSpace(blocker.ToolName) => $"{blocker.ToolName} 无法继续",
+                    _ => "任务暂时受阻",
+                };
+            }
+        }
 
         [JsonIgnore]
         public string AgentTaskModeLabel => string.Equals(AgentTaskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase) ? "计划" : "执行";
@@ -262,6 +298,9 @@ namespace ColorVision.Copilot
             CopilotAgentStopReason.ApprovalDenied => "审批未通过",
             CopilotAgentStopReason.BudgetExhausted => "本轮预算已用尽",
             CopilotAgentStopReason.TaskPassLimit => "达到本轮继续上限",
+            CopilotAgentStopReason.Blocked => "任务受阻",
+            CopilotAgentStopReason.Paused => "任务已暂停",
+            CopilotAgentStopReason.Cancelled => "任务已取消",
             _ => "Agent 已停止",
         };
 
@@ -537,6 +576,16 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            var validBlockers = (_agentBlockers ?? Array.Empty<CopilotAgentBlockerSnapshot>())
+                .Where(item => item?.IsStructurallyValid() == true)
+                .Take(8)
+                .ToArray();
+            if (_agentBlockers == null || validBlockers.Length != _agentBlockers.Count)
+            {
+                _agentBlockers = validBlockers;
+                changed = true;
+            }
+
             for (var index = AgentTraceEntries.Count - 1; index >= 0; index--)
             {
                 if (AgentTraceEntries[index] != null)
@@ -601,6 +650,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasIncompleteAgentTasks));
             OnPropertyChanged(nameof(HasRecoverableAgentTasks));
             OnPropertyChanged(nameof(AgentRecoveryActionLabel));
+            OnPropertyChanged(nameof(HasAgentBlockers));
+            OnPropertyChanged(nameof(AgentBlockerLabel));
             OnPropertyChanged(nameof(AgentTaskModeLabel));
             OnPropertyChanged(nameof(AgentTaskProgressLabel));
             OnPropertyChanged(nameof(AgentStopReasonLabel));

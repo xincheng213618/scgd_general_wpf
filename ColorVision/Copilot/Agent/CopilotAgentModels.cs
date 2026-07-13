@@ -70,6 +70,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentRecoveryRequest? Recovery { get; init; }
 
+        public CopilotAgentRunControl? RunControl { get; init; }
+
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }
@@ -256,6 +258,7 @@ namespace ColorVision.Copilot
         AnswerDelta,
         Error,
         Completed,
+        CheckpointReady,
     }
 
     public sealed class CopilotAgentEvent
@@ -341,6 +344,14 @@ namespace ColorVision.Copilot
                 Type = CopilotAgentEventType.Completed,
             };
         }
+
+        public static CopilotAgentEvent CheckpointReady()
+        {
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.CheckpointReady,
+            };
+        }
     }
 
     public sealed class CopilotAgentPreparedPrompt
@@ -370,6 +381,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentStopReason StopReason { get; init; }
 
+        public IReadOnlyList<CopilotAgentBlockerSnapshot> Blockers { get; init; } = Array.Empty<CopilotAgentBlockerSnapshot>();
+
         public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
@@ -383,6 +396,9 @@ namespace ColorVision.Copilot
         ApprovalDenied,
         BudgetExhausted,
         TaskPassLimit,
+        Blocked,
+        Paused,
+        Cancelled,
     }
 
     public sealed class CopilotAgentTaskLedgerSnapshot
@@ -421,6 +437,7 @@ namespace ColorVision.Copilot
             Items = normalizedItems;
             return changed || originalItems?.Count != Items.Count;
         }
+
     }
 
     public sealed class CopilotAgentTaskItem

@@ -266,6 +266,7 @@ namespace ColorVision.Copilot
 
             var recoveredTaskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
             taskEventJournalBuilder.RecordTaskLedger(recoveredTaskLedger, sessionResumed ? "recovered" : "initial");
+            emit(CopilotAgentEvent.CheckpointReady());
             if (sessionResumed)
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
@@ -290,71 +291,83 @@ namespace ColorVision.Copilot
                 ? "Agent Framework is generating an answer without tools."
                 : $"Agent Framework can use {frameworkTools.Count} request-scoped tool(s)."));
 
-            while (true)
+            var controlIntent = CopilotAgentControlIntent.None;
+            try
             {
-                var approvalRequests = new List<ToolApprovalRequestContent>();
-                await foreach (var update in agent.RunStreamingAsync(messages, session, null, cancellationToken))
+                while (true)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    var approvalRequests = new List<ToolApprovalRequestContent>();
+                    await foreach (var update in agent.RunStreamingAsync(messages, session, null, cancellationToken))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
 
-                    foreach (var usageContent in update.Contents.OfType<UsageContent>())
-                        usage = usage.Add(ToCopilotUsage(usageContent.Details));
+                        foreach (var usageContent in update.Contents.OfType<UsageContent>())
+                            usage = usage.Add(ToCopilotUsage(usageContent.Details));
 
-                    approvalRequests.AddRange(update.Contents.OfType<ToolApprovalRequestContent>());
-                    if (!string.IsNullOrEmpty(update.Text))
-                        emit(CopilotAgentEvent.AnswerDelta(update.Text));
+                        approvalRequests.AddRange(update.Contents.OfType<ToolApprovalRequestContent>());
+                        if (!string.IsNullOrEmpty(update.Text))
+                            emit(CopilotAgentEvent.AnswerDelta(update.Text));
+                    }
+
+                    if (approvalRequests.Count == 0)
+                        break;
+
+                    var responses = new List<AIContent>();
+                    foreach (var approvalRequest in approvalRequests)
+                    {
+                        if (!bridge.TryBeginApproval(approvalRequest, out var reservation, out var error))
+                        {
+                            emit(CopilotAgentEvent.Status($"Agent Framework approval request was rejected: {error}"));
+                            responses.Add(approvalRequest.CreateResponse(false, error));
+                            continue;
+                        }
+
+                        var handle = _approvalCoordinator.RequestApproval(reservation.Tool, reservation.ToolInput, reservation.CallId, cancellationToken);
+                        bridge.PublishAwaitingApproval(reservation, handle.Action);
+                        emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
+
+                        bool approved;
+                        try
+                        {
+                            approved = await handle.Decision;
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            _approvalCoordinator.Cancel(handle);
+                            throw;
+                        }
+                        if (approved)
+                        {
+                            bridge.Approve(reservation);
+                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved. Agent Framework is resuming the same session."));
+                        }
+                        else
+                        {
+                            bridge.Reject(reservation, "The user rejected or did not complete this protected action approval.");
+                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was not approved. Agent Framework will continue without executing it."));
+                        }
+                        if (approved)
+                        {
+                            taskEventJournalBuilder.RecordApprovalDecision(
+                                reservation.Tool.Name,
+                                reservation.CallId,
+                                reservation.ApprovalActionId,
+                                approved: true);
+                        }
+
+                        responses.Add(approvalRequest.CreateResponse(approved, approved ? "Approved in ColorVision." : "Rejected or expired in ColorVision."));
+                    }
+
+                    messages = new[] { new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, responses) };
                 }
-
-                if (approvalRequests.Count == 0)
-                    break;
-
-                var responses = new List<AIContent>();
-                foreach (var approvalRequest in approvalRequests)
-                {
-                    if (!bridge.TryBeginApproval(approvalRequest, out var reservation, out var error))
-                    {
-                        emit(CopilotAgentEvent.Status($"Agent Framework approval request was rejected: {error}"));
-                        responses.Add(approvalRequest.CreateResponse(false, error));
-                        continue;
-                    }
-
-                    var handle = _approvalCoordinator.RequestApproval(reservation.Tool, reservation.ToolInput, reservation.CallId, cancellationToken);
-                    bridge.PublishAwaitingApproval(reservation, handle.Action);
-                    emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
-
-                    bool approved;
-                    try
-                    {
-                        approved = await handle.Decision;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        _approvalCoordinator.Cancel(handle);
-                        throw;
-                    }
-                    if (approved)
-                    {
-                        bridge.Approve(reservation);
-                        emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved. Agent Framework is resuming the same session."));
-                    }
-                    else
-                    {
-                        bridge.Reject(reservation, "The user rejected or did not complete this protected action approval.");
-                        emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was not approved. Agent Framework will continue without executing it."));
-                    }
-                    if (approved)
-                    {
-                        taskEventJournalBuilder.RecordApprovalDecision(
-                            reservation.Tool.Name,
-                            reservation.CallId,
-                            reservation.ApprovalActionId,
-                            approved: true);
-                    }
-
-                    responses.Add(approvalRequest.CreateResponse(approved, approved ? "Approved in ColorVision." : "Rejected or expired in ColorVision."));
-                }
-
-                messages = new[] { new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, responses) };
+            }
+            catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel)
+            {
+                controlIntent = request.RunControl.Intent;
+                taskEventJournalBuilder.RecordControl(controlIntent);
+                emit(CopilotAgentEvent.RuntimeDiagnostic(controlIntent == CopilotAgentControlIntent.Pause
+                    ? "Agent pause requested; preserving the current task session checkpoint."
+                    : "Agent cancellation requested; the new task session checkpoint will be discarded."));
             }
 
             var budgetSnapshot = chatClient.Snapshot;
@@ -363,9 +376,20 @@ namespace ColorVision.Copilot
                 + (budgetSnapshot.UsedEstimatedUsage ? " · includes estimates" : string.Empty)
                 + (budgetSnapshot.BudgetExhausted ? " · exhausted" : string.Empty)
                 + "."));
-            var taskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
-            var stopReason = DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords);
+            var finalizationToken = controlIntent == CopilotAgentControlIntent.None ? cancellationToken : CancellationToken.None;
+            var taskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, finalizationToken);
+            var stopReason = controlIntent switch
+            {
+                CopilotAgentControlIntent.Pause => CopilotAgentStopReason.Paused,
+                CopilotAgentControlIntent.Cancel => CopilotAgentStopReason.Cancelled,
+                _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords),
+            };
+            var blockers = CopilotAgentBlockerDetector.Detect(taskLedger, bridge.StepRecords, stopReason);
+            if (stopReason == CopilotAgentStopReason.TaskPassLimit && blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ToolFailure))
+                stopReason = CopilotAgentStopReason.Blocked;
             taskEventJournalBuilder.RecordTaskLedger(taskLedger, "final");
+            foreach (var blocker in blockers)
+                taskEventJournalBuilder.RecordBlocker(blocker);
             emit(CopilotAgentEvent.RuntimeDiagnostic(FormatTaskLedgerDiagnostic("Agent task ledger", taskLedger)));
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent stop reason · {stopReason}."));
             IReadOnlyList<CopilotAgentEvidenceArtifact> evidenceArtifacts = previousEvidenceArtifacts
@@ -391,10 +415,13 @@ namespace ColorVision.Copilot
             CopilotAgentSessionCheckpoint? sessionCheckpoint = null;
             try
             {
-                var serializedSession = await agent.SerializeSessionAsync(session, null, cancellationToken);
-                sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(request.Profile, serializedSession.GetRawText(), capabilitySnapshot, evidenceArtifacts, taskEventJournal);
-                if (sessionCheckpoint == null)
-                    emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
+                if (controlIntent != CopilotAgentControlIntent.Cancel)
+                {
+                    var serializedSession = await agent.SerializeSessionAsync(session, null, finalizationToken);
+                    sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(request.Profile, serializedSession.GetRawText(), capabilitySnapshot, evidenceArtifacts, taskEventJournal);
+                    if (sessionCheckpoint == null)
+                        emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
+                }
             }
             catch (OperationCanceledException)
             {
@@ -413,6 +440,7 @@ namespace ColorVision.Copilot
                 Budget = budgetSnapshot,
                 TaskLedger = taskLedger,
                 StopReason = stopReason,
+                Blockers = blockers,
                 TaskEventJournal = taskEventJournal,
                 SessionCheckpoint = sessionCheckpoint,
             };
