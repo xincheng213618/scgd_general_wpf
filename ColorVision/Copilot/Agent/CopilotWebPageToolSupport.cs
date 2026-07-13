@@ -261,7 +261,7 @@ namespace ColorVision.Copilot
             }
 
             if (normalized.Length > MaxWebPageContentChars)
-                normalized = normalized[..MaxWebPageContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxWebPageContentChars} characters.>";
+                normalized = TruncateStructuredWebContent(normalized);
 
             var title = Path.GetFileName(uri.AbsolutePath.TrimEnd('/'));
             if (string.IsNullOrWhiteSpace(title))
@@ -271,6 +271,15 @@ namespace ColorVision.Copilot
                 title,
                 $"Structured web resource ({mediaType}).",
                 normalized);
+        }
+
+        private static string TruncateStructuredWebContent(string content)
+        {
+            const string marker = "\n...<structured content truncated; preserved beginning and end.>\n";
+            var retainedCharacters = MaxWebPageContentChars - marker.Length;
+            var headCharacters = retainedCharacters * 2 / 3;
+            var tailCharacters = retainedCharacters - headCharacters;
+            return content[..headCharacters] + marker + content[^tailCharacters..];
         }
 
         private static List<string> ExtractRelatedResourceUrls(Uri pageUri, HtmlDocument document)

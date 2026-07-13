@@ -10,6 +10,17 @@ namespace ColorVision.Copilot
     public sealed class CopilotFetchUrlTool : ICopilotTool
     {
         private const int MaxResourcesPerRequest = 3;
+        private readonly Func<string, CancellationToken, Task<CopilotFetchedWebPageContent>> _pageLoader;
+
+        public CopilotFetchUrlTool()
+            : this(CopilotWebPageToolSupport.LoadWebPageContentAsync)
+        {
+        }
+
+        public CopilotFetchUrlTool(Func<string, CancellationToken, Task<CopilotFetchedWebPageContent>> pageLoader)
+        {
+            _pageLoader = pageLoader ?? throw new ArgumentNullException(nameof(pageLoader));
+        }
 
         public string Name => "FetchUrl";
 
@@ -67,22 +78,19 @@ namespace ColorVision.Copilot
 
                 try
                 {
-                    var page = await CopilotWebPageToolSupport.LoadWebPageContentAsync(url, cancellationToken);
+                    var page = await _pageLoader(url, cancellationToken);
                     builder.AppendLine(CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(page));
                     builder.AppendLine();
                     successCount++;
 
-                    if (page.IsSparseExtraction)
+                    foreach (var relatedUrl in page.DiscoveredResourceUrls)
                     {
-                        foreach (var relatedUrl in page.DiscoveredResourceUrls)
-                        {
-                            if (pendingUrls.Count + attemptedCount >= MaxResourcesPerRequest)
-                                break;
-                            if (visitedUrls.Contains(relatedUrl) || pendingUrls.Contains(relatedUrl, StringComparer.OrdinalIgnoreCase))
-                                continue;
-                            pendingUrls.Enqueue(relatedUrl);
-                            discoveredCount++;
-                        }
+                        if (pendingUrls.Count + attemptedCount >= MaxResourcesPerRequest)
+                            break;
+                        if (visitedUrls.Contains(relatedUrl) || pendingUrls.Contains(relatedUrl, StringComparer.OrdinalIgnoreCase))
+                            continue;
+                        pendingUrls.Enqueue(relatedUrl);
+                        discoveredCount++;
                     }
                 }
                 catch (OperationCanceledException)

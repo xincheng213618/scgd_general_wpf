@@ -34,7 +34,7 @@ CopilotToolRegistry
 
 `CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。
 
-直接 URL 请求还有确定性策略：先调用 `FetchUrl`，失败后调用 `WebSearch`，再由模型基于网页证据回答。用户明确要求不访问网络时不触发该策略。
+直接 URL 请求还有确定性策略：先调用 `FetchUrl`，失败后调用 `WebSearch`，再由模型基于网页证据回答。`FetchUrl` 会自动补读 HTML 中已经确认的同源 JSON、RSS 和 Atom 入口，单次调用连同初始 URL 最多读取三个资源；普通页面链接只作为线索返回，由模型决定是否继续访问。结构化内容超限时保留开头和结尾，避免只截取大型 JSON 的前半段；补读失败不会丢弃已经成功取得的页面证据。用户明确要求不访问网络时不触发该策略。
 
 `Auto` 模式不会因为当前解决方案存在搜索根目录就自动暴露搜索工具。普通概念问答直接由模型回答；只有用户明确指向当前项目/代码、公开网页/最新信息或给出 URL 时，才分别开放本地搜索、`WebSearch` 或 `FetchUrl`。外部 MCP 中名称或描述可识别为文件搜索、网页搜索和 URL 读取的工具也服从同一意图门槛，其他设备、状态与业务工具仍按各自 `CanHandle` 判断。
 

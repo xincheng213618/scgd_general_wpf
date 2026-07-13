@@ -226,6 +226,116 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public void WebPage_LongStructuredResourcePreservesBeginningAndEnd()
+    {
+        var json = $$"""{"head":"HEAD-SENTINEL","padding":"{{new string('x', 20_000)}}","tail":"TAIL-SENTINEL"}""";
+
+        var page = CopilotWebPageToolSupport.ExtractDownloadedContent(
+            new Uri("https://codexradar.com/current.json"),
+            "application/json",
+            json);
+
+        Assert.True(page.Content.Length <= CopilotWebPageToolSupport.MaxWebPageContentChars);
+        Assert.Contains("HEAD-SENTINEL", page.Content, StringComparison.Ordinal);
+        Assert.Contains("TAIL-SENTINEL", page.Content, StringComparison.Ordinal);
+        Assert.Contains("structured content truncated", page.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task FetchUrl_FollowsDiscoveredStructuredResourceFromRichPage()
+    {
+        var loadedUrls = new List<string>();
+        var tool = new CopilotFetchUrlTool((url, _) =>
+        {
+            loadedUrls.Add(url);
+            return Task.FromResult(url.EndsWith("current.json", StringComparison.OrdinalIgnoreCase)
+                ? new CopilotFetchedWebPageContent(url, "current.json", "Structured data", "QUOTA-DATA-SENTINEL")
+                : new CopilotFetchedWebPageContent(
+                    url,
+                    "Codex Radar",
+                    "Rich static page",
+                    new string('p', 2_000),
+                    ["https://codexradar.com/current.json"],
+                    IsSparseExtraction: false));
+        });
+
+        var result = await tool.ExecuteAsync(
+            new CopilotAgentRequest { UserText = "Inspect https://codexradar.com/" },
+            new CopilotAgentToolInput { Query = "https://codexradar.com/" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, loadedUrls.Count);
+        Assert.Equal("https://codexradar.com/", loadedUrls[0]);
+        Assert.Equal("https://codexradar.com/current.json", loadedUrls[1]);
+        Assert.Contains("Fetched 2/2 web resources", result.Summary, StringComparison.Ordinal);
+        Assert.Contains("QUOTA-DATA-SENTINEL", result.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task FetchUrl_PreservesRootEvidenceWhenDiscoveredResourceFails()
+    {
+        var tool = new CopilotFetchUrlTool((url, _) =>
+        {
+            if (url.EndsWith("current.json", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Structured resource unavailable.");
+
+            return Task.FromResult(new CopilotFetchedWebPageContent(
+                url,
+                "Codex Radar",
+                "Root summary",
+                "ROOT-EVIDENCE-SENTINEL",
+                ["https://codexradar.com/current.json"],
+                IsSparseExtraction: false));
+        });
+
+        var result = await tool.ExecuteAsync(
+            new CopilotAgentRequest { UserText = "Inspect https://codexradar.com/" },
+            new CopilotAgentToolInput { Query = "https://codexradar.com/" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(CopilotToolFailureKind.None, result.FailureKind);
+        Assert.Contains("Fetched 1/2 web resources", result.Summary, StringComparison.Ordinal);
+        Assert.Contains("ROOT-EVIDENCE-SENTINEL", result.Content, StringComparison.Ordinal);
+        Assert.Contains("Structured resource unavailable", result.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task FetchUrl_BoundsAutomaticStructuredResourceDiscovery()
+    {
+        var loadedUrls = new List<string>();
+        var tool = new CopilotFetchUrlTool((url, _) =>
+        {
+            loadedUrls.Add(url);
+            return Task.FromResult(url.EndsWith('/')
+                ? new CopilotFetchedWebPageContent(
+                    url,
+                    "Root",
+                    "Root summary",
+                    "Root content",
+                    [
+                        "https://example.com/one.json",
+                        "https://example.com/two.json",
+                        "https://example.com/three.json",
+                        "https://example.com/four.json",
+                    ],
+                    IsSparseExtraction: false)
+                : new CopilotFetchedWebPageContent(url, "Data", "Structured data", url));
+        });
+
+        var result = await tool.ExecuteAsync(
+            new CopilotAgentRequest { UserText = "Inspect https://example.com/" },
+            new CopilotAgentToolInput { Query = "https://example.com/" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(3, loadedUrls.Count);
+        Assert.DoesNotContain("three.json", loadedUrls, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("four.json", loadedUrls, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void WebPage_RedirectResolutionRejectsUnsafeTargets()
     {
         var current = new Uri("https://example.com/articles/start");
