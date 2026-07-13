@@ -248,8 +248,9 @@ public sealed class CopilotToolExecutorTests : IDisposable
     {
         var tracker = new ConcurrencyTracker(expectedConcurrent: 4);
         var executor = new CopilotToolExecutor();
-        var tasks = Enumerable.Range(1, 6).Select(index => executor.ExecuteAsync(
-            CreateInvocation(new TrackedTool($"Read{index}", tracker), new CopilotAgentToolInput { Query = $"resource-{index}" }),
+        var resourceKeys = CreateResourceKeysWithEarlyStripeCollision();
+        var tasks = resourceKeys.Select((resourceKey, index) => executor.ExecuteAsync(
+            CreateInvocation(new TrackedTool($"Read{index + 1}", tracker), new CopilotAgentToolInput { Query = resourceKey }),
             _ => { },
             CancellationToken.None)).ToArray();
 
@@ -372,6 +373,42 @@ public sealed class CopilotToolExecutorTests : IDisposable
         };
     }
 
+    private static string[] CreateResourceKeysWithEarlyStripeCollision()
+    {
+        const int stripeCount = 64;
+        var firstByStripe = new Dictionary<int, string>();
+        string? firstCollision = null;
+        string? secondCollision = null;
+        var collisionStripe = -1;
+        for (var index = 0; index < 10_000 && firstCollision == null; index++)
+        {
+            var key = $"resource-{index}";
+            var stripe = (StringComparer.OrdinalIgnoreCase.GetHashCode(key) & int.MaxValue) % stripeCount;
+            if (firstByStripe.TryGetValue(stripe, out firstCollision))
+            {
+                secondCollision = key;
+                collisionStripe = stripe;
+            }
+            else
+            {
+                firstByStripe[stripe] = key;
+            }
+        }
+
+        Assert.NotNull(firstCollision);
+        Assert.NotNull(secondCollision);
+        var results = new List<string> { firstCollision!, secondCollision! };
+        var usedStripes = new HashSet<int> { collisionStripe };
+        for (var index = 10_000; results.Count < 6; index++)
+        {
+            var key = $"resource-{index}";
+            var stripe = (StringComparer.OrdinalIgnoreCase.GetHashCode(key) & int.MaxValue) % stripeCount;
+            if (usedStripes.Add(stripe))
+                results.Add(key);
+        }
+        return results.ToArray();
+    }
+
     private sealed class RecordingTool : ICopilotTool
     {
         private readonly bool _waitForCancellation;
@@ -452,6 +489,8 @@ public sealed class CopilotToolExecutorTests : IDisposable
         public string Name { get; } = name;
 
         public string Description => "Tracks bounded read concurrency.";
+
+        public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => toolInput.Query;
 
         public bool CanHandle(CopilotAgentRequest request) => true;
 

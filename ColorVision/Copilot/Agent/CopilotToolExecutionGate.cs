@@ -45,10 +45,10 @@ namespace ColorVision.Copilot
             var resource = GetResourceStripe(concurrencyKey);
             try
             {
-                await _readCapacity.WaitAsync(cancellationToken);
-                capacityHeld = true;
                 await resource.WaitAsync(cancellationToken);
                 resourceHeld = true;
+                await _readCapacity.WaitAsync(cancellationToken);
+                capacityHeld = true;
 
                 await _turnstile.WaitAsync(cancellationToken);
                 _turnstile.Release();
