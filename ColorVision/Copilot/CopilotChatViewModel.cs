@@ -126,6 +126,9 @@ namespace ColorVision.Copilot
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => _ = RetryMessageAsync(message, refreshWebContext: false), CanRegenerateMessage);
             RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => _ = RetryMessageAsync(message, refreshWebContext: true), CanRegenerateMessage);
             ContinueAgentTasksCommand = new RelayCommand<CopilotChatMessage>(ContinueAgentTasks, CanContinueAgentTasks);
+            OpenAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(OpenAgentTask, task => task != null && CanSwitchConversation);
+            ResumeAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(ResumeAgentTask, CanResumeAgentTask);
+            DismissAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(DismissAgentTask, task => task != null && !IsBusy);
             SteerCommand = new RelayCommand(_ => TrySteerCurrentRun(), _ => CanSteerCurrentRun);
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
@@ -146,11 +149,18 @@ namespace ColorVision.Copilot
             RefreshPendingActions();
             RefreshComposerTokenEstimate();
             RefreshCompactHistoryConversations();
+            RefreshAgentTasks();
         }
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
 
         public ObservableCollection<CopilotConversationRecord> CompactHistoryConversations { get; } = new();
+
+        public ObservableCollection<CopilotAgentTaskSummary> AgentTasks { get; } = new();
+
+        public bool HasAgentTasks => AgentTasks.Count > 0;
+
+        public string AgentTaskCountLabel => AgentTasks.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
         public bool HasCompactHistoryConversations => CompactHistoryConversations.Count > 0;
 
@@ -278,6 +288,12 @@ namespace ColorVision.Copilot
         public ICommand RefreshMessageCommand { get; }
 
         public ICommand ContinueAgentTasksCommand { get; }
+
+        public ICommand OpenAgentTaskCommand { get; }
+
+        public ICommand ResumeAgentTaskCommand { get; }
+
+        public ICommand DismissAgentTaskCommand { get; }
 
         public ICommand SteerCommand { get; }
 
@@ -659,6 +675,7 @@ namespace ColorVision.Copilot
             _canPauseAgentRun = false;
             IsBusy = false;
             _requestSession.Complete();
+            RefreshAgentTasks();
         }
 
         private async Task<CopilotTokenUsage> RunConversationTurnAsync(
@@ -1492,6 +1509,59 @@ namespace ColorVision.Copilot
             _ = SendAsync();
         }
 
+        private void OpenAgentTask(CopilotAgentTaskSummary? task)
+        {
+            if (task == null || IsBusy || !Conversations.Contains(task.Conversation))
+                return;
+
+            SelectConversation(task.Conversation, persist: true, preferredProfileId: task.Conversation.ProfileId);
+        }
+
+        private bool CanResumeAgentTask(CopilotAgentTaskSummary? task)
+        {
+            if (IsBusy || task?.CanResume != true || !Conversations.Contains(task.Conversation))
+                return false;
+
+            var profile = ResolveProfile(task.Conversation.ProfileId);
+            return profile?.IsConfigured == true && CopilotAgentRecoveryPolicy.Evaluate(
+                task.Message,
+                task.Conversation.AgentSessionCheckpoint,
+                profile,
+                CopilotCapabilityCatalog.Shared.GetSnapshot()).IsAvailable;
+        }
+
+        private void ResumeAgentTask(CopilotAgentTaskSummary? task)
+        {
+            if (!CanResumeAgentTask(task) || task == null)
+                return;
+
+            SelectConversation(task.Conversation, persist: true, preferredProfileId: task.Conversation.ProfileId);
+            ContinueAgentTasks(task.Message);
+        }
+
+        private void DismissAgentTask(CopilotAgentTaskSummary? task)
+        {
+            if (task == null || IsBusy || !Conversations.Contains(task.Conversation))
+                return;
+
+            if (MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                $"放弃 Agent 任务“{task.Title}”？保存的继续状态会被清除。",
+                "ColorVision",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            if (!CopilotAgentTaskIndex.Dismiss(task))
+                return;
+            if (ReferenceEquals(task.Conversation, SelectedConversation))
+                PublishSelectedTaskEventJournal();
+            PersistState();
+            RefreshAgentTasks();
+        }
+
         private CopilotAgentRecoveryRequest? ConsumePendingAgentRecoveryRequest()
         {
             var recovery = _pendingAgentRecoveryRequest;
@@ -1697,6 +1767,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(IsConversationEmpty));
             OnPropertyChanged(nameof(InputPlaceholder));
             RefreshCompactHistoryConversations();
+            RefreshAgentTasks();
             RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
         }
@@ -1704,6 +1775,7 @@ namespace ColorVision.Copilot
         private void Conversations_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             RefreshCompactHistoryConversations();
+            RefreshAgentTasks();
             OnPropertyChanged(nameof(Conversations));
             CommandManager.InvalidateRequerySuggested();
         }
@@ -1725,6 +1797,18 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(CanShowCompactHistory));
             OnPropertyChanged(nameof(HasCompactHistoryOverflow));
             OnPropertyChanged(nameof(CompactHistoryFooterText));
+        }
+
+        private void RefreshAgentTasks()
+        {
+            var tasks = CopilotAgentTaskIndex.Build(Conversations);
+            AgentTasks.Clear();
+            foreach (var task in tasks)
+                AgentTasks.Add(task);
+
+            OnPropertyChanged(nameof(HasAgentTasks));
+            OnPropertyChanged(nameof(AgentTaskCountLabel));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private int CountHistoryConversations()
