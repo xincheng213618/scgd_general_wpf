@@ -2077,6 +2077,80 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_TracksUnknownToolCallAndLetsFrameworkReturnNotFoundResult()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        CopilotToolExecutionAuditLogger.ClearForTests();
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_hallucinated_tool", new Dictionary<string, object?>
+        {
+            ["query"] = "current status",
+            ["api_key"] = "secret-value",
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "answer without unavailable tools",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        var rejected = Assert.Single(result.StepRecords);
+        Assert.Equal("call-1", rejected.Execution.CallId);
+        Assert.Equal("colorvision_hallucinated_tool", rejected.Execution.ToolName);
+        Assert.Equal(CopilotToolExecutionState.Failed, rejected.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.NotFound, rejected.Execution.FailureKind);
+        Assert.Equal(CopilotToolAccess.Write, rejected.Execution.Access);
+        Assert.Equal(CopilotToolApprovalMode.Always, rejected.Execution.ApprovalMode);
+        Assert.False(rejected.Execution.RetryEligible);
+        Assert.Equal("fields=api_key,query", rejected.Execution.ArgumentSummary);
+        Assert.DoesNotContain("secret-value", rejected.Execution.ArgumentSummary, StringComparison.Ordinal);
+        Assert.Equal(1, result.Budget.ToolCalls);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.ToolResult
+            && item.ToolExecution?.FailureKind == CopilotToolFailureKind.NotFound);
+        Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted
+            && item.ToolName == "colorvision_hallucinated_tool"
+            && item.State == CopilotToolExecutionState.Failed.ToString());
+        Assert.NotNull(fakeChatClient.LastMessages);
+        var functionResult = Assert.Single(fakeChatClient.LastMessages!
+            .SelectMany(message => message.Contents)
+            .OfType<FunctionResultContent>());
+        Assert.Equal("call-1", functionResult.CallId);
+        Assert.Contains("not found", Assert.IsType<string>(functionResult.Result), StringComparison.OrdinalIgnoreCase);
+        var audit = Assert.Single(CopilotToolExecutionAuditLogger.GetRecentEntries(), entry => entry.ToolName == "colorvision_hallucinated_tool");
+        Assert.Equal(CopilotToolFailureKind.NotFound, audit.FailureKind);
+        Assert.Equal("fields=api_key,query", audit.ArgumentSummary);
+        Assert.DoesNotContain("secret-value", audit.ArgumentSummary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_DoesNotTrackProviderHandledUnknownCall()
+    {
+        CopilotToolExecutionAuditLogger.ClearForTests();
+        using var fakeChatClient = new ServerHandledFunctionCallChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "use the provider-handled capability",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Empty(result.StepRecords);
+        Assert.Equal(0, result.Budget.ToolCalls);
+        Assert.DoesNotContain(CopilotToolExecutionAuditLogger.GetRecentEntries(), entry => entry.CallId == "server-call");
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_PausesThenResumesApprovedProtectedToolInSameSession()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
@@ -2913,6 +2987,42 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             }
 
             yield return new ChatResponseUpdate(ChatRole.Assistant, "harness answer");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class ServerHandledFunctionCallChatClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant,
+            [
+                new FunctionCallContent("server-call", "provider_managed_tool", new Dictionary<string, object?>()),
+                new FunctionResultContent("server-call", "provider-managed result"),
+            ])));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+            [
+                new FunctionCallContent("server-call", "provider_managed_tool", new Dictionary<string, object?>()),
+                new FunctionResultContent("server-call", "provider-managed result"),
+            ]);
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

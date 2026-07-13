@@ -202,12 +202,13 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped AGENTS.md document(s)."));
 
             var providerChatClient = _chatClientFactory(request.Profile);
-            using var chatClient = new CopilotTokenBudgetChatClient(
+            var chatClient = new CopilotTokenBudgetChatClient(
                 providerChatClient,
                 tokenBudget,
                 snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")));
-            var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
+            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(chatClient, bridge.RecordUnknownToolCall);
+            var agent = trackingChatClient.AsHarnessAgent(new HarnessAgentOptions
             {
                 Name = "ColorVisionCopilot",
                 HarnessInstructions = BuildHarnessInstructions(availableTools)
@@ -994,6 +995,82 @@ namespace ColorVision.Copilot
                 _emit(CopilotAgentEvent.FromToolResult(result, execution));
             }
 
+            public void RecordUnknownToolCall(FunctionCallContent functionCall)
+            {
+                ArgumentNullException.ThrowIfNull(functionCall);
+                CopilotToolExecutionOutcome outcome;
+                lock (_syncRoot)
+                {
+                    if (_reservedToolCalls >= _maxToolCalls)
+                        return;
+
+                    var round = ++_reservedToolCalls;
+                    var occurredAtUtc = DateTimeOffset.UtcNow;
+                    var toolName = NormalizeUnknownToolName(functionCall.Name);
+                    var tool = new UnavailableTool(toolName);
+                    var arguments = functionCall.Arguments == null
+                        ? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                        : new Dictionary<string, object?>(functionCall.Arguments, StringComparer.OrdinalIgnoreCase);
+                    var toolInput = CreateNamesOnlyToolInput(arguments);
+                    var invocation = new CopilotToolInvocation
+                    {
+                        CallId = string.IsNullOrWhiteSpace(functionCall.CallId) ? Guid.NewGuid().ToString("N") : functionCall.CallId.Trim(),
+                        Round = round,
+                        Attempt = 1,
+                        MaxAttempts = 1,
+                        RuntimeName = "agent-framework",
+                        Tool = tool,
+                        AgentRequest = _request,
+                        ToolInput = toolInput,
+                        ToolCall = new CopilotToolCall
+                        {
+                            ToolName = toolName,
+                            ToolInput = toolInput,
+                            Reason = "Rejected because the model requested a function that is unavailable in the current request.",
+                        },
+                    };
+                    var result = new CopilotToolResult
+                    {
+                        ToolName = toolName,
+                        Success = false,
+                        Summary = $"{toolName} is not available in the current Agent request.",
+                        ErrorMessage = "The model requested a function that was not included in the current request-scoped tool surface.",
+                        FailureKind = CopilotToolFailureKind.NotFound,
+                    };
+                    var execution = new CopilotToolExecutionInfo
+                    {
+                        CallId = invocation.CallId,
+                        Round = round,
+                        Attempt = 1,
+                        MaxAttempts = 1,
+                        RuntimeName = invocation.RuntimeName,
+                        ToolName = toolName,
+                        Access = CopilotToolAccess.Write,
+                        RiskLevel = CopilotToolRiskLevel.High,
+                        ApprovalMode = CopilotToolApprovalMode.Always,
+                        Idempotency = CopilotToolIdempotency.Unknown,
+                        ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
+                        ArgumentSummary = CreateRejectedArgumentSummary(arguments),
+                        State = CopilotToolExecutionState.Failed,
+                        FailureKind = CopilotToolFailureKind.NotFound,
+                        RetryEligible = false,
+                        StartedAtUtc = occurredAtUtc,
+                        CompletedAtUtc = occurredAtUtc,
+                        TimeoutMs = Math.Max(1, (long)tool.Capability.EffectiveExecutionTimeout.TotalMilliseconds),
+                    };
+                    outcome = new CopilotToolExecutionOutcome
+                    {
+                        Invocation = invocation,
+                        Result = result,
+                        Execution = execution,
+                    };
+                    _stepRecords.Add(outcome.StepRecord);
+                }
+
+                CopilotToolExecutionAuditLogger.Record(outcome);
+                _emit(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution));
+            }
+
             private string RecordRejectedToolCall(
                 ICopilotTool tool,
                 IReadOnlyDictionary<string, object?> arguments,
@@ -1008,14 +1085,7 @@ namespace ColorVision.Copilot
 
                     var round = ++_reservedToolCalls;
                     var occurredAtUtc = DateTimeOffset.UtcNow;
-                    var toolInput = new CopilotAgentToolInput
-                    {
-                        Arguments = arguments.Keys
-                            .Where(name => !string.IsNullOrWhiteSpace(name))
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .Take(64)
-                            .ToDictionary(name => name, _ => (object?)null, StringComparer.OrdinalIgnoreCase),
-                    };
+                    var toolInput = CreateNamesOnlyToolInput(arguments);
                     var invocation = new CopilotToolInvocation
                     {
                         CallId = string.IsNullOrWhiteSpace(callId) ? Guid.NewGuid().ToString("N") : callId.Trim(),
@@ -1229,6 +1299,28 @@ namespace ColorVision.Copilot
                 return summary.Length <= 800 ? summary : summary[..800];
             }
 
+            private static CopilotAgentToolInput CreateNamesOnlyToolInput(IReadOnlyDictionary<string, object?> arguments)
+            {
+                return new CopilotAgentToolInput
+                {
+                    Arguments = arguments.Keys
+                        .Where(name => !string.IsNullOrWhiteSpace(name))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Take(64)
+                        .ToDictionary(name => name, _ => (object?)null, StringComparer.OrdinalIgnoreCase),
+                };
+            }
+
+            private static string NormalizeUnknownToolName(string? toolName)
+            {
+                var normalized = new string((toolName ?? string.Empty)
+                    .Trim()
+                    .Where(character => !char.IsControl(character))
+                    .Take(120)
+                    .ToArray());
+                return normalized.Length == 0 ? "unknown_function" : normalized;
+            }
+
             private bool TryReserveAttempt(ICopilotTool tool, string signature, out int round, out int attempt, out string error)
             {
                 round = 0;
@@ -1354,6 +1446,36 @@ namespace ColorVision.Copilot
                 public bool InProgress { get; set; }
 
                 public CopilotToolExecutionOutcome? LastOutcome { get; set; }
+            }
+
+            private sealed class UnavailableTool(string name) : ICopilotTool
+            {
+                public string Name { get; } = name;
+
+                public string Description => "Represents a model-requested function that is unavailable in the current request.";
+
+                public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(
+                    CopilotToolIdempotency.Unknown,
+                    auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly);
+
+                public CopilotToolInputSchema InputSchema => CopilotToolInputSchema.Empty;
+
+                public bool CanHandle(CopilotAgentRequest request) => false;
+
+                public Task<CopilotToolResult> ExecuteAsync(
+                    CopilotAgentRequest request,
+                    CopilotAgentToolInput toolInput,
+                    CancellationToken cancellationToken)
+                {
+                    return Task.FromResult(new CopilotToolResult
+                    {
+                        ToolName = Name,
+                        Success = false,
+                        Summary = $"{Name} is unavailable.",
+                        ErrorMessage = "Unavailable functions cannot be executed.",
+                        FailureKind = CopilotToolFailureKind.NotFound,
+                    });
+                }
             }
 
         }
