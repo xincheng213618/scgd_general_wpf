@@ -25,10 +25,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var preparedUserMessageContent = BuildAnswerUserMessageContent(request, stepRecords ?? Array.Empty<CopilotAgentStepRecord>());
-            var messages = request.History
-                .Where(message => !string.IsNullOrWhiteSpace(message.Content))
-                .TakeLast(MaxHistoryMessages)
-                .ToList();
+            var messages = CopilotConversationHistoryWindow.Select(request.History, MaxHistoryMessages).ToList();
 
             messages.Add(new CopilotRequestMessage("user", preparedUserMessageContent));
             return new CopilotAgentPreparedPrompt(messages, preparedUserMessageContent);

@@ -1970,13 +1970,13 @@ namespace ColorVision.Copilot
                     messages = conversation.Messages.Take(index);
             }
 
-            return messages
+            var history = messages
                 .Where(message => !string.IsNullOrWhiteSpace(message.Content))
-                .TakeLast(maxMessages)
                 .Select(message => new CopilotRequestMessage(
                     message.IsUser ? "user" : "assistant",
                     message.Content.Trim()))
-                .ToList();
+                .ToArray();
+            return CopilotConversationHistoryWindow.Select(history, maxMessages).ToList();
         }
 
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

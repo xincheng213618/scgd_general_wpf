@@ -1180,6 +1180,35 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_TreatsHistoryAsContextNotCurrentAuthorization()
+    {
+        using var fakeChatClient = new CapturingFinalChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "What is EQE?",
+            History =
+            [
+                new CopilotRequestMessage("user", "Create and apply a new flow."),
+                new CopilotRequestMessage("assistant", "The earlier request is historical context."),
+            ],
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.NotNull(fakeChatClient.LastOptions);
+        Assert.Contains("historical user and assistant messages", fakeChatClient.LastOptions!.Instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("never authorize", fakeChatClient.LastOptions.Instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(fakeChatClient.LastMessages);
+        Assert.Contains(fakeChatClient.LastMessages!, message => message.Role == ChatRole.User
+            && message.Text.Contains("What is EQE?", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_StopsProviderLoopWhenRequestTokenBudgetIsExhausted()
     {
         var tool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.Query("URL.", required: true));
@@ -2991,10 +3020,13 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     {
         public IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? LastMessages { get; private set; }
 
+        public ChatOptions? LastOptions { get; private set; }
+
         public Task<ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             LastMessages = messages.ToArray();
+            LastOptions = options;
             return Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, "compacted answer")));
         }
 
@@ -3005,6 +3037,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             LastMessages = messages.ToArray();
+            LastOptions = options;
             await Task.Yield();
             yield return new ChatResponseUpdate(ChatRole.Assistant, "compacted answer");
         }

@@ -11,6 +11,31 @@ namespace ColorVision.UI.Tests;
 public class CopilotBusinessContextTests
 {
     [Fact]
+    public void ConversationHistoryWindowPreservesInitialUserGoalAndRecentMessages()
+    {
+        var history = Enumerable.Range(0, 12)
+            .Select(index => new CopilotRequestMessage(
+                index % 2 == 0 ? "user" : "assistant",
+                index == 0 ? "ORIGINAL-USER-GOAL" : $"history-{index}"))
+            .ToArray();
+
+        var prepared = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "continue the same task",
+            History = history,
+            Profile = new CopilotProfileConfig(),
+            Mode = CopilotAgentMode.Auto,
+        }, Array.Empty<CopilotAgentStepRecord>());
+
+        Assert.Equal(9, prepared.Messages.Count);
+        Assert.Equal("ORIGINAL-USER-GOAL", prepared.Messages[0].Content);
+        Assert.Equal("history-5", prepared.Messages[1].Content);
+        Assert.Equal("history-11", prepared.Messages[^2].Content);
+        Assert.DoesNotContain(prepared.Messages, message => message.Content == "history-4");
+        Assert.Contains("continue the same task", prepared.Messages[^1].Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AgentContextBuilder_IncludesBusinessContextAndToolObservations()
     {
         var builder = new CopilotAgentContextBuilder();
