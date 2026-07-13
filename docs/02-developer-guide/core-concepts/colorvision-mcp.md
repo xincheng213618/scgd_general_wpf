@@ -2,6 +2,8 @@
 
 ColorVision 本地 MCP 让 Codex 或其他 MCP 客户端在本机读取正在运行的 ColorVision 上下文，用于诊断、导航、日志查看、文档搜索和有限的低风险 UI 操作。它默认关闭，只绑定 loopback，并使用 bearer token 认证。
 
+本页描述的是 ColorVision 作为 MCP server 的入站接口。Copilot 作为 MCP client 连接其他 Streamable HTTP 服务的配置、权限和执行链，参见 [Copilot Agent Runtime](./copilot-agent-runtime.md#外部-mcp-工具发现)。两者可以独立启用。
+
 本页是维护入口，不是完整协议规范。源码以 `ColorVision/Copilot/Mcp/` 和 `ColorVision/Copilot/Capabilities/` 为准。
 
 ## 核心边界

@@ -734,6 +734,10 @@ namespace ColorVision.Copilot
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
                 Mode = userMessage.RequestMode,
                 SessionCheckpoint = sessionCheckpoint,
+                ExternalMcpServers = CopilotConfig.Instance.ExternalMcpServers
+                    .Where(server => server?.Enabled == true)
+                    .Select(server => server.Clone())
+                    .ToArray(),
             };
 
             var result = await _agentRuntime.RunAsync(

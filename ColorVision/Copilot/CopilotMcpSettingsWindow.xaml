@@ -216,6 +216,34 @@
                             </Grid>
                         </Expander>
                     </Grid>
+
+                    <Separator Margin="0,18,0,14" />
+                    <TextBlock Style="{StaticResource McpPanelTitleStyle}" Text="Copilot MCP clients" />
+                    <TextBlock Margin="0,5,0,8"
+                               Style="{StaticResource McpHintTextStyle}"
+                               Text="Connect Copilot to explicit Streamable HTTP MCP servers. One server per line: name | endpoint | token environment variable | approval/read-only. Remote endpoints require HTTPS; tokens are never stored here."
+                               TextWrapping="Wrap" />
+                    <TextBox MinHeight="92"
+                             AcceptsReturn="True"
+                             Text="{Binding ExternalMcpServersText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             TextWrapping="NoWrap"
+                             VerticalScrollBarVisibility="Auto" />
+                    <TextBlock Margin="0,5,0,0"
+                               FontSize="11"
+                               Text="{Binding ExternalMcpServersValidationText}"
+                               TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource McpHintTextStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsExternalMcpServersValid}" Value="False">
+                                        <Setter Property="Foreground" Value="{StaticResource McpValidationErrorBrush}" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter Property="Opacity" Value="0.95" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </ScrollViewer>
         </Border>

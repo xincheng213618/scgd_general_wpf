@@ -228,6 +228,7 @@ namespace ColorVision.Copilot
             McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
             McpEndpoint = BuildMcpEndpoint();
             McpBearerToken = config.McpBearerToken;
+            ExternalMcpServersText = CopilotMcpClientConfigurationText.Format(config.ExternalMcpServers);
             RefreshMcpStatusText();
             RefreshMcpDiagnostics();
             _isReadyForUserChanges = true;
@@ -416,6 +417,44 @@ namespace ColorVision.Copilot
             }
         }
 
+        public string ExternalMcpServersText
+        {
+            get => _externalMcpServersText;
+            set
+            {
+                if (SetProperty(ref _externalMcpServersText, value ?? string.Empty))
+                {
+                    ValidateExternalMcpServers(updateNotice: _isReadyForUserChanges);
+                    if (_isReadyForUserChanges)
+                        MarkSettingsPending("External MCP server configuration changed. Click Apply or Save to use it in Copilot.");
+                }
+            }
+        }
+        private string _externalMcpServersText = string.Empty;
+
+        public bool IsExternalMcpServersValid
+        {
+            get => _isExternalMcpServersValid;
+            private set
+            {
+                if (SetProperty(ref _isExternalMcpServersValid, value))
+                {
+                    OnPropertyChanged(nameof(CanApplySettings));
+                    OnPropertyChanged(nameof(CanSaveSettings));
+                    OnPropertyChanged(nameof(CanAddAndUseProfile));
+                    CommandManager.InvalidateRequerySuggested();
+                }
+            }
+        }
+        private bool _isExternalMcpServersValid = true;
+
+        public string ExternalMcpServersValidationText
+        {
+            get => _externalMcpServersValidationText;
+            private set => SetProperty(ref _externalMcpServersValidationText, value ?? string.Empty);
+        }
+        private string _externalMcpServersValidationText = "One server per line: name | endpoint | token environment variable | approval/read-only.";
+
         public string CodexMcpConfigSnippet => BuildCodexMcpConfigSnippet();
 
         public string McpTokenEnvironmentCommandText => BuildMcpTokenEnvironmentCommand();
@@ -530,9 +569,9 @@ namespace ColorVision.Copilot
         }
         private bool _hasUnsavedSettings;
 
-        public bool CanApplySettings => HasUnsavedSettings && IsMcpPortValid;
+        public bool CanApplySettings => HasUnsavedSettings && IsMcpPortValid && IsExternalMcpServersValid;
 
-        public bool CanSaveSettings => IsMcpPortValid;
+        public bool CanSaveSettings => IsMcpPortValid && IsExternalMcpServersValid;
 
         public string SettingsCancelButtonText => HasUnsavedSettings ? "Cancel" : "Close";
 
@@ -840,6 +879,13 @@ namespace ColorVision.Copilot
         {
             if (!ApplyMcpPortText(updateNotice: true))
                 return false;
+            if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var externalMcpServers, out var externalMcpError))
+            {
+                IsExternalMcpServersValid = false;
+                ExternalMcpServersValidationText = externalMcpError;
+                SetSettingsNotice(externalMcpError);
+                return false;
+            }
 
             _isSavingSettings = true;
             try
@@ -857,6 +903,9 @@ namespace ColorVision.Copilot
                 config.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
                     ? CopilotConfig.GenerateMcpBearerToken()
                     : McpBearerToken.Trim();
+                config.ExternalMcpServers.Clear();
+                foreach (var server in externalMcpServers)
+                    config.ExternalMcpServers.Add(server.Clone());
 
                 config.EnsureInitialized();
                 McpPort = config.McpPort;
@@ -1313,6 +1362,24 @@ namespace ColorVision.Copilot
 
             McpPort = port;
             return true;
+        }
+
+        private bool ValidateExternalMcpServers(bool updateNotice)
+        {
+            if (CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
+            {
+                IsExternalMcpServersValid = true;
+                ExternalMcpServersValidationText = servers.Count == 0
+                    ? "Optional. One server per line: name | endpoint | token environment variable | approval/read-only."
+                    : $"{servers.Count} external MCP server(s) configured. Tokens are read only from environment variables.";
+                return true;
+            }
+
+            IsExternalMcpServersValid = false;
+            ExternalMcpServersValidationText = error;
+            if (updateNotice)
+                SetSettingsNotice(error);
+            return false;
         }
 
         private string BuildCodexMcpConfigSnippet()

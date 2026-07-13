@@ -501,6 +501,148 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_ExecutesExternalToolThroughUnifiedExecutor()
+    {
+        var schema = CopilotToolInputSchema.FromJsonSchema(JsonSerializer.SerializeToElement(new
+        {
+            type = "object",
+            properties = new { message = new { type = "string" } },
+            required = new[] { "message" },
+            additionalProperties = false,
+        }));
+        var tool = new TestAgentTool("Mcp_Test_Echo", inputSchema: schema);
+        var externalProvider = new StaticExternalToolProvider(tool);
+        using var fakeChatClient = new ScriptedHarnessChatClient(options =>
+            new FunctionCallContent("external-call", GetFunction(options, "colorvision_mcp_test_echo").Name, new Dictionary<string, object?>
+            {
+                ["message"] = "hello MCP",
+            }));
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => fakeChatClient,
+            externalProvider);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Use the configured MCP echo tool.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, externalProvider.DiscoverCount);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal("hello MCP", tool.LastInput?.Arguments["message"]);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("Mcp_Test_Echo", step.ToolCall.ToolName);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("MCP client test connected", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ExternalProtectedToolStillRequiresExactCallApproval()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        var tool = new FrameworkApprovalTestTool();
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_protected_write", new Dictionary<string, object?>
+        {
+            ["query"] = "external-approved-value",
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => fakeChatClient,
+            new StaticExternalToolProvider(tool));
+
+        var runTask = runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Run the configured protected external tool.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+        var action = await WaitForPendingActionAsync();
+
+        Assert.Equal(0, tool.ApprovedExecutionCount);
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, tool.ApprovedExecutionCount);
+        Assert.Equal(0, tool.UnapprovedExecutionCount);
+        Assert.Equal("external-approved-value", tool.LastInput?.Query);
+        Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ConnectsOfficialMcpClientToColorVisionServer()
+    {
+        const string tokenVariable = "COLORVISION_TEST_EXTERNAL_MCP_TOKEN";
+        const string token = "external-mcp-test-token";
+        var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        var server = CopilotMcpServer.Instance;
+        Environment.SetEnvironmentVariable(tokenVariable, token);
+        server.ApplySettings(new CopilotMcpRuntimeSettings
+        {
+            Enabled = true,
+            Host = "127.0.0.1",
+            Port = port,
+            BearerToken = token,
+        });
+
+        try
+        {
+            using var fakeChatClient = new ScriptedHarnessChatClient(options =>
+            {
+                var function = options.Tools?.OfType<AIFunctionDeclaration>()
+                    .SingleOrDefault(tool => tool.Name.EndsWith("get_server_status", StringComparison.Ordinal));
+                return function == null
+                    ? null
+                    : new FunctionCallContent("mcp-status-call", function.Name, new Dictionary<string, object?>());
+            });
+            var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+                new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+                new CopilotAgentContextBuilder(),
+                _ => fakeChatClient);
+            var events = new List<CopilotAgentEvent>();
+
+            var result = await runtime.RunAsync(new CopilotAgentRequest
+            {
+                UserText = "Read the current ColorVision status from the configured MCP server.",
+                Profile = CreateProfile(),
+                Mode = CopilotAgentMode.Auto,
+                ExternalMcpServers =
+                [
+                    new CopilotMcpClientServerConfig
+                    {
+                        Name = "colorvision",
+                        Endpoint = $"http://127.0.0.1:{port}/mcp",
+                        BearerTokenEnvironmentVariable = tokenVariable,
+                        AccessPolicy = CopilotMcpClientAccessPolicy.ReadOnly,
+                    },
+                ],
+            }, events.Add, CancellationToken.None);
+
+            Assert.True(events.Any(item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+                    && item.Text.Contains("MCP client connected to colorvision", StringComparison.Ordinal)),
+                string.Join(Environment.NewLine, events.Where(item => item.Type == CopilotAgentEventType.RuntimeDiagnostic).Select(item => item.Text)));
+            var step = Assert.Single(result.StepRecords);
+            Assert.Equal("Mcp_colorvision_get_server_status", step.ToolCall.ToolName);
+            Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        }
+        finally
+        {
+            server.Stop();
+            Environment.SetEnvironmentVariable(tokenVariable, null);
+        }
+    }
+
+    [Fact]
     public async Task AgentService_FetchesDirectUrlBeforePlannerCanFinish()
     {
         var responses = new Queue<HttpResponseMessage>(new[]
@@ -1512,6 +1654,18 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 Content = _success ? "deterministic evidence" : string.Empty,
                 ErrorMessage = _success ? string.Empty : "deterministic failure",
             });
+        }
+    }
+
+    private sealed class StaticExternalToolProvider(params ICopilotTool[] tools) : ICopilotExternalToolProvider
+    {
+        public int DiscoverCount { get; private set; }
+
+        public Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            DiscoverCount++;
+            return Task.FromResult(new CopilotExternalToolLease(tools, ["MCP client test connected."]));
         }
     }
 

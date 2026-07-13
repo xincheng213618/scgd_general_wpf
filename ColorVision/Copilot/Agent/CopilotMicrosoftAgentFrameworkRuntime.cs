@@ -28,6 +28,7 @@ namespace ColorVision.Copilot
         private readonly CopilotAgentContextBuilder _contextBuilder;
         private readonly CopilotToolExecutor _toolExecutor;
         private readonly Func<CopilotProfileConfig, IChatClient> _chatClientFactory;
+        private readonly ICopilotExternalToolProvider _externalToolProvider;
         private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
@@ -58,11 +59,22 @@ namespace ColorVision.Copilot
             CopilotAgentContextBuilder contextBuilder,
             CopilotToolExecutor toolExecutor,
             Func<CopilotProfileConfig, IChatClient> chatClientFactory)
+            : this(toolRegistry, contextBuilder, toolExecutor, chatClientFactory, new CopilotMcpToolProvider())
+        {
+        }
+
+        public CopilotMicrosoftAgentFrameworkRuntime(
+            CopilotToolRegistry toolRegistry,
+            CopilotAgentContextBuilder contextBuilder,
+            CopilotToolExecutor toolExecutor,
+            Func<CopilotProfileConfig, IChatClient> chatClientFactory,
+            ICopilotExternalToolProvider externalToolProvider)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
             _toolExecutor = toolExecutor ?? throw new ArgumentNullException(nameof(toolExecutor));
             _chatClientFactory = chatClientFactory ?? throw new ArgumentNullException(nameof(chatClientFactory));
+            _externalToolProvider = externalToolProvider ?? throw new ArgumentNullException(nameof(externalToolProvider));
             _approvalCoordinator = new CopilotFrameworkApprovalCoordinator();
         }
 
@@ -111,8 +123,10 @@ namespace ColorVision.Copilot
             var emit = CreateEventEmitter(onEvent);
             emit(CopilotAgentEvent.Status("Agent Framework is preparing the request and available tools."));
 
-            var availableTools = _toolRegistry.FindTools(request)
-                .ToArray();
+            await using var externalToolLease = await _externalToolProvider.DiscoverAsync(request, cancellationToken);
+            foreach (var diagnostic in externalToolLease.Diagnostics)
+                emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
+            var availableTools = MergeAvailableTools(_toolRegistry.FindTools(request), externalToolLease.Tools, emit);
             var bridge = new HarnessToolBridge(request, availableTools, request.Profile.MaxToolRounds, _toolExecutor, emit);
             var frameworkTools = bridge.CreateFunctions();
             var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
@@ -512,7 +526,7 @@ namespace ColorVision.Copilot
 
             if (tools.Count > 0)
             {
-                builder.AppendLine("Available ColorVision functions:");
+                builder.AppendLine("Available request-scoped functions:");
                 foreach (var tool in tools)
                     builder.Append("- ")
                         .Append(tool.Name)
@@ -526,6 +540,27 @@ namespace ColorVision.Copilot
             }
 
             return builder.ToString().TrimEnd();
+        }
+
+        private static ICopilotTool[] MergeAvailableTools(
+            IReadOnlyList<ICopilotTool> builtInTools,
+            IReadOnlyList<ICopilotTool> externalTools,
+            Action<CopilotAgentEvent> emit)
+        {
+            var merged = new List<ICopilotTool>(builtInTools.Count + externalTools.Count);
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var tool in builtInTools.Concat(externalTools))
+            {
+                if (tool == null || string.IsNullOrWhiteSpace(tool.Name))
+                    continue;
+                if (!names.Add(tool.Name))
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic($"MCP client skipped duplicate tool name {tool.Name}."));
+                    continue;
+                }
+                merged.Add(tool);
+            }
+            return merged.ToArray();
         }
 
         private sealed class HarnessToolBridge
@@ -793,6 +828,7 @@ namespace ColorVision.Copilot
             private static string ToFunctionName(string toolName)
             {
                 var snakeCase = Regex.Replace(toolName ?? string.Empty, "(?<!^)([A-Z])", "_$1").ToLowerInvariant();
+                snakeCase = Regex.Replace(snakeCase, "[^a-z0-9]+", "_").Trim('_');
                 return "colorvision_" + snakeCase;
             }
 
@@ -813,6 +849,7 @@ namespace ColorVision.Copilot
                     toolInput.Path?.Trim() ?? string.Empty,
                     toolInput.StartLine?.ToString() ?? string.Empty,
                     toolInput.EndLine?.ToString() ?? string.Empty,
+                    toolInput.GetStableArgumentsJson(),
                 });
             }
 

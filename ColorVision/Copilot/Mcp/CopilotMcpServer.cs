@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -247,21 +248,31 @@ namespace ColorVision.Copilot.Mcp
 
             var bodyStart = headerEnd + 4;
             var alreadyRead = (int)memory.Length - bodyStart;
-            while (alreadyRead < contentLength)
+            var isChunked = headers.TryGetValue("Transfer-Encoding", out var transferEncoding)
+                && transferEncoding.Split(',').Any(value => string.Equals(value.Trim(), "chunked", StringComparison.OrdinalIgnoreCase));
+            string body;
+            if (isChunked)
             {
-                var remaining = Math.Min(buffer.Length, contentLength - alreadyRead);
-                var read = await stream.ReadAsync(buffer.AsMemory(0, remaining), cancellationToken);
-                if (read <= 0)
-                    break;
-
-                memory.Write(buffer, 0, read);
-                alreadyRead += read;
+                body = await ReadChunkedBodyAsync(stream, memory.GetBuffer().AsMemory(bodyStart, Math.Max(0, alreadyRead)), cancellationToken);
             }
+            else
+            {
+                while (alreadyRead < contentLength)
+                {
+                    var remaining = Math.Min(buffer.Length, contentLength - alreadyRead);
+                    var read = await stream.ReadAsync(buffer.AsMemory(0, remaining), cancellationToken);
+                    if (read <= 0)
+                        break;
 
-            var data = memory.ToArray();
-            var body = contentLength > 0 && data.Length >= bodyStart
-                ? Encoding.UTF8.GetString(data, bodyStart, Math.Min(contentLength, data.Length - bodyStart))
-                : string.Empty;
+                    memory.Write(buffer, 0, read);
+                    alreadyRead += read;
+                }
+
+                var data = memory.ToArray();
+                body = contentLength > 0 && data.Length >= bodyStart
+                    ? Encoding.UTF8.GetString(data, bodyStart, Math.Min(contentLength, data.Length - bodyStart))
+                    : string.Empty;
+            }
 
             var path = requestLine[1];
             var queryIndex = path.IndexOf('?');
@@ -276,6 +287,99 @@ namespace ColorVision.Copilot.Mcp
                 Body = body,
                 CallerSource = callerSource,
             };
+        }
+
+        private static async Task<string> ReadChunkedBodyAsync(
+            NetworkStream stream,
+            ReadOnlyMemory<byte> initialBytes,
+            CancellationToken cancellationToken)
+        {
+            using var encoded = new MemoryStream();
+            if (!initialBytes.IsEmpty)
+                encoded.Write(initialBytes.Span);
+
+            var buffer = new byte[8192];
+            while (encoded.Length <= MaxRequestBytes)
+            {
+                var data = encoded.ToArray();
+                if (TryDecodeChunkedBody(data, out var decoded, out var invalid))
+                    return Encoding.UTF8.GetString(decoded);
+                if (invalid)
+                    return string.Empty;
+
+                var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
+                if (read <= 0)
+                    break;
+                encoded.Write(buffer, 0, read);
+            }
+
+            return string.Empty;
+        }
+
+        private static bool TryDecodeChunkedBody(byte[] encoded, out byte[] decoded, out bool invalid)
+        {
+            using var output = new MemoryStream();
+            var offset = 0;
+            invalid = false;
+            decoded = Array.Empty<byte>();
+
+            while (true)
+            {
+                var lineEnd = FindCrlf(encoded, offset);
+                if (lineEnd < 0)
+                    return false;
+
+                var sizeText = Encoding.ASCII.GetString(encoded, offset, lineEnd - offset);
+                var extensionIndex = sizeText.IndexOf(';');
+                if (extensionIndex >= 0)
+                    sizeText = sizeText[..extensionIndex];
+                if (!int.TryParse(sizeText.Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var chunkSize)
+                    || chunkSize < 0
+                    || output.Length + chunkSize > MaxRequestBytes)
+                {
+                    invalid = true;
+                    return false;
+                }
+
+                offset = lineEnd + 2;
+                if (chunkSize == 0)
+                {
+                    if (encoded.Length < offset + 2)
+                        return false;
+                    if (encoded[offset] == '\r' && encoded[offset + 1] == '\n')
+                    {
+                        decoded = output.ToArray();
+                        return true;
+                    }
+
+                    var trailerEnd = FindHeaderEnd(encoded, encoded.Length, offset);
+                    if (trailerEnd < 0)
+                        return false;
+                    decoded = output.ToArray();
+                    return true;
+                }
+
+                if (encoded.Length < offset + chunkSize + 2)
+                    return false;
+                output.Write(encoded, offset, chunkSize);
+                offset += chunkSize;
+                if (encoded[offset] != '\r' || encoded[offset + 1] != '\n')
+                {
+                    invalid = true;
+                    return false;
+                }
+                offset += 2;
+            }
+        }
+
+        private static int FindCrlf(byte[] buffer, int startIndex)
+        {
+            for (var index = Math.Max(0, startIndex); index <= buffer.Length - 2; index++)
+            {
+                if (buffer[index] == '\r' && buffer[index + 1] == '\n')
+                    return index;
+            }
+            return -1;
         }
 
         private static async Task WriteResponseAsync(NetworkStream stream, CopilotMcpHttpResponse response, CancellationToken cancellationToken)
@@ -296,9 +400,9 @@ namespace ColorVision.Copilot.Mcp
                 await stream.WriteAsync(bodyBytes.AsMemory(0, bodyBytes.Length), cancellationToken);
         }
 
-        private static int FindHeaderEnd(byte[] buffer, int length)
+        private static int FindHeaderEnd(byte[] buffer, int length, int startIndex = 0)
         {
-            for (var index = 0; index <= length - 4; index++)
+            for (var index = Math.Max(0, startIndex); index <= length - 4; index++)
             {
                 if (buffer[index] == '\r'
                     && buffer[index + 1] == '\n'

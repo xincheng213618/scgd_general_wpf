@@ -242,6 +242,8 @@ namespace ColorVision.Copilot
                 ReadableLocalDirectoryPaths = request.ReadableLocalDirectoryPaths,
                 PreferBatchReadLocalFiles = request.PreferBatchReadLocalFiles,
                 Mode = request.Mode,
+                SessionCheckpoint = request.SessionCheckpoint,
+                ExternalMcpServers = request.ExternalMcpServers,
             };
         }
 

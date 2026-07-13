@@ -24,6 +24,7 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotToolInputSchema
     {
+        private const int MaximumSerializedArgumentsLength = 65_536;
         private static readonly StringComparer NameComparer = StringComparer.OrdinalIgnoreCase;
         private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "startLine", "endLine" }, NameComparer);
 
@@ -39,9 +40,23 @@ namespace ColorVision.Copilot
             JsonSchema = BuildJsonSchema(Parameters);
         }
 
+        private CopilotToolInputSchema(JsonElement jsonSchema)
+        {
+            if (jsonSchema.ValueKind != JsonValueKind.Object)
+                throw new ArgumentException("A tool input schema must be a JSON object.", nameof(jsonSchema));
+
+            Parameters = Array.Empty<CopilotToolParameter>();
+            JsonSchema = jsonSchema.Clone();
+            UsesArbitraryArguments = true;
+        }
+
         public IReadOnlyList<CopilotToolParameter> Parameters { get; }
 
         public JsonElement JsonSchema { get; }
+
+        public bool UsesArbitraryArguments { get; }
+
+        public static CopilotToolInputSchema FromJsonSchema(JsonElement jsonSchema) => new(jsonSchema);
 
         public static CopilotToolInputSchema Query(string description, bool required = false)
         {
@@ -72,6 +87,9 @@ namespace ColorVision.Copilot
         public bool TryBind(IReadOnlyDictionary<string, object?> arguments, out CopilotAgentToolInput input, out string error)
         {
             arguments ??= new Dictionary<string, object?>();
+            if (UsesArbitraryArguments)
+                return TryBindArbitraryArguments(arguments, out input, out error);
+
             var parametersByName = Parameters.ToDictionary(parameter => parameter.Name, NameComparer);
             var unknown = arguments.Keys.FirstOrDefault(name => !parametersByName.ContainsKey(name));
             if (!string.IsNullOrWhiteSpace(unknown))
@@ -109,10 +127,76 @@ namespace ColorVision.Copilot
 
             input = new CopilotAgentToolInput
             {
+                Arguments = new Dictionary<string, object?>(arguments, NameComparer),
                 Query = query,
                 Path = path,
                 StartLine = startLine,
                 EndLine = endLine,
+            };
+            error = string.Empty;
+            return true;
+        }
+
+        private bool TryBindArbitraryArguments(IReadOnlyDictionary<string, object?> arguments, out CopilotAgentToolInput input, out string error)
+        {
+            var copiedArguments = new Dictionary<string, object?>(arguments, NameComparer);
+            string serialized;
+            try
+            {
+                serialized = JsonSerializer.Serialize(copiedArguments);
+            }
+            catch (Exception ex)
+            {
+                input = CopilotAgentToolInput.Empty;
+                error = "Tool arguments could not be serialized: " + ex.Message;
+                return false;
+            }
+
+            if (serialized.Length > MaximumSerializedArgumentsLength)
+            {
+                input = CopilotAgentToolInput.Empty;
+                error = $"Tool arguments exceed the {MaximumSerializedArgumentsLength}-character limit.";
+                return false;
+            }
+
+            if (JsonSchema.TryGetProperty("required", out var requiredElement) && requiredElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var requiredNameElement in requiredElement.EnumerateArray())
+                {
+                    var requiredName = requiredNameElement.GetString();
+                    if (string.IsNullOrWhiteSpace(requiredName))
+                        continue;
+                    if (!TryGetValue(copiedArguments, requiredName, out var requiredValue) || IsMissing(requiredValue))
+                    {
+                        input = CopilotAgentToolInput.Empty;
+                        error = $"Required argument '{requiredName}' is missing.";
+                        return false;
+                    }
+                }
+            }
+
+            if (JsonSchema.TryGetProperty("additionalProperties", out var additionalProperties)
+                && additionalProperties.ValueKind == JsonValueKind.False
+                && JsonSchema.TryGetProperty("properties", out var propertiesElement)
+                && propertiesElement.ValueKind == JsonValueKind.Object)
+            {
+                var knownNames = propertiesElement.EnumerateObject().Select(property => property.Name).ToHashSet(NameComparer);
+                var unknownName = copiedArguments.Keys.FirstOrDefault(name => !knownNames.Contains(name));
+                if (!string.IsNullOrWhiteSpace(unknownName))
+                {
+                    input = CopilotAgentToolInput.Empty;
+                    error = $"Unknown argument '{unknownName}'.";
+                    return false;
+                }
+            }
+
+            input = new CopilotAgentToolInput
+            {
+                Arguments = copiedArguments,
+                Query = TryReadCompatibleString(copiedArguments, "query"),
+                Path = TryReadCompatibleString(copiedArguments, "path"),
+                StartLine = TryReadCompatibleInt(copiedArguments, "startLine"),
+                EndLine = TryReadCompatibleInt(copiedArguments, "endLine"),
             };
             error = string.Empty;
             return true;
@@ -268,6 +352,28 @@ namespace ColorVision.Copilot
                 return element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
                     || element.ValueKind == JsonValueKind.String && string.IsNullOrWhiteSpace(element.GetString());
             return false;
+        }
+
+        private static string TryReadCompatibleString(IReadOnlyDictionary<string, object?> arguments, string name)
+        {
+            if (!TryGetValue(arguments, name, out var value) || value == null)
+                return string.Empty;
+            if (value is string text)
+                return text.Trim();
+            if (value is JsonElement element && element.ValueKind == JsonValueKind.String)
+                return element.GetString()?.Trim() ?? string.Empty;
+            return string.Empty;
+        }
+
+        private static int? TryReadCompatibleInt(IReadOnlyDictionary<string, object?> arguments, string name)
+        {
+            if (!TryGetValue(arguments, name, out var value) || value == null)
+                return null;
+            if (value is int integer)
+                return integer;
+            if (value is JsonElement element && element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var jsonInteger))
+                return jsonInteger;
+            return null;
         }
     }
 }

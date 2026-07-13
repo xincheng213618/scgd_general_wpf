@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using ColorVision.UI;
 
 namespace ColorVision.Copilot
@@ -19,6 +20,8 @@ namespace ColorVision.Copilot
     {
         public static CopilotAgentToolInput Empty { get; } = new();
 
+        public IReadOnlyDictionary<string, object?> Arguments { get; init; } = new Dictionary<string, object?>();
+
         public string Query { get; init; } = string.Empty;
 
         public string Path { get; init; } = string.Empty;
@@ -26,6 +29,17 @@ namespace ColorVision.Copilot
         public int? StartLine { get; init; }
 
         public int? EndLine { get; init; }
+
+        public string GetStableArgumentsJson()
+        {
+            if (Arguments.Count == 0)
+                return string.Empty;
+
+            var ordered = Arguments
+                .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+            return JsonSerializer.Serialize(ordered);
+        }
     }
 
     public sealed class CopilotAgentRequest
@@ -53,6 +67,8 @@ namespace ColorVision.Copilot
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+
+        public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
     }
 
     public sealed class CopilotToolResult

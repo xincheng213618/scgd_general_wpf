@@ -3,6 +3,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace ColorVision.Copilot
 {
@@ -127,8 +128,32 @@ namespace ColorVision.Copilot
             if (input.EndLine.HasValue)
                 parts.Add("endLine=" + input.EndLine.Value);
 
+            foreach (var pair in input.Arguments
+                .Where(pair => !IsStandardArgumentName(pair.Key))
+                .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                string value;
+                try
+                {
+                    value = pair.Value is string text ? text : JsonSerializer.Serialize(pair.Value);
+                }
+                catch
+                {
+                    value = "<unserializable>";
+                }
+                parts.Add(pair.Key + "=" + CopilotMcpAuditLogger.RedactArgument(pair.Key, value));
+            }
+
             var summary = parts.Count == 0 ? "(none)" : string.Join("; ", parts);
             return Sanitize(CopilotMcpAuditLogger.RedactText(summary));
+        }
+
+        private static bool IsStandardArgumentName(string name)
+        {
+            return string.Equals(name, "query", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "path", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "startLine", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "endLine", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string Sanitize(string? value)
