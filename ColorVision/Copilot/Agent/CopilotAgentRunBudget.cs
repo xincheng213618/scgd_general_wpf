@@ -62,7 +62,8 @@ namespace ColorVision.Copilot
             CopilotAgentBudgetSnapshot? tokenSnapshot,
             TimeSpan elapsed,
             int toolCalls,
-            bool timeBudgetExhausted)
+            bool timeBudgetExhausted,
+            bool toolBudgetExhausted = false)
         {
             tokenSnapshot ??= new CopilotAgentBudgetSnapshot();
             return new CopilotAgentBudgetSnapshot
@@ -74,9 +75,10 @@ namespace ColorVision.Copilot
                 ConsumedTokens = tokenSnapshot.ConsumedTokens,
                 ProviderCalls = tokenSnapshot.ProviderCalls,
                 UsedEstimatedUsage = tokenSnapshot.UsedEstimatedUsage,
-                BudgetExhausted = tokenSnapshot.BudgetExhausted || timeBudgetExhausted,
+                BudgetExhausted = tokenSnapshot.BudgetExhausted || timeBudgetExhausted || toolBudgetExhausted,
                 MaxToolCalls = MaxToolCalls,
                 ToolCalls = Math.Clamp(toolCalls, 0, MaxToolCalls),
+                ToolBudgetExhausted = toolBudgetExhausted,
                 MaxAgentPasses = MaxAgentPasses,
                 TotalDurationMs = Math.Max(1, (long)TotalDuration.TotalMilliseconds),
                 ElapsedMs = Math.Max(0, (long)elapsed.TotalMilliseconds),

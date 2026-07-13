@@ -22,6 +22,10 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotMicrosoftAgentFrameworkRuntime : ICopilotAgentRuntime, ICopilotAgentSteeringRuntime
     {
+        // Business tools use their own hard limit in HarnessToolBridge. Framework
+        // functions (todo/mode/approval) and the final answer still need iterations.
+        private const int HarnessFunctionIterationOverhead = 8;
+
         private const int MaxSteeringMessageLength = 16_000;
 
         private readonly CopilotToolRegistry _toolRegistry;
@@ -222,7 +226,7 @@ namespace ColorVision.Copilot
                         : string.Empty),
                 MaxContextWindowTokens = tokenBudget.ContextWindowTokens,
                 MaxOutputTokens = request.Profile.MaxTokens,
-                MaximumIterationsPerRequest = runBudget.MaxToolCalls,
+                MaximumIterationsPerRequest = runBudget.MaxToolCalls + HarnessFunctionIterationOverhead,
                 DisableCompaction = false,
                 DisableFileMemory = true,
                 DisableFileAccess = true,
@@ -427,11 +431,17 @@ namespace ColorVision.Copilot
 
             if (controlIntent == CopilotAgentControlIntent.None)
                 timeBudgetExhausted |= timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
-            var budgetSnapshot = runBudget.CreateSnapshot(chatClient.Snapshot, stopwatch.Elapsed, bridge.StepRecords.Count, timeBudgetExhausted);
+            var budgetSnapshot = runBudget.CreateSnapshot(
+                chatClient.Snapshot,
+                stopwatch.Elapsed,
+                bridge.StepRecords.Count,
+                timeBudgetExhausted,
+                bridge.ToolBudgetExhausted);
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
                 + $" · tools {budgetSnapshot.ToolCalls}/{budgetSnapshot.MaxToolCalls} · elapsed {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ElapsedMs))}/{FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.TotalDurationMs))}"
                 + (budgetSnapshot.UsedEstimatedUsage ? " · includes estimates" : string.Empty)
+                + (budgetSnapshot.ToolBudgetExhausted ? " · tool limit reached" : string.Empty)
                 + (budgetSnapshot.BudgetExhausted ? " · exhausted" : string.Empty)
                 + "."));
             var finalizationToken = controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted ? cancellationToken : CancellationToken.None;
@@ -867,6 +877,7 @@ namespace ColorVision.Copilot
             private readonly object _syncRoot = new();
             private readonly int _maxToolCalls;
             private int _reservedToolCalls;
+            private bool _toolBudgetExhausted;
 
             public HarnessToolBridge(
                 CopilotAgentRequest request,
@@ -888,6 +899,15 @@ namespace ColorVision.Copilot
                 {
                     lock (_syncRoot)
                         return _stepRecords.OrderBy(step => step.Round).ToArray();
+                }
+            }
+
+            public bool ToolBudgetExhausted
+            {
+                get
+                {
+                    lock (_syncRoot)
+                        return _toolBudgetExhausted;
                 }
             }
 
@@ -1025,7 +1045,10 @@ namespace ColorVision.Copilot
                 lock (_syncRoot)
                 {
                     if (_reservedToolCalls >= _maxToolCalls)
+                    {
+                        _toolBudgetExhausted = true;
                         return;
+                    }
 
                     var round = ++_reservedToolCalls;
                     var occurredAtUtc = DateTimeOffset.UtcNow;
@@ -1104,7 +1127,10 @@ namespace ColorVision.Copilot
                 lock (_syncRoot)
                 {
                     if (_reservedToolCalls >= _maxToolCalls)
+                    {
+                        _toolBudgetExhausted = true;
                         return FormatRejectedToolCall(tool.Name, $"{error} The request has reached its {_maxToolCalls}-call tool limit.");
+                    }
 
                     var round = ++_reservedToolCalls;
                     var occurredAtUtc = DateTimeOffset.UtcNow;
@@ -1176,7 +1202,10 @@ namespace ColorVision.Copilot
                 lock (_syncRoot)
                 {
                     if (_reservedToolCalls >= _maxToolCalls)
+                    {
+                        _toolBudgetExhausted = true;
                         return FormatRejectedToolCall(tool.Name, $"{error} The request has reached its {_maxToolCalls}-call tool limit.");
+                    }
 
                     var round = ++_reservedToolCalls;
                     var attempt = 1;
@@ -1446,6 +1475,7 @@ namespace ColorVision.Copilot
                 attempt = 0;
                 if (_reservedToolCalls >= _maxToolCalls)
                 {
+                    _toolBudgetExhausted = true;
                     error = $"The request reached its {_maxToolCalls}-call tool limit. Continue with the collected observations and provide the final answer.";
                     return false;
                 }

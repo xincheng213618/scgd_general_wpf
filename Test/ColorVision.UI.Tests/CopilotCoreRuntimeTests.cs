@@ -236,6 +236,20 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.True(resume.IsAvailable);
         Assert.Equal(CopilotAgentRecoveryMode.Resume, resume.Request!.Mode);
 
+        var budgetJournal = new CopilotAgentTaskEventJournalBuilder();
+        budgetJournal.RecordRunStarted();
+        budgetJournal.RecordStop(CopilotAgentStopReason.BudgetExhausted);
+        var budgetCheckpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            capabilitySnapshot,
+            taskEventJournal: budgetJournal.Snapshot());
+        message.AgentStopReason = CopilotAgentStopReason.BudgetExhausted;
+        var budgetResume = CopilotAgentRecoveryPolicy.Evaluate(message, budgetCheckpoint, profile, capabilitySnapshot);
+        Assert.True(budgetResume.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Resume, budgetResume.Request!.Mode);
+        message.AgentStopReason = CopilotAgentStopReason.TaskPassLimit;
+
         message.AgentTraceEntries.Add(new CopilotAgentTraceEntry
         {
             CallId = "failed-read",
@@ -1191,6 +1205,65 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(1, bounded.ProviderCalls);
         Assert.True(bounded.Result.Budget.BudgetExhausted);
         Assert.Equal(CopilotAgentStopReason.BudgetExhausted, bounded.Result.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_LeavesFinalAnswerIterationAfterUsingLastToolCall()
+    {
+        var tool = new TestAgentTool("CatalogProbe");
+        using var client = new FunctionCallingChatClient("colorvision_catalog_probe");
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "inspect one catalog entry and answer",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { MaxToolCalls = 1 },
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(2, client.StreamCallCount);
+        Assert.Equal(1, result.Budget.ToolCalls);
+        Assert.False(result.Budget.ToolBudgetExhausted);
+        Assert.False(result.Budget.BudgetExhausted);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text == "harness answer");
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_FinalizesAnswerAfterModelExceedsToolBudget()
+    {
+        var tool = new TestAgentTool("CatalogProbe");
+        using var client = new FunctionCallingChatClient("colorvision_catalog_probe", repeatFunctionCallOnce: true);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "inspect one catalog entry without exceeding the tool limit",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { MaxToolCalls = 1 },
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(3, client.StreamCallCount);
+        Assert.Single(result.StepRecords);
+        Assert.Equal(1, result.Budget.ToolCalls);
+        Assert.True(result.Budget.ToolBudgetExhausted);
+        Assert.True(result.Budget.BudgetExhausted);
+        Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.StopReason);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text == "harness answer");
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("tool limit reached", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

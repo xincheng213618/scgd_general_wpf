@@ -477,6 +477,8 @@ namespace ColorVision.Copilot
 
         public int ToolCalls { get; init; }
 
+        public bool ToolBudgetExhausted { get; init; }
+
         public int MaxAgentPasses { get; init; }
 
         public long TotalDurationMs { get; init; }
