@@ -931,22 +931,34 @@ namespace ColorVision.Copilot
                 }
 
                 var signature = BuildExecutionSignature(tool.Name, toolInput);
+                string? reservationError = null;
                 lock (_syncRoot)
                 {
                     if (!TryReserveAttempt(tool, signature, out var round, out var attempt, out error))
-                        return false;
-
-                    reservation = new FrameworkApprovalReservation
                     {
-                        CallId = string.IsNullOrWhiteSpace(functionCall.CallId) ? Guid.NewGuid().ToString("N") : functionCall.CallId,
-                        Round = round,
-                        Attempt = attempt,
-                        MaxAttempts = GetMaximumAttempts(tool),
-                        Signature = signature,
-                        Tool = tool,
-                        ToolInput = toolInput,
-                        StartedAtUtc = DateTimeOffset.UtcNow,
-                    };
+                        reservationError = error;
+                    }
+                    else
+                    {
+                        reservation = new FrameworkApprovalReservation
+                        {
+                            CallId = string.IsNullOrWhiteSpace(functionCall.CallId) ? Guid.NewGuid().ToString("N") : functionCall.CallId,
+                            Round = round,
+                            Attempt = attempt,
+                            MaxAttempts = GetMaximumAttempts(tool),
+                            Signature = signature,
+                            Tool = tool,
+                            ToolInput = toolInput,
+                            StartedAtUtc = DateTimeOffset.UtcNow,
+                        };
+                    }
+                }
+
+                if (reservationError != null)
+                {
+                    RecordGuardRejectedToolCall(tool, toolInput, signature, reservationError, functionCall.CallId);
+                    error = reservationError;
+                    return false;
                 }
 
                 error = string.Empty;
@@ -1153,6 +1165,87 @@ namespace ColorVision.Copilot
                 return CopilotFrameworkToolResultFormatter.Format(outcome);
             }
 
+            private string RecordGuardRejectedToolCall(
+                ICopilotTool tool,
+                CopilotAgentToolInput toolInput,
+                string signature,
+                string error,
+                string? callId = null)
+            {
+                CopilotToolExecutionOutcome outcome;
+                lock (_syncRoot)
+                {
+                    if (_reservedToolCalls >= _maxToolCalls)
+                        return FormatRejectedToolCall(tool.Name, $"{error} The request has reached its {_maxToolCalls}-call tool limit.");
+
+                    var round = ++_reservedToolCalls;
+                    var attempt = 1;
+                    if (_attemptsBySignature.TryGetValue(signature, out var state))
+                    {
+                        state.RejectedCount++;
+                        attempt = state.InProgress
+                            ? Math.Max(1, state.AttemptCount)
+                            : Math.Max(1, state.AttemptCount + state.RejectedCount);
+                    }
+
+                    var maxAttempts = Math.Max(attempt, GetMaximumAttempts(tool));
+                    var occurredAtUtc = DateTimeOffset.UtcNow;
+                    var invocation = new CopilotToolInvocation
+                    {
+                        CallId = string.IsNullOrWhiteSpace(callId) ? Guid.NewGuid().ToString("N") : callId.Trim(),
+                        Round = round,
+                        Attempt = attempt,
+                        MaxAttempts = maxAttempts,
+                        RuntimeName = "agent-framework",
+                        Tool = tool,
+                        AgentRequest = _request,
+                        ToolInput = toolInput,
+                        ToolCall = CreateToolCall(tool, toolInput),
+                    };
+                    var capability = tool.Capability;
+                    var result = new CopilotToolResult
+                    {
+                        ToolName = tool.Name,
+                        Success = false,
+                        Summary = $"{tool.Name} was not executed because the identical call made no new progress.",
+                        ErrorMessage = error,
+                        FailureKind = CopilotToolFailureKind.Conflict,
+                    };
+                    var execution = new CopilotToolExecutionInfo
+                    {
+                        CallId = invocation.CallId,
+                        Round = round,
+                        Attempt = attempt,
+                        MaxAttempts = maxAttempts,
+                        RuntimeName = invocation.RuntimeName,
+                        ToolName = tool.Name,
+                        Access = capability.Access,
+                        RiskLevel = capability.RiskLevel,
+                        ApprovalMode = capability.ApprovalMode,
+                        Idempotency = capability.Idempotency,
+                        ConcurrencyMode = CopilotToolExecutor.ResolveConcurrencyMode(tool),
+                        ArgumentSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(tool, toolInput),
+                        State = CopilotToolExecutionState.Failed,
+                        FailureKind = CopilotToolFailureKind.Conflict,
+                        RetryEligible = false,
+                        StartedAtUtc = occurredAtUtc,
+                        CompletedAtUtc = occurredAtUtc,
+                        TimeoutMs = Math.Max(1, (long)capability.EffectiveExecutionTimeout.TotalMilliseconds),
+                    };
+                    outcome = new CopilotToolExecutionOutcome
+                    {
+                        Invocation = invocation,
+                        Result = result,
+                        Execution = execution,
+                    };
+                    _stepRecords.Add(outcome.StepRecord);
+                }
+
+                CopilotToolExecutionAuditLogger.Record(outcome);
+                _emit(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution));
+                return CopilotFrameworkToolResultFormatter.Format(outcome);
+            }
+
             private async Task<string> ExecuteAsync(
                 ICopilotTool tool,
                 CopilotAgentToolInput toolInput,
@@ -1164,6 +1257,7 @@ namespace ColorVision.Copilot
                 int maxAttempts;
                 var signature = BuildExecutionSignature(tool.Name, toolInput);
                 FrameworkApprovalReservation? approvalReservation;
+                string? reservationError = null;
                 lock (_syncRoot)
                 {
                     if (_approvedCalls.Remove(signature, out approvalReservation))
@@ -1175,10 +1269,19 @@ namespace ColorVision.Copilot
                     else
                     {
                         if (!TryReserveAttempt(tool, signature, out round, out attempt, out var error))
-                            return FormatRejectedToolCall(tool.Name, error);
-                        maxAttempts = GetMaximumAttempts(tool);
+                        {
+                            reservationError = error;
+                            maxAttempts = 0;
+                        }
+                        else
+                        {
+                            maxAttempts = GetMaximumAttempts(tool);
+                        }
                     }
                 }
+
+                if (reservationError != null)
+                    return RecordGuardRejectedToolCall(tool, toolInput, signature, reservationError, providerCallId);
 
                 var invocation = approvalReservation == null
                     ? new CopilotToolInvocation
@@ -1459,6 +1562,8 @@ namespace ColorVision.Copilot
             private sealed class ToolAttemptState
             {
                 public int AttemptCount { get; set; }
+
+                public int RejectedCount { get; set; }
 
                 public bool InProgress { get; set; }
 

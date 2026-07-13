@@ -1060,6 +1060,43 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RejectsConcurrentIdenticalReadWithoutCancellingOriginal()
+    {
+        var tool = new BlockingFrameworkReadTool();
+        using var fakeChatClient = new BatchFunctionCallingChatClient(
+            ("colorvision_blocking_read", "same-resource"),
+            ("colorvision_blocking_read", "same-resource"));
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new ICopilotTool[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var conflictObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var run = runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "inspect the resource once",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+        }, agentEvent =>
+        {
+            if (agentEvent.ToolExecution?.FailureKind == CopilotToolFailureKind.Conflict)
+                conflictObserved.TrySetResult();
+        }, CancellationToken.None);
+        await tool.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await conflictObserved.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        tool.Release();
+        var result = await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(2, result.Budget.ToolCalls);
+        var completed = Assert.Single(result.StepRecords, step => step.Execution.State == CopilotToolExecutionState.Completed);
+        var conflict = Assert.Single(result.StepRecords, step => step.Execution.FailureKind == CopilotToolFailureKind.Conflict);
+        Assert.Equal(1, completed.Execution.Attempt);
+        Assert.Equal(1, conflict.Execution.Attempt);
+        Assert.NotEqual(completed.Execution.CallId, conflict.Execution.CallId);
+    }
+
+    [Fact]
     public void FrameworkToolResultFormatter_BoundsRedactsAndPreservesWebSections()
     {
         var content = string.Join(Environment.NewLine + Environment.NewLine, Enumerable.Range(1, 3).Select(index =>
@@ -1668,6 +1705,41 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.BlockerDetected
             && item.SubjectId == blocker.SourceCallKey
             && item.ToolName == "PermanentProbe");
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ClassifiesRepeatedToolLoopAsNoProgressBlocker()
+    {
+        var tool = new TestAgentTool("CatalogProbe");
+        using var client = new ScriptedHarnessChatClient(
+            options => CreateTodoAddCall(options, "Collect catalog evidence", "The task remains open until evidence is evaluated."),
+            _ => new FunctionCallContent("catalog-call-1", "colorvision_catalog_probe", new Dictionary<string, object?> { ["query"] = "same-resource" }),
+            _ => new FunctionCallContent("catalog-call-2", "colorvision_catalog_probe", new Dictionary<string, object?> { ["query"] = "same-resource" }),
+            _ => null);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "collect required catalog evidence",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { MaxAgentPasses = 2 },
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotAgentStopReason.Blocked, result.StopReason);
+        Assert.Equal(CopilotToolFailureKind.Conflict, result.StepRecords[^1].Execution.FailureKind);
+        var blocker = Assert.Single(result.Blockers);
+        Assert.Equal(CopilotAgentBlockerKind.ToolFailure, blocker.Kind);
+        Assert.Equal("tool_conflict", blocker.Code);
+        Assert.Equal("CatalogProbe", blocker.ToolName);
+        Assert.Equal(CopilotAgentTaskEventIds.ForCall("catalog-call-2"), blocker.SourceCallKey);
+        Assert.Contains("identical tool call", blocker.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.BlockerDetected
+            && item.State == "tool_conflict");
     }
 
     [Fact]
@@ -2374,6 +2446,57 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_TracksRepeatedCompletedReadAsNoProgressConflict()
+    {
+        CopilotToolExecutionAuditLogger.ClearForTests();
+        var tool = new TestAgentTool("CatalogProbe");
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_catalog_probe", repeatFunctionCallOnce: true);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "read the catalog once",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(2, result.Budget.ToolCalls);
+        Assert.Collection(result.StepRecords,
+            completed => Assert.Equal(CopilotToolExecutionState.Completed, completed.Execution.State),
+            conflict =>
+            {
+                Assert.Equal("call-2", conflict.Execution.CallId);
+                Assert.Equal(2, conflict.Execution.Round);
+                Assert.Equal(2, conflict.Execution.Attempt);
+                Assert.Equal(CopilotToolExecutionState.Failed, conflict.Execution.State);
+                Assert.Equal(CopilotToolFailureKind.Conflict, conflict.Execution.FailureKind);
+                Assert.False(conflict.Execution.RetryEligible);
+                Assert.Contains("query=https://example.test/", conflict.Execution.ArgumentSummary, StringComparison.Ordinal);
+            });
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.ToolResult
+            && item.ToolExecution?.CallId == "call-2"
+            && item.ToolExecution.FailureKind == CopilotToolFailureKind.Conflict);
+        Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted
+            && item.SubjectId == CopilotAgentTaskEventIds.ForCall("call-2")
+            && item.State == CopilotToolExecutionState.Failed.ToString());
+        var conflictResult = Assert.Single(fakeChatClient.LastMessages!
+            .SelectMany(message => message.Contents)
+            .OfType<FunctionResultContent>(), item => item.CallId == "call-2");
+        using (var document = JsonDocument.Parse(Assert.IsType<string>(conflictResult.Result)))
+        {
+            Assert.Equal("conflict", document.RootElement.GetProperty("failure_kind").GetString());
+            Assert.False(document.RootElement.GetProperty("retry_allowed").GetBoolean());
+        }
+        var conflictAudit = Assert.Single(CopilotToolExecutionAuditLogger.GetRecentEntries(), entry => entry.CallId == "call-2");
+        Assert.Equal(CopilotToolFailureKind.Conflict, conflictAudit.FailureKind);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_DoesNotReapproveOrReplaySameNonIdempotentCall()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
@@ -2397,10 +2520,21 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Equal(1, tool.ApprovedExecutionCount);
-        Assert.Single(result.StepRecords);
+        Assert.Equal(2, result.Budget.ToolCalls);
+        Assert.Collection(result.StepRecords,
+            completed => Assert.Equal(CopilotToolExecutionState.Completed, completed.Execution.State),
+            conflict =>
+            {
+                Assert.Equal("call-2", conflict.Execution.CallId);
+                Assert.Equal(CopilotToolExecutionState.Failed, conflict.Execution.State);
+                Assert.Equal(CopilotToolFailureKind.Conflict, conflict.Execution.FailureKind);
+                Assert.Equal(CopilotToolApprovalMode.Always, conflict.Execution.ApprovalMode);
+            });
         Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.Status
             && item.Text.Contains("exact protected tool call", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.ToolResult
+            && item.ToolExecution?.FailureKind == CopilotToolFailureKind.Conflict);
     }
 
     [Fact]
@@ -2458,9 +2592,17 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         }, _ => { }, CancellationToken.None);
 
         Assert.Equal(1, tool.ExecutionCount);
-        var step = Assert.Single(result.StepRecords);
-        Assert.Equal(CopilotToolFailureKind.Validation, step.Execution.FailureKind);
-        Assert.False(step.Execution.RetryEligible);
+        Assert.Collection(result.StepRecords,
+            failed =>
+            {
+                Assert.Equal(CopilotToolFailureKind.Validation, failed.Execution.FailureKind);
+                Assert.False(failed.Execution.RetryEligible);
+            },
+            conflict =>
+            {
+                Assert.Equal(CopilotToolFailureKind.Conflict, conflict.Execution.FailureKind);
+                Assert.False(conflict.Execution.RetryEligible);
+            });
     }
 
     [Fact]
@@ -2781,6 +2923,33 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             await probe.EnterAsync(cancellationToken);
             return new CopilotToolResult { ToolName = Name, Success = true, Summary = $"{Name} completed." };
         }
+    }
+
+    private sealed class BlockingFrameworkReadTool : ICopilotTool
+    {
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public string Name => "BlockingRead";
+
+        public string Description => "Reads one deterministic resource and waits for test release.";
+
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Resource name.", required: true);
+
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int ExecutionCount { get; private set; }
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            ExecutionCount++;
+            Started.TrySetResult();
+            await _release.Task.WaitAsync(cancellationToken);
+            return new CopilotToolResult { ToolName = Name, Success = true, Summary = "Blocking read completed." };
+        }
+
+        public void Release() => _release.TrySetResult();
     }
 
     private sealed class ParallelInvocationProbe(int expectedConcurrentCalls)
