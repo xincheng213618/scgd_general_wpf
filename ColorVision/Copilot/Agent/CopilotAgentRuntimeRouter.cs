@@ -6,12 +6,10 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentRuntimeRouter : ICopilotAgentRuntime, ICopilotAgentSteeringRuntime
     {
-        private readonly ICopilotAgentRuntime _builtInRuntime;
         private readonly ICopilotAgentRuntime _agentFrameworkRuntime;
 
-        public CopilotAgentRuntimeRouter(ICopilotAgentRuntime builtInRuntime, ICopilotAgentRuntime agentFrameworkRuntime)
+        public CopilotAgentRuntimeRouter(ICopilotAgentRuntime agentFrameworkRuntime)
         {
-            _builtInRuntime = builtInRuntime ?? throw new ArgumentNullException(nameof(builtInRuntime));
             _agentFrameworkRuntime = agentFrameworkRuntime ?? throw new ArgumentNullException(nameof(agentFrameworkRuntime));
         }
 
@@ -24,33 +22,9 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(onEvent);
 
             if (!CanUseAgentFramework(request.Profile, out var reason))
-            {
-                onEvent(CopilotAgentEvent.Status($"Agent Framework is unavailable for this profile ({reason}); using the built-in Agent runtime."));
-                return await _builtInRuntime.RunAsync(request, onEvent, cancellationToken);
-            }
+                throw new NotSupportedException($"Agent Framework is unavailable for this profile: {reason}.");
 
-            var hasMaterialProgress = false;
-            try
-            {
-                return await _agentFrameworkRuntime.RunAsync(
-                    request,
-                    agentEvent =>
-                    {
-                        if (agentEvent.Type is CopilotAgentEventType.ToolStarted or CopilotAgentEventType.ToolResult or CopilotAgentEventType.AnswerDelta or CopilotAgentEventType.Completed)
-                            hasMaterialProgress = true;
-                        onEvent(agentEvent);
-                    },
-                    cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex) when (!hasMaterialProgress)
-            {
-                onEvent(CopilotAgentEvent.Status($"Agent Framework failed before executing a tool or producing an answer ({ex.Message}); using the built-in Agent runtime."));
-                return await _builtInRuntime.RunAsync(request, onEvent, cancellationToken);
-            }
+            return await _agentFrameworkRuntime.RunAsync(request, onEvent, cancellationToken);
         }
 
         public bool TryEnqueueSteeringMessage(string message)

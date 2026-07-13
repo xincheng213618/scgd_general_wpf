@@ -70,9 +70,8 @@ namespace ColorVision.Copilot
             _agentContextBuilder = new CopilotAgentContextBuilder();
             var toolRegistry = CopilotToolRegistry.CreateDefault();
             var toolExecutor = new CopilotToolExecutor();
-            var builtInAgentRuntime = new CopilotAgentService(chatService, toolRegistry, _agentContextBuilder, toolExecutor);
             var agentFrameworkRuntime = new CopilotMicrosoftAgentFrameworkRuntime(toolRegistry, _agentContextBuilder, toolExecutor);
-            _agentRuntime = new CopilotAgentRuntimeRouter(builtInAgentRuntime, agentFrameworkRuntime);
+            _agentRuntime = new CopilotAgentRuntimeRouter(agentFrameworkRuntime);
             _taskHost = CopilotAgentTaskHost.Shared;
             _contextRegistry = CopilotContextRegistry.CreateDefault();
             _config = CopilotConfig.Instance;
@@ -873,6 +872,19 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (hostedRun.RunControl?.Intent == CopilotAgentControlIntent.Pause && sessionCheckpoint != null)
             {
                 conversation.AgentSessionCheckpoint = sessionCheckpoint;
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                if (sessionCheckpoint != null)
+                {
+                    conversation.AgentSessionCheckpoint = sessionCheckpoint;
+                    PersistState();
+                }
                 throw;
             }
 

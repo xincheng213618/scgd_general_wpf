@@ -1177,27 +1177,40 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     [Fact]
     public async Task AgentRuntimeRouter_UsesFrameworkForOpenAiAndAnthropicProfiles()
     {
-        var builtIn = new RecordingAgentRuntime("built-in");
         var framework = new RecordingAgentRuntime("agent-framework");
-        var router = new CopilotAgentRuntimeRouter(builtIn, framework);
+        var router = new CopilotAgentRuntimeRouter(framework);
         var profile = CreateProfile();
         var events = new List<CopilotAgentEvent>();
 
         await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
-        Assert.Equal(0, builtIn.RunCount);
         Assert.Equal(1, framework.RunCount);
 
         profile.ProviderType = CopilotProviderType.AnthropicCompatible;
         await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
-        Assert.Equal(0, builtIn.RunCount);
         Assert.Equal(2, framework.RunCount);
 
         profile.ProviderType = CopilotProviderType.OpenAICompatible;
         profile.VendorType = CopilotVendorType.Xiaomi;
         profile.ReasoningMode = CopilotReasoningMode.Enabled;
         await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
-        Assert.Equal(0, builtIn.RunCount);
         Assert.Equal(3, framework.RunCount);
+    }
+
+    [Fact]
+    public async Task AgentRuntimeRouter_RejectsInvalidProfileWithoutCallingFramework()
+    {
+        var framework = new RecordingAgentRuntime("agent-framework");
+        var router = new CopilotAgentRuntimeRouter(framework);
+        var profile = CreateProfile();
+        profile.BaseUrl = "relative-endpoint";
+
+        var error = await Assert.ThrowsAsync<NotSupportedException>(() => router.RunAsync(
+            new CopilotAgentRequest { Profile = profile },
+            _ => { },
+            CancellationToken.None));
+
+        Assert.Contains("base URL is invalid", error.Message, StringComparison.Ordinal);
+        Assert.Equal(0, framework.RunCount);
     }
 
     [Fact]
@@ -2518,30 +2531,27 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentRuntimeRouter_FallsBackWhenFrameworkFailsBeforeMaterialProgress()
+    public async Task AgentRuntimeRouter_PropagatesFrameworkFailureBeforeMaterialProgress()
     {
-        var builtIn = new RecordingAgentRuntime("built-in");
-        var router = new CopilotAgentRuntimeRouter(builtIn, new ThrowingAgentRuntime());
-        var events = new List<CopilotAgentEvent>();
+        var router = new CopilotAgentRuntimeRouter(new ThrowingAgentRuntime());
 
-        await router.RunAsync(new CopilotAgentRequest { Profile = CreateProfile() }, events.Add, CancellationToken.None);
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => router.RunAsync(
+            new CopilotAgentRequest { Profile = CreateProfile() },
+            _ => { },
+            CancellationToken.None));
 
-        Assert.Equal(1, builtIn.RunCount);
-        Assert.Contains(events, item => item.Type == CopilotAgentEventType.Status && item.Text.Contains("failed before executing a tool", StringComparison.Ordinal));
+        Assert.Equal("framework unavailable", error.Message);
     }
 
     [Fact]
-    public async Task AgentRuntimeRouter_DoesNotFallbackAfterToolExecutionStarts()
+    public async Task AgentRuntimeRouter_PropagatesFrameworkFailureAfterToolExecutionStarts()
     {
-        var builtIn = new RecordingAgentRuntime("built-in");
-        var router = new CopilotAgentRuntimeRouter(builtIn, new ToolStartingThenThrowingAgentRuntime());
+        var router = new CopilotAgentRuntimeRouter(new ToolStartingThenThrowingAgentRuntime());
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => router.RunAsync(
             new CopilotAgentRequest { Profile = CreateProfile() },
             _ => { },
             CancellationToken.None));
-
-        Assert.Equal(0, builtIn.RunCount);
     }
 
     [Fact]
