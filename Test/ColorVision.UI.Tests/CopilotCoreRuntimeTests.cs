@@ -1990,6 +1990,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     [Fact]
     public async Task AgentFrameworkRuntime_RejectsArgumentsOutsideToolSchema()
     {
+        CopilotToolExecutionAuditLogger.ClearForTests();
         var tool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.Query("Complete URL.", required: true));
         using var fakeChatClient = new FunctionCallingChatClient("colorvision_fetch_url", new Dictionary<string, object?>
         {
@@ -2000,16 +2001,79 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             new CopilotToolRegistry(new[] { tool }),
             new CopilotAgentContextBuilder(),
             _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
 
         var result = await runtime.RunAsync(new CopilotAgentRequest
         {
             UserText = "https://example.test/",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Web,
-        }, _ => { }, CancellationToken.None);
+        }, events.Add, CancellationToken.None);
 
         Assert.Equal(0, tool.ExecutionCount);
-        Assert.Empty(result.StepRecords);
+        var rejected = Assert.Single(result.StepRecords);
+        Assert.Equal(CopilotToolExecutionState.Failed, rejected.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.Validation, rejected.Execution.FailureKind);
+        Assert.False(rejected.Execution.RetryEligible);
+        Assert.Equal("fields=path,query", rejected.Execution.ArgumentSummary);
+        Assert.DoesNotContain("https://example.test/", rejected.Execution.ArgumentSummary, StringComparison.Ordinal);
+        Assert.Equal(1, result.Budget.ToolCalls);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.ToolResult
+            && item.ToolExecution?.FailureKind == CopilotToolFailureKind.Validation);
+        Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted
+            && item.ToolName == "FetchUrl"
+            && item.State == CopilotToolExecutionState.Failed.ToString());
+        Assert.NotNull(fakeChatClient.LastMessages);
+        var functionResult = Assert.Single(fakeChatClient.LastMessages!
+            .SelectMany(message => message.Contents)
+            .OfType<FunctionResultContent>());
+        var formatted = Assert.IsType<string>(functionResult.Result);
+        using (var document = JsonDocument.Parse(formatted))
+        {
+            Assert.Equal("validation", document.RootElement.GetProperty("failure_kind").GetString());
+            Assert.False(document.RootElement.GetProperty("retry_allowed").GetBoolean());
+        }
+        var audit = Assert.Single(CopilotToolExecutionAuditLogger.GetRecentEntries(), entry => entry.ToolName == "FetchUrl");
+        Assert.Equal(CopilotToolExecutionState.Failed, audit.State);
+        Assert.Equal(CopilotToolFailureKind.Validation, audit.FailureKind);
+        Assert.Equal("fields=path,query", audit.ArgumentSummary);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_RejectsInvalidProtectedArgumentsBeforeOpeningApproval()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        CopilotToolExecutionAuditLogger.ClearForTests();
+        var tool = new FrameworkApprovalTestTool();
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_protected_write", new Dictionary<string, object?>
+        {
+            ["query"] = "protected-value",
+            ["path"] = "unexpected.txt",
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "apply the protected value",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(0, tool.ApprovedExecutionCount);
+        Assert.Equal(0, tool.UnapprovedExecutionCount);
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        var rejected = Assert.Single(result.StepRecords);
+        Assert.Equal("call-1", rejected.Execution.CallId);
+        Assert.Equal(CopilotToolExecutionState.Failed, rejected.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.Validation, rejected.Execution.FailureKind);
+        Assert.Equal(CopilotToolApprovalMode.Always, rejected.Execution.ApprovalMode);
+        Assert.Equal(1, result.Budget.ToolCalls);
+        Assert.DoesNotContain(events, item => item.ToolExecution?.State == CopilotToolExecutionState.AwaitingApproval);
+        Assert.Contains(events, item => item.ToolExecution?.FailureKind == CopilotToolFailureKind.Validation);
     }
 
     [Fact]
@@ -2806,12 +2870,15 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         public ChatOptions? LastOptions { get; private set; }
 
+        public IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? LastMessages { get; private set; }
+
         public int StreamCallCount => Volatile.Read(ref _streamCallCount);
 
         public Task<ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             LastOptions = options;
+            LastMessages = messages.ToArray();
             return Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, "harness answer")));
         }
 
@@ -2822,6 +2889,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             LastOptions = options;
+            LastMessages = messages.ToArray();
             await Task.Yield();
 
             var callNumber = Interlocked.Increment(ref _streamCallCount);

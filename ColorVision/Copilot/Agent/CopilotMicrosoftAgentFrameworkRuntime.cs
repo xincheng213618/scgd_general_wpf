@@ -913,7 +913,10 @@ namespace ColorVision.Copilot
                     ? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, object?>(functionCall.Arguments, StringComparer.OrdinalIgnoreCase);
                 if (!tool.InputSchema.TryBind(arguments, out var toolInput, out error))
+                {
+                    RecordRejectedToolCall(tool, arguments, error, functionCall.CallId);
                     return false;
+                }
 
                 var signature = BuildExecutionSignature(tool.Name, toolInput);
                 lock (_syncRoot)
@@ -989,6 +992,84 @@ namespace ColorVision.Copilot
                     RecordOutcome(reservation.Signature, outcome);
                 }
                 _emit(CopilotAgentEvent.FromToolResult(result, execution));
+            }
+
+            private string RecordRejectedToolCall(
+                ICopilotTool tool,
+                IReadOnlyDictionary<string, object?> arguments,
+                string error,
+                string? callId = null)
+            {
+                CopilotToolExecutionOutcome outcome;
+                lock (_syncRoot)
+                {
+                    if (_reservedToolCalls >= _maxToolCalls)
+                        return FormatRejectedToolCall(tool.Name, $"{error} The request has reached its {_maxToolCalls}-call tool limit.");
+
+                    var round = ++_reservedToolCalls;
+                    var occurredAtUtc = DateTimeOffset.UtcNow;
+                    var toolInput = new CopilotAgentToolInput
+                    {
+                        Arguments = arguments.Keys
+                            .Where(name => !string.IsNullOrWhiteSpace(name))
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .Take(64)
+                            .ToDictionary(name => name, _ => (object?)null, StringComparer.OrdinalIgnoreCase),
+                    };
+                    var invocation = new CopilotToolInvocation
+                    {
+                        CallId = string.IsNullOrWhiteSpace(callId) ? Guid.NewGuid().ToString("N") : callId.Trim(),
+                        Round = round,
+                        Attempt = 1,
+                        MaxAttempts = 1,
+                        RuntimeName = "agent-framework",
+                        Tool = tool,
+                        AgentRequest = _request,
+                        ToolInput = toolInput,
+                        ToolCall = CreateToolCall(tool, toolInput),
+                    };
+                    var capability = tool.Capability;
+                    var result = new CopilotToolResult
+                    {
+                        ToolName = tool.Name,
+                        Success = false,
+                        Summary = $"{tool.Name} arguments were rejected before execution.",
+                        ErrorMessage = error,
+                        FailureKind = CopilotToolFailureKind.Validation,
+                    };
+                    var execution = new CopilotToolExecutionInfo
+                    {
+                        CallId = invocation.CallId,
+                        Round = round,
+                        Attempt = 1,
+                        MaxAttempts = 1,
+                        RuntimeName = invocation.RuntimeName,
+                        ToolName = tool.Name,
+                        Access = capability.Access,
+                        RiskLevel = capability.RiskLevel,
+                        ApprovalMode = capability.ApprovalMode,
+                        Idempotency = capability.Idempotency,
+                        ConcurrencyMode = CopilotToolExecutor.ResolveConcurrencyMode(tool),
+                        ArgumentSummary = CreateRejectedArgumentSummary(arguments),
+                        State = CopilotToolExecutionState.Failed,
+                        FailureKind = CopilotToolFailureKind.Validation,
+                        RetryEligible = false,
+                        StartedAtUtc = occurredAtUtc,
+                        CompletedAtUtc = occurredAtUtc,
+                        TimeoutMs = Math.Max(1, (long)capability.EffectiveExecutionTimeout.TotalMilliseconds),
+                    };
+                    outcome = new CopilotToolExecutionOutcome
+                    {
+                        Invocation = invocation,
+                        Result = result,
+                        Execution = execution,
+                    };
+                    _stepRecords.Add(outcome.StepRecord);
+                }
+
+                CopilotToolExecutionAuditLogger.Record(outcome);
+                _emit(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution));
+                return CopilotFrameworkToolResultFormatter.Format(outcome);
             }
 
             private async Task<string> ExecuteAsync(ICopilotTool tool, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
@@ -1134,6 +1215,20 @@ namespace ColorVision.Copilot
                 });
             }
 
+            private static string CreateRejectedArgumentSummary(IReadOnlyDictionary<string, object?> arguments)
+            {
+                var names = arguments.Keys
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => new string(name.Trim().Where(character => !char.IsControl(character)).Take(120).ToArray()))
+                    .Where(name => name.Length > 0)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                    .Take(64)
+                    .ToArray();
+                var summary = names.Length == 0 ? "(none)" : "fields=" + string.Join(",", names);
+                return summary.Length <= 800 ? summary : summary[..800];
+            }
+
             private bool TryReserveAttempt(ICopilotTool tool, string signature, out int round, out int attempt, out string error)
             {
                 round = 0;
@@ -1225,7 +1320,7 @@ namespace ColorVision.Copilot
                 protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
                 {
                     if (!_tool.InputSchema.TryBind(arguments, out var toolInput, out var error))
-                        return FormatRejectedToolCall(_tool.Name, error);
+                        return _owner.RecordRejectedToolCall(_tool, arguments, error);
 
                     return await _owner.ExecuteAsync(_tool, toolInput, cancellationToken);
                 }
