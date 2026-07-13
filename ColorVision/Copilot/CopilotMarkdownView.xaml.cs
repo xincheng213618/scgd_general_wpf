@@ -30,6 +30,7 @@ namespace ColorVision.Copilot
 
         private readonly DispatcherTimer _renderTimer;
         private string _pendingMarkdown = string.Empty;
+        private FlowDocument? _renderDocument;
 
         public CopilotMarkdownView()
         {
@@ -83,10 +84,37 @@ namespace ColorVision.Copilot
 
         private void RenderMarkdown(string markdown)
         {
-            MarkdownDocument.Blocks.Clear();
-            if (string.IsNullOrWhiteSpace(markdown))
-                return;
+            FlowDocument document;
+            try
+            {
+                document = BuildMarkdownDocument(markdown);
+            }
+            catch (Exception)
+            {
+                document = CreatePlainTextDocument(markdown);
+            }
 
+            DocumentViewer.Document = document;
+        }
+
+        private FlowDocument BuildMarkdownDocument(string markdown)
+        {
+            var document = CreateDocument();
+            _renderDocument = document;
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(markdown))
+                    PopulateMarkdownDocument(markdown);
+                return document;
+            }
+            finally
+            {
+                _renderDocument = null;
+            }
+        }
+
+        private void PopulateMarkdownDocument(string markdown)
+        {
             var normalized = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
             var lines = normalized.Split('\n');
             var paragraphLines = new List<string>();
@@ -236,14 +264,14 @@ namespace ColorVision.Copilot
             };
             var block = CreateParagraph(fontSize, FontWeights.SemiBold, new Thickness(0, level <= 2 ? 8 : 5, 0, 6));
             AddInlines(block.Inlines, text);
-            MarkdownDocument.Blocks.Add(block);
+            CurrentDocument.Blocks.Add(block);
         }
 
         private void AddTextBlock(string text, Thickness margin)
         {
             var block = CreateParagraph(13, FontWeights.Normal, margin);
             AddInlines(block.Inlines, text);
-            MarkdownDocument.Blocks.Add(block);
+            CurrentDocument.Blocks.Add(block);
         }
 
         private void AddListItem(string marker, string text)
@@ -253,7 +281,7 @@ namespace ColorVision.Copilot
             markerRun.SetResourceReference(TextElement.ForegroundProperty, "SecondaryTextBrush");
             block.Inlines.Add(markerRun);
             AddInlines(block.Inlines, text);
-            MarkdownDocument.Blocks.Add(block);
+            CurrentDocument.Blocks.Add(block);
         }
 
         private void AddQuote(string text)
@@ -263,7 +291,7 @@ namespace ColorVision.Copilot
             block.Padding = new Thickness(10, 2, 0, 2);
             block.SetResourceReference(Block.BorderBrushProperty, "PrimaryBrush");
             AddInlines(block.Inlines, text);
-            MarkdownDocument.Blocks.Add(block);
+            CurrentDocument.Blocks.Add(block);
         }
 
         private void AddCodeBlock(string code)
@@ -275,7 +303,7 @@ namespace ColorVision.Copilot
             block.SetResourceReference(Block.BackgroundProperty, "ButtonBackground");
             block.SetResourceReference(Block.BorderBrushProperty, "ButtonBorderBrush");
             block.Inlines.Add(new Run(code));
-            MarkdownDocument.Blocks.Add(block);
+            CurrentDocument.Blocks.Add(block);
         }
 
         private void AddFormulaBlock(string latex, string originalText)
@@ -298,7 +326,35 @@ namespace ColorVision.Copilot
             {
                 Margin = new Thickness(0, 4, 0, 10),
             };
-            MarkdownDocument.Blocks.Add(block);
+            CurrentDocument.Blocks.Add(block);
+        }
+
+        private FlowDocument CurrentDocument => _renderDocument
+            ?? throw new InvalidOperationException("Markdown blocks can only be added while a document is being built.");
+
+        private static FlowDocument CreateDocument()
+        {
+            return new FlowDocument
+            {
+                ColumnGap = 0,
+                ColumnWidth = 100000,
+                PagePadding = new Thickness(0),
+            };
+        }
+
+        private static FlowDocument CreatePlainTextDocument(string markdown)
+        {
+            var document = CreateDocument();
+            if (!string.IsNullOrEmpty(markdown))
+                document.Blocks.Add(CreatePlainTextParagraph(markdown));
+            return document;
+        }
+
+        private static Paragraph CreatePlainTextParagraph(string text)
+        {
+            var paragraph = CreateParagraph(13, FontWeights.Normal, new Thickness(0, 0, 0, 8));
+            paragraph.Inlines.Add(new Run(text));
+            return paragraph;
         }
 
         private static Paragraph CreateParagraph(double fontSize, FontWeight fontWeight, Thickness margin)
@@ -391,6 +447,7 @@ namespace ColorVision.Copilot
                 _ = WpfTeXFormulaParser.Instance.Parse(latex);
                 formula = new FormulaControl
                 {
+                    ErrorTemplate = null!,
                     Formula = latex,
                     Focusable = false,
                     IsHitTestVisible = true,

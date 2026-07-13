@@ -18,11 +18,6 @@
                      IsReadOnly="True"
                      IsReadOnlyCaretVisible="False"
                      Padding="0"
-                     VerticalScrollBarVisibility="Disabled">
-            <FlowDocument x:Name="MarkdownDocument"
-                          ColumnGap="0"
-                          ColumnWidth="100000"
-                          PagePadding="0" />
-        </RichTextBox>
+                     VerticalScrollBarVisibility="Disabled" />
     </Grid>
 </UserControl>

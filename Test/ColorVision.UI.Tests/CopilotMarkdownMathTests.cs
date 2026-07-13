@@ -11,6 +11,13 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CopilotMarkdownMathTests
 {
+    private static readonly string[] StreamingMarkdownUpdates =
+    {
+        "光通量 $\\Phi_v=683\\int P_e(\\lambda)V(\\lambda)d\\lambda$",
+        "EQE $$\\mathrm{EQE}=\\frac{N_{photons}}{N_{electrons}}$$",
+        "最终内容包含无法解析的公式 $\\frac{$，但仍应显示。",
+    };
+
     [Fact]
     public void InlineParserRecognizesMathButSkipsCodeEscapesAndCurrency()
     {
@@ -64,6 +71,8 @@ public sealed class CopilotMarkdownMathTests
     [InlineData(@"x_{corrected}=x(1+k_1r^2+k_2r^4+k_3r^6)")]
     [InlineData(@"r=\sqrt{x^2+y^2}")]
     [InlineData(@"x_{corrected}=x+[2p_1xy+p_2(r^2+2x^2)]")]
+    [InlineData(@"\Phi_v=683\int_0^\infty P_{e,\lambda}(\lambda)V(\lambda)\,d\lambda")]
+    [InlineData(@"\mathrm{EQE}=\frac{P_{opt}/(hc/\lambda)}{I/q}")]
     public void ScreenshotFormulasAreAcceptedByWpfMath(string latex)
     {
         var formula = WpfTeXFormulaParser.Instance.Parse(latex);
@@ -116,6 +125,42 @@ public sealed class CopilotMarkdownMathTests
                     .SelectMany(paragraph => paragraph.Inlines.OfType<Run>())
                     .Select(run => run.Text));
                 Assert.Contains(@"$\frac{$", fallbackText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void MarkdownViewCanReplaceFormulaDocumentDuringStreamingUpdates()
+    {
+        RunOnStaThread(() =>
+        {
+            var view = new CopilotMarkdownView();
+            var window = new Window
+            {
+                Content = view,
+                Height = 320,
+                ShowInTaskbar = false,
+                Width = 640,
+                WindowStyle = WindowStyle.None,
+            };
+
+            try
+            {
+                window.Show();
+                foreach (var markdown in StreamingMarkdownUpdates)
+                {
+                    view.Markdown = markdown;
+                    PumpDispatcher(TimeSpan.FromMilliseconds(150));
+                }
+
+                var viewer = Assert.IsType<RichTextBox>(LogicalTreeHelper.FindLogicalNode(view, "DocumentViewer"));
+                var text = new TextRange(viewer.Document.ContentStart, viewer.Document.ContentEnd).Text;
+                Assert.Contains("最终内容", text, StringComparison.Ordinal);
+                Assert.Contains(@"$\frac{$", text, StringComparison.Ordinal);
             }
             finally
             {
