@@ -22,6 +22,8 @@ namespace ColorVision.Copilot
 
         public string ToolName { get; init; } = string.Empty;
 
+        public string SourceCallKey { get; init; } = string.Empty;
+
         public string ResourceKey { get; init; } = string.Empty;
 
         public string Summary { get; init; } = string.Empty;
@@ -38,6 +40,7 @@ namespace ColorVision.Copilot
                 && IsBounded(CapabilityId, 200)
                 && IsHex(CapabilityFingerprint, 64)
                 && IsBounded(ToolName, 120)
+                && (string.IsNullOrWhiteSpace(SourceCallKey) || IsPrefixedHex(SourceCallKey, "call:", 32))
                 && IsPrefixedHex(ResourceKey, "resource:", 16)
                 && (!string.IsNullOrWhiteSpace(Summary) || !string.IsNullOrWhiteSpace(ContentExcerpt))
                 && (Summary?.Length ?? 0) <= MaxSummaryLength
@@ -109,6 +112,7 @@ namespace ColorVision.Copilot
                     CapabilityId = capability.Id,
                     CapabilityFingerprint = capability.Fingerprint,
                     ToolName = Sanitize(step.Execution.ToolName, 120, preserveLines: false),
+                    SourceCallKey = CopilotAgentTaskEventIds.ForCall(step.Execution.CallId),
                     ResourceKey = resourceKey,
                     Summary = summary,
                     ContentExcerpt = excerpt,

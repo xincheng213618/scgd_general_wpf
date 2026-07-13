@@ -186,6 +186,7 @@ public sealed class CopilotCapabilityCatalogTests
         Assert.Contains("api_key=<redacted>", excerpt.ContentExcerpt, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("secret-value", excerpt.ContentExcerpt, StringComparison.Ordinal);
         Assert.True(excerpt.ContentExcerpt.Length <= CopilotAgentEvidenceArtifact.MaxExcerptLength);
+        Assert.Equal(CopilotAgentTaskEventIds.ForCall("PublicEvidence-call"), excerpt.SourceCallKey);
         var namesOnly = Assert.Single(artifacts, artifact => artifact.ToolName == "ExternalEvidence");
         Assert.Empty(namesOnly.ContentExcerpt);
         Assert.DoesNotContain(artifacts, artifact => artifact.ToolName == "ProtectedWrite");
@@ -214,6 +215,7 @@ public sealed class CopilotCapabilityCatalogTests
             Observation = new CopilotToolObservation { Success = success, Summary = summary, Content = content },
             Execution = new CopilotToolExecutionInfo
             {
+                CallId = tool.Name + "-call",
                 ToolName = tool.Name,
                 Access = tool.Capability.Access,
                 Idempotency = tool.Capability.Idempotency,

@@ -100,6 +100,7 @@ namespace ColorVision.Copilot
                 [
                     new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, normalized),
                 ]);
+                activeContext.TaskEventJournal.RecordSteering(normalized);
                 return true;
             }
             catch (ObjectDisposedException)
@@ -123,7 +124,14 @@ namespace ColorVision.Copilot
             if (!CopilotAgentRuntimeRouter.CanUseAgentFramework(request.Profile, out var unsupportedReason))
                 throw new NotSupportedException(unsupportedReason);
 
-            var emit = CreateEventEmitter(onEvent);
+            var requestedCheckpoint = request.SessionCheckpoint;
+            var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(requestedCheckpoint?.TaskEventJournal);
+            var emit = CreateEventEmitter(agentEvent =>
+            {
+                taskEventJournalBuilder.Observe(agentEvent);
+                onEvent(agentEvent);
+            });
+            taskEventJournalBuilder.RecordRunStarted();
             emit(CopilotAgentEvent.Status("Agent Framework is preparing the request and available tools."));
 
             await using var externalToolLease = await _externalToolProvider.DiscoverAsync(request, cancellationToken);
@@ -131,7 +139,6 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
             var availableTools = MergeAvailableTools(_toolRegistry.FindTools(request), externalToolLease.Tools, emit);
             var capabilitySnapshot = _capabilityCatalog.GetSnapshot();
-            var requestedCheckpoint = request.SessionCheckpoint;
             var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind is CopilotAgentCheckpointCompatibilityKind.ProfileChanged
                 or CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing
@@ -227,6 +234,7 @@ namespace ColorVision.Copilot
                     using var checkpointDocument = JsonDocument.Parse(requestedCheckpoint.SerializedSessionJson);
                     session = await agent.DeserializeSessionAsync(checkpointDocument.RootElement.Clone(), null, cancellationToken);
                     sessionResumed = true;
+                    taskEventJournalBuilder.RecordSessionResumed();
                     emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework session resumed from the persisted conversation checkpoint."));
                 }
                 catch (OperationCanceledException)
@@ -236,6 +244,7 @@ namespace ColorVision.Copilot
                 catch (Exception ex)
                 {
                     sessionResumeFailed = true;
+                    taskEventJournalBuilder.RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind.Invalid);
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be resumed; starting a fresh session ({ex.Message})."));
                     session = await agent.CreateSessionAsync(cancellationToken);
                 }
@@ -243,12 +252,16 @@ namespace ColorVision.Copilot
             else
             {
                 if (requiresCheckpointReplan)
+                {
+                    taskEventJournalBuilder.RecordReplanRequired(checkpointCompatibility!.Kind);
                     emit(CopilotAgentEvent.RuntimeDiagnostic(FormatCapabilityReplanDiagnostic(checkpointCompatibility!)));
+                }
                 session = await agent.CreateSessionAsync(cancellationToken);
             }
-            using var steeringRegistration = RegisterSteeringContext(messageInjector, session);
+            using var steeringRegistration = RegisterSteeringContext(messageInjector, session, taskEventJournalBuilder);
 
             var recoveredTaskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
+            taskEventJournalBuilder.RecordTaskLedger(recoveredTaskLedger, sessionResumed ? "recovered" : "initial");
             if (sessionResumed)
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
@@ -325,6 +338,14 @@ namespace ColorVision.Copilot
                         bridge.Reject(reservation, "The user rejected or did not complete this protected action approval.");
                         emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was not approved. Agent Framework will continue without executing it."));
                     }
+                    if (approved)
+                    {
+                        taskEventJournalBuilder.RecordApprovalDecision(
+                            reservation.Tool.Name,
+                            reservation.CallId,
+                            reservation.ApprovalActionId,
+                            approved: true);
+                    }
 
                     responses.Add(approvalRequest.CreateResponse(approved, approved ? "Approved in ColorVision." : "Rejected or expired in ColorVision."));
                 }
@@ -340,14 +361,34 @@ namespace ColorVision.Copilot
                 + "."));
             var taskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
             var stopReason = DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords);
+            taskEventJournalBuilder.RecordTaskLedger(taskLedger, "final");
             emit(CopilotAgentEvent.RuntimeDiagnostic(FormatTaskLedgerDiagnostic("Agent task ledger", taskLedger)));
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent stop reason · {stopReason}."));
+            IReadOnlyList<CopilotAgentEvidenceArtifact> evidenceArtifacts = previousEvidenceArtifacts
+                .Where(artifact => artifact?.IsStructurallyValid() == true)
+                .TakeLast(CopilotAgentEvidenceArtifact.MaxArtifacts)
+                .ToArray();
+            try
+            {
+                var capturedAtUtc = DateTimeOffset.UtcNow;
+                evidenceArtifacts = CopilotAgentEvidenceArtifacts.Merge(previousEvidenceArtifacts, bridge.StepRecords, capabilitySnapshot, capturedAtUtc);
+                var currentCallKeys = bridge.StepRecords
+                    .Select(step => CopilotAgentTaskEventIds.ForCall(step.Execution.CallId))
+                    .ToHashSet(StringComparer.Ordinal);
+                foreach (var artifact in evidenceArtifacts.Where(artifact => currentCallKeys.Contains(artifact.SourceCallKey)))
+                    taskEventJournalBuilder.RecordEvidence(artifact);
+            }
+            catch (Exception ex)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent evidence checkpoint could not be updated ({ex.Message})."));
+            }
+            taskEventJournalBuilder.RecordStop(stopReason);
+            var taskEventJournal = taskEventJournalBuilder.Snapshot();
             CopilotAgentSessionCheckpoint? sessionCheckpoint = null;
             try
             {
-                var evidenceArtifacts = CopilotAgentEvidenceArtifacts.Merge(previousEvidenceArtifacts, bridge.StepRecords, capabilitySnapshot, DateTimeOffset.UtcNow);
                 var serializedSession = await agent.SerializeSessionAsync(session, null, cancellationToken);
-                sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(request.Profile, serializedSession.GetRawText(), capabilitySnapshot, evidenceArtifacts);
+                sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(request.Profile, serializedSession.GetRawText(), capabilitySnapshot, evidenceArtifacts, taskEventJournal);
                 if (sessionCheckpoint == null)
                     emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
             }
@@ -368,13 +409,17 @@ namespace ColorVision.Copilot
                 Budget = budgetSnapshot,
                 TaskLedger = taskLedger,
                 StopReason = stopReason,
+                TaskEventJournal = taskEventJournal,
                 SessionCheckpoint = sessionCheckpoint,
             };
         }
 
-        private IDisposable RegisterSteeringContext(MessageInjectingChatClient messageInjector, AgentSession session)
+        private IDisposable RegisterSteeringContext(
+            MessageInjectingChatClient messageInjector,
+            AgentSession session,
+            CopilotAgentTaskEventJournalBuilder taskEventJournal)
         {
-            var context = new ActiveSteeringContext(messageInjector, session);
+            var context = new ActiveSteeringContext(messageInjector, session, taskEventJournal);
             lock (_steeringSyncRoot)
                 _activeSteeringContext = context;
             return new SteeringRegistration(this, context);
@@ -1067,7 +1112,10 @@ namespace ColorVision.Copilot
             }
         }
 
-        private sealed record ActiveSteeringContext(MessageInjectingChatClient MessageInjector, AgentSession Session);
+        private sealed record ActiveSteeringContext(
+            MessageInjectingChatClient MessageInjector,
+            AgentSession Session,
+            CopilotAgentTaskEventJournalBuilder TaskEventJournal);
 
         private sealed class SteeringRegistration(CopilotMicrosoftAgentFrameworkRuntime owner, ActiveSteeringContext context) : IDisposable
         {

@@ -58,6 +58,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
 
+        public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
+
         public DateTimeOffset UpdatedAtUtc { get; init; }
 
         public bool IsUsableFor(CopilotProfileConfig profile)
@@ -117,7 +119,8 @@ namespace ColorVision.Copilot
                     || capability.Fingerprint.Length != 64
                     || capability.Fingerprint.Any(character => !Uri.IsHexDigit(character))) ?? false)
                 || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count)
-                || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts)
+                || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts
+                || TaskEventJournal?.Events?.Count > CopilotAgentTaskEventJournal.MaxEvents)
             {
                 return false;
             }
@@ -137,7 +140,8 @@ namespace ColorVision.Copilot
             CopilotProfileConfig profile,
             string serializedSessionJson,
             CopilotCapabilityCatalogSnapshot? capabilitySnapshot = null,
-            IReadOnlyList<CopilotAgentEvidenceArtifact>? evidenceArtifacts = null)
+            IReadOnlyList<CopilotAgentEvidenceArtifact>? evidenceArtifacts = null,
+            CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -152,6 +156,9 @@ namespace ColorVision.Copilot
             {
                 return null;
             }
+            taskEventJournal ??= new CopilotAgentTaskEventJournalSnapshot();
+            if (!taskEventJournal.IsStructurallyValid())
+                return null;
 
             var checkpoint = new CopilotAgentSessionCheckpoint
             {
@@ -167,6 +174,7 @@ namespace ColorVision.Copilot
                     })
                     .ToArray(),
                 EvidenceArtifacts = persistedEvidence,
+                TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
             return checkpoint.IsStructurallyValid() ? checkpoint : null;

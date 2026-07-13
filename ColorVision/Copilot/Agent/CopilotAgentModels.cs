@@ -368,6 +368,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentStopReason StopReason { get; init; }
 
+        public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
+
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
     }
 

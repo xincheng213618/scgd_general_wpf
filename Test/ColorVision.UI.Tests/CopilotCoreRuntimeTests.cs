@@ -85,6 +85,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var store = new CopilotChatStateStore(_tempRoot);
         var state = new CopilotChatState();
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var taskEventJournal = new CopilotAgentTaskEventJournalBuilder();
+        taskEventJournal.RecordRunStarted();
+        taskEventJournal.RecordStop(CopilotAgentStopReason.Completed);
         conversation.AgentSessionCheckpoint = new CopilotAgentSessionCheckpoint
         {
             ProfileKey = "profile-key",
@@ -113,6 +116,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                     CapturedAtUtc = DateTimeOffset.UtcNow,
                 },
             ],
+            TaskEventJournal = taskEventJournal.Snapshot(),
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         };
         state.Conversations.Add(conversation);
@@ -132,6 +136,81 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var evidence = Assert.Single(checkpoint.EvidenceArtifacts);
         Assert.Equal("builtin:searchdocs", evidence.CapabilityId);
         Assert.Equal("Documentation evidence collected.", evidence.Summary);
+        Assert.Equal(2, checkpoint.TaskEventJournal.Events.Count);
+        Assert.Equal(CopilotAgentTaskEventType.RunStopped, checkpoint.TaskEventJournal.Events[^1].Type);
+    }
+
+    [Fact]
+    public void TaskEventJournal_IsBoundedRedactedCorrelatedAndCursorQueryable()
+    {
+        var builder = new CopilotAgentTaskEventJournalBuilder();
+        builder.RecordRunStarted();
+        var startedAt = DateTimeOffset.UtcNow;
+        builder.Observe(CopilotAgentEvent.ToolStarted(new CopilotToolExecutionInfo
+        {
+            CallId = "provider-call-123",
+            ToolName = "FetchUrl",
+            State = CopilotToolExecutionState.Running,
+            StartedAtUtc = startedAt,
+        }));
+        builder.Observe(CopilotAgentEvent.FromToolResult(new CopilotToolResult
+        {
+            ToolName = "FetchUrl",
+            Success = true,
+            Summary = "FetchUrl is waiting for approval.",
+        }, new CopilotToolExecutionInfo
+        {
+            CallId = "provider-call-123",
+            ToolName = "FetchUrl",
+            ApprovalActionId = "approval-456",
+            State = CopilotToolExecutionState.AwaitingApproval,
+            StartedAtUtc = startedAt,
+        }));
+        builder.RecordApprovalDecision("FetchUrl", "provider-call-123", "approval-456", approved: true);
+        builder.RecordTaskLedger(new CopilotAgentTaskLedgerSnapshot
+        {
+            Mode = "execute",
+            Items = [new CopilotAgentTaskItem { Id = 7, Title = "Secret task title", IsComplete = true }],
+        }, "final");
+        builder.Observe(CopilotAgentEvent.Error("api_key=secret-value runtime failed"));
+        builder.RecordStop(CopilotAgentStopReason.Completed);
+
+        var snapshot = builder.Snapshot();
+        Assert.True(snapshot.IsStructurallyValid());
+        Assert.DoesNotContain("secret-value", JsonSerializer.Serialize(snapshot), StringComparison.Ordinal);
+        Assert.DoesNotContain("Secret task title", JsonSerializer.Serialize(snapshot), StringComparison.Ordinal);
+        var callEvents = CopilotAgentTaskEventJournal.Query(snapshot, new CopilotAgentTaskEventQuery
+        {
+            SubjectOrRelatedId = CopilotAgentTaskEventIds.ForCall("provider-call-123"),
+        });
+        Assert.Contains(callEvents.Events, item => item.Type == CopilotAgentTaskEventType.ToolStarted);
+        Assert.Contains(callEvents.Events, item => item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        Assert.Contains(callEvents.Events, item => item.Type == CopilotAgentTaskEventType.ApprovalApproved);
+
+        var boundedBuilder = new CopilotAgentTaskEventJournalBuilder();
+        boundedBuilder.RecordRunStarted();
+        for (var index = 0; index < CopilotAgentTaskEventJournal.MaxEvents + 20; index++)
+            boundedBuilder.RecordSteering("steering-" + index);
+        var bounded = boundedBuilder.Snapshot();
+        Assert.Equal(CopilotAgentTaskEventJournal.MaxEvents, bounded.Events.Count);
+        Assert.True(bounded.IsStructurallyValid());
+        var firstPage = CopilotAgentTaskEventJournal.Query(bounded, new CopilotAgentTaskEventQuery { Limit = 10 });
+        Assert.Equal(10, firstPage.Events.Count);
+        Assert.True(firstPage.HasMore);
+        Assert.NotNull(firstPage.NextBeforeSequence);
+        var secondPage = CopilotAgentTaskEventJournal.Query(bounded, new CopilotAgentTaskEventQuery
+        {
+            BeforeSequence = firstPage.NextBeforeSequence!.Value,
+            Limit = 10,
+        });
+        Assert.DoesNotContain(secondPage.Events, second => firstPage.Events.Any(first => first.Id == second.Id));
+
+        var unknownSchema = new CopilotAgentTaskEventJournalSnapshot { SchemaVersion = 999 };
+        Assert.Empty(CopilotAgentTaskEventJournal.Query(unknownSchema).Events);
+        Assert.Null(CopilotAgentSessionCheckpoint.Create(CreateProfile(), "{\"state\":{}}", taskEventJournal: unknownSchema));
+        var recoveredBuilder = new CopilotAgentTaskEventJournalBuilder(unknownSchema);
+        recoveredBuilder.RecordRunStarted();
+        Assert.Single(recoveredBuilder.Snapshot().Events);
     }
 
     [Fact]
@@ -996,6 +1075,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.DoesNotContain(secondClient.LastMessages!, message => message.Text.Contains("DUPLICATE-SENTINEL", StringComparison.Ordinal));
         Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("first persisted agent turn", StringComparison.Ordinal));
         Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("second persisted agent turn", StringComparison.Ordinal));
+        Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.SessionResumed);
+        Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Id == firstResult.TaskEventJournal.Events[0].Id);
     }
 
     [Fact]
@@ -1030,6 +1111,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var persistedEvidence = Assert.Single(firstResult.SessionCheckpoint!.EvidenceArtifacts);
         Assert.Equal("CatalogProbe", persistedEvidence.ToolName);
         Assert.Contains("deterministic evidence", persistedEvidence.ContentExcerpt, StringComparison.Ordinal);
+        Assert.Contains(firstResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted && item.ToolName == "CatalogProbe");
+        Assert.Contains(firstResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.EvidenceCaptured && item.SubjectId == persistedEvidence.Id);
+        Assert.Contains(firstResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped);
 
         var changedTool = new TestAgentTool(
             "CatalogProbe",
@@ -1068,6 +1152,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("capability drift", StringComparison.OrdinalIgnoreCase)
             && item.Text.Contains("re-plan", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ReplanRequired
+            && item.State == CopilotAgentCheckpointCompatibilityKind.CapabilityDrift.ToString());
+        Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Id == firstResult.TaskEventJournal.Events[0].Id);
         Assert.True(secondResult.SessionCheckpoint!.IsUsableFor(profile, catalog.GetSnapshot()));
     }
 
@@ -1099,6 +1186,12 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(2, result.TaskLedger.CompletedCount);
         Assert.Equal(0, result.TaskLedger.RemainingCount);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.TaskLedgerCaptured
+            && item.State == "final"
+            && item.RelatedIds.Contains("task:1", StringComparer.Ordinal)
+            && item.RelatedIds.Contains("task:2", StringComparer.Ordinal));
+        Assert.Contains(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped
+            && item.State == CopilotAgentStopReason.Completed.ToString());
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("2/2 complete", StringComparison.OrdinalIgnoreCase));
     }
@@ -1207,6 +1300,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(1, tool.ApprovedExecutionCount);
         Assert.NotNull(firstResult.SessionCheckpoint);
         Assert.Equal(1, firstResult.TaskLedger.RemainingCount);
+        Assert.Contains(firstResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        Assert.Contains(firstResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ApprovalApproved);
 
         using var secondClient = new ScriptedHarnessChatClient(
             options => CreateModeSetCall(options, "execute"),
@@ -1266,6 +1361,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Contains(fakeChatClient.SecondCallMessages!, message => message.Role == ChatRole.User
             && string.Equals(message.Text, steeringMessage, StringComparison.Ordinal));
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        var steeringEvent = Assert.Single(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.SteeringQueued);
+        Assert.Equal(CopilotAgentTaskEventIds.ForSteering(steeringMessage), steeringEvent.SubjectId);
+        Assert.DoesNotContain("change direction", JsonSerializer.Serialize(result.TaskEventJournal), StringComparison.OrdinalIgnoreCase);
         Assert.False(runtime.TryEnqueueSteeringMessage("too late"));
     }
 
