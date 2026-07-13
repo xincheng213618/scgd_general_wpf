@@ -122,19 +122,6 @@ namespace ColorVision.Copilot
         public string Reason { get; init; } = string.Empty;
 
         public bool IsFallback { get; init; }
-
-        public static CopilotToolCall FromPlan(CopilotAgentPlan? plan, string? toolNameOverride = null)
-        {
-            return new CopilotToolCall
-            {
-                ToolName = string.IsNullOrWhiteSpace(toolNameOverride)
-                    ? plan?.ToolName ?? string.Empty
-                    : toolNameOverride,
-                ToolInput = plan?.ToolInput ?? CopilotAgentToolInput.Empty,
-                Reason = plan?.Reason ?? string.Empty,
-                IsFallback = plan?.IsFallback ?? false,
-            };
-        }
     }
 
     public sealed class CopilotToolObservation
