@@ -1,6 +1,7 @@
 #pragma warning disable CA1826,CA1859
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -45,6 +46,33 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(onEvent);
 
+            var runBudget = CopilotAgentRunBudget.Resolve(request);
+            var stopwatch = Stopwatch.StartNew();
+            using var timeBudgetCancellation = new CancellationTokenSource(runBudget.TotalDuration);
+            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeBudgetCancellation.Token);
+            try
+            {
+                return await RunCoreAsync(request, onEvent, runBudget, stopwatch, linkedCancellation.Token);
+            }
+            catch (OperationCanceledException) when (timeBudgetCancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                onEvent(CopilotAgentEvent.RuntimeDiagnostic("Built-in Agent total-time budget exhausted; the compatibility run was stopped."));
+                onEvent(CopilotAgentEvent.Completed());
+                return new CopilotAgentRunResult
+                {
+                    Budget = runBudget.CreateSnapshot(new CopilotAgentBudgetSnapshot(), stopwatch.Elapsed, 0, timeBudgetExhausted: true),
+                    StopReason = CopilotAgentStopReason.BudgetExhausted,
+                };
+            }
+        }
+
+        private async Task<CopilotAgentRunResult> RunCoreAsync(
+            CopilotAgentRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CopilotAgentRunBudget runBudget,
+            Stopwatch stopwatch,
+            CancellationToken cancellationToken)
+        {
             onEvent(CopilotAgentEvent.Status("Analyzing task..."));
 
             var toolResults = new List<CopilotToolResult>();
@@ -53,16 +81,19 @@ namespace ColorVision.Copilot
                 (request.ReadableLocalFilePaths ?? Array.Empty<string>())
                     .Where(path => !string.IsNullOrWhiteSpace(path)),
                 StringComparer.OrdinalIgnoreCase);
-            var maxToolRounds = request.Profile?.MaxToolRounds > 0
-                ? request.Profile.MaxToolRounds
-                : CopilotProfileConfig.DefaultMaxToolRounds;
             var executedStepSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var executedAnyTool = false;
             var totalUsage = CopilotTokenUsage.Empty;
+            var providerCalls = 0;
 
-            for (var round = 1; round <= maxToolRounds; round++)
+            for (var round = 1; round <= runBudget.MaxToolCalls; round++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                if (totalUsage.EffectiveTotalTokens >= runBudget.RequestTokenBudget)
+                {
+                    onEvent(CopilotAgentEvent.RuntimeDiagnostic("Built-in Agent request-token budget reached; finishing with the collected observations."));
+                    break;
+                }
 
                 var roundRequest = CreateRoundRequest(request, readableLocalFilePaths);
                 var tools = _toolRegistry.FindTools(roundRequest)
@@ -91,6 +122,7 @@ namespace ColorVision.Copilot
                         stepRecords,
                         readableLocalFilePaths,
                         cancellationToken);
+                    providerCalls++;
                     totalUsage = totalUsage.Add(planResult.Usage);
                     plan = planResult.Plan;
                 }
@@ -153,14 +185,26 @@ namespace ColorVision.Copilot
                         onEvent(CopilotAgentEvent.AnswerDelta(delta.Content));
                 },
                 cancellationToken);
+            providerCalls++;
             totalUsage = totalUsage.Add(finalUsage);
 
+            var consumedTokens = totalUsage.EffectiveTotalTokens;
+            var tokenSnapshot = new CopilotAgentBudgetSnapshot
+            {
+                RequestTokenBudget = runBudget.RequestTokenBudget,
+                ConsumedTokens = consumedTokens,
+                ProviderCalls = providerCalls,
+                BudgetExhausted = consumedTokens >= runBudget.RequestTokenBudget,
+            };
+            var budgetSnapshot = runBudget.CreateSnapshot(tokenSnapshot, stopwatch.Elapsed, stepRecords.Count, timeBudgetExhausted: false);
             onEvent(CopilotAgentEvent.Completed());
             return new CopilotAgentRunResult
             {
                 PreparedUserMessageContent = preparedPrompt.PreparedUserMessageContent,
                 StepRecords = stepRecords.ToArray(),
                 Usage = totalUsage,
+                Budget = budgetSnapshot,
+                StopReason = budgetSnapshot.BudgetExhausted ? CopilotAgentStopReason.BudgetExhausted : CopilotAgentStopReason.Completed,
             };
         }
 
@@ -245,6 +289,7 @@ namespace ColorVision.Copilot
                 SessionCheckpoint = request.SessionCheckpoint,
                 Recovery = request.Recovery,
                 RunControl = request.RunControl,
+                RunBudgetOverride = request.RunBudgetOverride,
                 ExternalMcpServers = request.ExternalMcpServers,
             };
         }

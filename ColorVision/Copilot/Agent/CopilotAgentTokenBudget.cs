@@ -21,16 +21,17 @@ namespace ColorVision.Copilot
 
         public int RequestTokenBudget { get; init; }
 
-        public static CopilotAgentTokenBudget Create(CopilotProfileConfig profile)
+        public static CopilotAgentTokenBudget Create(CopilotProfileConfig profile, CopilotAgentRunBudget runBudget)
         {
             ArgumentNullException.ThrowIfNull(profile);
+            ArgumentNullException.ThrowIfNull(runBudget);
             var maxOutputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
             var contextWindowTokens = Math.Max(DefaultContextWindowTokens, maxOutputTokens * 4);
             return new CopilotAgentTokenBudget
             {
                 ContextWindowTokens = contextWindowTokens,
                 MaxOutputTokens = maxOutputTokens,
-                RequestTokenBudget = checked(contextWindowTokens * DefaultRequestWindowMultiplier),
+                RequestTokenBudget = runBudget.RequestTokenBudget,
             };
         }
     }

@@ -1135,11 +1135,13 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             UserText = "fetch with a bounded agent budget",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Diagnose,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { RequestTokenBudget = 50_000 },
         }, events.Add, CancellationToken.None);
 
         Assert.Equal(2, fakeChatClient.StreamCallCount);
         Assert.True(result.Budget.BudgetExhausted);
         Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.StopReason);
+        Assert.Equal(50_000, result.Budget.RequestTokenBudget);
         Assert.Equal(80_000, result.Budget.ConsumedTokens);
         Assert.Equal(2, result.Budget.ProviderCalls);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
@@ -1326,12 +1328,42 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             UserText = "exercise the bounded completion loop",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Auto,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { MaxAgentPasses = 2 },
         }, _ => { }, CancellationToken.None);
 
-        Assert.Equal(4, fakeChatClient.StreamCallCount);
+        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Equal(2, result.Budget.MaxAgentPasses);
         Assert.Equal(1, result.TaskLedger.RemainingCount);
         Assert.Equal("execute", result.TaskLedger.Mode);
         Assert.Equal(CopilotAgentStopReason.TaskPassLimit, result.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_StopsAndFinalizesWhenTotalTimeBudgetExpires()
+    {
+        using var client = new BlockingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "exercise the total-time budget",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { TotalDuration = TimeSpan.FromSeconds(1) },
+        }, events.Add, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.StopReason);
+        Assert.True(result.Budget.BudgetExhausted);
+        Assert.True(result.Budget.TimeBudgetExhausted);
+        Assert.Equal(1000, result.Budget.TotalDurationMs);
+        Assert.True(result.Budget.ElapsedMs >= 800);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("total-time budget exhausted", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.Completed);
     }
 
     [Fact]

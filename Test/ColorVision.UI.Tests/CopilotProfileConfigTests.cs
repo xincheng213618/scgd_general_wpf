@@ -28,12 +28,15 @@ public sealed class CopilotProfileConfigTests
     }
 
     [Fact]
-    public void Serialize_DoesNotPersistInternalModelPolicy()
+    public void Serialize_PersistsAgentBudgetsButNotInternalModelPolicy()
     {
         var profile = new CopilotProfileConfig
         {
             MaxTokens = 256,
             MaxToolRounds = 3,
+            AgentRequestTokenBudget = 48_000,
+            MaxAgentPasses = 5,
+            AgentTimeoutSeconds = 180,
             Temperature = 0.8,
         };
 
@@ -43,7 +46,10 @@ public sealed class CopilotProfileConfigTests
         Assert.Null(root.Property("SystemPrompt"));
         Assert.Null(root.Property("CustomSystemPrompt"));
         Assert.Null(root.Property("MaxTokens"));
-        Assert.Null(root.Property("MaxToolRounds"));
+        Assert.Equal(3, root.Value<int>("MaxToolRounds"));
+        Assert.Equal(48_000, root.Value<int>("AgentRequestTokenBudget"));
+        Assert.Equal(5, root.Value<int>("MaxAgentPasses"));
+        Assert.Equal(180, root.Value<int>("AgentTimeoutSeconds"));
         Assert.Null(root.Property("Temperature"));
         Assert.Null(root.Property("UseAgentFramework"));
     }
@@ -60,13 +66,16 @@ public sealed class CopilotProfileConfigTests
     }
 
     [Fact]
-    public void Deserialize_IgnoresRemovedAdvancedProfileFields()
+    public void Deserialize_LoadsAgentBudgetsAndIgnoresRemovedModelPolicy()
     {
         const string json = """
             {
               "CustomSystemPrompt": "legacy custom prompt",
               "MaxTokens": 128,
               "MaxToolRounds": 2,
+              "AgentRequestTokenBudget": 48000,
+              "MaxAgentPasses": 3,
+              "AgentTimeoutSeconds": 90,
               "Temperature": 1.5,
               "UseAgentFramework": false
             }
@@ -76,8 +85,55 @@ public sealed class CopilotProfileConfigTests
 
         Assert.Equal(CopilotProfileConfig.DefaultSystemPrompt, profile.EffectiveSystemPrompt);
         Assert.Equal(CopilotProfileConfig.DefaultMaxTokens, profile.MaxTokens);
-        Assert.Equal(CopilotProfileConfig.DefaultMaxToolRounds, profile.MaxToolRounds);
+        Assert.Equal(2, profile.MaxToolRounds);
+        Assert.Equal(48_000, profile.AgentRequestTokenBudget);
+        Assert.Equal(3, profile.MaxAgentPasses);
+        Assert.Equal(90, profile.AgentTimeoutSeconds);
         Assert.Equal(CopilotProfileConfig.DefaultTemperature, profile.Temperature);
+    }
+
+    [Fact]
+    public void RunBudget_ResolvesRequestOverrideBeforeProfileDefaultsAndSafetyLimits()
+    {
+        var profile = new CopilotProfileConfig
+        {
+            AgentRequestTokenBudget = 96_000,
+            MaxToolRounds = 8,
+            MaxAgentPasses = 6,
+            AgentTimeoutSeconds = 240,
+        };
+        var resolved = CopilotAgentRunBudget.Resolve(new CopilotAgentRequest
+        {
+            Profile = profile,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride
+            {
+                RequestTokenBudget = 20_000,
+                MaxAgentPasses = 2,
+                TotalDuration = TimeSpan.FromSeconds(30),
+            },
+        });
+
+        Assert.Equal(20_000, resolved.RequestTokenBudget);
+        Assert.Equal(8, resolved.MaxToolCalls);
+        Assert.Equal(2, resolved.MaxAgentPasses);
+        Assert.Equal(TimeSpan.FromSeconds(30), resolved.TotalDuration);
+
+        var clamped = CopilotAgentRunBudget.Resolve(new CopilotAgentRequest
+        {
+            Profile = profile,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride
+            {
+                RequestTokenBudget = 1,
+                MaxToolCalls = int.MaxValue,
+                MaxAgentPasses = 0,
+                TotalDuration = TimeSpan.Zero,
+            },
+        });
+
+        Assert.Equal(CopilotAgentRunBudget.MinimumRequestTokenBudget, clamped.RequestTokenBudget);
+        Assert.Equal(CopilotAgentRunBudget.MaximumToolCalls, clamped.MaxToolCalls);
+        Assert.Equal(CopilotAgentRunBudget.MinimumAgentPasses, clamped.MaxAgentPasses);
+        Assert.Equal(CopilotAgentRunBudget.MinimumTotalDuration, clamped.TotalDuration);
     }
 
     [Fact]

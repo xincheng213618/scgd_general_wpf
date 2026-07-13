@@ -8,6 +8,7 @@ using OpenAI;
 using OpenAI.Chat;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -21,7 +22,6 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotMicrosoftAgentFrameworkRuntime : ICopilotAgentRuntime, ICopilotAgentSteeringRuntime
     {
-        private const int MaxAutonomousTaskPasses = 4;
         private const int MaxSteeringMessageLength = 16_000;
 
         private readonly CopilotToolRegistry _toolRegistry;
@@ -121,6 +121,43 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(onEvent);
 
+            var runBudget = CopilotAgentRunBudget.Resolve(request);
+            var stopwatch = Stopwatch.StartNew();
+            using var timeBudgetCancellation = new CancellationTokenSource(runBudget.TotalDuration);
+            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeBudgetCancellation.Token);
+            try
+            {
+                return await RunCoreAsync(
+                    request,
+                    onEvent,
+                    runBudget,
+                    stopwatch,
+                    timeBudgetCancellation,
+                    cancellationToken,
+                    linkedCancellation.Token);
+            }
+            catch (OperationCanceledException) when (timeBudgetCancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                var budgetSnapshot = runBudget.CreateSnapshot(new CopilotAgentBudgetSnapshot(), stopwatch.Elapsed, 0, timeBudgetExhausted: true);
+                onEvent(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; the run stopped before a checkpoint could be finalized."));
+                onEvent(CopilotAgentEvent.Completed());
+                return new CopilotAgentRunResult
+                {
+                    Budget = budgetSnapshot,
+                    StopReason = CopilotAgentStopReason.BudgetExhausted,
+                };
+            }
+        }
+
+        private async Task<CopilotAgentRunResult> RunCoreAsync(
+            CopilotAgentRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CopilotAgentRunBudget runBudget,
+            Stopwatch stopwatch,
+            CancellationTokenSource timeBudgetCancellation,
+            CancellationToken callerCancellationToken,
+            CancellationToken cancellationToken)
+        {
             if (!CopilotAgentRuntimeRouter.CanUseAgentFramework(request.Profile, out var unsupportedReason))
                 throw new NotSupportedException(unsupportedReason);
 
@@ -149,14 +186,14 @@ namespace ColorVision.Copilot
             var previousEvidenceArtifacts = checkpointCompatibility?.Kind != CopilotAgentCheckpointCompatibilityKind.Invalid
                 ? requestedCheckpoint?.EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()
                 : Array.Empty<CopilotAgentEvidenceArtifact>();
-            var bridge = new HarnessToolBridge(request, availableTools, request.Profile.MaxToolRounds, _toolExecutor, emit);
+            var bridge = new HarnessToolBridge(request, availableTools, runBudget.MaxToolCalls, _toolExecutor, emit);
             var frameworkTools = bridge.CreateFunctions();
             var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
-            var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile);
-            var autonomousTaskPasses = Math.Clamp(request.Profile.MaxToolRounds, 1, MaxAutonomousTaskPasses);
+            var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
+            var autonomousTaskPasses = runBudget.MaxAgentPasses;
             using var agentSkills = CopilotAgentSkills.Create(request);
             emit(CopilotAgentEvent.RuntimeDiagnostic(
-                $"Agent context compaction enabled · input budget {tokenBudget.InputBudgetTokens:N0} tokens · request budget {tokenBudget.RequestTokenBudget:N0} tokens."));
+                $"Agent budgets · input {tokenBudget.InputBudgetTokens:N0} tokens · request {tokenBudget.RequestTokenBudget:N0} tokens · tools {runBudget.MaxToolCalls} · passes {runBudget.MaxAgentPasses} · total time {FormatDuration(runBudget.TotalDuration)}."));
             emit(CopilotAgentEvent.RuntimeDiagnostic(agentSkills.IsEnabled
                 ? $"Agent Skills enabled · {agentSkills.SkillNames.Count} skill(s) from {agentSkills.SearchPaths.Count} trusted root(s) · scripts disabled."
                 : "Agent Skills enabled · no trusted project or built-in skills were discovered."));
@@ -178,7 +215,7 @@ namespace ColorVision.Copilot
                         : string.Empty),
                 MaxContextWindowTokens = tokenBudget.ContextWindowTokens,
                 MaxOutputTokens = request.Profile.MaxTokens,
-                MaximumIterationsPerRequest = Math.Max(1, request.Profile.MaxToolRounds),
+                MaximumIterationsPerRequest = runBudget.MaxToolCalls,
                 DisableCompaction = false,
                 DisableFileMemory = true,
                 DisableFileAccess = true,
@@ -292,6 +329,7 @@ namespace ColorVision.Copilot
                 : $"Agent Framework can use {frameworkTools.Count} request-scoped tool(s)."));
 
             var controlIntent = CopilotAgentControlIntent.None;
+            var timeBudgetExhausted = false;
             try
             {
                 while (true)
@@ -361,27 +399,41 @@ namespace ColorVision.Copilot
                     messages = new[] { new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, responses) };
                 }
             }
-            catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel)
+            catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
+                || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested))
             {
-                controlIntent = request.RunControl.Intent;
-                taskEventJournalBuilder.RecordControl(controlIntent);
-                emit(CopilotAgentEvent.RuntimeDiagnostic(controlIntent == CopilotAgentControlIntent.Pause
-                    ? "Agent pause requested; preserving the current task session checkpoint."
-                    : "Agent cancellation requested; the new task session checkpoint will be discarded."));
+                var requestedControl = request.RunControl?.Intent ?? CopilotAgentControlIntent.None;
+                if (requestedControl is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel)
+                {
+                    controlIntent = requestedControl;
+                    taskEventJournalBuilder.RecordControl(controlIntent);
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(controlIntent == CopilotAgentControlIntent.Pause
+                        ? "Agent pause requested; preserving the current task session checkpoint."
+                        : "Agent cancellation requested; the new task session checkpoint will be discarded."));
+                }
+                else
+                {
+                    timeBudgetExhausted = timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
+                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; finalizing the current task checkpoint."));
+                }
             }
 
-            var budgetSnapshot = chatClient.Snapshot;
+            if (controlIntent == CopilotAgentControlIntent.None)
+                timeBudgetExhausted |= timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
+            var budgetSnapshot = runBudget.CreateSnapshot(chatClient.Snapshot, stopwatch.Elapsed, bridge.StepRecords.Count, timeBudgetExhausted);
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
+                + $" · tools {budgetSnapshot.ToolCalls}/{budgetSnapshot.MaxToolCalls} · elapsed {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ElapsedMs))}/{FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.TotalDurationMs))}"
                 + (budgetSnapshot.UsedEstimatedUsage ? " · includes estimates" : string.Empty)
                 + (budgetSnapshot.BudgetExhausted ? " · exhausted" : string.Empty)
                 + "."));
-            var finalizationToken = controlIntent == CopilotAgentControlIntent.None ? cancellationToken : CancellationToken.None;
+            var finalizationToken = controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted ? cancellationToken : CancellationToken.None;
             var taskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, finalizationToken);
             var stopReason = controlIntent switch
             {
                 CopilotAgentControlIntent.Pause => CopilotAgentStopReason.Paused,
                 CopilotAgentControlIntent.Cancel => CopilotAgentStopReason.Cancelled,
+                _ when timeBudgetExhausted => CopilotAgentStopReason.BudgetExhausted,
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords),
             };
             var blockers = CopilotAgentBlockerDetector.Detect(taskLedger, bridge.StepRecords, stopReason);
@@ -542,6 +594,15 @@ namespace ColorVision.Copilot
         {
             var sanitized = Regex.Replace(title ?? string.Empty, @"\s+", " ").Trim();
             return sanitized.Length <= 60 ? sanitized : sanitized[..57] + "...";
+        }
+
+        private static string FormatDuration(TimeSpan duration)
+        {
+            if (duration.TotalSeconds < 1)
+                return $"{Math.Max(1, duration.TotalMilliseconds):0}ms";
+            if (duration.TotalMinutes < 1)
+                return $"{duration.TotalSeconds:0.#}s";
+            return $"{(int)duration.TotalMinutes}m {duration.Seconds}s";
         }
 
         private static IChatClient CreateChatClient(CopilotProfileConfig profile)

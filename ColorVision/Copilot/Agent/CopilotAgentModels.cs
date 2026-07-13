@@ -72,6 +72,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentRunControl? RunControl { get; init; }
 
+        public CopilotAgentRunBudgetOverride? RunBudgetOverride { get; init; }
+
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }
@@ -481,5 +483,17 @@ namespace ColorVision.Copilot
         public bool UsedEstimatedUsage { get; init; }
 
         public bool BudgetExhausted { get; init; }
+
+        public int MaxToolCalls { get; init; }
+
+        public int ToolCalls { get; init; }
+
+        public int MaxAgentPasses { get; init; }
+
+        public long TotalDurationMs { get; init; }
+
+        public long ElapsedMs { get; init; }
+
+        public bool TimeBudgetExhausted { get; init; }
     }
 }
