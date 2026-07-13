@@ -713,6 +713,135 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentService_ReportsTaskPassLimitAfterUsingAllToolCalls()
+    {
+        var responses = new Queue<HttpResponseMessage>(new[]
+        {
+            CreateJsonResponse("{\"choices\":[{\"message\":{\"content\":\"{\\\"action\\\":\\\"tool\\\",\\\"toolName\\\":\\\"TestTool\\\",\\\"reason\\\":\\\"collect evidence\\\"}\"}}]}"),
+            CreateEventStreamResponse("data: {\"choices\":[{\"delta\":{\"content\":\"partial answer\"}}]}\n\ndata: [DONE]\n\n"),
+        });
+        using var httpClient = new HttpClient(new StaticResponseHandler(() => responses.Dequeue()));
+        var tool = new TestAgentTool();
+        var service = new CopilotAgentService(
+            new CopilotChatService(httpClient),
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder());
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await service.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "continue until the task is complete",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { MaxToolCalls = 1 },
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.TaskPassLimit, result.StopReason);
+        Assert.Equal(1, result.Budget.ToolCalls);
+        Assert.Equal(1, result.Budget.MaxToolCalls);
+        Assert.Single(result.StepRecords);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("compatibility limit", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text == "partial answer");
+    }
+
+    [Fact]
+    public async Task AgentService_StopsRepeatedToolCallAsIncompleteAndPreservesEvidence()
+    {
+        const string repeatedPlan = "{\"choices\":[{\"message\":{\"content\":\"{\\\"action\\\":\\\"tool\\\",\\\"toolName\\\":\\\"WebSearch\\\",\\\"reason\\\":\\\"collect evidence\\\",\\\"input\\\":{\\\"query\\\":\\\"same query\\\"}}\"}}]}";
+        var responses = new Queue<HttpResponseMessage>(new[]
+        {
+            CreateJsonResponse(repeatedPlan),
+            CreateJsonResponse(repeatedPlan),
+            CreateEventStreamResponse("data: {\"choices\":[{\"delta\":{\"content\":\"evidence retained\"}}]}\n\ndata: [DONE]\n\n"),
+        });
+        using var handler = new CapturingResponseHandler(() => responses.Dequeue());
+        using var httpClient = new HttpClient(handler);
+        var tool = new TestAgentTool("WebSearch", inputSchema: CopilotToolInputSchema.OptionalQuery);
+        var service = new CopilotAgentService(
+            new CopilotChatService(httpClient),
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder());
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await service.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "search once and answer",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { MaxToolCalls = 4 },
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.TaskPassLimit, result.StopReason);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Single(result.StepRecords);
+        Assert.Equal(3, handler.RequestBodies.Count);
+        Assert.Contains("Evidence collected", result.PreparedUserMessageContent, StringComparison.Ordinal);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("repeated the same tool call", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task AgentService_DoesNotStartAnotherCallAfterPlannerExhaustsTokenBudget()
+    {
+        var plannerResponse = CreateJsonResponse("{\"choices\":[{\"message\":{\"content\":\"{\\\"action\\\":\\\"tool\\\",\\\"toolName\\\":\\\"TestTool\\\",\\\"reason\\\":\\\"collect evidence\\\"}\"}}],\"usage\":{\"prompt_tokens\":4096,\"completion_tokens\":1,\"total_tokens\":4097}}");
+        using var handler = new CapturingResponseHandler(() => plannerResponse);
+        using var httpClient = new HttpClient(handler);
+        var tool = new TestAgentTool();
+        var service = new CopilotAgentService(
+            new CopilotChatService(httpClient),
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder());
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await service.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "collect bounded evidence",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { RequestTokenBudget = 4096 },
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.StopReason);
+        Assert.True(result.Budget.BudgetExhausted);
+        Assert.Equal(4097, result.Budget.ConsumedTokens);
+        Assert.Equal(1, result.Budget.ProviderCalls);
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Single(handler.RequestBodies);
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.AnswerDelta);
+    }
+
+    [Fact]
+    public async Task AgentService_ReturnsStructuredCancellationInsteadOfThrowing()
+    {
+        using var httpClient = new HttpClient(new DelayedResponseHandler());
+        var service = new CopilotAgentService(
+            new CopilotChatService(httpClient),
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder());
+        var events = new List<CopilotAgentEvent>();
+        var control = new CopilotAgentRunControl();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(30));
+        Assert.True(control.RequestCancel());
+
+        var result = await service.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "cancel this compatibility run",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            RunControl = control,
+        }, events.Add, cancellation.Token);
+
+        Assert.Equal(CopilotAgentStopReason.Cancelled, result.StopReason);
+        Assert.Equal(0, result.Budget.ProviderCalls);
+        Assert.Empty(result.StepRecords);
+        Assert.Contains("cancel this compatibility run", result.PreparedUserMessageContent, StringComparison.Ordinal);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("cancellation requested", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(CopilotAgentEventType.Completed, events[^1].Type);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_LoadsProjectSkillWithoutApprovalOrScriptExecution()
     {
         var skillDirectory = Path.Combine(_tempRoot, ".agents", "skills", "test-diagnostics");
