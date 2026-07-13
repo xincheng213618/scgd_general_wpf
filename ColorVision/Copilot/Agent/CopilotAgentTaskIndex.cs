@@ -12,6 +12,7 @@ namespace ColorVision.Copilot
         Blocked,
         BudgetExhausted,
         TaskPassLimit,
+        IncompleteOutput,
     }
 
     public sealed class CopilotAgentTaskSummary
@@ -50,6 +51,7 @@ namespace ColorVision.Copilot
             CopilotAgentTaskAttentionKind.Blocked => "任务受阻",
             CopilotAgentTaskAttentionKind.BudgetExhausted => "预算耗尽",
             CopilotAgentTaskAttentionKind.TaskPassLimit => "达到轮次上限",
+            CopilotAgentTaskAttentionKind.IncompleteOutput => "等待最终回答",
             _ => string.Empty,
         };
 
@@ -58,6 +60,8 @@ namespace ColorVision.Copilot
             get
             {
                 var blocker = Message.AgentBlockers.FirstOrDefault(item => item != null && item.IsStructurallyValid());
+                if (blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput)
+                    return "模型未返回最终回答";
                 if (blocker != null && !string.IsNullOrWhiteSpace(blocker.Summary))
                     return blocker.Summary;
 
@@ -95,7 +99,8 @@ namespace ColorVision.Copilot
         private static CopilotAgentTaskSummary? CreateSummary(CopilotConversationRecord conversation)
         {
             var message = conversation.Messages.LastOrDefault(candidate => candidate != null && !candidate.IsUser);
-            if (message == null || message.AgentTaskLedger.RemainingCount <= 0)
+            if (message == null
+                || (message.AgentTaskLedger.RemainingCount <= 0 && !message.HasRecoverableAgentTasks))
                 return null;
 
             var attentionKind = message.AgentStopReason switch
@@ -106,6 +111,7 @@ namespace ColorVision.Copilot
                 CopilotAgentStopReason.Blocked => CopilotAgentTaskAttentionKind.Blocked,
                 CopilotAgentStopReason.BudgetExhausted => CopilotAgentTaskAttentionKind.BudgetExhausted,
                 CopilotAgentStopReason.TaskPassLimit => CopilotAgentTaskAttentionKind.TaskPassLimit,
+                CopilotAgentStopReason.IncompleteOutput => CopilotAgentTaskAttentionKind.IncompleteOutput,
                 _ => (CopilotAgentTaskAttentionKind?)null,
             };
 

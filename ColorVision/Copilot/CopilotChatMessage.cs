@@ -248,20 +248,36 @@ namespace ColorVision.Copilot
         public bool HasAgentTaskLedger => !IsUser && AgentTaskLedger.TotalCount > 0;
 
         [JsonIgnore]
+        public bool HasAgentTaskState => !IsUser && (HasAgentTaskLedger || HasAgentBlockers || HasRecoverableAgentTasks);
+
+        [JsonIgnore]
         public bool HasIncompleteAgentTasks => HasAgentTaskLedger && AgentTaskLedger.RemainingCount > 0;
 
         [JsonIgnore]
-        public bool HasRecoverableAgentTasks => HasIncompleteAgentTasks
-            && AgentStopReason is CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused;
+        public bool HasRecoverableFinalAnswer => !HasIncompleteAgentTasks
+            && AgentStopReason is CopilotAgentStopReason.IncompleteOutput or CopilotAgentStopReason.BudgetExhausted
+            && AgentBlockers.Any(blocker => blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput);
 
         [JsonIgnore]
-        public string AgentRecoveryActionLabel => AgentTraceEntries?.LastOrDefault(entry => entry != null
+        public bool HasRecoverableAgentTasks => (HasIncompleteAgentTasks
+                && AgentStopReason is CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused)
+            || HasRecoverableFinalAnswer;
+
+        [JsonIgnore]
+        public string AgentRecoveryActionLabel => HasRecoverableFinalAnswer
+                ? "重试最终回答"
+                : AgentTraceEntries?.LastOrDefault(entry => entry != null
             && entry.IsFailure
             && entry.RetryEligible
             && entry.Access == CopilotToolAccess.ReadOnly
             && entry.Idempotency == CopilotToolIdempotency.Idempotent) != null
                 ? "重试只读检查"
                 : "继续任务";
+
+        [JsonIgnore]
+        public string AgentRecoveryToolTip => HasRecoverableFinalAnswer
+            ? "仅使用已保存的上下文和证据生成最终回答；不会再次调用工具"
+            : "从当前 AgentSession 继续未完成任务；写操作仍需重新审批";
 
         [JsonIgnore]
         public bool HasAgentBlockers => !IsUser && AgentBlockers.Count > 0;
@@ -658,9 +674,12 @@ namespace ColorVision.Copilot
         private void OnAgentTaskStateChanged()
         {
             OnPropertyChanged(nameof(HasAgentTaskLedger));
+            OnPropertyChanged(nameof(HasAgentTaskState));
             OnPropertyChanged(nameof(HasIncompleteAgentTasks));
+            OnPropertyChanged(nameof(HasRecoverableFinalAnswer));
             OnPropertyChanged(nameof(HasRecoverableAgentTasks));
             OnPropertyChanged(nameof(AgentRecoveryActionLabel));
+            OnPropertyChanged(nameof(AgentRecoveryToolTip));
             OnPropertyChanged(nameof(HasAgentBlockers));
             OnPropertyChanged(nameof(AgentBlockerLabel));
             OnPropertyChanged(nameof(AgentTaskModeLabel));
@@ -687,6 +706,7 @@ namespace ColorVision.Copilot
 
             RebuildExecutionContentFromAgentTrace();
             OnPropertyChanged(nameof(AgentRecoveryActionLabel));
+            OnPropertyChanged(nameof(AgentRecoveryToolTip));
         }
 
         public void RebuildExecutionContentFromAgentTrace()

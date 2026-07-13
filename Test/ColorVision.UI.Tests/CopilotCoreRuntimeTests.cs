@@ -243,6 +243,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var resume = CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, profile, capabilitySnapshot);
         Assert.True(resume.IsAvailable);
         Assert.Equal(CopilotAgentRecoveryMode.Resume, resume.Request!.Mode);
+        var changedProfile = profile.Clone();
+        changedProfile.Model = "replacement-model";
+        var replan = CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, changedProfile, capabilitySnapshot);
+        Assert.True(replan.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Replan, replan.Request!.Mode);
 
         var budgetJournal = new CopilotAgentTaskEventJournalBuilder();
         budgetJournal.RecordRunStarted();
@@ -290,6 +295,37 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.False(CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, profile, capabilitySnapshot).IsAvailable);
         message.AgentStopReason = CopilotAgentStopReason.ApprovalDenied;
         Assert.False(CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, profile, capabilitySnapshot).IsAvailable);
+
+        var incompleteJournal = new CopilotAgentTaskEventJournalBuilder();
+        incompleteJournal.RecordRunStarted();
+        incompleteJournal.RecordStop(CopilotAgentStopReason.IncompleteOutput);
+        var incompleteCheckpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            capabilitySnapshot,
+            taskEventJournal: incompleteJournal.Snapshot());
+        message.AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot { Mode = "execute" };
+        message.AgentStopReason = CopilotAgentStopReason.IncompleteOutput;
+        message.AgentBlockers =
+        [
+            new CopilotAgentBlockerSnapshot
+            {
+                Kind = CopilotAgentBlockerKind.ProviderOutput,
+                Code = "provider_empty_output",
+                Summary = "The model returned no final answer.",
+                RequiresUserInput = true,
+            },
+        ];
+
+        var finalize = CopilotAgentRecoveryPolicy.Evaluate(message, incompleteCheckpoint, profile, capabilitySnapshot);
+        Assert.True(finalize.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Finalize, finalize.Request!.Mode);
+        Assert.Equal("重试最终回答", finalize.ActionLabel);
+        Assert.True(message.HasRecoverableAgentTasks);
+        Assert.Equal("重试最终回答", message.AgentRecoveryActionLabel);
+        var finalizeWithChangedProfile = CopilotAgentRecoveryPolicy.Evaluate(message, incompleteCheckpoint, changedProfile, capabilitySnapshot);
+        Assert.True(finalizeWithChangedProfile.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Finalize, finalizeWithChangedProfile.Request!.Mode);
     }
 
     [Fact]
@@ -1428,6 +1464,177 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RetriesOnlyFinalAnswerWithoutReplayingHarnessOrTools()
+    {
+        var profile = CreateProfile();
+        var tool = new TestAgentTool("CatalogProbe");
+        using var emptyClient = new EmptyFinalAnswerChatClient("colorvision_catalog_probe", string.Empty);
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => emptyClient);
+        var firstResult = await firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "explain the saved inspection evidence",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+        Assert.Equal(CopilotAgentStopReason.IncompleteOutput, firstResult.StopReason);
+        Assert.NotNull(firstResult.SessionCheckpoint);
+        Assert.Equal(1, tool.ExecutionCount);
+
+        using var recoveryClient = new EmptyFinalAnswerChatClient("colorvision_catalog_probe", "recovered without replay");
+        var recoveryRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => recoveryClient);
+        var recoveryEvents = new List<CopilotAgentEvent>();
+        var recovered = await recoveryRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "仅重新生成最终回答，不要再次调用工具。",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = firstResult.SessionCheckpoint,
+            Recovery = new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Finalize,
+                PreviousStopReason = CopilotAgentStopReason.IncompleteOutput,
+            },
+        }, recoveryEvents.Add, CancellationToken.None);
+
+        Assert.Equal(0, recoveryClient.StreamCallCount);
+        Assert.Equal(1, recoveryClient.FinalizationCallCount);
+        Assert.NotNull(recoveryClient.FinalizationOptions);
+        Assert.Empty(recoveryClient.FinalizationOptions!.Tools ?? Array.Empty<AITool>());
+        Assert.NotNull(recoveryClient.FinalizationMessages);
+        Assert.Contains(recoveryClient.FinalizationMessages!, message => message.Text.Contains("explain the saved inspection evidence", StringComparison.Ordinal));
+        Assert.Contains(recoveryClient.FinalizationMessages!, message => message.Text.Contains("Evidence collected", StringComparison.Ordinal));
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Empty(recovered.StepRecords);
+        Assert.Equal(1, recovered.Budget.ProviderCalls);
+        Assert.Equal(0, recovered.Budget.ToolCalls);
+        Assert.Equal(CopilotAgentStopReason.Completed, recovered.StopReason);
+        Assert.Null(recovered.SessionCheckpoint);
+        Assert.Contains(recoveryEvents, item => item.Type == CopilotAgentEventType.AnswerDelta
+            && item.Text == "recovered without replay");
+        Assert.Contains(recoveryEvents, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("bypassed tool discovery", StringComparison.OrdinalIgnoreCase));
+        var recoveryEvent = Assert.Single(recovered.TaskEventJournal.Events,
+            item => item.Type == CopilotAgentTaskEventType.RecoveryRequested
+                && item.State == CopilotAgentRecoveryMode.Finalize.ToString());
+        Assert.Empty(recoveryEvent.RelatedIds);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_PreservesCheckpointWhenFinalAnswerOnlyRetryIsStillEmpty()
+    {
+        var profile = CreateProfile();
+        var tool = new TestAgentTool("CatalogProbe");
+        using var firstClient = new EmptyFinalAnswerChatClient("colorvision_catalog_probe", string.Empty);
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => firstClient);
+        var firstResult = await firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "produce a final answer",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+        Assert.NotNull(firstResult.SessionCheckpoint);
+
+        using var retryClient = new EmptyFinalAnswerChatClient(string.Empty, string.Empty);
+        var retryRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => retryClient);
+        var retried = await retryRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "retry only the final answer",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = firstResult.SessionCheckpoint,
+            Recovery = new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Finalize,
+                PreviousStopReason = CopilotAgentStopReason.IncompleteOutput,
+            },
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(0, retryClient.StreamCallCount);
+        Assert.Equal(1, retryClient.FinalizationCallCount);
+        Assert.Equal(CopilotAgentStopReason.IncompleteOutput, retried.StopReason);
+        Assert.NotNull(retried.SessionCheckpoint);
+        Assert.Equal(CopilotAgentStopReason.IncompleteOutput.ToString(), retried.SessionCheckpoint!.TaskEventJournal.Events
+            .Last(item => item.Type == CopilotAgentTaskEventType.RunStopped).State);
+        var blocker = Assert.Single(retried.Blockers);
+        Assert.Equal(CopilotAgentBlockerKind.ProviderOutput, blocker.Kind);
+        Assert.Equal("provider_empty_output", blocker.Code);
+        Assert.Equal(1, tool.ExecutionCount);
+
+        using var finalClient = new EmptyFinalAnswerChatClient(string.Empty, "eventually recovered");
+        var finalRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => finalClient);
+        var finalResult = await finalRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "retry only the final answer again",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = retried.SessionCheckpoint,
+            Recovery = new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Finalize,
+                PreviousStopReason = CopilotAgentStopReason.IncompleteOutput,
+            },
+        }, _ => { }, CancellationToken.None);
+
+        Assert.NotNull(finalClient.FinalizationMessages);
+        Assert.Contains(finalClient.FinalizationMessages!, message => message.Text.Contains("Evidence collected", StringComparison.Ordinal));
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotAgentStopReason.Completed, finalResult.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_RejectsMismatchedFinalAnswerRecoveryBeforeProviderOrToolExecution()
+    {
+        var profile = CreateProfile();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordStop(CopilotAgentStopReason.BudgetExhausted);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            CopilotCapabilityCatalog.Shared.GetSnapshot(),
+            taskEventJournal: journal.Snapshot());
+        Assert.NotNull(checkpoint);
+        var tool = new TestAgentTool("CatalogProbe");
+        using var client = new EmptyFinalAnswerChatClient("colorvision_catalog_probe", "must not run");
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(new[] { tool }),
+            new CopilotAgentContextBuilder(),
+            _ => client);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "retry final answer",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = checkpoint,
+            Recovery = new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Finalize,
+                PreviousStopReason = CopilotAgentStopReason.IncompleteOutput,
+            },
+        }, _ => { }, CancellationToken.None));
+
+        Assert.Equal(0, client.StreamCallCount);
+        Assert.Equal(0, client.FinalizationCallCount);
+        Assert.Equal(0, tool.ExecutionCount);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_CompactsOversizedHistoryBeforeProviderCall()
     {
         using var fakeChatClient = new CapturingFinalChatClient();
@@ -1932,6 +2139,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     [Fact]
     public async Task AgentFrameworkRuntime_StopsAndFinalizesWhenTotalTimeBudgetExpires()
     {
+        var profile = CreateProfile();
         using var client = new BlockingChatClient();
         var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
             new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
@@ -1942,7 +2150,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var result = await runtime.RunAsync(new CopilotAgentRequest
         {
             UserText = "exercise the total-time budget",
-            Profile = CreateProfile(),
+            Profile = profile,
             Mode = CopilotAgentMode.Auto,
             RunBudgetOverride = new CopilotAgentRunBudgetOverride { TotalDuration = TimeSpan.FromSeconds(1) },
         }, events.Add, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
@@ -1952,6 +2160,22 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.True(result.Budget.TimeBudgetExhausted);
         Assert.Equal(1000, result.Budget.TotalDurationMs);
         Assert.True(result.Budget.ElapsedMs >= 800);
+        var blocker = Assert.Single(result.Blockers);
+        Assert.Equal(CopilotAgentBlockerKind.ProviderOutput, blocker.Kind);
+        Assert.Equal("provider_output_timeout", blocker.Code);
+        Assert.NotNull(result.SessionCheckpoint);
+        var recovery = CopilotAgentRecoveryPolicy.Evaluate(
+            new CopilotChatMessage(CopilotChatRole.Assistant, "No final answer")
+            {
+                AgentStopReason = result.StopReason,
+                AgentTaskLedger = result.TaskLedger,
+                AgentBlockers = result.Blockers,
+            },
+            result.SessionCheckpoint,
+            profile,
+            CopilotCapabilityCatalog.Shared.GetSnapshot());
+        Assert.True(recovery.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Finalize, recovery.Request!.Mode);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("total-time budget exhausted", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.Completed);

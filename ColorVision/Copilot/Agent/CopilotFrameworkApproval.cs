@@ -112,8 +112,14 @@ namespace ColorVision.Copilot
             try
             {
                 var remaining = action.ExpiresAt - DateTimeOffset.UtcNow;
-                if (remaining > TimeSpan.Zero && await Task.WhenAny(decision, Task.Delay(remaining, CancellationToken.None)) != decision)
+                if (remaining <= TimeSpan.Zero)
+                {
                     _confirmationStore.ExpireStaleActions();
+                }
+                else if (await Task.WhenAny(decision, Task.Delay(remaining, CancellationToken.None)) != decision)
+                {
+                    _confirmationStore.ExpireStaleActions();
+                }
                 return await decision.WaitAsync(cancellationToken);
             }
             finally

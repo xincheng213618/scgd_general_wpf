@@ -55,6 +55,32 @@ public sealed class CopilotAgentTaskIndexTests
     }
 
     [Fact]
+    public void Build_IndexesRecoverableMissingFinalAnswerWithoutOpenTodos()
+    {
+        var incomplete = CreateConversation("missing answer", CopilotAgentStopReason.IncompleteOutput, DateTime.Now, withCheckpoint: true);
+        var message = incomplete.Messages[0];
+        message.AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot { Mode = "execute" };
+        message.AgentBlockers =
+        [
+            new CopilotAgentBlockerSnapshot
+            {
+                Kind = CopilotAgentBlockerKind.ProviderOutput,
+                Code = "provider_empty_output",
+                Summary = "The model returned no final answer.",
+                RequiresUserInput = true,
+            },
+        ];
+
+        var task = Assert.Single(CopilotAgentTaskIndex.Build(new[] { incomplete }));
+
+        Assert.Equal(CopilotAgentTaskAttentionKind.IncompleteOutput, task.AttentionKind);
+        Assert.Equal("等待最终回答", task.StatusLabel);
+        Assert.Equal("模型未返回最终回答", task.DetailLabel);
+        Assert.Equal(0, task.RemainingCount);
+        Assert.True(task.CanResume);
+    }
+
+    [Fact]
     public void StateRoundTrip_RebuildsPausedTaskIndex()
     {
         var root = Path.Combine(Path.GetTempPath(), "ColorVision", "CopilotAgentTaskIndexTests", Guid.NewGuid().ToString("N"));

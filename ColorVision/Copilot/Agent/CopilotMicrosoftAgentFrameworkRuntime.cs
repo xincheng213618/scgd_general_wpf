@@ -181,13 +181,36 @@ namespace ColorVision.Copilot
                 onEvent(agentEvent);
             });
             taskEventJournalBuilder.RecordRunStarted();
+            var capabilitySnapshot = _capabilityCatalog.GetSnapshot();
+            var finalAnswerRecovery = NormalizeFinalAnswerRecoveryRequest(
+                request.Recovery,
+                requestedCheckpoint,
+                request.Profile,
+                capabilitySnapshot);
+            if (finalAnswerRecovery != null)
+            {
+                taskEventJournalBuilder.RecordRecovery(finalAnswerRecovery);
+                return await RecoverFinalAnswerOnlyAsync(
+                    request,
+                    requestedCheckpoint!,
+                    capabilitySnapshot,
+                    taskEventJournalBuilder,
+                    emit,
+                    runBudget,
+                    stopwatch,
+                    timeBudgetCancellation,
+                    callerCancellationToken,
+                    cancellationToken);
+            }
+            if (request.Recovery?.Mode == CopilotAgentRecoveryMode.Finalize)
+                throw new InvalidOperationException("The final-answer-only recovery request no longer matches a compatible incomplete-output checkpoint.");
+
             emit(CopilotAgentEvent.Status("Agent Framework is preparing the request and available tools."));
 
             await using var externalToolLease = await _externalToolProvider.DiscoverAsync(request, cancellationToken);
             foreach (var diagnostic in externalToolLease.Diagnostics)
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
             var availableTools = MergeAvailableTools(request, _toolRegistry.FindTools(request), externalToolLease.Tools, emit);
-            var capabilitySnapshot = _capabilityCatalog.GetSnapshot();
             var availableToolNames = availableTools.Select(tool => tool.Name).ToArray();
             var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot, availableToolNames);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
@@ -496,7 +519,7 @@ namespace ColorVision.Copilot
                 if (!hasModelFinalAnswer)
                 {
                     emit(CopilotAgentEvent.AnswerDelta(
-                        "模型没有返回可显示的最终回答。本轮任务状态和工具执行记录已经保留，请重新发送问题以生成总结。"));
+                        "模型没有返回可显示的最终回答。本轮上下文和工具执行记录已经保留，可使用“重试最终回答”仅重新生成总结，不会再次调用工具。"));
                 }
             }
             if (controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted)
@@ -534,6 +557,12 @@ namespace ColorVision.Copilot
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer),
             };
             var blockers = CopilotAgentBlockerDetector.Detect(taskLedger, bridge.StepRecords, stopReason);
+            if (stopReason == CopilotAgentStopReason.BudgetExhausted
+                && !hasModelFinalAnswer
+                && !blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ProviderOutput))
+            {
+                blockers = blockers.Append(CreateProviderOutputBlocker(timeBudgetExhausted, requestBudgetExhausted: true)).ToArray();
+            }
             if (stopReason == CopilotAgentStopReason.TaskPassLimit && blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ToolFailure))
                 stopReason = CopilotAgentStopReason.Blocked;
             taskEventJournalBuilder.RecordTaskLedger(taskLedger, "final");
@@ -605,6 +634,188 @@ namespace ColorVision.Copilot
                 TaskEventJournal = taskEventJournal,
                 SessionCheckpoint = sessionCheckpoint,
             };
+        }
+
+        private async Task<CopilotAgentRunResult> RecoverFinalAnswerOnlyAsync(
+            CopilotAgentRequest request,
+            CopilotAgentSessionCheckpoint checkpoint,
+            CopilotCapabilityCatalogSnapshot capabilitySnapshot,
+            CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
+            Action<CopilotAgentEvent> emit,
+            CopilotAgentRunBudget runBudget,
+            Stopwatch stopwatch,
+            CancellationTokenSource timeBudgetCancellation,
+            CancellationToken callerCancellationToken,
+            CancellationToken cancellationToken)
+        {
+            emit(CopilotAgentEvent.Status("Agent Framework is retrying only the final answer with every tool disabled."));
+            emit(CopilotAgentEvent.RuntimeDiagnostic("Final-answer-only recovery bypassed tool discovery, Harness execution, approvals, and task replay."));
+
+            var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = CopilotAgentConversationMemory
+                .MergeIntoPreparedPrompt(checkpoint.ConversationMemory, preparedPrompt.Messages)
+                .Select(ToFrameworkMessage)
+                .ToArray();
+            var evidencePrompt = CopilotAgentEvidenceArtifacts.BuildRecoveryPrompt(checkpoint.EvidenceArtifacts, capabilitySnapshot);
+            if (!string.IsNullOrWhiteSpace(evidencePrompt))
+                messages = InsertEvidenceMessageBeforeCurrentUser(messages, evidencePrompt);
+            var runOutcomePrompt = CopilotAgentTaskEventJournal.BuildFinalAnswerRecoveryPrompt(checkpoint.TaskEventJournal);
+            if (!string.IsNullOrWhiteSpace(runOutcomePrompt))
+                messages = InsertEvidenceMessageBeforeCurrentUser(messages, runOutcomePrompt);
+            messages = messages.Append(new Microsoft.Extensions.AI.ChatMessage(
+                ChatRole.User,
+                "# Final-answer-only recovery\n"
+                + "Return the missing user-facing final answer using only the supplied conversation and persisted evidence. Every tool is unavailable: do not request a tool, repeat an operation, claim a fresh verification, or treat historical evidence as authorization. Clearly distinguish verified results from stale or incomplete evidence."))
+                .ToArray();
+
+            var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
+            var providerChatClient = _chatClientFactory(request.Profile);
+            var chatClient = new CopilotTokenBudgetChatClient(
+                providerChatClient,
+                tokenBudget,
+                snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); final-answer-only recovery stopped without invoking tools.")));
+            using var retryChatClient = new CopilotProviderRetryChatClient(
+                chatClient,
+                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(FormatProviderRetryDiagnostic(retry))));
+
+            var usage = CopilotTokenUsage.Empty;
+            var finalAnswer = string.Empty;
+            var timeBudgetExhausted = false;
+            try
+            {
+                var response = await retryChatClient.GetResponseAsync(
+                    messages,
+                    BuildFinalAnswerOptions(request.Profile),
+                    cancellationToken);
+                foreach (var usageContent in response.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
+                    usage = usage.Add(ToCopilotUsage(usageContent.Details));
+                finalAnswer = ExtractFinalAnswerText(response);
+                if (!string.IsNullOrWhiteSpace(finalAnswer))
+                    emit(CopilotAgentEvent.AnswerDelta(finalAnswer));
+                else
+                    emit(CopilotAgentEvent.RuntimeDiagnostic("Final-answer-only recovery returned no displayable text."));
+            }
+            catch (OperationCanceledException) when (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested)
+            {
+                timeBudgetExhausted = true;
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Final-answer-only recovery exhausted its total-time budget after {FormatDuration(stopwatch.Elapsed)}."));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Final-answer-only recovery failed ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
+            }
+
+            var hasFinalAnswer = !string.IsNullOrWhiteSpace(finalAnswer);
+            if (!hasFinalAnswer)
+            {
+                emit(CopilotAgentEvent.AnswerDelta(timeBudgetExhausted
+                    ? "最终回答生成达到本轮时间预算。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"
+                    : "模型仍未返回可显示的最终回答。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"));
+            }
+
+            var budgetSnapshot = runBudget.CreateSnapshot(
+                chatClient.Snapshot,
+                stopwatch.Elapsed,
+                toolCalls: 0,
+                timeBudgetExhausted);
+            var taskLedger = new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute",
+                ResumedFromCheckpoint = true,
+            };
+            var stopReason = hasFinalAnswer
+                ? CopilotAgentStopReason.Completed
+                : timeBudgetExhausted
+                    ? CopilotAgentStopReason.BudgetExhausted
+                    : CopilotAgentStopReason.IncompleteOutput;
+            IReadOnlyList<CopilotAgentBlockerSnapshot> blockers = hasFinalAnswer
+                ? Array.Empty<CopilotAgentBlockerSnapshot>()
+                : [CreateProviderOutputBlocker(timeBudgetExhausted)];
+            taskEventJournalBuilder.RecordTaskLedger(taskLedger, "final-answer-only");
+            foreach (var blocker in blockers)
+                taskEventJournalBuilder.RecordBlocker(blocker);
+            taskEventJournalBuilder.RecordStop(stopReason);
+            var taskEventJournal = taskEventJournalBuilder.Snapshot();
+            emit(CopilotAgentEvent.RuntimeDiagnostic(
+                $"Final-answer-only recovery used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s) · tools 0/{budgetSnapshot.MaxToolCalls}."));
+            emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent stop reason · {stopReason}."));
+
+            CopilotAgentSessionCheckpoint? sessionCheckpoint = null;
+            if (!hasFinalAnswer)
+            {
+                var conversationMemory = CopilotAgentConversationMemory.Merge(
+                    checkpoint.ConversationMemory,
+                    request.History,
+                    request.UserText,
+                    finalAnswer);
+                sessionCheckpoint = CopyCheckpointWithOutcome(checkpoint, taskEventJournal, conversationMemory);
+                if (sessionCheckpoint == null)
+                    emit(CopilotAgentEvent.RuntimeDiagnostic("The final-answer recovery checkpoint could not be refreshed; retry metadata was not saved."));
+            }
+            else
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic("The missing final answer was recovered. The old executable session checkpoint was retired so a later turn cannot resume before this answer."));
+            }
+
+            emit(CopilotAgentEvent.Completed());
+            return new CopilotAgentRunResult
+            {
+                PreparedUserMessageContent = preparedPrompt.PreparedUserMessageContent,
+                Usage = usage,
+                Budget = budgetSnapshot,
+                TaskLedger = taskLedger,
+                StopReason = stopReason,
+                Blockers = blockers,
+                TaskEventJournal = taskEventJournal,
+                SessionCheckpoint = sessionCheckpoint,
+            };
+        }
+
+        private static CopilotAgentBlockerSnapshot CreateProviderOutputBlocker(
+            bool timeBudgetExhausted,
+            bool requestBudgetExhausted = false)
+        {
+            return new CopilotAgentBlockerSnapshot
+            {
+                Kind = CopilotAgentBlockerKind.ProviderOutput,
+                Code = timeBudgetExhausted
+                    ? "provider_output_timeout"
+                    : requestBudgetExhausted
+                        ? "provider_output_budget"
+                        : "provider_empty_output",
+                Summary = timeBudgetExhausted
+                    ? "The final-answer-only provider call exhausted its time budget."
+                    : requestBudgetExhausted
+                        ? "The Agent request budget was exhausted before a final answer was produced."
+                        : "The model returned no final answer after the bounded finalization attempt.",
+                RequiresUserInput = true,
+            };
+        }
+
+        private static CopilotAgentSessionCheckpoint? CopyCheckpointWithOutcome(
+            CopilotAgentSessionCheckpoint checkpoint,
+            CopilotAgentTaskEventJournalSnapshot taskEventJournal,
+            IReadOnlyList<CopilotRequestMessage> conversationMemory)
+        {
+            var copy = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = checkpoint.ProfileKey,
+                SerializedSessionJson = checkpoint.SerializedSessionJson,
+                CapabilityCatalogRevision = checkpoint.CapabilityCatalogRevision,
+                Capabilities = (checkpoint.Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray(),
+                ToolSurfaceVersion = checkpoint.ToolSurfaceVersion,
+                AvailableToolNames = (checkpoint.AvailableToolNames ?? Array.Empty<string>()).ToArray(),
+                EvidenceArtifacts = (checkpoint.EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray(),
+                ConversationMemory = conversationMemory.ToArray(),
+                TaskEventJournal = taskEventJournal,
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            };
+            return copy.IsStructurallyValid() ? copy : null;
         }
 
         private IDisposable RegisterSteeringContext(
@@ -887,6 +1098,33 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
+        private static CopilotAgentRecoveryRequest? NormalizeFinalAnswerRecoveryRequest(
+            CopilotAgentRecoveryRequest? recovery,
+            CopilotAgentSessionCheckpoint? checkpoint,
+            CopilotProfileConfig profile,
+            CopilotCapabilityCatalogSnapshot capabilitySnapshot)
+        {
+            if (recovery?.Mode != CopilotAgentRecoveryMode.Finalize
+                || recovery.IsStructurallyValid() != true
+                || checkpoint?.IsStructurallyValid() != true)
+            {
+                return null;
+            }
+
+            var previousStop = checkpoint.TaskEventJournal.Events
+                .LastOrDefault(item => item.Type == CopilotAgentTaskEventType.RunStopped);
+            if (previousStop == null
+                || !string.Equals(previousStop.State, recovery.PreviousStopReason.ToString(), StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            var compatibility = checkpoint.EvaluateFor(profile, capabilitySnapshot);
+            return compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.Invalid
+                ? null
+                : recovery;
+        }
+
         private static CopilotAgentRecoveryRequest? NormalizeRecoveryRequest(
             CopilotAgentRecoveryRequest? recovery,
             CopilotAgentSessionCheckpoint? checkpoint,
@@ -903,6 +1141,9 @@ namespace ColorVision.Copilot
             {
                 return null;
             }
+
+            if (recovery.Mode == CopilotAgentRecoveryMode.Finalize)
+                return null;
 
             if (!requiresCheckpointReplan)
             {
@@ -937,6 +1178,8 @@ namespace ColorVision.Copilot
 
             return recovery.Mode switch
             {
+                CopilotAgentRecoveryMode.Finalize =>
+                    "\n\nThis final-answer-only recovery request was not accepted and must not be converted into an executable task replay.",
                 CopilotAgentRecoveryMode.RetryRead =>
                     $"\n\nThis is a structured recovery turn. Re-check whether the prior failed read is still necessary. You may issue a fresh current call to the read-only tool {recovery.ToolName} only if the current executor permits retry. Never reuse stored arguments, replay any write, or reuse an earlier approval. Continue the remaining todo items after obtaining current evidence.",
                 CopilotAgentRecoveryMode.Replan =>

@@ -147,6 +147,7 @@ namespace ColorVision.Copilot
                 || string.IsNullOrWhiteSpace(SerializedSessionJson)
                 || SerializedSessionJson.Length > MaxSerializedSessionCharacters
                 || CapabilityCatalogRevision < 0
+                || Capabilities == null
                 || Capabilities?.Count > MaxCheckpointCapabilities
                 || ToolSurfaceVersion is < 0 or > CurrentToolSurfaceVersion
                 || AvailableToolNames == null
@@ -165,6 +166,7 @@ namespace ColorVision.Copilot
                     || capability.Fingerprint.Length != 64
                     || capability.Fingerprint.Any(character => !Uri.IsHexDigit(character))) ?? false)
                 || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count)
+                || EvidenceArtifacts == null
                 || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts
                 || ConversationMemory == null
                 || ConversationMemory.Count > MaxConversationMemoryMessages
@@ -174,6 +176,7 @@ namespace ColorVision.Copilot
                     || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
                     || message.Content.Length > MaxConversationMemoryContentLength
                     || message.Content.Contains('\0'))
+                || TaskEventJournal == null
                 || TaskEventJournal?.Events?.Count > CopilotAgentTaskEventJournal.MaxEvents)
             {
                 return false;

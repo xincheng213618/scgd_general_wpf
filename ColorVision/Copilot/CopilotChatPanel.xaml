@@ -1003,7 +1003,7 @@
                                                 BorderThickness="1"
                                                 CornerRadius="8"
                                                 ToolTip="{Binding AgentTaskSummaryToolTip}"
-                                                Visibility="{Binding HasAgentTaskLedger, Converter={StaticResource bool2VisibilityConverter}}">
+                                                Visibility="{Binding HasAgentTaskState, Converter={StaticResource bool2VisibilityConverter}}">
                                             <StackPanel>
                                                 <DockPanel LastChildFill="True">
                                                     <Button DockPanel.Dock="Right"
@@ -1013,7 +1013,7 @@
                                                             CommandParameter="{Binding}"
                                                             Content="{Binding AgentRecoveryActionLabel}"
                                                             Style="{StaticResource MessageActionButtonStyle}"
-                                                            ToolTip="从当前 AgentSession 继续未完成任务；写操作仍需重新审批"
+                                                            ToolTip="{Binding AgentRecoveryToolTip}"
                                                             Visibility="{Binding HasRecoverableAgentTasks, Converter={StaticResource bool2VisibilityConverter}}" />
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock VerticalAlignment="Center"

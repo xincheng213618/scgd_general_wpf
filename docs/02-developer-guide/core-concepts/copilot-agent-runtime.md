@@ -82,7 +82,7 @@ Agent Framework checkpoint 保存目录 revision，以及每个能力的稳定 I
 
 `CopilotAgentTaskEventJournal` 把原先分散的 todo snapshot、工具生命周期、原生审批、运行中 steering、evidence artifact 和 stop reason 归入同一条版本化序列。每次运行生成独立的 `run:` ID；工具 `CallId`、审批 action ID 和 steering 内容只生成稳定哈希关联键，todo 仅保存数字 ID 与完成统计。摘要复用 MCP 审计脱敏器并限制为 320 字符，journal 最多保留最近 256 条事件。
 
-`CopilotAgentTaskEventJournal.Query` 支持按事件类型、run ID、工具名、subject/related ID 和 `BeforeSequence` 游标查询，单页最多 100 条，结果按新到旧返回。checkpoint 保存完整有界 snapshot，`CopilotAgentRunResult` 返回当前可查询 snapshot；旧 checkpoint、未知 Schema 或损坏的可选 journal 会被丢弃而不会变成模型上下文。journal 是诊断元数据，不参与 prompt 构造，不代表任何审批或重放授权。
+`CopilotAgentTaskEventJournal.Query` 支持按事件类型、run ID、工具名、subject/related ID 和 `BeforeSequence` 游标查询，单页最多 100 条，结果按新到旧返回。checkpoint 保存完整有界 snapshot，`CopilotAgentRunResult` 返回当前可查询 snapshot；旧 checkpoint、未知 Schema 或损坏的可选 journal 会被丢弃而不会变成模型上下文。journal 默认只作为诊断元数据，不代表任何审批或重放授权；唯一例外是 `Finalize` 恢复会把最后一个已停止 run 中最多 24 条脱敏工具结果、审批结果和 blocker 复制成独立 user-role 数据块，用于解释已经发生的结果。该数据块明确标为不可信历史数据，不能授权、重放或声称重新核验任何操作。
 
 `CopilotAgentTaskEventJournalRegistry` 只发布当前选中会话最近一次已保存的 snapshot；新一轮开始并撤下 checkpoint 时同步清空，运行完成后再发布新版本。本机 MCP 通过 `colorvision://copilot/task-events` 暴露最近 100 条，通过只读 `get_agent_task_events` 支持类型、run、工具、关联 ID、`before_sequence` 和 `max_events` 过滤。两者均为显式诊断入口，不加入默认 diagnostic bundle，也不产生聊天活动行；没有已保存 journal 时直接返回 unavailable，不回退到日志搜索或其他工具。
 
@@ -162,6 +162,8 @@ Harness 不再关闭压缩。ColorVision 为所有模型使用一个保守的 32
 `CopilotAgentRunBudget` 统一管理一次 Agent 运行的请求 Token、业务工具调用、Agent pass 和总时长。有效值按“单次请求覆盖 > Profile 默认值 > 框架安全默认值”解析；Profile 默认值分别为 64K Token、12 次业务工具调用、4 个 pass 和 300 秒，并通过上下限避免无界运行。业务工具硬上限由 Bridge 独立执行，Harness 的 todo、mode、approval 等框架函数和最后一次自然语言总结使用单独的有界迭代余量，因此用完最后一次业务工具后仍可返回结论；只有继续越界调用工具时才记录 `ToolBudgetExhausted`。设置窗口中的 `Agent run limits` 可以修改 Profile 默认值，集成调用方也可通过 `CopilotAgentRunBudgetOverride` 只覆盖当前请求。
 
 Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把空 Todo 账本直接判为完成。它会通过同一 Token 与传输重试中间件发起一次非流式最终总结，`ChatOptions.Tools` 固定为空，并把有界工具观察与当前任务账本作为数据交给模型；因此这个阶段不能重放业务或 Framework 工具。总结仍为空或失败时会发出固定用户提示、记录 `IncompleteOutput` 与 `provider_empty_output` blocker，保存 checkpoint，并且绝不标记 `Completed`。
+
+`CopilotAgentRecoveryMode.Finalize` 为这种状态提供独立恢复协议。Runtime 在验证 profile、checkpoint 和最后一次 `RunStopped` 后直接进入 no-tools Provider 调用，不发现外部 MCP、不创建 Harness、不恢复 Todo、不打开审批；不匹配的 Finalize 请求会在工具发现之前拒绝，不能降级成普通 Agent 执行。再次空输出或超时时会刷新原 session 的 journal 与对话记忆并继续保留 checkpoint；成功后旧 session checkpoint 会退役，因为旁路生成的最终回答并不存在于旧 Framework session 中，后续轮次应从包含新答案的可见历史创建新 session。
 
 `CopilotTokenBudgetChatClient` 基于官方 `DelegatingChatClient` 中间件包装真实模型客户端，累计同一 Agent 请求内所有供应商调用的 usage。当已观测用量达到有效请求预算时，下一次供应商调用会被替换为确定性的结束响应，不会再次调用模型或重放工具。供应商不返回 usage 时使用字符数近似，并在诊断中标记 `includes estimates`。这个预算是跨调用循环闸门；单个供应商响应可能使最终统计略微超过阈值。
 

@@ -8,6 +8,7 @@ namespace ColorVision.Copilot
         Resume,
         Replan,
         RetryRead,
+        Finalize,
     }
 
     public sealed class CopilotAgentRecoveryRequest
@@ -22,11 +23,16 @@ namespace ColorVision.Copilot
 
         public bool IsStructurallyValid()
         {
-            if (!Enum.IsDefined(Mode)
-                || PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused))
-            {
+            if (!Enum.IsDefined(Mode))
                 return false;
-            }
+
+            if (Mode == CopilotAgentRecoveryMode.Finalize)
+                return PreviousStopReason is CopilotAgentStopReason.IncompleteOutput or CopilotAgentStopReason.BudgetExhausted
+                    && string.IsNullOrWhiteSpace(ToolName)
+                    && string.IsNullOrWhiteSpace(SourceCallKey);
+
+            if (PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused))
+                return false;
 
             return Mode != CopilotAgentRecoveryMode.RetryRead
                 || (!string.IsNullOrWhiteSpace(ToolName)
@@ -58,13 +64,17 @@ namespace ColorVision.Copilot
         {
             if (message == null
                 || message.IsUser
-                || !message.HasIncompleteAgentTasks
-                || message.AgentStopReason is not (CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused)
                 || checkpoint?.IsStructurallyValid() != true
                 || profile?.IsConfigured != true)
             {
                 return CopilotAgentRecoveryDecision.Unavailable;
             }
+
+            var isFinalAnswerRecovery = message.HasRecoverableFinalAnswer;
+            var isTaskRecovery = message.HasIncompleteAgentTasks
+                && message.AgentStopReason is CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused;
+            if (!isFinalAnswerRecovery && !isTaskRecovery)
+                return CopilotAgentRecoveryDecision.Unavailable;
 
             var checkpointStop = checkpoint.TaskEventJournal.Events
                 .LastOrDefault(item => item.Type == CopilotAgentTaskEventType.RunStopped);
@@ -77,6 +87,15 @@ namespace ColorVision.Copilot
             var compatibility = checkpoint.EvaluateFor(profile, capabilitySnapshot);
             if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.Invalid)
                 return CopilotAgentRecoveryDecision.Unavailable;
+
+            if (isFinalAnswerRecovery)
+            {
+                return CreateDecision(
+                    CopilotAgentRecoveryMode.Finalize,
+                    message.AgentStopReason,
+                    "重试最终回答",
+                    "仅使用本轮已保存的上下文和证据重新生成最终回答，不再调用任何工具。");
+            }
 
             if (compatibility.Kind != CopilotAgentCheckpointCompatibilityKind.Compatible)
             {
