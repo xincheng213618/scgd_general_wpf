@@ -242,59 +242,7 @@ namespace ColorVision.Copilot
                     return docsTool;
             }
 
-            var preferredToolNames = request.Mode switch
-            {
-                CopilotAgentMode.Web => new[]
-                {
-                    "SearchDocs",
-                    "WebSearch",
-                    "FetchUrl",
-                    "ReadAttachedFile",
-                    "ReadLocalFile",
-                    "SearchFiles",
-                    "GrepText",
-                },
-                CopilotAgentMode.Diagnose => new[]
-                {
-                    "TemplatePatch",
-                    "GetRecentLog",
-                    "ReadLocalFile",
-                    "ReadAttachedFile",
-                    "ListDirectory",
-                    "SearchFiles",
-                    "GrepText",
-                    "WebSearch",
-                    "FetchUrl",
-                },
-                _ => new[]
-                {
-                    "TemplatePatch",
-                    "SearchDocs",
-                    "ReadLocalFile",
-                    "ReadAttachedFile",
-                    "ListDirectory",
-                    "SearchFiles",
-                    "GrepText",
-                    "WebSearch",
-                    "GetRecentLog",
-                    "FetchUrl",
-                },
-            };
-
-            foreach (var toolName in preferredToolNames)
-            {
-                if (string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
-                    && CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count == 0)
-                {
-                    continue;
-                }
-
-                var match = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, toolName, StringComparison.OrdinalIgnoreCase));
-                if (match != null)
-                    return match;
-            }
-
-            return availableTools.Count == 1 ? availableTools[0] : null;
+            return null;
         }
 
         private static CopilotAgentToolInput BuildFallbackToolInput(CopilotAgentRequest request, string toolName)

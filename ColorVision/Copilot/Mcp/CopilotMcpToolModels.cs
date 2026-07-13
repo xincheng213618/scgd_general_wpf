@@ -61,6 +61,18 @@ namespace ColorVision.Copilot.Mcp
 
         public string ErrorCode { get; init; } = string.Empty;
 
+        public bool RequiresApproval { get; init; }
+
+        public string ApprovalActionId { get; init; } = string.Empty;
+
+        public string ApprovalTitle { get; init; } = string.Empty;
+
+        public string ApprovalRiskLevel { get; init; } = string.Empty;
+
+        public DateTimeOffset ApprovalExpiresAtUtc { get; init; }
+
+        public bool ExecuteOnApproval { get; init; }
+
         public static CopilotMcpToolCallResult Ok(string text) => new()
         {
             Success = true,
@@ -72,6 +84,19 @@ namespace ColorVision.Copilot.Mcp
             Success = false,
             ErrorCode = errorCode ?? string.Empty,
             Text = message ?? string.Empty,
+        };
+
+        public static CopilotMcpToolCallResult ApprovalRequired(string message, ConfirmableAction action) => new()
+        {
+            Success = false,
+            ErrorCode = "confirmation_required",
+            Text = message ?? string.Empty,
+            RequiresApproval = true,
+            ApprovalActionId = action?.ActionId ?? string.Empty,
+            ApprovalTitle = action?.Title ?? string.Empty,
+            ApprovalRiskLevel = action?.RiskLevel ?? string.Empty,
+            ApprovalExpiresAtUtc = action?.ExpiresAt ?? default,
+            ExecuteOnApproval = action?.ExecuteOnApproval ?? false,
         };
     }
 

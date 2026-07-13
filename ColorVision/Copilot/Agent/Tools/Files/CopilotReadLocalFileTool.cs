@@ -10,6 +10,8 @@ namespace ColorVision.Copilot
 
         public string Description => "Read local text files allowed for the current round, with optional path and line-range focus.";
 
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.FileRead();
+
         public bool CanHandle(CopilotAgentRequest request)
         {
             return request?.ReadableLocalFilePaths?.Count > 0

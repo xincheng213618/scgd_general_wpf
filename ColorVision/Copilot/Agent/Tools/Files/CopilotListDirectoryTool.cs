@@ -10,6 +10,8 @@ namespace ColorVision.Copilot
 
         public string Description => "List the contents of local directories allowed for the current round, including files and subdirectories.";
 
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Path("Allowed local directory path to list.");
+
         public bool CanHandle(CopilotAgentRequest request)
         {
             return request?.ReadableLocalDirectoryPaths?.Count > 0

@@ -30,6 +30,8 @@ public sealed class CopilotApplicationAgentActionTests : IDisposable
         var action = Assert.Single(CopilotMcpConfirmationStore.Instance.GetPendingActions());
 
         Assert.True(staged.Success);
+        Assert.NotNull(staged.Approval);
+        Assert.Equal(action.ActionId, staged.Approval.ActionId);
         Assert.Equal("create_flow", action.ToolName);
         Assert.True(action.ExecuteOnApproval);
         Assert.Contains("校准流程", action.ArgumentsSummary, StringComparison.Ordinal);
@@ -39,6 +41,31 @@ public sealed class CopilotApplicationAgentActionTests : IDisposable
 
         Assert.True(created.Success);
         Assert.Equal(1, createCount);
+    }
+
+    [Fact]
+    public async Task FrameworkApprovedCreateFlowExecutesWithoutSecondPendingAction()
+    {
+        var createCount = 0;
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            CreateFlowHandler = (name, _) =>
+            {
+                createCount++;
+                return Task.FromResult(CopilotMcpToolCallResult.Ok($"created {name}"));
+            },
+        });
+        var tool = new CopilotCreateFlowTool(dispatcher);
+
+        var result = await tool.ExecuteApprovedAsync(
+            CreateRequest("创建新的流程，名为框架审批流程"),
+            CopilotAgentToolInput.Empty,
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Null(result.Approval);
+        Assert.Equal(1, createCount);
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
     }
 
     [Fact]
@@ -92,6 +119,8 @@ public sealed class CopilotApplicationAgentActionTests : IDisposable
         var action = Assert.Single(CopilotMcpConfirmationStore.Instance.GetPendingActions());
 
         Assert.True(staged.Success);
+        Assert.NotNull(staged.Approval);
+        Assert.Equal(action.ActionId, staged.Approval.ActionId);
         Assert.Equal("execute_menu", action.ToolName);
         Assert.True(action.ExecuteOnApproval);
         Assert.Equal(0, executeCount);
@@ -100,6 +129,97 @@ public sealed class CopilotApplicationAgentActionTests : IDisposable
 
         Assert.True(executed.Success);
         Assert.Equal(1, executeCount);
+    }
+
+    [Fact]
+    public async Task FrameworkApprovedMenuExecutesWithoutSecondPendingAction()
+    {
+        var handlerCalls = 0;
+        var executeCount = 0;
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            ExecuteMenuHandler = (_, dryRun, _) =>
+            {
+                handlerCalls++;
+                if (!dryRun && handlerCalls == 1)
+                    return Task.FromResult(CopilotMcpToolCallResult.Fail("confirmation_required", "confirmation_required\nrisk_level: confirmation-required"));
+
+                if (!dryRun)
+                    executeCount++;
+                return Task.FromResult(CopilotMcpToolCallResult.Ok("executed"));
+            },
+        });
+        var tool = new CopilotExecuteMenuTool(dispatcher);
+
+        var result = await tool.ExecuteApprovedAsync(
+            CreateRequest("执行检查更新菜单"),
+            new CopilotAgentToolInput { Query = "帮助 > 检查更新" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Null(result.Approval);
+        Assert.Equal(2, handlerCalls);
+        Assert.Equal(1, executeCount);
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+    }
+
+    [Fact]
+    public async Task InAppGenericMenuAlwaysStagesEvenWhenHandlerReportsLowRiskSuccess()
+    {
+        var executeCount = 0;
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            ExecuteMenuHandler = (_, dryRun, _) =>
+            {
+                if (!dryRun)
+                    executeCount++;
+                return Task.FromResult(CopilotMcpToolCallResult.Ok(dryRun ? "preview" : "executed"));
+            },
+        });
+        var tool = new CopilotExecuteMenuTool(dispatcher);
+
+        var result = await tool.ExecuteAsync(
+            CreateRequest("执行选项菜单"),
+            new CopilotAgentToolInput { Query = "工具 > 选项" },
+            CancellationToken.None);
+        var action = Assert.Single(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Approval);
+        Assert.Equal(0, executeCount);
+        Assert.True(action.ExecuteOnApproval);
+    }
+
+    [Fact]
+    public async Task LanguageToolStagesNormallyAndFrameworkApprovalDoesNotStageTwice()
+    {
+        var changeCount = 0;
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            SetLanguageHandler = (language, _) =>
+            {
+                changeCount++;
+                return Task.FromResult(CopilotMcpToolCallResult.Ok($"changed to {language}"));
+            },
+        });
+        var tool = new CopilotSetLanguageTool(dispatcher);
+        var input = new CopilotAgentToolInput { Query = "en-US" };
+
+        var staged = await tool.ExecuteAsync(CreateRequest("切换语言到 English"), input, CancellationToken.None);
+        var action = Assert.Single(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+
+        Assert.True(staged.Success);
+        Assert.NotNull(staged.Approval);
+        Assert.Equal(0, changeCount);
+        Assert.True(action.ExecuteOnApproval);
+        Assert.True(CopilotMcpConfirmationStore.Instance.Reject(action.ActionId, out _));
+
+        var applied = await tool.ExecuteApprovedAsync(CreateRequest("切换语言到 English"), input, CancellationToken.None);
+
+        Assert.True(applied.Success);
+        Assert.Null(applied.Approval);
+        Assert.Equal(1, changeCount);
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
     }
 
     [Fact]

@@ -13,6 +13,8 @@ namespace ColorVision.Copilot
 
         public string ErrorMessage { get; init; } = string.Empty;
 
+        public CopilotToolFailureKind FailureKind { get; init; }
+
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
         public CopilotToolResult ToToolResult(string toolName)
@@ -24,6 +26,7 @@ namespace ColorVision.Copilot
                 Summary = Summary,
                 Content = Content,
                 ErrorMessage = ErrorMessage,
+                FailureKind = FailureKind,
                 SuggestedReadableLocalFilePaths = SuggestedReadableLocalFilePaths,
             };
         }

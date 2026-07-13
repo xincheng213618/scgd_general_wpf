@@ -13,6 +13,8 @@ namespace ColorVision.Copilot
 
         public string Description => "Read recent application logs for failure or exception diagnosis.";
 
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Optional error text, exception name, or keyword used to filter recent logs.");
+
         public bool CanHandle(CopilotAgentRequest request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat)

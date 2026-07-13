@@ -35,6 +35,8 @@ namespace ColorVision.Copilot
 
         public string ErrorMessage { get; init; } = string.Empty;
 
+        public CopilotToolFailureKind FailureKind { get; init; }
+
         public IReadOnlyList<CopilotWebSearchHit> Hits { get; init; } = Array.Empty<CopilotWebSearchHit>();
 
         public CopilotCapabilityResult ToCapabilityResult()
@@ -45,6 +47,7 @@ namespace ColorVision.Copilot
                 Summary = Summary,
                 Content = Content,
                 ErrorMessage = ErrorMessage,
+                FailureKind = FailureKind,
             };
         }
     }
@@ -67,6 +70,7 @@ namespace ColorVision.Copilot
                     Provider = ProviderName,
                     Summary = "Missing web search query.",
                     ErrorMessage = "The web search tool requires a non-empty query.",
+                    FailureKind = CopilotToolFailureKind.Validation,
                 };
             }
 
@@ -91,6 +95,7 @@ namespace ColorVision.Copilot
                         Provider = ProviderName,
                         Summary = "Web search completed but returned no usable results.",
                         ErrorMessage = "No result title and URL pairs could be extracted from the search response.",
+                        FailureKind = CopilotToolFailureKind.NotFound,
                     };
                 }
 
@@ -117,6 +122,7 @@ namespace ColorVision.Copilot
                     Provider = ProviderName,
                     Summary = "Web search failed.",
                     ErrorMessage = ex.Message,
+                    FailureKind = CopilotToolFailureClassifier.Classify(ex),
                 };
             }
         }

@@ -11,13 +11,6 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotTemplatePatchTool : ICopilotTool
     {
-        private static readonly string[] ChangeIntentMarkers =
-        {
-            "change", "adjust", "modify", "set ", "preview", "apply", "patch", "parameter", "threshold", "exposure",
-            "修改", "调整", "改成", "设置", "预览", "应用", "参数", "阈值", "曝光",
-        };
-        private static readonly string[] ApplyIntentMarkers = { "apply", "confirm", "use this preview", "应用", "确认", "使用这个预览" };
-
         private readonly CopilotMcpToolDispatcher _dispatcher;
 
         public CopilotTemplatePatchTool()
@@ -32,7 +25,17 @@ namespace ColorVision.Copilot
 
         public string Name => "TemplatePatch";
 
-        public string Description => "Preview guarded changes to the active template JSON, or stage an existing preview for explicit ColorVision approval. For a preview, input.query must be a JSON string like {\"proposed_changes\":{\"Exposure\":12}}. To stage an existing preview, use {\"preview_id\":\"id\",\"apply\":true}. This tool never saves the template.";
+        public string Description => "Preview guarded changes to the active template JSON. input.query must be a JSON string like {\"proposed_changes\":{\"Exposure\":12}}. This function never applies or saves the template; use ApplyTemplatePatch for an existing preview.";
+
+        public CopilotToolAccess Access => CopilotToolAccess.ReadOnly;
+
+        public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.Low;
+
+        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Never;
+
+        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.Unknown;
+
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("JSON object containing proposed_changes for a preview.", required: true);
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -43,8 +46,8 @@ namespace ColorVision.Copilot
             if (context == null || !context.SourceId.StartsWith("template-json-editor:", StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            var text = request.UserText ?? string.Empty;
-            return ChangeIntentMarkers.Any(marker => text.Contains(marker, StringComparison.OrdinalIgnoreCase));
+            return CopilotTemplatePatchIntentSupport.HasChangeIntent(request.UserText)
+                && !CopilotTemplatePatchIntentSupport.HasApplyIntent(request.UserText);
         }
 
         public async Task<CopilotToolResult> ExecuteAsync(
@@ -63,14 +66,7 @@ namespace ColorVision.Copilot
                     return Failure("Template patch input is invalid.", "The template patch input root must be a JSON object.");
 
                 if (TryGetString(document.RootElement, "preview_id", out var previewId))
-                {
-                    if (!TryGetBoolean(document.RootElement, "apply", out var apply) || !apply)
-                        return Failure("Template patch application was not requested.", "Staging a preview requires apply=true.");
-                    if (!ApplyIntentMarkers.Any(marker => (request.UserText ?? string.Empty).Contains(marker, StringComparison.OrdinalIgnoreCase)))
-                        return Failure("Template patch application requires explicit user intent.", "Ask the user to explicitly apply or confirm the preview before staging it.");
-
-                    return await StagePreviewForApprovalAsync(previewId, cancellationToken);
-                }
+                    return Failure("Template patch preview input cannot apply an existing preview.", $"Use ApplyTemplatePatch with preview_id={previewId} after an explicit apply request.");
 
                 var proposedChanges = document.RootElement.TryGetProperty("proposed_changes", out var proposedElement)
                     ? proposedElement
@@ -90,24 +86,6 @@ namespace ColorVision.Copilot
             {
                 return Failure("Template patch input is invalid JSON.", ex.Message);
             }
-        }
-
-        private async Task<CopilotToolResult> StagePreviewForApprovalAsync(string previewId, CancellationToken cancellationToken)
-        {
-            var arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["preview_id"] = JsonSerializer.SerializeToElement(previewId),
-            };
-            var result = await _dispatcher.CallAsync("apply_template_patch", arguments, cancellationToken, CopilotMcpToolDispatcher.InAppAgentCallerSource);
-            var isWaitingForApproval = string.Equals(result.ErrorCode, "confirmation_required", StringComparison.OrdinalIgnoreCase);
-            return new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = result.Success || isWaitingForApproval,
-                Summary = isWaitingForApproval ? "Template patch is waiting for explicit ColorVision approval." : result.Success ? "Template patch applied." : "Template patch staging failed.",
-                Content = result.Text,
-                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Text,
-            };
         }
 
         private CopilotToolResult ToToolResult(CopilotMcpToolCallResult result, string successSummary, string failureSummary)
@@ -151,19 +129,19 @@ namespace ColorVision.Copilot
             return !string.IsNullOrWhiteSpace(value);
         }
 
-        private static bool TryGetBoolean(JsonElement element, string propertyName, out bool value)
+    }
+
+    internal static class CopilotTemplatePatchIntentSupport
+    {
+        private static readonly string[] ChangeIntentMarkers =
         {
-            value = false;
-            if (!element.TryGetProperty(propertyName, out var property))
-                return false;
+            "change", "adjust", "modify", "set ", "preview", "apply", "patch", "parameter", "threshold", "exposure",
+            "修改", "调整", "改成", "设置", "预览", "应用", "参数", "阈值", "曝光",
+        };
+        private static readonly string[] ApplyIntentMarkers = { "apply", "confirm", "use this preview", "应用", "确认", "使用这个预览" };
 
-            if (property.ValueKind is JsonValueKind.True or JsonValueKind.False)
-            {
-                value = property.GetBoolean();
-                return true;
-            }
+        public static bool HasChangeIntent(string? text) => ChangeIntentMarkers.Any(marker => (text ?? string.Empty).Contains(marker, StringComparison.OrdinalIgnoreCase));
 
-            return property.ValueKind == JsonValueKind.String && bool.TryParse(property.GetString(), out value);
-        }
+        public static bool HasApplyIntent(string? text) => ApplyIntentMarkers.Any(marker => (text ?? string.Empty).Contains(marker, StringComparison.OrdinalIgnoreCase));
     }
 }

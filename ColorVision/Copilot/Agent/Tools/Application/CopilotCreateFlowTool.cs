@@ -8,7 +8,7 @@ using System.Windows;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotCreateFlowTool : ICopilotTool
+    public sealed class CopilotCreateFlowTool : ICopilotFrameworkApprovedTool
     {
         private readonly CopilotMcpToolDispatcher _dispatcher;
 
@@ -26,6 +26,16 @@ namespace ColorVision.Copilot
 
         public string Description => "Create a new empty ColorVision flow after explicit user approval. Put only the requested flow name in input.query, or leave it empty to generate a timestamped name. This tool stages the action and never opens the flow-template manager.";
 
+        public CopilotToolAccess Access => CopilotToolAccess.Write;
+
+        public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.High;
+
+        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Always;
+
+        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.NonIdempotent;
+
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Optional name for the new flow. Omit to generate a timestamped name.");
+
         public bool CanHandle(CopilotAgentRequest request)
         {
             return request != null
@@ -39,6 +49,23 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
+            return await ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentCallerSource, cancellationToken);
+        }
+
+        public async Task<CopilotToolResult> ExecuteApprovedAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            return await ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentFrameworkApprovedCallerSource, cancellationToken);
+        }
+
+        private async Task<CopilotToolResult> ExecuteCoreAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            string callerSource,
+            CancellationToken cancellationToken)
+        {
             ArgumentNullException.ThrowIfNull(request);
 
             var flowName = CopilotFlowCreationSupport.ResolveFlowName(request.UserText, toolInput?.Query);
@@ -46,7 +73,7 @@ namespace ColorVision.Copilot
             {
                 ["name"] = JsonSerializer.SerializeToElement(flowName),
             };
-            var result = await _dispatcher.CallAsync("create_flow", arguments, cancellationToken, CopilotMcpToolDispatcher.InAppAgentCallerSource);
+            var result = await _dispatcher.CallAsync("create_flow", arguments, cancellationToken, callerSource);
             var isWaitingForApproval = string.Equals(result.ErrorCode, "confirmation_required", StringComparison.OrdinalIgnoreCase);
 
             return new CopilotToolResult
@@ -58,6 +85,7 @@ namespace ColorVision.Copilot
                     : result.Success ? $"Created flow {flowName}." : "Flow creation failed.",
                 Content = result.Text,
                 ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Text,
+                Approval = result.ToApprovalInfo(),
             };
         }
     }

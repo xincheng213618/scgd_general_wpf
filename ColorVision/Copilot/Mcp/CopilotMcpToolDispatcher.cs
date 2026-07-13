@@ -28,6 +28,8 @@ namespace ColorVision.Copilot.Mcp
         private const int DefaultDiagnosticBundleChars = 12000;
         private const int MaxDiagnosticBundleChars = 60000;
         public const string InAppAgentCallerSource = "in-app-agent";
+
+        internal const string InAppAgentFrameworkApprovedCallerSource = "in-app-agent-framework-approved";
         private const string LiveContextResourceUri = "colorvision://live-context/current";
         private const string WorkspaceResourceUri = "colorvision://workspace/current";
         private const string LogsResourceUri = "colorvision://logs/recent";
@@ -275,14 +277,14 @@ namespace ColorVision.Copilot.Mcp
                 .Register("diagnose_flow_failure", (arguments, _, token) => DiagnoseFlowFailureAsync(arguments, token))
                 .Register("open_panel", (arguments, _, token) => OpenPanelAsync(arguments, token))
                 .Register("execute_menu", (arguments, caller, token) => ExecuteMenuAsync(arguments, caller, token))
-                .Register("create_flow", (arguments, caller, _) => Task.FromResult(CreateFlow(arguments, caller)))
+                .Register("create_flow", (arguments, caller, token) => CreateFlowAsync(arguments, caller, token))
                 .Register("confirm_action", (arguments, _, token) => ConfirmActionAsync(arguments, token))
                 .Register("preview_template_patch", (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)))
                 .Register("suggest_template_patch", (arguments, _, token) => SuggestTemplatePatchAsync(arguments, token))
                 .Register("apply_template_patch", (arguments, caller, token) => ApplyTemplatePatchAsync(arguments, caller, token))
                 .Register("preview_flow_action", (arguments, _, token) => PreviewFlowActionAsync(arguments, token))
                 .Register("set_theme", (arguments, _, token) => SetThemeAsync(arguments, token))
-                .Register("set_language", (arguments, _, token) => SetLanguageAsync(arguments, token));
+                .Register("set_language", (arguments, caller, token) => SetLanguageAsync(arguments, caller, token));
         }
 
         private void ValidateRouterMatchesDescriptors()
@@ -866,11 +868,52 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Fail("missing_query", "The execute_menu tool requires a non-empty query argument.");
 
             var dryRun = GetBool(arguments, "dry_run") ?? true;
+            var frameworkApproved = IsInAppAgentFrameworkApproved(callerSource);
+            var inAppAgent = IsInAppAgent(callerSource);
+
+            if (inAppAgent && !dryRun)
+            {
+                if (_environment.ExecuteMenuHandler != null)
+                {
+                    var handlerPreview = await _environment.ExecuteMenuHandler(query, true, cancellationToken);
+                    if (!handlerPreview.Success)
+                        return handlerPreview;
+
+                    return CreateConfirmableActionResult(
+                        "Confirm menu command",
+                        $"Execute ColorVision menu command: {query}",
+                        "execute_menu",
+                        arguments,
+                        handlerPreview.Text,
+                        token => _environment.ExecuteMenuHandler(query, false, token),
+                        executeOnApproval: true);
+                }
+
+                if (Application.Current == null)
+                    return CopilotMcpToolCallResult.Fail("application_unavailable", "The WPF application is not available.");
+
+                var applicationPreview = await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: true, allowConfirmationRequired: false, cancellationToken);
+                if (!applicationPreview.Success)
+                    return ToMcpResult(applicationPreview, "menu_preview_failed");
+
+                return CreateConfirmableActionResult(
+                    "Confirm menu command",
+                    $"Execute ColorVision menu command: {query}",
+                    "execute_menu",
+                    arguments,
+                    string.Join(Environment.NewLine, new[] { applicationPreview.Summary, applicationPreview.Content }.Where(value => !string.IsNullOrWhiteSpace(value))),
+                    async token => ToMcpResult(await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: false, allowConfirmationRequired: true, token), "menu_execution_failed"),
+                    executeOnApproval: true);
+            }
 
             if (_environment.ExecuteMenuHandler != null)
             {
                 var handlerResult = await _environment.ExecuteMenuHandler(query, dryRun, cancellationToken);
                 if (!dryRun && IsConfirmationRequiredResult(handlerResult))
+                {
+                    if (frameworkApproved)
+                        return await _environment.ExecuteMenuHandler(query, false, cancellationToken);
+
                     return CreateConfirmableActionResult(
                         "Confirm menu command",
                         $"Execute ColorVision menu command: {query}",
@@ -879,6 +922,7 @@ namespace ColorVision.Copilot.Mcp
                         handlerResult.Text,
                         token => _environment.ExecuteMenuHandler(query, false, token),
                         executeOnApproval: IsInAppAgent(callerSource));
+                }
 
                 return handlerResult;
             }
@@ -886,7 +930,7 @@ namespace ColorVision.Copilot.Mcp
             if (Application.Current == null)
                 return CopilotMcpToolCallResult.Fail("application_unavailable", "The WPF application is not available.");
 
-            var result = await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun, allowConfirmationRequired: false, cancellationToken);
+            var result = await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun, allowConfirmationRequired: frameworkApproved, cancellationToken);
             if (!dryRun && IsConfirmationRequiredResult(result))
             {
                 return CreateConfirmableActionResult(
@@ -902,13 +946,19 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result, "menu_execution_failed");
         }
 
-        private CopilotMcpToolCallResult CreateFlow(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource)
+        private async Task<CopilotMcpToolCallResult> CreateFlowAsync(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            string callerSource,
+            CancellationToken cancellationToken)
         {
             var flowName = CopilotFlowCreationSupport.ResolveFlowName(null, GetString(arguments, "name"));
             var normalizedArguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
             {
                 ["name"] = JsonSerializer.SerializeToElement(flowName),
             };
+
+            if (string.Equals(callerSource, InAppAgentFrameworkApprovedCallerSource, StringComparison.OrdinalIgnoreCase))
+                return await _environment.CreateFlowHandler(flowName, cancellationToken);
 
             return CreateConfirmableActionResult(
                 "Confirm new flow creation",
@@ -1084,6 +1134,9 @@ namespace ColorVision.Copilot.Mcp
             if (!validationResult.Success)
                 return validationResult;
 
+            if (IsInAppAgentFrameworkApproved(callerSource))
+                return await ExecuteTemplatePatchPreviewAsync(preview.PreviewId, cancellationToken);
+
             return CreateConfirmableActionResult(
                 "Confirm template patch",
                 $"Apply previewed JSON changes to active template editor: {preview.TemplateIdentifier}",
@@ -1216,11 +1269,21 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result, "theme_change_failed");
         }
 
-        private async Task<CopilotMcpToolCallResult> SetLanguageAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        private async Task<CopilotMcpToolCallResult> SetLanguageAsync(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            string callerSource,
+            CancellationToken cancellationToken)
         {
             var languageQuery = FirstNonEmpty(GetString(arguments, "language"), GetString(arguments, "query"));
             if (string.IsNullOrWhiteSpace(languageQuery))
                 return CopilotMcpToolCallResult.Fail("missing_language", "The set_language tool requires a non-empty language argument.");
+
+            if (IsInAppAgentFrameworkApproved(callerSource))
+            {
+                return _environment.SetLanguageHandler != null
+                    ? await _environment.SetLanguageHandler(languageQuery, cancellationToken)
+                    : ToMcpResult(await CopilotApplicationCapability.SetLanguageAsync(languageQuery, cancellationToken), "language_change_failed");
+            }
 
             if (_environment.SetLanguageHandler != null)
             {
@@ -1230,7 +1293,8 @@ namespace ColorVision.Copilot.Mcp
                     "set_language",
                     arguments,
                     "Changing language may affect UI state and can trigger the existing restart confirmation flow.",
-                    token => _environment.SetLanguageHandler(languageQuery, token));
+                    token => _environment.SetLanguageHandler(languageQuery, token),
+                    executeOnApproval: IsInAppAgent(callerSource));
             }
 
             return CreateConfirmableActionResult(
@@ -1239,7 +1303,8 @@ namespace ColorVision.Copilot.Mcp
                 "set_language",
                 arguments,
                 "Changing language may affect UI state and can trigger the existing restart confirmation flow.",
-                async token => ToMcpResult(await CopilotApplicationCapability.SetLanguageAsync(languageQuery, token), "language_change_failed"));
+                async token => ToMcpResult(await CopilotApplicationCapability.SetLanguageAsync(languageQuery, token), "language_change_failed"),
+                executeOnApproval: IsInAppAgent(callerSource));
         }
 
         private CopilotMcpToolCallResult CreateConfirmableActionResult(
@@ -1285,7 +1350,7 @@ namespace ColorVision.Copilot.Mcp
                 builder.AppendLine(TrimLong(RedactForDisplay(previewText), 8000));
             }
 
-            return CopilotMcpToolCallResult.Fail("confirmation_required", builder.ToString().TrimEnd());
+            return CopilotMcpToolCallResult.ApprovalRequired(builder.ToString().TrimEnd(), action);
         }
 
         private static bool IsConfirmationRequiredResult(CopilotMcpToolCallResult result)
@@ -1309,6 +1374,11 @@ namespace ColorVision.Copilot.Mcp
         private static bool IsInAppAgent(string callerSource)
         {
             return string.Equals(callerSource, InAppAgentCallerSource, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsInAppAgentFrameworkApproved(string callerSource)
+        {
+            return string.Equals(callerSource, InAppAgentFrameworkApprovedCallerSource, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool ContainsSensitiveArgumentValues(IReadOnlyDictionary<string, JsonElement>? arguments)

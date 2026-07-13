@@ -30,10 +30,11 @@ public sealed class CopilotTemplatePatchAgentTests : IDisposable
                 return Task.FromResult(CopilotMcpToolCallResult.Ok("applied"));
             },
         });
-        var tool = new CopilotTemplatePatchTool(dispatcher);
+        var previewTool = new CopilotTemplatePatchTool(dispatcher);
+        var applyTool = new CopilotApplyTemplatePatchTool(dispatcher);
         var request = CreateRequest("把曝光调整到 12");
 
-        var preview = await tool.ExecuteAsync(request, new CopilotAgentToolInput
+        var preview = await previewTool.ExecuteAsync(request, new CopilotAgentToolInput
         {
             Query = "{\"proposed_changes\":{\"Exposure\":12}}",
         }, CancellationToken.None);
@@ -41,14 +42,17 @@ public sealed class CopilotTemplatePatchAgentTests : IDisposable
 
         Assert.True(preview.Success);
         Assert.Contains("Exposure: 10 -> 12", preview.Content, StringComparison.Ordinal);
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
 
-        var staged = await tool.ExecuteAsync(CreateRequest("应用这个预览"), new CopilotAgentToolInput
+        var staged = await applyTool.ExecuteAsync(CreateRequest("应用这个预览"), new CopilotAgentToolInput
         {
-            Query = $"{{\"preview_id\":\"{previewId}\",\"apply\":true}}",
+            Query = $"{{\"preview_id\":\"{previewId}\"}}",
         }, CancellationToken.None);
         var action = Assert.Single(CopilotMcpConfirmationStore.Instance.GetPendingActions());
 
         Assert.True(staged.Success);
+        Assert.NotNull(staged.Approval);
+        Assert.Equal(action.ActionId, staged.Approval.ActionId);
         Assert.True(action.ExecuteOnApproval);
         Assert.Equal(0, applyCount);
 
@@ -58,6 +62,40 @@ public sealed class CopilotTemplatePatchAgentTests : IDisposable
         Assert.Equal(1, applyCount);
         using var document = JsonDocument.Parse(currentJson);
         Assert.Equal(12, document.RootElement.GetProperty("Exposure").GetInt32());
+    }
+
+    [Fact]
+    public async Task FrameworkApprovedApplyToolExecutesWithoutSecondPendingAction()
+    {
+        const string currentJson = "{\"Exposure\":10}";
+        var applyCount = 0;
+        var context = CreateTemplateContext(() => currentJson);
+        CopilotLiveContextRegistry.Publish(context);
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            LiveContextProvider = () => context,
+            ApplyTemplatePatchHandler = (_, _) =>
+            {
+                applyCount++;
+                return Task.FromResult(CopilotMcpToolCallResult.Ok("applied"));
+            },
+        });
+        var preview = await new CopilotTemplatePatchTool(dispatcher).ExecuteAsync(
+            CreateRequest("把曝光调整到 12"),
+            new CopilotAgentToolInput { Query = "{\"proposed_changes\":{\"Exposure\":12}}" },
+            CancellationToken.None);
+        var previewId = ExtractField(preview.Content, "preview_id");
+        var tool = new CopilotApplyTemplatePatchTool(dispatcher);
+
+        var result = await tool.ExecuteApprovedAsync(
+            CreateRequest("应用这个预览"),
+            new CopilotAgentToolInput { Query = $"{{\"preview_id\":\"{previewId}\"}}" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Null(result.Approval);
+        Assert.Equal(1, applyCount);
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
     }
 
     [Fact]
@@ -84,12 +122,12 @@ public sealed class CopilotTemplatePatchAgentTests : IDisposable
     [Fact]
     public async Task ExistingPreviewCannotBeStagedWithoutExplicitApplyIntent()
     {
-        var tool = new CopilotTemplatePatchTool();
+        var tool = new CopilotApplyTemplatePatchTool();
         CopilotLiveContextRegistry.Publish(CreateTemplateContext(() => "{\"Exposure\":10}"));
 
         var result = await tool.ExecuteAsync(CreateRequest("查看这个预览"), new CopilotAgentToolInput
         {
-            Query = "{\"preview_id\":\"abcdef123456\",\"apply\":true}",
+            Query = "{\"preview_id\":\"abcdef123456\"}",
         }, CancellationToken.None);
 
         Assert.False(result.Success);
@@ -140,12 +178,16 @@ public sealed class CopilotTemplatePatchAgentTests : IDisposable
     [Fact]
     public void ToolIsAvailableOnlyForTemplateChangeIntent()
     {
-        var tool = new CopilotTemplatePatchTool();
+        var previewTool = new CopilotTemplatePatchTool();
+        var applyTool = new CopilotApplyTemplatePatchTool();
         CopilotLiveContextRegistry.Publish(CreateTemplateContext(() => "{\"Exposure\":10}"));
 
-        Assert.True(tool.CanHandle(CreateRequest("把曝光调整到 12")));
-        Assert.False(tool.CanHandle(CreateRequest("解释这个模板")));
-        Assert.False(tool.CanHandle(new CopilotAgentRequest
+        Assert.True(previewTool.CanHandle(CreateRequest("把曝光调整到 12")));
+        Assert.False(previewTool.CanHandle(CreateRequest("应用这个预览")));
+        Assert.True(applyTool.CanHandle(CreateRequest("应用这个预览")));
+        Assert.False(applyTool.CanHandle(CreateRequest("把曝光调整到 12")));
+        Assert.False(previewTool.CanHandle(CreateRequest("解释这个模板")));
+        Assert.False(previewTool.CanHandle(new CopilotAgentRequest
         {
             UserText = "把曝光调整到 12",
             Mode = CopilotAgentMode.Chat,
@@ -158,12 +200,13 @@ public sealed class CopilotTemplatePatchAgentTests : IDisposable
     {
         var messages = new CopilotAgentContextBuilder().BuildPlannerMessages(
             CreateRequest("把曝光调整到 12"),
-            new ICopilotTool[] { new CopilotTemplatePatchTool() },
+            new ICopilotTool[] { new CopilotTemplatePatchTool(), new CopilotApplyTemplatePatchTool() },
             Array.Empty<CopilotAgentStepRecord>(),
             Array.Empty<string>());
         var prompt = messages[^1].Content;
 
         Assert.Contains("{\"proposed_changes\":{\"FieldName\":newValue}}", prompt, StringComparison.Ordinal);
+        Assert.Contains("ApplyTemplatePatch", prompt, StringComparison.Ordinal);
         Assert.DoesNotContain("{\\\"proposed_changes", prompt, StringComparison.Ordinal);
     }
 
