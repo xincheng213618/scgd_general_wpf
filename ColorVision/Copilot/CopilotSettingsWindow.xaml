@@ -288,14 +288,10 @@
                                 </DockPanel>
                             </Grid>
 
-                            <Expander Margin="0,4,0,0" Header="Advanced model settings" IsExpanded="False" Foreground="{DynamicResource GlobalTextBrush}">
+                            <Expander Margin="0,4,0,0" Header="Connection settings" IsExpanded="False" Foreground="{DynamicResource GlobalTextBrush}">
                                 <StackPanel Margin="0,10,0,0">
                                     <Grid>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
@@ -314,48 +310,7 @@
                                                   SelectedValue="{Binding SelectedProfile.ProviderType, UpdateSourceTrigger=PropertyChanged}" />
 
                                         <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Base URL" />
-                                        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
-
-                                        <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,0,0,10">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="104" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="14" />
-                                                <ColumnDefinition Width="104" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-
-                                            <TextBlock Grid.Column="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotMaxToken}" />
-                                            <TextBox Grid.Column="1" Text="{Binding SelectedProfile.MaxTokens, UpdateSourceTrigger=PropertyChanged}" />
-
-                                            <TextBlock Grid.Column="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotTemperature}" />
-                                            <TextBox Grid.Column="4" Text="{Binding SelectedProfile.Temperature, UpdateSourceTrigger=PropertyChanged}" />
-                                        </Grid>
-
-                                        <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotToolRounds}" />
-                                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.MaxToolRounds, UpdateSourceTrigger=PropertyChanged}" />
-
-                                        <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" VerticalAlignment="Top" Text="Agent runtime" />
-                                        <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,10">
-                                            <CheckBox Content="Use Microsoft Agent Framework (experimental)"
-                                                      IsChecked="{Binding SelectedProfile.UseAgentFramework, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Margin="0,5,0,0"
-                                                       Style="{StaticResource SettingsHintTextStyle}"
-                                                       Text="Off by default. Unsupported profiles automatically use the built-in Agent runtime."
-                                                       TextWrapping="Wrap" />
-                                        </StackPanel>
-
-                                        <TextBlock Grid.Row="5" Style="{StaticResource SettingsFieldLabelStyle}" VerticalAlignment="Top" Text="{x:Static properties:Resources.CopilotSystemPrompt}" />
-                                        <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,10">
-                                            <TextBox Height="110"
-                                                     AcceptsReturn="True"
-                                                     VerticalScrollBarVisibility="Auto"
-                                                     TextWrapping="Wrap"
-                                                     Text="{Binding SelectedProfile.CustomSystemPrompt, UpdateSourceTrigger=PropertyChanged}" />
-                                            <TextBlock Margin="0,6,0,0"
-                                                       Style="{StaticResource SettingsHintTextStyle}"
-                                                       Text="Optional instructions appended after ColorVision's built-in prompt. Leave empty to use the app default." />
-                                        </StackPanel>
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
                                     </Grid>
                                 </StackPanel>
                             </Expander>

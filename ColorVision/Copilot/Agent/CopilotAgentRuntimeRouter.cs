@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotAgentRuntimeRouter : ICopilotAgentRuntime
+    public sealed class CopilotAgentRuntimeRouter : ICopilotAgentRuntime, ICopilotAgentSteeringRuntime
     {
         private readonly ICopilotAgentRuntime _builtInRuntime;
         private readonly ICopilotAgentRuntime _agentFrameworkRuntime;
@@ -15,7 +15,7 @@ namespace ColorVision.Copilot
             _agentFrameworkRuntime = agentFrameworkRuntime ?? throw new ArgumentNullException(nameof(agentFrameworkRuntime));
         }
 
-        public Task<CopilotAgentRunResult> RunAsync(
+        public async Task<CopilotAgentRunResult> RunAsync(
             CopilotAgentRequest request,
             Action<CopilotAgentEvent> onEvent,
             CancellationToken cancellationToken)
@@ -23,16 +23,40 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(onEvent);
 
-            if (!request.Profile.UseAgentFramework)
-                return _builtInRuntime.RunAsync(request, onEvent, cancellationToken);
-
             if (!CanUseAgentFramework(request.Profile, out var reason))
             {
                 onEvent(CopilotAgentEvent.Status($"Agent Framework is unavailable for this profile ({reason}); using the built-in Agent runtime."));
-                return _builtInRuntime.RunAsync(request, onEvent, cancellationToken);
+                return await _builtInRuntime.RunAsync(request, onEvent, cancellationToken);
             }
 
-            return _agentFrameworkRuntime.RunAsync(request, onEvent, cancellationToken);
+            var hasMaterialProgress = false;
+            try
+            {
+                return await _agentFrameworkRuntime.RunAsync(
+                    request,
+                    agentEvent =>
+                    {
+                        if (agentEvent.Type is CopilotAgentEventType.ToolStarted or CopilotAgentEventType.ToolResult or CopilotAgentEventType.AnswerDelta or CopilotAgentEventType.Completed)
+                            hasMaterialProgress = true;
+                        onEvent(agentEvent);
+                    },
+                    cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (!hasMaterialProgress)
+            {
+                onEvent(CopilotAgentEvent.Status($"Agent Framework failed before executing a tool or producing an answer ({ex.Message}); using the built-in Agent runtime."));
+                return await _builtInRuntime.RunAsync(request, onEvent, cancellationToken);
+            }
+        }
+
+        public bool TryEnqueueSteeringMessage(string message)
+        {
+            return _agentFrameworkRuntime is ICopilotAgentSteeringRuntime steeringRuntime
+                && steeringRuntime.TryEnqueueSteeringMessage(message);
         }
 
         public static bool CanUseAgentFramework(CopilotProfileConfig? profile, out string reason)
@@ -43,15 +67,9 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            if (profile.ProviderType != CopilotProviderType.OpenAICompatible)
+            if (profile.ProviderType is not (CopilotProviderType.OpenAICompatible or CopilotProviderType.AnthropicCompatible))
             {
-                reason = "only OpenAI-compatible profiles are enabled in the experiment";
-                return false;
-            }
-
-            if (CopilotReasoningCapabilities.GetEffectiveMode(profile) != CopilotReasoningMode.Default)
-            {
-                reason = "provider-specific reasoning settings require the built-in runtime";
+                reason = "provider protocol is unsupported";
                 return false;
             }
 

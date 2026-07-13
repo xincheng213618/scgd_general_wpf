@@ -11,4 +11,9 @@ namespace ColorVision.Copilot
             Action<CopilotAgentEvent> onEvent,
             CancellationToken cancellationToken);
     }
+
+    public interface ICopilotAgentSteeringRuntime
+    {
+        bool TryEnqueueSteeringMessage(string message);
+    }
 }

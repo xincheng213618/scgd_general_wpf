@@ -1566,8 +1566,6 @@ namespace ColorVision.Copilot
                 Id = Guid.NewGuid().ToString("N"),
                 VendorType = vendorType,
                 Name = $"{CopilotVendorCatalog.GetLabel(vendorType)} {Profiles.Count + 1}",
-                MaxTokens = CopilotProfileConfig.DefaultMaxTokens,
-                Temperature = CopilotProfileConfig.DefaultTemperature,
             };
 
             ApplyVendorPreset(profile, resetName: false);

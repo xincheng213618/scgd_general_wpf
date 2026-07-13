@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -188,6 +189,8 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingContent));
                     OnPropertyChanged(nameof(HasThinkingContent));
+                    OnPropertyChanged(nameof(LegacyThinkingContent));
+                    OnPropertyChanged(nameof(HasLegacyThinkingContent));
                     OnPropertyChanged(nameof(ExecutionSummary));
                     OnPropertyChanged(nameof(ExecutionSummaryToolTip));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
@@ -196,11 +199,65 @@ namespace ColorVision.Copilot
         }
         private string _executionContent = string.Empty;
 
+        public ObservableCollection<CopilotAgentTraceEntry> AgentTraceEntries { get; set; } = new();
+
+        public CopilotAgentTaskLedgerSnapshot AgentTaskLedger
+        {
+            get => _agentTaskLedger;
+            set
+            {
+                var normalized = value ?? new CopilotAgentTaskLedgerSnapshot();
+                normalized.EnsureValid();
+                if (SetProperty(ref _agentTaskLedger, normalized))
+                    OnAgentTaskStateChanged();
+            }
+        }
+        private CopilotAgentTaskLedgerSnapshot _agentTaskLedger = new();
+
+        public CopilotAgentStopReason AgentStopReason
+        {
+            get => _agentStopReason;
+            set
+            {
+                var normalized = Enum.IsDefined(value) ? value : CopilotAgentStopReason.None;
+                if (SetProperty(ref _agentStopReason, normalized))
+                    OnAgentTaskStateChanged();
+            }
+        }
+        private CopilotAgentStopReason _agentStopReason;
+
+        [JsonIgnore]
+        public bool HasAgentTaskLedger => !IsUser && AgentTaskLedger.TotalCount > 0;
+
+        [JsonIgnore]
+        public bool HasIncompleteAgentTasks => HasAgentTaskLedger && AgentTaskLedger.RemainingCount > 0;
+
+        [JsonIgnore]
+        public string AgentTaskModeLabel => string.Equals(AgentTaskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase) ? "计划" : "执行";
+
+        [JsonIgnore]
+        public string AgentTaskProgressLabel => $"{AgentTaskLedger.CompletedCount}/{AgentTaskLedger.TotalCount} 已完成";
+
+        [JsonIgnore]
+        public string AgentStopReasonLabel => AgentStopReason switch
+        {
+            CopilotAgentStopReason.Completed => "任务完成",
+            CopilotAgentStopReason.AwaitingUser => "等待用户决定",
+            CopilotAgentStopReason.ApprovalDenied => "审批未通过",
+            CopilotAgentStopReason.BudgetExhausted => "本轮预算已用尽",
+            CopilotAgentStopReason.TaskPassLimit => "达到本轮继续上限",
+            _ => "Agent 已停止",
+        };
+
+        [JsonIgnore]
+        public string AgentTaskSummaryToolTip => $"Agent 任务 · {AgentTaskModeLabel} · {AgentTaskProgressLabel}{Environment.NewLine}{AgentStopReasonLabel}";
+
         [JsonIgnore]
         public bool HasExecutionTrace => !string.IsNullOrWhiteSpace(ExecutionContent);
 
         [JsonIgnore]
-        public bool HasExecutionFailures => AnalyzeExecutionTrace(FilterDisplayableExecutionContent(ExecutionContent)).FailedCount > 0;
+        public bool HasExecutionFailures => AgentTraceEntries.Any(entry => entry != null && IsFailedTraceState(entry.State))
+            || AnalyzeExecutionTrace(FilterDisplayableExecutionContent(ExecutionContent)).FailedCount > 0;
 
         public bool IsExecutionExpanded
         {
@@ -232,7 +289,9 @@ namespace ColorVision.Copilot
         public string ExecutionHeader => IsExecutionInProgress ? CopilotUiText.ExecutionInProgressHeader : CopilotUiText.ExecutionHeader;
 
         [JsonIgnore]
-        public string ExecutionSummary => BuildExecutionSummary(ExecutionContent, IsExecutionInProgress);
+        public string ExecutionSummary => AgentTraceEntries.Count > 0
+            ? BuildAgentTraceSummary(AgentTraceEntries, IsExecutionInProgress)
+            : BuildExecutionSummary(ExecutionContent, IsExecutionInProgress);
 
         [JsonIgnore]
         public string ExecutionSummaryToolTip
@@ -257,6 +316,8 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingContent));
                     OnPropertyChanged(nameof(HasThinkingContent));
+                    OnPropertyChanged(nameof(LegacyThinkingContent));
+                    OnPropertyChanged(nameof(HasLegacyThinkingContent));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
                 }
             }
@@ -329,7 +390,9 @@ namespace ColorVision.Copilot
         private DateTime _thinkingCompletedAt;
 
         [JsonIgnore]
-        public bool IsThinkingInProgress => IsExecutionInProgress || IsReasoningInProgress;
+        public bool IsThinkingInProgress => _isProcessingInProgress || IsExecutionInProgress || IsReasoningInProgress;
+
+        private bool _isProcessingInProgress;
 
         [JsonIgnore]
         public bool HasThinkingTrace => HasExecutionTrace || HasReasoning || IsThinkingInProgress || ThinkingStartedAt != default;
@@ -338,28 +401,46 @@ namespace ColorVision.Copilot
         public bool HasThinkingContent => !string.IsNullOrWhiteSpace(ThinkingContent);
 
         [JsonIgnore]
+        public bool HasAgentTraceEntries => VisibleAgentTraceEntries.Count > 0;
+
+        [JsonIgnore]
+        public IReadOnlyList<CopilotAgentTraceEntry> VisibleAgentTraceEntries => AgentTraceEntries
+            .Where(entry => entry != null && entry.IsVisibleInActivity)
+            .ToArray();
+
+        [JsonIgnore]
+        public string LegacyThinkingContent => HasAgentTraceEntries ? string.Empty : BuildThinkingContent(ExecutionContent, ReasoningContent);
+
+        [JsonIgnore]
+        public bool HasLegacyThinkingContent => !string.IsNullOrWhiteSpace(LegacyThinkingContent);
+
+        [JsonIgnore]
         public string ThinkingHeader
         {
             get
             {
-                var header = IsThinkingInProgress
-                    ? CopilotUiText.ThinkingInProgressHeader
-                    : CopilotUiText.ThinkingCompletedHeader;
-                var elapsed = FormatThinkingElapsed();
-                return string.IsNullOrWhiteSpace(elapsed) ? header : $"{header}（用时 {elapsed}）";
+                if (IsThinkingInProgress)
+                    return CopilotUiText.ProcessingHeader;
+
+                var elapsed = FormatCompletedProcessingElapsed();
+                return string.IsNullOrWhiteSpace(elapsed)
+                    ? CopilotUiText.ProcessedHeader
+                    : $"{CopilotUiText.ProcessedHeader} {elapsed}";
             }
         }
 
         [JsonIgnore]
-        public string ThinkingContent => BuildThinkingContent(ExecutionContent, ReasoningContent);
+        public string ThinkingContent => HasAgentTraceEntries
+            ? string.Join(Environment.NewLine, VisibleAgentTraceEntries.Select(entry => entry.ActivityLabel))
+            : LegacyThinkingContent;
 
         [JsonIgnore]
-        public string ThinkingSummaryToolTip => string.IsNullOrWhiteSpace(ThinkingContent)
-            ? ThinkingHeader
-            : ThinkingHeader + Environment.NewLine + Environment.NewLine + TrimForTooltip(ThinkingContent);
+        public string ThinkingSummaryToolTip => ThinkingHeader;
 
         public void MarkThinkingStarted()
         {
+            _isProcessingInProgress = true;
+
             if (ThinkingStartedAt == default)
                 ThinkingStartedAt = DateTime.Now;
 
@@ -374,6 +455,8 @@ namespace ColorVision.Copilot
 
         public void MarkThinkingCompleted()
         {
+            _isProcessingInProgress = false;
+
             if (ThinkingStartedAt == default)
                 ThinkingStartedAt = CreatedAt == default ? DateTime.Now : CreatedAt;
 
@@ -416,6 +499,58 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (AgentTraceEntries == null)
+            {
+                AgentTraceEntries = new ObservableCollection<CopilotAgentTraceEntry>();
+                changed = true;
+            }
+
+            if (_agentTaskLedger == null)
+            {
+                _agentTaskLedger = new CopilotAgentTaskLedgerSnapshot();
+                changed = true;
+            }
+            else
+            {
+                changed |= _agentTaskLedger.EnsureValid();
+            }
+
+            if (!Enum.IsDefined(AgentStopReason))
+            {
+                AgentStopReason = CopilotAgentStopReason.None;
+                changed = true;
+            }
+
+            for (var index = AgentTraceEntries.Count - 1; index >= 0; index--)
+            {
+                if (AgentTraceEntries[index] != null)
+                    continue;
+
+                AgentTraceEntries.RemoveAt(index);
+                changed = true;
+            }
+
+            var recoveredAtUtc = DateTimeOffset.UtcNow;
+            foreach (var entry in AgentTraceEntries)
+                changed |= entry.EnsureValid(recoveredAtUtc);
+
+            if (AgentTraceEntries.Count > 0)
+            {
+                var previousExecutionContent = ExecutionContent;
+                RebuildExecutionContentFromAgentTrace();
+                changed |= !string.Equals(previousExecutionContent, ExecutionContent, StringComparison.Ordinal);
+            }
+
+            if (IsExecutionInProgress || IsReasoningInProgress)
+            {
+                IsExecutionInProgress = false;
+                IsReasoningInProgress = false;
+                _isProcessingInProgress = false;
+                if (ThinkingCompletedAt == default)
+                    ThinkingCompletedAt = DateTime.Now;
+                changed = true;
+            }
+
             if (!IsThinkingInProgress && HasThinkingTrace)
             {
                 IsThinkingExpanded = false;
@@ -444,26 +579,107 @@ namespace ColorVision.Copilot
             return changed;
         }
 
-        private string FormatThinkingElapsed()
+        private void OnAgentTaskStateChanged()
         {
-            var startedAt = ThinkingStartedAt == default ? CreatedAt : ThinkingStartedAt;
-            if (startedAt == default)
-                return string.Empty;
+            OnPropertyChanged(nameof(HasAgentTaskLedger));
+            OnPropertyChanged(nameof(HasIncompleteAgentTasks));
+            OnPropertyChanged(nameof(AgentTaskModeLabel));
+            OnPropertyChanged(nameof(AgentTaskProgressLabel));
+            OnPropertyChanged(nameof(AgentStopReasonLabel));
+            OnPropertyChanged(nameof(AgentTaskSummaryToolTip));
+        }
 
-            var endedAt = ThinkingCompletedAt == default
-                ? IsThinkingInProgress ? DateTime.Now : default
-                : ThinkingCompletedAt;
-            if (endedAt == default || endedAt < startedAt)
-                return string.Empty;
+        public void UpsertAgentTrace(CopilotAgentTraceEntry traceEntry)
+        {
+            ArgumentNullException.ThrowIfNull(traceEntry);
+            AgentTraceEntries ??= new ObservableCollection<CopilotAgentTraceEntry>();
 
-            var elapsed = endedAt - startedAt;
-            if (elapsed.TotalSeconds < 1)
-                return "<1秒";
+            var index = AgentTraceEntries
+                .Select((entry, entryIndex) => new { entry, entryIndex })
+                .FirstOrDefault(item => !string.IsNullOrWhiteSpace(traceEntry.CallId)
+                    && string.Equals(item.entry.CallId, traceEntry.CallId, StringComparison.Ordinal))
+                ?.entryIndex ?? -1;
 
-            if (elapsed.TotalMinutes < 1)
-                return $"{Math.Max(1, (int)Math.Round(elapsed.TotalSeconds))}秒";
+            if (index >= 0)
+                AgentTraceEntries[index] = traceEntry;
+            else
+                AgentTraceEntries.Add(traceEntry);
 
-            return $"{(int)elapsed.TotalMinutes}分 {elapsed.Seconds}秒";
+            RebuildExecutionContentFromAgentTrace();
+        }
+
+        public void RebuildExecutionContentFromAgentTrace()
+        {
+            if (AgentTraceEntries == null || AgentTraceEntries.Count == 0)
+                return;
+
+            var blocks = AgentTraceEntries
+                .Where(entry => entry != null)
+                .Select(BuildAgentTraceBlock)
+                .Where(block => !string.IsNullOrWhiteSpace(block));
+            ExecutionContent = string.Join(Environment.NewLine + Environment.NewLine, blocks);
+            OnPropertyChanged(nameof(HasAgentTraceEntries));
+            OnPropertyChanged(nameof(VisibleAgentTraceEntries));
+            OnPropertyChanged(nameof(ThinkingContent));
+            OnPropertyChanged(nameof(HasThinkingContent));
+            OnPropertyChanged(nameof(LegacyThinkingContent));
+            OnPropertyChanged(nameof(HasLegacyThinkingContent));
+            OnPropertyChanged(nameof(HasExecutionFailures));
+            OnPropertyChanged(nameof(ExecutionSummary));
+            OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+        }
+
+        private static string BuildAgentTraceBlock(CopilotAgentTraceEntry entry)
+        {
+            return entry.DiagnosticDetails;
+        }
+
+        private static string BuildAgentTraceSummary(ObservableCollection<CopilotAgentTraceEntry> entries, bool isInProgress)
+        {
+            var failedCount = entries.Count(entry => entry != null && IsFailedTraceState(entry.State));
+            var latestTool = entries.LastOrDefault(entry => entry != null)?.ToolName ?? string.Empty;
+            var isAwaitingApproval = entries.Any(entry => entry?.State == CopilotToolExecutionState.AwaitingApproval);
+            var hasRunningTool = entries.Any(entry => entry?.State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running);
+            var builder = new StringBuilder(isAwaitingApproval
+                ? "Awaiting approval"
+                : (isInProgress || hasRunningTool ? "Running" : "Completed"));
+            builder.Append(" - ").Append(entries.Count).Append(entries.Count == 1 ? " tool" : " tools");
+            if (failedCount > 0)
+                builder.Append(" - ").Append(failedCount).Append(" failed");
+            if (!string.IsNullOrWhiteSpace(latestTool))
+                builder.Append(" - latest ").Append(TrimForInline(latestTool));
+            return builder.ToString();
+        }
+
+        private static bool IsFailedTraceState(CopilotToolExecutionState state)
+        {
+            return state is CopilotToolExecutionState.Failed
+                or CopilotToolExecutionState.TimedOut
+                or CopilotToolExecutionState.Denied
+                or CopilotToolExecutionState.Cancelled
+                or CopilotToolExecutionState.Interrupted;
+        }
+
+        private static string FormatTraceState(CopilotToolExecutionState state) => state switch
+        {
+            CopilotToolExecutionState.Pending => "Pending",
+            CopilotToolExecutionState.Running => "Running...",
+            CopilotToolExecutionState.Completed => "Completed",
+            CopilotToolExecutionState.Failed => "Failed",
+            CopilotToolExecutionState.TimedOut => "Timed out",
+            CopilotToolExecutionState.Denied => "Denied",
+            CopilotToolExecutionState.Cancelled => "Cancelled",
+            CopilotToolExecutionState.Interrupted => "Interrupted",
+            CopilotToolExecutionState.AwaitingApproval => "Awaiting approval",
+            _ => "Unknown",
+        };
+
+        private static string FormatTraceDuration(long durationMs)
+        {
+            if (durationMs < 1000)
+                return $"{Math.Max(0, durationMs)}ms";
+
+            return $"{durationMs / 1000d:0.#}s";
         }
 
         private static string BuildThinkingContent(string? executionContent, string? reasoningContent)
@@ -485,6 +701,27 @@ namespace ColorVision.Copilot
             }
 
             return builder.ToString().TrimEnd();
+        }
+
+        private string FormatCompletedProcessingElapsed()
+        {
+            var startedAt = ThinkingStartedAt == default ? CreatedAt : ThinkingStartedAt;
+            if (IsThinkingInProgress || startedAt == default || ThinkingCompletedAt == default || ThinkingCompletedAt < startedAt)
+                return string.Empty;
+
+            var elapsed = ThinkingCompletedAt - startedAt;
+            if (elapsed.TotalSeconds < 1)
+                return "<1s";
+
+            var totalSeconds = Math.Max(1, (int)Math.Floor(elapsed.TotalSeconds));
+            var hours = totalSeconds / 3600;
+            var minutes = totalSeconds % 3600 / 60;
+            var seconds = totalSeconds % 60;
+
+            if (hours > 0)
+                return $"{hours}h {minutes}m {seconds}s";
+
+            return minutes > 0 ? $"{minutes}m {seconds}s" : $"{seconds}s";
         }
 
         private static string FilterDisplayableExecutionContent(string? content)
@@ -709,6 +946,8 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
 
+        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; set; }
+
         [JsonIgnore]
         public string UpdatedLabel => UpdatedAt.Date == DateTime.Today ? UpdatedAt.ToString("HH:mm") : UpdatedAt.ToString("M/d");
 
@@ -745,6 +984,11 @@ namespace ColorVision.Copilot
 
             Messages ??= new ObservableCollection<CopilotChatMessage>();
             Attachments ??= new ObservableCollection<CopilotAttachmentItem>();
+            if (AgentSessionCheckpoint != null && !AgentSessionCheckpoint.IsStructurallyValid())
+            {
+                AgentSessionCheckpoint = null;
+                changed = true;
+            }
 
             foreach (var message in Messages)
             {

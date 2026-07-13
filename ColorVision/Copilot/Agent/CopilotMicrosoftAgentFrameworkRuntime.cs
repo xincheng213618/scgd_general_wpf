@@ -1,5 +1,7 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
+using Anthropic;
+using Anthropic.Core;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -8,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -15,21 +19,21 @@ using System.ClientModel;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotMicrosoftAgentFrameworkRuntime : ICopilotAgentRuntime
+    public sealed class CopilotMicrosoftAgentFrameworkRuntime : ICopilotAgentRuntime, ICopilotAgentSteeringRuntime
     {
-        private static readonly string[] ExperimentalToolNames =
-        {
-            "SearchDocs",
-            "SearchFiles",
-            "GetRecentLog",
-        };
+        private const int MaxAutonomousTaskPasses = 4;
+        private const int MaxSteeringMessageLength = 16_000;
 
         private readonly CopilotToolRegistry _toolRegistry;
         private readonly CopilotAgentContextBuilder _contextBuilder;
+        private readonly CopilotToolExecutor _toolExecutor;
         private readonly Func<CopilotProfileConfig, IChatClient> _chatClientFactory;
+        private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
+        private readonly object _steeringSyncRoot = new();
+        private ActiveSteeringContext? _activeSteeringContext;
 
         public CopilotMicrosoftAgentFrameworkRuntime(CopilotToolRegistry toolRegistry, CopilotAgentContextBuilder contextBuilder)
-            : this(toolRegistry, contextBuilder, CreateChatClient)
+            : this(toolRegistry, contextBuilder, new CopilotToolExecutor(), CreateChatClient)
         {
         }
 
@@ -37,10 +41,60 @@ namespace ColorVision.Copilot
             CopilotToolRegistry toolRegistry,
             CopilotAgentContextBuilder contextBuilder,
             Func<CopilotProfileConfig, IChatClient> chatClientFactory)
+            : this(toolRegistry, contextBuilder, new CopilotToolExecutor(), chatClientFactory)
+        {
+        }
+
+        public CopilotMicrosoftAgentFrameworkRuntime(
+            CopilotToolRegistry toolRegistry,
+            CopilotAgentContextBuilder contextBuilder,
+            CopilotToolExecutor toolExecutor)
+            : this(toolRegistry, contextBuilder, toolExecutor, CreateChatClient)
+        {
+        }
+
+        public CopilotMicrosoftAgentFrameworkRuntime(
+            CopilotToolRegistry toolRegistry,
+            CopilotAgentContextBuilder contextBuilder,
+            CopilotToolExecutor toolExecutor,
+            Func<CopilotProfileConfig, IChatClient> chatClientFactory)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
+            _toolExecutor = toolExecutor ?? throw new ArgumentNullException(nameof(toolExecutor));
             _chatClientFactory = chatClientFactory ?? throw new ArgumentNullException(nameof(chatClientFactory));
+            _approvalCoordinator = new CopilotFrameworkApprovalCoordinator();
+        }
+
+        public bool TryEnqueueSteeringMessage(string message)
+        {
+            var normalized = (message ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized) || normalized.Length > MaxSteeringMessageLength)
+                return false;
+
+            ActiveSteeringContext? activeContext;
+            lock (_steeringSyncRoot)
+                activeContext = _activeSteeringContext;
+
+            if (activeContext == null)
+                return false;
+
+            try
+            {
+                activeContext.MessageInjector.EnqueueMessages(activeContext.Session,
+                [
+                    new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, normalized),
+                ]);
+                return true;
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
         }
 
         public async Task<CopilotAgentRunResult> RunAsync(
@@ -55,74 +109,325 @@ namespace ColorVision.Copilot
                 throw new NotSupportedException(unsupportedReason);
 
             var emit = CreateEventEmitter(onEvent);
-            emit(CopilotAgentEvent.Status("Agent Framework Harness is preparing a safe experimental run."));
+            emit(CopilotAgentEvent.Status("Agent Framework is preparing the request and available tools."));
 
             var availableTools = _toolRegistry.FindTools(request)
-                .Where(tool => ExperimentalToolNames.Contains(tool.Name, StringComparer.OrdinalIgnoreCase))
                 .ToArray();
-            var bridge = new HarnessToolBridge(request, availableTools, emit);
+            var bridge = new HarnessToolBridge(request, availableTools, request.Profile.MaxToolRounds, _toolExecutor, emit);
             var frameworkTools = bridge.CreateFunctions();
             var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
+            var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile);
+            var autonomousTaskPasses = Math.Clamp(request.Profile.MaxToolRounds, 1, MaxAutonomousTaskPasses);
+            emit(CopilotAgentEvent.RuntimeDiagnostic(
+                $"Agent context compaction enabled · input budget {tokenBudget.InputBudgetTokens:N0} tokens · request budget {tokenBudget.RequestTokenBudget:N0} tokens."));
 
-            using var chatClient = _chatClientFactory(request.Profile);
+            var providerChatClient = _chatClientFactory(request.Profile);
+            using var chatClient = new CopilotTokenBudgetChatClient(
+                providerChatClient,
+                tokenBudget,
+                snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")));
             var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
             {
-                Name = "ColorVisionCopilotExperimental",
+                Name = "ColorVisionCopilot",
                 HarnessInstructions = BuildHarnessInstructions(availableTools),
+                MaxContextWindowTokens = tokenBudget.ContextWindowTokens,
                 MaxOutputTokens = request.Profile.MaxTokens,
                 MaximumIterationsPerRequest = Math.Max(1, request.Profile.MaxToolRounds),
-                DisableCompaction = true,
+                DisableCompaction = false,
                 DisableFileMemory = true,
                 DisableFileAccess = true,
                 DisableWebSearch = true,
-                DisableTodoProvider = true,
-                DisableAgentModeProvider = true,
+                DisableTodoProvider = false,
+                DisableAgentModeProvider = false,
+                AgentModeProviderOptions = new AgentModeProviderOptions
+                {
+                    DefaultMode = "execute",
+                },
+                LoopEvaluators =
+                [
+                    new TodoCompletionLoopEvaluator(new TodoCompletionLoopEvaluatorOptions
+                    {
+                        Modes = ["execute"],
+                        FeedbackMessageTemplate = "Continue working through the task ledger until every item is complete or a concrete blocker is reported. Re-check current state before acting; persisted tasks are planning state, not authorization. Protected actions require a fresh exact-call approval. Remaining tasks:\n"
+                            + TodoCompletionLoopEvaluator.RemainingTodosPlaceholder,
+                    }),
+                ],
+                LoopAgentOptions = new LoopAgentOptions
+                {
+                    MaxIterations = autonomousTaskPasses,
+                    ExcludeOnBehalfOfMessages = true,
+                },
                 DisableAgentSkillsProvider = true,
                 DisableToolAutoApproval = true,
                 DisableOpenTelemetry = true,
-                ChatOptions = new ChatOptions
-                {
-                    Instructions = request.Profile.EffectiveSystemPrompt,
-                    MaxOutputTokens = request.Profile.MaxTokens,
-                    Temperature = (float)request.Profile.Temperature,
-                    Tools = frameworkTools,
-                },
+                ChatOptions = BuildChatOptions(request.Profile, frameworkTools),
             });
+            var todoProvider = agent.GetService(typeof(TodoProvider)) as TodoProvider
+                ?? throw new InvalidOperationException("Agent Framework Harness did not expose its todo provider.");
+            var modeProvider = agent.GetService(typeof(AgentModeProvider)) as AgentModeProvider
+                ?? throw new InvalidOperationException("Agent Framework Harness did not expose its mode provider.");
+            var messageInjector = agent.GetService(typeof(MessageInjectingChatClient)) as MessageInjectingChatClient
+                ?? throw new InvalidOperationException("Agent Framework Harness did not expose its message-injection client.");
+            var functionInvokingClient = agent.GetService(typeof(FunctionInvokingChatClient)) as FunctionInvokingChatClient
+                ?? throw new InvalidOperationException("Agent Framework Harness did not expose its function-invocation client.");
+            functionInvokingClient.AllowConcurrentInvocation = true;
+            emit(CopilotAgentEvent.RuntimeDiagnostic(
+                $"Agent task ledger enabled · plan/execute modes enabled · completion loop capped at {autonomousTaskPasses} pass(es)."));
 
             var usage = CopilotTokenUsage.Empty;
-            var messages = preparedPrompt.Messages.Select(ToFrameworkMessage).ToArray();
-            emit(CopilotAgentEvent.Status(frameworkTools.Count == 0
-                ? "Agent Framework is generating an answer without experimental tools."
-                : $"Agent Framework can use {frameworkTools.Count} guarded read-only tool(s)."));
-
-            await foreach (var update in agent.RunStreamingAsync(messages, null, null, cancellationToken))
+            var sessionResumed = false;
+            AgentSession session;
+            if (request.SessionCheckpoint?.IsUsableFor(request.Profile) == true)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    using var checkpointDocument = JsonDocument.Parse(request.SessionCheckpoint.SerializedSessionJson);
+                    session = await agent.DeserializeSessionAsync(checkpointDocument.RootElement.Clone(), null, cancellationToken);
+                    sessionResumed = true;
+                    emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework session resumed from the persisted conversation checkpoint."));
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be resumed; starting a fresh session ({ex.Message})."));
+                    session = await agent.CreateSessionAsync(cancellationToken);
+                }
+            }
+            else
+            {
+                session = await agent.CreateSessionAsync(cancellationToken);
+            }
+            using var steeringRegistration = RegisterSteeringContext(messageInjector, session);
 
-                foreach (var usageContent in update.Contents.OfType<UsageContent>())
-                    usage = usage.Add(ToCopilotUsage(usageContent.Details));
-
-                if (!string.IsNullOrEmpty(update.Text))
-                    emit(CopilotAgentEvent.AnswerDelta(update.Text));
+            var recoveredTaskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
+            if (sessionResumed)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    FormatTaskLedgerDiagnostic("Agent task ledger recovered", recoveredTaskLedger)
+                    + " Persisted tasks are planning state, not authorization; protected tools require a fresh exact-call approval."));
             }
 
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = (sessionResumed
+                    ? preparedPrompt.Messages.TakeLast(1)
+                    : preparedPrompt.Messages)
+                .Select(ToFrameworkMessage)
+                .ToArray();
+            emit(CopilotAgentEvent.Status(frameworkTools.Count == 0
+                ? "Agent Framework is generating an answer without tools."
+                : $"Agent Framework can use {frameworkTools.Count} request-scoped tool(s)."));
+
+            while (true)
+            {
+                var approvalRequests = new List<ToolApprovalRequestContent>();
+                await foreach (var update in agent.RunStreamingAsync(messages, session, null, cancellationToken))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    foreach (var usageContent in update.Contents.OfType<UsageContent>())
+                        usage = usage.Add(ToCopilotUsage(usageContent.Details));
+
+                    approvalRequests.AddRange(update.Contents.OfType<ToolApprovalRequestContent>());
+                    if (!string.IsNullOrEmpty(update.Text))
+                        emit(CopilotAgentEvent.AnswerDelta(update.Text));
+                }
+
+                if (approvalRequests.Count == 0)
+                    break;
+
+                var responses = new List<AIContent>();
+                foreach (var approvalRequest in approvalRequests)
+                {
+                    if (!bridge.TryBeginApproval(approvalRequest, out var reservation, out var error))
+                    {
+                        emit(CopilotAgentEvent.Status($"Agent Framework approval request was rejected: {error}"));
+                        responses.Add(approvalRequest.CreateResponse(false, error));
+                        continue;
+                    }
+
+                    var handle = _approvalCoordinator.RequestApproval(reservation.Tool, reservation.ToolInput, reservation.CallId, cancellationToken);
+                    bridge.PublishAwaitingApproval(reservation, handle.Action);
+                    emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
+
+                    bool approved;
+                    try
+                    {
+                        approved = await handle.Decision;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _approvalCoordinator.Cancel(handle);
+                        throw;
+                    }
+                    if (approved)
+                    {
+                        bridge.Approve(reservation);
+                        emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved. Agent Framework is resuming the same session."));
+                    }
+                    else
+                    {
+                        bridge.Reject(reservation, "The user rejected or did not complete this protected action approval.");
+                        emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was not approved. Agent Framework will continue without executing it."));
+                    }
+
+                    responses.Add(approvalRequest.CreateResponse(approved, approved ? "Approved in ColorVision." : "Rejected or expired in ColorVision."));
+                }
+
+                messages = new[] { new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, responses) };
+            }
+
+            var budgetSnapshot = chatClient.Snapshot;
+            emit(CopilotAgentEvent.RuntimeDiagnostic(
+                $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
+                + (budgetSnapshot.UsedEstimatedUsage ? " · includes estimates" : string.Empty)
+                + (budgetSnapshot.BudgetExhausted ? " · exhausted" : string.Empty)
+                + "."));
+            var taskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
+            var stopReason = DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords);
+            emit(CopilotAgentEvent.RuntimeDiagnostic(FormatTaskLedgerDiagnostic("Agent task ledger", taskLedger)));
+            emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent stop reason · {stopReason}."));
+            CopilotAgentSessionCheckpoint? sessionCheckpoint = null;
+            try
+            {
+                var serializedSession = await agent.SerializeSessionAsync(session, null, cancellationToken);
+                sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(request.Profile, serializedSession.GetRawText());
+                if (sessionCheckpoint == null)
+                    emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded the persistence limit and was not saved."));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be saved ({ex.Message})."));
+            }
             emit(CopilotAgentEvent.Completed());
             return new CopilotAgentRunResult
             {
                 PreparedUserMessageContent = preparedPrompt.PreparedUserMessageContent,
                 StepRecords = bridge.StepRecords,
                 Usage = usage,
+                Budget = budgetSnapshot,
+                TaskLedger = taskLedger,
+                StopReason = stopReason,
+                SessionCheckpoint = sessionCheckpoint,
             };
+        }
+
+        private IDisposable RegisterSteeringContext(MessageInjectingChatClient messageInjector, AgentSession session)
+        {
+            var context = new ActiveSteeringContext(messageInjector, session);
+            lock (_steeringSyncRoot)
+                _activeSteeringContext = context;
+            return new SteeringRegistration(this, context);
+        }
+
+        private void ClearSteeringContext(ActiveSteeringContext context)
+        {
+            lock (_steeringSyncRoot)
+            {
+                if (ReferenceEquals(_activeSteeringContext, context))
+                    _activeSteeringContext = null;
+            }
+        }
+
+        private static CopilotAgentStopReason DetermineStopReason(
+            CopilotAgentTaskLedgerSnapshot taskLedger,
+            CopilotAgentBudgetSnapshot budget,
+            IReadOnlyList<CopilotAgentStepRecord> steps)
+        {
+            if (budget.BudgetExhausted)
+                return CopilotAgentStopReason.BudgetExhausted;
+            if (taskLedger.RemainingCount == 0)
+                return CopilotAgentStopReason.Completed;
+            if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
+                return CopilotAgentStopReason.ApprovalDenied;
+            if (string.Equals(taskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase))
+                return CopilotAgentStopReason.AwaitingUser;
+            return CopilotAgentStopReason.TaskPassLimit;
+        }
+
+        private static async Task<CopilotAgentTaskLedgerSnapshot> CaptureTaskLedgerAsync(
+            TodoProvider todoProvider,
+            AgentModeProvider modeProvider,
+            AgentSession session,
+            bool resumedFromCheckpoint,
+            CancellationToken cancellationToken)
+        {
+            var todos = await todoProvider.GetAllTodosAsync(session, cancellationToken);
+            return new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = modeProvider.GetMode(session),
+                ResumedFromCheckpoint = resumedFromCheckpoint,
+                Items = todos.Select(item => new CopilotAgentTaskItem
+                {
+                    Id = item.Id,
+                    Title = item.Title ?? string.Empty,
+                    Description = item.Description ?? string.Empty,
+                    IsComplete = item.IsComplete,
+                }).ToArray(),
+            };
+        }
+
+        private static string FormatTaskLedgerDiagnostic(string prefix, CopilotAgentTaskLedgerSnapshot ledger)
+        {
+            var summary = $"{prefix} · {ledger.CompletedCount}/{ledger.TotalCount} complete · mode {ledger.Mode}";
+            var remaining = ledger.Items.Where(item => !item.IsComplete).Take(3).Select(item => $"[{item.Id}] {SanitizeTaskTitle(item.Title)}").ToArray();
+            return remaining.Length == 0 ? summary + "." : summary + " · open: " + string.Join("; ", remaining) + ".";
+        }
+
+        private static string SanitizeTaskTitle(string title)
+        {
+            var sanitized = Regex.Replace(title ?? string.Empty, @"\s+", " ").Trim();
+            return sanitized.Length <= 60 ? sanitized : sanitized[..57] + "...";
         }
 
         private static IChatClient CreateChatClient(CopilotProfileConfig profile)
         {
+            if (profile.ProviderType == CopilotProviderType.AnthropicCompatible)
+            {
+                var anthropicClient = new AnthropicClient(new ClientOptions
+                {
+                    ApiKey = profile.ApiKey,
+                    BaseUrl = profile.BaseUrl.Trim().TrimEnd('/'),
+                });
+                return anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens);
+            }
+
             var options = new OpenAIClientOptions
             {
                 Endpoint = NormalizeOpenAiEndpoint(profile.BaseUrl),
             };
             var client = new ChatClient(profile.Model, new ApiKeyCredential(profile.ApiKey), options);
             return client.AsIChatClient();
+        }
+
+        private static ChatOptions BuildChatOptions(CopilotProfileConfig profile, IList<AITool> tools)
+        {
+            return new ChatOptions
+            {
+                Instructions = profile.EffectiveSystemPrompt,
+                MaxOutputTokens = profile.MaxTokens,
+                Temperature = CopilotReasoningRequestMapper.ShouldIncludeTemperature(profile) ? (float)profile.Temperature : null,
+                Reasoning = BuildReasoningOptions(profile),
+                Tools = tools,
+            };
+        }
+
+        private static ReasoningOptions? BuildReasoningOptions(CopilotProfileConfig profile)
+        {
+            return CopilotReasoningCapabilities.GetEffectiveMode(profile) switch
+            {
+                CopilotReasoningMode.Disabled => new ReasoningOptions { Effort = ReasoningEffort.None, Output = ReasoningOutput.None },
+                CopilotReasoningMode.Enabled => new ReasoningOptions { Effort = ReasoningEffort.Medium, Output = ReasoningOutput.Full },
+                CopilotReasoningMode.High => new ReasoningOptions { Effort = ReasoningEffort.High, Output = ReasoningOutput.Full },
+                CopilotReasoningMode.Max => new ReasoningOptions { Effort = ReasoningEffort.ExtraHigh, Output = ReasoningOutput.Full },
+                _ => null,
+            };
         }
 
         private static Uri NormalizeOpenAiEndpoint(string baseUrl)
@@ -163,31 +468,49 @@ namespace ColorVision.Copilot
         private static Action<CopilotAgentEvent> CreateEventEmitter(Action<CopilotAgentEvent> onEvent)
         {
             var dispatcher = Application.Current?.Dispatcher;
+            var syncRoot = new object();
             return agentEvent =>
             {
-                if (dispatcher != null && !dispatcher.CheckAccess())
+                lock (syncRoot)
                 {
-                    dispatcher.Invoke(() => onEvent(agentEvent));
-                    return;
-                }
+                    if (dispatcher != null && !dispatcher.CheckAccess())
+                    {
+                        dispatcher.Invoke(() => onEvent(agentEvent));
+                        return;
+                    }
 
-                onEvent(agentEvent);
+                    onEvent(agentEvent);
+                }
             };
         }
 
         private static string BuildHarnessInstructions(IReadOnlyList<ICopilotTool> tools)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("You are the experimental ColorVision Agent runtime.");
-            builder.AppendLine("Use only the guarded read-only functions supplied for this run. Never claim a tool succeeded unless its returned result says success.");
-            builder.AppendLine("Do not attempt file writes, shell execution, device control, flow execution, settings changes, or other mutations.");
-            builder.AppendLine("Call a function only when it adds evidence needed to answer the user, avoid repeating identical calls, and then answer naturally.");
+            builder.AppendLine("You are the ColorVision Agent runtime. Complete the user's request by reasoning, calling the request-scoped tools when useful, observing their results, and continuing until you can give a supported final answer.");
+            builder.AppendLine("Tools are optional. Answer ordinary conceptual or conversational questions directly from stable general knowledge; do not search merely because a search function is available.");
+            builder.AppendLine("Call a tool only when the user explicitly asks to inspect, search, fetch, diagnose, or change something, or when current, local, attached, or externally verifiable evidence is necessary for a reliable answer.");
+            builder.AppendLine("Never claim a tool succeeded unless its returned result says success. If a tool fails, try another source only when the requested outcome still requires that evidence; otherwise answer from reliable context without exposing speculative search failures as user-facing content.");
+            builder.AppendLine("For a direct http/https URL, call FetchUrl before claiming that the page cannot be accessed. Use WebSearch when the user asks about public information and direct page content is unavailable or insufficient.");
+            builder.AppendLine("Avoid identical calls. Do not stop immediately after a successful tool call; use its observation to decide whether another tool is needed, then answer naturally.");
+            builder.AppendLine("Repeat an identical tool call only when its structured result says retry_allowed: true. A retry is a new bounded attempt; protected tools require a fresh approval.");
+            builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
+            builder.AppendLine("For multi-step work, create a concise todo list, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
+            builder.AppendLine("Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
 
             if (tools.Count > 0)
             {
                 builder.AppendLine("Available ColorVision functions:");
                 foreach (var tool in tools)
-                    builder.Append("- ").Append(tool.Name).Append(": ").AppendLine(tool.Description);
+                    builder.Append("- ")
+                        .Append(tool.Name)
+                        .Append(" [")
+                        .Append(tool.Access == CopilotToolAccess.ReadOnly ? "read-only" : "write-capable")
+                        .Append("; risk=").Append(tool.RiskLevel)
+                        .Append("; approval=").Append(tool.ApprovalMode)
+                        .Append("; idempotency=").Append(tool.Idempotency)
+                        .Append("]: ")
+                        .AppendLine(tool.Description);
             }
 
             return builder.ToString().TrimEnd();
@@ -197,14 +520,26 @@ namespace ColorVision.Copilot
         {
             private readonly CopilotAgentRequest _request;
             private readonly IReadOnlyDictionary<string, ICopilotTool> _tools;
+            private readonly CopilotToolExecutor _toolExecutor;
             private readonly Action<CopilotAgentEvent> _emit;
             private readonly List<CopilotAgentStepRecord> _stepRecords = new();
+            private readonly Dictionary<string, ToolAttemptState> _attemptsBySignature = new(StringComparer.OrdinalIgnoreCase);
+            private readonly Dictionary<string, FrameworkApprovalReservation> _approvedCalls = new(StringComparer.OrdinalIgnoreCase);
             private readonly object _syncRoot = new();
+            private readonly int _maxToolCalls;
+            private int _reservedToolCalls;
 
-            public HarnessToolBridge(CopilotAgentRequest request, IReadOnlyList<ICopilotTool> tools, Action<CopilotAgentEvent> emit)
+            public HarnessToolBridge(
+                CopilotAgentRequest request,
+                IReadOnlyList<ICopilotTool> tools,
+                int maxToolCalls,
+                CopilotToolExecutor toolExecutor,
+                Action<CopilotAgentEvent> emit)
             {
                 _request = request;
                 _tools = tools.ToDictionary(tool => tool.Name, StringComparer.OrdinalIgnoreCase);
+                _maxToolCalls = Math.Max(1, maxToolCalls);
+                _toolExecutor = toolExecutor;
                 _emit = emit;
             }
 
@@ -213,99 +548,406 @@ namespace ColorVision.Copilot
                 get
                 {
                     lock (_syncRoot)
-                        return _stepRecords.ToArray();
+                        return _stepRecords.OrderBy(step => step.Round).ToArray();
                 }
             }
 
             public IList<AITool> CreateFunctions()
             {
                 var functions = new List<AITool>();
-                if (_tools.ContainsKey("SearchDocs"))
+                foreach (var tool in _tools.Values)
                 {
-                    functions.Add(AIFunctionFactory.Create(
-                        new Func<string, CancellationToken, Task<string>>(SearchDocsAsync),
-                        "search_colorvision_docs",
-                        "Search ColorVision documentation for a focused query and return relevant documented evidence.",
-                        null));
+                    var function = new HarnessToolFunction(this, tool);
+                    functions.Add(RequiresNativeApproval(tool) ? new ApprovalRequiredAIFunction(function) : function);
                 }
-
-                if (_tools.ContainsKey("SearchFiles"))
-                {
-                    functions.Add(AIFunctionFactory.Create(
-                        new Func<string, CancellationToken, Task<string>>(SearchFilesAsync),
-                        "search_colorvision_files",
-                        "Search allowed ColorVision workspace file names and relative paths for a focused query.",
-                        null));
-                }
-
-                if (_tools.ContainsKey("GetRecentLog"))
-                {
-                    functions.Add(AIFunctionFactory.Create(
-                        new Func<string, CancellationToken, Task<string>>(GetRecentLogAsync),
-                        "get_recent_colorvision_log",
-                        "Read recent ColorVision application log lines, optionally filtered by a short query.",
-                        null));
-                }
-
                 return functions;
             }
 
-            private Task<string> SearchDocsAsync(string query, CancellationToken cancellationToken) => ExecuteAsync("SearchDocs", query, cancellationToken);
-
-            private Task<string> SearchFilesAsync(string query, CancellationToken cancellationToken) => ExecuteAsync("SearchFiles", query, cancellationToken);
-
-            private Task<string> GetRecentLogAsync(string query, CancellationToken cancellationToken) => ExecuteAsync("GetRecentLog", query, cancellationToken);
-
-            private async Task<string> ExecuteAsync(string toolName, string query, CancellationToken cancellationToken)
+            public bool TryBeginApproval(
+                ToolApprovalRequestContent request,
+                out FrameworkApprovalReservation reservation,
+                out string error)
             {
-                if (!_tools.TryGetValue(toolName, out var tool))
-                    return $"Tool unavailable: {toolName}.";
+                reservation = null!;
+                if (request.ToolCall is not FunctionCallContent functionCall)
+                {
+                    error = "The approval request does not contain a function call.";
+                    return false;
+                }
 
-                _emit(CopilotAgentEvent.Status($"Agent Framework is calling {toolName}."));
-                var toolInput = new CopilotAgentToolInput { Query = query?.Trim() ?? string.Empty };
-                CopilotToolResult result;
-                try
+                var tool = _tools.Values.FirstOrDefault(candidate => string.Equals(ToFunctionName(candidate.Name), functionCall.Name, StringComparison.OrdinalIgnoreCase));
+                if (tool == null || !RequiresNativeApproval(tool))
                 {
-                    result = await tool.ExecuteAsync(_request, toolInput, cancellationToken);
+                    error = $"Function {functionCall.Name} is not registered as a natively approved ColorVision tool.";
+                    return false;
                 }
-                catch (OperationCanceledException)
+
+                var arguments = functionCall.Arguments == null
+                    ? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, object?>(functionCall.Arguments, StringComparer.OrdinalIgnoreCase);
+                if (!tool.InputSchema.TryBind(arguments, out var toolInput, out error))
+                    return false;
+
+                var signature = BuildExecutionSignature(tool.Name, toolInput);
+                lock (_syncRoot)
                 {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    result = new CopilotToolResult
+                    if (!TryReserveAttempt(tool, signature, out var round, out var attempt, out error))
+                        return false;
+
+                    reservation = new FrameworkApprovalReservation
                     {
-                        ToolName = toolName,
-                        Success = false,
-                        Summary = $"{toolName} execution failed.",
-                        ErrorMessage = ex.Message,
+                        CallId = string.IsNullOrWhiteSpace(functionCall.CallId) ? Guid.NewGuid().ToString("N") : functionCall.CallId,
+                        Round = round,
+                        Attempt = attempt,
+                        MaxAttempts = GetMaximumAttempts(tool),
+                        Signature = signature,
+                        Tool = tool,
+                        ToolInput = toolInput,
+                        StartedAtUtc = DateTimeOffset.UtcNow,
                     };
                 }
 
-                lock (_syncRoot)
-                {
-                    _stepRecords.Add(new CopilotAgentStepRecord
-                    {
-                        Round = _stepRecords.Count + 1,
-                        ToolCall = new CopilotToolCall
-                        {
-                            ToolName = toolName,
-                            ToolInput = toolInput,
-                            Reason = "Selected by Microsoft Agent Framework Harness.",
-                        },
-                        Observation = CopilotToolObservation.FromResult(result),
-                    });
-                }
-
-                _emit(CopilotAgentEvent.FromToolResult(result));
-                return FormatToolResult(result);
+                error = string.Empty;
+                return true;
             }
 
-            private static string FormatToolResult(CopilotToolResult result)
+            public void PublishAwaitingApproval(FrameworkApprovalReservation reservation, Mcp.ConfirmableAction action)
             {
+                reservation.ApprovalActionId = action.ActionId;
+                var result = new CopilotToolResult
+                {
+                    ToolName = reservation.Tool.Name,
+                    Success = true,
+                    Summary = $"{reservation.Tool.Name} is waiting for explicit ColorVision approval.",
+                    Approval = new CopilotToolApprovalInfo
+                    {
+                        ActionId = action.ActionId,
+                        Title = action.Title,
+                        RiskLevel = action.RiskLevel,
+                        ExpiresAtUtc = action.ExpiresAt,
+                        ExecuteOnApproval = false,
+                    },
+                };
+                _emit(CopilotAgentEvent.FromToolResult(result, CreateApprovalExecutionInfo(reservation, CopilotToolExecutionState.AwaitingApproval, action.ActionId)));
+            }
+
+            public void Approve(FrameworkApprovalReservation reservation)
+            {
+                lock (_syncRoot)
+                    _approvedCalls[reservation.Signature] = reservation;
+            }
+
+            public void Reject(FrameworkApprovalReservation reservation, string reason)
+            {
+                var result = new CopilotToolResult
+                {
+                    ToolName = reservation.Tool.Name,
+                    Success = false,
+                    Summary = $"{reservation.Tool.Name} was not approved.",
+                    ErrorMessage = reason,
+                    FailureKind = CopilotToolFailureKind.Authorization,
+                };
+                var execution = CreateApprovalExecutionInfo(
+                    reservation,
+                    CopilotToolExecutionState.Denied,
+                    reservation.ApprovalActionId,
+                    DateTimeOffset.UtcNow,
+                    CopilotToolFailureKind.Authorization);
+                var invocation = CreateInvocation(reservation, frameworkApprovalGranted: false);
+                var outcome = new CopilotToolExecutionOutcome { Invocation = invocation, Result = result, Execution = execution };
+                CopilotToolExecutionAuditLogger.Record(outcome);
+                lock (_syncRoot)
+                {
+                    _stepRecords.Add(outcome.StepRecord);
+                    RecordOutcome(reservation.Signature, outcome);
+                }
+                _emit(CopilotAgentEvent.FromToolResult(result, execution));
+            }
+
+            private async Task<string> ExecuteAsync(ICopilotTool tool, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+            {
+                int round;
+                int attempt;
+                int maxAttempts;
+                var signature = BuildExecutionSignature(tool.Name, toolInput);
+                FrameworkApprovalReservation? approvalReservation;
+                lock (_syncRoot)
+                {
+                    if (_approvedCalls.Remove(signature, out approvalReservation))
+                    {
+                        round = approvalReservation.Round;
+                        attempt = approvalReservation.Attempt;
+                        maxAttempts = approvalReservation.MaxAttempts;
+                    }
+                    else
+                    {
+                        if (!TryReserveAttempt(tool, signature, out round, out attempt, out var error))
+                            return FormatRejectedToolCall(tool.Name, error);
+                        maxAttempts = GetMaximumAttempts(tool);
+                    }
+                }
+
+                var invocation = approvalReservation == null
+                    ? new CopilotToolInvocation
+                    {
+                        Round = round,
+                        Attempt = attempt,
+                        MaxAttempts = maxAttempts,
+                        RuntimeName = "agent-framework",
+                        Tool = tool,
+                        AgentRequest = _request,
+                        ToolInput = toolInput,
+                        ToolCall = CreateToolCall(tool, toolInput),
+                    }
+                    : CreateInvocation(approvalReservation, frameworkApprovalGranted: true);
+                var outcome = await _toolExecutor.ExecuteAsync(invocation, _emit, cancellationToken);
+
+                lock (_syncRoot)
+                {
+                    _stepRecords.Add(outcome.StepRecord);
+                    RecordOutcome(signature, outcome);
+                }
+
+                return FormatToolResult(outcome);
+            }
+
+            private CopilotToolInvocation CreateInvocation(FrameworkApprovalReservation reservation, bool frameworkApprovalGranted)
+            {
+                return new CopilotToolInvocation
+                {
+                    CallId = reservation.CallId,
+                    Round = reservation.Round,
+                    Attempt = reservation.Attempt,
+                    MaxAttempts = reservation.MaxAttempts,
+                    RuntimeName = "agent-framework",
+                    Tool = reservation.Tool,
+                    AgentRequest = _request,
+                    ToolInput = reservation.ToolInput,
+                    ToolCall = CreateToolCall(reservation.Tool, reservation.ToolInput),
+                    FrameworkApprovalGranted = frameworkApprovalGranted,
+                    ApprovalActionId = reservation.ApprovalActionId,
+                };
+            }
+
+            private static CopilotToolCall CreateToolCall(ICopilotTool tool, CopilotAgentToolInput toolInput)
+            {
+                return new CopilotToolCall
+                {
+                    ToolName = tool.Name,
+                    ToolInput = toolInput,
+                    Reason = "Selected by Microsoft Agent Framework.",
+                };
+            }
+
+            private CopilotToolExecutionInfo CreateApprovalExecutionInfo(
+                FrameworkApprovalReservation reservation,
+                CopilotToolExecutionState state,
+                string approvalActionId,
+                DateTimeOffset? completedAtUtc = null,
+                CopilotToolFailureKind failureKind = CopilotToolFailureKind.None)
+            {
+                return new CopilotToolExecutionInfo
+                {
+                    CallId = reservation.CallId,
+                    Round = reservation.Round,
+                    Attempt = reservation.Attempt,
+                    MaxAttempts = reservation.MaxAttempts,
+                    RuntimeName = "agent-framework",
+                    ToolName = reservation.Tool.Name,
+                    Access = reservation.Tool.Access,
+                    RiskLevel = reservation.Tool.RiskLevel,
+                    ApprovalMode = reservation.Tool.ApprovalMode,
+                    Idempotency = reservation.Tool.Idempotency,
+                    ConcurrencyMode = CopilotToolExecutor.ResolveConcurrencyMode(reservation.Tool),
+                    ConcurrencyKey = CopilotToolExecutor.ResolveConcurrencyKey(reservation.Tool, _request, reservation.ToolInput),
+                    ApprovalActionId = approvalActionId,
+                    ArgumentSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(reservation.ToolInput),
+                    State = state,
+                    FailureKind = failureKind,
+                    RetryEligible = false,
+                    StartedAtUtc = reservation.StartedAtUtc,
+                    CompletedAtUtc = completedAtUtc,
+                    DurationMs = completedAtUtc.HasValue ? Math.Max(0, (long)(completedAtUtc.Value - reservation.StartedAtUtc).TotalMilliseconds) : 0,
+                    QueueDurationMs = 0,
+                    TimeoutMs = Math.Max(1, (long)reservation.Tool.ExecutionTimeout.TotalMilliseconds),
+                };
+            }
+
+            private static bool RequiresNativeApproval(ICopilotTool tool)
+            {
+                return tool.ApprovalMode == CopilotToolApprovalMode.Always && tool is ICopilotFrameworkApprovedTool;
+            }
+
+            private static string ToFunctionName(string toolName)
+            {
+                var snakeCase = Regex.Replace(toolName ?? string.Empty, "(?<!^)([A-Z])", "_$1").ToLowerInvariant();
+                return "colorvision_" + snakeCase;
+            }
+
+            private static string BuildFunctionDescription(ICopilotTool tool)
+            {
+                var access = tool.Access == CopilotToolAccess.ReadOnly
+                    ? "This function is read-only."
+                    : "This function can change application state and must match the user's explicit request.";
+                return $"{tool.Description} {access}";
+            }
+
+            private static string BuildExecutionSignature(string toolName, CopilotAgentToolInput toolInput)
+            {
+                return string.Join("|", new[]
+                {
+                    toolName?.Trim() ?? string.Empty,
+                    toolInput.Query?.Trim() ?? string.Empty,
+                    toolInput.Path?.Trim() ?? string.Empty,
+                    toolInput.StartLine?.ToString() ?? string.Empty,
+                    toolInput.EndLine?.ToString() ?? string.Empty,
+                });
+            }
+
+            private bool TryReserveAttempt(ICopilotTool tool, string signature, out int round, out int attempt, out string error)
+            {
+                round = 0;
+                attempt = 0;
+                if (_reservedToolCalls >= _maxToolCalls)
+                {
+                    error = $"The request reached its {_maxToolCalls}-call tool limit. Continue with the collected observations and provide the final answer.";
+                    return false;
+                }
+
+                var maxAttempts = GetMaximumAttempts(tool);
+                if (!_attemptsBySignature.TryGetValue(signature, out var state))
+                {
+                    state = new ToolAttemptState { AttemptCount = 1, InProgress = true };
+                    _attemptsBySignature.Add(signature, state);
+                }
+                else
+                {
+                    var callLabel = RequiresNativeApproval(tool) ? "protected tool call" : "tool call";
+                    if (state.InProgress)
+                    {
+                        error = $"This exact {callLabel} and argument set is already running or awaiting approval.";
+                        return false;
+                    }
+
+                    if (state.AttemptCount >= maxAttempts)
+                    {
+                        error = $"This exact {callLabel} and argument set reached its {maxAttempts}-attempt retry limit.";
+                        return false;
+                    }
+
+                    if (state.LastOutcome?.Execution.RetryEligible != true)
+                    {
+                        error = $"This exact {callLabel} and argument set already completed or failed with a non-retryable result. Use the existing observation or choose different arguments.";
+                        return false;
+                    }
+
+                    state.AttemptCount++;
+                    state.InProgress = true;
+                }
+
+                attempt = state.AttemptCount;
+                round = ++_reservedToolCalls;
+                error = string.Empty;
+                return true;
+            }
+
+            private int GetMaximumAttempts(ICopilotTool tool)
+            {
+                return tool.Idempotency == CopilotToolIdempotency.Idempotent
+                    ? Math.Min(CopilotToolRetryPolicy.MaximumAttemptsPerCall, _maxToolCalls)
+                    : 1;
+            }
+
+            private void RecordOutcome(string signature, CopilotToolExecutionOutcome outcome)
+            {
+                if (!_attemptsBySignature.TryGetValue(signature, out var state))
+                {
+                    state = new ToolAttemptState { AttemptCount = Math.Max(1, outcome.Invocation.Attempt) };
+                    _attemptsBySignature.Add(signature, state);
+                }
+
+                state.InProgress = false;
+                state.LastOutcome = outcome;
+            }
+
+            private static string FormatRejectedToolCall(string toolName, string error)
+            {
+                return $"success: false{Environment.NewLine}summary: {toolName} was not executed.{Environment.NewLine}error: {error}";
+            }
+
+            private sealed class HarnessToolFunction : AIFunction
+            {
+                private readonly HarnessToolBridge _owner;
+                private readonly ICopilotTool _tool;
+
+                public HarnessToolFunction(HarnessToolBridge owner, ICopilotTool tool)
+                {
+                    _owner = owner;
+                    _tool = tool;
+                }
+
+                public override string Name => ToFunctionName(_tool.Name);
+
+                public override string Description => BuildFunctionDescription(_tool);
+
+                public override JsonElement JsonSchema => _tool.InputSchema.JsonSchema;
+
+                protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
+                {
+                    if (!_tool.InputSchema.TryBind(arguments, out var toolInput, out var error))
+                        return FormatRejectedToolCall(_tool.Name, error);
+
+                    return await _owner.ExecuteAsync(_tool, toolInput, cancellationToken);
+                }
+            }
+
+            public sealed class FrameworkApprovalReservation
+            {
+                public string CallId { get; init; } = string.Empty;
+
+                public int Round { get; init; }
+
+                public int Attempt { get; init; } = 1;
+
+                public int MaxAttempts { get; init; } = 1;
+
+                public string Signature { get; init; } = string.Empty;
+
+                public ICopilotTool Tool { get; init; } = null!;
+
+                public CopilotAgentToolInput ToolInput { get; init; } = CopilotAgentToolInput.Empty;
+
+                public DateTimeOffset StartedAtUtc { get; init; }
+
+                public string ApprovalActionId { get; set; } = string.Empty;
+            }
+
+            private sealed class ToolAttemptState
+            {
+                public int AttemptCount { get; set; }
+
+                public bool InProgress { get; set; }
+
+                public CopilotToolExecutionOutcome? LastOutcome { get; set; }
+            }
+
+            private static string FormatToolResult(CopilotToolExecutionOutcome outcome)
+            {
+                var result = outcome.Result;
+                var execution = outcome.Execution;
                 var builder = new StringBuilder();
                 builder.AppendLine(result.Success ? "success: true" : "success: false");
+                builder.Append("attempt: ").Append(execution.Attempt).Append('/').AppendLine(execution.MaxAttempts.ToString());
+                if (execution.FailureKind != CopilotToolFailureKind.None)
+                    builder.Append("failure_kind: ").AppendLine(execution.FailureKind.ToString().ToLowerInvariant());
+                builder.Append("retry_allowed: ").AppendLine(execution.RetryEligible ? "true" : "false");
+                if (result.Approval != null)
+                {
+                    builder.AppendLine("status: awaiting_approval");
+                    builder.Append("approval_action_id: ").AppendLine(result.Approval.ActionId);
+                    builder.Append("approval_risk: ").AppendLine(result.Approval.RiskLevel);
+                    builder.Append("approval_expires_at: ").AppendLine(result.Approval.ExpiresAtUtc.ToString("O"));
+                }
                 if (!string.IsNullOrWhiteSpace(result.Summary))
                     builder.Append("summary: ").AppendLine(result.Summary.Trim());
                 if (!string.IsNullOrWhiteSpace(result.Content))
@@ -313,6 +955,18 @@ namespace ColorVision.Copilot
                 if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
                     builder.Append("error: ").AppendLine(result.ErrorMessage.Trim());
                 return builder.ToString().TrimEnd();
+            }
+        }
+
+        private sealed record ActiveSteeringContext(MessageInjectingChatClient MessageInjector, AgentSession Session);
+
+        private sealed class SteeringRegistration(CopilotMicrosoftAgentFrameworkRuntime owner, ActiveSteeringContext context) : IDisposable
+        {
+            private CopilotMicrosoftAgentFrameworkRuntime? _owner = owner;
+
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _owner, null)?.ClearSteeringContext(context);
             }
         }
     }
