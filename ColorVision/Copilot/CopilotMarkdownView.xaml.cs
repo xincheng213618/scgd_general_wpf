@@ -79,7 +79,7 @@ namespace ColorVision.Copilot
 
         private void RenderMarkdown(string markdown)
         {
-            BlocksPanel.Children.Clear();
+            MarkdownDocument.Blocks.Clear();
             if (string.IsNullOrWhiteSpace(markdown))
                 return;
 
@@ -180,105 +180,85 @@ namespace ColorVision.Copilot
                 3 => 14d,
                 _ => 13d,
             };
-            var block = CreateTextBlock(fontSize, FontWeights.SemiBold, new Thickness(0, level <= 2 ? 8 : 5, 0, 6));
-            AddInlines(block, text);
-            BlocksPanel.Children.Add(block);
+            var block = CreateParagraph(fontSize, FontWeights.SemiBold, new Thickness(0, level <= 2 ? 8 : 5, 0, 6));
+            AddInlines(block.Inlines, text);
+            MarkdownDocument.Blocks.Add(block);
         }
 
         private void AddTextBlock(string text, Thickness margin)
         {
-            var block = CreateTextBlock(13, FontWeights.Normal, margin);
-            AddInlines(block, text);
-            BlocksPanel.Children.Add(block);
+            var block = CreateParagraph(13, FontWeights.Normal, margin);
+            AddInlines(block.Inlines, text);
+            MarkdownDocument.Blocks.Add(block);
         }
 
         private void AddListItem(string marker, string text)
         {
-            var block = CreateTextBlock(13, FontWeights.Normal, new Thickness(14, 0, 0, 5));
+            var block = CreateParagraph(13, FontWeights.Normal, new Thickness(14, 0, 0, 5));
             var markerRun = new Run(marker + " ") { FontWeight = FontWeights.SemiBold };
             markerRun.SetResourceReference(TextElement.ForegroundProperty, "SecondaryTextBrush");
             block.Inlines.Add(markerRun);
-            AddInlines(block, text);
-            BlocksPanel.Children.Add(block);
+            AddInlines(block.Inlines, text);
+            MarkdownDocument.Blocks.Add(block);
         }
 
         private void AddQuote(string text)
         {
-            var block = CreateTextBlock(13, FontWeights.Normal, new Thickness(0));
-            block.Opacity = 0.84;
-            AddInlines(block, text);
-
-            var border = new Border
-            {
-                BorderThickness = new Thickness(3, 0, 0, 0),
-                Margin = new Thickness(0, 2, 0, 8),
-                Padding = new Thickness(10, 2, 0, 2),
-                Child = block,
-            };
-            border.SetResourceReference(Border.BorderBrushProperty, "PrimaryBrush");
-            BlocksPanel.Children.Add(border);
+            var block = CreateParagraph(13, FontWeights.Normal, new Thickness(0, 2, 0, 8));
+            block.BorderThickness = new Thickness(3, 0, 0, 0);
+            block.Padding = new Thickness(10, 2, 0, 2);
+            block.SetResourceReference(Block.BorderBrushProperty, "PrimaryBrush");
+            AddInlines(block.Inlines, text);
+            MarkdownDocument.Blocks.Add(block);
         }
 
         private void AddCodeBlock(string code)
         {
-            var text = new TextBlock
-            {
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 12,
-                Text = code,
-                TextWrapping = TextWrapping.Wrap,
-            };
-            text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-
-            var border = new Border
-            {
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(5),
-                Margin = new Thickness(0, 2, 0, 10),
-                Padding = new Thickness(10, 8, 10, 8),
-                Child = text,
-            };
-            border.SetResourceReference(Border.BackgroundProperty, "ButtonBackground");
-            border.SetResourceReference(Border.BorderBrushProperty, "ButtonBorderBrush");
-            BlocksPanel.Children.Add(border);
+            var block = CreateParagraph(12, FontWeights.Normal, new Thickness(0, 2, 0, 10));
+            block.FontFamily = new FontFamily("Consolas");
+            block.BorderThickness = new Thickness(1);
+            block.Padding = new Thickness(10, 8, 10, 8);
+            block.SetResourceReference(Block.BackgroundProperty, "ButtonBackground");
+            block.SetResourceReference(Block.BorderBrushProperty, "ButtonBorderBrush");
+            block.Inlines.Add(new Run(code));
+            MarkdownDocument.Blocks.Add(block);
         }
 
-        private static TextBlock CreateTextBlock(double fontSize, FontWeight fontWeight, Thickness margin)
+        private static Paragraph CreateParagraph(double fontSize, FontWeight fontWeight, Thickness margin)
         {
-            var block = new TextBlock
+            var block = new Paragraph
             {
                 FontSize = fontSize,
                 FontWeight = fontWeight,
                 LineHeight = fontSize * 1.55,
                 Margin = margin,
-                TextWrapping = TextWrapping.Wrap,
             };
-            block.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            block.SetResourceReference(TextElement.ForegroundProperty, "GlobalTextBrush");
             return block;
         }
 
-        private static void AddInlines(TextBlock block, string text)
+        private static void AddInlines(InlineCollection inlines, string text)
         {
             var currentIndex = 0;
             foreach (Match match in InlineRegex.Matches(text))
             {
                 if (match.Index > currentIndex)
-                    block.Inlines.Add(new Run(text[currentIndex..match.Index]));
+                    inlines.Add(new Run(text[currentIndex..match.Index]));
 
                 var token = match.Value;
                 if (token.StartsWith("**", StringComparison.Ordinal) && token.EndsWith("**", StringComparison.Ordinal))
                 {
-                    block.Inlines.Add(new Run(token[2..^2]) { FontWeight = FontWeights.SemiBold });
+                    inlines.Add(new Run(token[2..^2]) { FontWeight = FontWeights.SemiBold });
                 }
                 else if (token.StartsWith('`') && token.EndsWith('`'))
                 {
                     var codeRun = new Run(token[1..^1]) { FontFamily = new FontFamily("Consolas") };
                     codeRun.SetResourceReference(TextElement.BackgroundProperty, "GlobalBorderBrush1");
-                    block.Inlines.Add(codeRun);
+                    inlines.Add(codeRun);
                 }
                 else if (token.StartsWith('*') && token.EndsWith('*'))
                 {
-                    block.Inlines.Add(new Run(token[1..^1]) { FontStyle = FontStyles.Italic });
+                    inlines.Add(new Run(token[1..^1]) { FontStyle = FontStyles.Italic });
                 }
                 else
                 {
@@ -286,14 +266,14 @@ namespace ColorVision.Copilot
                     var linkText = closingBracket > 1 ? token[1..closingBracket] : token;
                     var linkRun = new Run(linkText) { TextDecorations = TextDecorations.Underline };
                     linkRun.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
-                    block.Inlines.Add(linkRun);
+                    inlines.Add(linkRun);
                 }
 
                 currentIndex = match.Index + match.Length;
             }
 
             if (currentIndex < text.Length)
-                block.Inlines.Add(new Run(text[currentIndex..]));
+                inlines.Add(new Run(text[currentIndex..]));
         }
     }
 }
