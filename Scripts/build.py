@@ -23,6 +23,7 @@ from backend_client import (
     upload_file as backend_upload_file,
 )
 from tqdm import tqdm
+from release_runtime import validate_release_runtime_payload
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
 INSTALLER_EXTENSIONS = {".exe", ".msi", ".zip", ".rar"}
@@ -57,6 +58,10 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
             [str(msbuild_path), str(solution_path), "/p:Configuration=Release", "/p:Platform=x64"],
             check=True,
         )
+
+        runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
+        if not validate_release_runtime_payload(runtime_directory, aip_path):
+            return False
 
         print(f"Running Advanced Installer: {advanced_installer_path} /rebuild {aip_path}")
         subprocess.run([str(advanced_installer_path), "/rebuild", str(aip_path)], check=True)

@@ -6,6 +6,7 @@ import time
 from pathlib import PurePosixPath
 
 from file_manager import FileManager
+from release_runtime import validate_release_runtime_payload
 
 
 ALLOWED_RUNTIME_PREFIXES = (
@@ -359,6 +360,9 @@ def main() -> int:
     version = get_file_version(exe_path)
     if not version:
         print(f"无法从 {exe_path} 读取版本号，终止。")
+        return 1
+
+    if not validate_release_runtime_payload(new_version_dir):
         return 1
 
     print("打包版本: " + version)

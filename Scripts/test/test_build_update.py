@@ -22,6 +22,17 @@ class BuildUpdateTests(unittest.TestCase):
         self.assertTrue(mocked_print.called)
         self.assertIn("无法从", mocked_print.call_args[0][0])
 
+    def test_main_fails_when_required_runtime_payload_is_missing(self):
+        with (
+            patch("build_update.get_file_version", return_value="1.2.3.4"),
+            patch("build_update.validate_release_runtime_payload", return_value=False),
+            patch("build_update.create_directory_if_not_exists") as mocked_create_directory,
+        ):
+            exit_code = build_update.main()
+
+        self.assertEqual(exit_code, 1)
+        mocked_create_directory.assert_not_called()
+
     def test_get_all_files_can_exclude_shell_extension_files(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             files = [
@@ -106,6 +117,7 @@ class BuildUpdateTests(unittest.TestCase):
     def test_main_fails_when_incremental_upload_fails(self):
         with (
             patch("build_update.get_file_version", return_value="1.2.3.4"),
+            patch("build_update.validate_release_runtime_payload", return_value=True),
             patch("build_update.create_directory_if_not_exists"),
             patch("build_update.find_latest_zip", return_value="old.zip"),
             patch("build_update.make_incremental_zip"),
