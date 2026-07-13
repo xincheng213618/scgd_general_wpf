@@ -151,6 +151,44 @@ public sealed class CopilotCapabilityCatalogTests
     }
 
     [Fact]
+    public void AgentCheckpoint_AllowsToolAdditionsButReplansWhenRequestToolIsRemoved()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var snapshot = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:test-suite",
+            "Test suite",
+            [new CatalogTool("Inspect", "Inspect current state.", "inspect")]);
+        var profile = new CopilotProfileConfig
+        {
+            ProviderType = CopilotProviderType.OpenAICompatible,
+            ApiKey = "test-key",
+            BaseUrl = "https://example.test/v1",
+            Model = "test-model",
+        };
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            snapshot,
+            availableToolNames: ["FetchUrl"]);
+
+        Assert.NotNull(checkpoint);
+        Assert.Equal(CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion, checkpoint!.ToolSurfaceVersion);
+        Assert.Equal(["FetchUrl"], checkpoint.AvailableToolNames);
+        Assert.True(checkpoint.EvaluateFor(profile, snapshot, ["FetchUrl", "WebSearch"]).CanResume);
+
+        var removed = checkpoint.EvaluateFor(profile, snapshot, ["WebSearch"]);
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift, removed.Kind);
+        Assert.Equal(["FetchUrl"], removed.RemovedToolNames);
+
+        var legacy = CopilotAgentSessionCheckpoint.Create(profile, "{\"state\":{}}", snapshot);
+        Assert.NotNull(legacy);
+        Assert.Equal(
+            CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing,
+            legacy!.EvaluateFor(profile, snapshot, ["FetchUrl"]).Kind);
+    }
+
+    [Fact]
     public void EvidenceArtifacts_PersistOnlySuccessfulReadsAndHonorRedactionPolicy()
     {
         var excerptTool = new EvidenceTool(

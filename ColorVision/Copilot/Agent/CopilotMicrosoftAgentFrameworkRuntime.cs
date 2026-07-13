@@ -176,10 +176,10 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
             var availableTools = MergeAvailableTools(request, _toolRegistry.FindTools(request), externalToolLease.Tools, emit);
             var capabilitySnapshot = _capabilityCatalog.GetSnapshot();
-            var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot);
-            var requiresCheckpointReplan = checkpointCompatibility?.Kind is CopilotAgentCheckpointCompatibilityKind.ProfileChanged
-                or CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing
-                or CopilotAgentCheckpointCompatibilityKind.CapabilityDrift;
+            var availableToolNames = availableTools.Select(tool => tool.Name).ToArray();
+            var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot, availableToolNames);
+            var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
+                || checkpointCompatibility?.RequiresReplan == true;
             var recovery = NormalizeRecoveryRequest(request.Recovery, requestedCheckpoint, availableTools, requiresCheckpointReplan);
             if (recovery != null)
                 taskEventJournalBuilder.RecordRecovery(recovery);
@@ -470,7 +470,13 @@ namespace ColorVision.Copilot
                 if (controlIntent != CopilotAgentControlIntent.Cancel)
                 {
                     var serializedSession = await agent.SerializeSessionAsync(session, null, finalizationToken);
-                    sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(request.Profile, serializedSession.GetRawText(), capabilitySnapshot, evidenceArtifacts, taskEventJournal);
+                    sessionCheckpoint = CopilotAgentSessionCheckpoint.Create(
+                        request.Profile,
+                        serializedSession.GetRawText(),
+                        capabilitySnapshot,
+                        evidenceArtifacts,
+                        taskEventJournal,
+                        availableToolNames);
                     if (sessionCheckpoint == null)
                         emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
                 }
@@ -569,6 +575,10 @@ namespace ColorVision.Copilot
                 return "Persisted Agent session belongs to a different model profile; its task plan was discarded and Agent Framework will re-plan against the current profile and tools.";
             if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing)
                 return "Persisted Agent session predates capability tracking; its task plan was discarded and Agent Framework will re-plan against current tools.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing)
+                return "Persisted Agent session predates request-scoped tool tracking; its internal task state was discarded and Agent Framework will re-plan from visible conversation history and current tools.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift)
+                return $"Agent request tool surface changed · {compatibility.RemovedToolNames.Count} previously available tool(s) removed ({string.Join(", ", compatibility.RemovedToolNames.Take(4))}). Persisted internal task state was discarded and Agent Framework will re-plan from visible conversation history and current tools.";
 
             var removed = compatibility.RemovedCapabilityIds.Count;
             var changed = compatibility.ChangedCapabilityIds.Count;

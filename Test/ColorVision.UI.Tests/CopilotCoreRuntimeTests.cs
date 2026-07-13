@@ -79,6 +79,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                     Fingerprint = new string('a', 64),
                 },
             ],
+            ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
+            AvailableToolNames = ["FetchUrl"],
             EvidenceArtifacts =
             [
                 new CopilotAgentEvidenceArtifact
@@ -110,6 +112,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal("builtin:searchdocs", capability.Id);
         Assert.Equal(2, capability.Revision);
         Assert.Equal(new string('a', 64), capability.Fingerprint);
+        Assert.Equal(CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion, checkpoint.ToolSurfaceVersion);
+        Assert.Equal(["FetchUrl"], checkpoint.AvailableToolNames);
         var evidence = Assert.Single(checkpoint.EvidenceArtifacts);
         Assert.Equal("builtin:searchdocs", evidence.CapabilityId);
         Assert.Equal("Documentation evidence collected.", evidence.Summary);
@@ -1237,6 +1241,57 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(1, followUpTool.ExecutionCount);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("retained recent read-only tool FetchUrl", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ReplansFromVisibleHistoryWhenRequestToolIsRemoved()
+    {
+        var profile = CreateProfile();
+        var firstTool = new TestAgentTool("TransientProbe");
+        using var firstClient = new FunctionCallingChatClient("colorvision_transient_probe");
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([firstTool]),
+            new CopilotAgentContextBuilder(),
+            _ => firstClient);
+        var firstResult = await firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "inspect the transient resource",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.NotNull(firstResult.SessionCheckpoint);
+        Assert.Contains("TransientProbe", firstResult.SessionCheckpoint!.AvailableToolNames);
+
+        var unavailableTool = new TestAgentTool("TransientProbe", canHandle: false);
+        using var secondClient = new CapturingFinalChatClient();
+        var secondRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([unavailableTool]),
+            new CopilotAgentContextBuilder(),
+            _ => secondClient);
+        var events = new List<CopilotAgentEvent>();
+        var secondResult = await secondRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "continue with that result",
+            History =
+            [
+                new CopilotRequestMessage("user", "inspect the transient resource"),
+                new CopilotRequestMessage("assistant", "The transient resource was inspected."),
+            ],
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = firstResult.SessionCheckpoint,
+        }, events.Add, CancellationToken.None);
+
+        Assert.False(secondResult.TaskLedger.ResumedFromCheckpoint);
+        Assert.Equal(0, unavailableTool.ExecutionCount);
+        Assert.NotNull(secondClient.LastMessages);
+        Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("inspect the transient resource", StringComparison.Ordinal));
+        Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("continue with that result", StringComparison.Ordinal));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("request tool surface changed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ReplanRequired
+            && item.State == CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift.ToString());
     }
 
     [Fact]

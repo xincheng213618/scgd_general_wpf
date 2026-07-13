@@ -14,6 +14,8 @@ namespace ColorVision.Copilot
         ProfileChanged,
         CapabilitySnapshotMissing,
         CapabilityDrift,
+        ToolSurfaceSnapshotMissing,
+        ToolSurfaceDrift,
     }
 
     public sealed class CopilotAgentCheckpointCapability
@@ -37,16 +39,23 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> ChangedCapabilityIds { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> RemovedToolNames { get; init; } = Array.Empty<string>();
+
         public bool CanResume => Kind == CopilotAgentCheckpointCompatibilityKind.Compatible;
 
         public bool RequiresReplan => Kind is CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing
-            or CopilotAgentCheckpointCompatibilityKind.CapabilityDrift;
+            or CopilotAgentCheckpointCompatibilityKind.CapabilityDrift
+            or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing
+            or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift;
     }
 
     public sealed class CopilotAgentSessionCheckpoint
     {
         public const int MaxSerializedSessionCharacters = 4_000_000;
         public const int MaxCheckpointCapabilities = 2_048;
+        public const int MaxAvailableToolNames = 2_048;
+        public const int MaxAvailableToolNameLength = 256;
+        public const int CurrentToolSurfaceVersion = 1;
 
         public string ProfileKey { get; init; } = string.Empty;
 
@@ -55,6 +64,10 @@ namespace ColorVision.Copilot
         public long CapabilityCatalogRevision { get; init; }
 
         public IReadOnlyList<CopilotAgentCheckpointCapability> Capabilities { get; init; } = Array.Empty<CopilotAgentCheckpointCapability>();
+
+        public int ToolSurfaceVersion { get; init; }
+
+        public IReadOnlyList<string> AvailableToolNames { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
 
@@ -74,7 +87,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentCheckpointCompatibility EvaluateFor(
             CopilotProfileConfig profile,
-            CopilotCapabilityCatalogSnapshot capabilitySnapshot)
+            CopilotCapabilityCatalogSnapshot capabilitySnapshot,
+            IReadOnlyCollection<string>? availableToolNames = null)
         {
             ArgumentNullException.ThrowIfNull(capabilitySnapshot);
             if (profile == null || !IsStructurallyValid())
@@ -99,9 +113,27 @@ namespace ColorVision.Copilot
                 }
             }
 
-            return removed.Count == 0 && changed.Count == 0
-                ? CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot)
-                : CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.CapabilityDrift, capabilitySnapshot, removed, changed);
+            if (removed.Count > 0 || changed.Count > 0)
+                return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.CapabilityDrift, capabilitySnapshot, removed, changed);
+
+            if (availableToolNames != null)
+            {
+                if (ToolSurfaceVersion != CurrentToolSurfaceVersion)
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing, capabilitySnapshot);
+
+                var currentToolNames = availableToolNames
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => name.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var removedToolNames = AvailableToolNames
+                    .Where(name => !currentToolNames.Contains(name))
+                    .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                if (removedToolNames.Length > 0)
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift, capabilitySnapshot, removedTools: removedToolNames);
+            }
+
+            return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot);
         }
 
         public bool IsStructurallyValid()
@@ -111,6 +143,15 @@ namespace ColorVision.Copilot
                 || SerializedSessionJson.Length > MaxSerializedSessionCharacters
                 || CapabilityCatalogRevision < 0
                 || Capabilities?.Count > MaxCheckpointCapabilities
+                || ToolSurfaceVersion is < 0 or > CurrentToolSurfaceVersion
+                || AvailableToolNames == null
+                || AvailableToolNames?.Count > MaxAvailableToolNames
+                || (AvailableToolNames?.Any(name => string.IsNullOrWhiteSpace(name)
+                    || !string.Equals(name, name.Trim(), StringComparison.Ordinal)
+                    || name.Length > MaxAvailableToolNameLength
+                    || name.Any(char.IsControl)) ?? false)
+                || (AvailableToolNames?.Distinct(StringComparer.OrdinalIgnoreCase).Count() != AvailableToolNames?.Count)
+                || (ToolSurfaceVersion == 0 && AvailableToolNames?.Count > 0)
                 || (Capabilities?.Any(capability => capability == null
                     || string.IsNullOrWhiteSpace(capability.Id)
                     || capability.Id.Length > 200
@@ -141,7 +182,8 @@ namespace ColorVision.Copilot
             string serializedSessionJson,
             CopilotCapabilityCatalogSnapshot? capabilitySnapshot = null,
             IReadOnlyList<CopilotAgentEvidenceArtifact>? evidenceArtifacts = null,
-            CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null)
+            CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null,
+            IReadOnlyCollection<string>? availableToolNames = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -159,6 +201,17 @@ namespace ColorVision.Copilot
             taskEventJournal ??= new CopilotAgentTaskEventJournalSnapshot();
             if (!taskEventJournal.IsStructurallyValid())
                 return null;
+            var persistedToolNames = (availableToolNames ?? Array.Empty<string>())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (persistedToolNames.Length > MaxAvailableToolNames
+                || persistedToolNames.Any(name => name.Length > MaxAvailableToolNameLength || name.Any(char.IsControl)))
+            {
+                return null;
+            }
 
             var checkpoint = new CopilotAgentSessionCheckpoint
             {
@@ -173,6 +226,8 @@ namespace ColorVision.Copilot
                         Fingerprint = capability.Fingerprint,
                     })
                     .ToArray(),
+                ToolSurfaceVersion = availableToolNames == null ? 0 : CurrentToolSurfaceVersion,
+                AvailableToolNames = persistedToolNames,
                 EvidenceArtifacts = persistedEvidence,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
@@ -184,7 +239,8 @@ namespace ColorVision.Copilot
             CopilotAgentCheckpointCompatibilityKind kind,
             CopilotCapabilityCatalogSnapshot currentSnapshot,
             IReadOnlyList<string>? removed = null,
-            IReadOnlyList<string>? changed = null)
+            IReadOnlyList<string>? changed = null,
+            IReadOnlyList<string>? removedTools = null)
         {
             return new CopilotAgentCheckpointCompatibility
             {
@@ -193,6 +249,7 @@ namespace ColorVision.Copilot
                 CurrentCatalogRevision = currentSnapshot.Revision,
                 RemovedCapabilityIds = removed ?? Array.Empty<string>(),
                 ChangedCapabilityIds = changed ?? Array.Empty<string>(),
+                RemovedToolNames = removedTools ?? Array.Empty<string>(),
             };
         }
 
