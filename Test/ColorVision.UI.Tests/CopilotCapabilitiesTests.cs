@@ -113,6 +113,55 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public void WebPage_SparseSpaDiscoversOnlySameOriginStructuredResources()
+    {
+        var html = $$"""
+            <html>
+              <head>
+                <title>Codex Radar</title>
+                <link rel="alternate" type="application/json" href="/current.json">
+                <script>{{new string('x', 25_000)}}</script>
+              </head>
+              <body>
+                <main>Only static card</main>
+                <a href="/feed.xml">RSS</a>
+                <a href="https://other.example/private.json">External data</a>
+              </body>
+            </html>
+            """;
+
+        var page = CopilotWebPageToolSupport.ExtractDownloadedContent(
+            new Uri("https://codexradar.com/"),
+            "text/html",
+            html);
+
+        Assert.True(page.IsSparseExtraction);
+        Assert.Contains("Only static card", page.Content, StringComparison.Ordinal);
+        Assert.Contains("https://codexradar.com/current.json", page.DiscoveredResourceUrls, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("https://codexradar.com/feed.xml", page.DiscoveredResourceUrls, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain(page.DiscoveredResourceUrls, url => url.Contains("other.example", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void WebPage_ExtractsJsonAndXmlResourcesAsReadableEvidence()
+    {
+        var jsonPage = CopilotWebPageToolSupport.ExtractDownloadedContent(
+            new Uri("https://codexradar.com/current.json"),
+            "application/json",
+            """{"model_iq":{"latest":{"passed":7}}}""");
+        var rssPage = CopilotWebPageToolSupport.ExtractDownloadedContent(
+            new Uri("https://codexradar.com/feed.xml"),
+            "application/rss+xml",
+            """<rss><channel><title>Reset updates</title></channel></rss>""");
+
+        Assert.Equal("current.json", jsonPage.Title);
+        Assert.Contains("model_iq", jsonPage.Content, StringComparison.Ordinal);
+        Assert.Contains(Environment.NewLine, jsonPage.Content, StringComparison.Ordinal);
+        Assert.Equal("feed.xml", rssPage.Title);
+        Assert.Contains("Reset updates", rssPage.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ReadLocalFile_ReadsSelectedLineRange()
     {
         var filePath = Path.Combine(_tempRoot, "settings.json");

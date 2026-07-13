@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotFetchUrlTool : ICopilotTool
     {
-        private const int MaxUrlsPerRequest = 3;
+        private const int MaxResourcesPerRequest = 3;
 
         public string Name => "FetchUrl";
 
@@ -32,7 +32,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var urls = ResolveUrls(request, toolInput)
-                .Take(MaxUrlsPerRequest)
+                .Take(MaxResourcesPerRequest)
                 .ToArray();
 
             if (urls.Length == 0)
@@ -49,12 +49,21 @@ namespace ColorVision.Copilot
 
             var builder = new StringBuilder();
             var successCount = 0;
+            var attemptedCount = 0;
+            var discoveredCount = 0;
             var errors = new List<string>();
             var failureKinds = new List<CopilotToolFailureKind>();
+            var pendingUrls = new Queue<string>(urls);
+            var visitedUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var url in urls)
+            while (pendingUrls.Count > 0 && attemptedCount < MaxResourcesPerRequest)
             {
+                var url = pendingUrls.Dequeue();
+                if (!visitedUrls.Add(url))
+                    continue;
+
                 cancellationToken.ThrowIfCancellationRequested();
+                attemptedCount++;
 
                 try
                 {
@@ -62,6 +71,19 @@ namespace ColorVision.Copilot
                     builder.AppendLine(CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(page));
                     builder.AppendLine();
                     successCount++;
+
+                    if (page.IsSparseExtraction)
+                    {
+                        foreach (var relatedUrl in page.DiscoveredResourceUrls)
+                        {
+                            if (pendingUrls.Count + attemptedCount >= MaxResourcesPerRequest)
+                                break;
+                            if (visitedUrls.Contains(relatedUrl) || pendingUrls.Contains(relatedUrl, StringComparer.OrdinalIgnoreCase))
+                                continue;
+                            pendingUrls.Enqueue(relatedUrl);
+                            discoveredCount++;
+                        }
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -81,8 +103,9 @@ namespace ColorVision.Copilot
                 ToolName = Name,
                 Success = successCount > 0,
                 Summary = successCount > 0
-                    ? $"Fetched {successCount}/{urls.Length} web pages."
-                    : $"Failed to fetch any web pages from {urls.Length} URLs.",
+                    ? $"Fetched {successCount}/{attemptedCount} web resources"
+                        + (discoveredCount > 0 ? $" ({urls.Length} requested, {discoveredCount} discovered)." : ".")
+                    : $"Failed to fetch any web resources from {attemptedCount} URLs.",
                 Content = builder.ToString().TrimEnd(),
                 ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
                 FailureKind = successCount == 0 && failureKinds.Count > 0 && failureKinds.All(kind => kind == CopilotToolFailureKind.Transient)

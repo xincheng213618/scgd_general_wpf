@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             return _tools
-                .Where(tool => tool.CanHandle(request))
+                .Where(tool => tool.CanHandle(request) || CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool))
                 .ToArray();
         }
 

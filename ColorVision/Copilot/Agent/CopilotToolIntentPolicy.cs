@@ -5,6 +5,9 @@ namespace ColorVision.Copilot
 {
     internal static class CopilotToolIntentPolicy
     {
+        private static readonly TimeSpan FollowUpToolLeaseDuration = TimeSpan.FromHours(24);
+        private const int MaximumFollowUpCharacters = 300;
+
         private static readonly string[] LocalEvidenceMarkers =
         {
             "当前项目", "这个项目", "本项目", "项目里", "工程里", "工作区", "仓库", "代码", "源码",
@@ -38,6 +41,17 @@ namespace ColorVision.Copilot
         {
             "fetch_url", "fetchurl", "read_url", "readurl", "get_url", "geturl",
             "fetch a url", "fetch web page", "read web page",
+        };
+
+        private static readonly string[] NewTopicMarkers =
+        {
+            "换个话题", "另一个问题", "另外一个问题", "另外，", "另外,", "顺便问", "不相关",
+            "new topic", "another question", "unrelated", "by the way",
+        };
+
+        private static readonly string[] FollowUpWebToolNames =
+        {
+            "FetchUrl", "WebSearch",
         };
 
         public static bool NeedsLocalEvidence(CopilotAgentRequest? request)
@@ -86,6 +100,42 @@ namespace ColorVision.Copilot
                 return NeedsLocalEvidence(request);
 
             return true;
+        }
+
+        public static bool CanRetainForFollowUp(CopilotAgentRequest? request, ICopilotTool? tool)
+        {
+            if (request == null || tool == null || request.Mode != CopilotAgentMode.Auto)
+                return false;
+            if (request.History.Count == 0
+                || string.IsNullOrWhiteSpace(request.UserText)
+                || request.UserText.Length > MaximumFollowUpCharacters)
+                return false;
+
+            var checkpoint = request.SessionCheckpoint;
+            if (checkpoint?.IsStructurallyValid() != true
+                || DateTimeOffset.UtcNow - checkpoint.UpdatedAtUtc > FollowUpToolLeaseDuration)
+                return false;
+            if (ContainsAny(request.UserText, NewTopicMarkers)
+                || ContainsAny(request.UserText, LocalEvidenceMarkers))
+                return false;
+            if (!FollowUpWebToolNames.Contains(tool.Name, StringComparer.OrdinalIgnoreCase))
+                return false;
+
+            var capability = tool.Capability;
+            if (capability.Access != CopilotToolAccess.ReadOnly
+                || capability.Idempotency != CopilotToolIdempotency.Idempotent
+                || capability.ApprovalMode != CopilotToolApprovalMode.Never)
+                return false;
+
+            var previousStop = checkpoint.TaskEventJournal.Events
+                .LastOrDefault(item => item.Type == CopilotAgentTaskEventType.RunStopped);
+            if (previousStop == null)
+                return false;
+
+            return checkpoint.TaskEventJournal.Events.Any(item =>
+                string.Equals(item.RunId, previousStop.RunId, StringComparison.Ordinal)
+                && item.Type is CopilotAgentTaskEventType.ToolStarted or CopilotAgentTaskEventType.ToolCompleted
+                && FollowUpWebToolNames.Contains(item.ToolName, StringComparer.OrdinalIgnoreCase));
         }
 
         private static bool ContainsAny(string? text, string[] markers)

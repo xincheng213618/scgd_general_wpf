@@ -1,5 +1,6 @@
 #pragma warning disable CA1707
 using ColorVision.Copilot;
+using System;
 
 namespace ColorVision.UI.Tests;
 
@@ -49,5 +50,74 @@ public sealed class CopilotToolIntentPolicyTests
 
         Assert.Equal(expectSearch, new CopilotWebSearchTool().CanHandle(request));
         Assert.Equal(expectFetch, new CopilotFetchUrlTool().CanHandle(request));
+    }
+
+    [Fact]
+    public void AutoMode_ShortFollowUpAfterWebRunRetainsReadOnlyWebTools()
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = "Pro20x的额度有多少",
+            Mode = CopilotAgentMode.Auto,
+            History = [new CopilotRequestMessage("user", "https://codexradar.com/ 寻找里面有价值的信息")],
+            SessionCheckpoint = CreatePreviousWebCheckpoint(),
+        };
+
+        var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
+
+        Assert.Contains(tools, tool => tool.Name == "FetchUrl");
+        Assert.Contains(tools, tool => tool.Name == "WebSearch");
+        Assert.DoesNotContain(tools, tool => tool.Capability.Access == CopilotToolAccess.Write);
+    }
+
+    [Theory]
+    [InlineData("另外，畸变校正是什么？")]
+    [InlineData("换个话题，介绍一下色彩空间")]
+    [InlineData("这个项目的代码在哪里实现？")]
+    public void AutoMode_NewTopicAfterWebRunDoesNotRetainWebTools(string prompt)
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = prompt,
+            Mode = CopilotAgentMode.Auto,
+            History = [new CopilotRequestMessage("user", "https://codexradar.com/")],
+            SessionCheckpoint = CreatePreviousWebCheckpoint(),
+        };
+
+        var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
+
+        Assert.DoesNotContain(tools, tool => tool.Name is "FetchUrl" or "WebSearch");
+    }
+
+    private static CopilotAgentSessionCheckpoint CreatePreviousWebCheckpoint()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var startedAt = DateTimeOffset.UtcNow.AddSeconds(-1);
+        journal.Observe(CopilotAgentEvent.FromToolResult(new CopilotToolResult
+        {
+            ToolName = "FetchUrl",
+            Success = true,
+            Summary = "Fetched one web resource.",
+        }, new CopilotToolExecutionInfo
+        {
+            CallId = "previous-fetch",
+            ToolName = "FetchUrl",
+            Access = CopilotToolAccess.ReadOnly,
+            ApprovalMode = CopilotToolApprovalMode.Never,
+            Idempotency = CopilotToolIdempotency.Idempotent,
+            State = CopilotToolExecutionState.Completed,
+            StartedAtUtc = startedAt,
+            CompletedAtUtc = DateTimeOffset.UtcNow,
+        }));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+
+        return new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{\"state\":{}}",
+            TaskEventJournal = journal.Snapshot(),
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        };
     }
 }

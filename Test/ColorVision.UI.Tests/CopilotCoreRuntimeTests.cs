@@ -1196,6 +1196,50 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RetainsWebToolForShortFollowUpInSameSession()
+    {
+        var profile = CreateProfile();
+        var firstTool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.OptionalQuery);
+        using var firstClient = new FunctionCallingChatClient("colorvision_fetch_url");
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([firstTool]),
+            new CopilotAgentContextBuilder(),
+            _ => firstClient);
+        var firstResult = await firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "https://codexradar.com/ 寻找里面有价值的信息",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, firstTool.ExecutionCount);
+        Assert.NotNull(firstResult.SessionCheckpoint);
+
+        var followUpTool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.OptionalQuery, canHandle: false);
+        using var secondClient = new FunctionCallingChatClient(
+            "colorvision_fetch_url",
+            new Dictionary<string, object?> { ["query"] = "Pro20x的额度有多少" });
+        var secondRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([followUpTool]),
+            new CopilotAgentContextBuilder(),
+            _ => secondClient);
+        var events = new List<CopilotAgentEvent>();
+
+        await secondRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Pro20x的额度有多少",
+            History = [new CopilotRequestMessage("user", "https://codexradar.com/ 寻找里面有价值的信息")],
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = firstResult.SessionCheckpoint,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, followUpTool.ExecutionCount);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("retained recent read-only tool FetchUrl", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_DiscardsPersistedPlanAndReplansAfterCapabilityDrift()
     {
         var profile = CreateProfile();
