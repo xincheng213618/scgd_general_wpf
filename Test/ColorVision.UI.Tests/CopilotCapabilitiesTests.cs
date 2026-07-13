@@ -162,6 +162,38 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public void WebPage_RedirectResolutionRejectsUnsafeTargets()
+    {
+        var current = new Uri("https://example.com/articles/start");
+
+        Assert.Equal(
+            "https://example.com/data/current.json",
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, new Uri("/data/current.json", UriKind.Relative)).ToString());
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, new Uri("http://127.0.0.1/private")));
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, new Uri("file:///C:/Windows/win.ini")));
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, new Uri("https://user:secret@example.com/private")));
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, null));
+    }
+
+    [Theory]
+    [InlineData("http://10.0.0.1/private")]
+    [InlineData("http://169.254.169.254/latest/meta-data")]
+    [InlineData("http://192.0.2.1/documentation")]
+    [InlineData("http://[::ffff:10.0.0.1]/private")]
+    [InlineData("http://[2001:db8::1]/documentation")]
+    [InlineData("http://[ff02::1]/multicast")]
+    [InlineData("file:///C:/Windows/win.ini")]
+    public async Task WebPage_RejectsNonPublicAddressesBeforeSendingRequest(string url)
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.LoadWebPageContentAsync(url, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task ReadLocalFile_ReadsSelectedLineRange()
     {
         var filePath = Path.Combine(_tempRoot, "settings.json");

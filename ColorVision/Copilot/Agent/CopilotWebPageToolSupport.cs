@@ -30,6 +30,7 @@ namespace ColorVision.Copilot
     {
         public const int MaxWebPageDownloadBytes = 2 * 1024 * 1024;
         public const int MaxWebPageContentChars = 12000;
+        public const int MaxWebPageRedirects = 5;
 
         private static readonly Regex HttpUrlRegex = new("https?://[^\\s\\\"'<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly char[] UrlTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '\uFF0C', '\u3002', '\uFF1B', '\uFF1A', '\uFF01', '\uFF1F', '\uFF09', '\u3011', '\u300B', '\u3001' };
@@ -62,7 +63,8 @@ namespace ColorVision.Copilot
                 return string.Empty;
 
             if (!normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                && !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                && !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                && !Regex.IsMatch(normalized, "^[a-z][a-z0-9+.-]*:", RegexOptions.IgnoreCase))
             {
                 normalized = "https://" + normalized;
             }
@@ -72,21 +74,39 @@ namespace ColorVision.Copilot
 
         public static async Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(string url, CancellationToken cancellationToken)
         {
-            var uri = NormalizeAndValidateWebPageUri(url);
-            await EnsureAllowedWebPageUriAsync(uri, cancellationToken);
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
-            if (!IsSupportedWebContentType(mediaType))
+            var currentUri = NormalizeAndValidateWebPageUri(url);
+            for (var redirectCount = 0; ; redirectCount++)
             {
-                throw new InvalidOperationException($"The target URL returned an unsupported content type: {mediaType}");
-            }
+                await EnsureAllowedWebPageUriAsync(currentUri, cancellationToken);
 
-            var content = await ReadWebPageContentAsync(response, cancellationToken);
-            return ExtractDownloadedContent(uri, mediaType, content);
+                using var request = new HttpRequestMessage(HttpMethod.Get, currentUri);
+                using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (IsRedirectStatusCode(response.StatusCode))
+                {
+                    if (redirectCount >= MaxWebPageRedirects)
+                        throw new InvalidOperationException($"The web page exceeded the redirect limit ({MaxWebPageRedirects}).");
+                    currentUri = ResolveRedirectWebPageUri(currentUri, response.Headers.Location);
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode();
+                var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+                if (!IsSupportedWebContentType(mediaType))
+                    throw new InvalidOperationException($"The target URL returned an unsupported content type: {mediaType}");
+
+                var content = await ReadWebPageContentAsync(response, cancellationToken);
+                return ExtractDownloadedContent(currentUri, mediaType, content);
+            }
+        }
+
+        public static Uri ResolveRedirectWebPageUri(Uri currentUri, Uri? location)
+        {
+            ArgumentNullException.ThrowIfNull(currentUri);
+            if (location == null)
+                throw new InvalidOperationException("The web page returned a redirect without a Location header.");
+
+            var resolved = location.IsAbsoluteUri ? location : new Uri(currentUri, location);
+            return ValidateWebPageUri(resolved);
         }
 
         public static string BuildFetchedWebPageContextBlock(CopilotFetchedWebPageContent page)
@@ -327,6 +347,11 @@ namespace ColorVision.Copilot
             if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri))
                 throw new InvalidOperationException("The web page URL is not valid.");
 
+            return ValidateWebPageUri(uri);
+        }
+
+        private static Uri ValidateWebPageUri(Uri uri)
+        {
             if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
             {
@@ -335,8 +360,19 @@ namespace ColorVision.Copilot
 
             if (uri.IsLoopback || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Fetching localhost or loopback URLs is not allowed.");
+            if (!string.IsNullOrWhiteSpace(uri.UserInfo))
+                throw new InvalidOperationException("Web page URLs containing embedded credentials are not allowed.");
 
             return uri;
+        }
+
+        private static bool IsRedirectStatusCode(HttpStatusCode statusCode)
+        {
+            return statusCode is HttpStatusCode.MovedPermanently
+                or HttpStatusCode.Redirect
+                or HttpStatusCode.RedirectMethod
+                or HttpStatusCode.TemporaryRedirect
+                or HttpStatusCode.PermanentRedirect;
         }
 
         private static async Task EnsureAllowedWebPageUriAsync(Uri uri, CancellationToken cancellationToken)
@@ -364,11 +400,18 @@ namespace ColorVision.Copilot
 
             if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                if (address.IsIPv6LinkLocal || address.IsIPv6SiteLocal)
+                if (address.IsIPv4MappedToIPv6)
+                    return IsBlockedWebPageAddress(address.MapToIPv4());
+                if (address.Equals(IPAddress.IPv6Any)
+                    || address.IsIPv6LinkLocal
+                    || address.IsIPv6SiteLocal
+                    || address.IsIPv6Multicast)
                     return true;
 
                 var bytes = address.GetAddressBytes();
-                return bytes.Length > 0 && (bytes[0] & 0xFE) == 0xFC;
+                return bytes.Length != 16
+                    || (bytes[0] & 0xFE) == 0xFC
+                    || bytes is [0x20, 0x01, 0x0D, 0xB8, ..];
             }
 
             if (address.AddressFamily != AddressFamily.InterNetwork)
@@ -386,7 +429,14 @@ namespace ColorVision.Copilot
                 169 when bytesV4[1] == 254 => true,
                 172 when bytesV4[1] >= 16 && bytesV4[1] <= 31 => true,
                 192 when bytesV4[1] == 168 => true,
+                192 when bytesV4[1] == 0 && bytesV4[2] == 0 => true,
+                192 when bytesV4[1] == 0 && bytesV4[2] == 2 => true,
+                192 when bytesV4[1] == 88 && bytesV4[2] == 99 => true,
+                198 when bytesV4[1] is 18 or 19 => true,
+                198 when bytesV4[1] == 51 && bytesV4[2] == 100 => true,
+                203 when bytesV4[1] == 0 && bytesV4[2] == 113 => true,
                 100 when bytesV4[1] >= 64 && bytesV4[1] <= 127 => true,
+                >= 224 => true,
                 _ => false,
             };
         }
@@ -418,7 +468,10 @@ namespace ColorVision.Copilot
 
         private static HttpClient CreateHttpClient()
         {
-            var client = new HttpClient
+            var client = new HttpClient(new HttpClientHandler
+            {
+                AllowAutoRedirect = false,
+            })
             {
                 Timeout = TimeSpan.FromSeconds(20),
             };
