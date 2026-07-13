@@ -131,7 +131,7 @@ namespace ColorVision.Copilot
             builder.AppendLine("1. If key facts are still missing and one available tool is likely to provide them, return action=tool.");
             builder.AppendLine("2. If the context is sufficient to answer, or remaining tools will not add meaningful value, return action=finish.");
             builder.AppendLine("3. toolName must be selected from the currently available tools.");
-            builder.AppendLine("4. For SearchFiles, GrepText, GetRecentLog, SearchDocs, WebSearch, FetchUrl, SetTheme, SetLanguage, ExecuteMenu, or TemplatePatch, fill input.query when possible; use short focused search terms, direct product questions for SearchDocs, public-web questions for WebSearch, and the target theme, language, or menu for app-control tools.\n5. For TemplatePatch, convert supported field changes into a JSON string in input.query. Use {\"proposed_changes\":{\"FieldName\":newValue}} for preview, or {\"preview_id\":\"id\",\"apply\":true} only when the user explicitly asks to apply a prior preview. Never invent a field absent from the attached template JSON.\n6. Prefer local files, attached context, recent logs, and ColorVision docs for ColorVision-specific implementation questions. Use WebSearch for general knowledge/current/public information, or when local/docs search failed and public information can still help.\n7. If a search tool failed because it found no keywords or no matches, try another relevant search tool before finishing.\n8. For FetchUrl, use a complete URL from the user text or prior WebSearch observations; avoid repeating the whole user question.\n9. For ListDirectory, fill input.path when possible; the path must come from the allowed local directory list.\n10. For ReadLocalFile, leave input.path empty when analyzing a directory or candidate set; fill input.path/startLine/endLine only for close reading of one file or line range.\n11. Keep reason to one short English sentence.");
+            builder.AppendLine("4. For SearchFiles, GrepText, GetRecentLog, SearchDocs, WebSearch, FetchUrl, SetTheme, SetLanguage, ExecuteMenu, CreateFlow, or TemplatePatch, fill input.query when possible; use short focused search terms, direct product questions for SearchDocs, public-web questions for WebSearch, and the target theme, language, menu, or flow name for app-control tools.\n5. For CreateFlow, put only the requested flow name in input.query; leave it empty when the user did not provide a name.\n6. For TemplatePatch, convert supported field changes into a JSON string in input.query. Use {\"proposed_changes\":{\"FieldName\":newValue}} for preview, or {\"preview_id\":\"id\",\"apply\":true} only when the user explicitly asks to apply a prior preview. Never invent a field absent from the attached template JSON.\n7. Prefer local files, attached context, recent logs, and ColorVision docs for ColorVision-specific implementation questions. Use WebSearch for general knowledge/current/public information, or when local/docs search failed and public information can still help.\n8. If a search tool failed because it found no keywords or no matches, try another relevant search tool before finishing.\n9. For FetchUrl, use a complete URL from the user text or prior WebSearch observations; avoid repeating the whole user question.\n10. For ListDirectory, fill input.path when possible; the path must come from the allowed local directory list.\n11. For ReadLocalFile, leave input.path empty when analyzing a directory or candidate set; fill input.path/startLine/endLine only for close reading of one file or line range.\n12. Keep reason to one short English sentence.");
             builder.AppendLine();
             builder.AppendLine("# User question");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
@@ -383,6 +383,13 @@ namespace ColorVision.Copilot
                 && !string.IsNullOrWhiteSpace(toolInput.Query))
             {
                 return $" (target menu: {toolInput.Query})";
+            }
+
+            if (string.Equals(toolName, "CreateFlow", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.IsNullOrWhiteSpace(toolInput.Query)
+                    ? " (generated flow name)"
+                    : $" (flow name: {toolInput.Query})";
             }
 
             if (!string.IsNullOrWhiteSpace(toolInput.Query))

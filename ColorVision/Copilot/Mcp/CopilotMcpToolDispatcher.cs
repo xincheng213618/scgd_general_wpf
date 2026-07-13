@@ -145,6 +145,10 @@ namespace ColorVision.Copilot.Mcp
                     ["query"] = StringProperty("Menu name or path to execute."),
                     ["dry_run"] = BooleanProperty("When true, resolve the menu and report risk without executing it."),
                 }, "query"), "app-control", "confirmation-required", "Call execute_menu with { \"query\": \"View > Copilot\", \"dry_run\": true } first."),
+                Tool("create_flow", "Create a new empty ColorVision flow after explicit user approval. Optional argument: name; a timestamped name is generated when omitted.", Schema(new Dictionary<string, object>
+                {
+                    ["name"] = StringProperty("Optional new flow name."),
+                }), "app-control", "confirmation-required", "Call create_flow with { \"name\": \"CalibrationFlow\" }, then wait for approval in ColorVision."),
                 Tool("confirm_action", "Execute a previously approved confirmation-required action. Required arguments: action_id, tool_name, arguments_summary.", Schema(new Dictionary<string, object>
                 {
                     ["action_id"] = StringProperty("Confirmable action id returned by a previous tool call."),
@@ -270,7 +274,8 @@ namespace ColorVision.Copilot.Mcp
                 .Register("get_flow_summary", (_, _, token) => GetFlowSummaryAsync(token))
                 .Register("diagnose_flow_failure", (arguments, _, token) => DiagnoseFlowFailureAsync(arguments, token))
                 .Register("open_panel", (arguments, _, token) => OpenPanelAsync(arguments, token))
-                .Register("execute_menu", (arguments, _, token) => ExecuteMenuAsync(arguments, token))
+                .Register("execute_menu", (arguments, caller, token) => ExecuteMenuAsync(arguments, caller, token))
+                .Register("create_flow", (arguments, caller, _) => Task.FromResult(CreateFlow(arguments, caller)))
                 .Register("confirm_action", (arguments, _, token) => ConfirmActionAsync(arguments, token))
                 .Register("preview_template_patch", (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)))
                 .Register("suggest_template_patch", (arguments, _, token) => SuggestTemplatePatchAsync(arguments, token))
@@ -854,7 +859,7 @@ namespace ColorVision.Copilot.Mcp
             return new CopilotPanelTarget(string.IsNullOrWhiteSpace(normalizedAlias) ? "copilot" : normalizedAlias, targetId);
         }
 
-        private async Task<CopilotMcpToolCallResult> ExecuteMenuAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        private async Task<CopilotMcpToolCallResult> ExecuteMenuAsync(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource, CancellationToken cancellationToken)
         {
             var query = GetString(arguments, "query");
             if (string.IsNullOrWhiteSpace(query))
@@ -872,7 +877,8 @@ namespace ColorVision.Copilot.Mcp
                         "execute_menu",
                         arguments,
                         handlerResult.Text,
-                        token => _environment.ExecuteMenuHandler(query, false, token));
+                        token => _environment.ExecuteMenuHandler(query, false, token),
+                        executeOnApproval: IsInAppAgent(callerSource));
 
                 return handlerResult;
             }
@@ -889,10 +895,29 @@ namespace ColorVision.Copilot.Mcp
                     "execute_menu",
                     arguments,
                     string.Join(Environment.NewLine, new[] { result.Summary, result.Content, result.ErrorMessage }.Where(value => !string.IsNullOrWhiteSpace(value))),
-                    async token => ToMcpResult(await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: false, allowConfirmationRequired: true, token), "menu_execution_failed"));
+                    async token => ToMcpResult(await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: false, allowConfirmationRequired: true, token), "menu_execution_failed"),
+                    executeOnApproval: IsInAppAgent(callerSource));
             }
 
             return ToMcpResult(result, "menu_execution_failed");
+        }
+
+        private CopilotMcpToolCallResult CreateFlow(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource)
+        {
+            var flowName = CopilotFlowCreationSupport.ResolveFlowName(null, GetString(arguments, "name"));
+            var normalizedArguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["name"] = JsonSerializer.SerializeToElement(flowName),
+            };
+
+            return CreateConfirmableActionResult(
+                "Confirm new flow creation",
+                $"Create a new empty ColorVision flow: {flowName}",
+                "create_flow",
+                normalizedArguments,
+                $"Flow name: {flowName}{Environment.NewLine}The flow will be created but will not be opened or executed automatically.",
+                token => _environment.CreateFlowHandler(flowName, token),
+                executeOnApproval: IsInAppAgent(callerSource));
         }
 
         private async Task<CopilotMcpToolCallResult> ConfirmActionAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
@@ -1279,6 +1304,11 @@ namespace ColorVision.Copilot.Mcp
                     || (result.Content ?? string.Empty).Contains("execution_status: confirmation_required", StringComparison.OrdinalIgnoreCase)
                     || (result.Content ?? string.Empty).Contains("risk_level: confirmation-required", StringComparison.OrdinalIgnoreCase)
                     || (result.Content ?? string.Empty).Contains("risk_level=confirmation-required", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsInAppAgent(string callerSource)
+        {
+            return string.Equals(callerSource, InAppAgentCallerSource, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool ContainsSensitiveArgumentValues(IReadOnlyDictionary<string, JsonElement>? arguments)

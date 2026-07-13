@@ -371,6 +371,7 @@ namespace ColorVision.Copilot
                 var builder = new StringBuilder();
                 builder.AppendLine(profile.DisplayLabel);
                 builder.AppendLine(profile.SecondaryLabel);
+                builder.AppendLine($"推理：{profile.ReasoningLabel}");
 
                 if (!string.IsNullOrWhiteSpace(profile.BaseUrl))
                     builder.AppendLine(profile.BaseUrl.Trim());
@@ -404,6 +405,29 @@ namespace ColorVision.Copilot
                     RefreshComposerTokenEstimate();
                 }
             }
+        }
+
+        public IReadOnlyList<CopilotReasoningOption> SelectedProfileReasoningOptions => CopilotReasoningCapabilities.GetOptions(SelectedProfile);
+
+        public string SelectedProfileReasoningLabel => CopilotReasoningCapabilities.GetLabel(CopilotReasoningCapabilities.GetEffectiveMode(SelectedProfile));
+
+        public string SelectedProfileReasoningToolTip => CopilotReasoningCapabilities.GetToolTip(SelectedProfile);
+
+        public bool HasConfigurableReasoning => CopilotReasoningCapabilities.HasConfigurableReasoning(SelectedProfile);
+
+        public void SetSelectedProfileReasoningMode(CopilotReasoningMode mode)
+        {
+            var profile = SelectedProfile;
+            if (profile == null || !HasConfigurableReasoning)
+                return;
+
+            var normalized = CopilotReasoningCapabilities.Normalize(profile.VendorType, mode);
+            if (profile.ReasoningMode == normalized)
+                return;
+
+            profile.ReasoningMode = normalized;
+            PersistConfig();
+            RefreshSelectedProfileReasoningState();
         }
         private string _inputText = string.Empty;
 
@@ -819,7 +843,7 @@ namespace ColorVision.Copilot
             var result = MessageBox.Show(
                 Application.Current.GetActiveWindow(),
                 BuildPendingActionApprovalPrompt(action),
-                "Approve MCP action",
+                "Approve Copilot action",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
                 MessageBoxResult.No);
@@ -833,7 +857,7 @@ namespace ColorVision.Copilot
             {
                 var executionResult = await CopilotMcpConfirmationStore.Instance.ApproveAndExecuteAsync(action.ActionId, CancellationToken.None);
                 SetPendingActionFeedback(executionResult.Success
-                    ? $"{action.ActionId}: approved and applied."
+                    ? $"{action.ActionId}: approved and executed."
                     : $"{action.ActionId}: {executionResult.Text}");
             }
             else
@@ -847,7 +871,7 @@ namespace ColorVision.Copilot
         private static string BuildPendingActionApprovalPrompt(ConfirmableAction action)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Approve this MCP action?");
+            builder.AppendLine("Approve this Copilot action?");
             builder.AppendLine();
             builder.AppendLine(action.Title);
             builder.AppendLine($"Tool: {action.ToolName}");
@@ -860,7 +884,7 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             builder.AppendLine("Only approve if the requested operation matches your intent.");
             builder.Append(action.ExecuteOnApproval
-                ? "This in-app action will execute immediately after approval; template changes still remain unsaved in the editor until you save them."
+                ? "This in-app action will execute immediately after approval."
                 : "The requesting MCP client must still call confirm_action after approval.");
             return builder.ToString();
         }
@@ -1469,9 +1493,16 @@ namespace ColorVision.Copilot
             if (ReferenceEquals(_selectedProfile, profile))
                 return;
 
+            if (_selectedProfile != null)
+                _selectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
+
             _selectedProfile = profile;
+            if (_selectedProfile != null)
+                _selectedProfile.PropertyChanged += SelectedProfile_PropertyChanged;
+
             OnPropertyChanged(nameof(SelectedProfile));
             OnPropertyChanged(nameof(SelectedProfileToolTip));
+            RefreshSelectedProfileReasoningState();
 
             _state.ActiveProfileId = profile?.Id ?? string.Empty;
 
@@ -1491,6 +1522,28 @@ namespace ColorVision.Copilot
                 PersistState();
 
             RefreshComposerTokenEstimate();
+        }
+
+        private void SelectedProfile_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(CopilotProfileConfig.ReasoningMode)
+                or nameof(CopilotProfileConfig.ReasoningLabel)
+                or nameof(CopilotProfileConfig.VendorType)
+                or nameof(CopilotProfileConfig.Name)
+                or nameof(CopilotProfileConfig.Model)
+                or nameof(CopilotProfileConfig.ProviderType))
+            {
+                RefreshSelectedProfileReasoningState();
+                OnPropertyChanged(nameof(SelectedProfileToolTip));
+            }
+        }
+
+        private void RefreshSelectedProfileReasoningState()
+        {
+            OnPropertyChanged(nameof(SelectedProfileReasoningOptions));
+            OnPropertyChanged(nameof(SelectedProfileReasoningLabel));
+            OnPropertyChanged(nameof(SelectedProfileReasoningToolTip));
+            OnPropertyChanged(nameof(HasConfigurableReasoning));
         }
 
         private CopilotConversationRecord EnsureConversation()

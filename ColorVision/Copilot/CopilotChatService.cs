@@ -94,26 +94,28 @@ namespace ColorVision.Copilot
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            object payload;
+            Dictionary<string, object?> payload;
             if (config.ProviderType == CopilotProviderType.AnthropicCompatible)
             {
                 request.Headers.Add("x-api-key", config.ApiKey);
                 request.Headers.Add("anthropic-version", "2023-06-01");
 
                 var systemPrompt = config.EffectiveSystemPrompt;
-                payload = new
+                payload = new Dictionary<string, object?>
                 {
-                    model = config.Model,
-                    system = systemPrompt,
-                    max_tokens = config.MaxTokens,
-                    temperature = config.Temperature,
-                    stream = true,
-                    messages = messages.Select(message => new
+                    ["model"] = config.Model,
+                    ["system"] = systemPrompt,
+                    ["max_tokens"] = config.MaxTokens,
+                    ["stream"] = true,
+                    ["messages"] = messages.Select(message => new
                     {
                         role = message.Role,
                         content = message.Content,
                     }).ToArray(),
                 };
+
+                if (CopilotReasoningRequestMapper.ShouldIncludeTemperature(config))
+                    payload["temperature"] = config.Temperature;
             }
             else
             {
@@ -136,19 +138,23 @@ namespace ColorVision.Copilot
                     content = message.Content,
                 }));
 
-                payload = new
+                payload = new Dictionary<string, object?>
                 {
-                    model = config.Model,
-                    stream = true,
-                    temperature = config.Temperature,
-                    max_tokens = config.MaxTokens,
-                    stream_options = new
+                    ["model"] = config.Model,
+                    ["stream"] = true,
+                    ["max_tokens"] = config.MaxTokens,
+                    ["stream_options"] = new
                     {
                         include_usage = true,
                     },
-                    messages = payloadMessages,
+                    ["messages"] = payloadMessages,
                 };
+
+                if (CopilotReasoningRequestMapper.ShouldIncludeTemperature(config))
+                    payload["temperature"] = config.Temperature;
             }
+
+            CopilotReasoningRequestMapper.Apply(config, payload);
 
             request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
             return request;

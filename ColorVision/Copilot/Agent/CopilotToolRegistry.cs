@@ -28,6 +28,7 @@ namespace ColorVision.Copilot
         {
             return new CopilotToolRegistry(new ICopilotTool[]
             {
+                new CopilotCreateFlowTool(),
                 new CopilotExecuteMenuTool(),
                 new CopilotSetThemeTool(),
                 new CopilotSetLanguageTool(),

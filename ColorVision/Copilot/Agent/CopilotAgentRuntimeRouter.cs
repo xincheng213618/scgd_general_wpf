@@ -49,6 +49,12 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            if (CopilotReasoningCapabilities.GetEffectiveMode(profile) != CopilotReasoningMode.Default)
+            {
+                reason = "provider-specific reasoning settings require the built-in runtime";
+                return false;
+            }
+
             if (!Uri.TryCreate(profile.BaseUrl, UriKind.Absolute, out var endpoint)
                 || (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps))
             {

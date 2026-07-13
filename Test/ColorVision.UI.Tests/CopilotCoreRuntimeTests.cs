@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 
 namespace ColorVision.UI.Tests;
@@ -98,6 +99,107 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal("inspect ", string.Concat(deltas.Select(delta => delta.ReasoningContent)));
         Assert.Equal("done", string.Concat(deltas.Select(delta => delta.Content)));
         Assert.Equal(new CopilotTokenUsage(3, 2, 5), usage);
+    }
+
+    [Fact]
+    public async Task ChatService_SendsDeepSeekAnthropicHighReasoningParameters()
+    {
+        var profile = CreateProfile();
+        profile.VendorType = CopilotVendorType.DeepSeek;
+        profile.ProviderType = CopilotProviderType.AnthropicCompatible;
+        profile.BaseUrl = "https://api.deepseek.com/anthropic";
+        profile.ReasoningMode = CopilotReasoningMode.High;
+        using var handler = new CapturingResponseHandler(() => CreateJsonResponse("{\"content\":[{\"type\":\"text\",\"text\":\"ok\"}]}"));
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotChatService(httpClient);
+
+        await service.CompleteReplyAsync(profile, new[] { new CopilotRequestMessage("user", "test") }, CancellationToken.None);
+
+        using var document = JsonDocument.Parse(Assert.IsType<string>(handler.RequestBody));
+        var root = document.RootElement;
+        Assert.Equal("enabled", root.GetProperty("thinking").GetProperty("type").GetString());
+        Assert.Equal("high", root.GetProperty("output_config").GetProperty("effort").GetString());
+        Assert.False(root.TryGetProperty("reasoning_effort", out _));
+        Assert.False(root.TryGetProperty("temperature", out _));
+    }
+
+    [Fact]
+    public async Task ChatService_SendsDeepSeekOpenAiMaxReasoningParameters()
+    {
+        var profile = CreateProfile();
+        profile.VendorType = CopilotVendorType.DeepSeek;
+        profile.ReasoningMode = CopilotReasoningMode.Max;
+        using var handler = new CapturingResponseHandler(() => CreateJsonResponse("{\"choices\":[{\"message\":{\"content\":\"ok\"}}]}"));
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotChatService(httpClient);
+
+        await service.CompleteReplyAsync(profile, new[] { new CopilotRequestMessage("user", "test") }, CancellationToken.None);
+
+        using var document = JsonDocument.Parse(Assert.IsType<string>(handler.RequestBody));
+        var root = document.RootElement;
+        Assert.Equal("enabled", root.GetProperty("thinking").GetProperty("type").GetString());
+        Assert.Equal("max", root.GetProperty("reasoning_effort").GetString());
+        Assert.False(root.TryGetProperty("output_config", out _));
+        Assert.False(root.TryGetProperty("temperature", out _));
+    }
+
+    [Fact]
+    public async Task ChatService_DefaultReasoningPreservesExistingTemperatureBehavior()
+    {
+        var profile = CreateProfile();
+        profile.VendorType = CopilotVendorType.DeepSeek;
+        using var handler = new CapturingResponseHandler(() => CreateJsonResponse("{\"choices\":[{\"message\":{\"content\":\"ok\"}}]}"));
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotChatService(httpClient);
+
+        await service.CompleteReplyAsync(profile, new[] { new CopilotRequestMessage("user", "test") }, CancellationToken.None);
+
+        using var document = JsonDocument.Parse(Assert.IsType<string>(handler.RequestBody));
+        var root = document.RootElement;
+        Assert.Equal(profile.Temperature, root.GetProperty("temperature").GetDouble());
+        Assert.False(root.TryGetProperty("thinking", out _));
+        Assert.False(root.TryGetProperty("reasoning_effort", out _));
+    }
+
+    [Fact]
+    public async Task ChatService_SendsXiaomiThinkingToggleWithoutFakeEffortLevel()
+    {
+        var profile = CreateProfile();
+        profile.VendorType = CopilotVendorType.Xiaomi;
+        profile.ProviderType = CopilotProviderType.AnthropicCompatible;
+        profile.BaseUrl = "https://api.xiaomimimo.com/anthropic";
+        profile.Model = "mimo-v2.5-pro";
+        profile.ReasoningMode = CopilotReasoningMode.Enabled;
+        using var handler = new CapturingResponseHandler(() => CreateJsonResponse("{\"content\":[{\"type\":\"text\",\"text\":\"ok\"}]}"));
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotChatService(httpClient);
+
+        await service.CompleteReplyAsync(profile, new[] { new CopilotRequestMessage("user", "test") }, CancellationToken.None);
+
+        using var document = JsonDocument.Parse(Assert.IsType<string>(handler.RequestBody));
+        var root = document.RootElement;
+        Assert.Equal("enabled", root.GetProperty("thinking").GetProperty("type").GetString());
+        Assert.False(root.TryGetProperty("reasoning_effort", out _));
+        Assert.False(root.TryGetProperty("output_config", out _));
+        Assert.False(root.TryGetProperty("temperature", out _));
+    }
+
+    [Fact]
+    public void ReasoningCapabilities_ExposeOnlyProviderSupportedChoices()
+    {
+        var profile = CreateProfile();
+        profile.VendorType = CopilotVendorType.DeepSeek;
+        profile.ReasoningMode = CopilotReasoningMode.Max;
+        Assert.Equal(
+            new[] { CopilotReasoningMode.Default, CopilotReasoningMode.Disabled, CopilotReasoningMode.High, CopilotReasoningMode.Max },
+            CopilotReasoningCapabilities.GetOptions(profile).Select(option => option.Mode));
+        Assert.Equal(CopilotReasoningMode.Max, profile.Clone().ReasoningMode);
+
+        profile.VendorType = CopilotVendorType.Xiaomi;
+        Assert.Equal(CopilotReasoningMode.Enabled, profile.ReasoningMode);
+        Assert.Equal(
+            new[] { CopilotReasoningMode.Default, CopilotReasoningMode.Disabled, CopilotReasoningMode.Enabled },
+            CopilotReasoningCapabilities.GetOptions(profile).Select(option => option.Mode));
     }
 
     [Fact]
@@ -197,6 +299,13 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
         Assert.Equal(2, builtIn.RunCount);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.Status && item.Text.Contains("using the built-in Agent runtime", StringComparison.Ordinal));
+
+        profile.ProviderType = CopilotProviderType.OpenAICompatible;
+        profile.VendorType = CopilotVendorType.Xiaomi;
+        profile.ReasoningMode = CopilotReasoningMode.Enabled;
+        await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
+        Assert.Equal(3, builtIn.RunCount);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.Status && item.Text.Contains("provider-specific reasoning settings", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -267,6 +376,18 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(responseFactory());
+        }
+    }
+
+    private sealed class CapturingResponseHandler(Func<HttpResponseMessage> responseFactory) : HttpMessageHandler
+    {
+        public string? RequestBody { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            RequestBody = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken);
+            return responseFactory();
         }
     }
 

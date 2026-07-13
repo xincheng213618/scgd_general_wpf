@@ -207,6 +207,13 @@ namespace ColorVision.Copilot
             if (availableTools.Count == 0)
                 return null;
 
+            if (CopilotFlowCreationSupport.HasCreateIntent(request.UserText))
+            {
+                var createFlowTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "CreateFlow", StringComparison.OrdinalIgnoreCase));
+                if (createFlowTool != null)
+                    return createFlowTool;
+            }
+
             if (CopilotApplicationCapability.HasMenuIntent(request.UserText))
             {
                 var menuTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "ExecuteMenu", StringComparison.OrdinalIgnoreCase));
@@ -292,7 +299,8 @@ namespace ColorVision.Copilot
 
         private static CopilotAgentToolInput BuildFallbackToolInput(CopilotAgentRequest request, string toolName)
         {
-            if (string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(toolName, "CreateFlow", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "TemplatePatch", StringComparison.OrdinalIgnoreCase))

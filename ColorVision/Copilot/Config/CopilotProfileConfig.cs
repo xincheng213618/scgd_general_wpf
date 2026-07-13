@@ -29,8 +29,10 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _vendorType, value))
                 {
+                    ReasoningMode = CopilotReasoningCapabilities.Normalize(value, ReasoningMode);
                     OnPropertyChanged(nameof(VendorLabel));
                     OnPropertyChanged(nameof(SecondaryLabel));
+                    OnPropertyChanged(nameof(ReasoningLabel));
                 }
             }
         }
@@ -159,6 +161,20 @@ namespace ColorVision.Copilot
         }
         private double _temperature = DefaultTemperature;
 
+        [DisplayName("Reasoning")]
+        [Description("Provider-aware thinking mode or reasoning effort")]
+        public CopilotReasoningMode ReasoningMode
+        {
+            get => _reasoningMode;
+            set
+            {
+                var normalized = CopilotReasoningCapabilities.Normalize(VendorType, value);
+                if (SetProperty(ref _reasoningMode, normalized))
+                    OnPropertyChanged(nameof(ReasoningLabel));
+            }
+        }
+        private CopilotReasoningMode _reasoningMode = CopilotReasoningMode.Default;
+
         [DisplayName("Max tool rounds")]
         [Description("Maximum tool-call rounds allowed for one Agent request")]
         public int MaxToolRounds
@@ -203,6 +219,9 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string ProviderLabel => ProviderType == CopilotProviderType.AnthropicCompatible ? "Anthropic Compatible" : "OpenAI Compatible";
+
+        [JsonIgnore]
+        public string ReasoningLabel => CopilotReasoningCapabilities.GetLabel(CopilotReasoningCapabilities.GetEffectiveMode(this));
 
         [JsonIgnore]
         public string DisplayLabel
@@ -250,6 +269,13 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            var normalizedReasoningMode = CopilotReasoningCapabilities.Normalize(VendorType, ReasoningMode);
+            if (ReasoningMode != normalizedReasoningMode)
+            {
+                ReasoningMode = normalizedReasoningMode;
+                changed = true;
+            }
+
             if (!Enum.IsDefined(VendorType))
             {
                 VendorType = CopilotVendorType.Custom;
@@ -284,6 +310,7 @@ namespace ColorVision.Copilot
                 MaxTokens = MaxTokens,
                 MaxToolRounds = MaxToolRounds,
                 Temperature = Temperature,
+                ReasoningMode = ReasoningMode,
                 UseAgentFramework = UseAgentFramework,
             };
 

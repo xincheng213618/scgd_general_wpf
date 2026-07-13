@@ -91,6 +91,7 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.Contains("get_server_status", response.Body, StringComparison.Ordinal);
         Assert.Contains("get_audit_log", response.Body, StringComparison.Ordinal);
         Assert.Contains("open_panel", response.Body, StringComparison.Ordinal);
+        Assert.Contains("create_flow", response.Body, StringComparison.Ordinal);
         Assert.Contains("search_docs", response.Body, StringComparison.Ordinal);
         Assert.Contains("confirm_action", response.Body, StringComparison.Ordinal);
         Assert.Contains("preview_template_patch", response.Body, StringComparison.Ordinal);

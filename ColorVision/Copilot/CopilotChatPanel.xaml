@@ -67,12 +67,126 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        <Style x:Key="ComposerComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+        <Style x:Key="ComposerSelectorToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinWidth" Value="88" />
+            <Setter Property="MaxWidth" Value="180" />
+            <Setter Property="Padding" Value="4,0,2,0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="0">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.42" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ComposerPopoverRowToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="0">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.42" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ComposerPopoverButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="0">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.76" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ComposerPopoverListBoxItemStyle" TargetType="ListBoxItem">
             <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="0">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="CopilotIconButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="28" />
@@ -149,6 +263,8 @@
         </Style>
         <Style x:Key="UserMessageTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ReadOnlyMessageTextBoxStyle}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style x:Key="UserMessageMetaTextStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White" />
@@ -525,20 +641,6 @@
                                        Text="&#xE710;" />
                         </Button>
 
-                        <Button Style="{StaticResource CopilotIconButtonStyle}"
-                                Click="SettingsMenuButton_Click"
-                                IsEnabled="{Binding CanSwitchConversation}"
-                                ToolTip="{x:Static properties:Resources.CopilotConfigureCopilot}">
-                            <Button.ContextMenu>
-                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                    <MenuItem Header="Language Models" Command="{Binding OpenSettingsCommand}" />
-                                    <MenuItem Header="MCP Settings" Command="{Binding OpenMcpSettingsCommand}" />
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                            <TextBlock FontFamily="Segoe MDL2 Assets"
-                                       FontSize="15"
-                                       Text="&#xE713;" />
-                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -769,15 +871,15 @@
 
                 <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <ItemsControl MaxWidth="880"
-                                  Margin="20,14,20,14"
+                                  Margin="16,12,16,12"
                                   HorizontalAlignment="Stretch"
                                   ItemsSource="{Binding Messages}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:CopilotChatMessage}">
-                                <Grid Margin="0,0,0,16">
+                                <Grid Margin="0,0,0,12">
                                     <Border x:Name="UserBubble"
                                             MaxWidth="680"
-                                            Padding="12,9"
+                                            Padding="10,5"
                                             HorizontalAlignment="Right"
                                             Background="{DynamicResource GlobalBorderBrush1}"
                                             BorderBrush="{DynamicResource ButtonBorderBrush}"
@@ -791,7 +893,7 @@
                                     </Border>
 
                                     <StackPanel x:Name="AssistantPanel"
-                                                Margin="0,0,24,0"
+                                                Margin="0"
                                                 Visibility="Collapsed">
                                         <Expander Margin="0,0,0,8"
                                                   Style="{StaticResource TraceExpanderStyle}"
@@ -875,7 +977,7 @@
                     x:Name="ComposerShellBorder"
                     MaxWidth="880"
                     Margin="24,0,24,14"
-                    Padding="12,8,10,8"
+                    Padding="10,5,8,5"
                     Style="{StaticResource ComposerShellBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -1065,8 +1167,8 @@
                     </StackPanel>
 
                     <Grid Grid.Row="2"
-                          MinHeight="34">
-                        <TextBlock Padding="0,3,0,3"
+                          MinHeight="24">
+                        <TextBlock Padding="0,2"
                                    Foreground="{DynamicResource GlobalTextBrush}"
                                    IsHitTestVisible="False"
                                    Opacity="0.28"
@@ -1074,9 +1176,9 @@
                                    VerticalAlignment="Top"
                                    Visibility="{Binding IsInputEmpty, Converter={StaticResource bool2VisibilityConverter}}" />
                         <TextBox x:Name="PromptTextBox"
-                                 MinHeight="34"
+                                 MinHeight="24"
                                  MaxHeight="112"
-                                 Padding="0,3,0,3"
+                                 Padding="0,2"
                                  AcceptsReturn="True"
                                  Background="Transparent"
                                  BorderThickness="0"
@@ -1088,16 +1190,11 @@
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
 
-                    <Grid x:Name="ComposerFooterGrid" Grid.Row="3" Margin="0,6,0,0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition x:Name="ComposerFooterSecondRowDefinition" Height="0" />
-                        </Grid.RowDefinitions>
+                    <Grid x:Name="ComposerFooterGrid" Grid.Row="3" Margin="0,2,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
@@ -1150,25 +1247,340 @@
 
                         <Grid x:Name="ComposerSelectorGrid"
                               Grid.Row="0"
-                              Grid.Column="3"
-                              Margin="8,0,8,0"
+                              Grid.Column="2"
+                              MaxWidth="180"
+                              Margin="4,0,4,0"
+                              HorizontalAlignment="Right"
                               VerticalAlignment="Center">
-                            <ComboBox x:Name="ProfileComboBox"
-                                      MinWidth="72"
-                                      MaxWidth="180"
-                                      HorizontalAlignment="Right"
-                                      Style="{StaticResource ComposerComboBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      ItemsSource="{Binding Profiles}"
-                                      DisplayMemberPath="DisplayLabel"
-                                      SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
-                                      ToolTip="{Binding SelectedProfileToolTip}"
-                                      IsEnabled="{Binding CanSelectProfile}" />
+                            <ToggleButton x:Name="ProfileSelectorButton"
+                                          MaxWidth="180"
+                                          HorizontalAlignment="Stretch"
+                                          IsEnabled="{Binding CanSelectProfile}"
+                                          Style="{StaticResource ComposerSelectorToggleButtonStyle}"
+                                          ToolTip="{Binding SelectedProfileToolTip}">
+                                <Grid TextElement.Foreground="{DynamicResource GlobalTextBrush}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Viewbox Grid.Column="0"
+                                             MaxHeight="17"
+                                             HorizontalAlignment="Stretch"
+                                             Stretch="Uniform"
+                                             StretchDirection="DownOnly">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"
+                                                       Text="{Binding SelectedProfile.DisplayLabel}" />
+                                            <TextBlock Margin="5,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="10"
+                                                       Opacity="0.58"
+                                                       Text="{Binding SelectedProfileReasoningLabel}" />
+                                        </StackPanel>
+                                    </Viewbox>
+                                    <TextBlock Grid.Column="1"
+                                               Margin="7,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="11"
+                                               Opacity="0.64"
+                                               Text="&#xE70D;" />
+                                </Grid>
+                            </ToggleButton>
+
+                            <Popup x:Name="ProfileSelectorPopup"
+                                   AllowsTransparency="True"
+                                   Closed="ProfileSelectorPopup_Closed"
+                                   IsOpen="{Binding IsChecked, ElementName=ProfileSelectorButton, Mode=TwoWay}"
+                                   Opened="ProfileSelectorPopup_Opened"
+                                   Placement="Top"
+                                   PlacementTarget="{Binding ElementName=ProfileSelectorButton}"
+                                   PopupAnimation="Fade"
+                                   StaysOpen="False"
+                                   VerticalOffset="6">
+                                <Border Padding="14" Background="Transparent">
+                                <Grid TextElement.Foreground="{DynamicResource GlobalTextBrush}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="230" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="1"
+                                            Padding="4"
+                                            VerticalAlignment="Bottom"
+                                            Background="{DynamicResource ButtonBackground}"
+                                            BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" Opacity="0.2" ShadowDepth="2" />
+                                        </Border.Effect>
+                                        <StackPanel>
+                                            <ToggleButton x:Name="ModelSelectorRowButton"
+                                                          Click="ModelSelectorRowButton_Click"
+                                                          Style="{StaticResource ComposerPopoverRowToggleStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold" Text="模型" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="12,0,0,0"
+                                                               HorizontalAlignment="Right"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="10"
+                                                               Opacity="0.58"
+                                                               Text="{Binding SelectedProfile.DisplayLabel}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Grid.Column="2"
+                                                               Margin="10,0,0,0"
+                                                               VerticalAlignment="Center"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="10"
+                                                               Opacity="0.64"
+                                                               Text="&#xE76C;" />
+                                                </Grid>
+                                            </ToggleButton>
+
+                                            <ToggleButton x:Name="ReasoningSelectorRowButton"
+                                                          Click="ReasoningSelectorRowButton_Click"
+                                                          IsEnabled="{Binding HasConfigurableReasoning}"
+                                                          Style="{StaticResource ComposerPopoverRowToggleStyle}"
+                                                          ToolTip="{Binding SelectedProfileReasoningToolTip}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold" Text="推理强度" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="12,0,0,0"
+                                                               HorizontalAlignment="Right"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="10"
+                                                               Opacity="0.58"
+                                                               Text="{Binding SelectedProfileReasoningLabel}" />
+                                                    <TextBlock Grid.Column="2"
+                                                               Margin="10,0,0,0"
+                                                               VerticalAlignment="Center"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="10"
+                                                               Opacity="0.64"
+                                                               Text="&#xE76C;" />
+                                                </Grid>
+                                            </ToggleButton>
+
+                                            <Border Height="1" Margin="6,3" Background="{DynamicResource ButtonBorderBrush}" />
+
+                                            <ToggleButton x:Name="AdvancedSettingsSelectorRowButton"
+                                                          Click="AdvancedSettingsSelectorRowButton_Click"
+                                                          Style="{StaticResource ComposerPopoverRowToggleStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold" Text="高级设置" />
+                                                    <TextBlock Grid.Column="2"
+                                                               VerticalAlignment="Center"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="11"
+                                                               Opacity="0.68"
+                                                               Text="&#xE76C;" />
+                                                </Grid>
+                                            </ToggleButton>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="ModelSubmenuBorder"
+                                            Grid.Column="0"
+                                            Width="276"
+                                            MaxHeight="340"
+                                            Margin="0,0,8,0"
+                                            Padding="4"
+                                            VerticalAlignment="Bottom"
+                                            Background="{DynamicResource ButtonBackground}"
+                                            BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Visibility="Collapsed">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" Opacity="0.2" ShadowDepth="2" />
+                                        </Border.Effect>
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock DockPanel.Dock="Top"
+                                                       Margin="8,5,8,4"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Opacity="0.58"
+                                                       Text="模型" />
+                                            <ListBox x:Name="ProfileListBox"
+                                                     Background="Transparent"
+                                                     BorderThickness="0"
+                                                     ItemContainerStyle="{StaticResource ComposerPopoverListBoxItemStyle}"
+                                                     ItemsSource="{Binding Profiles}"
+                                                     PreviewMouseLeftButtonUp="ProfileListBox_PreviewMouseLeftButtonUp"
+                                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                     SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid MinHeight="36" Margin="8,2">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock FontSize="11"
+                                                                           FontWeight="SemiBold"
+                                                                           Text="{Binding DisplayLabel}"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Margin="0,2,0,0"
+                                                                           FontSize="9"
+                                                                           Opacity="0.52"
+                                                                           Text="{Binding SecondaryLabel}"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                            </StackPanel>
+                                                            <TextBlock x:Name="SelectedProfileCheck"
+                                                                       Grid.Column="1"
+                                                                       Margin="12,0,2,0"
+                                                                       VerticalAlignment="Center"
+                                                                       FontFamily="Segoe MDL2 Assets"
+                                                                       FontSize="10"
+                                                                       Text="&#xE73E;"
+                                                                       Visibility="Collapsed" />
+                                                        </Grid>
+                                                        <DataTemplate.Triggers>
+                                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                                <Setter TargetName="SelectedProfileCheck" Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </DataTemplate.Triggers>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </DockPanel>
+                                    </Border>
+
+                                    <Border x:Name="ReasoningSubmenuBorder"
+                                            Grid.Column="0"
+                                            Width="276"
+                                            Margin="0,0,8,0"
+                                            Padding="4"
+                                            VerticalAlignment="Bottom"
+                                            Background="{DynamicResource ButtonBackground}"
+                                            BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Visibility="Collapsed">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" Opacity="0.2" ShadowDepth="2" />
+                                        </Border.Effect>
+                                        <StackPanel>
+                                            <TextBlock Margin="8,5,8,4"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Opacity="0.58"
+                                                       Text="推理强度" />
+                                            <ItemsControl ItemsSource="{Binding SelectedProfileReasoningOptions}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Tag="{Binding Mode}"
+                                                                Click="ReasoningOptionButton_Click"
+                                                                Style="{StaticResource ComposerPopoverButtonStyle}"
+                                                                ToolTip="{Binding Description}">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock VerticalAlignment="Center" FontSize="11" Text="{Binding Label}" />
+                                                                <TextBlock Grid.Column="1"
+                                                                           Margin="12,0,2,0"
+                                                                           VerticalAlignment="Center"
+                                                                           FontFamily="Segoe MDL2 Assets"
+                                                                           FontSize="10"
+                                                                           Text="&#xE73E;"
+                                                                           Visibility="{Binding IsSelected, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                            </Grid>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border x:Name="AdvancedSettingsSubmenuBorder"
+                                            Grid.Column="0"
+                                            Width="276"
+                                            Margin="0,0,8,0"
+                                            Padding="4"
+                                            VerticalAlignment="Bottom"
+                                            Background="{DynamicResource ButtonBackground}"
+                                            BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="14"
+                                            Visibility="Collapsed">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" Opacity="0.2" ShadowDepth="2" />
+                                        </Border.Effect>
+                                        <StackPanel>
+                                            <TextBlock Margin="8,5,8,4"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Opacity="0.58"
+                                                       Text="高级设置" />
+                                            <Button Click="CloseSelectorPopupButton_Click"
+                                                    Command="{Binding OpenSettingsCommand}"
+                                                    Style="{StaticResource ComposerPopoverButtonStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock VerticalAlignment="Center" FontSize="11" Text="模型设置" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="12,0,2,0"
+                                                               VerticalAlignment="Center"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="10"
+                                                               Opacity="0.68"
+                                                               Text="&#xE713;" />
+                                                </Grid>
+                                            </Button>
+                                            <Button Click="CloseSelectorPopupButton_Click"
+                                                    Command="{Binding OpenMcpSettingsCommand}"
+                                                    Style="{StaticResource ComposerPopoverButtonStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock VerticalAlignment="Center" FontSize="11" Text="MCP 设置" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="12,0,2,0"
+                                                               VerticalAlignment="Center"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="10"
+                                                               Opacity="0.68"
+                                                               Text="&#xE713;" />
+                                                </Grid>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                </Border>
+                            </Popup>
                         </Grid>
 
                         <StackPanel x:Name="ComposerActionStack"
                                     Grid.Row="0"
-                                    Grid.Column="4"
+                                    Grid.Column="3"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
                             <Button x:Name="VoiceInputButton"
