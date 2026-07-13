@@ -207,7 +207,10 @@ namespace ColorVision.Copilot
                 tokenBudget,
                 snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")));
-            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(chatClient, bridge.RecordUnknownToolCall);
+            var retryChatClient = new CopilotProviderRetryChatClient(
+                chatClient,
+                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(FormatProviderRetryDiagnostic(retry))));
+            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(retryChatClient, bridge.RecordUnknownToolCall);
             var agent = trackingChatClient.AsHarnessAgent(new HarnessAgentOptions
             {
                 Name = "ColorVisionCopilot",
@@ -608,6 +611,14 @@ namespace ColorVision.Copilot
         {
             var sanitized = Regex.Replace(title ?? string.Empty, @"\s+", " ").Trim();
             return sanitized.Length <= 60 ? sanitized : sanitized[..57] + "...";
+        }
+
+        private static string FormatProviderRetryDiagnostic(CopilotProviderRetryInfo retry)
+        {
+            var delay = retry.Delay.TotalSeconds >= 1
+                ? $"{retry.Delay.TotalSeconds:0.#}s"
+                : $"{Math.Max(0, retry.Delay.TotalMilliseconds):0}ms";
+            return $"Provider request retry {retry.NextAttempt}/{retry.MaximumAttempts} · {retry.FailureKind} before the first response update · waiting {delay}; no content or tool call was replayed.";
         }
 
         private static string FormatDuration(TimeSpan duration)

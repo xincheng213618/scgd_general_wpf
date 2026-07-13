@@ -1956,15 +1956,99 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             new CopilotAgentContextBuilder(),
             _ => fakeChatClient);
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(40));
+        var events = new List<CopilotAgentEvent>();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runtime.RunAsync(new CopilotAgentRequest
         {
             UserText = "cancel the long provider request",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Diagnose,
-        }, _ => { }, cancellation.Token));
+        }, events.Add, cancellation.Token));
 
         Assert.Equal(1, fakeChatClient.StreamCallCount);
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("provider request retry", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_RetriesTransientProviderFailureBeforeFirstUpdate()
+    {
+        using var fakeChatClient = new PreResponseFailureChatClient(2, HttpStatusCode.ServiceUnavailable);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "answer after a bounded transient provider failure",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Equal(3, result.Budget.ProviderCalls);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        var retryDiagnostics = events.Where(item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("provider request retry", StringComparison.OrdinalIgnoreCase)).ToArray();
+        Assert.Collection(
+            retryDiagnostics,
+            item => Assert.Contains("2/3", item.Text, StringComparison.Ordinal),
+            item => Assert.Contains("3/3", item.Text, StringComparison.Ordinal));
+        Assert.All(retryDiagnostics, item =>
+        {
+            Assert.Contains("HTTP 503", item.Text, StringComparison.Ordinal);
+            Assert.Contains("before the first response update", item.Text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(PreResponseFailureChatClient.SensitiveFailureMessage, item.Text, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_DoesNotRetryPermanentProviderFailure()
+    {
+        using var fakeChatClient = new PreResponseFailureChatClient(int.MaxValue, HttpStatusCode.BadRequest);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var error = await Assert.ThrowsAsync<HttpRequestException>(() => runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "do not retry a permanent provider request error",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+        }, events.Add, CancellationToken.None));
+
+        Assert.Equal(HttpStatusCode.BadRequest, error.StatusCode);
+        Assert.Equal(1, fakeChatClient.StreamCallCount);
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("provider request retry", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_DoesNotReplayProviderCallAfterStreamingStarts()
+    {
+        using var fakeChatClient = new PartialStreamFailureChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "do not replay partial provider output",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Diagnose,
+        }, events.Add, CancellationToken.None));
+
+        Assert.Equal(1, fakeChatClient.StreamCallCount);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta
+            && item.Text.Contains("partial answer", StringComparison.Ordinal));
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("provider request retry", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -3254,6 +3338,81 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Interlocked.Increment(ref _streamCallCount);
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             yield break;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class PreResponseFailureChatClient(int failuresBeforeSuccess, HttpStatusCode statusCode) : IChatClient
+    {
+        public const string SensitiveFailureMessage = "simulated provider body: secret-value";
+
+        private int _responseCallCount;
+        private int _streamCallCount;
+
+        public int StreamCallCount => Volatile.Read(ref _streamCallCount);
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (Interlocked.Increment(ref _responseCallCount) <= failuresBeforeSuccess)
+                throw new HttpRequestException(SensitiveFailureMessage, null, statusCode);
+
+            return Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, "provider recovered")));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
+            if (Interlocked.Increment(ref _streamCallCount) <= failuresBeforeSuccess)
+                throw new HttpRequestException(SensitiveFailureMessage, null, statusCode);
+
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "provider recovered");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class PartialStreamFailureChatClient : IChatClient
+    {
+        private int _streamCallCount;
+
+        public int StreamCallCount => Volatile.Read(ref _streamCallCount);
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new HttpRequestException("partial non-stream failure", null, HttpStatusCode.ServiceUnavailable);
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _streamCallCount);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "partial answer");
+            await Task.Yield();
+            throw new HttpRequestException("stream interrupted after output", null, HttpStatusCode.ServiceUnavailable);
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
