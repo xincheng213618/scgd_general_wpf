@@ -153,7 +153,7 @@ namespace ColorVision.Copilot
             RefreshCompactHistoryConversations();
             RefreshAgentTasks();
             IsBusy = _taskHost.IsActive;
-            RefreshAgentRunNotice();
+            NotifyHostedRunStateChanged();
         }
 
         public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
@@ -940,6 +940,7 @@ namespace ColorVision.Copilot
 
         private void NotifyHostedRunStateChanged()
         {
+            RefreshConversationRunStatuses();
             OnPropertyChanged(nameof(CanSwitchConversation));
             OnPropertyChanged(nameof(CanSteerCurrentRun));
             OnPropertyChanged(nameof(CanCancelAgentRun));
@@ -947,6 +948,16 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(PrimaryActionGlyph));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
             RefreshAgentRunNotice();
+        }
+
+        private void RefreshConversationRunStatuses()
+        {
+            var activeRun = ActiveHostedRun;
+            CopilotAgentRunStatusSynchronizer.Refresh(
+                Conversations,
+                activeRun?.IsAgent == true ? activeRun.ConversationId : null,
+                activeRun?.IsAgent == true ? activeRun.State : null,
+                _taskHost.QueuedRuns.Where(run => run.IsAgent).Select(run => run.ConversationId).ToArray());
         }
 
         private void RefreshAgentRunNotice()
@@ -1993,6 +2004,7 @@ namespace ColorVision.Copilot
         {
             RefreshCompactHistoryConversations();
             RefreshAgentTasks();
+            RefreshConversationRunStatuses();
             OnPropertyChanged(nameof(Conversations));
             CommandManager.InvalidateRequerySuggested();
         }

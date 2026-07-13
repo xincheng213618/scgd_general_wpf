@@ -1990,6 +1990,17 @@
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
+                                                <Border Margin="6,0,0,0"
+                                                        Padding="5,1"
+                                                        VerticalAlignment="Center"
+                                                        Background="{DynamicResource GlobalBorderBrush1}"
+                                                        CornerRadius="6"
+                                                        Visibility="{Binding HasAgentRunStatus, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <TextBlock FontSize="9"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.72"
+                                                               Text="{Binding AgentRunStatusLabel}" />
+                                                </Border>
                                             </StackPanel>
                                         </DockPanel>
 

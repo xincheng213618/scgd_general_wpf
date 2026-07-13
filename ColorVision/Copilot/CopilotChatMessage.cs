@@ -1081,6 +1081,21 @@ namespace ColorVision.Copilot
         public string PinMenuText => IsPinned ? CopilotUiText.UnpinMenuText : CopilotUiText.PinMenuText;
 
         [JsonIgnore]
+        public string AgentRunStatusLabel
+        {
+            get => _agentRunStatusLabel;
+            internal set
+            {
+                if (SetProperty(ref _agentRunStatusLabel, value ?? string.Empty))
+                    OnPropertyChanged(nameof(HasAgentRunStatus));
+            }
+        }
+        private string _agentRunStatusLabel = string.Empty;
+
+        [JsonIgnore]
+        public bool HasAgentRunStatus => !string.IsNullOrWhiteSpace(AgentRunStatusLabel);
+
+        [JsonIgnore]
         public CopilotTokenUsage LastUsage => new(LastUsageInputTokens, LastUsageOutputTokens, LastUsageTotalTokens);
 
         public bool EnsureValid()
