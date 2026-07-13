@@ -1034,6 +1034,34 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_AppendsWebSourceLedgerWhenModelOmitsReturnedUrls()
+    {
+        var tool = new WebEvidenceAgentTool();
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_fetch_url");
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "https://example.test/ summarize the page",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Web,
+        }, events.Add, CancellationToken.None);
+
+        var sourceEvent = Assert.Single(events, item => item.Type == CopilotAgentEventType.AnswerDelta
+            && item.Text.Contains("来源：", StringComparison.Ordinal));
+        Assert.Contains("<https://example.test/>", sourceEvent.Text, StringComparison.Ordinal);
+        Assert.Contains("<https://example.test/current.json>", sourceEvent.Text, StringComparison.Ordinal);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("source ledger was appended", StringComparison.Ordinal));
+        Assert.Contains(result.SessionCheckpoint!.ConversationMemory, message =>
+            message.Role == "assistant" && message.Content.Contains("https://example.test/current.json", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_ContinuesFromFailedFetchToWebSearch()
     {
         var fetchTool = new TestAgentTool("FetchUrl", success: false, inputSchema: CopilotToolInputSchema.Query("Complete URL.", required: true));
@@ -3034,6 +3062,31 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 Summary = _success ? "Evidence collected." : "Evidence collection failed.",
                 Content = _success ? "deterministic evidence" : string.Empty,
                 ErrorMessage = _success ? string.Empty : "deterministic failure",
+            });
+        }
+    }
+
+    private sealed class WebEvidenceAgentTool : ICopilotTool
+    {
+        public string Name => "FetchUrl";
+
+        public string Description => "Fetch a deterministic public web page.";
+
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Complete URL.", required: true);
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = "Fetched deterministic web evidence.",
+                Content = string.Join('\n',
+                    "[Web Page Fetched] https://example.test/",
+                    "Title: Example",
+                    "[Web Page Fetched] https://example.test/current.json"),
             });
         }
     }

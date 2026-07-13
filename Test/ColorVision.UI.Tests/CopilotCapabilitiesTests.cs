@@ -336,6 +336,98 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public void WebEvidenceSourceLedger_AppendsBoundedReturnedUrlsOnlyWhenMissing()
+    {
+        var steps = new[]
+        {
+            new CopilotAgentStepRecord
+            {
+                ToolCall = new CopilotToolCall { ToolName = "FetchUrl" },
+                Observation = new CopilotToolObservation
+                {
+                    Success = true,
+                    Content = string.Join('\n',
+                        "Unsafe: http://127.0.0.1/private",
+                        "[Web Page Fetched] https://example.com/",
+                        "Discovered but unread: https://example.com/ignored.json",
+                        "[Web Page Fetched] https://example.com/current.json",
+                        "[Web Page Fetched] https://example.com/feed.xml",
+                        "[Web Page Fetched] https://example.com/fourth.json"),
+                },
+            },
+        };
+        ICopilotTool[] tools = [new CopilotFetchUrlTool()];
+
+        var appendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(steps, tools, "Evidence-based answer.");
+
+        Assert.Contains("来源：", appendix, StringComparison.Ordinal);
+        Assert.Contains("<https://example.com/>", appendix, StringComparison.Ordinal);
+        Assert.Contains("<https://example.com/current.json>", appendix, StringComparison.Ordinal);
+        Assert.Contains("<https://example.com/feed.xml>", appendix, StringComparison.Ordinal);
+        Assert.DoesNotContain("127.0.0.1", appendix, StringComparison.Ordinal);
+        Assert.DoesNotContain("ignored.json", appendix, StringComparison.Ordinal);
+        Assert.DoesNotContain("fourth.json", appendix, StringComparison.Ordinal);
+        Assert.Equal(
+            string.Empty,
+            CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
+                steps,
+                tools,
+                "Evidence-based answer: https://example.com/current.json"));
+    }
+
+    [Fact]
+    public void WebEvidenceSourceLedger_IgnoresFailedWebAndNonWebEvidence()
+    {
+        var steps = new[]
+        {
+            new CopilotAgentStepRecord
+            {
+                ToolCall = new CopilotToolCall { ToolName = "FetchUrl" },
+                Observation = new CopilotToolObservation { Success = false, Content = "https://failed.example/" },
+            },
+            new CopilotAgentStepRecord
+            {
+                ToolCall = new CopilotToolCall { ToolName = "SearchFiles" },
+                Observation = new CopilotToolObservation { Success = true, Content = "https://local.example/" },
+            },
+        };
+        ICopilotTool[] tools = [new CopilotFetchUrlTool(), new CopilotSearchFilesTool()];
+
+        var appendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(steps, tools, "Answer without web evidence.");
+
+        Assert.Equal(string.Empty, appendix);
+    }
+
+    [Fact]
+    public void WebEvidenceSourceLedger_UsesActualSearchResultUrlsOnly()
+    {
+        var steps = new[]
+        {
+            new CopilotAgentStepRecord
+            {
+                ToolCall = new CopilotToolCall { ToolName = "WebSearch" },
+                Observation = new CopilotToolObservation
+                {
+                    Success = true,
+                    Content = string.Join('\n',
+                        "[Web Search Results]",
+                        "Provider note: https://search-provider.example/",
+                        "1. Relevant result",
+                        "   URL: https://result.example/article",
+                        "   Snippet: Mentions https://unverified.example/ only as text."),
+                },
+            },
+        };
+        ICopilotTool[] tools = [new CopilotWebSearchTool()];
+
+        var appendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(steps, tools, "Search-based answer.");
+
+        Assert.Contains("<https://result.example/article>", appendix, StringComparison.Ordinal);
+        Assert.DoesNotContain("search-provider.example", appendix, StringComparison.Ordinal);
+        Assert.DoesNotContain("unverified.example", appendix, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WebPage_RedirectResolutionRejectsUnsafeTargets()
     {
         var current = new Uri("https://example.com/articles/start");

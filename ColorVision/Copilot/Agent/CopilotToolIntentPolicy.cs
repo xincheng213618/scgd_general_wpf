@@ -116,7 +116,7 @@ namespace ColorVision.Copilot
             if (ContainsAny(request.UserText, NewTopicMarkers)
                 || ContainsAny(request.UserText, LocalEvidenceMarkers))
                 return false;
-            if (!IsFollowUpWebTool(tool))
+            if (!IsWebEvidenceTool(tool))
                 return false;
 
             var capability = tool.Capability;
@@ -155,8 +155,11 @@ namespace ColorVision.Copilot
                     || ContainsAny(message.Content, PublicWebMarkers));
         }
 
-        private static bool IsFollowUpWebTool(ICopilotTool tool)
+        internal static bool IsWebEvidenceTool(ICopilotTool? tool)
         {
+            if (tool == null)
+                return false;
+
             return IsFollowUpWebToolIdentity(tool.Name, tool.Description);
         }
 
