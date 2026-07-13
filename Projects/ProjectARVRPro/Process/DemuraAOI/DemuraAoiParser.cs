@@ -1,5 +1,8 @@
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Services.Devices.Sensor.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
@@ -15,6 +18,8 @@ namespace ProjectARVRPro.Process.DemuraAOI
         private const int RebuildPixelsResultType = 32;
         private const int GradingV2ResultType = 243;
         private const int BlackScreenResultType = 49;
+        private static readonly string[] DisplayVoltageNames = { "ELVDD", "ELVSS", "VDIO", "VCI" };
+        private static readonly string[] DisplayCurrentNames = { "ELVDD", "ELVSS", "VDIO", "VCI" };
         private static readonly HashSet<string> SupportedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".bmp", ".jpg", ".jpeg", ".png", ".tif", ".tiff"
@@ -24,6 +29,21 @@ namespace ProjectARVRPro.Process.DemuraAOI
         {
             ArgumentNullException.ThrowIfNull(config);
             return Task.Run(() => Parse(batchId, config, cancellationToken), cancellationToken);
+        }
+
+        public static DemuraAoiSensorData? ParseSensorResult(int resultId, string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+
+            SensorPayload? payload = JsonConvert.DeserializeObject<SensorPayload>(json);
+            if (payload == null) return null;
+            return new DemuraAoiSensorData
+            {
+                ResultId = resultId,
+                Channel = payload.Channel,
+                Voltages = SelectSensorValues(payload.Voltages, DisplayVoltageNames),
+                Currents = SelectSensorValues(payload.Currents, DisplayCurrentNames)
+            };
         }
 
         private static DemuraAoiParseResult Parse(int batchId, DemuraAoiProcessConfig config, CancellationToken cancellationToken)
@@ -54,6 +74,9 @@ namespace ProjectARVRPro.Process.DemuraAOI
                     .Where(master => master.BatchId == batchId)
                     .OrderBy(master => master.Id, OrderByType.Desc)
                     .ToList();
+
+                ParseSensor(db, batchId, result);
+                ParseSpectrometer(db, batchId, result);
 
                 if (masters.Count == 0)
                 {
@@ -204,6 +227,126 @@ namespace ProjectARVRPro.Process.DemuraAOI
                 GradeLevel = payload.GradeLevel!.Trim(),
                 TimeStamp = payload.TimeStamp ?? string.Empty
             };
+        }
+
+        private static void ParseSensor(SqlSugarClient db, int batchId, DemuraAoiParseResult result)
+        {
+            SensorResultEntity? entity = db.Queryable<SensorResultEntity>()
+                .Where(item => item.BatchId == batchId)
+                .OrderBy(item => item.Id, OrderByType.Desc)
+                .First();
+            if (entity == null) return;
+
+            if (entity.ResultCode.HasValue && entity.ResultCode.Value != 0)
+            {
+                result.Warnings.Add($"传感器结果执行失败: ResultId={entity.Id}, ResultCode={entity.ResultCode}");
+                return;
+            }
+
+            try
+            {
+                result.Sensor = ParseSensorResult(entity.Id, entity.Result);
+            }
+            catch (Exception ex)
+            {
+                result.Warnings.Add($"传感器结果JSON解析失败: ResultId={entity.Id}, {ex.Message}");
+                return;
+            }
+
+            if (result.Sensor == null)
+            {
+                result.Warnings.Add($"传感器结果为空: ResultId={entity.Id}");
+            }
+        }
+
+        private static void ParseSpectrometer(SqlSugarClient db, int batchId, DemuraAoiParseResult result)
+        {
+            SpectumResultEntity? entity = db.Queryable<SpectumResultEntity>()
+                .Where(item => item.BatchId == batchId)
+                .OrderBy(item => item.Id, OrderByType.Desc)
+                .First();
+            if (entity == null) return;
+
+            if (entity.ResultCode.HasValue && entity.ResultCode.Value != 0)
+            {
+                result.Warnings.Add($"光谱仪结果执行失败: ResultId={entity.Id}, ResultCode={entity.ResultCode}");
+                return;
+            }
+
+            double? excitationPurity = null;
+            if (entity.fx.HasValue && entity.fy.HasValue)
+            {
+                double wavelength = ColorimetryHelper.CalculateDominantWavelength(entity.fx.Value, entity.fy.Value);
+                excitationPurity = ColorimetryHelper.CalculateExcitationPurity(entity.fx.Value, entity.fy.Value, wavelength);
+            }
+
+            result.Spectrometer = new DemuraAoiSpectrometerData
+            {
+                ResultId = entity.Id,
+                IntegrationTime = entity.IntTime,
+                IpPercent = entity.fIp.HasValue ? Math.Round(entity.fIp.Value / 65535d * 100d, 2) : null,
+                Luminance = entity.fPh,
+                BluePercent = CalculateBluePercent(entity.fPL),
+                X = entity.fx,
+                Y = entity.fy,
+                U = entity.fu,
+                VChromaticity = entity.fv,
+                CorrelatedColorTemperature = entity.fCCT,
+                DominantWavelength = entity.fLd,
+                ColorPurity = entity.fPur,
+                PeakWavelength = entity.fLp,
+                ColorRenderingIndex = entity.fRa,
+                HalfBandwidth = entity.fHW,
+                ExcitationPurity = excitationPurity,
+                DominantWavelengthColor = entity.fLd is >= 380 and <= 780 ? WavelengthToColor.ToHex(entity.fLd.Value) : string.Empty,
+                Voltage = entity.VResult,
+                Current = entity.IResult
+            };
+        }
+
+        private static List<DemuraAoiNamedValue> SelectSensorValues(IEnumerable<SensorNamedValue>? values, IEnumerable<string> displayNames)
+        {
+            if (values == null) return new List<DemuraAoiNamedValue>();
+
+            List<SensorNamedValue> source = values.ToList();
+            var selected = new List<DemuraAoiNamedValue>();
+            foreach (string displayName in displayNames)
+            {
+                SensorNamedValue? value = source.LastOrDefault(item => string.Equals(item.Name, displayName, StringComparison.OrdinalIgnoreCase));
+                if (value == null || !value.Value.HasValue || !double.IsFinite(value.Value.Value)) continue;
+                selected.Add(new DemuraAoiNamedValue { Name = displayName, Value = value.Value.Value });
+            }
+            return selected;
+        }
+
+        private static double? CalculateBluePercent(string? spectrumJson)
+        {
+            if (string.IsNullOrWhiteSpace(spectrumJson)) return null;
+
+            try
+            {
+                double[]? spectrum = JsonConvert.DeserializeObject<double[]>(spectrumJson);
+                if (spectrum == null || spectrum.Length == 0) return null;
+
+                double blue = SumSpectrumSamples(spectrum, 35, 75);
+                double total = SumSpectrumSamples(spectrum, 20, 120);
+                return Math.Abs(total) < double.Epsilon ? null : Math.Round(blue / total * 100d, 2);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static double SumSpectrumSamples(double[] spectrum, int start, int end)
+        {
+            double sum = 0;
+            for (int i = start; i <= end; i++)
+            {
+                int index = i * 10;
+                if (index < spectrum.Length) sum += spectrum[index];
+            }
+            return sum;
         }
 
         private static bool TryReadPayload<T>(SqlSugarClient db, AlgResultMasterModel master, DemuraAoiProcessConfig config, CancellationToken cancellationToken, out T? payload, out string resultFile, out string error) where T : class
@@ -380,6 +523,19 @@ namespace ProjectARVRPro.Process.DemuraAOI
             public string? TimeStamp { get; set; }
         }
 
+        private sealed class SensorPayload
+        {
+            public int Channel { get; set; }
+            public List<SensorNamedValue>? Voltages { get; set; }
+            public List<SensorNamedValue>? Currents { get; set; }
+        }
+
+        private sealed class SensorNamedValue
+        {
+            public string? Name { get; set; }
+            public double? Value { get; set; }
+        }
+
         private sealed class DemuraAoiFileRecord
         {
             public int Id { get; set; }
@@ -427,6 +583,18 @@ namespace ProjectARVRPro.Process.DemuraAOI
                 AddGradeItem(result.Items, "BlackGrade", parseResult.Black.GradeLevel, recipe.BlackGrade);
                 AddRangeItem(result.Items, "BlackBrightCount", parseResult.Black.BrightCount, recipe.BlackBrightCount, "count");
             }
+
+            if (parseResult.Sensor != null)
+            {
+                AddInformationalItem(result.Items, "Sensor_Channel", parseResult.Sensor.Channel);
+                foreach (DemuraAoiNamedValue voltage in parseResult.Sensor.Voltages)
+                    AddInformationalItem(result.Items, $"Sensor_Voltage_{voltage.Name}", voltage.Value, "V");
+                foreach (DemuraAoiNamedValue current in parseResult.Sensor.Currents)
+                    AddInformationalItem(result.Items, $"Sensor_Current_{current.Name}", current.Value, "mA");
+            }
+
+            if (parseResult.Spectrometer != null)
+                AddSpectrometerItems(result.Items, parseResult.Spectrometer);
 
             foreach (ObjectiveTestItem item in result.Items.Where(item => item.Name != "AOIDataIntegrity" && !item.TestResult))
                 result.SpecificationFailures.Add($"{item.Name}: value={item.TestValue}, range=[{item.LowLimit},{item.UpLimit}]");
@@ -488,6 +656,56 @@ namespace ProjectARVRPro.Process.DemuraAOI
                 LowLimit = recipe.IsUse ? recipe.Min : 0,
                 UpLimit = recipe.IsUse ? recipe.Max : 0,
                 Unit = unit
+            });
+        }
+
+        private static void AddSpectrometerItems(System.Collections.ObjectModel.ObservableCollection<ObjectiveTestItem> items, DemuraAoiSpectrometerData data)
+        {
+            AddInformationalItem(items, "Spectrometer_IntTime", data.IntegrationTime, "ms");
+            AddInformationalItem(items, "Spectrometer_IP", data.IpPercent, "%");
+            AddInformationalItem(items, "Spectrometer_Lv", data.Luminance, "cd/m²");
+            AddInformationalItem(items, "Spectrometer_Blue", data.BluePercent, "%");
+            AddInformationalItem(items, "Spectrometer_x", data.X);
+            AddInformationalItem(items, "Spectrometer_y", data.Y);
+            AddInformationalItem(items, "Spectrometer_u", data.U);
+            AddInformationalItem(items, "Spectrometer_v", data.VChromaticity);
+            AddInformationalItem(items, "Spectrometer_CCT", data.CorrelatedColorTemperature, "K");
+            AddInformationalItem(items, "Spectrometer_Ld", data.DominantWavelength, "nm");
+            AddInformationalItem(items, "Spectrometer_ColorPurity", data.ColorPurity, "%");
+            AddInformationalItem(items, "Spectrometer_Lp", data.PeakWavelength, "nm");
+            AddInformationalItem(items, "Spectrometer_Ra", data.ColorRenderingIndex);
+            AddInformationalItem(items, "Spectrometer_HalfBandwidth", data.HalfBandwidth, "nm");
+            AddInformationalItem(items, "Spectrometer_ExcitationPurity", data.ExcitationPurity);
+            if (!string.IsNullOrWhiteSpace(data.DominantWavelengthColor))
+                AddInformationalItem(items, "Spectrometer_DominantWavelengthColor", data.DominantWavelengthColor);
+            AddInformationalItem(items, "Spectrometer_V", data.Voltage, "V");
+            AddInformationalItem(items, "Spectrometer_I", data.Current, "mA");
+        }
+
+        private static void AddInformationalItem(System.Collections.ObjectModel.ObservableCollection<ObjectiveTestItem> items, string name, double? value, string unit = "")
+        {
+            if (!value.HasValue || !double.IsFinite(value.Value)) return;
+            items.Add(new ObjectiveTestItem
+            {
+                Name = name,
+                Value = value.Value,
+                TestValue = value.Value.ToString("0.######", CultureInfo.InvariantCulture),
+                LowLimit = 0,
+                UpLimit = 0,
+                Unit = unit
+            });
+        }
+
+        private static void AddInformationalItem(System.Collections.ObjectModel.ObservableCollection<ObjectiveTestItem> items, string name, string value)
+        {
+            items.Add(new ObjectiveTestItem
+            {
+                Name = name,
+                Value = 0,
+                TestValue = value,
+                LowLimit = 0,
+                UpLimit = 0,
+                Unit = string.Empty
             });
         }
     }

@@ -217,6 +217,57 @@ class CacheManager:
             CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action);
             CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
 
+            -- Operations relay: outbound-only host control plane. Tasks are catalog-bound,
+            -- immutable intents and never contain arbitrary commands.
+            CREATE TABLE IF NOT EXISTS operations_hosts (
+                host_id         TEXT PRIMARY KEY,
+                display_name    TEXT,
+                app_version     TEXT,
+                status          TEXT DEFAULT 'unknown',
+                capabilities    TEXT DEFAULT '[]',
+                snapshot        TEXT DEFAULT '{}',
+                last_seen_at    TEXT NOT NULL,
+                created_at      TEXT NOT NULL,
+                updated_at      TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_hosts_seen ON operations_hosts(last_seen_at);
+
+            CREATE TABLE IF NOT EXISTS operations_tasks (
+                task_id         TEXT PRIMARY KEY,
+                host_id         TEXT NOT NULL,
+                capability_id   TEXT NOT NULL,
+                payload         TEXT NOT NULL DEFAULT '{}',
+                status          TEXT NOT NULL DEFAULT 'queued',
+                idempotency_key TEXT NOT NULL,
+                created_by      TEXT,
+                created_at      TEXT NOT NULL,
+                expires_at      TEXT NOT NULL,
+                delivered_at    TEXT,
+                UNIQUE(host_id, idempotency_key)
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_tasks_host_status ON operations_tasks(host_id, status, created_at);
+
+            CREATE TABLE IF NOT EXISTS operations_task_receipts (
+                receipt_id      TEXT PRIMARY KEY,
+                task_id         TEXT NOT NULL,
+                host_id         TEXT NOT NULL,
+                status          TEXT NOT NULL,
+                evidence        TEXT NOT NULL DEFAULT '{}',
+                created_at      TEXT NOT NULL,
+                FOREIGN KEY(task_id) REFERENCES operations_tasks(task_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_receipts_task ON operations_task_receipts(task_id, created_at);
+
+            CREATE TABLE IF NOT EXISTS operations_support_events (
+                event_id        TEXT PRIMARY KEY,
+                host_id         TEXT NOT NULL,
+                session_id      TEXT NOT NULL,
+                event_type      TEXT NOT NULL,
+                payload         TEXT NOT NULL DEFAULT '{}',
+                created_at      TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_support_session ON operations_support_events(session_id, created_at);
+
             -- Scheduled jobs: persistent job definitions
             CREATE TABLE IF NOT EXISTS scheduled_jobs (
                 id              TEXT PRIMARY KEY,

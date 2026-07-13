@@ -32,6 +32,19 @@ namespace ColorVision.UI.Desktop.LanRemote
         }
         private int _port = DefaultPort;
 
+        public int SecurePort
+        {
+            get => _securePort;
+            set
+            {
+                int normalized = NormalizeSecurePort(value);
+                if (_securePort == normalized) return;
+                _securePort = normalized;
+                OnPropertyChanged();
+            }
+        }
+        private int _securePort = DefaultSecurePort;
+
         public string PreferredHost
         {
             get => _preferredHost;
@@ -60,6 +73,8 @@ namespace ColorVision.UI.Desktop.LanRemote
 
         public const int DefaultPort = 8787;
 
+        public const int DefaultSecurePort = 8788;
+
         public bool EnsureInitialized()
         {
             bool changed = false;
@@ -79,6 +94,14 @@ namespace ColorVision.UI.Desktop.LanRemote
                 changed = true;
             }
 
+            int normalizedSecurePort = NormalizeSecurePort(_securePort);
+            if (_securePort != normalizedSecurePort || _securePort == _port)
+            {
+                _securePort = normalizedSecurePort == _port ? GetAdjacentSecurePort(_port) : normalizedSecurePort;
+                OnPropertyChanged(nameof(SecurePort));
+                changed = true;
+            }
+
             return changed;
         }
 
@@ -90,6 +113,16 @@ namespace ColorVision.UI.Desktop.LanRemote
         public static int NormalizePort(int port)
         {
             return port is >= 1024 and <= 65535 ? port : DefaultPort;
+        }
+
+        public static int NormalizeSecurePort(int port)
+        {
+            return port is >= 1024 and <= 65535 ? port : DefaultSecurePort;
+        }
+
+        private static int GetAdjacentSecurePort(int port)
+        {
+            return port < 65535 ? port + 1 : port - 1;
         }
 
         public static string GeneratePairingToken()

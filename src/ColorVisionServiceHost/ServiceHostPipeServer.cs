@@ -62,7 +62,7 @@ internal sealed class ServiceHostPipeServer
             PipeAccessRights.FullControl,
             AccessControlType.Allow));
         security.AddAccessRule(new PipeAccessRule(
-            new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null),
+            new SecurityIdentifier(WellKnownSidType.InteractiveSid, null),
             PipeAccessRights.ReadWrite,
             AccessControlType.Allow));
         return security;
@@ -78,6 +78,13 @@ internal sealed class ServiceHostPipeServer
             try
             {
                 ServiceHostLog.Write("Reading pipe request.");
+                if (!ServiceHostCallerIdentity.TryResolve(pipe, out ServiceHostRequestContext context, out string identityError))
+                {
+                    ServiceHostLog.Write($"Pipe caller rejected: {identityError}");
+                    writer.WriteLine(JsonConvert.SerializeObject(
+                        ServiceHostResponse.FromObject(string.Empty, false, "untrusted_pipe_client"), ServiceHostJson.Settings));
+                    return;
+                }
                 string? requestJson = reader.ReadLine();
                 if (string.IsNullOrWhiteSpace(requestJson))
                     return;
@@ -85,7 +92,7 @@ internal sealed class ServiceHostPipeServer
                 ServiceHostRequest? request = JsonConvert.DeserializeObject<ServiceHostRequest>(requestJson, ServiceHostJson.Settings);
                 ServiceHostResponse response = request == null || string.IsNullOrWhiteSpace(request.Command)
                     ? ServiceHostResponse.FromObject(string.Empty, false, "Invalid request.")
-                    : _handler.Handle(request);
+                    : _handler.Handle(request, context);
 
                 string responseJson = JsonConvert.SerializeObject(response, ServiceHostJson.Settings);
                 writer.WriteLine(responseJson);

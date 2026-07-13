@@ -375,6 +375,9 @@ def register_all_blueprints(app, ctx, services, helpers):
         get_slow_requests=lambda: ctx.slow_requests,
     ))
 
+    from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes
+    register_operations_relay_routes(app, OperationsRelayContext(cache=cache))
+
     register_docs_site(app)
 
     register_frontend_spa(app, FrontendSpaContext(

@@ -43,12 +43,51 @@ namespace ProjectARVRPro.Process.DemuraAOI
         public string TimeStamp { get; set; } = string.Empty;
     }
 
+    public sealed class DemuraAoiNamedValue
+    {
+        public string Name { get; set; } = string.Empty;
+        public double Value { get; set; }
+    }
+
+    public sealed class DemuraAoiSensorData
+    {
+        public int ResultId { get; set; }
+        public int Channel { get; set; }
+        public List<DemuraAoiNamedValue> Voltages { get; set; } = new List<DemuraAoiNamedValue>();
+        public List<DemuraAoiNamedValue> Currents { get; set; } = new List<DemuraAoiNamedValue>();
+    }
+
+    public sealed class DemuraAoiSpectrometerData
+    {
+        public int ResultId { get; set; }
+        public double? IntegrationTime { get; set; }
+        public double? IpPercent { get; set; }
+        public double? Luminance { get; set; }
+        public double? BluePercent { get; set; }
+        public double? X { get; set; }
+        public double? Y { get; set; }
+        public double? U { get; set; }
+        public double? VChromaticity { get; set; }
+        public double? CorrelatedColorTemperature { get; set; }
+        public double? DominantWavelength { get; set; }
+        public double? ColorPurity { get; set; }
+        public double? PeakWavelength { get; set; }
+        public double? ColorRenderingIndex { get; set; }
+        public double? HalfBandwidth { get; set; }
+        public double? ExcitationPurity { get; set; }
+        public string DominantWavelengthColor { get; set; } = string.Empty;
+        public double? Voltage { get; set; }
+        public double? Current { get; set; }
+    }
+
     public sealed class DemuraAoiParseResult
     {
         public int BatchId { get; set; }
         public W255UniformityResult? W255 { get; set; }
         public DemuraAoiGradingData? Grading { get; set; }
         public DemuraAoiBlackData? Black { get; set; }
+        public DemuraAoiSensorData? Sensor { get; set; }
+        public DemuraAoiSpectrometerData? Spectrometer { get; set; }
         public List<string> DataErrors { get; set; } = new List<string>();
         public List<string> Warnings { get; set; } = new List<string>();
         public bool IsDataValid => DataErrors.Count == 0;

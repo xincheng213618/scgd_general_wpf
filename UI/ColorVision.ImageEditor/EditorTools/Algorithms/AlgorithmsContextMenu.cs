@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.BatchProcessing;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
 using ColorVision.UI.Menus;
@@ -28,6 +29,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 GuidId = "AlgorithmsCall",
                 Order = 104,
                 Header = Properties.Resources.Algorithm_AlgorithmCalls,
+            });
+
+            RelayCommand batchProcessingCommand = new(o =>
+            {
+                var window = new BatchImageProcessingWindow
+                {
+                    Owner = Application.Current.GetActiveWindow()
+                };
+                window.ShowDialog();
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "Algorithms",
+                GuidId = "BatchImageProcessing",
+                Order = 0,
+                Header = "批量执行算法...",
+                Command = batchProcessingCommand,
             });
 
             RelayCommand SFRCommand = new(o =>

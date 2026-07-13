@@ -20,8 +20,17 @@ namespace ColorVision.Engine.Templates
             CreateView.Initialize(template, new TemplateCreateOptions
             {
                 InitialSourceKind = template.HasCreateTemplateSource ? TemplateCreateSourceKind.Prepared : TemplateCreateSourceKind.Default,
-                SuggestedName = string.IsNullOrWhiteSpace(template.ImportName) ? null : template.ImportName
+                SuggestedName = string.IsNullOrWhiteSpace(template.ImportName) ? null : template.ImportName,
+                IsSourceSelectionVisible = !isImport
             });
+
+            if (isImport && template.IsSideHide)
+            {
+                Width = 560;
+                Height = 240;
+                MinWidth = 520;
+                MinHeight = 220;
+            }
             CreateView.TemplateCreated += CreateView_TemplateCreated;
             CreateView.CancelRequested += CreateView_CancelRequested;
             Closed += TemplateCreate_Closed;

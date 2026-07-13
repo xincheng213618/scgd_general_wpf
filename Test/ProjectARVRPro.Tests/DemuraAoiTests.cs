@@ -93,6 +93,65 @@ namespace ProjectARVRPro.Tests
             Assert.False(result.Items.Single(item => item.Name == "MaxDefectDensity").TestResult);
         }
 
+        [Fact]
+        public void EvaluateSensorAndSpectrometerResultsAddsDisplayOnlyItems()
+        {
+            DemuraAoiParseResult parsed = CreateValidParseResult();
+            parsed.Sensor = new DemuraAoiSensorData
+            {
+                Channel = 1,
+                Voltages = CreateSensorValues(1.1),
+                Currents = CreateSensorValues(10)
+            };
+            parsed.Spectrometer = new DemuraAoiSpectrometerData
+            {
+                Luminance = 123.4,
+                X = 0.31,
+                Y = 0.32,
+                CorrelatedColorTemperature = 6500,
+                DominantWavelengthColor = "#AABBCC"
+            };
+
+            DemuraAoiEvaluationResult result = DemuraAoiEvaluator.Evaluate(parsed, new DemuraAoiRecipeConfig());
+
+            Assert.Equal(DemuraAoiOutcome.Pass, result.Outcome);
+            Assert.Equal(4, result.Items.Count(item => item.Name.StartsWith("Sensor_Voltage_", StringComparison.Ordinal)));
+            Assert.Equal(4, result.Items.Count(item => item.Name.StartsWith("Sensor_Current_", StringComparison.Ordinal)));
+            Assert.Contains(result.Items, item => item.Name == "Spectrometer_Lv" && item.TestValue == "123.4");
+            Assert.Contains(result.Items, item => item.Name == "Spectrometer_DominantWavelengthColor" && item.TestValue == "#AABBCC");
+            Assert.All(result.Items, item => Assert.True(item.TestResult, item.Name));
+        }
+
+        [Fact]
+        public void ParseSensorResultKeepsOnlyFourRequestedVoltagesAndCurrents()
+        {
+            const string json = """
+                {
+                  "Channel": 1,
+                  "Voltages": [
+                    { "Name": "ELVDD", "Value": 1.099 }, { "Name": "ELVSS", "Value": 2.2 },
+                    { "Name": "VDIO", "Value": 1.1 }, { "Name": "VCI", "Value": 1.799 },
+                    { "Name": "VBAT2", "Value": 3.0 }, { "Name": "AVDD", "Value": 0.0 }
+                  ],
+                  "Currents": [
+                    { "Name": "ELVDD", "Value": 230.7 }, { "Name": "ELVSS", "Value": 134.3 },
+                    { "Name": "VDIO", "Value": 14.8 }, { "Name": "VCI", "Value": 7.9 },
+                    { "Name": "VBAT2", "Value": 0.0 }, { "Name": "AVDD", "Value": 0.0 },
+                    { "Name": "VEXT1", "Value": 0.0 }, { "Name": "VEXT2", "Value": 0.0 },
+                    { "Name": "VEXT3", "Value": 0.0 }
+                  ]
+                }
+                """;
+
+            DemuraAoiSensorData? result = DemuraAoiParser.ParseSensorResult(284, json);
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Channel);
+            string[] expectedNames = { "ELVDD", "ELVSS", "VDIO", "VCI" };
+            Assert.Equal(expectedNames, result.Voltages.Select(item => item.Name));
+            Assert.Equal(expectedNames, result.Currents.Select(item => item.Name));
+        }
+
         private static DemuraAoiParseResult CreateValidParseResult()
         {
             return new DemuraAoiParseResult
@@ -111,6 +170,12 @@ namespace ProjectARVRPro.Tests
                     BrightCount = 0
                 }
             };
+        }
+
+        private static List<DemuraAoiNamedValue> CreateSensorValues(double startValue)
+        {
+            string[] names = { "ELVDD", "ELVSS", "VDIO", "VCI" };
+            return names.Select((name, index) => new DemuraAoiNamedValue { Name = name, Value = startValue + index }).ToList();
         }
     }
 }

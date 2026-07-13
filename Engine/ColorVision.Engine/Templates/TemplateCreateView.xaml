@@ -117,42 +117,48 @@
                            FontSize="11"
                            Visibility="Collapsed"/>
 
-                <Grid Grid.Row="3" Margin="0,20,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="{x:Static properties:Resources.CreateSource}"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"/>
-                    <hc:TextBox x:Name="SourceSearchTextBox"
-                                Grid.Column="1"
-                                Width="160"
-                                Height="30"
-                                Padding="9,1"
-                                VerticalContentAlignment="Center"
-                                BorderBrush="{DynamicResource BorderBrush}"
-                                hc:InfoElement.Placeholder="搜索"
-                                hc:InfoElement.ShowClearButton="True"
-                                TextChanged="SourceSearchTextBox_TextChanged"/>
-                </Grid>
+                <Grid x:Name="SourcePanel" Grid.Row="3" Grid.RowSpan="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Margin="0,20,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{x:Static properties:Resources.CreateSource}"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <hc:TextBox x:Name="SourceSearchTextBox"
+                                    Grid.Column="1"
+                                    Width="160"
+                                    Height="30"
+                                    Padding="9,1"
+                                    VerticalContentAlignment="Center"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    hc:InfoElement.Placeholder="搜索"
+                                    hc:InfoElement.ShowClearButton="True"
+                                    TextChanged="SourceSearchTextBox_TextChanged"/>
+                    </Grid>
 
-                <ListBox x:Name="SourceListBox"
-                         Grid.Row="4"
-                         Padding="0"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         ItemContainerStyle="{StaticResource TemplateCreateSourceItemStyle}"
-                         SelectionChanged="SourceListBox_SelectionChanged"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         KeyboardNavigation.DirectionalNavigation="Contained">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                </ListBox>
+                    <ListBox x:Name="SourceListBox"
+                             Grid.Row="1"
+                             Padding="0"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ItemContainerStyle="{StaticResource TemplateCreateSourceItemStyle}"
+                             SelectionChanged="SourceListBox_SelectionChanged"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             KeyboardNavigation.DirectionalNavigation="Contained">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
+                </Grid>
             </Grid>
 
             <Border x:Name="PropertyPreviewBorder"

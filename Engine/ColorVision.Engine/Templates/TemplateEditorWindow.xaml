@@ -37,8 +37,8 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Height="30" Padding="20,1,2,1" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="{DynamicResource BorderBrush}" MaxLength="15" VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"/>
-                <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="5,0,0,0">
+                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"/>
+                <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
                     <Rectangle Width="16" Height="16">
                         <Rectangle.Resources>
                             <SolidColorBrush x:Key="canvas" Opacity="0"/>
@@ -62,8 +62,8 @@
                         </Rectangle.Fill>
                     </Rectangle>
                 </Viewbox>
-                <Button Grid.Column="1" Margin="7,0,0,0" Click="Setting_Click" Padding="2" Height="30" Width="30">
-                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <Button Grid.Column="1" Margin="5,0,0,0" Click="Setting_Click" Padding="2" Height="20" Width="20">
+                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}"/>
                 </Button>
             </Grid>
 

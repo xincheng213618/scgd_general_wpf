@@ -1494,6 +1494,7 @@ namespace ColorVision.Copilot
             var entries = CopilotMcpAuditLogger.GetRecentEntries(20);
             var failureCount = entries.Count(CopilotMcpAuditLogger.IsRealFailureEntry);
             var approvalFlowCount = entries.Count(CopilotMcpAuditLogger.IsApprovalFlowEntry);
+            var capabilityCatalog = CopilotCapabilityCatalog.Shared.GetSnapshot();
 
             var server = CopilotMcpServer.Instance;
             var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
@@ -1503,7 +1504,7 @@ namespace ColorVision.Copilot
                 : $"{FormatAuditEntryForSummary(lastEntry)}.";
 
             McpDiagnosticsSummaryText =
-                $"Recent calls: {entries.Count}; failures: {failureCount}; approval events: {approvalFlowCount}; pending actions: {pendingCount}. {lastActivity}";
+                $"Capabilities: {capabilityCatalog.Capabilities.Count} (revision {capabilityCatalog.Revision}); recent calls: {entries.Count}; failures: {failureCount}; approval events: {approvalFlowCount}; pending actions: {pendingCount}. {lastActivity}";
 
             var lastError = CopilotMcpAuditLogger.GetLastError();
             McpLastErrorText = lastError == null
@@ -1526,7 +1527,7 @@ namespace ColorVision.Copilot
 
             if (!McpEnabled && !server.IsRunning && entries.Count == 0)
             {
-                McpDiagnosticsSummaryText = "MCP is disabled. Enable and save it before expecting external MCP traffic.";
+                McpDiagnosticsSummaryText = $"MCP is disabled. Capability catalog: {capabilityCatalog.Capabilities.Count} item(s), revision {capabilityCatalog.Revision}.";
                 McpServiceSummaryText = "Disabled";
                 McpActivitySummaryText = "No calls";
                 McpPendingSummaryText = "None";
@@ -1566,6 +1567,8 @@ namespace ColorVision.Copilot
             builder.AppendLine($"Activity summary: {McpActivitySummaryText}");
             builder.AppendLine($"Pending summary: {McpPendingSummaryText}");
             builder.AppendLine($"Error summary: {McpErrorSummaryText}");
+            var capabilityCatalog = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            builder.AppendLine($"Capability catalog: {capabilityCatalog.Capabilities.Count} item(s) from {capabilityCatalog.SourceCount} source(s), revision {capabilityCatalog.Revision}");
             builder.AppendLine(McpDiagnosticsSummaryText);
             builder.AppendLine(McpLastErrorText);
             builder.AppendLine();

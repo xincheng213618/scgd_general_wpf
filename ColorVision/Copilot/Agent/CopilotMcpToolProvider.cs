@@ -74,7 +74,9 @@ namespace ColorVision.Copilot
             var tools = new List<ICopilotTool>();
             var diagnostics = new List<string>();
             var clients = new List<IAsyncDisposable>();
-            foreach (var server in request.ExternalMcpServers.Where(server => server?.Enabled == true).Take(8))
+            var enabledServers = request.ExternalMcpServers.Where(server => server?.Enabled == true).Take(8).ToArray();
+            CopilotCapabilityCatalog.Shared.RetainExternalMcpServers(enabledServers);
+            foreach (var server in enabledServers)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (tools.Count >= MaximumToolsPerRequest)
@@ -160,8 +162,11 @@ namespace ColorVision.Copilot
                         .OfType<AllowedMcpTool>()
                         .Take(Math.Min(MaximumToolsPerServer, remaining))
                         .ToArray();
-                    foreach (var allowedTool in allowedTools)
-                        tools.Add(new CopilotMcpToolAdapter(server, allowedTool.Tool, allowedTool.AccessPolicy));
+                    var adapters = allowedTools
+                        .Select(allowedTool => new CopilotMcpToolAdapter(server, allowedTool.Tool, allowedTool.AccessPolicy))
+                        .ToArray();
+                    tools.AddRange(adapters);
+                    CopilotCapabilityCatalog.Shared.PublishExternalMcp(server, adapters);
                     CopilotMcpClientHealthRegistry.RecordConnected(
                         server,
                         discoveredToolCount,
@@ -242,7 +247,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    internal sealed class CopilotMcpToolAdapter : ICopilotFrameworkApprovedTool
+    internal sealed class CopilotMcpToolAdapter : ICopilotFrameworkApprovedTool, ICopilotCapabilityCatalogIdentity
     {
         private const int MaximumResultLength = 65_536;
         private static readonly Regex InvalidNameCharacters = new("[^A-Za-z0-9_]", RegexOptions.Compiled);
@@ -265,6 +270,8 @@ namespace ColorVision.Copilot
         public string Name { get; }
 
         public string Description { get; }
+
+        public string CatalogCapabilityKey => _remoteTool.ProtocolTool.Name;
 
         public CopilotToolCapabilityDescriptor Capability { get; }
 

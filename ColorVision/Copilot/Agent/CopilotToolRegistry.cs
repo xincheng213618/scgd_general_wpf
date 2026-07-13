@@ -47,7 +47,12 @@ namespace ColorVision.Copilot
 
         public static CopilotToolRegistry CreateDefault()
         {
-            return new CopilotToolRegistry(new ICopilotTool[]
+            return new CopilotToolRegistry(CreateDefaultTools());
+        }
+
+        internal static ICopilotTool[] CreateDefaultTools()
+        {
+            return new ICopilotTool[]
             {
                 new CopilotCreateFlowTool(),
                 new CopilotExecuteMenuTool(),
@@ -64,7 +69,7 @@ namespace ColorVision.Copilot
                 new CopilotListDirectoryTool(),
                 new CopilotReadAttachedFileTool(),
                 new CopilotGetRecentLogTool(),
-            });
+            };
         }
     }
 }

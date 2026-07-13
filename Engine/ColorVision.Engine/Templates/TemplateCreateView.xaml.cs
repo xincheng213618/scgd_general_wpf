@@ -21,6 +21,7 @@ namespace ColorVision.Engine.Templates
         public TemplateCreateSourceKind? InitialSourceKind { get; set; }
         public int InitialTemplateIndex { get; set; } = -1;
         public string? SuggestedName { get; set; }
+        public bool IsSourceSelectionVisible { get; set; } = true;
     }
 
     public sealed class TemplateCreatedEventArgs : EventArgs
@@ -63,7 +64,9 @@ namespace ColorVision.Engine.Templates
             _isRefreshingSources = false;
 
             BuildTemplateSources();
-            SourceSearchTextBox.Visibility = _templateSources.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
+            bool isSourceSelectionVisible = options?.IsSourceSelectionVisible ?? true;
+            SourcePanel.Visibility = isSourceSelectionVisible ? Visibility.Visible : Visibility.Collapsed;
+            SourceSearchTextBox.Visibility = isSourceSelectionVisible && _templateSources.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
             TemplateCreateSource? initialSource = FindInitialSource(options);
             RenderTemplateSources(initialSource);
 

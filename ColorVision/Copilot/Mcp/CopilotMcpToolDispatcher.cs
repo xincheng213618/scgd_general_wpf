@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -37,6 +38,12 @@ namespace ColorVision.Copilot.Mcp
         private const string FlowResourceUri = "colorvision://flow/current";
         private const string AuditSummaryResourceUri = "colorvision://mcp/audit-summary";
         private const string AuditLogResourceUri = "colorvision://mcp/audit-log";
+        private const string CapabilityCatalogResourceUri = "colorvision://copilot/capabilities";
+        private static readonly JsonSerializerOptions CapabilityCatalogJsonOptions = new(JsonSerializerDefaults.Web)
+        {
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+        };
         private static readonly string[] SupportedPanelAliases =
         {
             "copilot",
@@ -210,7 +217,15 @@ namespace ColorVision.Copilot.Mcp
                 Resource(FlowResourceUri, "Current flow", "Current active flow snapshot and selected node summary, when available."),
                 Resource(AuditSummaryResourceUri, "MCP audit summary", "Compact ColorVision MCP audit and pending approval summary."),
                 Resource(AuditLogResourceUri, "MCP audit log", "Recent ColorVision MCP tool-call audit entries."),
+                Resource(CapabilityCatalogResourceUri, "Copilot capability catalog", "Versioned read-only catalog of built-in and discovered Copilot capabilities.", "application/json"),
             };
+        }
+
+        public string GetResourceMimeType(string uri)
+        {
+            var normalizedUri = NormalizeResourceUri(uri);
+            return ListResources().FirstOrDefault(resource => string.Equals(resource.Uri, normalizedUri, StringComparison.OrdinalIgnoreCase))?.MimeType
+                ?? "text/plain";
         }
 
         public async Task<CopilotMcpToolCallResult> ReadResourceAsync(string uri, CancellationToken cancellationToken)
@@ -225,8 +240,15 @@ namespace ColorVision.Copilot.Mcp
                 FlowResourceUri => await GetFlowSummaryAsync(cancellationToken),
                 AuditSummaryResourceUri => GetAuditSummary(null),
                 AuditLogResourceUri => GetAuditLog(null),
+                CapabilityCatalogResourceUri => GetCapabilityCatalog(),
                 _ => CopilotMcpToolCallResult.Fail("resource_not_found", $"Unknown ColorVision MCP resource: {uri}"),
             };
+        }
+
+        private static CopilotMcpToolCallResult GetCapabilityCatalog()
+        {
+            var snapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(snapshot, CapabilityCatalogJsonOptions));
         }
 
         public async Task<CopilotMcpToolCallResult> CallAsync(string toolName, IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken, string callerSource = "")
@@ -2405,12 +2427,12 @@ namespace ColorVision.Copilot.Mcp
             };
         }
 
-        private static CopilotMcpResourceDescriptor Resource(string uri, string name, string description) => new()
+        private static CopilotMcpResourceDescriptor Resource(string uri, string name, string description, string mimeType = "text/plain") => new()
         {
             Uri = uri,
             Name = name,
             Description = description,
-            MimeType = "text/plain",
+            MimeType = mimeType,
         };
 
         private static object EmptySchema() => Schema(new Dictionary<string, object>());
