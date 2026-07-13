@@ -1337,6 +1337,26 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_EstimatedBudgetCountsToolResultsBeforeNextProviderCall()
+    {
+        var small = await RunEstimatedBudgetScenarioAsync(16, 100_000);
+        var large = await RunEstimatedBudgetScenarioAsync(10_000, 100_000);
+
+        Assert.Equal(2, small.ProviderCalls);
+        Assert.Equal(2, large.ProviderCalls);
+        Assert.True(small.Result.Budget.UsedEstimatedUsage);
+        Assert.True(large.Result.Budget.ConsumedTokens >= small.Result.Budget.ConsumedTokens + 2_500);
+
+        var boundedBudget = (int)(small.Result.Budget.ConsumedTokens
+            + (large.Result.Budget.ConsumedTokens - small.Result.Budget.ConsumedTokens) / 2);
+        var bounded = await RunEstimatedBudgetScenarioAsync(10_000, boundedBudget);
+
+        Assert.Equal(1, bounded.ProviderCalls);
+        Assert.True(bounded.Result.Budget.BudgetExhausted);
+        Assert.Equal(CopilotAgentStopReason.BudgetExhausted, bounded.Result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_CompactsOversizedHistoryBeforeProviderCall()
     {
         using var fakeChatClient = new CapturingFinalChatClient();
@@ -3122,7 +3142,33 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         }
     }
 
-    private sealed class LargeFrameworkResultTool : ICopilotTool
+    private static async Task<(CopilotAgentRunResult Result, int ProviderCalls)> RunEstimatedBudgetScenarioAsync(
+        int charactersPerSection,
+        int requestTokenBudget)
+    {
+        using var fakeChatClient = new ScriptedHarnessChatClient(options =>
+        {
+            var function = GetFunction(options, "colorvision_fetch_url");
+            return new FunctionCallContent("estimated-budget-call", function.Name, new Dictionary<string, object?>
+            {
+                ["query"] = "https://example.test/",
+            });
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([new LargeFrameworkResultTool(charactersPerSection)]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "https://example.test/ inspect the pages",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Web,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride { RequestTokenBudget = requestTokenBudget },
+        }, _ => { }, CancellationToken.None);
+        return (result, fakeChatClient.StreamCallCount);
+    }
+
+    private sealed class LargeFrameworkResultTool(int charactersPerSection = 10_000) : ICopilotTool
     {
         public string Name => "FetchUrl";
 
@@ -3136,7 +3182,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             var content = string.Join(Environment.NewLine + Environment.NewLine, Enumerable.Range(1, 3).Select(index =>
                 $"[Web Page Fetched] https://example.test/page-{index}\nPAGE-{index}-HEAD\n"
-                + new string((char)('k' + index), 10_000)
+                + new string((char)('k' + index), Math.Max(1, charactersPerSection))
                 + $"\nPAGE-{index}-TAIL"));
             return Task.FromResult(new CopilotToolResult
             {

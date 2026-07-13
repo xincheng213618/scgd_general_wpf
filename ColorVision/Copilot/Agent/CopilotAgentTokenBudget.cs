@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -75,12 +76,12 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken = default)
         {
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-            if (!TryBeginProviderCall())
+            if (!TryBeginProviderCall(EstimateInputTokens(materializedMessages, options)))
                 return new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, BudgetExhaustedAnswer));
 
             var response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
             var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
-            CommitUsage(usage, EstimateTokens(materializedMessages, options, response.Text?.Length ?? 0));
+            CommitUsage(usage, EstimateTokens(materializedMessages, options, EstimateMessageCharacters(response.Messages)));
             return response;
         }
 
@@ -90,17 +91,17 @@ namespace ColorVision.Copilot
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-            if (!TryBeginProviderCall())
+            if (!TryBeginProviderCall(EstimateInputTokens(materializedMessages, options)))
             {
                 yield return new ChatResponseUpdate(ChatRole.Assistant, BudgetExhaustedAnswer);
                 yield break;
             }
 
             var usage = CopilotTokenUsage.Empty;
-            var responseCharacters = 0;
+            long responseCharacters = 0;
             await foreach (var update in base.GetStreamingResponseAsync(materializedMessages, options, cancellationToken))
             {
-                responseCharacters += update.Text?.Length ?? 0;
+                responseCharacters += EstimateContentCharacters(update.Contents);
                 usage = usage.MergeProgress(ExtractUsage(update.Contents));
                 yield return update;
             }
@@ -108,12 +109,14 @@ namespace ColorVision.Copilot
             CommitUsage(usage, EstimateTokens(materializedMessages, options, responseCharacters));
         }
 
-        private bool TryBeginProviderCall()
+        private bool TryBeginProviderCall(int estimatedInputTokens)
         {
             CopilotAgentBudgetSnapshot? notification = null;
             lock (_syncRoot)
             {
-                if (_consumedTokens >= _budget.RequestTokenBudget)
+                var wouldExceedBudget = _providerCalls > 0
+                    && _consumedTokens + Math.Max(1, estimatedInputTokens) > _budget.RequestTokenBudget;
+                if (_consumedTokens >= _budget.RequestTokenBudget || wouldExceedBudget)
                 {
                     _budgetExhausted = true;
                     if (!_budgetNotificationPublished)
@@ -188,13 +191,131 @@ namespace ColorVision.Copilot
         private static int EstimateTokens(
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options,
-            int responseCharacters)
+            long responseCharacters)
         {
-            long characters = options?.Instructions?.Length ?? 0;
-            foreach (var message in messages)
-                characters += message.Text?.Length ?? 0;
+            long characters = EstimateInputCharacters(messages, options);
             characters += Math.Max(0, responseCharacters);
             return (int)Math.Clamp((characters + 3) / 4, 1, int.MaxValue);
+        }
+
+        private static int EstimateInputTokens(
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options)
+        {
+            var characters = EstimateInputCharacters(messages, options);
+            return (int)Math.Clamp((characters + 3) / 4, 1, int.MaxValue);
+        }
+
+        private static long EstimateInputCharacters(
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options)
+        {
+            long characters = options?.Instructions?.Length ?? 0;
+            characters += EstimateToolsCharacters(options?.Tools);
+            characters += EstimateMessageCharacters(messages);
+            return characters;
+        }
+
+        private static long EstimateMessageCharacters(IEnumerable<Microsoft.Extensions.AI.ChatMessage>? messages)
+        {
+            long characters = 0;
+            foreach (var message in messages ?? Enumerable.Empty<Microsoft.Extensions.AI.ChatMessage>())
+            {
+                characters += 16;
+                characters += EstimateContentCharacters(message.Contents);
+            }
+            return characters;
+        }
+
+        private static int EstimateContentCharacters(IEnumerable<AIContent>? contents)
+        {
+            long characters = 0;
+            foreach (var content in contents ?? Enumerable.Empty<AIContent>())
+                characters += EstimateContentCharacters(content);
+            return (int)Math.Clamp(characters, 0, int.MaxValue);
+        }
+
+        private static int EstimateContentCharacters(AIContent? content)
+        {
+            long characters = content switch
+            {
+                null => 0,
+                TextContent text => text.Text?.Length ?? 0,
+                TextReasoningContent reasoning => (reasoning.Text?.Length ?? 0) + (reasoning.ProtectedData?.Length ?? 0),
+                FunctionCallContent functionCall => (functionCall.CallId?.Length ?? 0)
+                    + (functionCall.Name?.Length ?? 0)
+                    + EstimateValueCharacters(functionCall.Arguments)
+                    + (functionCall.Exception?.Message?.Length ?? 0),
+                FunctionResultContent functionResult => (functionResult.CallId?.Length ?? 0)
+                    + EstimateValueCharacters(functionResult.Result)
+                    + (functionResult.Exception?.Message?.Length ?? 0),
+                ToolApprovalRequestContent approvalRequest => (approvalRequest.RequestId?.Length ?? 0)
+                    + EstimateContentCharacters(approvalRequest.ToolCall),
+                ToolApprovalResponseContent approvalResponse => (approvalResponse.RequestId?.Length ?? 0)
+                    + (approvalResponse.Reason?.Length ?? 0)
+                    + EstimateContentCharacters(approvalResponse.ToolCall),
+                ErrorContent error => (error.Message?.Length ?? 0)
+                    + (error.ErrorCode?.Length ?? 0)
+                    + (error.Details?.Length ?? 0),
+                DataContent data => EstimateDataContentCharacters(data),
+                UriContent uri => (uri.Uri?.OriginalString.Length ?? 0) + (uri.MediaType?.Length ?? 0),
+                _ => content.ToString()?.Length ?? 0,
+            };
+            return (int)Math.Clamp(characters, 0, int.MaxValue);
+        }
+
+        private static long EstimateToolsCharacters(IEnumerable<AITool>? tools)
+        {
+            long characters = 0;
+            foreach (var tool in tools ?? Enumerable.Empty<AITool>())
+            {
+                characters += tool.Name?.Length ?? 0;
+                characters += tool.Description?.Length ?? 0;
+                if (tool is AIFunction function)
+                {
+                    characters += function.JsonSchema.ValueKind == JsonValueKind.Undefined
+                        ? 0
+                        : function.JsonSchema.GetRawText().Length;
+                    if (function.ReturnJsonSchema is JsonElement returnSchema
+                        && returnSchema.ValueKind != JsonValueKind.Undefined)
+                    {
+                        characters += returnSchema.GetRawText().Length;
+                    }
+                }
+            }
+            return characters;
+        }
+
+        private static int EstimateValueCharacters(object? value)
+        {
+            if (value == null)
+                return 4;
+            if (value is string text)
+                return text.Length;
+            if (value is JsonElement element)
+                return element.GetRawText().Length;
+
+            try
+            {
+                return JsonSerializer.Serialize(value, value.GetType()).Length;
+            }
+            catch (Exception ex) when (ex is NotSupportedException or JsonException)
+            {
+                return value.ToString()?.Length ?? 0;
+            }
+        }
+
+        private static long EstimateDataContentCharacters(DataContent data)
+        {
+            var encodedCharacters = EstimateEncodedDataCharacters(data.Data.Length);
+            if (encodedCharacters == 0)
+                encodedCharacters = data.Uri?.Length ?? 0;
+            return encodedCharacters + (data.MediaType?.Length ?? 0) + (data.Name?.Length ?? 0);
+        }
+
+        private static long EstimateEncodedDataCharacters(int byteCount)
+        {
+            return byteCount <= 0 ? 0 : ((long)byteCount + 2) / 3 * 4;
         }
     }
 }
