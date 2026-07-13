@@ -244,10 +244,17 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Margin="0,4,0,0"
-                               Style="{StaticResource McpHintTextStyle}"
-                               Text="{Binding ExternalMcpClientsStatusText}"
-                               TextWrapping="Wrap" />
+                    <DockPanel Margin="0,6,0,0" LastChildFill="True">
+                        <Button DockPanel.Dock="Right"
+                                Margin="10,0,0,0"
+                                Padding="10,4"
+                                Command="{Binding RefreshExternalMcpClientsCommand}"
+                                Content="Refresh Discovery" />
+                        <TextBlock VerticalAlignment="Center"
+                                   Style="{StaticResource McpHintTextStyle}"
+                                   Text="{Binding ExternalMcpClientsStatusText}"
+                                   TextWrapping="Wrap" />
+                    </DockPanel>
                 </StackPanel>
             </ScrollViewer>
         </Border>

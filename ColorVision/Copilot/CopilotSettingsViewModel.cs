@@ -214,6 +214,7 @@ namespace ColorVision.Copilot
             CopyMcpTokenEnvironmentCommand = new RelayCommand(_ => CopyMcpTokenEnvironmentCommandToClipboard());
             TestMcpConnectionCommand = new RelayCommand(_ => _ = TestMcpConnectionAsync());
             RefreshMcpDiagnosticsCommand = new RelayCommand(_ => RefreshMcpDiagnostics());
+            RefreshExternalMcpClientsCommand = new RelayCommand(_ => _ = RefreshExternalMcpClientsAsync(), _ => !IsRefreshingExternalMcpClients);
             CopyMcpDiagnosticsCommand = new RelayCommand(_ => CopyMcpDiagnostics());
             TestSelectedProfileCommand = new RelayCommand(_ => _ = TestSelectedProfileConnectionAsync(), _ => CanTestSelectedProfile);
             UseSelectedProfileInChatCommand = new RelayCommand(_ => UseSelectedProfileInChat(), _ => CanUseSelectedProfileInChat);
@@ -268,6 +269,8 @@ namespace ColorVision.Copilot
         public RelayCommand TestMcpConnectionCommand { get; }
 
         public RelayCommand RefreshMcpDiagnosticsCommand { get; }
+
+        public RelayCommand RefreshExternalMcpClientsCommand { get; }
 
         public RelayCommand CopyMcpDiagnosticsCommand { get; }
 
@@ -461,6 +464,17 @@ namespace ColorVision.Copilot
             private set => SetProperty(ref _externalMcpClientsStatusText, value ?? string.Empty);
         }
         private string _externalMcpClientsStatusText = "No external MCP servers configured.";
+
+        public bool IsRefreshingExternalMcpClients
+        {
+            get => _isRefreshingExternalMcpClients;
+            private set
+            {
+                if (SetProperty(ref _isRefreshingExternalMcpClients, value))
+                    CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        private bool _isRefreshingExternalMcpClients;
 
         public string CodexMcpConfigSnippet => BuildCodexMcpConfigSnippet();
 
@@ -1405,9 +1419,56 @@ namespace ColorVision.Copilot
                     return $"{server.Name}: not checked";
 
                 return health.State == CopilotMcpClientHealthState.Connected
-                    ? $"{server.Name}: connected ({health.ExposedToolCount}/{health.DiscoveredToolCount} tools)"
+                    ? $"{server.Name}: connected ({health.ExposedToolCount}/{health.DiscoveredToolCount} tools, {(health.UsedCachedDiscovery ? "cached" : "live")}{(health.CapabilitiesChanged ? ", updated" : string.Empty)})"
                     : $"{server.Name}: unavailable";
             }));
+        }
+
+        private async Task RefreshExternalMcpClientsAsync()
+        {
+            if (IsRefreshingExternalMcpClients)
+                return;
+            if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
+            {
+                IsExternalMcpServersValid = false;
+                ExternalMcpServersValidationText = error;
+                SetSettingsNotice(error);
+                return;
+            }
+            if (servers.Count == 0)
+            {
+                ExternalMcpClientsStatusText = "No external MCP servers configured.";
+                SetSettingsNotice("Add an external MCP server before refreshing discovery.");
+                return;
+            }
+
+            IsRefreshingExternalMcpClients = true;
+            ExternalMcpClientsStatusText = "Refreshing external MCP discovery...";
+            try
+            {
+                var provider = new CopilotMcpToolProvider();
+                await using var lease = await provider.DiscoverAsync(new CopilotAgentRequest
+                {
+                    ExternalMcpServers = servers.Select(server => server.Clone()).ToArray(),
+                    ForceExternalMcpToolRefresh = true,
+                }, CancellationToken.None);
+
+                RefreshExternalMcpClientsStatus(servers);
+                var connectedCount = servers.Count(server =>
+                    CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health)
+                    && health.State == CopilotMcpClientHealthState.Connected);
+                SetSettingsNotice($"External MCP discovery refreshed: {connectedCount}/{servers.Count} server(s) connected.");
+            }
+            catch (Exception ex)
+            {
+                var message = CopilotMcpAuditLogger.RedactText(ex.Message);
+                ExternalMcpClientsStatusText = "External MCP discovery refresh failed.";
+                SetSettingsNotice(message);
+            }
+            finally
+            {
+                IsRefreshingExternalMcpClients = false;
+            }
         }
 
         private string BuildCodexMcpConfigSnippet()

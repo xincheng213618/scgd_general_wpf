@@ -28,6 +28,12 @@ namespace ColorVision.Copilot
 
         public int FilteredToolCount { get; init; }
 
+        public bool UsedCachedDiscovery { get; init; }
+
+        public long CapabilityRevision { get; init; }
+
+        public bool CapabilitiesChanged { get; init; }
+
         public string Message { get; init; } = string.Empty;
     }
 
@@ -38,7 +44,13 @@ namespace ColorVision.Copilot
         private static readonly object SyncRoot = new();
         private static readonly Dictionary<string, CopilotMcpClientHealthSnapshot> Snapshots = new(StringComparer.OrdinalIgnoreCase);
 
-        public static void RecordConnected(CopilotMcpClientServerConfig server, int discoveredToolCount, int exposedToolCount)
+        public static void RecordConnected(
+            CopilotMcpClientServerConfig server,
+            int discoveredToolCount,
+            int exposedToolCount,
+            bool usedCachedDiscovery = false,
+            long capabilityRevision = 1,
+            bool capabilitiesChanged = false)
         {
             ArgumentNullException.ThrowIfNull(server);
             var discovered = Math.Max(0, discoveredToolCount);
@@ -52,9 +64,12 @@ namespace ColorVision.Copilot
                 DiscoveredToolCount = discovered,
                 ExposedToolCount = exposed,
                 FilteredToolCount = Math.Max(0, discovered - exposed),
+                UsedCachedDiscovery = usedCachedDiscovery,
+                CapabilityRevision = Math.Max(1, capabilityRevision),
+                CapabilitiesChanged = capabilitiesChanged,
                 Message = exposed == discovered
-                    ? $"Connected · {exposed} tool(s) exposed."
-                    : $"Connected · {exposed}/{discovered} tool(s) exposed by policy.",
+                    ? $"Connected · {exposed} tool(s) exposed · {(usedCachedDiscovery ? "cached" : "live")} discovery."
+                    : $"Connected · {exposed}/{discovered} tool(s) exposed by policy · {(usedCachedDiscovery ? "cached" : "live")} discovery.",
             });
         }
 

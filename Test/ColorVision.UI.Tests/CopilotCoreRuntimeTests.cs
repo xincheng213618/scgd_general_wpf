@@ -597,14 +597,15 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         try
         {
-            using var fakeChatClient = new ScriptedHarnessChatClient(options =>
+            FunctionCallContent? CallStatus(ChatOptions options)
             {
                 var function = options.Tools?.OfType<AIFunctionDeclaration>()
                     .SingleOrDefault(tool => tool.Name.EndsWith("get_server_status", StringComparison.Ordinal));
                 return function == null
                     ? null
                     : new FunctionCallContent("mcp-status-call", function.Name, new Dictionary<string, object?>());
-            });
+            }
+            using var fakeChatClient = new ScriptedHarnessChatClient(CallStatus, _ => null, CallStatus, _ => null, CallStatus);
             var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
                 new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
                 new CopilotAgentContextBuilder(),
@@ -626,7 +627,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 ],
             };
 
-            var result = await runtime.RunAsync(new CopilotAgentRequest
+            var request = new CopilotAgentRequest
             {
                 UserText = "Read the current ColorVision status from the configured MCP server.",
                 Profile = CreateProfile(),
@@ -635,7 +636,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 [
                     externalServer,
                 ],
-            }, events.Add, CancellationToken.None);
+            };
+            var result = await runtime.RunAsync(request, events.Add, CancellationToken.None);
 
             Assert.True(events.Any(item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
                     && item.Text.Contains("MCP client connected to colorvision", StringComparison.Ordinal)),
@@ -648,6 +650,32 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Assert.True(health.DiscoveredToolCount > 1);
             Assert.Equal(1, health.ExposedToolCount);
             Assert.Equal(health.DiscoveredToolCount - 1, health.FilteredToolCount);
+            Assert.False(health.UsedCachedDiscovery);
+            Assert.Equal(1, health.CapabilityRevision);
+
+            var cachedResult = await runtime.RunAsync(request, events.Add, CancellationToken.None);
+
+            Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(cachedResult.StepRecords).Execution.State);
+            Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(externalServer, out var cachedHealth));
+            Assert.True(cachedHealth.UsedCachedDiscovery);
+            Assert.Equal(health.CapabilityRevision, cachedHealth.CapabilityRevision);
+            Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+                && item.Text.Contains("cached discovery", StringComparison.Ordinal));
+
+            var refreshedResult = await runtime.RunAsync(new CopilotAgentRequest
+            {
+                UserText = request.UserText,
+                Profile = request.Profile,
+                Mode = request.Mode,
+                ExternalMcpServers = request.ExternalMcpServers,
+                ForceExternalMcpToolRefresh = true,
+            }, events.Add, CancellationToken.None);
+
+            Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(refreshedResult.StepRecords).Execution.State);
+            Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(externalServer, out var refreshedHealth));
+            Assert.False(refreshedHealth.UsedCachedDiscovery);
+            Assert.Equal(cachedHealth.CapabilityRevision, refreshedHealth.CapabilityRevision);
+            Assert.False(refreshedHealth.CapabilitiesChanged);
         }
         finally
         {

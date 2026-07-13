@@ -19,7 +19,7 @@ Copilot 默认使用 Microsoft Agent Framework 组织多轮推理和工具调用
 
 可用工具按当前请求和 ColorVision 上下文动态筛选，包括文档与网页搜索、网页读取、受控本地文件读取、日志诊断和有限应用操作。普通概念问答会直接回答，不会仅因工作区可搜索就调用文件或网页工具；只有明确询问当前项目/代码、要求联网、提供 URL，或确实需要实时证据时才开放对应搜索能力。网页 URL 请求会优先读取页面；读取失败时再搜索公开网页。成功调用会以紧凑活动行显示；没有找到结果的搜索尝试默认不占据主活动区，诊断数据仍保留在会话 trace 中。
 
-外部 MCP 服务按行配置，格式为 `名称 | Streamable HTTP 地址 | token 环境变量 | 默认策略 | 可选工具白名单`，例如 `lab | https://mcp.example.com/mcp | LAB_MCP_TOKEN | approval | get_status=read-only,apply_patch=approval`。第五段使用远端工具的精确名称，未列出的工具不会提供给模型；留空或写 `*` 会暴露该服务发现的全部工具。远程地址必须使用 HTTPS，本机 loopback 可使用 HTTP；token 只从环境变量读取，不写入 ColorVision 配置。默认策略使用 `approval`；只对明确可信的只读工具单独设置 `read-only`。某个外部服务连接失败时，本次问答继续执行，不会把连接诊断或可选搜索失败铺满聊天界面。
+外部 MCP 服务按行配置，格式为 `名称 | Streamable HTTP 地址 | token 环境变量 | 默认策略 | 可选工具白名单`，例如 `lab | https://mcp.example.com/mcp | LAB_MCP_TOKEN | approval | get_status=read-only,apply_patch=approval`。第五段使用远端工具的精确名称，未列出的工具不会提供给模型；留空或写 `*` 会暴露该服务发现的全部工具。远程地址必须使用 HTTPS，本机 loopback 可使用 HTTP；token 只从环境变量读取，不写入 ColorVision 配置。默认策略使用 `approval`；只对明确可信的只读工具单独设置 `read-only`。工具描述会在进程内缓存 5 分钟以减少重复发现，但每轮仍建立独立连接；设置页的 `Refresh Discovery` 会绕过缓存、重新发现并更新紧凑健康状态。某个外部服务连接失败时，本次问答继续执行，不会把连接诊断或可选搜索失败铺满聊天界面。
 
 当只读或明确幂等的工具遇到瞬时网络错误或超时时，Agent 可以明确发起一次重试。聊天 trace 会分别显示每次尝试；同参数最多两次。非幂等操作、参数错误、拒绝和取消不会重试。如果受保护的幂等写操作需要第二次尝试，界面会再次要求审批，不会沿用上一次授权。
 

@@ -54,6 +54,18 @@ namespace ColorVision.Copilot
     {
         private const int MaximumToolsPerServer = 32;
         private const int MaximumToolsPerRequest = 64;
+        private const int MaximumCachedToolDefinitionsPerServer = 512;
+        private readonly CopilotMcpToolDiscoveryCache _discoveryCache;
+
+        public CopilotMcpToolProvider()
+            : this(CopilotMcpToolDiscoveryCache.Shared)
+        {
+        }
+
+        internal CopilotMcpToolProvider(CopilotMcpToolDiscoveryCache discoveryCache)
+        {
+            _discoveryCache = discoveryCache ?? throw new ArgumentNullException(nameof(discoveryCache));
+        }
 
         public async Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
         {
@@ -86,7 +98,32 @@ namespace ColorVision.Copilot
                     using var connectionTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     connectionTimeout.CancelAfter(TimeSpan.FromSeconds(server.ConnectionTimeoutSeconds));
                     client = await McpClient.CreateAsync(transport, cancellationToken: connectionTimeout.Token);
-                    var remoteTools = await client.ListToolsAsync(cancellationToken: connectionTimeout.Token);
+                    CopilotMcpToolDiscoverySnapshot cachedDiscovery = null!;
+                    var usedCachedDiscovery = !request.ForceExternalMcpToolRefresh
+                        && _discoveryCache.TryGet(server, token, out cachedDiscovery);
+                    McpClientTool[] remoteTools;
+                    int discoveredToolCount;
+                    CopilotMcpDiscoveryCacheUpdateKind? cacheUpdate = null;
+                    long capabilityRevision;
+                    if (usedCachedDiscovery)
+                    {
+                        remoteTools = cachedDiscovery.Tools.Select(tool => new McpClientTool(client, tool)).ToArray();
+                        discoveredToolCount = cachedDiscovery.DiscoveredToolCount;
+                        capabilityRevision = cachedDiscovery.Revision;
+                    }
+                    else
+                    {
+                        var discoveredTools = await client.ListToolsAsync(cancellationToken: connectionTimeout.Token);
+                        discoveredToolCount = discoveredTools.Count;
+                        remoteTools = discoveredTools.Take(MaximumCachedToolDefinitionsPerServer).ToArray();
+                        cacheUpdate = _discoveryCache.Store(
+                            server,
+                            token,
+                            remoteTools.Select(tool => tool.ProtocolTool).ToArray(),
+                            discoveredToolCount,
+                            out var refreshedDiscovery);
+                        capabilityRevision = refreshedDiscovery.Revision;
+                    }
                     var remaining = MaximumToolsPerRequest - tools.Count;
                     var allowedTools = remoteTools
                         .Select(tool => server.TryResolveToolAccessPolicy(tool.Name, out var accessPolicy)
@@ -102,10 +139,21 @@ namespace ColorVision.Copilot
                         clients.Add(client);
                         client = null;
                     }
-                    CopilotMcpClientHealthRegistry.RecordConnected(server, remoteTools.Count, allowedTools.Length);
-                    diagnostics.Add(allowedTools.Length == remoteTools.Count
-                        ? $"MCP client connected to {server.Name} · {allowedTools.Length} tool(s) exposed."
-                        : $"MCP client connected to {server.Name} · {allowedTools.Length}/{remoteTools.Count} tool(s) exposed by policy and request limits.");
+                    CopilotMcpClientHealthRegistry.RecordConnected(
+                        server,
+                        discoveredToolCount,
+                        allowedTools.Length,
+                        usedCachedDiscovery,
+                        capabilityRevision,
+                        cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed);
+                    var discoverySource = usedCachedDiscovery ? "cached discovery" : "live discovery";
+                    diagnostics.Add(allowedTools.Length == discoveredToolCount
+                        ? $"MCP client connected to {server.Name} · {allowedTools.Length} tool(s) exposed from {discoverySource}."
+                        : $"MCP client connected to {server.Name} · {allowedTools.Length}/{discoveredToolCount} tool(s) exposed from {discoverySource} by policy and request limits.");
+                    if (discoveredToolCount > remoteTools.Length)
+                        diagnostics.Add($"MCP client {server.Name} cached the first {remoteTools.Length}/{discoveredToolCount} tool definition(s) within the safety limit.");
+                    if (cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed)
+                        diagnostics.Add($"MCP client {server.Name} capability set changed · revision {capabilityRevision}.");
                     if (tools.Count >= MaximumToolsPerRequest)
                     {
                         diagnostics.Add($"MCP client discovery reached the {MaximumToolsPerRequest}-tool request limit.");
