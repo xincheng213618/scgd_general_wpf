@@ -221,9 +221,9 @@
                     <TextBlock Style="{StaticResource McpPanelTitleStyle}" Text="Copilot MCP clients" />
                     <TextBlock Margin="0,5,0,8"
                                Style="{StaticResource McpHintTextStyle}"
-                               Text="Connect Copilot to explicit Streamable HTTP MCP servers. One server per line: name | endpoint | token environment variable | approval/read-only. Remote endpoints require HTTPS; tokens are never stored here."
+                               Text="Connect Copilot to explicit Streamable HTTP MCP servers. One server per line: name | endpoint | token environment variable | default policy | optional tool=policy,... Use an exact tool list when possible; blank or * exposes every discovered tool."
                                TextWrapping="Wrap" />
-                    <TextBox MinHeight="92"
+                    <TextBox MinHeight="104"
                              AcceptsReturn="True"
                              Text="{Binding ExternalMcpServersText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              TextWrapping="NoWrap"
@@ -244,6 +244,10 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
+                    <TextBlock Margin="0,4,0,0"
+                               Style="{StaticResource McpHintTextStyle}"
+                               Text="{Binding ExternalMcpClientsStatusText}"
+                               TextWrapping="Wrap" />
                 </StackPanel>
             </ScrollViewer>
         </Border>

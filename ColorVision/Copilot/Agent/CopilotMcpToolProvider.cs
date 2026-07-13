@@ -65,6 +65,8 @@ namespace ColorVision.Copilot
             foreach (var server in request.ExternalMcpServers.Where(server => server?.Enabled == true).Take(8))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                if (tools.Count >= MaximumToolsPerRequest)
+                    break;
                 McpClient? client = null;
                 try
                 {
@@ -86,11 +88,24 @@ namespace ColorVision.Copilot
                     client = await McpClient.CreateAsync(transport, cancellationToken: connectionTimeout.Token);
                     var remoteTools = await client.ListToolsAsync(cancellationToken: connectionTimeout.Token);
                     var remaining = MaximumToolsPerRequest - tools.Count;
-                    foreach (var remoteTool in remoteTools.Take(Math.Min(MaximumToolsPerServer, remaining)))
-                        tools.Add(new CopilotMcpToolAdapter(server, remoteTool));
-                    clients.Add(client);
-                    client = null;
-                    diagnostics.Add($"MCP client connected to {server.Name} · {Math.Min(remoteTools.Count, Math.Min(MaximumToolsPerServer, remaining))} tool(s) discovered.");
+                    var allowedTools = remoteTools
+                        .Select(tool => server.TryResolveToolAccessPolicy(tool.Name, out var accessPolicy)
+                            ? new AllowedMcpTool(tool, accessPolicy)
+                            : null)
+                        .OfType<AllowedMcpTool>()
+                        .Take(Math.Min(MaximumToolsPerServer, remaining))
+                        .ToArray();
+                    foreach (var allowedTool in allowedTools)
+                        tools.Add(new CopilotMcpToolAdapter(server, allowedTool.Tool, allowedTool.AccessPolicy));
+                    if (allowedTools.Length > 0)
+                    {
+                        clients.Add(client);
+                        client = null;
+                    }
+                    CopilotMcpClientHealthRegistry.RecordConnected(server, remoteTools.Count, allowedTools.Length);
+                    diagnostics.Add(allowedTools.Length == remoteTools.Count
+                        ? $"MCP client connected to {server.Name} · {allowedTools.Length} tool(s) exposed."
+                        : $"MCP client connected to {server.Name} · {allowedTools.Length}/{remoteTools.Count} tool(s) exposed by policy and request limits.");
                     if (tools.Count >= MaximumToolsPerRequest)
                     {
                         diagnostics.Add($"MCP client discovery reached the {MaximumToolsPerRequest}-tool request limit.");
@@ -99,11 +114,14 @@ namespace ColorVision.Copilot
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
+                    CopilotMcpClientHealthRegistry.RecordUnavailable(server, "Connection timed out.");
                     diagnostics.Add($"MCP client {server.Name} was unavailable · connection timed out.");
                 }
                 catch (Exception ex)
                 {
-                    diagnostics.Add($"MCP client {server.Name} was unavailable · {CopilotMcpAuditLogger.RedactText(ex.Message)}");
+                    var error = CopilotMcpAuditLogger.RedactText(ex.Message);
+                    CopilotMcpClientHealthRegistry.RecordUnavailable(server, error);
+                    diagnostics.Add($"MCP client {server.Name} was unavailable · {error}");
                 }
                 finally
                 {
@@ -114,6 +132,8 @@ namespace ColorVision.Copilot
 
             return new CopilotExternalToolLease(tools, diagnostics, clients);
         }
+
+        private sealed record AllowedMcpTool(McpClientTool Tool, CopilotMcpClientAccessPolicy AccessPolicy);
 
         private static string ResolveBearerToken(CopilotMcpClientServerConfig server)
         {
@@ -133,11 +153,16 @@ namespace ColorVision.Copilot
         private static readonly Regex InvalidNameCharacters = new("[^A-Za-z0-9_]", RegexOptions.Compiled);
         private readonly CopilotMcpClientServerConfig _server;
         private readonly McpClientTool _remoteTool;
+        private readonly CopilotMcpClientAccessPolicy _accessPolicy;
 
-        public CopilotMcpToolAdapter(CopilotMcpClientServerConfig server, McpClientTool remoteTool)
+        public CopilotMcpToolAdapter(
+            CopilotMcpClientServerConfig server,
+            McpClientTool remoteTool,
+            CopilotMcpClientAccessPolicy accessPolicy)
         {
             _server = server?.Clone() ?? throw new ArgumentNullException(nameof(server));
             _remoteTool = remoteTool ?? throw new ArgumentNullException(nameof(remoteTool));
+            _accessPolicy = accessPolicy;
             Name = BuildToolName(_server.Name, remoteTool.Name);
             Description = BuildDescription(_server.Name, remoteTool.Description);
             InputSchema = CopilotToolInputSchema.FromJsonSchema(remoteTool.JsonSchema);
@@ -147,7 +172,7 @@ namespace ColorVision.Copilot
 
         public string Description { get; }
 
-        public CopilotToolAccess Access => _server.AccessPolicy == CopilotMcpClientAccessPolicy.ReadOnly
+        public CopilotToolAccess Access => _accessPolicy == CopilotMcpClientAccessPolicy.ReadOnly
             ? CopilotToolAccess.ReadOnly
             : CopilotToolAccess.Write;
 

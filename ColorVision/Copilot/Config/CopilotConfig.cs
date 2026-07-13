@@ -94,6 +94,19 @@ namespace ColorVision.Copilot
                 changed |= profile.EnsureValid();
             }
 
+            for (var index = ExternalMcpServers.Count - 1; index >= 0; index--)
+            {
+                var server = ExternalMcpServers[index];
+                if (server == null)
+                {
+                    ExternalMcpServers.RemoveAt(index);
+                    changed = true;
+                    continue;
+                }
+
+                server.ToolRules ??= new ObservableCollection<CopilotMcpClientToolRule>();
+            }
+
             OnPropertyChanged(nameof(IsConfigured));
             return changed;
         }

@@ -610,6 +610,21 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 new CopilotAgentContextBuilder(),
                 _ => fakeChatClient);
             var events = new List<CopilotAgentEvent>();
+            var externalServer = new CopilotMcpClientServerConfig
+            {
+                Name = "colorvision",
+                Endpoint = $"http://127.0.0.1:{port}/mcp",
+                BearerTokenEnvironmentVariable = tokenVariable,
+                AccessPolicy = CopilotMcpClientAccessPolicy.RequireApproval,
+                ToolRules =
+                [
+                    new CopilotMcpClientToolRule
+                    {
+                        ToolName = "get_server_status",
+                        AccessPolicy = CopilotMcpClientAccessPolicy.ReadOnly,
+                    },
+                ],
+            };
 
             var result = await runtime.RunAsync(new CopilotAgentRequest
             {
@@ -618,13 +633,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 Mode = CopilotAgentMode.Auto,
                 ExternalMcpServers =
                 [
-                    new CopilotMcpClientServerConfig
-                    {
-                        Name = "colorvision",
-                        Endpoint = $"http://127.0.0.1:{port}/mcp",
-                        BearerTokenEnvironmentVariable = tokenVariable,
-                        AccessPolicy = CopilotMcpClientAccessPolicy.ReadOnly,
-                    },
+                    externalServer,
                 ],
             }, events.Add, CancellationToken.None);
 
@@ -634,6 +643,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             var step = Assert.Single(result.StepRecords);
             Assert.Equal("Mcp_colorvision_get_server_status", step.ToolCall.ToolName);
             Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+            Assert.True(CopilotMcpClientHealthRegistry.TryGetSnapshot(externalServer, out var health));
+            Assert.Equal(CopilotMcpClientHealthState.Connected, health.State);
+            Assert.True(health.DiscoveredToolCount > 1);
+            Assert.Equal(1, health.ExposedToolCount);
+            Assert.Equal(health.DiscoveredToolCount - 1, health.FilteredToolCount);
         }
         finally
         {

@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -11,6 +12,25 @@ namespace ColorVision.Copilot
     {
         RequireApproval,
         ReadOnly,
+    }
+
+    public sealed class CopilotMcpClientToolRule : ViewModelBase
+    {
+        public string ToolName
+        {
+            get => _toolName;
+            set => SetProperty(ref _toolName, (value ?? string.Empty).Trim());
+        }
+        private string _toolName = string.Empty;
+
+        public CopilotMcpClientAccessPolicy AccessPolicy
+        {
+            get => _accessPolicy;
+            set => SetProperty(ref _accessPolicy, value);
+        }
+        private CopilotMcpClientAccessPolicy _accessPolicy = CopilotMcpClientAccessPolicy.RequireApproval;
+
+        public CopilotMcpClientToolRule Clone() => new() { ToolName = ToolName, AccessPolicy = AccessPolicy };
     }
 
     public sealed class CopilotMcpClientServerConfig : ViewModelBase
@@ -67,6 +87,33 @@ namespace ColorVision.Copilot
         }
         private int _toolTimeoutSeconds = DefaultToolTimeoutSeconds;
 
+        public ObservableCollection<CopilotMcpClientToolRule> ToolRules
+        {
+            get => _toolRules;
+            set => SetProperty(ref _toolRules, value ?? new ObservableCollection<CopilotMcpClientToolRule>());
+        }
+        private ObservableCollection<CopilotMcpClientToolRule> _toolRules = new();
+
+        public bool TryResolveToolAccessPolicy(string toolName, out CopilotMcpClientAccessPolicy accessPolicy)
+        {
+            var rules = ToolRules.Where(rule => rule != null && !string.IsNullOrWhiteSpace(rule.ToolName)).ToArray();
+            if (rules.Length == 0)
+            {
+                accessPolicy = AccessPolicy;
+                return true;
+            }
+
+            var rule = rules.FirstOrDefault(candidate => string.Equals(candidate.ToolName, toolName, StringComparison.OrdinalIgnoreCase));
+            if (rule == null)
+            {
+                accessPolicy = default;
+                return false;
+            }
+
+            accessPolicy = rule.AccessPolicy;
+            return true;
+        }
+
         public CopilotMcpClientServerConfig Clone()
         {
             return new CopilotMcpClientServerConfig
@@ -78,6 +125,7 @@ namespace ColorVision.Copilot
                 AccessPolicy = AccessPolicy,
                 ConnectionTimeoutSeconds = ConnectionTimeoutSeconds,
                 ToolTimeoutSeconds = ToolTimeoutSeconds,
+                ToolRules = new ObservableCollection<CopilotMcpClientToolRule>(ToolRules.Select(rule => rule.Clone())),
             };
         }
     }
@@ -87,6 +135,7 @@ namespace ColorVision.Copilot
         private const int MaximumServers = 8;
         private static readonly Regex NameRegex = new("^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$", RegexOptions.Compiled);
         private static readonly Regex EnvironmentVariableRegex = new("^[A-Za-z_][A-Za-z0-9_]{0,127}$", RegexOptions.Compiled);
+        private static readonly Regex ToolNameRegex = new("^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$", RegexOptions.Compiled);
 
         public static bool TryParse(string? text, out IReadOnlyList<CopilotMcpClientServerConfig> servers, out string error)
         {
@@ -103,8 +152,8 @@ namespace ColorVision.Copilot
                     return Fail($"At most {MaximumServers} external MCP servers can be configured.", out servers, out error);
 
                 var parts = line.Split('|').Select(part => part.Trim()).ToArray();
-                if (parts.Length is < 2 or > 4)
-                    return Fail($"Line {index + 1} must use: name | endpoint | token-environment-variable | approval/read-only.", out servers, out error);
+                if (parts.Length is < 2 or > 5)
+                    return Fail($"Line {index + 1} must use: name | endpoint | token-environment-variable | approval/read-only | tool=policy,...", out servers, out error);
 
                 var name = parts[0];
                 if (!NameRegex.IsMatch(name))
@@ -128,14 +177,30 @@ namespace ColorVision.Copilot
                     return Fail($"Line {index + 1} has an invalid token environment-variable name.", out servers, out error);
 
                 var policyText = parts.Length >= 4 ? parts[3] : "approval";
-                var accessPolicy = policyText.ToLowerInvariant() switch
-                {
-                    "approval" or "require-approval" => CopilotMcpClientAccessPolicy.RequireApproval,
-                    "read-only" or "readonly" => CopilotMcpClientAccessPolicy.ReadOnly,
-                    _ => (CopilotMcpClientAccessPolicy?)null,
-                };
+                var accessPolicy = ParseAccessPolicy(policyText);
                 if (!accessPolicy.HasValue)
                     return Fail($"Line {index + 1} access policy must be 'approval' or 'read-only'.", out servers, out error);
+
+                var toolRules = new ObservableCollection<CopilotMcpClientToolRule>();
+                var toolRulesText = parts.Length >= 5 ? parts[4] : string.Empty;
+                if (!string.IsNullOrWhiteSpace(toolRulesText) && toolRulesText != "*")
+                {
+                    var toolNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var ruleText in toolRulesText.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    {
+                        var ruleParts = ruleText.Split('=', 2, StringSplitOptions.TrimEntries);
+                        var toolName = ruleParts[0];
+                        if (!ToolNameRegex.IsMatch(toolName))
+                            return Fail($"Line {index + 1} has an invalid MCP tool name '{toolName}'.", out servers, out error);
+                        if (!toolNames.Add(toolName))
+                            return Fail($"Line {index + 1} duplicates MCP tool rule '{toolName}'.", out servers, out error);
+
+                        var toolPolicy = ruleParts.Length == 1 ? accessPolicy : ParseAccessPolicy(ruleParts[1]);
+                        if (!toolPolicy.HasValue)
+                            return Fail($"Line {index + 1} tool '{toolName}' policy must be 'approval' or 'read-only'.", out servers, out error);
+                        toolRules.Add(new CopilotMcpClientToolRule { ToolName = toolName, AccessPolicy = toolPolicy.Value });
+                    }
+                }
 
                 parsed.Add(new CopilotMcpClientServerConfig
                 {
@@ -143,6 +208,7 @@ namespace ColorVision.Copilot
                     Endpoint = endpoint.AbsoluteUri,
                     BearerTokenEnvironmentVariable = tokenEnvironmentVariable,
                     AccessPolicy = accessPolicy.Value,
+                    ToolRules = toolRules,
                 });
             }
 
@@ -159,9 +225,26 @@ namespace ColorVision.Copilot
                 builder.Append(server.Name).Append(" | ")
                     .Append(server.Endpoint).Append(" | ")
                     .Append(server.BearerTokenEnvironmentVariable).Append(" | ")
-                    .AppendLine(server.AccessPolicy == CopilotMcpClientAccessPolicy.ReadOnly ? "read-only" : "approval");
+                    .Append(server.AccessPolicy == CopilotMcpClientAccessPolicy.ReadOnly ? "read-only" : "approval");
+                var toolRules = server.ToolRules.Where(rule => rule != null && !string.IsNullOrWhiteSpace(rule.ToolName)).ToArray();
+                if (toolRules.Length > 0)
+                {
+                    builder.Append(" | ").Append(string.Join(",", toolRules.Select(rule =>
+                        rule.ToolName + "=" + (rule.AccessPolicy == CopilotMcpClientAccessPolicy.ReadOnly ? "read-only" : "approval"))));
+                }
+                builder.AppendLine();
             }
             return builder.ToString().TrimEnd();
+        }
+
+        private static CopilotMcpClientAccessPolicy? ParseAccessPolicy(string? value)
+        {
+            return (value ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "approval" or "require-approval" => CopilotMcpClientAccessPolicy.RequireApproval,
+                "read-only" or "readonly" => CopilotMcpClientAccessPolicy.ReadOnly,
+                _ => null,
+            };
         }
 
         private static bool Fail(string message, out IReadOnlyList<CopilotMcpClientServerConfig> servers, out string error)
