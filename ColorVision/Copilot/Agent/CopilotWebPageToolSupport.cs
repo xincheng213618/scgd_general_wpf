@@ -15,15 +15,20 @@ using System.Xml.Linq;
 
 namespace ColorVision.Copilot
 {
+    public readonly record struct CopilotWebPageLink(string Url, string Text);
+
     public readonly record struct CopilotFetchedWebPageContent(
         string Url,
         string Title,
         string Description,
         string Content,
         IReadOnlyList<string>? RelatedResourceUrls = null,
-        bool IsSparseExtraction = false)
+        bool IsSparseExtraction = false,
+        IReadOnlyList<CopilotWebPageLink>? RelatedPageLinks = null)
     {
         public IReadOnlyList<string> DiscoveredResourceUrls => RelatedResourceUrls ?? Array.Empty<string>();
+
+        public IReadOnlyList<CopilotWebPageLink> DiscoveredPageLinks => RelatedPageLinks ?? Array.Empty<CopilotWebPageLink>();
     }
 
     public static class CopilotWebPageToolSupport
@@ -31,9 +36,16 @@ namespace ColorVision.Copilot
         public const int MaxWebPageDownloadBytes = 2 * 1024 * 1024;
         public const int MaxWebPageContentChars = 12000;
         public const int MaxWebPageRedirects = 5;
+        public const int MaxDiscoveredPageLinks = 12;
 
         private static readonly Regex HttpUrlRegex = new("https?://[^\\s\\\"'<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly char[] UrlTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '\uFF0C', '\u3002', '\uFF1B', '\uFF1A', '\uFF01', '\uFF1F', '\uFF09', '\u3011', '\u300B', '\u3001' };
+        private static readonly HashSet<string> NonPageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".7z", ".avi", ".bmp", ".css", ".csv", ".doc", ".docx", ".exe", ".gif", ".gz",
+            ".ico", ".jpeg", ".jpg", ".js", ".mp3", ".mp4", ".pdf", ".png", ".ppt", ".pptx",
+            ".rar", ".svg", ".tar", ".webm", ".webp", ".woff", ".woff2", ".xls", ".xlsx", ".zip",
+        };
         private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
         private static readonly HttpClient HttpClient = CreateHttpClient();
 
@@ -128,6 +140,8 @@ namespace ColorVision.Copilot
                     builder.Append("- ").AppendLine(relatedUrl);
             }
 
+            AppendDiscoveredPageLinks(builder, page.DiscoveredPageLinks);
+
             builder.AppendLine("Body:");
             builder.AppendLine(page.Content);
             return builder.ToString().TrimEnd();
@@ -160,6 +174,12 @@ namespace ColorVision.Copilot
                 builder.AppendLine();
             }
 
+            if (page.DiscoveredPageLinks.Count > 0)
+            {
+                AppendDiscoveredPageLinks(builder, page.DiscoveredPageLinks);
+                builder.AppendLine();
+            }
+
             builder.Append(page.Content);
             return builder.ToString();
         }
@@ -177,6 +197,7 @@ namespace ColorVision.Copilot
             var document = new HtmlDocument();
             document.LoadHtml(html ?? string.Empty);
             var relatedResourceUrls = ExtractRelatedResourceUrls(uri, document);
+            var relatedPageLinks = ExtractRelatedPageLinks(uri, document);
 
             foreach (var removableNode in document.DocumentNode.SelectNodes("//script|//style|//noscript|//svg") ?? Enumerable.Empty<HtmlNode>())
             {
@@ -209,7 +230,7 @@ namespace ColorVision.Copilot
                 content = content[..MaxWebPageContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxWebPageContentChars} characters.>";
 
             var sparseExtraction = (html?.Length ?? 0) >= 20_000 && content.Length < 500;
-            return new CopilotFetchedWebPageContent(uri.ToString(), title, description, content, relatedResourceUrls, sparseExtraction);
+            return new CopilotFetchedWebPageContent(uri.ToString(), title, description, content, relatedResourceUrls, sparseExtraction, relatedPageLinks);
         }
 
         private static CopilotFetchedWebPageContent ExtractStructuredWebContent(Uri uri, string mediaType, string content)
@@ -271,6 +292,84 @@ namespace ColorVision.Copilot
                     break;
             }
             return results;
+        }
+
+        private static List<CopilotWebPageLink> ExtractRelatedPageLinks(Uri pageUri, HtmlDocument document)
+        {
+            var results = new List<CopilotWebPageLink>();
+            var visitedUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var currentPageUrl = RemoveFragment(pageUri).AbsoluteUri;
+            var nodes = document.DocumentNode.SelectNodes("//a[@href]") ?? Enumerable.Empty<HtmlNode>();
+            foreach (var node in nodes)
+            {
+                var href = HtmlEntity.DeEntitize(node.GetAttributeValue("href", string.Empty)).Trim();
+                if (string.IsNullOrWhiteSpace(href)
+                    || href.Length > 2048
+                    || node.Attributes["download"] != null
+                    || !Uri.TryCreate(pageUri, href, out var candidate)
+                    || !IsSameOrigin(pageUri, candidate)
+                    || IsStructuredResourceLink(node, candidate)
+                    || !IsBrowsablePageUri(candidate))
+                {
+                    continue;
+                }
+
+                var normalizedUri = RemoveFragment(candidate);
+                var normalizedUrl = normalizedUri.AbsoluteUri;
+                if (string.Equals(normalizedUrl, currentPageUrl, StringComparison.OrdinalIgnoreCase)
+                    || !visitedUrls.Add(normalizedUrl))
+                {
+                    continue;
+                }
+
+                var label = NormalizeWebPageLine(node.InnerText);
+                if (string.IsNullOrWhiteSpace(label))
+                    label = NormalizeWebPageLine(node.GetAttributeValue("aria-label", string.Empty));
+                if (string.IsNullOrWhiteSpace(label))
+                    label = NormalizeWebPageLine(node.GetAttributeValue("title", string.Empty));
+                if (string.IsNullOrWhiteSpace(label))
+                    label = Path.GetFileName(normalizedUri.AbsolutePath.TrimEnd('/'));
+                if (string.IsNullOrWhiteSpace(label))
+                    label = normalizedUri.Host;
+                if (label.Length > 160)
+                    label = label[..159] + "…";
+
+                results.Add(new CopilotWebPageLink(normalizedUrl, label));
+                if (results.Count >= MaxDiscoveredPageLinks)
+                    break;
+            }
+
+            return results;
+        }
+
+        private static bool IsBrowsablePageUri(Uri uri)
+        {
+            if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var extension = Path.GetExtension(uri.AbsolutePath);
+            if (string.IsNullOrWhiteSpace(extension))
+                return true;
+            return !NonPageExtensions.Contains(extension);
+        }
+
+        private static Uri RemoveFragment(Uri uri)
+        {
+            var builder = new UriBuilder(uri) { Fragment = string.Empty };
+            return builder.Uri;
+        }
+
+        private static void AppendDiscoveredPageLinks(StringBuilder builder, IReadOnlyList<CopilotWebPageLink> links)
+        {
+            if (links == null || links.Count == 0)
+                return;
+
+            builder.AppendLine("Discovered same-origin pages (follow only when relevant):");
+            foreach (var link in links.Take(MaxDiscoveredPageLinks))
+                builder.Append("- ").Append(link.Text).Append(": ").AppendLine(link.Url);
         }
 
         private static bool IsStructuredResourceLink(HtmlNode node, Uri candidate)

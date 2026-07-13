@@ -164,6 +164,9 @@ public sealed class CopilotCapabilitiesTests : IDisposable
               <body>
                 <main>Only static card</main>
                 <a href="/feed.xml">RSS</a>
+                <a href="/iq/full/#latest">Full benchmark history</a>
+                <a href="/iq/full/">Duplicate benchmark link</a>
+                <a href="/assets/chart.png">Chart image</a>
                 <a href="https://other.example/private.json">External data</a>
               </body>
             </html>
@@ -179,6 +182,28 @@ public sealed class CopilotCapabilitiesTests : IDisposable
         Assert.Contains("https://codexradar.com/current.json", page.DiscoveredResourceUrls, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("https://codexradar.com/feed.xml", page.DiscoveredResourceUrls, StringComparer.OrdinalIgnoreCase);
         Assert.DoesNotContain(page.DiscoveredResourceUrls, url => url.Contains("other.example", StringComparison.OrdinalIgnoreCase));
+        var pageLink = Assert.Single(page.DiscoveredPageLinks);
+        Assert.Equal("https://codexradar.com/iq/full/", pageLink.Url);
+        Assert.Equal("Full benchmark history", pageLink.Text);
+        var context = CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(page);
+        Assert.Contains("Discovered same-origin pages (follow only when relevant)", context, StringComparison.Ordinal);
+        Assert.Contains("Full benchmark history: https://codexradar.com/iq/full/", context, StringComparison.Ordinal);
+        Assert.DoesNotContain("chart.png", context, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void WebPage_BoundsDiscoveredNavigationLinks()
+    {
+        var links = string.Join(Environment.NewLine, Enumerable.Range(1, 20)
+            .Select(index => $"<a href=\"/section/{index}\">Section {index}</a>"));
+        var page = CopilotWebPageToolSupport.ExtractDownloadedContent(
+            new Uri("https://example.com/"),
+            "text/html",
+            $"<html><body><main>Home</main>{links}</body></html>");
+
+        Assert.Equal(CopilotWebPageToolSupport.MaxDiscoveredPageLinks, page.DiscoveredPageLinks.Count);
+        Assert.Equal("https://example.com/section/1", page.DiscoveredPageLinks[0].Url);
+        Assert.Equal("https://example.com/section/12", page.DiscoveredPageLinks[^1].Url);
     }
 
     [Fact]

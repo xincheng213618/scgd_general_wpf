@@ -13,7 +13,7 @@ namespace ColorVision.Copilot
 
         public string Name => "FetchUrl";
 
-        public string Description => "Fetch the title, description, and readable body text for web pages mentioned by the user.";
+        public string Description => "Fetch a web page's readable text, structured data resources, and bounded same-origin navigation links for evidence-driven site exploration.";
 
         public CopilotToolEvidenceMode EvidenceMode => CopilotToolEvidenceMode.RedactedExcerpt;
 
