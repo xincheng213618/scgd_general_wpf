@@ -740,7 +740,6 @@ namespace ColorVision.Copilot
             var role = message.Role?.Trim().ToLowerInvariant() switch
             {
                 "assistant" => ChatRole.Assistant,
-                "system" => ChatRole.System,
                 _ => ChatRole.User,
             };
             return new Microsoft.Extensions.AI.ChatMessage(role, message.Content ?? string.Empty);

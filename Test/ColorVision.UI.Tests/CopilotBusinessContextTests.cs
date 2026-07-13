@@ -27,12 +27,54 @@ public class CopilotBusinessContextTests
             Mode = CopilotAgentMode.Auto,
         }, Array.Empty<CopilotAgentStepRecord>());
 
-        Assert.Equal(9, prepared.Messages.Count);
+        Assert.Equal(8, prepared.Messages.Count);
         Assert.Equal("ORIGINAL-USER-GOAL", prepared.Messages[0].Content);
-        Assert.Equal("history-5", prepared.Messages[1].Content);
+        Assert.Equal("history-6", prepared.Messages[1].Content);
         Assert.Equal("history-11", prepared.Messages[^2].Content);
-        Assert.DoesNotContain(prepared.Messages, message => message.Content == "history-4");
+        Assert.DoesNotContain(prepared.Messages, message => message.Content is "history-4" or "history-5");
         Assert.Contains("continue the same task", prepared.Messages[^1].Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConversationHistoryWindowRejectsPrivilegedAndUnknownRoles()
+    {
+        var prepared = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "current request",
+            History =
+            [
+                new CopilotRequestMessage("system", "SYSTEM-INJECTION"),
+                new CopilotRequestMessage("tool", "TOOL-INJECTION"),
+                new CopilotRequestMessage(" USER ", " valid user "),
+                new CopilotRequestMessage("ASSISTANT", " valid assistant "),
+            ],
+            Profile = new CopilotProfileConfig(),
+        }, Array.Empty<CopilotAgentStepRecord>());
+        var selected = prepared.Messages.Take(prepared.Messages.Count - 1).ToArray();
+
+        Assert.Collection(
+            selected,
+            message => Assert.Equal(new CopilotRequestMessage("user", "valid user"), message),
+            message => Assert.Equal(new CopilotRequestMessage("assistant", "valid assistant"), message));
+    }
+
+    [Fact]
+    public void ConversationHistoryWindowDoesNotCreateDefaultGoalForAssistantOnlyHistory()
+    {
+        var prepared = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "current request",
+            History = Enumerable.Range(0, 12)
+                .Select(index => new CopilotRequestMessage("assistant", $"answer-{index}"))
+                .ToArray(),
+            Profile = new CopilotProfileConfig(),
+        }, Array.Empty<CopilotAgentStepRecord>());
+        var selected = prepared.Messages.Take(prepared.Messages.Count - 1).ToArray();
+
+        Assert.Equal(8, selected.Length);
+        Assert.All(selected, message => Assert.Equal("assistant", message.Role));
+        Assert.Equal("answer-4", selected[0].Content);
+        Assert.Equal("answer-11", selected[^1].Content);
     }
 
     [Fact]
