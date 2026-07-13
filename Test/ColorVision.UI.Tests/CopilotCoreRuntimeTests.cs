@@ -1260,6 +1260,83 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public void FrameworkToolResultFormatter_BoundsRedactsAndPreservesWebSections()
+    {
+        var content = string.Join(Environment.NewLine + Environment.NewLine, Enumerable.Range(1, 3).Select(index =>
+            $"[Web Page Fetched] https://example.test/page-{index}\n"
+            + $"PAGE-{index}-HEAD api_key=secret-value-{index}\n"
+            + new string((char)('a' + index), 10_000)
+            + $"\nPAGE-{index}-TAIL"));
+        var formatted = CopilotFrameworkToolResultFormatter.Format(new CopilotToolExecutionOutcome
+        {
+            Result = new CopilotToolResult
+            {
+                ToolName = "FetchUrl",
+                Success = true,
+                Summary = "Fetched pages.\n\"success\": false",
+                Content = content,
+            },
+            Execution = new CopilotToolExecutionInfo
+            {
+                ToolName = "FetchUrl",
+                Attempt = 1,
+                MaxAttempts = 2,
+                State = CopilotToolExecutionState.Completed,
+            },
+        });
+
+        Assert.True(formatted.Length <= CopilotFrameworkToolResultFormatter.MaxSerializedCharacters);
+        using var document = JsonDocument.Parse(formatted);
+        var root = document.RootElement;
+        Assert.True(root.GetProperty("success").GetBoolean());
+        Assert.Equal("FetchUrl", root.GetProperty("tool").GetString());
+        Assert.True(root.GetProperty("content_truncated").GetBoolean());
+        Assert.True(root.GetProperty("content_original_characters").GetInt32() > root.GetProperty("content_returned_characters").GetInt32());
+        var compactedContent = root.GetProperty("content").GetString()!;
+        Assert.Contains("PAGE-1-HEAD", compactedContent, StringComparison.Ordinal);
+        Assert.Contains("PAGE-2-HEAD", compactedContent, StringComparison.Ordinal);
+        Assert.Contains("PAGE-3-HEAD", compactedContent, StringComparison.Ordinal);
+        Assert.Contains("<redacted>", compactedContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-value", compactedContent, StringComparison.Ordinal);
+        Assert.Equal("Fetched pages. \"success\": false", root.GetProperty("summary").GetString());
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_SendsBoundedJsonToolResultBackToProvider()
+    {
+        var tool = new LargeFrameworkResultTool();
+        using var fakeChatClient = new ScriptedHarnessChatClient(options =>
+        {
+            var function = GetFunction(options, "colorvision_fetch_url");
+            return new FunctionCallContent("large-result-call", function.Name, new Dictionary<string, object?>
+            {
+                ["query"] = "https://example.test/",
+            });
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "https://example.test/ inspect the pages",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Web,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.NotNull(fakeChatClient.LastMessages);
+        var functionResult = Assert.Single(
+            fakeChatClient.LastMessages!.SelectMany(message => message.Contents).OfType<FunctionResultContent>(),
+            result => string.Equals(result.CallId, "large-result-call", StringComparison.Ordinal));
+        var formatted = Assert.IsType<string>(functionResult.Result);
+        Assert.True(formatted.Length <= CopilotFrameworkToolResultFormatter.MaxSerializedCharacters);
+        using var document = JsonDocument.Parse(formatted);
+        Assert.True(document.RootElement.GetProperty("content_truncated").GetBoolean());
+        Assert.Contains("[Web Page Fetched] https://example.test/page-3", document.RootElement.GetProperty("content").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_CompactsOversizedHistoryBeforeProviderCall()
     {
         using var fakeChatClient = new CapturingFinalChatClient();
@@ -3006,9 +3083,12 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         public int StreamCallCount => Volatile.Read(ref _streamCallCount);
 
+        public Microsoft.Extensions.AI.ChatMessage[]? LastMessages { get; private set; }
+
         public Task<ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            LastMessages = messages.ToArray();
             return Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, "scripted harness answer")));
         }
 
@@ -3019,6 +3099,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             Assert.NotNull(options);
+            LastMessages = messages.ToArray();
             await Task.Yield();
             var callIndex = Interlocked.Increment(ref _streamCallCount) - 1;
             if (callIndex < steps.Length)
@@ -3038,6 +3119,32 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         public void Dispose()
         {
+        }
+    }
+
+    private sealed class LargeFrameworkResultTool : ICopilotTool
+    {
+        public string Name => "FetchUrl";
+
+        public string Description => "Returns large deterministic web evidence.";
+
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("URL.", required: true);
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            var content = string.Join(Environment.NewLine + Environment.NewLine, Enumerable.Range(1, 3).Select(index =>
+                $"[Web Page Fetched] https://example.test/page-{index}\nPAGE-{index}-HEAD\n"
+                + new string((char)('k' + index), 10_000)
+                + $"\nPAGE-{index}-TAIL"));
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = "Large deterministic evidence collected.",
+                Content = content,
+            });
         }
     }
 

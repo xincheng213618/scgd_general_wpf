@@ -1034,7 +1034,7 @@ namespace ColorVision.Copilot
                     RecordOutcome(signature, outcome);
                 }
 
-                return FormatToolResult(outcome);
+                return CopilotFrameworkToolResultFormatter.Format(outcome);
             }
 
             private CopilotToolInvocation CreateInvocation(FrameworkApprovalReservation reservation, bool frameworkApprovalGranted)
@@ -1201,7 +1201,7 @@ namespace ColorVision.Copilot
 
             private static string FormatRejectedToolCall(string toolName, string error)
             {
-                return $"success: false{Environment.NewLine}summary: {toolName} was not executed.{Environment.NewLine}error: {error}";
+                return CopilotFrameworkToolResultFormatter.FormatRejected(toolName, error);
             }
 
             private sealed class HarnessToolFunction : AIFunction
@@ -1260,31 +1260,6 @@ namespace ColorVision.Copilot
                 public CopilotToolExecutionOutcome? LastOutcome { get; set; }
             }
 
-            private static string FormatToolResult(CopilotToolExecutionOutcome outcome)
-            {
-                var result = outcome.Result;
-                var execution = outcome.Execution;
-                var builder = new StringBuilder();
-                builder.AppendLine(result.Success ? "success: true" : "success: false");
-                builder.Append("attempt: ").Append(execution.Attempt).Append('/').AppendLine(execution.MaxAttempts.ToString());
-                if (execution.FailureKind != CopilotToolFailureKind.None)
-                    builder.Append("failure_kind: ").AppendLine(execution.FailureKind.ToString().ToLowerInvariant());
-                builder.Append("retry_allowed: ").AppendLine(execution.RetryEligible ? "true" : "false");
-                if (result.Approval != null)
-                {
-                    builder.AppendLine("status: awaiting_approval");
-                    builder.Append("approval_action_id: ").AppendLine(result.Approval.ActionId);
-                    builder.Append("approval_risk: ").AppendLine(result.Approval.RiskLevel);
-                    builder.Append("approval_expires_at: ").AppendLine(result.Approval.ExpiresAtUtc.ToString("O"));
-                }
-                if (!string.IsNullOrWhiteSpace(result.Summary))
-                    builder.Append("summary: ").AppendLine(result.Summary.Trim());
-                if (!string.IsNullOrWhiteSpace(result.Content))
-                    builder.AppendLine("content:").AppendLine(result.Content.Trim());
-                if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
-                    builder.Append("error: ").AppendLine(result.ErrorMessage.Trim());
-                return builder.ToString().TrimEnd();
-            }
         }
 
         private sealed record ActiveSteeringContext(
