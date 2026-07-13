@@ -211,6 +211,19 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var recoveredBuilder = new CopilotAgentTaskEventJournalBuilder(unknownSchema);
         recoveredBuilder.RecordRunStarted();
         Assert.Single(recoveredBuilder.Snapshot().Events);
+
+        CopilotAgentTaskEventJournalRegistry.Clear();
+        try
+        {
+            Assert.True(CopilotAgentTaskEventJournalRegistry.Publish("conversation-journal-test", snapshot));
+            Assert.Equal("conversation-journal-test", CopilotAgentTaskEventJournalRegistry.Current?.ConversationId);
+            Assert.False(CopilotAgentTaskEventJournalRegistry.Publish("conversation-invalid", unknownSchema));
+            Assert.Equal("conversation-journal-test", CopilotAgentTaskEventJournalRegistry.Current?.ConversationId);
+        }
+        finally
+        {
+            CopilotAgentTaskEventJournalRegistry.Clear();
+        }
     }
 
     [Fact]

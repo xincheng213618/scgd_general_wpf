@@ -171,6 +171,8 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<CopilotLiveContext?> LiveContextProvider { get; init; } = () => CopilotLiveContextRegistry.Current;
 
+        public Func<CopilotAgentTaskEventJournalContext?> TaskEventJournalProvider { get; init; } = () => CopilotAgentTaskEventJournalRegistry.Current;
+
         public Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> FlowSnapshotProvider { get; init; } = CreateDefaultFlowSnapshotAsync;
 
         public Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult> RecentLogProvider { get; init; } = CopilotRecentLogCapability.Capture;

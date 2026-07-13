@@ -1679,6 +1679,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
             OnPropertyChanged(nameof(InputPlaceholder));
+            PublishSelectedTaskEventJournal();
 
             _state.ActiveConversationId = conversation?.Id ?? string.Empty;
 
@@ -2582,8 +2583,24 @@ namespace ColorVision.Copilot
 
         private void PersistState()
         {
+            PublishSelectedTaskEventJournal();
             _stateStore.Save(_state);
             OnPropertyChanged(nameof(HasAttachments));
+        }
+
+        private void PublishSelectedTaskEventJournal()
+        {
+            var conversation = SelectedConversation;
+            var journal = conversation?.AgentSessionCheckpoint?.TaskEventJournal;
+            if (conversation != null
+                && journal?.Events?.Count > 0
+                && journal.IsStructurallyValid()
+                && CopilotAgentTaskEventJournalRegistry.Publish(conversation.Id, journal))
+            {
+                return;
+            }
+
+            CopilotAgentTaskEventJournalRegistry.Clear();
         }
 
         private void PersistConfig()

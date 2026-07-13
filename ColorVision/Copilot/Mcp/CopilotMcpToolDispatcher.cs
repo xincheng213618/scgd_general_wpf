@@ -39,7 +39,8 @@ namespace ColorVision.Copilot.Mcp
         private const string AuditSummaryResourceUri = "colorvision://mcp/audit-summary";
         private const string AuditLogResourceUri = "colorvision://mcp/audit-log";
         private const string CapabilityCatalogResourceUri = "colorvision://copilot/capabilities";
-        private static readonly JsonSerializerOptions CapabilityCatalogJsonOptions = new(JsonSerializerDefaults.Web)
+        private const string TaskEventJournalResourceUri = "colorvision://copilot/task-events";
+        private static readonly JsonSerializerOptions StructuredJsonOptions = new(JsonSerializerDefaults.Web)
         {
             WriteIndented = true,
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
@@ -102,6 +103,30 @@ namespace ColorVision.Copilot.Mcp
                     ["max_entries"] = IntegerProperty("Maximum recent audit entries to summarize. Defaults to 50.", 1, 200),
                 }), "audit", "read-only", "Call get_audit_summary with { \"max_entries\": 50 }."),
                 Tool("get_last_tool_error", "Return the most recent failed MCP tool call, if one is recorded.", EmptySchema(), "audit", "read-only", "Call get_last_tool_error with no arguments."),
+                Tool("get_agent_task_events", "Query the latest saved Agent task event journal. Use only when the user asks to inspect Agent execution, tools, approvals, steering, replanning, or stop reasons.", Schema(new Dictionary<string, object>
+                {
+                    ["event_types"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "array",
+                        ["description"] = "Optional event type filters, for example toolCompleted, approvalDenied, or runStopped.",
+                        ["items"] = new Dictionary<string, object>
+                        {
+                            ["type"] = "string",
+                            ["enum"] = Enum.GetNames<CopilotAgentTaskEventType>().Select(JsonNamingPolicy.CamelCase.ConvertName).ToArray(),
+                        },
+                        ["maxItems"] = Enum.GetValues<CopilotAgentTaskEventType>().Length,
+                    },
+                    ["run_id"] = StringProperty("Optional exact run: identifier."),
+                    ["tool"] = StringProperty("Optional exact tool name filter."),
+                    ["related_id"] = StringProperty("Optional exact subject or related identifier."),
+                    ["before_sequence"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "integer",
+                        ["description"] = "Return events with a sequence lower than this cursor.",
+                        ["minimum"] = 1L,
+                    },
+                    ["max_events"] = IntegerProperty("Maximum events to return. Defaults to 50.", 1, CopilotAgentTaskEventJournal.MaxQueryLimit),
+                }), "audit", "read-only", "Call get_agent_task_events with { \"event_types\": [\"toolCompleted\", \"runStopped\"], \"max_events\": 50 }."),
                 Tool("get_runtime_environment_summary", "Return a safe summary of the MCP runtime environment, workspace roots, live context, logs, and flow availability.", EmptySchema(), "status", "read-only", "Call get_runtime_environment_summary before diagnostics."),
                 Tool("get_diagnostic_bundle", "Return a size-limited redacted diagnostic bundle with server status, runtime, last error, recent log, live context, and flow summary.", Schema(new Dictionary<string, object>
                 {
@@ -218,6 +243,7 @@ namespace ColorVision.Copilot.Mcp
                 Resource(AuditSummaryResourceUri, "MCP audit summary", "Compact ColorVision MCP audit and pending approval summary."),
                 Resource(AuditLogResourceUri, "MCP audit log", "Recent ColorVision MCP tool-call audit entries."),
                 Resource(CapabilityCatalogResourceUri, "Copilot capability catalog", "Versioned read-only catalog of built-in and discovered Copilot capabilities.", "application/json"),
+                Resource(TaskEventJournalResourceUri, "Copilot Agent task events", "Latest saved bounded and redacted Agent task event journal.", "application/json"),
             };
         }
 
@@ -241,6 +267,7 @@ namespace ColorVision.Copilot.Mcp
                 AuditSummaryResourceUri => GetAuditSummary(null),
                 AuditLogResourceUri => GetAuditLog(null),
                 CapabilityCatalogResourceUri => GetCapabilityCatalog(),
+                TaskEventJournalResourceUri => GetAgentTaskEvents(null, CopilotAgentTaskEventJournal.MaxQueryLimit),
                 _ => CopilotMcpToolCallResult.Fail("resource_not_found", $"Unknown ColorVision MCP resource: {uri}"),
             };
         }
@@ -248,7 +275,92 @@ namespace ColorVision.Copilot.Mcp
         private static CopilotMcpToolCallResult GetCapabilityCatalog()
         {
             var snapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
-            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(snapshot, CapabilityCatalogJsonOptions));
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(snapshot, StructuredJsonOptions));
+        }
+
+        private CopilotMcpToolCallResult GetAgentTaskEvents(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            int defaultMaxEvents = 50)
+        {
+            var context = SafeInvoke(_environment.TaskEventJournalProvider);
+            if (context?.IsStructurallyValid() != true)
+            {
+                return CopilotMcpToolCallResult.Fail(
+                    "agent_task_events_unavailable",
+                    "No saved Agent task event journal is available for the selected conversation.");
+            }
+
+            if (!TryGetTaskEventTypes(arguments, out var eventTypes, out var eventTypesError))
+                return CopilotMcpToolCallResult.Fail("invalid_arguments", eventTypesError);
+
+            var beforeSequence = GetLong(arguments, "before_sequence");
+            if (arguments?.ContainsKey("before_sequence") == true && beforeSequence is null or <= 0)
+                return CopilotMcpToolCallResult.Fail("invalid_arguments", "before_sequence must be a positive integer cursor.");
+            var maxEvents = GetInt(arguments, "max_events");
+            if (arguments?.ContainsKey("max_events") == true
+                && (maxEvents is null or <= 0 || maxEvents > CopilotAgentTaskEventJournal.MaxQueryLimit))
+            {
+                return CopilotMcpToolCallResult.Fail(
+                    "invalid_arguments",
+                    $"max_events must be between 1 and {CopilotAgentTaskEventJournal.MaxQueryLimit}.");
+            }
+
+            var query = new CopilotAgentTaskEventQuery
+            {
+                Types = eventTypes,
+                RunId = GetString(arguments, "run_id"),
+                ToolName = GetString(arguments, "tool"),
+                SubjectOrRelatedId = GetString(arguments, "related_id"),
+                BeforeSequence = beforeSequence ?? long.MaxValue,
+                Limit = maxEvents ?? defaultMaxEvents,
+            };
+            var result = CopilotAgentTaskEventJournal.Query(context.Journal, query);
+            var payload = new
+            {
+                context.ConversationId,
+                context.PublishedAtUtc,
+                context.Journal.SchemaVersion,
+                Events = result.Events,
+                result.HasMore,
+                result.NextBeforeSequence,
+            };
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(payload, StructuredJsonOptions));
+        }
+
+        private static bool TryGetTaskEventTypes(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            out IReadOnlyCollection<CopilotAgentTaskEventType> eventTypes,
+            out string error)
+        {
+            eventTypes = Array.Empty<CopilotAgentTaskEventType>();
+            error = string.Empty;
+            if (arguments == null || !arguments.TryGetValue("event_types", out var value))
+                return true;
+            if (value.ValueKind != JsonValueKind.Array)
+            {
+                error = "event_types must be an array of Agent task event type names.";
+                return false;
+            }
+            if (value.GetArrayLength() > Enum.GetValues<CopilotAgentTaskEventType>().Length)
+            {
+                error = "event_types contains more entries than the supported Agent task event type set.";
+                return false;
+            }
+
+            var parsed = new HashSet<CopilotAgentTaskEventType>();
+            foreach (var item in value.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.String
+                    || !Enum.TryParse<CopilotAgentTaskEventType>(item.GetString(), ignoreCase: true, out var eventType)
+                    || !Enum.IsDefined(eventType))
+                {
+                    error = $"Unknown Agent task event type: {item}.";
+                    return false;
+                }
+                parsed.Add(eventType);
+            }
+            eventTypes = parsed;
+            return true;
         }
 
         public async Task<CopilotMcpToolCallResult> CallAsync(string toolName, IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken, string callerSource = "")
@@ -284,6 +396,7 @@ namespace ColorVision.Copilot.Mcp
                 .Register("get_audit_log", (arguments, _, _) => Task.FromResult(GetAuditLog(arguments)))
                 .Register("get_audit_summary", (arguments, _, _) => Task.FromResult(GetAuditSummary(arguments)))
                 .Register("get_last_tool_error", (_, _, _) => Task.FromResult(GetLastToolError()))
+                .Register("get_agent_task_events", (arguments, _, _) => Task.FromResult(GetAgentTaskEvents(arguments)))
                 .Register("get_runtime_environment_summary", (_, _, token) => GetRuntimeEnvironmentSummaryAsync(token))
                 .Register("get_diagnostic_bundle", (arguments, caller, token) => GetDiagnosticBundleAsync(arguments, caller, token))
                 .Register("get_live_context", (_, _, _) => Task.FromResult(GetLiveContext()))
@@ -2583,6 +2696,20 @@ namespace ColorVision.Copilot.Mcp
                 return number;
 
             if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out number))
+                return number;
+
+            return null;
+        }
+
+        private static long? GetLong(IReadOnlyDictionary<string, JsonElement>? arguments, string name)
+        {
+            if (arguments == null || !arguments.TryGetValue(name, out var value))
+                return null;
+
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var number))
+                return number;
+
+            if (value.ValueKind == JsonValueKind.String && long.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out number))
                 return number;
 
             return null;

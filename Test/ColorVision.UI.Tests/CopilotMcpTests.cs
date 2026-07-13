@@ -90,6 +90,7 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.Contains("set_theme", response.Body, StringComparison.Ordinal);
         Assert.Contains("get_server_status", response.Body, StringComparison.Ordinal);
         Assert.Contains("get_audit_log", response.Body, StringComparison.Ordinal);
+        Assert.Contains("get_agent_task_events", response.Body, StringComparison.Ordinal);
         Assert.Contains("open_panel", response.Body, StringComparison.Ordinal);
         Assert.Contains("create_flow", response.Body, StringComparison.Ordinal);
         Assert.Contains("search_docs", response.Body, StringComparison.Ordinal);
@@ -179,6 +180,92 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.Equal("redactedExcerpt", fetchUrl.GetProperty("evidenceMode").GetString());
         Assert.DoesNotContain("http://", text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("https://", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AgentTaskEvents_AreExplicitlyQueryableBoundedAndRedacted()
+    {
+        var journalBuilder = new CopilotAgentTaskEventJournalBuilder();
+        journalBuilder.RecordRunStarted();
+        journalBuilder.RecordSteering("api_key=secret-steering-value");
+        journalBuilder.Observe(CopilotAgentEvent.FromToolResult(new CopilotToolResult
+        {
+            ToolName = "SearchDocs",
+            Success = true,
+            Summary = "Documentation search completed.",
+        }, new CopilotToolExecutionInfo
+        {
+            CallId = "search-docs-call",
+            ToolName = "SearchDocs",
+            State = CopilotToolExecutionState.Completed,
+            StartedAtUtc = DateTimeOffset.UtcNow.AddMilliseconds(-10),
+            CompletedAtUtc = DateTimeOffset.UtcNow,
+        }));
+        journalBuilder.Observe(CopilotAgentEvent.Error("token=secret-runtime-value"));
+        journalBuilder.RecordStop(CopilotAgentStopReason.Completed);
+        var context = new CopilotAgentTaskEventJournalContext
+        {
+            ConversationId = "conversation-task-events",
+            Journal = journalBuilder.Snapshot(),
+            PublishedAtUtc = DateTimeOffset.UtcNow,
+        };
+        var handler = CreateHandler(taskEventJournalProvider: () => context);
+
+        var listResponse = await handler.HandleAsync(CreateJsonRpcRequest("resources/list", authorized: true), CancellationToken.None);
+        Assert.Contains("colorvision://copilot/task-events", listResponse.Body, StringComparison.Ordinal);
+        var resourceResponse = await ReadResourceAsync(handler, "colorvision://copilot/task-events");
+        var resourceText = ReadResourceText(resourceResponse);
+        Assert.DoesNotContain("secret-steering-value", resourceText, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-runtime-value", resourceText, StringComparison.Ordinal);
+        using (var resourceDocument = JsonDocument.Parse(resourceText))
+        {
+            Assert.Equal("conversation-task-events", resourceDocument.RootElement.GetProperty("conversationId").GetString());
+            Assert.Equal(CopilotAgentTaskEventJournalSnapshot.CurrentSchemaVersion, resourceDocument.RootElement.GetProperty("schemaVersion").GetInt32());
+            Assert.True(resourceDocument.RootElement.GetProperty("events").GetArrayLength() >= 5);
+        }
+
+        var filteredResult = ReadToolResult(await CallToolAsync(handler, "get_agent_task_events", new
+        {
+            event_types = new[] { "toolCompleted" },
+            tool = "SearchDocs",
+            max_events = 1,
+        }));
+        Assert.False(filteredResult.IsError);
+        using (var filteredDocument = JsonDocument.Parse(filteredResult.Text))
+        {
+            var events = filteredDocument.RootElement.GetProperty("events");
+            Assert.Equal(1, events.GetArrayLength());
+            Assert.Equal("toolCompleted", events[0].GetProperty("type").GetString());
+            Assert.Equal("SearchDocs", events[0].GetProperty("toolName").GetString());
+        }
+
+        var firstPage = ReadToolResult(await CallToolAsync(handler, "get_agent_task_events", new { max_events = 2 }));
+        using var firstPageDocument = JsonDocument.Parse(firstPage.Text);
+        Assert.True(firstPageDocument.RootElement.GetProperty("hasMore").GetBoolean());
+        var cursor = firstPageDocument.RootElement.GetProperty("nextBeforeSequence").GetInt64();
+        var secondPage = ReadToolResult(await CallToolAsync(handler, "get_agent_task_events", new { before_sequence = cursor, max_events = 2 }));
+        using var secondPageDocument = JsonDocument.Parse(secondPage.Text);
+        var firstIds = firstPageDocument.RootElement.GetProperty("events").EnumerateArray().Select(item => item.GetProperty("id").GetString()).ToHashSet();
+        Assert.DoesNotContain(secondPageDocument.RootElement.GetProperty("events").EnumerateArray(), item => firstIds.Contains(item.GetProperty("id").GetString()));
+
+        var invalidFilter = ReadToolResult(await CallToolAsync(handler, "get_agent_task_events", new { event_types = new[] { "notAnEvent" } }));
+        Assert.True(invalidFilter.IsError);
+        Assert.Contains("Unknown Agent task event type", invalidFilter.Text, StringComparison.Ordinal);
+
+        var diagnosticBundle = ReadToolResult(await CallToolAsync(handler, "get_diagnostic_bundle", new { max_chars = 12000 }));
+        Assert.DoesNotContain("task-event:", diagnosticBundle.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AgentTaskEvents_ReportUnavailableWithoutFallingBackToOtherDiagnostics()
+    {
+        var handler = CreateHandler(taskEventJournalProvider: () => null);
+
+        var resourceResponse = await ReadResourceAsync(handler, "colorvision://copilot/task-events");
+        Assert.Contains("No saved Agent task event journal", resourceResponse.Body, StringComparison.Ordinal);
+        var toolResult = ReadToolResult(await CallToolAsync(handler, "get_agent_task_events", new { }));
+        Assert.True(toolResult.IsError);
+        Assert.Contains("No saved Agent task event journal", toolResult.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1327,6 +1414,7 @@ public sealed class CopilotMcpTests : IDisposable
         Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? openPanelHandler = null,
         Func<string, bool, CancellationToken, Task<CopilotMcpToolCallResult>>? executeMenuHandler = null,
         Func<CopilotLiveContext?>? liveContextProvider = null,
+        Func<CopilotAgentTaskEventJournalContext?>? taskEventJournalProvider = null,
         Func<CancellationToken, Task<CopilotFlowContextSnapshot?>>? flowSnapshotProvider = null,
         Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>>? applyTemplatePatchHandler = null,
         Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult>? recentLogProvider = null)
@@ -1349,6 +1437,7 @@ public sealed class CopilotMcpTests : IDisposable
             OpenPanelHandler = openPanelHandler,
             ExecuteMenuHandler = executeMenuHandler,
             LiveContextProvider = liveContextProvider ?? (() => null),
+            TaskEventJournalProvider = taskEventJournalProvider ?? (() => null),
             FlowSnapshotProvider = flowSnapshotProvider ?? (_ => Task.FromResult<CopilotFlowContextSnapshot?>(null)),
             ApplyTemplatePatchHandler = applyTemplatePatchHandler ?? ((_, _) => Task.FromResult(CopilotMcpToolCallResult.Fail("apply_template_patch_unavailable", "No test apply handler is available."))),
             RecentLogProvider = recentLogProvider ?? ((_, _, _, _) => new CopilotCapabilityResult

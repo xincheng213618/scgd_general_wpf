@@ -43,6 +43,7 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 | 2 | `colorvision://live-context/current` | 获取当前 Copilot 上下文 |
 | 3 | `colorvision://workspace/current` | 确认当前工作区和允许的文件根 |
 | 4 | `get_recent_log` / `get_diagnostic_bundle` | 聚合日志和运行时信息 |
+| 可选 | `colorvision://copilot/task-events` / `get_agent_task_events` | 仅在排查 Agent 运行、工具、审批或停止原因时读取 |
 | 5 | `search_docs` / `search_files` / `grep_text` | 定位产品行为、源码或配置 |
 | 6 | `diagnose_flow_failure` | 诊断流程失败，不启动、不停止、不重跑流程 |
 | 7 | `open_panel` / `execute_menu` dry-run | 只做低风险导航或预览 |
@@ -55,15 +56,17 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 
 | 分类 | 工具或 URI | 风险 |
 | --- | --- | --- |
-| 状态/审计 | `get_server_status`、`get_enabled_tools`、`get_runtime_environment_summary`、`get_audit_log`、`get_last_tool_error` | 只读 |
+| 状态/审计 | `get_server_status`、`get_enabled_tools`、`get_runtime_environment_summary`、`get_audit_log`、`get_last_tool_error`、`get_agent_task_events` | 只读 |
 | 上下文 | `get_live_context`、`get_workspace_context`、`get_active_template_context`、`get_flow_summary`、`diagnose_flow_failure` | 只读 |
 | 搜索和文件 | `get_recent_log`、`search_docs`、`search_files`、`grep_text`、`read_allowed_file`、`list_allowed_directory` | 只读，仅限允许根 |
 | 模板预览 | `suggest_template_patch`、`preview_template_patch` | 只读 |
 | 应用操作 | `open_panel`、`set_theme` | 低风险 |
 | 待确认操作 | `execute_menu`、`apply_template_patch`、`set_language`、`confirm_action` | 需要用户批准 |
-| 资源 | `colorvision://live-context/current`、`workspace/current`、`logs/recent`、`template/current`、`flow/current`、`mcp/audit-*` | 只读快照 |
+| 资源 | `colorvision://live-context/current`、`workspace/current`、`logs/recent`、`template/current`、`flow/current`、`mcp/audit-*`、`copilot/capabilities`、`copilot/task-events` | 只读快照 |
 
 工具列表由 `CopilotMcpToolDispatcher.ListTools()` 生成。新增或删除工具时，先改源码和测试，再同步本页。
+
+`colorvision://copilot/task-events` 和 `get_agent_task_events` 只读取当前选中会话最近一次已保存的有界、脱敏 Agent journal。开始新一轮时旧快照会撤下，运行完成后再发布；默认 diagnostic bundle 不包含该数据。查询支持事件类型、run、工具、subject/related ID 和序号游标，但不会返回工具参数、steering 原文或可复用审批。
 
 ## 业务上下文扩展
 
