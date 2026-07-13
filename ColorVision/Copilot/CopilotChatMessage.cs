@@ -227,10 +227,26 @@ namespace ColorVision.Copilot
         private CopilotAgentStopReason _agentStopReason;
 
         [JsonIgnore]
+        public CopilotAgentRecoveryRequest? RecoveryRequest { get; set; }
+
+        [JsonIgnore]
         public bool HasAgentTaskLedger => !IsUser && AgentTaskLedger.TotalCount > 0;
 
         [JsonIgnore]
         public bool HasIncompleteAgentTasks => HasAgentTaskLedger && AgentTaskLedger.RemainingCount > 0;
+
+        [JsonIgnore]
+        public bool HasRecoverableAgentTasks => HasIncompleteAgentTasks
+            && AgentStopReason is CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit;
+
+        [JsonIgnore]
+        public string AgentRecoveryActionLabel => AgentTraceEntries?.LastOrDefault(entry => entry != null
+            && entry.IsFailure
+            && entry.RetryEligible
+            && entry.Access == CopilotToolAccess.ReadOnly
+            && entry.Idempotency == CopilotToolIdempotency.Idempotent) != null
+                ? "重试只读检查"
+                : "继续任务";
 
         [JsonIgnore]
         public string AgentTaskModeLabel => string.Equals(AgentTaskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase) ? "计划" : "执行";
@@ -583,6 +599,8 @@ namespace ColorVision.Copilot
         {
             OnPropertyChanged(nameof(HasAgentTaskLedger));
             OnPropertyChanged(nameof(HasIncompleteAgentTasks));
+            OnPropertyChanged(nameof(HasRecoverableAgentTasks));
+            OnPropertyChanged(nameof(AgentRecoveryActionLabel));
             OnPropertyChanged(nameof(AgentTaskModeLabel));
             OnPropertyChanged(nameof(AgentTaskProgressLabel));
             OnPropertyChanged(nameof(AgentStopReasonLabel));
@@ -606,6 +624,7 @@ namespace ColorVision.Copilot
                 AgentTraceEntries.Add(traceEntry);
 
             RebuildExecutionContentFromAgentTrace();
+            OnPropertyChanged(nameof(AgentRecoveryActionLabel));
         }
 
         public void RebuildExecutionContentFromAgentTrace()

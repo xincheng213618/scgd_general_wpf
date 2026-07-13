@@ -68,6 +68,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
+        public CopilotAgentRecoveryRequest? Recovery { get; init; }
+
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }

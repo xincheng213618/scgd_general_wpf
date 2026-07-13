@@ -999,10 +999,10 @@
                                                             Padding="10,3"
                                                             Command="{Binding DataContext.ContinueAgentTasksCommand, Source={x:Reference Root}}"
                                                             CommandParameter="{Binding}"
-                                                            Content="继续"
+                                                            Content="{Binding AgentRecoveryActionLabel}"
                                                             Style="{StaticResource MessageActionButtonStyle}"
                                                             ToolTip="从当前 AgentSession 继续未完成任务；写操作仍需重新审批"
-                                                            Visibility="{Binding HasIncompleteAgentTasks, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                            Visibility="{Binding HasRecoverableAgentTasks, Converter={StaticResource bool2VisibilityConverter}}" />
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock VerticalAlignment="Center"
                                                                    FontSize="12"

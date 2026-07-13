@@ -46,6 +46,7 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord? _selectedConversation;
         private CopilotProfileConfig? _selectedProfile;
         private CopilotAgentMode? _pendingRequestModeOverride;
+        private CopilotAgentRecoveryRequest? _pendingAgentRecoveryRequest;
         private bool _isAgentRequestActive;
         private string _activeDocumentPath = string.Empty;
         private string _pendingActionFeedbackText = string.Empty;
@@ -559,6 +560,7 @@ namespace ColorVision.Copilot
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
             {
                 RequestMode = ConsumeRequestModeOverride(),
+                RecoveryRequest = ConsumePendingAgentRecoveryRequest(),
             };
             var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
             {
@@ -734,6 +736,7 @@ namespace ColorVision.Copilot
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
                 Mode = userMessage.RequestMode,
                 SessionCheckpoint = sessionCheckpoint,
+                Recovery = sessionCheckpoint == null ? null : userMessage.RecoveryRequest,
                 ExternalMcpServers = CopilotConfig.Instance.ExternalMcpServers
                     .Where(server => server?.Enabled == true)
                     .Select(server => server.Clone())
@@ -1401,13 +1404,20 @@ namespace ColorVision.Copilot
 
         private bool CanContinueAgentTasks(CopilotChatMessage? message)
         {
-            if (IsBusy || message == null || message.IsUser || !message.HasIncompleteAgentTasks)
+            if (IsBusy || message == null || message.IsUser || !message.HasRecoverableAgentTasks)
                 return false;
             if (SelectedConversation?.AgentSessionCheckpoint == null || SelectedProfile?.IsConfigured != true)
                 return false;
 
             var latestAssistant = SelectedConversation.Messages.LastOrDefault(candidate => !candidate.IsUser);
-            return ReferenceEquals(latestAssistant, message);
+            if (!ReferenceEquals(latestAssistant, message))
+                return false;
+
+            return CopilotAgentRecoveryPolicy.Evaluate(
+                message,
+                SelectedConversation.AgentSessionCheckpoint,
+                SelectedProfile,
+                CopilotCapabilityCatalog.Shared.GetSnapshot()).IsAvailable;
         }
 
         private void ContinueAgentTasks(CopilotChatMessage? message)
@@ -1415,9 +1425,25 @@ namespace ColorVision.Copilot
             if (!CanContinueAgentTasks(message))
                 return;
 
+            var decision = CopilotAgentRecoveryPolicy.Evaluate(
+                message,
+                SelectedConversation?.AgentSessionCheckpoint,
+                SelectedProfile,
+                CopilotCapabilityCatalog.Shared.GetSnapshot());
+            if (!decision.IsAvailable)
+                return;
+
+            _pendingAgentRecoveryRequest = decision.Request;
             SetPendingRequestModeOverride(CopilotAgentMode.Auto);
-            InputText = "继续执行当前 Agent 任务清单中的未完成任务。先重新核对当前状态；不要把历史任务或历史审批视为写操作授权。";
+            InputText = decision.UserMessage;
             _ = SendAsync();
+        }
+
+        private CopilotAgentRecoveryRequest? ConsumePendingAgentRecoveryRequest()
+        {
+            var recovery = _pendingAgentRecoveryRequest;
+            _pendingAgentRecoveryRequest = null;
+            return recovery;
         }
 
         private CopilotAgentMode ResolveComposerRequestMode()

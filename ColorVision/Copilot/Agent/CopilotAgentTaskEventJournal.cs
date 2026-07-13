@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
         EvidenceCaptured,
         RuntimeError,
         RunStopped,
+        RecoveryRequested,
     }
 
     public sealed class CopilotAgentTaskEvent
@@ -229,6 +230,26 @@ namespace ColorVision.Copilot
         public void RecordRunStarted()
         {
             Append(CopilotAgentTaskEventType.RunStarted, RunId, "running", "Agent run started.");
+        }
+
+        public void RecordRecovery(CopilotAgentRecoveryRequest recovery)
+        {
+            ArgumentNullException.ThrowIfNull(recovery);
+            if (!recovery.IsStructurallyValid())
+                throw new ArgumentException("Agent recovery request is not structurally valid.", nameof(recovery));
+
+            var subjectId = recovery.Mode == CopilotAgentRecoveryMode.RetryRead ? recovery.SourceCallKey : RunId;
+            Append(
+                CopilotAgentTaskEventType.RecoveryRequested,
+                subjectId,
+                recovery.Mode.ToString(),
+                recovery.Mode switch
+                {
+                    CopilotAgentRecoveryMode.RetryRead => "Recovery may re-evaluate one retry-eligible read failure without replaying stored arguments.",
+                    CopilotAgentRecoveryMode.Replan => "Recovery requires a fresh plan against current capabilities.",
+                    _ => "Recovery resumes the incomplete task ledger from its checkpoint.",
+                },
+                recovery.ToolName);
         }
 
         public void RecordSessionResumed()

@@ -227,6 +227,90 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public void AgentRecoveryPolicy_OnlyOffersSafeCheckpointRecoveryModes()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordStop(CopilotAgentStopReason.TaskPassLimit);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+        Assert.NotNull(checkpoint);
+
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial result")
+        {
+            AgentStopReason = CopilotAgentStopReason.TaskPassLimit,
+            AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute",
+                Items = [new CopilotAgentTaskItem { Id = 1, Title = "Read evidence", IsComplete = false }],
+            },
+        };
+
+        var resume = CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, profile, capabilitySnapshot);
+        Assert.True(resume.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Resume, resume.Request!.Mode);
+
+        message.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "failed-read",
+            ToolName = "FetchUrl",
+            Access = CopilotToolAccess.ReadOnly,
+            Idempotency = CopilotToolIdempotency.Idempotent,
+            State = CopilotToolExecutionState.Failed,
+            RetryEligible = true,
+        });
+        var retryRead = CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, profile, capabilitySnapshot);
+        Assert.Equal(CopilotAgentRecoveryMode.RetryRead, retryRead.Request!.Mode);
+        Assert.Equal("FetchUrl", retryRead.Request.ToolName);
+        Assert.StartsWith("call:", retryRead.Request.SourceCallKey, StringComparison.Ordinal);
+        Assert.Equal(37, retryRead.Request.SourceCallKey.Length);
+
+        message.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "failed-write",
+            ToolName = "ApplyPatch",
+            Access = CopilotToolAccess.Write,
+            Idempotency = CopilotToolIdempotency.Idempotent,
+            State = CopilotToolExecutionState.Failed,
+            RetryEligible = true,
+        });
+        var writeExcluded = CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, profile, capabilitySnapshot);
+        Assert.Equal(CopilotAgentRecoveryMode.RetryRead, writeExcluded.Request!.Mode);
+        Assert.Equal("FetchUrl", writeExcluded.Request.ToolName);
+
+        message.AgentStopReason = CopilotAgentStopReason.AwaitingUser;
+        Assert.False(CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, profile, capabilitySnapshot).IsAvailable);
+        message.AgentStopReason = CopilotAgentStopReason.ApprovalDenied;
+        Assert.False(CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, profile, capabilitySnapshot).IsAvailable);
+    }
+
+    [Fact]
+    public void TaskEventJournal_RecordsRecoveryWithoutArgumentsOrApprovalReuse()
+    {
+        var builder = new CopilotAgentTaskEventJournalBuilder();
+        builder.RecordRunStarted();
+        builder.RecordRecovery(new CopilotAgentRecoveryRequest
+        {
+            Mode = CopilotAgentRecoveryMode.RetryRead,
+            PreviousStopReason = CopilotAgentStopReason.BudgetExhausted,
+            ToolName = "FetchUrl",
+            SourceCallKey = CopilotAgentTaskEventIds.ForCall("provider-call-with-secret-arguments"),
+        });
+
+        var recovery = Assert.Single(builder.Snapshot().Events, item => item.Type == CopilotAgentTaskEventType.RecoveryRequested);
+        Assert.Equal(CopilotAgentRecoveryMode.RetryRead.ToString(), recovery.State);
+        Assert.Equal("FetchUrl", recovery.ToolName);
+        var serialized = JsonSerializer.Serialize(recovery);
+        Assert.DoesNotContain("secret-arguments", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("approval", serialized, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void StateStore_PersistsAgentTaskLedgerAndStructuredStopReason()
     {
         var store = new CopilotChatStateStore(_tempRoot);
@@ -1231,6 +1315,53 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(1, result.TaskLedger.RemainingCount);
         Assert.Equal("execute", result.TaskLedger.Mode);
         Assert.Equal(CopilotAgentStopReason.TaskPassLimit, result.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_AcceptsOnlyCheckpointMatchedRecoveryRequest()
+    {
+        var profile = CreateProfile();
+        using var firstClient = new ScriptedHarnessChatClient(
+            options => CreateTodoAddCall(options, "Recover current read", "The task remains open at the pass limit."),
+            _ => null);
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => firstClient);
+        var firstResult = await firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "create one bounded recovery task",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.TaskPassLimit, firstResult.StopReason);
+        Assert.NotNull(firstResult.SessionCheckpoint);
+
+        using var secondClient = new ScriptedHarnessChatClient(
+            options => CreateTodoCompleteCall(options, 1, "Recovered task completed."),
+            _ => null);
+        var secondRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => secondClient);
+        var secondResult = await secondRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "continue the bounded recovery task",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = firstResult.SessionCheckpoint,
+            Recovery = new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Resume,
+                PreviousStopReason = CopilotAgentStopReason.TaskPassLimit,
+            },
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, secondResult.StopReason);
+        var recovery = Assert.Single(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.RecoveryRequested);
+        Assert.Equal(CopilotAgentRecoveryMode.Resume.ToString(), recovery.State);
+        Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.SessionResumed);
     }
 
     [Fact]

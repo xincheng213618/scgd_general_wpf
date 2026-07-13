@@ -243,6 +243,7 @@ namespace ColorVision.Copilot
                 PreferBatchReadLocalFiles = request.PreferBatchReadLocalFiles,
                 Mode = request.Mode,
                 SessionCheckpoint = request.SessionCheckpoint,
+                Recovery = request.Recovery,
                 ExternalMcpServers = request.ExternalMcpServers,
             };
         }
