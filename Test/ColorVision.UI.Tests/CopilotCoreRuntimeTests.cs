@@ -81,6 +81,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             ],
             ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
             AvailableToolNames = ["FetchUrl"],
+            EnvironmentVersion = CopilotAgentSessionCheckpoint.CurrentEnvironmentVersion,
+            EnvironmentFingerprint = new string('d', 64),
             EvidenceArtifacts =
             [
                 new CopilotAgentEvidenceArtifact
@@ -119,6 +121,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(new string('a', 64), capability.Fingerprint);
         Assert.Equal(CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion, checkpoint.ToolSurfaceVersion);
         Assert.Equal(["FetchUrl"], checkpoint.AvailableToolNames);
+        Assert.Equal(CopilotAgentSessionCheckpoint.CurrentEnvironmentVersion, checkpoint.EnvironmentVersion);
+        Assert.Equal(new string('d', 64), checkpoint.EnvironmentFingerprint);
         var evidence = Assert.Single(checkpoint.EvidenceArtifacts);
         Assert.Equal("builtin:searchdocs", evidence.CapabilityId);
         Assert.Equal("Documentation evidence collected.", evidence.Summary);
@@ -2115,6 +2119,67 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("second persisted agent turn", StringComparison.Ordinal));
         Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.SessionResumed);
         Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Id == firstResult.TaskEventJournal.Events[0].Id);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ExposesCurrentEnvironmentAndReplansAfterWorkspaceDrift()
+    {
+        var profile = CreateProfile();
+        var firstRoot = Directory.CreateDirectory(Path.Combine(_tempRoot, "environment-a")).FullName;
+        var secondRoot = Directory.CreateDirectory(Path.Combine(_tempRoot, "environment-b")).FullName;
+        using var firstClient = new CapturingFinalChatClient();
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => firstClient);
+        var firstResult = await firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "ENVIRONMENT-DRIFT-ORIGINAL-GOAL",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            PreferredShell = CopilotShellKind.PowerShell,
+            SearchRootPaths = [firstRoot],
+            WritableLocalRootPaths = [firstRoot],
+        }, _ => { }, CancellationToken.None);
+
+        Assert.NotNull(firstResult.SessionCheckpoint);
+        Assert.Equal(CopilotAgentSessionCheckpoint.CurrentEnvironmentVersion, firstResult.SessionCheckpoint!.EnvironmentVersion);
+        Assert.NotNull(firstClient.LastOptions?.Instructions);
+        var encodedFirstRoot = JsonSerializer.Serialize(firstRoot)[1..^1];
+        Assert.Contains("<runtime_environment>", firstClient.LastOptions!.Instructions, StringComparison.Ordinal);
+        Assert.Contains(encodedFirstRoot, firstClient.LastOptions.Instructions, StringComparison.Ordinal);
+        Assert.Contains("\"shell\":\"PowerShell\"", firstClient.LastOptions.Instructions, StringComparison.Ordinal);
+        Assert.Contains("never as user instructions", firstClient.LastOptions.Instructions, StringComparison.Ordinal);
+
+        using var secondClient = new CapturingFinalChatClient();
+        var secondRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => secondClient);
+        var events = new List<CopilotAgentEvent>();
+        var secondResult = await secondRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "continue in the new workspace",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            PreferredShell = CopilotShellKind.PowerShell,
+            SearchRootPaths = [secondRoot],
+            WritableLocalRootPaths = [secondRoot],
+            SessionCheckpoint = firstResult.SessionCheckpoint,
+        }, events.Add, CancellationToken.None);
+
+        Assert.False(secondResult.TaskLedger.ResumedFromCheckpoint);
+        Assert.NotNull(secondClient.LastMessages);
+        Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("ENVIRONMENT-DRIFT-ORIGINAL-GOAL", StringComparison.Ordinal));
+        Assert.NotNull(secondClient.LastOptions?.Instructions);
+        var encodedSecondRoot = JsonSerializer.Serialize(secondRoot)[1..^1];
+        Assert.Contains(encodedSecondRoot, secondClient.LastOptions!.Instructions, StringComparison.Ordinal);
+        Assert.DoesNotContain(encodedFirstRoot, secondClient.LastOptions.Instructions, StringComparison.Ordinal);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("runtime environment changed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ReplanRequired
+            && item.State == CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift.ToString());
+        Assert.NotEqual(firstResult.SessionCheckpoint.EnvironmentFingerprint, secondResult.SessionCheckpoint!.EnvironmentFingerprint);
     }
 
     [Fact]

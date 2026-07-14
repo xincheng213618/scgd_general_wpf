@@ -164,6 +164,23 @@ namespace ColorVision.Copilot
 
         internal static string GetShellLabel(CopilotShellKind shell) => shell == CopilotShellKind.CommandPrompt ? "CMD" : "PowerShell";
 
+        internal static string ResolveDefaultWorkingDirectory(CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            var candidate = request.WritableLocalRootPaths
+                .Concat(request.SearchRootPaths)
+                .FirstOrDefault(Directory.Exists)
+                ?? AppContext.BaseDirectory;
+            try
+            {
+                return Path.GetFullPath(candidate);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return AppContext.BaseDirectory;
+            }
+        }
+
         private static IReadOnlyList<string> BuildArguments(CopilotShellKind shell, string commandText)
         {
             return shell == CopilotShellKind.CommandPrompt
@@ -200,10 +217,7 @@ namespace ColorVision.Copilot
                 return true;
             }
 
-            workingDirectory = request.WritableLocalRootPaths
-                .Concat(request.SearchRootPaths)
-                .FirstOrDefault(Directory.Exists)
-                ?? AppContext.BaseDirectory;
+            workingDirectory = ResolveDefaultWorkingDirectory(request);
             return true;
         }
 

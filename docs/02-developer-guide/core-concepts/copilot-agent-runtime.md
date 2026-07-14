@@ -85,6 +85,8 @@ CopilotToolRegistry
 
 Agent Framework checkpoint 保存目录 revision，以及每个能力的稳定 ID、条目 revision 和内容指纹。恢复时不能只比较进程内 revision，因为应用重启后 revision 会重新计数；运行时会逐项比较内容指纹。原能力缺失或指纹变化时，Harness session 与 todo ledger 不会反序列化，但 checkpoint 中独立保存的有界对话记忆会与当前可见历史去重合并后交给新 session，并通过 Harness instructions 强制从当前能力重新规划。该记忆最多 16 条、64K 字符，只允许 user/assistant 消息，保留初始目标与最近问答，不保存 system/tool 消息、参数或授权。新增能力不使旧计划失效；旧格式 checkpoint 缺少能力快照时同样走安全重规划。能力指纹覆盖描述、来源、策略、超时、审计模式、evidence 模式与输入 Schema，但目录和 checkpoint 都不保存调用参数或凭据。
 
+每轮 Agent 还会生成版本化的 `CopilotAgentEnvironmentContext`。Harness 以明确标记为 host data 的 JSON 接收当前工作目录、平台/架构、首选 Shell、本地日期与时区、活动文档、最多 8 个搜索/可写根目录，以及通过只读 `.git/HEAD` 获取的仓库、分支和提交；它不会读取或发送进程环境变量、API key 或其他凭据。路径边界只描述工具可见范围，不代表写入授权。checkpoint 仅保存环境版本和稳定 SHA-256 指纹；工作区、活动文档、Shell、时区或 Git 状态变化会废弃旧 Harness session 并从有界对话记忆重新规划，单纯跨越本地日期不会使 checkpoint 失效。旧 checkpoint 没有环境指纹时同样只重建可执行 session，不丢失对话语义。
+
 `CopilotToolEvidenceMode` 是 Descriptor 的显式证据持久化策略：`None`、`Summary`、`RedactedExcerpt`。只读工具默认 `Summary`，写工具默认 `None`；文档搜索、公开 Web 搜索和页面读取显式选择 `RedactedExcerpt`。`CopilotAgentEvidenceArtifacts.Merge` 仅接收成功、已完成、只读且幂等的 step record，按 capability ID 与哈希 resource key 去重，最多保留 24 条；`NamesOnly` 能力即使声明 excerpt 也只保存摘要。artifact 包含生产能力 ID/指纹、哈希资源键、脱敏摘要/摘录、内容指纹和采集时间，不包含调用参数。
 
 只有 session 反序列化失败、profile 改变或 capability drift 触发新 session 时，恢复层才选择最近 12 条 artifact。可信防注入规则位于 Harness instructions；artifact JSON 使用单独的 user-role data message 插入到当前用户消息之前，避免把历史网页或工具内容提升为 system 指令。每条 artifact 标记 `producer_current`、`producer_changed` 或 `producer_unavailable`；后两者只能作为历史线索，所有易变化状态都必须重新核验，任何历史 evidence 都不能代表写操作审批。

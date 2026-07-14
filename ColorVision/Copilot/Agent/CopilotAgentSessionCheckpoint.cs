@@ -16,6 +16,8 @@ namespace ColorVision.Copilot
         CapabilityDrift,
         ToolSurfaceSnapshotMissing,
         ToolSurfaceDrift,
+        EnvironmentSnapshotMissing,
+        EnvironmentDrift,
     }
 
     public sealed class CopilotAgentCheckpointCapability
@@ -46,7 +48,9 @@ namespace ColorVision.Copilot
         public bool RequiresReplan => Kind is CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing
             or CopilotAgentCheckpointCompatibilityKind.CapabilityDrift
             or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing
-            or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift;
+            or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift
+            or CopilotAgentCheckpointCompatibilityKind.EnvironmentSnapshotMissing
+            or CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift;
     }
 
     public sealed class CopilotAgentSessionCheckpoint
@@ -59,6 +63,7 @@ namespace ColorVision.Copilot
         public const int MaxConversationMemoryContentLength = 8_000;
         public const int MaxConversationMemoryCharacters = 64_000;
         public const int CurrentToolSurfaceVersion = 1;
+        public const int CurrentEnvironmentVersion = CopilotAgentEnvironmentContext.CurrentVersion;
 
         public string ProfileKey { get; init; } = string.Empty;
 
@@ -71,6 +76,10 @@ namespace ColorVision.Copilot
         public int ToolSurfaceVersion { get; init; }
 
         public IReadOnlyList<string> AvailableToolNames { get; init; } = Array.Empty<string>();
+
+        public int EnvironmentVersion { get; init; }
+
+        public string EnvironmentFingerprint { get; init; } = string.Empty;
 
         public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
 
@@ -93,7 +102,8 @@ namespace ColorVision.Copilot
         public CopilotAgentCheckpointCompatibility EvaluateFor(
             CopilotProfileConfig profile,
             CopilotCapabilityCatalogSnapshot capabilitySnapshot,
-            IReadOnlyCollection<string>? availableToolNames = null)
+            IReadOnlyCollection<string>? availableToolNames = null,
+            CopilotAgentEnvironmentContext? environmentContext = null)
         {
             ArgumentNullException.ThrowIfNull(capabilitySnapshot);
             if (profile == null || !IsStructurallyValid())
@@ -138,6 +148,18 @@ namespace ColorVision.Copilot
                     return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift, capabilitySnapshot, removedTools: removedToolNames);
             }
 
+            if (environmentContext != null)
+            {
+                if (!environmentContext.IsStructurallyValid()
+                    || EnvironmentVersion != CurrentEnvironmentVersion
+                    || string.IsNullOrWhiteSpace(EnvironmentFingerprint))
+                {
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.EnvironmentSnapshotMissing, capabilitySnapshot);
+                }
+                if (!string.Equals(EnvironmentFingerprint, environmentContext.Fingerprint, StringComparison.OrdinalIgnoreCase))
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift, capabilitySnapshot);
+            }
+
             return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot);
         }
 
@@ -158,6 +180,9 @@ namespace ColorVision.Copilot
                     || name.Any(char.IsControl)) ?? false)
                 || (AvailableToolNames?.Distinct(StringComparer.OrdinalIgnoreCase).Count() != AvailableToolNames?.Count)
                 || (ToolSurfaceVersion == 0 && AvailableToolNames?.Count > 0)
+                || EnvironmentVersion is < 0 or > CurrentEnvironmentVersion
+                || (EnvironmentVersion == 0 && !string.IsNullOrEmpty(EnvironmentFingerprint))
+                || (EnvironmentVersion == CurrentEnvironmentVersion && !IsSha256(EnvironmentFingerprint))
                 || (Capabilities?.Any(capability => capability == null
                     || string.IsNullOrWhiteSpace(capability.Id)
                     || capability.Id.Length > 200
@@ -200,7 +225,8 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotAgentEvidenceArtifact>? evidenceArtifacts = null,
             CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null,
             IReadOnlyCollection<string>? availableToolNames = null,
-            IReadOnlyList<CopilotRequestMessage>? conversationMemory = null)
+            IReadOnlyList<CopilotRequestMessage>? conversationMemory = null,
+            CopilotAgentEnvironmentContext? environmentContext = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -230,6 +256,8 @@ namespace ColorVision.Copilot
                 return null;
             }
             var persistedConversationMemory = (conversationMemory ?? Array.Empty<CopilotRequestMessage>()).ToArray();
+            if (environmentContext?.IsStructurallyValid() == false)
+                return null;
 
             var checkpoint = new CopilotAgentSessionCheckpoint
             {
@@ -246,6 +274,8 @@ namespace ColorVision.Copilot
                     .ToArray(),
                 ToolSurfaceVersion = availableToolNames == null ? 0 : CurrentToolSurfaceVersion,
                 AvailableToolNames = persistedToolNames,
+                EnvironmentVersion = environmentContext == null ? 0 : CurrentEnvironmentVersion,
+                EnvironmentFingerprint = environmentContext?.Fingerprint ?? string.Empty,
                 EvidenceArtifacts = persistedEvidence,
                 ConversationMemory = persistedConversationMemory,
                 TaskEventJournal = taskEventJournal,
@@ -265,6 +295,8 @@ namespace ColorVision.Copilot
                 Capabilities = Capabilities,
                 ToolSurfaceVersion = ToolSurfaceVersion,
                 AvailableToolNames = AvailableToolNames,
+                EnvironmentVersion = EnvironmentVersion,
+                EnvironmentFingerprint = EnvironmentFingerprint,
                 EvidenceArtifacts = EvidenceArtifacts,
                 ConversationMemory = ConversationMemory,
                 TaskEventJournal = taskEventJournal,
@@ -305,5 +337,7 @@ namespace ColorVision.Copilot
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
             return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
         }
+
+        private static bool IsSha256(string value) => value?.Length == 64 && value.All(Uri.IsHexDigit);
     }
 }
