@@ -4205,6 +4205,51 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_UsesStructuredWindowsProcessInspectionWithoutApproval()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        var provider = new FixedWindowsProcessProvider(
+        [
+            new CopilotWindowsProcessSnapshot(
+                4242,
+                "ColorVision",
+                12.5,
+                100_000_000,
+                80_000_000,
+                24,
+                1,
+                "2026-07-15T00:00:00.0000000Z",
+                "C:\\ColorVision\\ColorVision.exe"),
+        ]);
+        var tool = new CopilotInspectWindowsProcessesTool(new CopilotWindowsProcessInspectionService(provider));
+        using var fakeChatClient = new FunctionCallingChatClient(
+            "colorvision_inspect_windows_processes",
+            new Dictionary<string, object?> { ["processId"] = 4242 });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "PID 4242 是什么进程",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        Assert.Equal(2, fakeChatClient.StreamCallCount);
+        Assert.Equal(1, provider.CaptureCount);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("InspectWindowsProcesses", step.Execution.ToolName);
+        Assert.Equal(CopilotToolApprovalMode.Never, step.Execution.ApprovalMode);
+        Assert.True(step.Observation.Success);
+        Assert.Contains("\"process_id\":4242", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Contains("\"process_name\":\"ColorVision\"", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_ApprovesStructuredGitInspectionBeforeExecution()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
@@ -4965,6 +5010,21 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             ReadCount++;
             return snapshot;
+        }
+    }
+
+    private sealed class FixedWindowsProcessProvider(IReadOnlyList<CopilotWindowsProcessSnapshot> snapshots) : ICopilotWindowsProcessProvider
+    {
+        public int CaptureCount { get; private set; }
+
+        public Task<IReadOnlyList<CopilotWindowsProcessSnapshot>> CaptureAsync(
+            int? processId,
+            string processName,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            CaptureCount++;
+            return Task.FromResult(snapshots);
         }
     }
 

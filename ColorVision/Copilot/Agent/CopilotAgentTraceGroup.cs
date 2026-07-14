@@ -117,7 +117,7 @@ namespace ColorVision.Copilot
                 "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => "file-search",
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => "database-query",
                 "ExecuteDatabaseSql" => "database-write",
-                "InspectWindowsSystem" or "InspectTcpPort" or "InspectGitWorkingTree" or "InspectGitDiff" or "RunShellCommand" => "command",
+                "InspectWindowsSystem" or "InspectWindowsProcesses" or "InspectTcpPort" or "InspectGitWorkingTree" or "InspectGitDiff" or "RunShellCommand" => "command",
                 "PreviewWorkspacePatch" or "PreviewCreateWorkspaceFile" or "PreviewWorkspaceChangeSet"
                     or "ApplyWorkspacePatch" or "ApplyCreateWorkspaceFile" or "ApplyWorkspaceChangeSet"
                     or "RollbackWorkspacePatch" or "RollbackWorkspaceChangeSet"
