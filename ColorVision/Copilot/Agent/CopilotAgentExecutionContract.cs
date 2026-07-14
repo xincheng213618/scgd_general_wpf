@@ -93,14 +93,17 @@ namespace ColorVision.Copilot
 
             var workspaceApplyTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceApplyTool).Select(tool => tool.Name);
             var workspaceCreateTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceCreateApplyTool).Select(tool => tool.Name);
+            var workspaceChangeSetApplyTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceChangeSetApplyTool).Select(tool => tool.Name);
             var workspaceValidationTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceValidationTool).Select(tool => tool.Name);
             var workspaceRollbackTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceRollbackTool).Select(tool => tool.Name);
+            var workspaceChangeSetRollbackTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceChangeSetRollbackTool).Select(tool => tool.Name);
             var needsValidation = CopilotToolIntentPolicy.NeedsWorkspaceValidation(request);
+            var needsChangeSet = CopilotToolIntentPolicy.NeedsWorkspaceChangeSet(request);
             if (CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
             {
                 return new CopilotAgentExecutionContract(
                     CopilotAgentExecutionRequirement.WorkspaceRollback,
-                    [workspaceRollbackTools]);
+                    [needsChangeSet ? workspaceChangeSetRollbackTools : workspaceRollbackTools]);
             }
             if (CopilotToolIntentPolicy.NeedsWorkspaceCreate(request))
             {
@@ -109,8 +112,8 @@ namespace ColorVision.Copilot
                         ? CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation
                         : CopilotAgentExecutionRequirement.WorkspaceCreate,
                     needsValidation
-                        ? [workspaceCreateTools, workspaceValidationTools]
-                        : [workspaceCreateTools]);
+                        ? [needsChangeSet ? workspaceChangeSetApplyTools : workspaceCreateTools, workspaceValidationTools]
+                        : [needsChangeSet ? workspaceChangeSetApplyTools : workspaceCreateTools]);
             }
             if (CopilotToolIntentPolicy.NeedsWorkspaceEdit(request))
             {
@@ -119,8 +122,8 @@ namespace ColorVision.Copilot
                         ? CopilotAgentExecutionRequirement.WorkspaceEditAndValidation
                         : CopilotAgentExecutionRequirement.WorkspaceEdit,
                     needsValidation
-                        ? [workspaceApplyTools, workspaceValidationTools]
-                        : [workspaceApplyTools]);
+                        ? [needsChangeSet ? workspaceChangeSetApplyTools : workspaceApplyTools, workspaceValidationTools]
+                        : [needsChangeSet ? workspaceChangeSetApplyTools : workspaceApplyTools]);
             }
             if (needsValidation)
             {
@@ -271,7 +274,9 @@ namespace ColorVision.Copilot
                                                     ? "required_flow_execution_statistics_missing"
                                                     : Requirement == CopilotAgentExecutionRequirement.DatabaseSqlQuery
                                                         ? "required_database_sql_query_missing"
-                                                        : "required_database_sql_mutation_missing",
+                                                        : Requirement == CopilotAgentExecutionRequirement.DatabaseSqlMutation
+                                                            ? "required_database_sql_mutation_missing"
+                                                            : "required_shell_command_missing",
                 Summary = step == null
                     ? "The model ended an explicit evidence request without calling an available matching tool."
                     : "The explicit evidence request ended without a successful matching tool result.",
@@ -285,6 +290,8 @@ namespace ColorVision.Copilot
         private string BuildFeedback(string[] untriedNames)
         {
             var preferred = untriedNames.Length > 0 ? untriedNames[0] : _preferredToolNames[0];
+            var requiresChangeSet = string.Equals(preferred, "ApplyWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(preferred, "RollbackWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase);
             return Requirement switch
             {
                 CopilotAgentExecutionRequirement.DirectUrlEvidence =>
@@ -292,23 +299,31 @@ namespace ColorVision.Copilot
                 CopilotAgentExecutionRequirement.PublicWebSearch =>
                     $"Execution contract: the user explicitly requested a public web search, but no successful search evidence has been collected. Call the available {preferred} tool now and base the answer on its observation. If every available search path fails, report a concrete blocker instead of presenting unverified claims as searched results.",
                 CopilotAgentExecutionRequirement.WorkspaceEdit =>
-                    $"Execution contract: the user explicitly requested a workspace edit, but no approved edit has completed. First call PreviewWorkspacePatch with one exact replacement, inspect its preview, then call {preferred} with the returned previewId. Never claim the file changed before the approved tool returns success.",
+                    requiresChangeSet
+                        ? "Execution contract: the user explicitly requested a multi-file workspace edit, but no approved change set has completed. Prepare each exact single-file preview, bundle all previewIds through PreviewWorkspaceChangeSet, then call ApplyWorkspaceChangeSet once with its changeSetId. A single child-file apply cannot satisfy this request."
+                        : $"Execution contract: the user explicitly requested a workspace edit, but no approved edit has completed. First call PreviewWorkspacePatch with one exact replacement, inspect its preview, then call {preferred} with the returned previewId. Never claim the file changed before the approved tool returns success.",
                 CopilotAgentExecutionRequirement.WorkspaceEditAndValidation =>
-                    $"Execution contract: the requested workspace edit and validation are not both complete in order. Apply the approved patch first, then call RunWorkspaceValidation and base the answer on its reported outcome. The next untried required tool is {preferred}; never validate before the write or claim an unverified result.",
+                    $"Execution contract: the requested workspace edit and validation are not both complete in order. Apply the approved {(requiresChangeSet ? "multi-file change set" : "patch")} first, then call RunWorkspaceValidation and base the answer on its reported outcome. The next untried required tool is {preferred}; never validate before the write or claim an unverified result.",
                 CopilotAgentExecutionRequirement.WorkspaceCreate =>
-                    $"Execution contract: the user explicitly requested a new workspace file, but no approved creation has completed. First call PreviewCreateWorkspaceFile with the complete path and content, inspect its preview, then call {preferred} with the returned previewId. Never claim the file exists before the approved tool returns success.",
+                    requiresChangeSet
+                        ? "Execution contract: the user explicitly requested multiple workspace files, but no approved change set has completed. Preview every new file, bundle all previewIds through PreviewWorkspaceChangeSet, then call ApplyWorkspaceChangeSet once with its changeSetId. One created child file cannot satisfy this request."
+                        : $"Execution contract: the user explicitly requested a new workspace file, but no approved creation has completed. First call PreviewCreateWorkspaceFile with the complete path and content, inspect its preview, then call {preferred} with the returned previewId. Never claim the file exists before the approved tool returns success.",
                 CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation =>
                     $"Execution contract: the requested file creation and validation are not both complete in order. Create the approved file first, then call RunWorkspaceValidation and base the answer on its reported outcome. The next untried required tool is {preferred}; never validate before creation or claim an unverified result.",
                 CopilotAgentExecutionRequirement.WorkspaceValidation =>
                     $"Execution contract: the user explicitly requested workspace validation, but no approved validation result was collected. Call {preferred} with a workspace solution or project path and report its structured passed/failed outcome; do not claim a build or test was run without this result.",
                 CopilotAgentExecutionRequirement.WorkspaceRollback =>
-                    $"Execution contract: the user explicitly requested a workspace patch rollback, but no approved rollback has completed. Call {preferred} with the exact prior previewId. Never claim the rollback completed before the approved tool returns success.",
+                    requiresChangeSet
+                        ? "Execution contract: the user explicitly requested a multi-file rollback, but the complete change set has not been restored. Call RollbackWorkspaceChangeSet with the exact prior changeSetId; rolling back one child preview cannot satisfy this request."
+                        : $"Execution contract: the user explicitly requested a workspace patch rollback, but no approved rollback has completed. Call {preferred} with the exact prior previewId. Never claim the rollback completed before the approved tool returns success.",
                 CopilotAgentExecutionRequirement.FlowExecutionStatistics =>
                     $"Execution contract: the user requested actual flow execution statistics, but no successful business data observation was collected. Call {preferred} with today, yesterday, or last7days and answer from its aggregate result. Never invent a count, SQL query, or database state.",
                 CopilotAgentExecutionRequirement.DatabaseSqlQuery =>
                     $"Execution contract: the user requested an actual database query, but no successful database observation was collected. Call {preferred} with exactly one read-only SQL statement and answer from its bounded, redacted result. Never invent rows or claim the query ran without this observation.",
                 CopilotAgentExecutionRequirement.DatabaseSqlMutation =>
                     $"Execution contract: the user requested a database change, but no approved change completed. Call {preferred} with exactly one SQL data or schema change, wait for native user approval, and report the affected-row result. Never claim the change ran before a successful approved observation.",
+                CopilotAgentExecutionRequirement.ShellCommand =>
+                    $"Execution contract: the user requested an actual machine inspection or command execution, but no approved command result was collected. Call {preferred} now with a bounded non-interactive PowerShell or CMD command, wait for native user approval, and answer from its exit code, stdout, and stderr. Never replace execution with command suggestions or invented machine state.",
                 _ => string.Empty,
             };
         }

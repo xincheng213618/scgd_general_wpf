@@ -3958,6 +3958,33 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RequiresWholeChangeSetForExplicitMultiFileEdit()
+    {
+        var tool = new TestAgentTool("ApplyWorkspaceChangeSet");
+        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+            "colorvision_apply_workspace_change_set",
+            new Dictionary<string, object?>());
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "请修改多个文件",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            WritableLocalRootPaths = [_tempRoot],
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
+            message.Text.Contains("multi-file workspace edit", StringComparison.Ordinal));
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_RequiresApprovedShellObservationForPortInspection()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
@@ -3967,7 +3994,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var runner = new CapturingShellProcessRunner(new CopilotShellProcessResult(
             0, false, "LocalAddress LocalPort OwningProcess\r\n0.0.0.0 6666 4321", string.Empty, TimeSpan.FromMilliseconds(20)));
         var tool = new CopilotShellCommandTool(new CopilotShellCommandService(runner, _ => executablePath));
-        using var fakeChatClient = new FunctionCallingChatClient("colorvision_run_shell_command", new Dictionary<string, object?>
+        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient("colorvision_run_shell_command", new Dictionary<string, object?>
         {
             ["command"] = "Get-NetTCPConnection -LocalPort 6666 -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,OwningProcess",
             ["shell"] = "powershell",
@@ -3977,6 +4004,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             new CopilotToolRegistry([tool]),
             new CopilotAgentContextBuilder(),
             _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
 
         var runTask = runtime.RunAsync(new CopilotAgentRequest
         {
@@ -3984,15 +4012,18 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Auto,
             SearchRootPaths = [_tempRoot],
-        }, _ => { }, CancellationToken.None);
+        }, events.Add, CancellationToken.None);
         var action = await WaitForPendingActionAsync();
 
         Assert.Equal("RunShellCommand", action.ToolName);
         Assert.Equal(0, runner.CallCount);
         Assert.Contains("6666", action.Description, StringComparison.Ordinal);
+        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
+            message.Text.Contains("actual machine inspection", StringComparison.Ordinal));
         Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
 
+        Assert.Equal(3, fakeChatClient.StreamCallCount);
         Assert.Equal(1, runner.CallCount);
         Assert.NotNull(runner.LastCommand);
         Assert.Equal(CopilotShellKind.PowerShell, runner.LastCommand!.Shell);
@@ -4002,6 +4033,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
         Assert.True(step.Observation.Success);
         Assert.Contains("6666", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerReset);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
     }
 

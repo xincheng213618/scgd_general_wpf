@@ -252,7 +252,9 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 工作区修改后的真实验证由 `RunWorkspaceValidation` 提供。它不是通用命令行：只接受工作区内现有 `.sln` / `.slnx` / 项目文件，以及精确的 `dotnet build` 或 `dotnet test`、`Debug` / `Release` 和 10–600 秒超时；执行参数由宿主固定拼装，始终附带 `--no-restore`，不经过 shell，也不接收额外参数。该操作会触发原生审批，因为项目 target 本身可能执行仓库代码。stdout/stderr 分别有界保留头尾，超时会终止进程树；非零退出作为已完成的失败验证证据交回模型，不会因工具层失败而自动重复。显式“修改并验证”请求由执行契约强制按“批准修改 -> 批准验证”的顺序完成，提前验证不能满足契约。
 
-通用 Windows 命令由 `RunShellCommand` 提供。它在 Auto/Agent 新任务中作为核心工具提供；已有会话的普通短追问不会顺带保留这个高风险工具，只有出现明确命令或机器诊断意图时才重新开放。工具支持 `PowerShell`、`CMD` 和跟随设置的 `Auto`；设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。工具接受完整命令、可选现有工作目录和 5–600 秒超时，始终以无窗口、非交互方式运行，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时。取消或超时会终止整个进程树。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令——包括只读端口检查——都必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。显式“执行命令”“检查端口/进程/服务”请求由执行契约要求成功的命令 observation，仅向用户展示命令文本不能冒充执行结果。普通概念问答可以直接回答，不强制调用命令工具。
+跨文件修改使用 `PreviewWorkspaceChangeSet`、`ApplyWorkspaceChangeSet` 和 `RollbackWorkspaceChangeSet`。模型先为 2–8 个不同路径分别生成精确的单文件修改或创建预览，再把这些 `previewId` 绑定成一个变更集；绑定后的子预览不能绕过变更集单独应用。审批窗口一次展示完整文件清单、每个操作以及前后 SHA-256。应用前先验证所有路径、状态和文件指纹，确认整组仍可写后才开始落盘；Windows 文件系统不提供跨文件事务，因此中途失败或取消时会按逆序补偿已经完成的写入。已成功应用的变更集可以通过一次新的原生审批整体回滚，回滚过程中若后续文件失败，则尽力重新应用先前已回滚的文件以维持原状态。预览和变更集都继承 30 分钟有效期。显式“修改多个文件”请求的执行契约只接受完整变更集成功，单个子文件成功不能冒充任务完成。
+
+通用 Windows 命令由 `RunShellCommand` 提供。它在 Auto/Agent 新任务中作为核心工具提供；已有会话的普通短追问不会顺带保留这个高风险工具，只有出现明确命令或机器诊断意图时才重新开放。工具支持 `PowerShell`、`CMD` 和跟随设置的 `Auto`；设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。工具接受完整命令、可选现有工作目录和 5–600 秒超时，始终以无窗口、非交互方式运行，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时。取消或超时会终止整个进程树。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令——包括只读端口检查——都必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。显式“执行命令”“检查端口/进程/服务”请求由执行契约要求成功的命令 observation；模型第一轮如果只给出文字答复，Harness 会撤回这份无依据草稿并要求其调用命令工具，仅向用户展示命令文本不能冒充执行结果。普通概念问答可以直接回答，不强制调用命令工具。
 
 例如“我想要知道 6666 端口有没有被占用”应优先使用 PowerShell：
 
@@ -287,7 +289,7 @@ netstat -ano | findstr :6666
 
 这是一套基础框架，不等同于 Codex、Claude Code 或 OpenCode 的完整能力。后续按优先级扩展：
 
-1. 在单文件预览协议之上增加多文件变更集，使一次用户审批绑定完整文件清单和每个文件的前后指纹，并支持整体冲突检测与回滚。
+1. 在现有“逐文件预览后分组”的变更集之上增加统一补丁信封，让模型能像 [Codex `apply_patch`](https://github.com/openai/codex/blob/main/codex-rs/core/prompt_with_apply_patch_instructions.md) 一样在一次结构化调用中表达多个 Add / Update / Delete，并继续复用当前审批、指纹和补偿边界。
 2. 在通用 Shell 之上增加可配置的只读命令自动批准白名单与更强的进程级隔离；当前版本在没有系统沙箱时保持每次原生审批。
 3. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致。
 
