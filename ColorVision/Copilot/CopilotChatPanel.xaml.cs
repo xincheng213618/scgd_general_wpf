@@ -50,31 +50,29 @@ namespace ColorVision.Copilot
                 _isThemeSubscriptionActive = true;
             }
 
-            SchedulePromptCaretBrushRefresh();
+            SchedulePromptCaretBrushRefresh(ThemeManager.Current.CurrentUITheme);
             UpdateResponsiveLayout();
         }
 
         private void ThemeManager_CurrentUIThemeChanged(Theme theme)
         {
-            SchedulePromptCaretBrushRefresh();
+            SchedulePromptCaretBrushRefresh(theme);
         }
 
-        private void SchedulePromptCaretBrushRefresh()
+        private void SchedulePromptCaretBrushRefresh(Theme theme)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, RefreshPromptCaretBrush);
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, () => ApplyPromptCaretBrush(PromptTextBox, theme));
         }
 
-        private void RefreshPromptCaretBrush()
+        private static void ApplyPromptCaretBrush(TextBox promptTextBox, Theme theme)
         {
-            var themeBrush = PromptTextBox.TryFindResource("GlobalTextBrush") as Brush;
-            var sourceBrush = themeBrush ?? PromptTextBox.Foreground;
-            PromptTextBox.CaretBrush = sourceBrush.CloneCurrentValue();
-            PromptTextBox.InvalidateVisual();
+            promptTextBox.CaretBrush = theme == Theme.Dark ? Brushes.White : Brushes.Black;
+            promptTextBox.InvalidateVisual();
         }
 
         private void PromptTextBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            RefreshPromptCaretBrush();
+            ApplyPromptCaretBrush(PromptTextBox, ThemeManager.Current.CurrentUITheme);
         }
 
         private void CopilotChatPanel_SizeChanged(object sender, SizeChangedEventArgs e)
