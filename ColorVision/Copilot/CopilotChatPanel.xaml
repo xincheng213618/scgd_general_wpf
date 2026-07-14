@@ -1463,7 +1463,6 @@
                                  AcceptsReturn="True"
                                  Background="Transparent"
                                  BorderThickness="0"
-                                 CaretBrush="{DynamicResource GlobalTextBrush}"
                                  Foreground="{DynamicResource GlobalTextBrush}"
                                  PreviewKeyDown="PromptTextBox_PreviewKeyDown"
                                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
