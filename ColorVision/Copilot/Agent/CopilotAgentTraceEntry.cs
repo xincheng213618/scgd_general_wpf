@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 4;
+        public const int CurrentSchemaVersion = 5;
         private const int MaxSummaryLength = 800;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
@@ -60,6 +60,20 @@ namespace ColorVision.Copilot
         public string ResultSummary { get; set; } = string.Empty;
 
         public string ErrorMessage { get; set; } = string.Empty;
+
+        public string DelegatedRunId { get; set; } = string.Empty;
+
+        public CopilotAgentStopReason DelegatedStopReason { get; set; }
+
+        public int DelegatedRequestTokenBudget { get; set; }
+
+        public long DelegatedConsumedTokens { get; set; }
+
+        public int DelegatedProviderCalls { get; set; }
+
+        public int DelegatedToolCalls { get; set; }
+
+        public long DelegatedQueueDurationMs { get; set; }
 
         [JsonIgnore]
         public bool IsFailure => State is CopilotToolExecutionState.Failed
@@ -120,6 +134,17 @@ namespace ColorVision.Copilot
                         .Append(" · Concurrency: ").Append(ConcurrencyMode);
                 if (!string.IsNullOrWhiteSpace(ConcurrencyKey))
                     builder.AppendLine().Append("Resource: ").Append(ConcurrencyKey);
+                if (!string.IsNullOrWhiteSpace(DelegatedRunId))
+                {
+                    builder.AppendLine().Append("Child run: ").Append(DelegatedRunId)
+                        .Append(" · stop: ").Append(DelegatedStopReason)
+                        .Append(" · provider calls: ").Append(DelegatedProviderCalls)
+                        .Append(" · tool calls: ").Append(DelegatedToolCalls);
+                    builder.AppendLine().Append("Child budget: ").Append(DelegatedConsumedTokens)
+                        .Append('/').Append(DelegatedRequestTokenBudget).Append(" tokens");
+                    if (DelegatedQueueDurationMs > 0)
+                        builder.Append(" · queued ").Append(FormatDuration(DelegatedQueueDurationMs));
+                }
                 if (FailureKind != CopilotToolFailureKind.None)
                     builder.AppendLine().Append("Failure: ").Append(FailureKind)
                         .Append(" · Retry eligible: ").Append(RetryEligible ? "yes" : "no");
@@ -150,6 +175,16 @@ namespace ColorVision.Copilot
                 var summary = !string.IsNullOrWhiteSpace(result.Summary) ? result.Summary : result.Content;
                 entry.ResultSummary = Sanitize(summary);
                 entry.ErrorMessage = result.Success ? string.Empty : Sanitize(result.ErrorMessage);
+                if (result.DelegatedRunUsage != null)
+                {
+                    entry.DelegatedRunId = SanitizeIdentifier(result.DelegatedRunUsage.RunId);
+                    entry.DelegatedStopReason = result.DelegatedRunUsage.StopReason;
+                    entry.DelegatedRequestTokenBudget = Math.Max(0, result.DelegatedRunUsage.RequestTokenBudget);
+                    entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);
+                    entry.DelegatedProviderCalls = Math.Max(0, result.DelegatedRunUsage.ProviderCalls);
+                    entry.DelegatedToolCalls = Math.Max(0, result.DelegatedRunUsage.ToolCalls);
+                    entry.DelegatedQueueDurationMs = Math.Max(0, result.DelegatedRunUsage.QueueDurationMs);
+                }
             }
 
             return entry;
@@ -167,6 +202,13 @@ namespace ColorVision.Copilot
             var originalConcurrencyKey = ConcurrencyKey;
             var originalResultSummary = ResultSummary;
             var originalErrorMessage = ErrorMessage;
+            var originalDelegatedRunId = DelegatedRunId;
+            var originalDelegatedStopReason = DelegatedStopReason;
+            var originalDelegatedRequestTokenBudget = DelegatedRequestTokenBudget;
+            var originalDelegatedConsumedTokens = DelegatedConsumedTokens;
+            var originalDelegatedProviderCalls = DelegatedProviderCalls;
+            var originalDelegatedToolCalls = DelegatedToolCalls;
+            var originalDelegatedQueueDurationMs = DelegatedQueueDurationMs;
             var originalRound = Round;
             var originalAttempt = Attempt;
             var originalMaxAttempts = MaxAttempts;
@@ -182,6 +224,12 @@ namespace ColorVision.Copilot
             ConcurrencyKey = SanitizeIdentifier(ConcurrencyKey);
             ResultSummary = Sanitize(ResultSummary);
             ErrorMessage = Sanitize(ErrorMessage);
+            DelegatedRunId = SanitizeIdentifier(DelegatedRunId);
+            DelegatedRequestTokenBudget = Math.Max(0, DelegatedRequestTokenBudget);
+            DelegatedConsumedTokens = Math.Max(0, DelegatedConsumedTokens);
+            DelegatedProviderCalls = Math.Max(0, DelegatedProviderCalls);
+            DelegatedToolCalls = Math.Max(0, DelegatedToolCalls);
+            DelegatedQueueDurationMs = Math.Max(0, DelegatedQueueDurationMs);
             Round = Math.Max(1, Round);
             Attempt = Math.Max(1, Attempt);
             MaxAttempts = Math.Max(Attempt, MaxAttempts);
@@ -205,6 +253,13 @@ namespace ColorVision.Copilot
                 || !string.Equals(originalConcurrencyKey, ConcurrencyKey, StringComparison.Ordinal)
                 || !string.Equals(originalResultSummary, ResultSummary, StringComparison.Ordinal)
                 || !string.Equals(originalErrorMessage, ErrorMessage, StringComparison.Ordinal)
+                || !string.Equals(originalDelegatedRunId, DelegatedRunId, StringComparison.Ordinal)
+                || originalDelegatedStopReason != DelegatedStopReason
+                || originalDelegatedRequestTokenBudget != DelegatedRequestTokenBudget
+                || originalDelegatedConsumedTokens != DelegatedConsumedTokens
+                || originalDelegatedProviderCalls != DelegatedProviderCalls
+                || originalDelegatedToolCalls != DelegatedToolCalls
+                || originalDelegatedQueueDurationMs != DelegatedQueueDurationMs
                 || originalRound != Round
                 || originalAttempt != Attempt
                 || originalMaxAttempts != MaxAttempts
@@ -245,6 +300,12 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(FailureKind))
             {
                 FailureKind = CopilotToolFailureKind.Unspecified;
+                changed = true;
+            }
+
+            if (!Enum.IsDefined(DelegatedStopReason))
+            {
+                DelegatedStopReason = CopilotAgentStopReason.None;
                 changed = true;
             }
 

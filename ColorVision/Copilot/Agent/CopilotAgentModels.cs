@@ -91,6 +91,16 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotDelegatedRunUsage
     {
+        public string RunId { get; init; } = string.Empty;
+
+        public int RequestTokenBudget { get; init; }
+
+        public long QueueDurationMs { get; init; }
+
+        public CopilotAgentStopReason StopReason { get; init; }
+
+        public int ToolCalls { get; init; }
+
         public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
 
         public long ConsumedTokens { get; init; }
