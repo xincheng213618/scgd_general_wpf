@@ -390,6 +390,7 @@ docs/.vitepress/dist
 x64/
 README.old.md
 README.old.backup
+Scripts/*.cvxp
 
 # Backend marketplace artifacts
 Backend/**/marketplace.db

@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import build
-import release_runtime
 
 
 def always_fail_upload(_file_path, _settings) -> bool:
@@ -89,76 +88,24 @@ class BuildScriptTests(unittest.TestCase):
         latest = build.get_latest_file(setup_dir)
         self.assertEqual(latest, newer)
 
-    def test_release_runtime_payload_requires_output_and_installer_source(self):
+    def test_installer_runtime_validation_rejects_unlisted_dll(self):
         runtime_dir = self.root / "runtime"
         runtime_dir.mkdir()
+        (runtime_dir / "Included.dll").write_bytes(b"runtime")
+        (runtime_dir / "Missing.dll").write_bytes(b"runtime")
         aip_path = self.root / "ColorVision.aip"
-        source_rows = "".join(
-            f'<ROW File="{file_name}" SourcePath="runtime\\{file_name}" />'
-            for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES
-        )
         aip_path.write_text(
             '<DOCUMENT><COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">'
-            + source_rows
+            '<ROW File="Included.dll" SourcePath="runtime\\Included.dll" />'
             + '</COMPONENT></DOCUMENT>',
             encoding="utf-8",
         )
         messages = []
 
         self.assertFalse(
-            release_runtime.validate_release_runtime_payload(runtime_dir, aip_path, report=messages.append)
+            build.validate_installer_runtime_dlls(runtime_dir, aip_path, report=messages.append)
         )
-        self.assertIn(
-            "Release runtime payload is missing: " + ", ".join(release_runtime.REQUIRED_MAIN_RUNTIME_FILES),
-            messages,
-        )
-
-        for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES:
-            (runtime_dir / file_name).write_bytes(b"runtime")
-        messages.clear()
-        self.assertTrue(
-            release_runtime.validate_release_runtime_payload(runtime_dir, aip_path, report=messages.append)
-        )
-        self.assertIn(
-            "Verified required release runtime payload: " + ", ".join(release_runtime.REQUIRED_MAIN_RUNTIME_FILES),
-            messages,
-        )
-
-    def test_release_runtime_payload_rejects_installer_without_required_source(self):
-        runtime_dir = self.root / "runtime"
-        runtime_dir.mkdir()
-        for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES:
-            (runtime_dir / file_name).write_bytes(b"runtime")
-        aip_path = self.root / "ColorVision.aip"
-        aip_path.write_text('<DOCUMENT><ROW SourcePath="runtime\\Other.dll" /></DOCUMENT>', encoding="utf-8")
-        messages = []
-
-        self.assertFalse(
-            release_runtime.validate_release_runtime_payload(runtime_dir, aip_path, report=messages.append)
-        )
-        self.assertIn(
-            "Advanced Installer payload is missing: " + ", ".join(release_runtime.REQUIRED_MAIN_RUNTIME_FILES),
-            messages,
-        )
-
-    def test_release_runtime_payload_rejects_unlisted_runtime_dll(self):
-        runtime_dir = self.root / "runtime"
-        runtime_dir.mkdir()
-        for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES:
-            (runtime_dir / file_name).write_bytes(b"runtime")
-        (runtime_dir / "NewDependency.dll").write_bytes(b"runtime")
-        aip_path = self.root / "ColorVision.aip"
-        source_rows = "".join(
-            f'<ROW File="{file_name}" SourcePath="runtime\\{file_name}" />'
-            for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES
-        )
-        aip_path.write_text(f"<DOCUMENT>{source_rows}</DOCUMENT>", encoding="utf-8")
-        messages = []
-
-        self.assertFalse(
-            release_runtime.validate_release_runtime_payload(runtime_dir, aip_path, report=messages.append)
-        )
-        self.assertIn("Advanced Installer does not include runtime DLLs: NewDependency.dll", messages)
+        self.assertIn("Advanced Installer does not include runtime DLLs: Missing.dll", messages)
 
     def test_upload_file_uses_basic_auth_and_streams_payload(self):
         package_file = self.root / "ColorVision-1.2.3.4.exe"
