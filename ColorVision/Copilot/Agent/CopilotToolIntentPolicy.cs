@@ -111,8 +111,26 @@ namespace ColorVision.Copilot
             "执行命令", "运行命令", "执行cmd", "执行 cmd", "运行cmd", "运行 cmd", "执行powershell", "执行 powershell",
             "运行powershell", "运行 powershell", "命令行执行", "终端执行", "检查端口", "查询端口", "查看端口", "端口占用",
             "端口有没有被占用", "端口是否被占用", "端口是否占用", "端口被占用", "查看进程", "检查进程", "查看服务状态", "检查服务状态", "查询本机ip", "查看本机ip",
+            "检查系统版本", "查看系统版本", "查询系统版本", "检查windows版本", "查看windows版本", "查询windows版本", "操作系统版本", "本机系统版本", "当前系统版本",
+            "检查当前系统", "查看当前系统", "查询当前系统", "检查本机系统", "查看本机系统", "查询本机系统", "检查本机的windows", "查看本机的windows",
+            "检查系统信息", "查看系统信息", "查询系统信息", "检查电脑配置", "查看电脑配置", "查询电脑配置", "查看本机 windows", "检查本机 windows",
             "run command", "execute command", "run cmd", "run powershell", "check port", "port usage", "port in use",
-            "list processes", "check process", "check service", "machine diagnostics",
+            "list processes", "check process", "check service", "machine diagnostics", "check windows version", "windows version",
+            "operating system version", "system information", "computer configuration",
+        };
+
+        private static readonly string[] RecentLogInspectionMarkers =
+        {
+            "读取日志", "查看日志", "查询日志", "检查日志", "最近日志", "应用日志", "运行日志", "错误日志", "异常日志",
+            "排查报错", "排查异常", "分析报错", "分析异常", "崩溃原因", "失败原因",
+            "read logs", "view logs", "check logs", "recent logs", "application logs", "error log", "exception log",
+            "diagnose error", "diagnose exception", "crash reason", "failure reason",
+        };
+
+        private static readonly string[] RecentLogExplanationMarkers =
+        {
+            "日志是什么", "日志原理", "如何记录日志", "怎么记录日志", "如何写日志", "怎么写日志",
+            "what is a log", "logging basics", "how to log", "how to write logs",
         };
 
         private static readonly string[] ShellExplanationMarkers =
@@ -140,6 +158,12 @@ namespace ColorVision.Copilot
             "执行cmd", "执行 cmd", "运行cmd", "运行 cmd", "用cmd", "用 cmd", "使用cmd", "使用 cmd", "cmd命令", "cmd 命令",
             "执行powershell", "执行 powershell", "运行powershell", "运行 powershell", "用powershell", "用 powershell", "使用powershell", "使用 powershell",
             "run cmd", "using cmd", "run powershell", "using powershell",
+        };
+
+        private static readonly string[] DiagnosticRefreshFollowUpMarkers =
+        {
+            "现在呢", "现在怎么样", "现在是什么状态", "再检查", "重新检查", "再查", "重新查", "再检测", "重新检测", "刷新一下", "再看一下", "再试一次",
+            "what about now", "check again", "inspect again", "query again", "refresh", "try again",
         };
 
         private static readonly Regex TcpPortPattern = new(
@@ -302,6 +326,19 @@ namespace ColorVision.Copilot
                 || StartsWithAny(text, "select ", "show ", "describe ", "desc ", "explain ", "with ", "table ");
         }
 
+        public static bool NeedsRecentLogInspection(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || ContainsAny(request.UserText, RecentLogExplanationMarkers))
+            {
+                return false;
+            }
+
+            return request.Mode == CopilotAgentMode.Diagnose
+                || ContainsAny(request.UserText, RecentLogInspectionMarkers);
+        }
+
         public static bool NeedsDatabaseSqlMutation(CopilotAgentRequest? request)
         {
             if (request == null
@@ -334,12 +371,22 @@ namespace ColorVision.Copilot
 
         public static bool NeedsTcpPortInspection(CopilotAgentRequest? request)
         {
-            return request != null
-                && request.Mode != CopilotAgentMode.Chat
-                && !ContainsAny(request.UserText, TcpPortExplanationMarkers)
-                && !ContainsAny(request.UserText, TcpPortExplicitShellMarkers)
-                && ContainsAny(request.UserText, TcpPortInspectionMarkers)
-                && TryExtractTcpPort(request.UserText, out _);
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || ContainsAny(request.UserText, TcpPortExplanationMarkers)
+                || ContainsAny(request.UserText, TcpPortExplicitShellMarkers))
+            {
+                return false;
+            }
+
+            if (ContainsAny(request.UserText, TcpPortInspectionMarkers)
+                && TryExtractTcpPort(request.UserText, out _))
+            {
+                return true;
+            }
+
+            return IsDiagnosticRefreshFollowUp(request.UserText)
+                && TryExtractTcpPortFromRecentConversation(request, out _);
         }
 
         internal static bool TryExtractTcpPort(string? text, out int port)
@@ -510,17 +557,63 @@ namespace ColorVision.Copilot
             if (ContainsAny(request.UserText, NewTopicMarkers)
                 || ContainsAny(request.UserText, LocalEvidenceMarkers))
                 return false;
-            if (!IsWebEvidenceTool(tool))
-                return false;
-
             var capability = tool.Capability;
             if (capability.Access != CopilotToolAccess.ReadOnly
                 || capability.Idempotency != CopilotToolIdempotency.Idempotent
                 || capability.ApprovalMode != CopilotToolApprovalMode.Never)
                 return false;
 
-            return HasRecentCheckpointWebEvidence(request.SessionCheckpoint)
-                || HasVisibleWebEvidence(request.History);
+            if (HasRecentCheckpointToolEvidence(request.SessionCheckpoint, tool.Name))
+                return true;
+
+            return IsWebEvidenceTool(tool)
+                && (HasRecentCheckpointWebEvidence(request.SessionCheckpoint)
+                    || HasVisibleWebEvidence(request.History));
+        }
+
+        private static bool IsDiagnosticRefreshFollowUp(string? text)
+        {
+            return !string.IsNullOrWhiteSpace(text)
+                && text.Length <= MaximumFollowUpCharacters
+                && ContainsAny(text, DiagnosticRefreshFollowUpMarkers);
+        }
+
+        private static bool TryExtractTcpPortFromRecentConversation(CopilotAgentRequest request, out int port)
+        {
+            foreach (var message in (request.History ?? Array.Empty<CopilotRequestMessage>()).TakeLast(VisibleHistoryEvidenceLimit).Reverse())
+            {
+                if (TryExtractTcpPort(message.Content, out port))
+                    return true;
+            }
+
+            foreach (var message in (request.SessionCheckpoint?.ConversationMemory ?? Array.Empty<CopilotRequestMessage>()).TakeLast(VisibleHistoryEvidenceLimit).Reverse())
+            {
+                if (TryExtractTcpPort(message.Content, out port))
+                    return true;
+            }
+
+            port = 0;
+            return false;
+        }
+
+        private static bool HasRecentCheckpointToolEvidence(CopilotAgentSessionCheckpoint? checkpoint, string toolName)
+        {
+            if (checkpoint?.IsStructurallyValid() != true
+                || string.IsNullOrWhiteSpace(toolName)
+                || DateTimeOffset.UtcNow - checkpoint.UpdatedAtUtc > FollowUpToolLeaseDuration)
+            {
+                return false;
+            }
+
+            var previousStop = checkpoint.TaskEventJournal.Events
+                .LastOrDefault(item => item.Type == CopilotAgentTaskEventType.RunStopped);
+            if (previousStop == null)
+                return false;
+
+            return checkpoint.TaskEventJournal.Events.Any(item =>
+                string.Equals(item.RunId, previousStop.RunId, StringComparison.Ordinal)
+                && item.Type == CopilotAgentTaskEventType.ToolCompleted
+                && string.Equals(item.ToolName, toolName, StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool HasRecentCheckpointWebEvidence(CopilotAgentSessionCheckpoint? checkpoint)

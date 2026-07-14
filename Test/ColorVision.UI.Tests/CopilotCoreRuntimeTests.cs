@@ -4073,6 +4073,50 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RechecksPortFromVisibleConversationFollowUp()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var executablePath = Path.Combine(_tempRoot, "powershell.exe");
+        File.WriteAllBytes(executablePath, []);
+        var runner = new CapturingShellProcessRunner(new CopilotShellProcessResult(
+            0,
+            false,
+            "{\"port\":6666,\"occupied\":false,\"binding_count\":0,\"truncated\":false,\"bindings\":[]}",
+            string.Empty,
+            TimeSpan.FromMilliseconds(20)));
+        var tool = new CopilotInspectTcpPortTool(
+            new CopilotTcpPortInspectionService(new CopilotShellCommandService(runner, _ => executablePath)));
+        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+            "colorvision_inspect_tcp_port",
+            new Dictionary<string, object?> { ["port"] = 6666 });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "再检查一遍",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = [_tempRoot],
+            History =
+            [
+                new CopilotRequestMessage("user", "我想要知道6666端口有没有被占用"),
+                new CopilotRequestMessage("assistant", "端口 6666 当前未被占用。"),
+            ],
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, runner.CallCount);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("InspectTcpPort", step.Execution.ToolName);
+        Assert.True(step.Observation.Success);
+        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
+            message.Text.Contains("current state of one TCP port", StringComparison.Ordinal));
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_RequiresApprovedShellObservationForExplicitCommand()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();

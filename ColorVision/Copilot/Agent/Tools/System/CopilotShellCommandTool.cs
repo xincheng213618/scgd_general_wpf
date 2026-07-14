@@ -47,7 +47,7 @@ namespace ColorVision.Copilot
 
         public bool CanHandle(CopilotAgentRequest request) => request.Mode != CopilotAgentMode.Chat
             && !CopilotToolIntentPolicy.NeedsTcpPortInspection(request)
-            && (request.History.Count == 0 || CopilotToolIntentPolicy.NeedsShellCommand(request));
+            && CopilotToolIntentPolicy.NeedsShellCommand(request);
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => "system:shell";
 

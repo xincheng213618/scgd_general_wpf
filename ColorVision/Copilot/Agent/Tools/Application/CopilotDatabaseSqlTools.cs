@@ -44,7 +44,7 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema => Schema;
 
-        public bool CanHandle(CopilotAgentRequest request) => request.Mode != CopilotAgentMode.Chat;
+        public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsDatabaseSqlQuery(request);
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {

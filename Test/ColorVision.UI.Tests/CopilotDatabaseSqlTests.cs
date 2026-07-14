@@ -182,11 +182,11 @@ public sealed class CopilotDatabaseSqlTests
 
         Assert.Contains(registry.FindTools(Request("查询数据库，执行 SELECT COUNT(*) FROM jobs")), tool => tool.Name == "QueryDatabaseSql");
         Assert.Contains(registry.FindTools(Request("数据库里现在数据有多少")), tool => tool.Name == "QueryDatabaseSql");
-        Assert.Contains(registry.FindTools(Request("解释一下畸变校正")), tool => tool.Name == "QueryDatabaseSql");
+        Assert.DoesNotContain(registry.FindTools(Request("解释一下畸变校正")), tool => tool.Name == "QueryDatabaseSql");
         Assert.DoesNotContain(registry.FindTools(Request("执行 SQL：SELECT COUNT(*) FROM jobs")), tool => tool.Name == "ExecuteDatabaseSql");
         Assert.Contains(registry.FindTools(Request("清理数据库，DELETE FROM jobs WHERE id < 10")), tool => tool.Name == "ExecuteDatabaseSql");
         Assert.Contains(registry.FindTools(Request("WITH old AS (SELECT id FROM jobs) DELETE FROM jobs WHERE id IN (SELECT id FROM old)")), tool => tool.Name == "ExecuteDatabaseSql");
-        Assert.Contains(registry.FindTools(Request("SQL 是什么，如何写 SQL")), tool => tool.Name == "QueryDatabaseSql");
+        Assert.DoesNotContain(registry.FindTools(Request("SQL 是什么，如何写 SQL")), tool => tool.Name == "QueryDatabaseSql");
         Assert.DoesNotContain(registry.FindTools(Request("SQL 是什么，如何写 SQL")), tool => tool.Name == "ExecuteDatabaseSql");
     }
 

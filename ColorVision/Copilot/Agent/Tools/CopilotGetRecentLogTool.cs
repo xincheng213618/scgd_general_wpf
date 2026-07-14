@@ -20,7 +20,8 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
 
-            return CopilotRecentLogCapability.HasAvailableLogFile();
+            return CopilotToolIntentPolicy.NeedsRecentLogInspection(request)
+                && CopilotRecentLogCapability.HasAvailableLogFile();
         }
 
         public Task<CopilotToolResult> ExecuteAsync(

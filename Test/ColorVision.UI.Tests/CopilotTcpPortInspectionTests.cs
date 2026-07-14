@@ -135,6 +135,30 @@ public sealed class CopilotTcpPortInspectionTests : IDisposable
         Assert.DoesNotContain(registry.FindTools(Request("检查6666端口", mode: CopilotAgentMode.Chat)), tool => tool.Name == "InspectTcpPort");
     }
 
+    [Theory]
+    [InlineData("现在呢")]
+    [InlineData("再检查一遍")]
+    [InlineData("check again")]
+    public void RegistryInheritsSinglePortIntentForDiagnosticRefreshFollowUp(string followUp)
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = followUp,
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = [_root],
+            History =
+            [
+                new CopilotRequestMessage("user", "我想要知道6666端口有没有被占用"),
+                new CopilotRequestMessage("assistant", "端口 6666 当前未被占用。"),
+            ],
+        };
+
+        var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
+
+        Assert.Contains(tools, tool => tool.Name == "InspectTcpPort");
+        Assert.DoesNotContain(tools, tool => tool.Name is "RunShellCommand" or "QueryDatabaseSql" or "GetRecentLog");
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root))
