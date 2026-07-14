@@ -49,14 +49,3 @@ Do not put real credentials in docs or checked-in command examples.
 | `file_manager.py` | Legacy upload/path helper |
 
 If a file is not present in `Scripts/`, do not document it as an active entry point.
-
-## Tests
-
-```powershell
-$env:PYTHONPATH='Scripts'
-python -m unittest `
-  Scripts.test.test_backend_client `
-  Scripts.test.test_build `
-  Scripts.test.test_build_update `
-  Scripts.test.test_file_manager
-```

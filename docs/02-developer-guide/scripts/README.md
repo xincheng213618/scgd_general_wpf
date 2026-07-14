@@ -75,15 +75,4 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | 上传 401 或连接失败 | 环境变量、后端是否运行、URL 是否正确、代理是否需要启用 |
 | 构建失败 | 先单独跑对应 `dotnet build`，再看 MSBuild、Advanced Installer 或外部 DLL |
 
-## 脚本测试
-
-```powershell
-$env:PYTHONPATH='Scripts'
-python -m unittest `
-  Scripts.test.test_backend_client `
-  Scripts.test.test_build `
-  Scripts.test.test_build_update `
-  Scripts.test.test_file_manager
-```
-
-如果改了上传、打包、版本读取或发布顺序，至少跑相关脚本测试；改正式发布路径时，还要做一次测试环境发布演练。
+改正式发布路径时，需要做一次测试环境发布演练。

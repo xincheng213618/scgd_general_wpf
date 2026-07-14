@@ -140,8 +140,6 @@ cd Web/Backend
 python test_app.py
 python test_app_releases.py
 
-# Release/script tests
-$env:PYTHONPATH='Scripts'; python -m unittest Scripts.test.test_backend_client Scripts.test.test_build Scripts.test.test_build_update Scripts.test.test_file_manager
 ```
 
 ## Release Rules
