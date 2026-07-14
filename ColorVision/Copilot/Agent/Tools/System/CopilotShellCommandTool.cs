@@ -36,7 +36,7 @@ namespace ColorVision.Copilot
 
         public string Name => "RunShellCommand";
 
-        public string Description => "Run one bounded, non-interactive Windows PowerShell or CMD command and return its real exit code, stdout, and stderr. Use it for system inspection, port/process/service diagnostics, developer commands, and user-authorized machine operations. Every invocation requires native approval.";
+        public string Description => "Run one bounded, non-interactive Windows PowerShell or CMD command and return its real exit code, stdout, and stderr. Use it for custom system inspection, multi-port/process/service diagnostics, developer commands, and user-authorized machine operations. Prefer InspectTcpPort for one specific TCP port. Every invocation requires native approval.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(
             CopilotToolIdempotency.NonIdempotent,
@@ -46,6 +46,7 @@ namespace ColorVision.Copilot
         public CopilotToolInputSchema InputSchema => Schema;
 
         public bool CanHandle(CopilotAgentRequest request) => request.Mode != CopilotAgentMode.Chat
+            && !CopilotToolIntentPolicy.NeedsTcpPortInspection(request)
             && (request.History.Count == 0 || CopilotToolIntentPolicy.NeedsShellCommand(request));
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => "system:shell";

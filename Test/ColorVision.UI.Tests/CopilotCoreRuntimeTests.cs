@@ -3985,18 +3985,64 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_RequiresApprovedShellObservationForPortInspection()
+    public async Task AgentFrameworkRuntime_UsesStructuredPortInspectionWithoutApproval()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
         Directory.CreateDirectory(_tempRoot);
         var executablePath = Path.Combine(_tempRoot, "powershell.exe");
         File.WriteAllBytes(executablePath, []);
         var runner = new CapturingShellProcessRunner(new CopilotShellProcessResult(
-            0, false, "LocalAddress LocalPort OwningProcess\r\n0.0.0.0 6666 4321", string.Empty, TimeSpan.FromMilliseconds(20)));
+            0,
+            false,
+            "{\"port\":6666,\"occupied\":true,\"binding_count\":1,\"truncated\":false,\"bindings\":[{\"local_address\":\"0.0.0.0\",\"local_port\":6666,\"remote_address\":\"0.0.0.0\",\"remote_port\":0,\"state\":\"Listen\",\"process_id\":4321,\"process_name\":\"ColorVision\"}]}",
+            string.Empty,
+            TimeSpan.FromMilliseconds(20)));
+        var service = new CopilotTcpPortInspectionService(new CopilotShellCommandService(runner, _ => executablePath));
+        var tool = new CopilotInspectTcpPortTool(service);
+        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+            "colorvision_inspect_tcp_port",
+            new Dictionary<string, object?> { ["port"] = 6666 });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "我想要知道6666端口有没有被占用",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = [_tempRoot],
+        }, events.Add, CancellationToken.None);
+
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Equal(1, runner.CallCount);
+        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
+            message.Text.Contains("successful structured inspection", StringComparison.Ordinal));
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("InspectTcpPort", step.Execution.ToolName);
+        Assert.Equal(CopilotToolApprovalMode.Never, step.Execution.ApprovalMode);
+        Assert.True(step.Observation.Success);
+        Assert.Contains("occupied: true", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerReset);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_RequiresApprovedShellObservationForExplicitCommand()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        Directory.CreateDirectory(_tempRoot);
+        var executablePath = Path.Combine(_tempRoot, "powershell.exe");
+        File.WriteAllBytes(executablePath, []);
+        var runner = new CapturingShellProcessRunner(new CopilotShellProcessResult(
+            0, false, "LocalAddress LocalPort OwningProcess\r\n0.0.0.0 80 4321", string.Empty, TimeSpan.FromMilliseconds(20)));
         var tool = new CopilotShellCommandTool(new CopilotShellCommandService(runner, _ => executablePath));
         using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient("colorvision_run_shell_command", new Dictionary<string, object?>
         {
-            ["command"] = "Get-NetTCPConnection -LocalPort 6666 -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,OwningProcess",
+            ["command"] = "Get-NetTCPConnection -State Listen | Select-Object LocalAddress,LocalPort,OwningProcess",
             ["shell"] = "powershell",
             ["timeoutSeconds"] = 30,
         });
@@ -4008,7 +4054,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         var runTask = runtime.RunAsync(new CopilotAgentRequest
         {
-            UserText = "我想要知道6666端口有没有被占用",
+            UserText = "运行 PowerShell 命令检查当前机器的监听端口",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Auto,
             SearchRootPaths = [_tempRoot],
@@ -4017,7 +4063,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         Assert.Equal("RunShellCommand", action.ToolName);
         Assert.Equal(0, runner.CallCount);
-        Assert.Contains("6666", action.Description, StringComparison.Ordinal);
+        Assert.Contains("Get-NetTCPConnection", action.Description, StringComparison.Ordinal);
         Assert.Contains(fakeChatClient.StreamMessages[1], message =>
             message.Text.Contains("actual machine inspection", StringComparison.Ordinal));
         Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
@@ -4027,12 +4073,12 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(1, runner.CallCount);
         Assert.NotNull(runner.LastCommand);
         Assert.Equal(CopilotShellKind.PowerShell, runner.LastCommand!.Shell);
-        Assert.Contains("6666", runner.LastCommand.Arguments[^1], StringComparison.Ordinal);
+        Assert.Contains("-State Listen", runner.LastCommand.Arguments[^1], StringComparison.Ordinal);
         var step = Assert.Single(result.StepRecords);
         Assert.Equal("RunShellCommand", step.Execution.ToolName);
         Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
         Assert.True(step.Observation.Success);
-        Assert.Contains("6666", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Contains("LocalPort", step.Observation.Content, StringComparison.Ordinal);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerReset);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
     }

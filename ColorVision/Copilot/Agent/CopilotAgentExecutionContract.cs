@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
         FlowExecutionStatistics,
         DatabaseSqlQuery,
         DatabaseSqlMutation,
+        TcpPortInspection,
         ShellCommand,
     }
 
@@ -66,6 +67,7 @@ namespace ColorVision.Copilot
             CopilotAgentExecutionRequirement.FlowExecutionStatistics => "read-only flow execution statistics",
             CopilotAgentExecutionRequirement.DatabaseSqlQuery => "read-only database SQL result",
             CopilotAgentExecutionRequirement.DatabaseSqlMutation => "approved database SQL change",
+            CopilotAgentExecutionRequirement.TcpPortInspection => "read-only TCP port inspection",
             CopilotAgentExecutionRequirement.ShellCommand => "approved shell command result",
             _ => "no mandatory tool evidence",
         };
@@ -85,6 +87,7 @@ namespace ColorVision.Copilot
                     && !CopilotToolIntentPolicy.NeedsFlowExecutionStatistics(request)
                     && !CopilotToolIntentPolicy.NeedsDatabaseSqlQuery(request)
                     && !CopilotToolIntentPolicy.NeedsDatabaseSqlMutation(request)
+                    && !CopilotToolIntentPolicy.NeedsTcpPortInspection(request)
                     && !CopilotToolIntentPolicy.NeedsShellCommand(request))
                 {
                     return None();
@@ -160,6 +163,16 @@ namespace ColorVision.Copilot
                 return new CopilotAgentExecutionContract(
                     CopilotAgentExecutionRequirement.DatabaseSqlQuery,
                     [queryTools]);
+            }
+
+            if (CopilotToolIntentPolicy.NeedsTcpPortInspection(request))
+            {
+                var portInspectionTools = availableTools
+                    .Where(CopilotToolIntentPolicy.IsTcpPortInspectionTool)
+                    .Select(tool => tool.Name);
+                return new CopilotAgentExecutionContract(
+                    CopilotAgentExecutionRequirement.TcpPortInspection,
+                    [portInspectionTools]);
             }
 
             if (CopilotToolIntentPolicy.NeedsShellCommand(request))
@@ -254,29 +267,7 @@ namespace ColorVision.Copilot
             return new CopilotAgentBlockerSnapshot
             {
                 Kind = step == null ? CopilotAgentBlockerKind.ProviderOutput : CopilotAgentBlockerKind.ToolFailure,
-                Code = Requirement == CopilotAgentExecutionRequirement.DirectUrlEvidence
-                    ? "required_url_evidence_missing"
-                    : Requirement == CopilotAgentExecutionRequirement.PublicWebSearch
-                        ? "required_web_search_missing"
-                        : Requirement == CopilotAgentExecutionRequirement.WorkspaceEdit
-                            ? "required_workspace_edit_missing"
-                            : Requirement == CopilotAgentExecutionRequirement.WorkspaceEditAndValidation
-                                ? "required_workspace_edit_validation_missing"
-                                : Requirement == CopilotAgentExecutionRequirement.WorkspaceCreate
-                                    ? "required_workspace_create_missing"
-                                    : Requirement == CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation
-                                        ? "required_workspace_create_validation_missing"
-                                        : Requirement == CopilotAgentExecutionRequirement.WorkspaceValidation
-                                            ? "required_workspace_validation_missing"
-                                            : Requirement == CopilotAgentExecutionRequirement.WorkspaceRollback
-                                                ? "required_workspace_rollback_missing"
-                                                : Requirement == CopilotAgentExecutionRequirement.FlowExecutionStatistics
-                                                    ? "required_flow_execution_statistics_missing"
-                                                    : Requirement == CopilotAgentExecutionRequirement.DatabaseSqlQuery
-                                                        ? "required_database_sql_query_missing"
-                                                        : Requirement == CopilotAgentExecutionRequirement.DatabaseSqlMutation
-                                                            ? "required_database_sql_mutation_missing"
-                                                            : "required_shell_command_missing",
+                Code = GetMissingEvidenceCode(),
                 Summary = step == null
                     ? "The model ended an explicit evidence request without calling an available matching tool."
                     : "The explicit evidence request ended without a successful matching tool result.",
@@ -322,9 +313,32 @@ namespace ColorVision.Copilot
                     $"Execution contract: the user requested an actual database query, but no successful database observation was collected. Call {preferred} with exactly one read-only SQL statement and answer from its bounded, redacted result. Never invent rows or claim the query ran without this observation.",
                 CopilotAgentExecutionRequirement.DatabaseSqlMutation =>
                     $"Execution contract: the user requested a database change, but no approved change completed. Call {preferred} with exactly one SQL data or schema change, wait for native user approval, and report the affected-row result. Never claim the change ran before a successful approved observation.",
+                CopilotAgentExecutionRequirement.TcpPortInspection =>
+                    $"Execution contract: the user requested the current state of one TCP port, but no successful structured inspection was collected. Call {preferred} with the exact port number now and answer from its occupied flag and bounded binding records. Do not substitute a command suggestion or an unapproved arbitrary shell call.",
                 CopilotAgentExecutionRequirement.ShellCommand =>
                     $"Execution contract: the user requested an actual machine inspection or command execution, but no approved command result was collected. Call {preferred} now with a bounded non-interactive PowerShell or CMD command, wait for native user approval, and answer from its exit code, stdout, and stderr. Never replace execution with command suggestions or invented machine state.",
                 _ => string.Empty,
+            };
+        }
+
+        private string GetMissingEvidenceCode()
+        {
+            return Requirement switch
+            {
+                CopilotAgentExecutionRequirement.DirectUrlEvidence => "required_url_evidence_missing",
+                CopilotAgentExecutionRequirement.PublicWebSearch => "required_web_search_missing",
+                CopilotAgentExecutionRequirement.WorkspaceEdit => "required_workspace_edit_missing",
+                CopilotAgentExecutionRequirement.WorkspaceEditAndValidation => "required_workspace_edit_validation_missing",
+                CopilotAgentExecutionRequirement.WorkspaceCreate => "required_workspace_create_missing",
+                CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation => "required_workspace_create_validation_missing",
+                CopilotAgentExecutionRequirement.WorkspaceValidation => "required_workspace_validation_missing",
+                CopilotAgentExecutionRequirement.WorkspaceRollback => "required_workspace_rollback_missing",
+                CopilotAgentExecutionRequirement.FlowExecutionStatistics => "required_flow_execution_statistics_missing",
+                CopilotAgentExecutionRequirement.DatabaseSqlQuery => "required_database_sql_query_missing",
+                CopilotAgentExecutionRequirement.DatabaseSqlMutation => "required_database_sql_mutation_missing",
+                CopilotAgentExecutionRequirement.TcpPortInspection => "required_tcp_port_inspection_missing",
+                CopilotAgentExecutionRequirement.ShellCommand => "required_shell_command_missing",
+                _ => "required_tool_evidence_missing",
             };
         }
     }

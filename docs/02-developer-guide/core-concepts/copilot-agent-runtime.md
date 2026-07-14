@@ -254,15 +254,11 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 跨文件修改使用 `PreviewWorkspaceChangeSet`、`ApplyWorkspaceChangeSet` 和 `RollbackWorkspaceChangeSet`。模型先为 2–8 个不同路径分别生成精确的单文件修改或创建预览，再把这些 `previewId` 绑定成一个变更集；绑定后的子预览不能绕过变更集单独应用。审批窗口一次展示完整文件清单、每个操作以及前后 SHA-256。应用前先验证所有路径、状态和文件指纹，确认整组仍可写后才开始落盘；Windows 文件系统不提供跨文件事务，因此中途失败或取消时会按逆序补偿已经完成的写入。已成功应用的变更集可以通过一次新的原生审批整体回滚，回滚过程中若后续文件失败，则尽力重新应用先前已回滚的文件以维持原状态。预览和变更集都继承 30 分钟有效期。显式“修改多个文件”请求的执行契约只接受完整变更集成功，单个子文件成功不能冒充任务完成。
 
-通用 Windows 命令由 `RunShellCommand` 提供。它在 Auto/Agent 新任务中作为核心工具提供；已有会话的普通短追问不会顺带保留这个高风险工具，只有出现明确命令或机器诊断意图时才重新开放。工具支持 `PowerShell`、`CMD` 和跟随设置的 `Auto`；设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。工具接受完整命令、可选现有工作目录和 5–600 秒超时，始终以无窗口、非交互方式运行，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时。取消或超时会终止整个进程树。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令——包括只读端口检查——都必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。显式“执行命令”“检查端口/进程/服务”请求由执行契约要求成功的命令 observation；模型第一轮如果只给出文字答复，Harness 会撤回这份无依据草稿并要求其调用命令工具，仅向用户展示命令文本不能冒充执行结果。普通概念问答可以直接回答，不强制调用命令工具。
+单个 TCP 端口的常见检查由 `InspectTcpPort` 提供。例如“我想要知道 6666 端口有没有被占用”只需传入整数 `6666`，宿主会执行固定的只读 PowerShell 诊断，不接受模型提供的命令文本，因此不需要审批。结果是有界的结构化数据：是否占用、绑定数量、本地/远程端点、连接状态、PID 和进程名；最多返回 64 条绑定并标记截断。显式单端口请求由执行契约强制收集这份真实 observation，模型只给命令示例或猜测机器状态都不能结束任务。询问“如何检查端口”之类的概念问题仍可直接回答，不会强制执行。
 
-例如“我想要知道 6666 端口有没有被占用”应优先使用 PowerShell：
+通用 Windows 命令由 `RunShellCommand` 提供。它在 Auto/Agent 新任务中作为核心工具提供，但精确的单端口请求会隐藏它并只暴露 `InspectTcpPort`；已有会话的普通短追问也不会顺带保留这个高风险工具，只有出现明确命令或其他机器诊断意图时才重新开放。工具支持 `PowerShell`、`CMD` 和跟随设置的 `Auto`；设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。工具接受完整命令、可选现有工作目录和 5–600 秒超时，始终以无窗口、非交互方式运行，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时。取消或超时会终止整个进程树。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令都必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。显式“执行命令”或自定义端口/进程/服务诊断由执行契约要求成功的命令 observation；模型第一轮如果只给出文字答复，Harness 会撤回这份无依据草稿并要求其调用命令工具，仅向用户展示命令文本不能冒充执行结果。普通概念问答可以直接回答，不强制调用命令工具。
 
-```powershell
-Get-NetTCPConnection -LocalPort 6666 -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,State,OwningProcess
-```
-
-当用户明确选择 CMD 或使用批处理语法时，也可以运行：
+当用户明确要求使用 CMD 或提供批处理语法时，仍按通用命令处理并进入原生审批，例如：
 
 ```bat
 netstat -ano | findstr :6666
@@ -290,7 +286,7 @@ netstat -ano | findstr :6666
 这是一套基础框架，不等同于 Codex、Claude Code 或 OpenCode 的完整能力。后续按优先级扩展：
 
 1. 在现有“逐文件预览后分组”的变更集之上增加统一补丁信封，让模型能像 [Codex `apply_patch`](https://github.com/openai/codex/blob/main/codex-rs/core/prompt_with_apply_patch_instructions.md) 一样在一次结构化调用中表达多个 Add / Update / Delete，并继续复用当前审批、指纹和补偿边界。
-2. 在通用 Shell 之上增加可配置的只读命令自动批准白名单与更强的进程级隔离；当前版本在没有系统沙箱时保持每次原生审批。
+2. 按 `InspectTcpPort` 的模式继续增加固定参数、固定实现的常用只读诊断工具；通用 Shell 在没有系统沙箱时仍保持每次原生审批，并继续补强进程级隔离。
 3. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致。
 
 框架中间件与函数调用层的设计参考 [Microsoft Agent Framework Middleware](https://learn.microsoft.com/en-us/agent-framework/agents/middleware/)；请求预算中间件使用官方建议的 [DelegatingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.ai.delegatingchatclient?view=net-11.0-pp) 组合方式。

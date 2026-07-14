@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ColorVision.Copilot
 {
@@ -121,6 +122,33 @@ namespace ColorVision.Copilot
             "怎么检查端口", "如何检查端口", "检查端口的命令", "端口检查命令",
             "what is cmd", "what is powershell", "how to write a command", "command example",
         };
+
+        private static readonly string[] TcpPortInspectionMarkers =
+        {
+            "检查", "查询", "查看", "检测", "占用", "被占", "监听", "哪个进程", "什么进程", "谁在用", "谁占用",
+            "check", "inspect", "query", "in use", "occupied", "listening", "which process", "what process",
+        };
+
+        private static readonly string[] TcpPortExplanationMarkers =
+        {
+            "怎么检查", "如何检查", "怎样检查", "怎么查询", "如何查询", "怎样查询", "怎么查看", "如何查看", "检查命令", "查询命令",
+            "how to check", "how do i check", "check command", "which command",
+        };
+
+        private static readonly string[] TcpPortExplicitShellMarkers =
+        {
+            "执行cmd", "执行 cmd", "运行cmd", "运行 cmd", "用cmd", "用 cmd", "使用cmd", "使用 cmd", "cmd命令", "cmd 命令",
+            "执行powershell", "执行 powershell", "运行powershell", "运行 powershell", "用powershell", "用 powershell", "使用powershell", "使用 powershell",
+            "run cmd", "using cmd", "run powershell", "using powershell",
+        };
+
+        private static readonly Regex TcpPortPattern = new(
+            @"(?:(?<before>\d{1,5})\s*端口|端口\s*[:#]?\s*(?<chineseAfter>\d{1,5})|(?:tcp\s*)?port\s*[:#]?\s*(?<after>\d{1,5})|(?<tail>\d{1,5})\s*(?:tcp\s*)?port\b)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+        private static readonly Regex TcpPortListPattern = new(
+            @"(?:(?:端口|ports?)\s*[:#]?\s*\d{1,5}|\d{1,5})\s*(?:和|与|、|,|，|/|\band\b)\s*\d{1,5}(?:\s*(?:端口|ports?))?",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
         private static readonly string[] PublicWebMarkers =
         {
@@ -294,12 +322,51 @@ namespace ColorVision.Copilot
         {
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
-                || ContainsAny(request.UserText, ShellExplanationMarkers))
+                || ContainsAny(request.UserText, ShellExplanationMarkers)
+                || NeedsTcpPortInspection(request))
             {
                 return false;
             }
 
-            return ContainsAny(request.UserText, ShellExecutionMarkers);
+            return ContainsAny(request.UserText, ShellExecutionMarkers)
+                || ContainsAny(request.UserText, TcpPortExplicitShellMarkers);
+        }
+
+        public static bool NeedsTcpPortInspection(CopilotAgentRequest? request)
+        {
+            return request != null
+                && request.Mode != CopilotAgentMode.Chat
+                && !ContainsAny(request.UserText, TcpPortExplanationMarkers)
+                && !ContainsAny(request.UserText, TcpPortExplicitShellMarkers)
+                && ContainsAny(request.UserText, TcpPortInspectionMarkers)
+                && TryExtractTcpPort(request.UserText, out _);
+        }
+
+        internal static bool TryExtractTcpPort(string? text, out int port)
+        {
+            port = 0;
+            if (string.IsNullOrWhiteSpace(text) || TcpPortListPattern.IsMatch(text))
+                return false;
+
+            var ports = new HashSet<int>();
+            foreach (Match match in TcpPortPattern.Matches(text))
+            {
+                var valueGroup = match.Groups["before"];
+                if (!valueGroup.Success)
+                    valueGroup = match.Groups["chineseAfter"];
+                if (!valueGroup.Success)
+                    valueGroup = match.Groups["after"];
+                if (!valueGroup.Success)
+                    valueGroup = match.Groups["tail"];
+                var value = valueGroup.Value;
+                if (int.TryParse(value, out var candidate) && candidate is >= 1 and <= 65535)
+                    ports.Add(candidate);
+            }
+
+            if (ports.Count != 1)
+                return false;
+            port = ports.Single();
+            return true;
         }
 
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
@@ -408,6 +475,11 @@ namespace ColorVision.Copilot
         internal static bool IsShellCommandTool(ICopilotTool? tool)
         {
             return string.Equals(tool?.Name, "RunShellCommand", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsTcpPortInspectionTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "InspectTcpPort", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)
