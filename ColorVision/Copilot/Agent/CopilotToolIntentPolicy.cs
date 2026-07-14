@@ -98,6 +98,23 @@ namespace ColorVision.Copilot
             "what is sql", "how to write sql", "explain sql",
         };
 
+        private static readonly string[] ShellExecutionMarkers =
+        {
+            "执行命令", "运行命令", "执行cmd", "执行 cmd", "运行cmd", "运行 cmd", "执行powershell", "执行 powershell",
+            "运行powershell", "运行 powershell", "命令行执行", "终端执行", "检查端口", "查询端口", "查看端口", "端口占用",
+            "端口有没有被占用", "端口是否被占用", "端口是否占用", "端口被占用", "查看进程", "检查进程", "查看服务状态", "检查服务状态", "查询本机ip", "查看本机ip",
+            "run command", "execute command", "run cmd", "run powershell", "check port", "port usage", "port in use",
+            "list processes", "check process", "check service", "machine diagnostics",
+        };
+
+        private static readonly string[] ShellExplanationMarkers =
+        {
+            "cmd是什么", "cmd 是什么", "powershell是什么", "powershell 是什么", "怎么写cmd", "怎么写 cmd", "如何写cmd", "如何写 cmd",
+            "怎么写powershell", "怎么写 powershell", "如何写powershell", "如何写 powershell", "命令怎么写", "命令示例",
+            "怎么检查端口", "如何检查端口", "检查端口的命令", "端口检查命令",
+            "what is cmd", "what is powershell", "how to write a command", "command example",
+        };
+
         private static readonly string[] PublicWebMarkers =
         {
             "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "官网", "公开资料", "公开信息",
@@ -259,6 +276,18 @@ namespace ColorVision.Copilot
                 || StartsWithAny(text, "insert ", "update ", "delete ", "replace ", "truncate ", "create ", "alter ", "drop ", "rename ");
         }
 
+        public static bool NeedsShellCommand(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || ContainsAny(request.UserText, ShellExplanationMarkers))
+            {
+                return false;
+            }
+
+            return ContainsAny(request.UserText, ShellExecutionMarkers);
+        }
+
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
@@ -347,6 +376,11 @@ namespace ColorVision.Copilot
         internal static bool IsDatabaseSqlMutationTool(ICopilotTool? tool)
         {
             return string.Equals(tool?.Name, "ExecuteDatabaseSql", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsShellCommandTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "RunShellCommand", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)

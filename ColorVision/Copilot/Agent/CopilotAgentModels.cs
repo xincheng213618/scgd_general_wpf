@@ -70,6 +70,8 @@ namespace ColorVision.Copilot
 
         public bool PreferBatchReadLocalFiles { get; init; }
 
+        public CopilotShellKind PreferredShell { get; init; } = CopilotShellKind.Auto;
+
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }

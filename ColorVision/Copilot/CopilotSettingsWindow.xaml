@@ -319,10 +319,11 @@
                                 <StackPanel Margin="0,10,0,0">
                                     <TextBlock Margin="0,0,0,10"
                                                Style="{StaticResource SettingsHintTextStyle}"
-                                               Text="Per-profile defaults. Request-specific callers can apply a narrower one-run override."
+                                               Text="Agent defaults. Run limits are per profile; the default Windows shell is shared."
                                                TextWrapping="Wrap" />
                                     <Grid>
                                         <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
@@ -344,7 +345,17 @@
                                         <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" Text="{Binding SelectedProfile.MaxAgentPasses}" ToolTip="Maximum automatic continuation passes for incomplete tasks." />
 
                                         <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="Timeout (seconds)" />
-                                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding SelectedProfile.AgentTimeoutSeconds}" ToolTip="Total wall-clock budget for one Agent run." />
+                                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" Text="{Binding SelectedProfile.AgentTimeoutSeconds}" ToolTip="Total wall-clock budget for one Agent run." />
+
+                                        <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="Default shell" />
+                                        <ComboBox Grid.Row="4"
+                                                  Grid.Column="1"
+                                                  Grid.ColumnSpan="2"
+                                                  ItemsSource="{Binding ShellOptions}"
+                                                  DisplayMemberPath="Label"
+                                                  SelectedValuePath="Value"
+                                                  SelectedValue="{Binding PreferredShell, UpdateSourceTrigger=PropertyChanged}"
+                                                  ToolTip="Default Windows shell used by approved Agent command execution." />
                                     </Grid>
                                 </StackPanel>
                             </Expander>

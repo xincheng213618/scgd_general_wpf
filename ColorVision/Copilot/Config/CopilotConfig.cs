@@ -24,6 +24,14 @@ namespace ColorVision.Copilot
         public const int DefaultMcpPort = 38473;
 
         [Browsable(false)]
+        public CopilotShellKind PreferredShell
+        {
+            get => _preferredShell;
+            set => SetProperty(ref _preferredShell, value);
+        }
+        private CopilotShellKind _preferredShell = CopilotShellKind.Auto;
+
+        [Browsable(false)]
         public bool McpEnabled
         {
             get => _mcpEnabled;
@@ -68,6 +76,12 @@ namespace ColorVision.Copilot
 
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
             ExternalMcpServers ??= new ObservableCollection<CopilotMcpClientServerConfig>();
+
+            if (!Enum.IsDefined(PreferredShell))
+            {
+                PreferredShell = CopilotShellKind.Auto;
+                changed = true;
+            }
 
             if (McpPort <= 0 || McpPort > 65535)
             {

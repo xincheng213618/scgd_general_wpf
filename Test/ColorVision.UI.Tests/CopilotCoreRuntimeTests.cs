@@ -3958,6 +3958,54 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RequiresApprovedShellObservationForPortInspection()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        Directory.CreateDirectory(_tempRoot);
+        var executablePath = Path.Combine(_tempRoot, "powershell.exe");
+        File.WriteAllBytes(executablePath, []);
+        var runner = new CapturingShellProcessRunner(new CopilotShellProcessResult(
+            0, false, "LocalAddress LocalPort OwningProcess\r\n0.0.0.0 6666 4321", string.Empty, TimeSpan.FromMilliseconds(20)));
+        var tool = new CopilotShellCommandTool(new CopilotShellCommandService(runner, _ => executablePath));
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_run_shell_command", new Dictionary<string, object?>
+        {
+            ["command"] = "Get-NetTCPConnection -LocalPort 6666 -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,OwningProcess",
+            ["shell"] = "powershell",
+            ["timeoutSeconds"] = 30,
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var runTask = runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "我想要知道6666端口有没有被占用",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = [_tempRoot],
+        }, _ => { }, CancellationToken.None);
+        var action = await WaitForPendingActionAsync();
+
+        Assert.Equal("RunShellCommand", action.ToolName);
+        Assert.Equal(0, runner.CallCount);
+        Assert.Contains("6666", action.Description, StringComparison.Ordinal);
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, runner.CallCount);
+        Assert.NotNull(runner.LastCommand);
+        Assert.Equal(CopilotShellKind.PowerShell, runner.LastCommand!.Shell);
+        Assert.Contains("6666", runner.LastCommand.Arguments[^1], StringComparison.Ordinal);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("RunShellCommand", step.Execution.ToolName);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.True(step.Observation.Success);
+        Assert.Contains("6666", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentRuntimeRouter_PropagatesFrameworkFailureBeforeMaterialProgress()
     {
         var router = new CopilotAgentRuntimeRouter(new ThrowingAgentRuntime());
@@ -4462,6 +4510,23 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         public Task<CopilotWorkspaceValidationProcessResult> RunAsync(
             CopilotWorkspaceValidationCommand command,
             CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            LastCommand = command;
+            Interlocked.Increment(ref _callCount);
+            return Task.FromResult(result);
+        }
+    }
+
+    private sealed class CapturingShellProcessRunner(CopilotShellProcessResult result) : ICopilotShellProcessRunner
+    {
+        private int _callCount;
+
+        public int CallCount => Volatile.Read(ref _callCount);
+
+        public CopilotShellProcessCommand? LastCommand { get; private set; }
+
+        public Task<CopilotShellProcessResult> RunAsync(CopilotShellProcessCommand command, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             LastCommand = command;

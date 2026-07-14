@@ -853,6 +853,7 @@ namespace ColorVision.Copilot
                 WritableLocalRootPaths = writableLocalRootPaths,
                 WritableLocalFilePaths = writableLocalFilePaths,
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
+                PreferredShell = CopilotConfig.Instance.PreferredShell,
                 Mode = userMessage.RequestMode,
                 SessionCheckpoint = sessionCheckpoint,
                 Recovery = sessionCheckpoint == null ? null : userMessage.RecoveryRequest,

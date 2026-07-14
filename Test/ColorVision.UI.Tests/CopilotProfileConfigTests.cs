@@ -171,4 +171,22 @@ public sealed class CopilotProfileConfigTests
         Assert.NotEmpty(config.Profiles);
         Assert.Contains(config.Profiles, profile => string.Equals(profile.Name, "DeepSeek Default", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void Config_PersistsPreferredShellAndRepairsInvalidValue()
+    {
+        var config = new CopilotConfig
+        {
+            PreferredShell = CopilotShellKind.CommandPrompt,
+            McpBearerToken = "test-token",
+        };
+
+        var json = JsonConvert.SerializeObject(config);
+        var restored = JsonConvert.DeserializeObject<CopilotConfig>(json)!;
+
+        Assert.Equal(CopilotShellKind.CommandPrompt, restored.PreferredShell);
+        restored.PreferredShell = (CopilotShellKind)999;
+        Assert.True(restored.EnsureInitialized());
+        Assert.Equal(CopilotShellKind.Auto, restored.PreferredShell);
+    }
 }

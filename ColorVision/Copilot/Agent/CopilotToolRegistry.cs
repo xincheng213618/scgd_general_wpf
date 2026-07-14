@@ -73,6 +73,7 @@ namespace ColorVision.Copilot
                 new CopilotQueryFlowExecutionStatsTool(),
                 new CopilotQueryDatabaseSqlTool(),
                 new CopilotExecuteDatabaseSqlTool(),
+                new CopilotShellCommandTool(),
                 new CopilotPreviewCreateWorkspaceFileTool(workspacePatchStore),
                 new CopilotApplyCreateWorkspaceFileTool(workspacePatchStore),
                 new CopilotPreviewWorkspacePatchTool(workspacePatchStore),

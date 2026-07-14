@@ -179,6 +179,12 @@ namespace ColorVision.Copilot
                 new CopilotProviderOption { Label = "OpenAI Compatible", Value = CopilotProviderType.OpenAICompatible },
                 new CopilotProviderOption { Label = "Anthropic Compatible", Value = CopilotProviderType.AnthropicCompatible },
             });
+            ShellOptions = new ReadOnlyCollection<CopilotShellOption>(new[]
+            {
+                new CopilotShellOption { Label = "自动（PowerShell）", Value = CopilotShellKind.Auto },
+                new CopilotShellOption { Label = "PowerShell", Value = CopilotShellKind.PowerShell },
+                new CopilotShellOption { Label = "CMD", Value = CopilotShellKind.CommandPrompt },
+            });
             VendorOptions = CopilotVendorCatalog.VendorOptions;
             QuickAddVendorOptions = VendorOptions
                 .Where(option => option.Value != CopilotVendorType.Custom)
@@ -225,6 +231,7 @@ namespace ColorVision.Copilot
             ClearConnectProviderSearchCommand = new RelayCommand(_ => ConnectProviderSearchText = string.Empty);
 
             McpEnabled = config.McpEnabled;
+            PreferredShell = config.PreferredShell;
             McpPort = config.McpPort;
             McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
             McpEndpoint = BuildMcpEndpoint();
@@ -239,6 +246,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotProviderOption> ProviderOptions { get; }
 
+        public IReadOnlyList<CopilotShellOption> ShellOptions { get; }
+
         public IReadOnlyList<CopilotVendorOption> VendorOptions { get; }
 
         public IReadOnlyList<CopilotVendorOption> QuickAddVendorOptions { get; }
@@ -247,6 +256,17 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotConnectProviderOption> VisibleConnectProviderOptions =>
             ConnectProviderOptions.Where(option => option.Matches(ConnectProviderSearchText)).ToArray();
+
+        public CopilotShellKind PreferredShell
+        {
+            get => _preferredShell;
+            set
+            {
+                if (SetProperty(ref _preferredShell, value) && _isReadyForUserChanges)
+                    MarkSettingsPending("Default Agent shell changed. Click Apply or Save to use it.");
+            }
+        }
+        private CopilotShellKind _preferredShell = CopilotShellKind.Auto;
 
         public RelayCommand AddProfileCommand { get; }
 
@@ -920,6 +940,7 @@ namespace ColorVision.Copilot
                 }
 
                 config.McpEnabled = McpEnabled;
+                config.PreferredShell = PreferredShell;
                 config.McpPort = McpPort;
                 config.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
                     ? CopilotConfig.GenerateMcpBearerToken()

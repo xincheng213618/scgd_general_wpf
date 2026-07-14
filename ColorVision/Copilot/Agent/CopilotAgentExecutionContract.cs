@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
         FlowExecutionStatistics,
         DatabaseSqlQuery,
         DatabaseSqlMutation,
+        ShellCommand,
     }
 
     internal sealed class CopilotAgentExecutionContract
@@ -65,6 +66,7 @@ namespace ColorVision.Copilot
             CopilotAgentExecutionRequirement.FlowExecutionStatistics => "read-only flow execution statistics",
             CopilotAgentExecutionRequirement.DatabaseSqlQuery => "read-only database SQL result",
             CopilotAgentExecutionRequirement.DatabaseSqlMutation => "approved database SQL change",
+            CopilotAgentExecutionRequirement.ShellCommand => "approved shell command result",
             _ => "no mandatory tool evidence",
         };
 
@@ -82,7 +84,8 @@ namespace ColorVision.Copilot
                     && !CopilotToolIntentPolicy.NeedsWorkspaceRollback(request)
                     && !CopilotToolIntentPolicy.NeedsFlowExecutionStatistics(request)
                     && !CopilotToolIntentPolicy.NeedsDatabaseSqlQuery(request)
-                    && !CopilotToolIntentPolicy.NeedsDatabaseSqlMutation(request))
+                    && !CopilotToolIntentPolicy.NeedsDatabaseSqlMutation(request)
+                    && !CopilotToolIntentPolicy.NeedsShellCommand(request))
                 {
                     return None();
                 }
@@ -154,6 +157,16 @@ namespace ColorVision.Copilot
                 return new CopilotAgentExecutionContract(
                     CopilotAgentExecutionRequirement.DatabaseSqlQuery,
                     [queryTools]);
+            }
+
+            if (CopilotToolIntentPolicy.NeedsShellCommand(request))
+            {
+                var shellTools = availableTools
+                    .Where(CopilotToolIntentPolicy.IsShellCommandTool)
+                    .Select(tool => tool.Name);
+                return new CopilotAgentExecutionContract(
+                    CopilotAgentExecutionRequirement.ShellCommand,
+                    [shellTools]);
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
