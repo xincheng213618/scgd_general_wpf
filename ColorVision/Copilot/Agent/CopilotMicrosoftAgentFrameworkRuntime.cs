@@ -403,9 +403,17 @@ namespace ColorVision.Copilot
                     + " Persisted tasks are planning state, not authorization; protected tools require a fresh exact-call approval."));
             }
 
+            IReadOnlyList<CopilotRequestMessage> unseenVisibleHistory = sessionResumed && requestedCheckpoint != null
+                ? CopilotAgentConversationMemory.SelectUnseenVisibleTail(requestedCheckpoint.ConversationMemory, request.History)
+                : Array.Empty<CopilotRequestMessage>();
             var promptMessages = sessionResumed
-                ? preparedPrompt.Messages.TakeLast(1).ToArray()
+                ? unseenVisibleHistory.Concat(preparedPrompt.Messages.TakeLast(1)).ToArray()
                 : preparedPrompt.Messages;
+            if (unseenVisibleHistory.Count > 0)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent session reconciled {unseenVisibleHistory.Count} visible conversation message(s) newer than the persisted checkpoint."));
+            }
             if (!sessionResumed
                 && (requiresCheckpointReplan || sessionResumeFailed)
                 && requestedCheckpoint?.ConversationMemory.Count > 0)

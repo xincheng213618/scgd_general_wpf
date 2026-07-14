@@ -43,6 +43,35 @@ namespace ColorVision.Copilot
             return history.Append(preparedMessages[^1]).ToArray();
         }
 
+        public static IReadOnlyList<CopilotRequestMessage> SelectUnseenVisibleTail(
+            IReadOnlyList<CopilotRequestMessage>? previousMemory,
+            IEnumerable<CopilotRequestMessage>? visibleHistory)
+        {
+            var previous = Normalize(previousMemory);
+            var visible = Normalize(visibleHistory);
+            if (visible.Length == 0 || previous.Length == 0)
+                return visible;
+
+            var commonPrefixLength = 0;
+            while (commonPrefixLength < previous.Length
+                && commonPrefixLength < visible.Length
+                && AreEqual(previous[commonPrefixLength], visible[commonPrefixLength]))
+            {
+                commonPrefixLength++;
+            }
+
+            var previousTail = previous.AsSpan(commonPrefixLength);
+            var visibleTail = visible.AsSpan(commonPrefixLength);
+            var maximumOverlap = Math.Min(previousTail.Length, visibleTail.Length);
+            for (var overlap = maximumOverlap; overlap > 0; overlap--)
+            {
+                if (previousTail[^overlap..].SequenceEqual(visibleTail[..overlap], CopilotRequestMessageComparer.Instance))
+                    return visibleTail[overlap..].ToArray();
+            }
+
+            return visibleTail.ToArray();
+        }
+
         private static CopilotRequestMessage[] Normalize(IEnumerable<CopilotRequestMessage>? messages)
         {
             return (messages ?? Array.Empty<CopilotRequestMessage>())
@@ -93,5 +122,20 @@ namespace ColorVision.Copilot
         }
 
         private static string CreateKey(CopilotRequestMessage message) => message.Role + "\n" + message.Content;
+
+        private static bool AreEqual(CopilotRequestMessage left, CopilotRequestMessage right)
+        {
+            return string.Equals(left.Role, right.Role, StringComparison.Ordinal)
+                && string.Equals(left.Content, right.Content, StringComparison.Ordinal);
+        }
+
+        private sealed class CopilotRequestMessageComparer : IEqualityComparer<CopilotRequestMessage>
+        {
+            public static CopilotRequestMessageComparer Instance { get; } = new();
+
+            public bool Equals(CopilotRequestMessage left, CopilotRequestMessage right) => AreEqual(left, right);
+
+            public int GetHashCode(CopilotRequestMessage message) => HashCode.Combine(message.Role, message.Content);
+        }
     }
 }

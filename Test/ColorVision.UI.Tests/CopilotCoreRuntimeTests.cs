@@ -130,6 +130,40 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public void StateStore_PreservesDistinctCheckpointsAcrossConversationSwitches()
+    {
+        var firstProfile = CreateProfile();
+        firstProfile.Model = "conversation-model-a";
+        var secondProfile = CreateProfile();
+        secondProfile.Model = "conversation-model-b";
+        var first = CopilotConversationRecord.CreateEmpty(firstProfile.Id, firstProfile.DisplayLabel);
+        var second = CopilotConversationRecord.CreateEmpty(secondProfile.Id, secondProfile.DisplayLabel);
+        first.AgentSessionCheckpoint = CopilotAgentSessionCheckpoint.Create(
+            firstProfile,
+            "{\"state\":{\"conversation\":\"a\"}}",
+            conversationMemory: [new CopilotRequestMessage("user", "conversation-a-context")]);
+        second.AgentSessionCheckpoint = CopilotAgentSessionCheckpoint.Create(
+            secondProfile,
+            "{\"state\":{\"conversation\":\"b\"}}",
+            conversationMemory: [new CopilotRequestMessage("user", "conversation-b-context")]);
+        Assert.NotNull(first.AgentSessionCheckpoint);
+        Assert.NotNull(second.AgentSessionCheckpoint);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = second.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([first, second]),
+        };
+        var store = new CopilotChatStateStore(_tempRoot);
+
+        store.Save(state);
+        var recovered = store.Load();
+
+        Assert.Equal(second.Id, recovered.ActiveConversationId);
+        Assert.Equal("conversation-a-context", recovered.Conversations.Single(item => item.Id == first.Id).AgentSessionCheckpoint!.ConversationMemory[0].Content);
+        Assert.Equal("conversation-b-context", recovered.Conversations.Single(item => item.Id == second.Id).AgentSessionCheckpoint!.ConversationMemory[0].Content);
+    }
+
+    [Fact]
     public void InterruptedAgentRun_IsClosedAtLastSafeCheckpointAndOfferedForRecovery()
     {
         var profile = CreateProfile();
@@ -1988,7 +2022,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_ResumesPersistedFrameworkSessionWithoutDuplicatingVisibleHistory()
+    public async Task AgentFrameworkRuntime_ResumesPersistedFrameworkSessionAndReconcilesNewerVisibleHistory()
     {
         var profile = CreateProfile();
         using var firstClient = new CapturingFinalChatClient();
@@ -2015,7 +2049,13 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var secondResult = await secondRuntime.RunAsync(new CopilotAgentRequest
         {
             UserText = "second persisted agent turn",
-            History = new[] { new CopilotRequestMessage("user", "DUPLICATE-SENTINEL") },
+            History =
+            [
+                new CopilotRequestMessage("user", "first persisted agent turn"),
+                new CopilotRequestMessage("assistant", "compacted answer"),
+                new CopilotRequestMessage("user", "VISIBLE-QUESTION-AFTER-CHECKPOINT"),
+                new CopilotRequestMessage("assistant", "VISIBLE-ANSWER-AFTER-CHECKPOINT"),
+            ],
             Profile = profile,
             Mode = CopilotAgentMode.Diagnose,
             SessionCheckpoint = firstResult.SessionCheckpoint,
@@ -2024,9 +2064,12 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.NotNull(secondResult.SessionCheckpoint);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("session resumed", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("reconciled 2 visible conversation message", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(secondClient.LastMessages);
-        Assert.DoesNotContain(secondClient.LastMessages!, message => message.Text.Contains("DUPLICATE-SENTINEL", StringComparison.Ordinal));
-        Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("first persisted agent turn", StringComparison.Ordinal));
+        Assert.Equal(1, secondClient.LastMessages!.Count(message => message.Text.Contains("first persisted agent turn", StringComparison.Ordinal)));
+        Assert.Contains(secondClient.LastMessages!, message => message.Text == "VISIBLE-QUESTION-AFTER-CHECKPOINT");
+        Assert.Contains(secondClient.LastMessages!, message => message.Text == "VISIBLE-ANSWER-AFTER-CHECKPOINT");
         Assert.Contains(secondClient.LastMessages!, message => message.Text.Contains("second persisted agent turn", StringComparison.Ordinal));
         Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.SessionResumed);
         Assert.Contains(secondResult.TaskEventJournal.Events, item => item.Id == firstResult.TaskEventJournal.Events[0].Id);

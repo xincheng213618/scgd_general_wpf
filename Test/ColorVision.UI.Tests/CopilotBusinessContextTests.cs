@@ -118,6 +118,49 @@ public class CopilotBusinessContextTests
     }
 
     [Fact]
+    public void AgentConversationMemorySelectsOnlyVisibleTailNewerThanCheckpoint()
+    {
+        CopilotRequestMessage[] checkpointMemory =
+        [
+            new("user", "ORIGINAL-GOAL"),
+            new("user", "persisted-question"),
+            new("assistant", "persisted-answer"),
+        ];
+        CopilotRequestMessage[] visibleHistory =
+        [
+            new("user", "ORIGINAL-GOAL"),
+            new("user", "persisted-question"),
+            new("assistant", "persisted-answer"),
+            new("user", "visible-after-checkpoint"),
+            new("assistant", "visible-answer-after-checkpoint"),
+        ];
+
+        var unseen = CopilotAgentConversationMemory.SelectUnseenVisibleTail(checkpointMemory, visibleHistory);
+
+        Assert.Collection(
+            unseen,
+            message => Assert.Equal("visible-after-checkpoint", message.Content),
+            message => Assert.Equal("visible-answer-after-checkpoint", message.Content));
+    }
+
+    [Fact]
+    public void AgentConversationMemoryAlignsGoalPreservingBoundedWindowWithoutDuplication()
+    {
+        var checkpointMemory = Enumerable.Range(0, 14)
+            .Select(index => new CopilotRequestMessage(
+                index % 2 == 0 ? "user" : "assistant",
+                index == 0 ? "ORIGINAL-GOAL" : $"persisted-{index}"))
+            .ToArray();
+        var visibleHistory = checkpointMemory.Take(1)
+            .Concat(checkpointMemory.TakeLast(6))
+            .ToArray();
+
+        var unseen = CopilotAgentConversationMemory.SelectUnseenVisibleTail(checkpointMemory, visibleHistory);
+
+        Assert.Empty(unseen);
+    }
+
+    [Fact]
     public void AgentContextBuilder_IncludesBusinessContextAndToolObservations()
     {
         var builder = new CopilotAgentContextBuilder();
