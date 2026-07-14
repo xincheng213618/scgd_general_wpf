@@ -120,7 +120,8 @@ namespace ColorVision.Copilot
                 "InspectTcpPort" or "RunShellCommand" => "command",
                 "PreviewWorkspacePatch" or "PreviewCreateWorkspaceFile" or "PreviewWorkspaceChangeSet"
                     or "ApplyWorkspacePatch" or "ApplyCreateWorkspaceFile" or "ApplyWorkspaceChangeSet"
-                    or "RollbackWorkspacePatch" or "RollbackWorkspaceChangeSet" => "workspace",
+                    or "RollbackWorkspacePatch" or "RollbackWorkspaceChangeSet"
+                    or "PreviewWorkspacePatchEnvelope" or "ApplyWorkspacePatchEnvelope" or "RollbackWorkspacePatchEnvelope" => "workspace",
                 "CreateFlow" or "ApplyTemplatePatch" or "TemplatePatch" or "ExecuteMenu" or "SetLanguage" or "SetTheme" => "application",
                 _ => "tool:" + toolName,
             };

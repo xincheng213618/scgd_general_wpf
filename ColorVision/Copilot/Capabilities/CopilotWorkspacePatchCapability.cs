@@ -324,6 +324,8 @@ namespace ColorVision.Copilot
 
             if (record.Operation == WorkspacePatchOperation.Create)
                 return await MutateCreationAsync(request, record, rollback, toolName, cancellationToken);
+            if (record.Operation == WorkspacePatchOperation.Delete)
+                return await MutateDeletionAsync(request, record, rollback, toolName, cancellationToken);
 
             if (!CopilotWorkspacePatchScope.TryResolve(request, record.FullPath, MaxFileBytes, out var fullPath, out var scopeError))
             {
@@ -752,9 +754,12 @@ namespace ColorVision.Copilot
         private static string BuildPreviewContent(WorkspacePatchRecord record)
         {
             var builder = new StringBuilder();
-            builder.AppendLine(record.Operation == WorkspacePatchOperation.Create
-                ? "[Workspace File Creation Preview]"
-                : "[Workspace Patch Preview]");
+            builder.AppendLine(record.Operation switch
+            {
+                WorkspacePatchOperation.Create => "[Workspace File Creation Preview]",
+                WorkspacePatchOperation.Delete => "[Workspace File Deletion Preview]",
+                _ => "[Workspace Patch Preview]",
+            });
             builder.AppendLine($"preview_id: {record.PreviewId}");
             builder.AppendLine($"path: {record.FullPath}");
             builder.AppendLine($"operation: {record.Operation}");
@@ -770,11 +775,16 @@ namespace ColorVision.Copilot
                 AppendPrefixedLines(builder, record.OldText, '-');
                 builder.AppendLine("+++ new text");
             }
-            else
+            else if (record.Operation == WorkspacePatchOperation.Create)
             {
                 builder.AppendLine("+++ new file");
             }
-            AppendPrefixedLines(builder, record.NewText, '+');
+            else
+            {
+                builder.AppendLine("--- deleted file");
+            }
+            AppendPrefixedLines(builder, record.Operation == WorkspacePatchOperation.Delete ? record.OldText : record.NewText,
+                record.Operation == WorkspacePatchOperation.Delete ? '-' : '+');
             var content = builder.ToString().TrimEnd();
             return content.Length <= MaxPreviewCharacters
                 ? content
@@ -814,7 +824,9 @@ namespace ColorVision.Copilot
                 && (previewId.StartsWith("workspace-patch:", StringComparison.Ordinal)
                     && previewId.Length == "workspace-patch:".Length + 32
                     || previewId.StartsWith("workspace-create:", StringComparison.Ordinal)
-                    && previewId.Length == "workspace-create:".Length + 32);
+                    && previewId.Length == "workspace-create:".Length + 32
+                    || previewId.StartsWith("workspace-delete:", StringComparison.Ordinal)
+                    && previewId.Length == "workspace-delete:".Length + 32);
         }
 
         private static string SafeFullPath(string path)
@@ -966,6 +978,7 @@ namespace ColorVision.Copilot
         {
             Replace,
             Create,
+            Delete,
         }
 
         private enum WorkspacePatchState

@@ -75,6 +75,8 @@ namespace ColorVision.Copilot
                 new CopilotExecuteDatabaseSqlTool(),
                 new CopilotInspectTcpPortTool(),
                 new CopilotShellCommandTool(),
+                new CopilotPreviewWorkspacePatchEnvelopeTool(workspacePatchStore),
+                new CopilotApplyWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotPreviewCreateWorkspaceFileTool(workspacePatchStore),
                 new CopilotApplyCreateWorkspaceFileTool(workspacePatchStore),
                 new CopilotPreviewWorkspacePatchTool(workspacePatchStore),
@@ -83,6 +85,7 @@ namespace ColorVision.Copilot
                 new CopilotApplyWorkspaceChangeSetTool(workspacePatchStore),
                 new CopilotRollbackWorkspacePatchTool(workspacePatchStore),
                 new CopilotRollbackWorkspaceChangeSetTool(workspacePatchStore),
+                new CopilotRollbackWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotWorkspaceValidationTool(),
             };
         }

@@ -256,9 +256,11 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 跨文件修改使用 `PreviewWorkspaceChangeSet`、`ApplyWorkspaceChangeSet` 和 `RollbackWorkspaceChangeSet`。模型先为 2–8 个不同路径分别生成精确的单文件修改或创建预览，再把这些 `previewId` 绑定成一个变更集；绑定后的子预览不能绕过变更集单独应用。审批窗口一次展示完整文件清单、每个操作以及前后 SHA-256。应用前先验证所有路径、状态和文件指纹，确认整组仍可写后才开始落盘；Windows 文件系统不提供跨文件事务，因此中途失败或取消时会按逆序补偿已经完成的写入。已成功应用的变更集可以通过一次新的原生审批整体回滚，回滚过程中若后续文件失败，则尽力重新应用先前已回滚的文件以维持原状态。预览和变更集都继承 30 分钟有效期。显式“修改多个文件”请求的执行契约只接受完整变更集成功，单个子文件成功不能冒充任务完成。
 
+`PreviewWorkspacePatchEnvelope` 将这条链路收敛为一次结构化预览调用：同一信封可按顺序表达 1–8 个 `add`、`update`、`delete` 操作，每个路径只能出现一次。`add` 携带完整 UTF-8 内容，`update` 仍要求唯一精确匹配的 `oldText/newText`，`delete` 只接受可写工作区根内可解码的现有文本文件；单独授权的根外文件可以更新但不能删除，避免回滚时把原路径误当成新文件授权。预览阶段不写入，内部直接生成并保留同一变更集；`ApplyWorkspacePatchEnvelope` 经一次原生审批后复用整组路径检查、前置 SHA-256 验证、原子单文件写入和逆序补偿。删除记录绑定删除前字节与哈希，应用后目标必须缺失；`RollbackWorkspacePatchEnvelope` 仅在目标仍缺失时恢复原字节，若外部进程重新创建了同名路径则整组回滚在写入前失败，绝不覆盖。旧的逐文件预览与 `PreviewWorkspaceChangeSet` 保留为兼容入口，但 Agent instructions 和执行契约优先选择统一信封。
+
 单个 TCP 端口的常见检查由 `InspectTcpPort` 提供。例如“我想要知道 6666 端口有没有被占用”只需传入整数 `6666`，宿主会执行固定的只读 PowerShell 诊断，不接受模型提供的命令文本，因此不需要审批。结果是有界的结构化数据：是否占用、绑定数量、本地/远程端点、连接状态、PID 和进程名；最多返回 64 条绑定并标记截断。显式单端口请求由执行契约强制收集这份真实 observation，模型只给命令示例或猜测机器状态都不能结束任务。询问“如何检查端口”之类的概念问题仍可直接回答，不会强制执行。
 
-通用 Windows 命令由 `RunShellCommand` 提供。它在 Auto/Agent 新任务中作为核心工具提供，但精确的单端口请求会隐藏它并只暴露 `InspectTcpPort`；已有会话的普通短追问也不会顺带保留这个高风险工具，只有出现明确命令或其他机器诊断意图时才重新开放。工具支持 `PowerShell`、`CMD` 和跟随设置的 `Auto`；设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。工具接受完整命令、可选现有工作目录和 5–600 秒超时，始终以无窗口、非交互方式运行，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时。取消或超时会终止整个进程树。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令都必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。显式“执行命令”或自定义端口/进程/服务诊断由执行契约要求成功的命令 observation；模型第一轮如果只给出文字答复，Harness 会撤回这份无依据草稿并要求其调用命令工具，仅向用户展示命令文本不能冒充执行结果。普通概念问答可以直接回答，不强制调用命令工具。
+通用 Windows 命令由 `RunShellCommand` 提供。它只在用户明确要求执行命令或检查本机系统版本、系统信息、进程、服务等机器状态时开放；精确的单端口请求会隐藏它并只暴露 `InspectTcpPort`。已有会话的普通短追问不会顺带保留这个高风险工具，只有出现新的明确机器诊断意图时才重新开放。工具支持 `PowerShell`、`CMD` 和跟随设置的 `Auto`；设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。工具接受完整命令、可选现有工作目录和 5–600 秒超时，始终以无窗口、非交互方式运行，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时。取消或超时会终止整个进程树。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令都必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。显式“执行命令”或自定义端口/进程/服务诊断由执行契约要求成功的命令 observation；模型第一轮如果只给出文字答复，Harness 会撤回这份无依据草稿并要求其调用命令工具，仅向用户展示命令文本不能冒充执行结果。普通概念问答可以直接回答，不暴露或强制调用命令工具。
 
 当用户明确要求使用 CMD 或提供批处理语法时，仍按通用命令处理并进入原生审批，例如：
 
@@ -268,7 +270,7 @@ netstat -ano | findstr :6666
 
 业务数据库同时提供语义快捷能力和通用 SQL 能力。`QueryFlowExecutionStats` 只读聚合 `t_scgd_measure_batch`：接受 `today`、`yesterday` 或 `last7days`，按本机时区生成左闭右开的日历范围，返回执行尝试总数、各 `FlowStatus` 数量、完成率和平均耗时。它适合“今天执行了多少次流程”这类常见问题，不要求模型了解表结构。
 
-`QueryDatabaseSql` 是 Auto/Agent 模式的核心只读工具，不再依赖用户恰好说出“查询数据库”等固定关键词才向模型暴露；普通知识问答仍由模型依据工具说明直接回答，涉及当前数据库事实时才调用它。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。默认最多返回 100 行，可在 1–500 行内调整；列数、单元格和总输出长度都有上限，密码、token、API key 等敏感列会统一显示为 `<redacted>`。`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`，每次都必须经过 Agent Framework 原生审批；无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会在审批说明中给出加强警告。普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。服务设置表是版本托管的只读边界，即使进入审批也会在执行前拒绝变更；更新时由版本自带 SQL 重置原生设置。服务配置表由 Service Manager 在数据库重置前导出并回写，结果表不参与保留且可通过受审批的清理流程删除。
+`QueryDatabaseSql` 是 Auto/Agent 模式的通用只读数据库工具，只在用户要求 SQL、表结构、当前数据库事实或数据库数量统计时向模型开放；普通系统诊断和知识问答不会看到它。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。默认最多返回 100 行，可在 1–500 行内调整；列数、单元格和总输出长度都有上限，密码、token、API key 等敏感列会统一显示为 `<redacted>`。`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`，每次都必须经过 Agent Framework 原生审批；无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会在审批说明中给出加强警告。普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。服务设置表是版本托管的只读边界，即使进入审批也会在执行前拒绝变更；更新时由版本自带 SQL 重置原生设置。服务配置表由 Service Manager 在数据库重置前导出并回写，结果表不参与保留且可通过受审批的清理流程删除。
 
 两个通用工具都只连接 ColorVision 当前配置的 MySQL，不接受连接字符串。解析层只允许单语句并拒绝 executable comment；账号与授权管理、创建/删除数据库、全局或会话设置、事务控制、锁、动态 SQL、存储过程调用、服务器关闭/终止、插件管理、文件导入导出以及延时函数不开放。审计只保存参数名和 SQL 指纹，错误结果不回显数据库异常或连接信息。显式 SQL 请求由执行契约要求真实成功 observation，模型不能在没有查询结果或写入结果时编造数据库状态。
 
@@ -287,9 +289,8 @@ netstat -ano | findstr :6666
 
 这是一套基础框架，不等同于 Codex、Claude Code 或 OpenCode 的完整能力。后续按优先级扩展：
 
-1. 在现有“逐文件预览后分组”的变更集之上增加统一补丁信封，让模型能像 [Codex `apply_patch`](https://github.com/openai/codex/blob/main/codex-rs/core/prompt_with_apply_patch_instructions.md) 一样在一次结构化调用中表达多个 Add / Update / Delete，并继续复用当前审批、指纹和补偿边界。
-2. 按 `InspectTcpPort` 的模式继续增加固定参数、固定实现的常用只读诊断工具；通用 Shell 在没有系统沙箱时仍保持每次原生审批，并继续补强进程级隔离。
-3. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致。
+1. 按 `InspectTcpPort` 的模式继续增加固定参数、固定实现的常用只读诊断工具；通用 Shell 在没有系统沙箱时仍保持每次原生审批，并继续补强进程级隔离。
+2. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致。
 
 框架中间件与函数调用层的设计参考 [Microsoft Agent Framework Middleware](https://learn.microsoft.com/en-us/agent-framework/agents/middleware/)；请求预算中间件使用官方建议的 [DelegatingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.ai.delegatingchatclient?view=net-11.0-pp) 组合方式。
 

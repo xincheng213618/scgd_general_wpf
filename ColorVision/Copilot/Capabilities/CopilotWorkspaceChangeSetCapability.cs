@@ -32,6 +32,18 @@ namespace ColorVision.Copilot
                     $"previewIds must contain 2-{MaxChangeSetFiles} unique workspace patch or creation preview identifiers."));
             }
 
+            return Task.FromResult(CreateChangeSetPreview(previewIds, "PreviewWorkspaceChangeSet", minimumFiles: 2));
+        }
+
+        private CopilotToolResult CreateChangeSetPreview(string[] previewIds, string toolName, int minimumFiles)
+        {
+            if (previewIds.Length < minimumFiles || previewIds.Length > MaxChangeSetFiles)
+            {
+                return Failure(toolName, CopilotToolFailureKind.Validation,
+                    "The workspace change-set preview list is invalid.",
+                    $"The operation list must contain {minimumFiles}-{MaxChangeSetFiles} workspace preview identifiers.");
+            }
+
             var now = DateTimeOffset.UtcNow;
             WorkspaceChangeSetRecord changeSet;
             WorkspacePatchRecord[] records;
@@ -45,27 +57,27 @@ namespace ColorVision.Copilot
                     .ToArray();
                 if (records.Length != previewIds.Length)
                 {
-                    return Task.FromResult(Failure("PreviewWorkspaceChangeSet", CopilotToolFailureKind.NotFound,
+                    return Failure(toolName, CopilotToolFailureKind.NotFound,
                         "One or more workspace previews are unavailable or expired.",
-                        "Create fresh single-file previews before preparing the multi-file change set."));
+                        "Create fresh workspace operation previews before preparing the guarded change set.");
                 }
                 if (records.Any(record => record.State != WorkspacePatchState.Previewed))
                 {
-                    return Task.FromResult(Failure("PreviewWorkspaceChangeSet", CopilotToolFailureKind.Conflict,
+                    return Failure(toolName, CopilotToolFailureKind.Conflict,
                         "Every workspace preview must be unused before it can enter a change set.",
-                        "At least one preview has already been applied, rolled back, or invalidated."));
+                        "At least one preview has already been applied, rolled back, or invalidated.");
                 }
                 if (records.Any(record => !string.IsNullOrWhiteSpace(record.ChangeSetId)))
                 {
-                    return Task.FromResult(Failure("PreviewWorkspaceChangeSet", CopilotToolFailureKind.Conflict,
+                    return Failure(toolName, CopilotToolFailureKind.Conflict,
                         "A workspace preview is already reserved by another change set.",
-                        "Create fresh previews or use the existing matching change-set identifier."));
+                        "Create fresh previews or use the existing matching change-set identifier.");
                 }
                 if (records.Select(record => record.FullPath).Distinct(StringComparer.OrdinalIgnoreCase).Count() != records.Length)
                 {
-                    return Task.FromResult(Failure("PreviewWorkspaceChangeSet", CopilotToolFailureKind.Validation,
+                    return Failure(toolName, CopilotToolFailureKind.Validation,
                         "A workspace change set cannot target the same path more than once.",
-                        "Combine replacements for one file into a single exact preview before grouping files."));
+                        "Combine replacements for one file into a single update operation before grouping files.");
                 }
 
                 changeSet = new WorkspaceChangeSetRecord
@@ -81,13 +93,13 @@ namespace ColorVision.Copilot
                 StoreChangeSet(changeSet);
             }
 
-            return Task.FromResult(new CopilotToolResult
+            return new CopilotToolResult
             {
-                ToolName = "PreviewWorkspaceChangeSet",
+                ToolName = toolName,
                 Success = true,
-                Summary = $"Prepared one conflict-checked workspace change set for {records.Length} files.",
+                Summary = $"Prepared one conflict-checked workspace change set for {records.Length} file(s).",
                 Content = BuildChangeSetContent(changeSet, records, preview: true),
-            });
+            };
         }
 
         public Task<CopilotToolResult> ApplyChangeSetAsync(
@@ -95,7 +107,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput input,
             CancellationToken cancellationToken)
         {
-            return MutateChangeSetAsync(request, input, rollback: false, cancellationToken);
+            return MutateChangeSetAsync(request, input, rollback: false, "ApplyWorkspaceChangeSet", cancellationToken);
         }
 
         public Task<CopilotToolResult> RollbackChangeSetAsync(
@@ -103,7 +115,23 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput input,
             CancellationToken cancellationToken)
         {
-            return MutateChangeSetAsync(request, input, rollback: true, cancellationToken);
+            return MutateChangeSetAsync(request, input, rollback: true, "RollbackWorkspaceChangeSet", cancellationToken);
+        }
+
+        public Task<CopilotToolResult> ApplyPatchEnvelopeAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            CancellationToken cancellationToken)
+        {
+            return MutateChangeSetAsync(request, input, rollback: false, "ApplyWorkspacePatchEnvelope", cancellationToken);
+        }
+
+        public Task<CopilotToolResult> RollbackPatchEnvelopeAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            CancellationToken cancellationToken)
+        {
+            return MutateChangeSetAsync(request, input, rollback: true, "RollbackWorkspacePatchEnvelope", cancellationToken);
         }
 
         public static string GetChangeSetConcurrencyKey(CopilotAgentToolInput input, string fallbackToolName)
@@ -159,11 +187,11 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
             bool rollback,
+            string toolName,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
             input ??= CopilotAgentToolInput.Empty;
-            var toolName = rollback ? "RollbackWorkspaceChangeSet" : "ApplyWorkspaceChangeSet";
             if (!TryGetChangeSetId(input, out var changeSetId))
             {
                 return Failure(toolName, CopilotToolFailureKind.Validation,
@@ -226,8 +254,8 @@ namespace ColorVision.Copilot
                     if (!result.Success)
                     {
                         return rollback
-                            ? await HandleRollbackFailureAsync(request, changeSet, records, completed, result)
-                            : await HandleApplyFailureAsync(request, changeSet, records, completed, result);
+                            ? await HandleRollbackFailureAsync(request, changeSet, records, completed, result, toolName)
+                            : await HandleApplyFailureAsync(request, changeSet, records, completed, result, toolName);
                     }
                     completed.Add(record);
                 }
@@ -280,7 +308,8 @@ namespace ColorVision.Copilot
             foreach (var record in records)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!rollback && record.Operation == WorkspacePatchOperation.Create)
+                if ((!rollback && record.Operation == WorkspacePatchOperation.Create)
+                    || (rollback && record.Operation == WorkspacePatchOperation.Delete))
                 {
                     if (!CopilotWorkspacePatchScope.TryResolveNewFile(request, record.FullPath, out _, out _, out var createError))
                     {
@@ -289,8 +318,10 @@ namespace ColorVision.Copilot
                         return Failure(toolName,
                             conflict ? CopilotToolFailureKind.Conflict : CopilotToolFailureKind.Authorization,
                             conflict
-                                ? "A change-set creation target appeared after preview; no files were changed."
-                                : "A change-set creation target is outside the writable workspace; no files were changed.",
+                                ? rollback
+                                    ? "A deleted-file path was recreated after apply; no files were changed."
+                                    : "A change-set creation target appeared after preview; no files were changed."
+                                : "A missing-file target is outside the writable workspace; no files were changed.",
                             createError);
                     }
                     continue;
@@ -354,14 +385,15 @@ namespace ColorVision.Copilot
             WorkspaceChangeSetRecord changeSet,
             WorkspacePatchRecord[] records,
             IReadOnlyList<WorkspacePatchRecord> appliedRecords,
-            CopilotToolResult failure)
+            CopilotToolResult failure,
+            string toolName)
         {
             var compensated = await RollbackAppliedChildrenAsync(request, appliedRecords, changeSet.ChangeSetId);
             CompleteChangeSet(changeSet,
                 compensated ? WorkspaceChangeSetState.RolledBack : WorkspaceChangeSetState.Invalidated,
                 releaseReservations: true,
                 records);
-            return Failure("ApplyWorkspaceChangeSet",
+            return Failure(toolName,
                 failure.FailureKind == CopilotToolFailureKind.None ? CopilotToolFailureKind.Internal : failure.FailureKind,
                 compensated
                     ? "The workspace change set was not applied; earlier writes were rolled back."
@@ -374,7 +406,8 @@ namespace ColorVision.Copilot
             WorkspaceChangeSetRecord changeSet,
             WorkspacePatchRecord[] records,
             IReadOnlyList<WorkspacePatchRecord> rolledBackRecords,
-            CopilotToolResult failure)
+            CopilotToolResult failure,
+            string toolName)
         {
             var restored = await RestoreAppliedChildrenAsync(request, rolledBackRecords, changeSet.ChangeSetId);
             var fullyApplied = restored && AreAllChildrenInState(records, WorkspacePatchState.Applied);
@@ -382,7 +415,7 @@ namespace ColorVision.Copilot
                 fullyApplied ? WorkspaceChangeSetState.Applied : WorkspaceChangeSetState.Invalidated,
                 releaseReservations: !fullyApplied,
                 records);
-            return Failure("RollbackWorkspaceChangeSet",
+            return Failure(toolName,
                 failure.FailureKind == CopilotToolFailureKind.None ? CopilotToolFailureKind.Internal : failure.FailureKind,
                 fullyApplied
                     ? "The workspace change-set rollback failed; already restored files were reapplied so the set remains applied."
@@ -559,7 +592,9 @@ namespace ColorVision.Copilot
             return previewId.StartsWith("workspace-patch:", StringComparison.Ordinal)
                     && previewId.Length == "workspace-patch:".Length + 32
                 || previewId.StartsWith("workspace-create:", StringComparison.Ordinal)
-                    && previewId.Length == "workspace-create:".Length + 32;
+                    && previewId.Length == "workspace-create:".Length + 32
+                || previewId.StartsWith("workspace-delete:", StringComparison.Ordinal)
+                    && previewId.Length == "workspace-delete:".Length + 32;
         }
 
         private static string BuildChangeSetContent(

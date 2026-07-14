@@ -281,7 +281,10 @@ namespace ColorVision.Copilot
         private string BuildFeedback(string[] untriedNames)
         {
             var preferred = untriedNames.Length > 0 ? untriedNames[0] : _preferredToolNames[0];
-            var requiresChangeSet = string.Equals(preferred, "ApplyWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase)
+            var usesPatchEnvelope = string.Equals(preferred, "ApplyWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(preferred, "RollbackWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase);
+            var requiresChangeSet = usesPatchEnvelope
+                || string.Equals(preferred, "ApplyWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(preferred, "RollbackWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase);
             return Requirement switch
             {
@@ -290,13 +293,17 @@ namespace ColorVision.Copilot
                 CopilotAgentExecutionRequirement.PublicWebSearch =>
                     $"Execution contract: the user explicitly requested a public web search, but no successful search evidence has been collected. Call the available {preferred} tool now and base the answer on its observation. If every available search path fails, report a concrete blocker instead of presenting unverified claims as searched results.",
                 CopilotAgentExecutionRequirement.WorkspaceEdit =>
-                    requiresChangeSet
+                    usesPatchEnvelope
+                        ? "Execution contract: the requested workspace edit has not completed. Call PreviewWorkspacePatchEnvelope once with the complete Add/Update/Delete operation list, inspect its bound file list and hashes, then call ApplyWorkspacePatchEnvelope once with the returned changeSetId. Never split the envelope into separately approved child writes."
+                        : requiresChangeSet
                         ? "Execution contract: the user explicitly requested a multi-file workspace edit, but no approved change set has completed. Prepare each exact single-file preview, bundle all previewIds through PreviewWorkspaceChangeSet, then call ApplyWorkspaceChangeSet once with its changeSetId. A single child-file apply cannot satisfy this request."
                         : $"Execution contract: the user explicitly requested a workspace edit, but no approved edit has completed. First call PreviewWorkspacePatch with one exact replacement, inspect its preview, then call {preferred} with the returned previewId. Never claim the file changed before the approved tool returns success.",
                 CopilotAgentExecutionRequirement.WorkspaceEditAndValidation =>
                     $"Execution contract: the requested workspace edit and validation are not both complete in order. Apply the approved {(requiresChangeSet ? "multi-file change set" : "patch")} first, then call RunWorkspaceValidation and base the answer on its reported outcome. The next untried required tool is {preferred}; never validate before the write or claim an unverified result.",
                 CopilotAgentExecutionRequirement.WorkspaceCreate =>
-                    requiresChangeSet
+                    usesPatchEnvelope
+                        ? "Execution contract: the requested workspace file creation has not completed. Call PreviewWorkspacePatchEnvelope once with the complete Add/Update/Delete operation list, then call ApplyWorkspacePatchEnvelope once with the returned changeSetId after native approval."
+                        : requiresChangeSet
                         ? "Execution contract: the user explicitly requested multiple workspace files, but no approved change set has completed. Preview every new file, bundle all previewIds through PreviewWorkspaceChangeSet, then call ApplyWorkspaceChangeSet once with its changeSetId. One created child file cannot satisfy this request."
                         : $"Execution contract: the user explicitly requested a new workspace file, but no approved creation has completed. First call PreviewCreateWorkspaceFile with the complete path and content, inspect its preview, then call {preferred} with the returned previewId. Never claim the file exists before the approved tool returns success.",
                 CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation =>
@@ -304,7 +311,9 @@ namespace ColorVision.Copilot
                 CopilotAgentExecutionRequirement.WorkspaceValidation =>
                     $"Execution contract: the user explicitly requested workspace validation, but no approved validation result was collected. Call {preferred} with a workspace solution or project path and report its structured passed/failed outcome; do not claim a build or test was run without this result.",
                 CopilotAgentExecutionRequirement.WorkspaceRollback =>
-                    requiresChangeSet
+                    usesPatchEnvelope
+                        ? "Execution contract: the requested workspace rollback has not completed. Call RollbackWorkspacePatchEnvelope once with the exact prior changeSetId so every Add/Update/Delete operation is restored as one guarded unit."
+                        : requiresChangeSet
                         ? "Execution contract: the user explicitly requested a multi-file rollback, but the complete change set has not been restored. Call RollbackWorkspaceChangeSet with the exact prior changeSetId; rolling back one child preview cannot satisfy this request."
                         : $"Execution contract: the user explicitly requested a workspace patch rollback, but no approved rollback has completed. Call {preferred} with the exact prior previewId. Never claim the rollback completed before the approved tool returns success.",
                 CopilotAgentExecutionRequirement.FlowExecutionStatistics =>

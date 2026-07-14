@@ -4027,6 +4027,33 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_UsesUnifiedPatchEnvelopeContractForMultiFileEdit()
+    {
+        var tool = new TestAgentTool("ApplyWorkspacePatchEnvelope");
+        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+            "colorvision_apply_workspace_patch_envelope",
+            new Dictionary<string, object?>());
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "请修改多个文件并删除旧文件",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            WritableLocalRootPaths = [_tempRoot],
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
+            message.Text.Contains("PreviewWorkspacePatchEnvelope", StringComparison.Ordinal));
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_UsesStructuredPortInspectionWithoutApproval()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();

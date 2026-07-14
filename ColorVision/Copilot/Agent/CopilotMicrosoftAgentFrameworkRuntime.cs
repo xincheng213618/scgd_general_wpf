@@ -1181,9 +1181,13 @@ namespace ColorVision.Copilot
             builder.AppendLine("Avoid identical calls. Do not stop immediately after a successful tool call; use its observation to decide whether another tool is needed, then answer naturally.");
             builder.AppendLine("Repeat an identical tool call only when its structured result says retry_allowed: true. A retry is a new bounded attempt; protected tools require a fresh approval.");
             builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
+            if (tools.Any(tool => string.Equals(tool.Name, "PreviewWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)))
+            {
+                builder.AppendLine("Prefer PreviewWorkspacePatchEnvelope for workspace changes. Express the complete intended file set in one call with Add, Update, and Delete operations, one operation per path. Updates must contain one exact oldText/newText replacement; Add contains complete file content; Delete is allowed only for an existing text file. Inspect the returned paths and hashes, then call ApplyWorkspacePatchEnvelope once with its exact changeSetId. The envelope uses one native approval, validates the whole set before writing, compensates partial failure, and must not be split into child applies.");
+            }
             if (tools.Any(tool => string.Equals(tool.Name, "PreviewWorkspacePatch", StringComparison.OrdinalIgnoreCase)))
             {
-                builder.AppendLine("For workspace text edits, call PreviewWorkspacePatch first with one exact oldText/newText replacement. Inspect the returned hashes and preview, then call ApplyWorkspacePatch with that exact previewId. The native approval and SHA-256 check are mandatory; never invent or reuse a previewId for different content.");
+                builder.AppendLine("PreviewWorkspacePatch and ApplyWorkspacePatch remain available for legacy single-file exact replacements when the unified patch envelope is unavailable. The native approval and SHA-256 check are mandatory; never invent or reuse a previewId for different content.");
             }
             if (tools.Any(tool => string.Equals(tool.Name, "PreviewCreateWorkspaceFile", StringComparison.OrdinalIgnoreCase)))
             {
@@ -1195,6 +1199,8 @@ namespace ColorVision.Copilot
                 builder.AppendLine("RollbackWorkspacePatch may restore an applied preview only when the current user explicitly asks to undo it; it requires a fresh native approval and an unchanged applied-file hash.");
             if (tools.Any(tool => string.Equals(tool.Name, "RollbackWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("RollbackWorkspaceChangeSet restores an entire applied multi-file change set from its exact changeSetId after one fresh approval and whole-set hash validation. Prefer it over rolling back child previews one by one.");
+            if (tools.Any(tool => string.Equals(tool.Name, "RollbackWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)))
+                builder.AppendLine("RollbackWorkspacePatchEnvelope restores the complete applied Add/Update/Delete envelope from its exact changeSetId after one fresh approval. It never overwrites a path recreated after an approved delete.");
             if (tools.Any(tool => string.Equals(tool.Name, "RunWorkspaceValidation", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("RunWorkspaceValidation is the dedicated build/test surface. Prefer it over the general shell for workspace validation because it accepts only approved dotnet build/test tasks for workspace solution or project files, always runs after the relevant write has completed, never restores packages, and treats a nonzero exit as a completed validation outcome to analyze rather than a reason to repeat the same call.");
             if (tools.Any(tool => string.Equals(tool.Name, "QueryFlowExecutionStats", StringComparison.OrdinalIgnoreCase)))
