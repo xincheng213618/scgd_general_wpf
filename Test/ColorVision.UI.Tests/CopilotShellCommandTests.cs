@@ -1,7 +1,10 @@
 using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,7 +27,10 @@ public sealed class CopilotShellCommandTests : IDisposable
     public async Task AutoShellUsesConfiguredPowerShellForPortInspection()
     {
         var runner = new RecordingRunner(new CopilotShellProcessResult(
-            0, false, "LocalPort OwningProcess\r\n6666 1234", string.Empty, TimeSpan.FromMilliseconds(30)));
+            0, false, "LocalPort OwningProcess\r\n6666 1234", string.Empty, TimeSpan.FromMilliseconds(30))
+        {
+            ProcessTreeContained = true,
+        });
         var service = CreateService(runner);
         var request = Request("我想要知道6666端口有没有被占用", preferredShell: CopilotShellKind.Auto);
 
@@ -36,6 +42,7 @@ public sealed class CopilotShellCommandTests : IDisposable
 
         Assert.True(result.Success);
         Assert.Contains("6666", result.Content, StringComparison.Ordinal);
+        Assert.Contains("process_tree: windows_job_object", result.Content, StringComparison.Ordinal);
         var process = Assert.Single(runner.Commands);
         Assert.Equal(CopilotShellKind.PowerShell, process.Shell);
         Assert.Equal(_powershellPath, process.ExecutablePath);
@@ -144,6 +151,84 @@ public sealed class CopilotShellCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task RealRunnerTerminatesBackgroundChildWhenRootShellCompletes()
+    {
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        var runner = new CopilotShellProcessRunner();
+        var result = await runner.RunAsync(new CopilotShellProcessCommand(
+            CopilotShellKind.PowerShell,
+            Path.Combine(windows, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+            ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", BuildBackgroundChildCommand()],
+            _root,
+            TimeSpan.FromSeconds(10)), CancellationToken.None);
+        var processId = ReadChildProcessId(result.StandardOutput);
+
+        try
+        {
+            Assert.True(result.ProcessTreeContained);
+            Assert.False(result.TimedOut);
+            Assert.True(await WaitForProcessExitAsync(processId), $"Background child process {processId} was left running.");
+        }
+        finally
+        {
+            TryKillProcess(processId);
+        }
+    }
+
+    [Fact]
+    public async Task RealRunnerTimeoutTerminatesEntireProcessJob()
+    {
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        var runner = new CopilotShellProcessRunner();
+        var result = await runner.RunAsync(new CopilotShellProcessCommand(
+            CopilotShellKind.PowerShell,
+            Path.Combine(windows, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+            ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", BuildBackgroundChildCommand("Start-Sleep -Seconds 30")],
+            _root,
+            TimeSpan.FromSeconds(2)), CancellationToken.None);
+        var processId = ReadChildProcessId(result.StandardOutput);
+
+        try
+        {
+            Assert.True(result.ProcessTreeContained);
+            Assert.True(result.TimedOut);
+            Assert.True(await WaitForProcessExitAsync(processId), $"Timed-out child process {processId} was left running.");
+        }
+        finally
+        {
+            TryKillProcess(processId);
+        }
+    }
+
+    [Fact]
+    public async Task RealRunnerCancellationTerminatesEntireProcessJob()
+    {
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        var processIdFile = Path.Combine(_root, "cancelled-child.pid");
+        var escapedProcessIdFile = processIdFile.Replace("'", "''", StringComparison.Ordinal);
+        var command = BuildBackgroundChildCommand($"Set-Content -LiteralPath '{escapedProcessIdFile}' -Value $child.Id -Encoding ASCII; Start-Sleep -Seconds 30");
+        var runner = new CopilotShellProcessRunner();
+        using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runner.RunAsync(new CopilotShellProcessCommand(
+            CopilotShellKind.PowerShell,
+            Path.Combine(windows, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+            ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+            _root,
+            TimeSpan.FromSeconds(10)), cancellationSource.Token));
+
+        var processId = await ReadProcessIdFileAsync(processIdFile);
+        try
+        {
+            Assert.True(await WaitForProcessExitAsync(processId), $"Cancelled child process {processId} was left running.");
+        }
+        finally
+        {
+            TryKillProcess(processId);
+        }
+    }
+
+    [Fact]
     public void RegistryKeepsShellAvailableForAgentSelectionOutsideChatMode()
     {
         var registry = CopilotToolRegistry.CreateDefault();
@@ -203,6 +288,69 @@ public sealed class CopilotShellCommandTests : IDisposable
         var path = Path.Combine(_root, name);
         File.WriteAllBytes(path, []);
         return path;
+    }
+
+    private static string BuildBackgroundChildCommand(string? continuation = null)
+    {
+        return "Start-Sleep -Milliseconds 200; "
+            + "$child = Start-Process -FilePath $env:ComSpec -ArgumentList '/d /s /c ping 127.0.0.1 -n 31 > nul' -WindowStyle Hidden -PassThru; "
+            + "Write-Output ('CV_CHILD_PID=' + $child.Id); "
+            + (continuation ?? string.Empty);
+    }
+
+    private static int ReadChildProcessId(string output)
+    {
+        const string prefix = "CV_CHILD_PID=";
+        var line = output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .First(item => item.StartsWith(prefix, StringComparison.Ordinal));
+        return int.Parse(line[prefix.Length..], NumberStyles.None, CultureInfo.InvariantCulture);
+    }
+
+    private static async Task<int> ReadProcessIdFileAsync(string path)
+    {
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            if (File.Exists(path))
+            {
+                var text = await File.ReadAllTextAsync(path);
+                if (int.TryParse(text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var processId))
+                    return processId;
+            }
+            await Task.Delay(50);
+        }
+        throw new InvalidOperationException("The cancelled shell did not publish its child process ID.");
+    }
+
+    private static async Task<bool> WaitForProcessExitAsync(int processId)
+    {
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            try
+            {
+                using var process = Process.GetProcessById(processId);
+                if (process.HasExited)
+                    return true;
+            }
+            catch (ArgumentException)
+            {
+                return true;
+            }
+            await Task.Delay(50);
+        }
+        return false;
+    }
+
+    private static void TryKillProcess(int processId)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(processId);
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+        }
     }
 
     private sealed class RecordingRunner(CopilotShellProcessResult result) : ICopilotShellProcessRunner

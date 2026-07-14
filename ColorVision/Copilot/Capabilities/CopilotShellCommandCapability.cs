@@ -25,7 +25,10 @@ namespace ColorVision.Copilot
         bool TimedOut,
         string StandardOutput,
         string StandardError,
-        TimeSpan Duration);
+        TimeSpan Duration)
+    {
+        public bool ProcessTreeContained { get; init; }
+    }
 
     public interface ICopilotShellProcessRunner
     {
@@ -230,6 +233,7 @@ namespace ColorVision.Copilot
             builder.AppendLine($"exit_code: {result.ExitCode}");
             builder.AppendLine($"outcome: {(result.TimedOut ? "timed_out" : result.ExitCode == 0 ? "completed" : "nonzero_exit")}");
             builder.AppendLine($"duration_ms: {Math.Max(0, (long)result.Duration.TotalMilliseconds)}");
+            builder.AppendLine($"process_tree: {(result.ProcessTreeContained ? "windows_job_object" : "best_effort")}");
             builder.AppendLine("stdout:");
             builder.AppendLine(string.IsNullOrWhiteSpace(result.StandardOutput) ? "<empty>" : CopilotMcpAuditLogger.RedactText(result.StandardOutput).TrimEnd());
             builder.AppendLine("stderr:");
@@ -341,6 +345,7 @@ namespace ColorVision.Copilot
             var stopwatch = Stopwatch.StartNew();
             if (!process.Start())
                 throw new InvalidOperationException("The shell process did not start.");
+            using var processJob = CopilotWindowsProcessJob.TryAssign(process);
             process.StandardInput.Close();
 
             var stdoutTask = ReadBoundedAsync(process.StandardOutput, MaxStreamCharacters);
@@ -355,14 +360,21 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 timedOut = true;
+                processJob?.TryTerminate();
                 TryKillProcessTree(process);
                 await process.WaitForExitAsync(CancellationToken.None);
             }
             catch (OperationCanceledException)
             {
+                processJob?.TryTerminate();
                 TryKillProcessTree(process);
+                await process.WaitForExitAsync(CancellationToken.None);
                 throw;
             }
+
+            // A successful root-shell exit must not leave approved background descendants alive.
+            // Terminating the job before draining output also closes inherited pipe handles.
+            processJob?.TryTerminate();
 
             var standardOutput = await stdoutTask;
             var standardError = await stderrTask;
@@ -372,7 +384,10 @@ namespace ColorVision.Copilot
                 timedOut,
                 standardOutput,
                 standardError,
-                stopwatch.Elapsed);
+                stopwatch.Elapsed)
+            {
+                ProcessTreeContained = processJob != null,
+            };
         }
 
         private static Encoding GetStreamEncoding(CopilotShellKind shell)

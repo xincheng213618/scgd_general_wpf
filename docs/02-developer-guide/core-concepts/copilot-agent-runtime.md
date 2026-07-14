@@ -262,7 +262,7 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 单个 TCP 端口的常见检查由 `InspectTcpPort` 提供。例如模型可以根据“我想要知道 6666 端口有没有被占用”发出 `{"port":6666}` 的结构化调用；宿主执行固定的只读 PowerShell 诊断，不接受模型提供的命令文本，因此不需要审批。结果是有界的结构化数据：是否占用、绑定数量、本地/远程端点、连接状态、PID 和进程名；最多返回 64 条绑定并标记截断。工具 Schema 与通用 Shell 同时可见，模型应优先选择风险更低、参数更窄的专用工具；询问“如何检查端口”之类的概念问题则可以直接回答，宿主不会按关键词强制调用。
 
-通用 Windows 命令由 `RunShellCommand` 提供，并与专用诊断工具一起稳定注册。模型需要在结构化参数中给出完整命令、`PowerShell` / `CMD` / `Auto`、可选现有工作目录和 5–600 秒超时；仅在回复文本中展示命令不会触发宿主执行。设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。宿主始终以无窗口、非交互方式运行命令，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时；取消或超时会终止整个进程树。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令即使由模型选中也必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。普通概念问答可以直接回答，宿主不会根据“端口”“系统”等词强制调用 Shell。
+通用 Windows 命令由 `RunShellCommand` 提供，并与专用诊断工具一起稳定注册。模型需要在结构化参数中给出完整命令、`PowerShell` / `CMD` / `Auto`、可选现有工作目录和 5–600 秒超时；仅在回复文本中展示命令不会触发宿主执行。设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。宿主始终以无窗口、非交互方式运行命令，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时。根 Shell 会进入带 `KILL_ON_JOB_CLOSE` 的独立 Windows Job Object；正常完成、取消或超时时都会收敛其后台子进程，并在读取 stdout/stderr 前关闭后代继承的管道。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令即使由模型选中也必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。普通概念问答可以直接回答，宿主不会根据“端口”“系统”等词强制调用 Shell。
 
 当用户明确要求使用 CMD 或提供批处理语法时，仍按通用命令处理并进入原生审批，例如：
 
@@ -291,7 +291,7 @@ netstat -ano | findstr :6666
 
 这是一套基础框架，不等同于 Codex、Claude Code 或 OpenCode 的完整能力。当前已采用相同的核心分工：稳定工具目录和 JSON Schema 交给模型选择，宿主执行确定性的参数校验、权限、审批、隔离、审计与结果回传；关键词策略仅保留在确实需要缩减外部/动态能力的边界，不再承担核心诊断工具路由。后续按优先级扩展：
 
-1. 按 `InspectTcpPort` 的模式继续增加固定参数、固定实现的常用只读诊断工具；通用 Shell 在没有系统沙箱时仍保持每次原生审批，并继续补强进程级隔离。
+1. 按 `InspectTcpPort` 的模式继续增加固定参数、固定实现的常用只读诊断工具；通用 Shell 在没有系统沙箱时仍保持每次原生审批。当前 Shell runner 已完成 Job Object 进程树归组；后续再增加受限 Windows 身份、文件系统与网络边界，形成真正的系统沙箱。
 2. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致。
 
 框架中间件与函数调用层的设计参考 [Microsoft Agent Framework Middleware](https://learn.microsoft.com/en-us/agent-framework/agents/middleware/)；请求预算中间件使用官方建议的 [DelegatingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.ai.delegatingchatclient?view=net-11.0-pp) 组合方式。
