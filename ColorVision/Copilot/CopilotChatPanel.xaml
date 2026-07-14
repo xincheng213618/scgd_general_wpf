@@ -1463,6 +1463,7 @@
                                  AcceptsReturn="True"
                                  Background="Transparent"
                                  BorderThickness="0"
+                                 CaretBrush="{Binding Foreground, RelativeSource={RelativeSource Self}}"
                                  Foreground="{DynamicResource GlobalTextBrush}"
                                  PreviewKeyDown="PromptTextBox_PreviewKeyDown"
                                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
