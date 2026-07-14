@@ -206,6 +206,19 @@ public sealed class CopilotUiTextTests
     }
 
     [Fact]
+    public void AgentActivity_ShowsWindowsServiceInspectionCompactly()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.UpsertAgentTrace(CreateCompletedTrace("service-1", "InspectWindowsServices", 125));
+
+        var trace = Assert.Single(message.VisibleAgentTraceEntries);
+
+        Assert.Equal("检查了服务", trace.ActivityLabel);
+        Assert.Equal("Windows 服务检查完成。", trace.ActivityDescription);
+        Assert.Equal("125ms", trace.ActivityDurationLabel);
+    }
+
+    [Fact]
     public void AgentActivity_ShowsGitDiffInspectionCompactly()
     {
         var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);

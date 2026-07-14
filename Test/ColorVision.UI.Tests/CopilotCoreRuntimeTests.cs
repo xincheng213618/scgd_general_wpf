@@ -4250,6 +4250,49 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_UsesStructuredWindowsServiceInspectionWithoutApproval()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        var provider = new FixedWindowsServiceProvider(
+        [
+            new CopilotWindowsServiceSnapshot(
+                "MySQL80",
+                "MySQL Server 8.0",
+                "running",
+                "Win32OwnProcess",
+                true,
+                false,
+                true),
+        ]);
+        var tool = new CopilotInspectWindowsServicesTool(new CopilotWindowsServiceInspectionService(provider));
+        using var fakeChatClient = new FunctionCallingChatClient(
+            "colorvision_inspect_windows_services",
+            new Dictionary<string, object?> { ["query"] = "MySQL", ["status"] = "running" });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "MySQL 服务现在运行吗",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        Assert.Equal(2, fakeChatClient.StreamCallCount);
+        Assert.Equal(1, provider.CaptureCount);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("InspectWindowsServices", step.Execution.ToolName);
+        Assert.Equal(CopilotToolApprovalMode.Never, step.Execution.ApprovalMode);
+        Assert.True(step.Observation.Success);
+        Assert.Contains("\"service_name\":\"MySQL80\"", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Contains("\"status\":\"running\"", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_ApprovesStructuredGitInspectionBeforeExecution()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
@@ -5025,6 +5068,21 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             CaptureCount++;
             return Task.FromResult(snapshots);
+        }
+    }
+
+    private sealed class FixedWindowsServiceProvider(IReadOnlyList<CopilotWindowsServiceSnapshot> snapshots) : ICopilotWindowsServiceProvider
+    {
+        public int CaptureCount { get; private set; }
+
+        public IReadOnlyList<CopilotWindowsServiceSnapshot> Capture(
+            string query,
+            string status,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            CaptureCount++;
+            return snapshots;
         }
     }
 

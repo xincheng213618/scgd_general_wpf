@@ -56,6 +56,7 @@ public sealed class CopilotToolIntentPolicyTests
             "QueryDatabaseSql",
             "ExecuteDatabaseSql",
             "InspectWindowsSystem",
+            "InspectWindowsServices",
             "InspectTcpPort",
             "RunShellCommand",
         };
