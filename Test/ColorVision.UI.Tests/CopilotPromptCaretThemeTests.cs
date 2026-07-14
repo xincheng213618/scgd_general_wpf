@@ -1,5 +1,4 @@
 using ColorVision.Copilot;
-using ColorVision.Themes;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Controls;
@@ -10,7 +9,7 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotPromptCaretThemeTests
 {
     [Fact]
-    public void PromptCaret_UsesContrastingColorForLightAndDarkThemes()
+    public void PromptCaret_FollowsGlobalTextBrushWhenThemeResourcesChange()
     {
         Exception? failure = null;
         var thread = new Thread(() =>
@@ -18,13 +17,14 @@ public sealed class CopilotPromptCaretThemeTests
             try
             {
                 var prompt = new TextBox();
-                var apply = typeof(CopilotChatPanel).GetMethod("ApplyPromptCaretBrush", BindingFlags.Static | BindingFlags.NonPublic);
+                prompt.Resources["GlobalTextBrush"] = Brushes.Black;
+                var bind = typeof(CopilotChatPanel).GetMethod("BindPromptCaretToThemeResource", BindingFlags.Static | BindingFlags.NonPublic);
 
-                Assert.NotNull(apply);
-                apply.Invoke(null, [prompt, Theme.Light]);
+                Assert.NotNull(bind);
+                bind.Invoke(null, [prompt]);
                 Assert.Equal(Colors.Black, Assert.IsType<SolidColorBrush>(prompt.CaretBrush).Color);
 
-                apply.Invoke(null, [prompt, Theme.Dark]);
+                prompt.Resources["GlobalTextBrush"] = Brushes.White;
                 Assert.Equal(Colors.White, Assert.IsType<SolidColorBrush>(prompt.CaretBrush).Color);
             }
             catch (Exception ex)
