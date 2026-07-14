@@ -19,6 +19,24 @@ namespace ColorVision.Copilot
             "find in files", "search the code", "where is", "fix", "debug", "refactor", "modify",
         };
 
+        private static readonly string[] WorkspaceEditMarkers =
+        {
+            "请修改", "帮我修改", "修改这个", "修改代码", "修改文件", "帮我改", "改一下", "修复这个", "修复代码", "重构", "替换代码", "编辑文件", "更新代码", "应用补丁", "写入文件",
+            "please modify", "please edit", "edit the file", "fix this", "fix the code", "refactor", "replace the code", "update the file", "apply the patch",
+        };
+
+        private static readonly string[] WorkspaceEditOptOutMarkers =
+        {
+            "不要修改", "不用修改", "无需修改", "只说明", "只解释", "只分析", "不要写文件",
+            "do not modify", "don't modify", "do not edit", "don't edit", "explain only", "analysis only", "read only",
+        };
+
+        private static readonly string[] WorkspaceRollbackMarkers =
+        {
+            "撤销修改", "撤销刚才", "回滚修改", "回滚刚才", "回滚补丁", "还原文件", "恢复原文件",
+            "undo the change", "undo that change", "rollback the change", "roll back the change", "revert the file",
+        };
+
         private static readonly string[] PublicWebMarkers =
         {
             "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "官网", "公开资料", "公开信息",
@@ -84,6 +102,31 @@ namespace ColorVision.Copilot
             return ContainsAny(request.UserText, LocalEvidenceMarkers);
         }
 
+        public static bool NeedsWorkspaceEdit(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || request.WritableLocalRootPaths.Count == 0 && request.WritableLocalFilePaths.Count == 0
+                || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers))
+            {
+                return false;
+            }
+
+            return ContainsAny(request.UserText, WorkspaceEditMarkers);
+        }
+
+        public static bool NeedsWorkspaceRollback(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || request.WritableLocalRootPaths.Count == 0 && request.WritableLocalFilePaths.Count == 0)
+            {
+                return false;
+            }
+
+            return ContainsAny(request.UserText, WorkspaceRollbackMarkers);
+        }
+
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
@@ -137,6 +180,16 @@ namespace ColorVision.Copilot
                 return true;
 
             return ContainsAny($"{tool.Name} {tool.Description}", ExternalWebSearchMarkers);
+        }
+
+        internal static bool IsWorkspaceApplyTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "ApplyWorkspacePatch", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsWorkspaceRollbackTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "RollbackWorkspacePatch", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)

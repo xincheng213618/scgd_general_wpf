@@ -36,7 +36,12 @@ namespace ColorVision.Copilot
             cancellationToken.ThrowIfCancellationRequested();
 
             var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var argumentsSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(input);
+            var argumentsSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(tool, input);
+            var presentation = tool is ICopilotFrameworkApprovalPresentation presenter
+                ? presenter.CreateApprovalPresentation(input)
+                : new CopilotToolApprovalPresentation(
+                    $"Approve {tool.Name}",
+                    $"Microsoft Agent Framework wants to run the protected ColorVision tool {tool.Name} with {argumentsSummary}.");
             ConfirmableAction? action = null;
             EventHandler<ConfirmableActionChangedEventArgs>? statusChanged = null;
             statusChanged = (_, eventArgs) =>
@@ -68,8 +73,8 @@ namespace ColorVision.Copilot
             try
             {
                 action = _confirmationStore.CreateAgentFrameworkApproval(
-                    $"Approve {tool.Name}",
-                    $"Microsoft Agent Framework wants to run the protected ColorVision tool {tool.Name} with {argumentsSummary}.",
+                    presentation.Title,
+                    presentation.Description,
                     tool.Name,
                     argumentsSummary,
                     callId,

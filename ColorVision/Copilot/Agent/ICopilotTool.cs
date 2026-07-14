@@ -102,4 +102,11 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken);
     }
+
+    public sealed record CopilotToolApprovalPresentation(string Title, string Description);
+
+    public interface ICopilotFrameworkApprovalPresentation
+    {
+        CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput);
+    }
 }

@@ -64,6 +64,10 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> ReadableLocalDirectoryPaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> WritableLocalRootPaths { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> WritableLocalFilePaths { get; init; } = Array.Empty<string>();
+
         public bool PreferBatchReadLocalFiles { get; init; }
 
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;

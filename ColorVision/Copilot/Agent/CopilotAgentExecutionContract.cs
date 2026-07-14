@@ -13,6 +13,8 @@ namespace ColorVision.Copilot
         None,
         DirectUrlEvidence,
         PublicWebSearch,
+        WorkspaceEdit,
+        WorkspaceRollback,
     }
 
     internal sealed class CopilotAgentExecutionContract
@@ -42,6 +44,8 @@ namespace ColorVision.Copilot
         {
             CopilotAgentExecutionRequirement.DirectUrlEvidence => "direct URL evidence",
             CopilotAgentExecutionRequirement.PublicWebSearch => "explicit public web search",
+            CopilotAgentExecutionRequirement.WorkspaceEdit => "approved workspace edit",
+            CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
             _ => "no mandatory tool evidence",
         };
 
@@ -53,7 +57,28 @@ namespace ColorVision.Copilot
             availableTools ??= Array.Empty<ICopilotTool>();
 
             if (CopilotToolIntentPolicy.ExplicitlyDisallowsPublicWebAccess(request))
-                return new CopilotAgentExecutionContract(CopilotAgentExecutionRequirement.None, Array.Empty<string>());
+            {
+                if (!CopilotToolIntentPolicy.NeedsWorkspaceEdit(request)
+                    && !CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
+                {
+                    return new CopilotAgentExecutionContract(CopilotAgentExecutionRequirement.None, Array.Empty<string>());
+                }
+            }
+
+            var workspaceApplyTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceApplyTool).Select(tool => tool.Name);
+            var workspaceRollbackTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceRollbackTool).Select(tool => tool.Name);
+            if (CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
+            {
+                return new CopilotAgentExecutionContract(
+                    CopilotAgentExecutionRequirement.WorkspaceRollback,
+                    workspaceRollbackTools);
+            }
+            if (CopilotToolIntentPolicy.NeedsWorkspaceEdit(request))
+            {
+                return new CopilotAgentExecutionContract(
+                    CopilotAgentExecutionRequirement.WorkspaceEdit,
+                    workspaceApplyTools);
+            }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
             var webSearchTools = availableTools.Where(CopilotToolIntentPolicy.IsPublicWebSearchTool).Select(tool => tool.Name);
@@ -120,7 +145,11 @@ namespace ColorVision.Copilot
                 Kind = step == null ? CopilotAgentBlockerKind.ProviderOutput : CopilotAgentBlockerKind.ToolFailure,
                 Code = Requirement == CopilotAgentExecutionRequirement.DirectUrlEvidence
                     ? "required_url_evidence_missing"
-                    : "required_web_search_missing",
+                    : Requirement == CopilotAgentExecutionRequirement.PublicWebSearch
+                        ? "required_web_search_missing"
+                        : Requirement == CopilotAgentExecutionRequirement.WorkspaceEdit
+                            ? "required_workspace_edit_missing"
+                            : "required_workspace_rollback_missing",
                 Summary = step == null
                     ? "The model ended an explicit evidence request without calling an available matching tool."
                     : "The explicit evidence request ended without a successful matching tool result.",
@@ -140,6 +169,10 @@ namespace ColorVision.Copilot
                     $"Execution contract: the user supplied a direct URL, but no successful URL evidence has been collected. Call the available {preferred} tool now and base the answer on its observation. If it fails, try another available web evidence tool only when useful; never claim the page was inspected without a successful result.",
                 CopilotAgentExecutionRequirement.PublicWebSearch =>
                     $"Execution contract: the user explicitly requested a public web search, but no successful search evidence has been collected. Call the available {preferred} tool now and base the answer on its observation. If every available search path fails, report a concrete blocker instead of presenting unverified claims as searched results.",
+                CopilotAgentExecutionRequirement.WorkspaceEdit =>
+                    $"Execution contract: the user explicitly requested a workspace edit, but no approved edit has completed. First call PreviewWorkspacePatch with one exact replacement, inspect its preview, then call {preferred} with the returned previewId. Never claim the file changed before the approved tool returns success.",
+                CopilotAgentExecutionRequirement.WorkspaceRollback =>
+                    $"Execution contract: the user explicitly requested a workspace patch rollback, but no approved rollback has completed. Call {preferred} with the exact prior previewId. Never claim the rollback completed before the approved tool returns success.",
                 _ => string.Empty,
             };
         }

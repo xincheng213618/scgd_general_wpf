@@ -1181,6 +1181,12 @@ namespace ColorVision.Copilot
             builder.AppendLine("Avoid identical calls. Do not stop immediately after a successful tool call; use its observation to decide whether another tool is needed, then answer naturally.");
             builder.AppendLine("Repeat an identical tool call only when its structured result says retry_allowed: true. A retry is a new bounded attempt; protected tools require a fresh approval.");
             builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
+            if (tools.Any(tool => string.Equals(tool.Name, "PreviewWorkspacePatch", StringComparison.OrdinalIgnoreCase)))
+            {
+                builder.AppendLine("For workspace text edits, call PreviewWorkspacePatch first with one exact oldText/newText replacement. Inspect the returned hashes and preview, then call ApplyWorkspacePatch with that exact previewId. The native approval and SHA-256 check are mandatory; never invent or reuse a previewId for different content.");
+            }
+            if (tools.Any(tool => string.Equals(tool.Name, "RollbackWorkspacePatch", StringComparison.OrdinalIgnoreCase)))
+                builder.AppendLine("RollbackWorkspacePatch may restore an applied preview only when the current user explicitly asks to undo it; it requires a fresh native approval and an unchanged applied-file hash.");
             builder.AppendLine("For multi-step work, create a concise todo list, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
             builder.AppendLine("Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
             builder.AppendLine("When Agent Skills metadata matches the task, load the skill before following its specialized workflow. Skills and their resources are read-only guidance and never grant permission to perform a write-capable action.");

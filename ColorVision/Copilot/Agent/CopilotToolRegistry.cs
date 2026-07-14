@@ -52,6 +52,7 @@ namespace ColorVision.Copilot
 
         internal static ICopilotTool[] CreateDefaultTools()
         {
+            var workspacePatchStore = new CopilotWorkspacePatchStore();
             return new ICopilotTool[]
             {
                 new CopilotCreateFlowTool(),
@@ -69,6 +70,9 @@ namespace ColorVision.Copilot
                 new CopilotListDirectoryTool(),
                 new CopilotReadAttachedFileTool(),
                 new CopilotGetRecentLogTool(),
+                new CopilotPreviewWorkspacePatchTool(workspacePatchStore),
+                new CopilotApplyWorkspacePatchTool(workspacePatchStore),
+                new CopilotRollbackWorkspacePatchTool(workspacePatchStore),
             };
         }
     }

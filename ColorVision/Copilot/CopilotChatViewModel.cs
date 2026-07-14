@@ -819,6 +819,8 @@ namespace ColorVision.Copilot
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
             var searchRootPaths = BuildSearchRootPaths(turnSnapshot, explicitLocalPaths);
+            var writableLocalRootPaths = BuildWritableLocalRootPaths(turnSnapshot);
+            var writableLocalFilePaths = BuildWritableLocalFilePaths(turnSnapshot, explicitLocalFilePaths);
             var projectInstructions = userMessage.RequestMode == CopilotAgentMode.Chat
                 ? Array.Empty<CopilotProjectInstructionDocument>()
                 : CopilotAgentProjectInstructions.Discover(searchRootPaths, turnSnapshot.ActiveDocumentPath);
@@ -848,6 +850,8 @@ namespace ColorVision.Copilot
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
+                WritableLocalRootPaths = writableLocalRootPaths,
+                WritableLocalFilePaths = writableLocalFilePaths,
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
                 Mode = userMessage.RequestMode,
                 SessionCheckpoint = sessionCheckpoint,
@@ -1397,6 +1401,25 @@ namespace ColorVision.Copilot
             }
 
             return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+        }
+
+        private static IReadOnlyList<string> BuildWritableLocalRootPaths(CopilotHostedTurnSnapshot turnSnapshot)
+        {
+            return CopilotWorkspaceSearchSupport.NormalizeSearchRoots([turnSnapshot.SolutionDirectoryPath]);
+        }
+
+        private static IReadOnlyList<string> BuildWritableLocalFilePaths(
+            CopilotHostedTurnSnapshot turnSnapshot,
+            IReadOnlyList<string> explicitLocalFilePaths)
+        {
+            var paths = explicitLocalFilePaths
+                .Append(turnSnapshot.ActiveDocumentPath)
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Select(Path.GetFullPath)
+                .Where(CopilotWorkspaceSearchSupport.IsTextLikeFile)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            return paths;
         }
 
         private static CopilotContextScope MapContextScope(CopilotAgentMode mode)
