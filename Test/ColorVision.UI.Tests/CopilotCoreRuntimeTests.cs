@@ -2569,6 +2569,89 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_CrashCheckpointNeverReusesPendingWriteApproval()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        var profile = CreateProfile();
+        var tool = new FrameworkApprovalTestTool();
+        using var firstClient = new ScriptedHarnessChatClient(
+            options => CreateTodoAddCall(options, "Apply protected change", "The write must receive a current approval."),
+            _ => new FunctionCallContent("crashed-write-call", "colorvision_protected_write", new Dictionary<string, object?> { ["query"] = "approved-value" }));
+        var firstRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => firstClient);
+        var firstEvents = new List<CopilotAgentEvent>();
+        using var firstCancellation = new CancellationTokenSource();
+        var firstRun = firstRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "apply the protected change",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+        }, firstEvents.Add, firstCancellation.Token);
+        var abandonedAction = await WaitForPendingActionAsync();
+        var liveCheckpointEvent = firstEvents.Last(item => item.Type == CopilotAgentEventType.CheckpointUpdated);
+        Assert.Equal(1, liveCheckpointEvent.TaskLedger!.RemainingCount);
+
+        firstCancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => firstRun);
+        Assert.Equal(ConfirmableActionStatus.Rejected, abandonedAction.Status);
+        Assert.False(CopilotMcpConfirmationStore.Instance.Approve(abandonedAction.ActionId, out _));
+        Assert.Equal(0, tool.ApprovedExecutionCount);
+
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            IsExecutionInProgress = true,
+            AgentTaskLedger = liveCheckpointEvent.TaskLedger,
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        conversation.Messages.Add(assistantMessage);
+        conversation.AgentSessionCheckpoint = liveCheckpointEvent.SessionCheckpoint;
+        var state = new CopilotChatState
+        {
+            ActiveProfileId = profile.Id,
+            ActiveConversationId = conversation.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([conversation]),
+        };
+        var config = new CopilotConfig { Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>([profile]) };
+        Assert.True(state.EnsureInitialized(config));
+        Assert.Equal(CopilotAgentStopReason.Interrupted, assistantMessage.AgentStopReason);
+
+        using var resumedClient = new ScriptedHarnessChatClient(
+            _ => new FunctionCallContent("resumed-write-call", "colorvision_protected_write", new Dictionary<string, object?> { ["query"] = "approved-value" }),
+            options => CreateTodoCompleteCall(options, 1, "Protected change applied after fresh approval."),
+            _ => null);
+        var resumedRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => resumedClient);
+        var resumedRun = resumedRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "continue the interrupted protected change",
+            Profile = profile,
+            Mode = CopilotAgentMode.Auto,
+            SessionCheckpoint = conversation.AgentSessionCheckpoint,
+            Recovery = new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Resume,
+                PreviousStopReason = CopilotAgentStopReason.Interrupted,
+            },
+        }, _ => { }, CancellationToken.None);
+        var freshAction = await WaitForPendingActionAsync();
+
+        Assert.NotEqual(abandonedAction.ActionId, freshAction.ActionId);
+        Assert.Equal("resumed-write-call", freshAction.AgentCallId);
+        Assert.Equal(0, tool.ApprovedExecutionCount);
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(freshAction.ActionId, out _));
+        var resumed = await resumedRun.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, tool.ApprovedExecutionCount);
+        Assert.Equal(CopilotAgentStopReason.Completed, resumed.StopReason);
+        Assert.Equal(0, resumed.TaskLedger.RemainingCount);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_InjectsUserSteeringIntoActiveHarnessSession()
     {
         using var fakeChatClient = new SteerableChatClient();
